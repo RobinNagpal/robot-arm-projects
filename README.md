@@ -10,7 +10,8 @@ than where it was aimed.
 | --- | --- | --- |
 | [`v1-touch-biggest-face`](v1-touch-biggest-face) | Measures cuboids and touches the biggest face of each | Working |
 | [`v2-assemble-table`](v2-assemble-table) | Stands four legs up and lays a table top on them | Working |
-| [`v3-top-from-wall`](v3-top-from-wall) | Takes the table top off a wall before building the table | Plans only |
+| [`v3-turn-top-flat`](v3-turn-top-flat) | Lifts a table top off a wall and turns it flat before building the table | Plans only |
+| [`v6-two-arms-jenga`](v6-two-arms-jenga) | Two arms, programmed two different ways, play Jenga against each other | Plans only |
 
 Each folder's name is its version, then what it does. The projects run
 entirely in simulation — Gazebo, ROS 2, MoveIt — so none of them needs
@@ -41,7 +42,7 @@ size, moves the four of them there, and lays the top on them.
 
 → [`v2-assemble-table/README.md`](v2-assemble-table/README.md)
 
-## v3 — take the table top off a wall
+## v3 — turn the table top flat
 
 The same job as v2, with one thing made harder: the table top starts leaning
 against a low wall, almost upright, instead of lying flat. The arm has to lift
@@ -52,7 +53,21 @@ There is no code yet. The folder works out how to do the turn — the ways it
 could be done, the physics of swinging the top flat in the air, and how heavy a
 top the gripper can manage — before any of it is built.
 
-→ [`v3-top-from-wall/README.md`](v3-top-from-wall/README.md)
+→ [`v3-turn-top-flat/README.md`](v3-turn-top-flat/README.md)
+
+## v6 — two arms play Jenga
+
+Two identical arms face each other across a Jenga tower and take turns, each
+programmed with a different approach; whichever makes the tower fall loses. It
+adds the two things none of the other projects have: information that can only
+be found by touch — which blocks are loose — and an opponent.
+
+There is no code yet. The folder sets out the game precisely enough for a
+referee program to judge it, and compares five ways to program a player —
+rules, feel, an internal physics model, reinforcement learning and imitation
+learning — before choosing which two play first.
+
+→ [`v6-two-arms-jenga/README.md`](v6-two-arms-jenga/README.md)
 
 ## Why there are two
 
