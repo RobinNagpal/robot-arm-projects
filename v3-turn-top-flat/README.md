@@ -60,7 +60,7 @@ To redraw them, use any Python with matplotlib and numpy. v2's environment
 has both:
 
 ```
-cd v3-top-from-wall/figures
+cd v3-turn-top-flat/figures
 ../../v2-assemble-table/.pixi/envs/default/bin/python top_from_wall.py
 ../../v2-assemble-table/.pixi/envs/default/bin/python swing_physics.py
 ../../v2-assemble-table/.pixi/envs/default/bin/python tilt_on_legs.py

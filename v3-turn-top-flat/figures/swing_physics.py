@@ -1,6 +1,6 @@
 """Draws the pictures in SWING_PHYSICS.md.
 
-Run from v3-top-from-wall/figures/:  python swing_physics.py
+Run from v3-turn-top-flat/figures/:  python swing_physics.py
 
 Sketches, not to scale, except the chart, which uses v2's numbers.
 """

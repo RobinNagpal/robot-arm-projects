@@ -1,6 +1,6 @@
 """Draws the pictures in TOP_FROM_WALL.md.
 
-Run from v3-top-from-wall/figures/:  python top_from_wall.py
+Run from v3-turn-top-flat/figures/:  python top_from_wall.py
 
 These are sketches to explain the idea, not to scale.
 """
