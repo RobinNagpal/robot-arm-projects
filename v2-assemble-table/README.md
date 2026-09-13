@@ -198,9 +198,9 @@ TABLE_ASSEMBLY_VIEWS=/tmp/views make run
 
 ## Reading further
 
-- [`PSEUDOCODE.md`](PSEUDOCODE.md) — what every file and function is for, and
+- [`pseudocode.md`](pseudocode.md) — what every file and function is for, and
   what calls what when you type `make run`.
-- [`ARCHITECTURE.md`](ARCHITECTURE.md) — the folder layout, the line between the
+- [`architecture.md`](architecture.md) — the folder layout, the line between the
   simulator and the robot, and why the pieces are split up the way they are.
-- [`IMPLEMENTATION_NOTES.md`](IMPLEMENTATION_NOTES.md) — why each choice was
+- [`implementation-notes.md`](implementation-notes.md) — why each choice was
   made, the maths and the physics behind it, and what breaks it.

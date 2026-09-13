@@ -27,8 +27,8 @@ answers it with a score.
 
 | File | What it answers |
 | --- | --- |
-| [`PROBLEM_STATEMENT.md`](PROBLEM_STATEMENT.md) | What exactly the game is: the table and the two arms, the rules, what each arm is allowed to know, how the referee decides, and how many games it takes to call a winner fairly. |
-| [`APPROACHES.md`](APPROACHES.md) | Five ways to program an arm to play — follow rules, feel, think ahead with a physics model, learn by trial and error, learn by copying a person — with the tools each needs, how each would be built, how hard it is, and how they compare. |
+| [`problem-statement.md`](problem-statement.md) | What exactly the game is: the table and the two arms, the rules, what each arm is allowed to know, how the referee decides, and how many games it takes to call a winner fairly. |
+| [`approaches.md`](approaches.md) | Five ways to program an arm to play — follow rules, feel, think ahead with a physics model, learn by trial and error, learn by copying a person — with the tools each needs, how each would be built, how hard it is, and how they compare. |
 
 ## The short answers
 

@@ -3,7 +3,7 @@
 A walk through the project at the level of files and functions. It says what
 each thing is for and who calls it, and stops short of what happens inside a
 function. For the reasoning behind the choices, read
-[`IMPLEMENTATION_NOTES.md`](IMPLEMENTATION_NOTES.md).
+[`implementation-notes.md`](implementation-notes.md).
 
 ## The two sides
 

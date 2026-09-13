@@ -143,9 +143,9 @@ as one.
 
 - [`docs/`](docs/) — a walk through one run, one document per step, with the
   pictures and the arithmetic for the parts that are hard to see in the code.
-- [`PSEUDOCODE.md`](PSEUDOCODE.md) — what every file and function is for, and
+- [`pseudocode.md`](pseudocode.md) — what every file and function is for, and
   what calls what when you type `make run`.
-- [`ARCHITECTURE.md`](ARCHITECTURE.md) — the folder layout, and why the pieces
+- [`architecture.md`](architecture.md) — the folder layout, and why the pieces
   are split up the way they are.
-- [`IMPLEMENTATION_NOTES.md`](IMPLEMENTATION_NOTES.md) — why each choice was
+- [`implementation-notes.md`](implementation-notes.md) — why each choice was
   made, the maths behind the measuring, and what breaks it.

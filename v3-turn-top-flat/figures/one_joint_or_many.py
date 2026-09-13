@@ -1,6 +1,6 @@
-"""Draws the pictures in SWING_PHYSICS.md.
+"""Draws the pictures in one-joint-or-many.md.
 
-Run from v3-turn-top-flat/figures/:  python swing_physics.py
+Run from v3-turn-top-flat/figures/:  python one_joint_or_many.py
 
 Sketches, not to scale, except the chart, which uses v2's numbers.
 """
@@ -11,7 +11,7 @@ import math
 
 import numpy as np
 from matplotlib.patches import Circle, FancyBboxPatch
-from top_from_wall import (
+from pick_up_and_place import (
     BAD,
     BG,
     BOARD_T,

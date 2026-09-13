@@ -4,9 +4,9 @@
 
 One task, done properly: a UR5e in Gazebo measures the cuboids on a table and
 touches the middle of the biggest face of each one. Read
-[`README.md`](README.md) first, then [`PSEUDOCODE.md`](PSEUDOCODE.md) for what
-every file and function is for, [`ARCHITECTURE.md`](ARCHITECTURE.md) for the
-layout, and [`IMPLEMENTATION_NOTES.md`](IMPLEMENTATION_NOTES.md) for why it is
+[`README.md`](README.md) first, then [`pseudocode.md`](pseudocode.md) for what
+every file and function is for, [`architecture.md`](architecture.md) for the
+layout, and [`implementation-notes.md`](implementation-notes.md) for why it is
 built the way it is.
 
 ## Before changing anything

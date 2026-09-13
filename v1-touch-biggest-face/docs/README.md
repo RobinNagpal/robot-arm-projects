@@ -35,5 +35,5 @@ the project's own functions run on those pictures.
   approach that ends with the fingertip against it.
 
 For the reasoning behind the choices these steps make, read
-[`../IMPLEMENTATION_NOTES.md`](../IMPLEMENTATION_NOTES.md). For which file and
-function each stage lives in, read [`../PSEUDOCODE.md`](../PSEUDOCODE.md).
+[`../implementation-notes.md`](../implementation-notes.md). For which file and
+function each stage lives in, read [`../pseudocode.md`](../pseudocode.md).

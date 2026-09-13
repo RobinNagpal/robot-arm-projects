@@ -1,6 +1,6 @@
 # The swing: who moves, and how heavy a top it can take
 
-This goes with [`TOP_FROM_WALL.md`](TOP_FROM_WALL.md), way A: grip the top by
+This goes with [`pick-up-and-place.md`](pick-up-and-place.md), way A: grip the top by
 its upper edge, let it hang, and swing it flat in the air. It answers four
 questions:
 
@@ -26,7 +26,7 @@ Both work. They are different moves.
 
 ![Way 1: the whole arm moves and the gripped edge stays put. Way 2: only wrist 1 turns and the board swings on a wide circle](figures/who_moves.png)
 
-**Way 1: the whole arm moves** (this is what `TOP_FROM_WALL.md` describes).
+**Way 1: the whole arm moves** (this is what `pick-up-and-place.md` describes).
 The gripped edge stays in one place and the board turns about it. Wrist 1 does
 most of the turning. But wrist 1 sits about 20 cm back from the fingers, so
 turning it alone would move the fingers too. The shoulder and elbow move at the
@@ -379,7 +379,7 @@ Moving adds to all three. When the arm speeds up or slows down, the board
 pushes back on the fingers. Keep the swing slow and smooth. v2 carries every
 part at a tenth of full speed for this reason.
 
-The chart in `TOP_FROM_WALL.md` shows how the twist grows through the swing.
+The chart in `pick-up-and-place.md` shows how the twist grows through the swing.
 It is zero when hanging and largest when flat.
 
 ---
@@ -430,9 +430,9 @@ What this means:
 How the limit could be raised, most useful first:
 
 1. **Let something else carry part of the weight.** Rest one edge on the legs
-   and tilt it down, as a person would. See [`TILT_ON_LEGS.md`](TILT_ON_LEGS.md).
+   and tilt it down, as a person would. See [`tilt-onto-legs.md`](tilt-onto-legs.md).
 2. **Grip the middle, not the edge.** A suction cup on the middle of the face
-   (way B in `TOP_FROM_WALL.md`) has almost no lever.
+   (way B in `pick-up-and-place.md`) has almost no lever.
 3. **Spread the pads further apart.** The twist limit grows in step with the
    distance between the rows: 10 cm apart instead of 2.4 is four times more.
 4. **Squeeze harder.** The twist limit grows in step with the squeeze. Real

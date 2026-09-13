@@ -5,10 +5,10 @@
 One task, done properly: a UR5e in Gazebo finds a table top lying on two
 stands and four legs standing on the floor, measures them, stands the legs
 where a top that size needs them, and puts the top on them. Read
-[`README.md`](README.md) first, then [`PSEUDOCODE.md`](PSEUDOCODE.md) for what
+[`README.md`](README.md) first, then [`pseudocode.md`](pseudocode.md) for what
 every file and function is for,
-[`ARCHITECTURE.md`](ARCHITECTURE.md) for the layout, and
-[`IMPLEMENTATION_NOTES.md`](IMPLEMENTATION_NOTES.md) for why it is built the
+[`architecture.md`](architecture.md) for the layout, and
+[`implementation-notes.md`](implementation-notes.md) for why it is built the
 way it is.
 
 This folder is a project on its own. It shares nothing with

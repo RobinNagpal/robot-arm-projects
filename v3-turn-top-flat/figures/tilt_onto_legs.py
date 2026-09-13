@@ -1,6 +1,6 @@
-"""Draws the pictures in TILT_ON_LEGS.md.
+"""Draws the pictures in tilt-onto-legs.md.
 
-Run from v3-turn-top-flat/figures/:  python tilt_on_legs.py
+Run from v3-turn-top-flat/figures/:  python tilt_onto_legs.py
 
 Sketches, not to scale, except the leg chart, which uses v2's numbers.
 """
@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import numpy as np
 from matplotlib.patches import Circle, Polygon, Rectangle
-from top_from_wall import (
+from pick_up_and_place import (
     BAD,
     BG,
     BOARD_T,
@@ -74,7 +74,7 @@ def steps():
 
     held(axes[0], PIVOT + np.array([0, 0.5]), 90)
     arrow(axes[0], (3.5, 4.0), (5.6, 4.4), rad=-0.3)
-    note(axes[0], (3.35, 2.9), "picked from the wall as in\nTOP_FROM_WALL.md, steps 1–4")
+    note(axes[0], (3.35, 2.9), "picked from the wall as in\npick-up-and-place.md, steps 1–4")
 
     held(axes[1], PIVOT + np.array([0, 0.5]), 90)
     eye(axes[1], (5.4, 4.6))

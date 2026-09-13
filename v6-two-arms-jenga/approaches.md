@@ -1,6 +1,6 @@
 # Approaches: how to program an arm that plays Jenga
 
-[`PROBLEM_STATEMENT.md`](PROBLEM_STATEMENT.md) says what the game is. This file
+[`problem-statement.md`](problem-statement.md) says what the game is. This file
 is about the code: five ways to program an arm to play it, what each would be
 built with, roughly how it would be built, how hard it is, and how they
 compare. It ends with which two to put against each other first.

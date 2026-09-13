@@ -1,6 +1,6 @@
 """Works out the torque on each of the UR5e's six joints while the table top
 is swung flat, for each way of doing the swing, and draws the charts in
-SWING_PHYSICS.md.
+one-joint-or-many.md.
 
 Run from v3-turn-top-flat/figures/, with v2's Python, which has PyBullet:
 
@@ -46,7 +46,7 @@ MAX_SPEED = math.radians(180.0)
 # v2's largest table top: 30 cm along the gripped edge, 20 cm out from it, 2 cm
 # thick, at 400 kg/m^3. The fingers close on its thickness, 2.7 cm in from the
 # edge, so its centre sits 7.3 cm past the middle of the pads, which are 11 cm
-# from the flange. See TOP_FROM_WALL.md.
+# from the flange. See pick-up-and-place.md.
 BOARD_SIZE = np.array([0.30, 0.02, 0.20])  # along the tool's x, y, z
 PAD_CENTRE = 0.110
 BOARD_CENTRE = PAD_CENTRE + 0.073

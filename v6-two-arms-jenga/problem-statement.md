@@ -148,7 +148,7 @@ Besides who won, the match records the things that explain *why*:
 - **Real hardware.** Everything is simulated.
 - **Humans.** Robot against robot only.
 - **Rule variants.** Standard rules only, as written above.
-- **Picking the approaches.** That is what [`APPROACHES.md`](APPROACHES.md) is
+- **Picking the approaches.** That is what [`approaches.md`](approaches.md) is
   for.
 
 ## Decisions still open

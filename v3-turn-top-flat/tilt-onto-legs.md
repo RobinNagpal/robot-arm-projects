@@ -14,16 +14,16 @@ Numbers and file names are v2's, as in the other files here.
 **At the start:**
 
 - the table top leans against a low wall, almost upright, as in
-  [`TOP_FROM_WALL.md`](TOP_FROM_WALL.md);
+  [`pick-up-and-place.md`](pick-up-and-place.md);
 - **the four legs are already standing** where the table goes. In the full
   job, v2's leg steps put them there. This file assumes they are done.
 
 **At the end:** the top lies flat on the four legs, and all four legs are
 still standing where they were.
 
-**Why bother:** the swing in `TOP_FROM_WALL.md` has a hard limit. Held flat by
+**Why bother:** the swing in `pick-up-and-place.md` has a hard limit. Held flat by
 one edge, a top heavier than about 0.8 kg twists out of v2's fingers (see
-[`SWING_PHYSICS.md`](SWING_PHYSICS.md)). This way never holds the top flat in
+[`one-joint-or-many.md`](one-joint-or-many.md)). This way never holds the top flat in
 the air. In the air it only ever hangs, and hanging is the easy way to hold
 it. By the time it is flat, the legs are carrying it.
 
@@ -52,11 +52,11 @@ nine times more than they can resist.
 ![The six steps: carry it hanging over the far legs, look and lower it, touch, tilt about the corner, land on the near legs, let go](figures/tilt_steps.png)
 
 1. **Pick it up from the wall and let it hang.** This is the same as steps
-   1 to 4 of `TOP_FROM_WALL.md`: come in above the upper edge, grip, lift,
+   1 to 4 of `pick-up-and-place.md`: come in above the upper edge, grip, lift,
    pull back, straighten until it hangs straight down.
 2. **Carry it round, hanging, to above the far legs.** Use `carry_round()`
    as for a leg. On the way, turn it so the gripped edge runs square across
-   the arm's reach (see `TOP_FROM_WALL.md`, section 5, rule 3). Stop with the
+   the arm's reach (see `pick-up-and-place.md`, section 5, rule 3). Stop with the
    board's lower edge about 5 cm above the far legs.
 3. **Look.** Measure where the far legs' tops are, to the millimetre if you
    can. Their tops are what the board will turn on.
@@ -181,7 +181,7 @@ over them.
 
 ## 5. Compared with the swing
 
-| | Swing in the air ([`TOP_FROM_WALL.md`](TOP_FROM_WALL.md)) | Rest on the legs and tilt (this file) |
+| | Swing in the air ([`pick-up-and-place.md`](pick-up-and-place.md)) | Rest on the legs and tilt (this file) |
 | --- | --- | --- |
 | Heaviest top, with v2's gripper | about 0.8 kg | about 4 kg (the arm's payload) |
 | What goes wrong | the top twists out of the fingers | a leg gets knocked over |
@@ -189,7 +189,7 @@ over them.
 | Speed | quicker | slower: touch down and tilt carefully |
 | Like a person would do it | no | yes |
 
-A robot that measures the top's weight first (see `SWING_PHYSICS.md`,
+A robot that measures the top's weight first (see `one-joint-or-many.md`,
 section 4) can use both: the swing for light tops, this way for heavy ones.
 
 ---
@@ -218,7 +218,7 @@ procedure INSTALL_TOP_BY_TILTING(top, legs):
             stop "cannot tilt the top onto these legs from here"
 
     # 3. Pick it up and carry it, hanging
-    PICK_FROM_WALL(top)                      # TOP_FROM_WALL.md, steps 1 to 4
+    PICK_FROM_WALL(top)                      # pick-up-and-place.md, steps 1 to 4
     carry_round(held, hanging, above)        # exists
     weight = MEASURE_WEIGHT()                # wrist efforts, now vs. before the grip
 

@@ -37,9 +37,9 @@ built. Everything else, including how heavy the top is, it has to measure.
 
 | File | Question |
 | --- | --- |
-| [`TOP_FROM_WALL.md`](TOP_FROM_WALL.md) | What are the ways to turn the top flat? Way A in detail: grip the upper edge and swing it flat in the air. |
-| [`SWING_PHYSICS.md`](SWING_PHYSICS.md) | During that swing, does only the wrist move or the whole arm? Does moving one joint strain the arm more than moving all six — worked out joint by joint on v2's robot? What real limits does a joint have, and which way do they push the design? How heavy a top can it handle, and how is the weight set in Gazebo? |
-| [`TILT_ON_LEGS.md`](TILT_ON_LEGS.md) | The way a person would do it: rest one edge on two legs, then tilt the top down. How does it work, and what can go wrong? |
+| [`pick-up-and-place.md`](pick-up-and-place.md) | What are the ways to turn the top flat? Way A in detail: grip the upper edge and swing it flat in the air. |
+| [`one-joint-or-many.md`](one-joint-or-many.md) | During that swing, does only the wrist move or the whole arm? Does moving one joint strain the arm more than moving all six — worked out joint by joint on v2's robot? What real limits does a joint have, and which way do they push the design? How heavy a top can it handle, and how is the weight set in Gazebo? |
+| [`tilt-onto-legs.md`](tilt-onto-legs.md) | The way a person would do it: rest one edge on two legs, then tilt the top down. How does it work, and what can go wrong? |
 
 Short answer: the swing is simple but only works for light tops, about
 0.8 kg with v2's gripper. Resting on the legs handles tops several times
@@ -58,19 +58,19 @@ pictures for one file:
 
 | Script | Draws the pictures for |
 | --- | --- |
-| `figures/top_from_wall.py` | `TOP_FROM_WALL.md` (and holds the drawing helpers the other two use) |
-| `figures/swing_physics.py` | `SWING_PHYSICS.md` |
-| `figures/tilt_on_legs.py` | `TILT_ON_LEGS.md` |
-| `figures/joint_torques.py` | the torque charts in `SWING_PHYSICS.md`, section 2 |
+| `figures/pick_up_and_place.py` | `pick-up-and-place.md` (and holds the drawing helpers the other two use) |
+| `figures/one_joint_or_many.py` | `one-joint-or-many.md` |
+| `figures/tilt_onto_legs.py` | `tilt-onto-legs.md` |
+| `figures/joint_torques.py` | the torque charts in `one-joint-or-many.md`, section 2 |
 
 To redraw them, use any Python with matplotlib and numpy. v2's environment
 has both:
 
 ```
 cd v3-turn-top-flat/figures
-../../v2-assemble-table/.pixi/envs/default/bin/python top_from_wall.py
-../../v2-assemble-table/.pixi/envs/default/bin/python swing_physics.py
-../../v2-assemble-table/.pixi/envs/default/bin/python tilt_on_legs.py
+../../v2-assemble-table/.pixi/envs/default/bin/python pick_up_and_place.py
+../../v2-assemble-table/.pixi/envs/default/bin/python one_joint_or_many.py
+../../v2-assemble-table/.pixi/envs/default/bin/python tilt_onto_legs.py
 ```
 
 They are sketches to explain the idea, not drawings to scale. The two charts

@@ -12,16 +12,16 @@ file explains how to add the turn back. File and function names in it
 
 Two related files:
 
-- [`SWING_PHYSICS.md`](SWING_PHYSICS.md): which joints move during the swing,
+- [`one-joint-or-many.md`](one-joint-or-many.md): which joints move during the swing,
   and how heavy a top this way can handle.
-- [`TILT_ON_LEGS.md`](TILT_ON_LEGS.md): the other way, the way a person would
+- [`tilt-onto-legs.md`](tilt-onto-legs.md): the other way, the way a person would
   do it. Rest one edge on two legs, then tilt the top down.
 
 It uses the same words as the rest of the docs. If a word is new to you, look
 in [Words used here](#words-used-here) at the end.
 
 The pictures are sketches, not to scale. They are drawn by
-[`figures/top_from_wall.py`](figures/top_from_wall.py). See the
+[`figures/pick_up_and_place.py`](figures/pick_up_and_place.py). See the
 [README](README.md) for how to redraw them.
 
 ---
@@ -541,7 +541,7 @@ Keeping to the rules in `CLAUDE.md`:
 | `perception/room.py`, `perception/fitting.py` | Probably nothing. `fit_plate()` already fits a leaning board; the old version measured the lean to 0.1 degrees. |
 | `assembly/plan.py` | `gripped_axis()` from the old version comes back: which long edge is highest. |
 | `assembly/grasps.py` | New: `edge_pick_poses()` (the old `top_pick_poses()`), `swing_about_edge()`. Reused as they are: `hold()`, `carry_round()`, `level_top_pose()`. |
-| `task.py` | New `_install_top_from_wall()`, with `_plan_top_route()` and `_follow_slowly()`. Only this file decides the order. |
+| `task.py` | New `_install_pick_up_and_place()`, with `_plan_top_route()` and `_follow_slowly()`. Only this file decides the order. |
 | `test/test_grasps.py` | New tests, see below. |
 
 ---
