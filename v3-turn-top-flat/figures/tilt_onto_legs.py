@@ -74,7 +74,7 @@ def steps():
 
     held(axes[0], PIVOT + np.array([0, 0.5]), 90)
     arrow(axes[0], (3.5, 4.0), (5.6, 4.4), rad=-0.3)
-    note(axes[0], (3.35, 2.9), "picked from the wall as in\npick-up-and-place.md, steps 1–4")
+    note(axes[0], (3.35, 2.9), "lifted straight\nout of the\nholders first")
 
     held(axes[1], PIVOT + np.array([0, 0.5]), 90)
     eye(axes[1], (5.4, 4.6))

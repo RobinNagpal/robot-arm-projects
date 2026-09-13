@@ -1,6 +1,7 @@
 """Works out the torque on each of the UR5e's six joints while the table top
-is swung flat, for each way of doing the swing, and draws the charts in
-one-joint-or-many.md.
+is turned 90 degrees, from hanging to flat, for each way of doing the turn, and
+draws the charts in one-joint-or-many.md. This is the calculation behind part 1
+of v3.
 
 Run from v3-turn-top-flat/figures/, with v2's Python, which has PyBullet:
 
@@ -56,8 +57,9 @@ V2_BOARD_MASS = 0.48
 FINGERS_ON_BOARD = BOARD_SIZE[1] / 2
 
 # v2's "ready" pose: the tool points straight down in front of the arm, which
-# is how the board hangs before the swing. In it, the board's gripped edge lies
-# along wrist 1's axis, which is what lets wrist 1 alone lay it flat.
+# is how the board hangs once it has been lifted straight up out of its
+# holders. In it, the board's gripped edge lies along wrist 1's axis, which is
+# what lets wrist 1 alone lay it flat.
 START = np.radians([0.0, -90.0, 90.0, -90.0, -90.0, 0.0])
 
 # The same board, in the same place, reached with the wrist flipped: wrist 2 on

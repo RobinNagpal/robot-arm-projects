@@ -10,7 +10,7 @@ than where it was aimed.
 | --- | --- | --- |
 | [`v1-touch-biggest-face`](v1-touch-biggest-face) | Measures cuboids and touches the biggest face of each | Working |
 | [`v2-assemble-table`](v2-assemble-table) | Stands four legs up and lays a table top on them | Working |
-| [`v3-turn-top-flat`](v3-turn-top-flat) | Lifts a table top off a wall and turns it flat before building the table | Plans only |
+| [`v3-turn-top-flat`](v3-turn-top-flat) | Lifts a table top straight up out of two holders and turns it flat before building the table | Plans only |
 | [`v6-two-arms-jenga`](v6-two-arms-jenga) | Two arms, programmed two different ways, play Jenga against each other | Plans only |
 
 Each folder's name is its version, then what it does. The projects run
@@ -44,14 +44,17 @@ size, moves the four of them there, and lays the top on them.
 
 ## v3 — turn the table top flat
 
-The same job as v2, with one thing made harder: the table top starts leaning
-against a low wall, almost upright, instead of lying flat. The arm has to lift
-it off the wall and turn it flat without dropping it and without knocking a
-leg over, then lay it on the legs.
+The same job as v2, with one thing made harder: the table top starts standing
+upright, held between two heavy holders that cannot move, instead of lying
+flat. The arm lifts it straight up out of the holders, turns it 90° to flat
+without dropping it, and lays it on the legs without knocking one over.
 
-There is no code yet. The folder works out how to do the turn — the ways it
-could be done, the physics of swinging the top flat in the air, and how heavy a
-top the gripper can manage — before any of it is built.
+There is no code yet. The work is in two parts:
+
+1. **Now:** turning the top 90° in the air — with one joint, or with several
+   joints together — and what that asks of each joint.
+2. **Next:** resting the top on two legs, then tilting it down, with the arm
+   moving as it turns, until it sits on all four.
 
 → [`v3-turn-top-flat/README.md`](v3-turn-top-flat/README.md)
 

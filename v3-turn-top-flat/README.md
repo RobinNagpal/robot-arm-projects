@@ -1,55 +1,80 @@
-# v3: the table top starts leaning on a wall
+# v3: turn the table top flat
 
-This folder is plans only. There is no code in it yet. The working build is
-[`../v2-assemble-table`](../v2-assemble-table), where the top starts lying flat on
-two stands.
+This folder is plans and one calculation. There is no robot code in it yet.
 
-## The problem
+## The setup
 
-The room is the same as in v2:
+The room is the same as in v2: a UR5e arm standing on the floor, with a
+camera on its wrist and a two-finger gripper; four table legs; and one table
+top, a thin board.
 
-- a UR5e arm standing on the floor, with a camera on its wrist and a
-  two-finger gripper;
-- four table legs;
-- one table top, a thin board.
+One thing is different. **The table top starts standing upright, between two
+holders.** It stands on one long edge, and each of its two ends sits in the
+slot of a holder. The holders are heavy, or bolted down, so they never move,
+and between them the top cannot tip over or slide sideways. The only way it
+can come out is straight up.
 
-One thing changes. **The table top starts leaning against a low wall**, almost
-upright. It stands on one long edge on the floor, and leans back 15 to 22
-degrees onto the wall's top corner.
+That makes the start simple, on purpose. The arm grips the middle of the top's
+upper edge and lifts it straight up out of the holders. It is then hanging
+straight down from the fingers, and the real question begins: how to get it
+from hanging to flat, and onto the four legs.
 
-The arm has to:
-
-1. find everything with its camera, and measure the top and the legs;
-2. work out where the legs go for a top that size;
-3. stand the four legs there (as v2 already does);
-4. pick the top up off the wall;
-5. get it from upright to flat, without dropping it and without knocking a
-   leg over;
-6. lay it on the legs, and check the table.
-
-Step 5 is the hard part, and it is why v2 starts the top flat on two stands.
+For comparison, v2 as it is today starts the top lying flat on two stands, so
+it never has to turn it at all.
 
 The rule from v2 still holds. The robot is told nothing about the room. It
 knows only itself: where its base is and how its gripper and camera are
 built. Everything else, including how heavy the top is, it has to measure.
 
+## The plan, in two parts
+
+**Part 1 — the 90° turn: one joint, or many? This is what v3 is working on
+now.**
+
+The top has to turn 90 degrees, from hanging to flat. The arm can do that by
+turning a single joint, wrist 1, and holding all the others still. Or it can
+move several joints together, so that one chosen point of the board — the
+gripped edge, or the board's middle — stays still while the board turns about
+it. Part 1 works out what that choice does to the arm: the torque on every
+joint, how fast each one has to turn, and what a joint's real limits mean for
+which way to go. → [`one-joint-or-many.md`](one-joint-or-many.md)
+
+**Part 2 — onto the legs, two first. Next, not started.**
+
+Rather than turn the top flat in the air and set it down on all four legs at
+once, the arm rests the top's lower edge on the two far legs first. Then it
+turns the top down about that edge, moving the arm as it goes, until the top
+touches and settles on all four legs. It is how a person puts a heavy top on
+a table. → [`tilt-onto-legs.md`](tilt-onto-legs.md)
+
+Both parts sit inside the whole job — look round, measure, stand the legs,
+pick the top up, put it down, check the table — which
+[`pick-up-and-place.md`](pick-up-and-place.md) plans from start to finish,
+along with the other ways the top could be turned.
+
 ## What each file answers
 
 | File | Question |
 | --- | --- |
-| [`pick-up-and-place.md`](pick-up-and-place.md) | What are the ways to turn the top flat? Way A in detail: grip the upper edge and swing it flat in the air. |
-| [`one-joint-or-many.md`](one-joint-or-many.md) | During that swing, does only the wrist move or the whole arm? Does moving one joint strain the arm more than moving all six — worked out joint by joint on v2's robot? What real limits does a joint have, and which way do they push the design? How heavy a top can it handle, and how is the weight set in Gazebo? |
-| [`tilt-onto-legs.md`](tilt-onto-legs.md) | The way a person would do it: rest one edge on two legs, then tilt the top down. How does it work, and what can go wrong? |
+| [`one-joint-or-many.md`](one-joint-or-many.md) | **Part 1.** To turn the top 90°, is it harder on the arm to turn one joint or several? Worked out joint by joint on v2's robot. What real limits does a joint have, and which way do they push the design? How heavy a top can the turn take, and how is weight set in Gazebo? |
+| [`tilt-onto-legs.md`](tilt-onto-legs.md) | **Part 2.** Resting the top on two legs first, then tilting it down onto four: how it works, and what can go wrong — mostly, legs being knocked over. |
+| [`pick-up-and-place.md`](pick-up-and-place.md) | The whole job, from the holders to the finished table. The ways the top could be turned, one of them in full detail, with pseudo code, the libraries and the gripper. |
 
-Short answer: the swing is simple but only works for light tops, about
-0.8 kg with v2's gripper. Resting on the legs handles tops several times
-heavier, but the legs can be knocked over, so it needs much more care.
+## The short answers
 
-Swinging with one joint or with the whole arm makes almost no difference to
-the torque on any joint, because nearly all of it is the torque needed just to
-hold things up, and that depends on where things are, not on which joints put
-them there. What does make a difference is the arm's posture: starting with the
-wrist flipped takes 28% off the busiest joint.
+**Part 1.** Turning with one joint or with several makes almost no difference
+to the torque on any joint. Nearly all of a joint's torque is what it takes
+just to hold things up, and that depends on where things are, not on which
+joints put them there. Turning one joint is also the quicker of the two,
+because the other way makes the busiest joint turn further. What does make a
+difference is the arm's *posture*: starting the turn with the wrist flipped
+takes 28% off the joint that works hardest.
+
+**Why part 2 exists.** For a turn in the air, it is the grip that gives out
+first, not a joint: held flat by one edge, a top heavier than about 0.8 kg
+twists out of v2's fingers. Resting the top on the legs before it goes flat
+means it is never held flat in the air at all, so much heavier tops become
+possible — at the price of having to turn it without knocking a leg over.
 
 ## The pictures
 
@@ -73,8 +98,8 @@ cd v3-turn-top-flat/figures
 ../../v2-assemble-table/.pixi/envs/default/bin/python tilt_onto_legs.py
 ```
 
-They are sketches to explain the idea, not drawings to scale. The two charts
-use v2's real numbers.
+They are sketches to explain the idea, not drawings to scale. The charts use
+v2's real numbers.
 
 `joint_torques.py` is different: it is a calculation, not a sketch. It loads
 v2's robot from `figures/ur5e_v2_gripper.urdf` and needs PyBullet, which v2's

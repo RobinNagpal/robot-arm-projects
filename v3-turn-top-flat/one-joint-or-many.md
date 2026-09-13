@@ -1,10 +1,16 @@
-# The swing: who moves, and how heavy a top it can take
+# Part 1: turning the top 90 degrees — one joint, or many?
 
-This goes with [`pick-up-and-place.md`](pick-up-and-place.md), way A: grip the top by
-its upper edge, let it hang, and swing it flat in the air. It answers four
+This is part 1 of v3, the part being worked on now.
+
+The arm has gripped the table top by the middle of its upper edge and lifted it
+straight up out of its holders, so it now hangs straight down from the fingers
+(steps 6 to 9 of [`pick-up-and-place.md`](pick-up-and-place.md)). To end up
+flat, it has to turn 90 degrees. The arm can make that turn by turning one of
+its joints and holding the rest still, or by moving several joints together.
+This file works out what difference that choice makes. It answers four
 questions:
 
-1. During the swing, does only the gripper move, or the whole arm?
+1. During the turn, does only the gripper move, or the whole arm?
 2. Does moving one joint put more force on the arm than moving all of them?
 3. What real limits does a joint have, and which way do they push the design?
 4. What stops this working when the top is heavy, and how do you test that in
@@ -65,8 +71,7 @@ square to the arm.
 
 | Stage | Joints that move most |
 | --- | --- |
-| Lift and pull back off the wall | shoulder, elbow |
-| Straighten (about 20°) | wrist 1, plus shoulder and elbow in way 1 |
+| Lift straight up, out of the holders | shoulder, elbow and wrist 1 together: a straight line needs all three |
 | Carry round, hanging | base, plus wrist 3 to turn the board |
 | Swing flat (90°) | wrist 1, plus shoulder and elbow in way 1 |
 | Carry round, flat | base, plus wrist 3 |
@@ -430,7 +435,8 @@ What this means:
 How the limit could be raised, most useful first:
 
 1. **Let something else carry part of the weight.** Rest one edge on the legs
-   and tilt it down, as a person would. See [`tilt-onto-legs.md`](tilt-onto-legs.md).
+   and tilt it down, as a person would. This is part 2 of v3: see
+   [`tilt-onto-legs.md`](tilt-onto-legs.md).
 2. **Grip the middle, not the edge.** A suction cup on the middle of the face
    (way B in `pick-up-and-place.md`) has almost no lever.
 3. **Spread the pads further apart.** The twist limit grows in step with the
