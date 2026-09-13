@@ -3,7 +3,7 @@
 Two ROS 2 packages under `src/`.
 
 ```
-v2/
+v2-assemble-table/
 ├── Makefile                         the only entry point people use
 ├── pixi.toml                        every dependency, pinned in pixi.lock
 └── src/

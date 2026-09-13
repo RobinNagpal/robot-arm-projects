@@ -1,7 +1,8 @@
 # v3: the table top starts leaning on a wall
 
 This folder is plans only. There is no code in it yet. The working build is
-[`../v2`](../v2), where the top starts lying flat on two stands.
+[`../v2-assemble-table`](../v2-assemble-table), where the top starts lying flat on
+two stands.
 
 ## The problem
 
@@ -59,10 +60,10 @@ To redraw them, use any Python with matplotlib and numpy. v2's environment
 has both:
 
 ```
-cd v3/figures
-../../v2/.pixi/envs/default/bin/python top_from_wall.py
-../../v2/.pixi/envs/default/bin/python swing_physics.py
-../../v2/.pixi/envs/default/bin/python tilt_on_legs.py
+cd v3-top-from-wall/figures
+../../v2-assemble-table/.pixi/envs/default/bin/python top_from_wall.py
+../../v2-assemble-table/.pixi/envs/default/bin/python swing_physics.py
+../../v2-assemble-table/.pixi/envs/default/bin/python tilt_on_legs.py
 ```
 
 They are sketches to explain the idea, not drawings to scale. The two charts

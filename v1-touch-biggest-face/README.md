@@ -1,4 +1,4 @@
-# touch-cuboid-centers
+# touch-biggest-face
 
 A robot arm looks at cuboids on a table, works out which face of each one is
 the biggest, and touches the middle of that face with its fingertip.

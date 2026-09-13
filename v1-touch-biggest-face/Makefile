@@ -1,4 +1,4 @@
-# touch-cuboid-centers — one entry point for everything.
+# touch-biggest-face — one entry point for everything.
 #
 # Run `make` on its own to see what is available.
 

@@ -1,13 +1,20 @@
 # Robot arm projects
 
-A learning repo. It holds two robot arm projects, `v1` and `v2`, each written to
-showcase a different set of the concepts you run into when a 6-axis arm has to
-look at something and then do something about it: where to put a camera, how
-pixels become millimetres, what a plan is worth once a part lands somewhere
-other than where it was aimed.
+A learning repo. It holds robot arm projects, each written to showcase a
+different set of the concepts you run into when a 6-axis arm has to look at
+something and then do something about it: where to put a camera, how pixels
+become millimetres, what a plan is worth once a part lands somewhere other
+than where it was aimed.
 
-Both run entirely in simulation — Gazebo, ROS 2, MoveIt — so neither needs
-hardware to try. The repo is named after `v1`, which was the first thing in it.
+| Folder | What the arm does | State |
+| --- | --- | --- |
+| [`v1-touch-biggest-face`](v1-touch-biggest-face) | Measures cuboids and touches the biggest face of each | Working |
+| [`v2-assemble-table`](v2-assemble-table) | Stands four legs up and lays a table top on them | Working |
+| [`v3-top-from-wall`](v3-top-from-wall) | Takes the table top off a wall before building the table | Plans only |
+
+Each folder's name is its version, then what it does. The projects run
+entirely in simulation — Gazebo, ROS 2, MoveIt — so none of them needs
+hardware to try.
 
 ## v1 — touch the centre of the biggest face
 
@@ -24,15 +31,28 @@ perception, not the other way round — moving a box to the far half of the tabl
 is how the arm remembers which boxes it has already done, without keeping a
 list.
 
-→ [`v1/README.md`](v1/README.md)
+→ [`v1-touch-biggest-face/README.md`](v1-touch-biggest-face/README.md)
 
 ## v2 — build a table
 
-A table top leans against a wall and four legs lie on the floor. The arm
-measures the top, works out where legs have to stand to hold up a top that
-size, stands the four of them up, and lays the top on them.
+A table top lies flat on two stands and four legs stand on the floor. The arm
+measures the top, works out where the legs have to stand to hold up a top that
+size, moves the four of them there, and lays the top on them.
 
-→ [`v2/README.md`](v2/README.md)
+→ [`v2-assemble-table/README.md`](v2-assemble-table/README.md)
+
+## v3 — take the table top off a wall
+
+The same job as v2, with one thing made harder: the table top starts leaning
+against a low wall, almost upright, instead of lying flat. The arm has to lift
+it off the wall and turn it flat without dropping it and without knocking a
+leg over, then lay it on the legs.
+
+There is no code yet. The folder works out how to do the turn — the ways it
+could be done, the physics of swinging the top flat in the air, and how heavy a
+top the gripper can manage — before any of it is built.
+
+→ [`v3-top-from-wall/README.md`](v3-top-from-wall/README.md)
 
 ## Why there are two
 
@@ -43,7 +63,7 @@ made easy.
 height, its edges and the two halves it is divided into are numbers in the code,
 and only the cuboids have to be measured. In `v2` the robot knows where it is
 bolted down and how its own gripper and camera are built, and nothing else — the
-floor height, the wall, the top's size and lean, and every leg's size and place
+floor height, where the top is and how big, and where every leg is and how long
 are all drawn at random per run and have to be measured. That is the harder and
 more realistic arrangement, and it is easy to break by accident, so a test
 fails if any robot code so much as imports the simulator's side.
@@ -56,6 +76,6 @@ sometimes tip over, so the arm has to look again after each placement and put
 the top down over where the legs actually are. Measure, act, look again, correct
 — that loop is the whole point of the second project.
 
-Each folder is a project of its own. They share no code and no configuration,
-only the same tools, and each has its own environment and its own `make run`.
-Start with the README inside whichever one you are reading.
+Each working folder is a project of its own. They share no code and no
+configuration, only the same tools, and each has its own environment and its
+own `make run`. Start with the README inside whichever one you are reading.

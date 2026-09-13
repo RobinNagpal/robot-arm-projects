@@ -11,8 +11,8 @@ every file and function is for,
 [`IMPLEMENTATION_NOTES.md`](IMPLEMENTATION_NOTES.md) for why it is built the
 way it is.
 
-This folder is a project on its own. It shares nothing with `../v1` and must
-not import from it or point at it.
+This folder is a project on its own. It shares nothing with
+`../v1-touch-biggest-face` and must not import from it or point at it.
 
 ## Before changing anything
 

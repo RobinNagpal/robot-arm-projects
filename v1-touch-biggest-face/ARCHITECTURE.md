@@ -3,7 +3,7 @@
 Two ROS 2 packages under `src/`.
 
 ```
-touch-cuboid-centers/
+v1-touch-biggest-face/
 ├── Makefile                     the only entry point people use
 ├── pixi.toml                    every dependency, pinned in pixi.lock
 └── src/

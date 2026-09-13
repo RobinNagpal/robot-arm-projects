@@ -5,10 +5,10 @@ version of the job, the one that kept failing: the table top starts **leaning
 against a wall**, and the arm has to pick it up, turn it flat, and lay it on the
 four legs.
 
-The working version, in [`../v2`](../v2), starts the top lying flat on two
-grey stands, so the arm never has to turn it. This file explains how to add
-the turn back. File and function names in it (`task.py`, `carry_round()`, and
-so on) are v2's.
+The working version, in [`../v2-assemble-table`](../v2-assemble-table), starts
+the top lying flat on two grey stands, so the arm never has to turn it. This
+file explains how to add the turn back. File and function names in it
+(`task.py`, `carry_round()`, and so on) are v2's.
 
 Two related files:
 

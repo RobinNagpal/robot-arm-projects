@@ -16,7 +16,7 @@ every newly installed library is checked the first time it loads. After that
 the cell is up in seconds.
 
 This folder is a project of its own. It shares no code or configuration with
-`../v1`; it only uses the same tools.
+`../v1-touch-biggest-face`; it only uses the same tools.
 
 ## The problem
 

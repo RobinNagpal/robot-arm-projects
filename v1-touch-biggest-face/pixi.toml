@@ -1,5 +1,5 @@
 [workspace]
-name = "touch-cuboid-centers"
+name = "touch-biggest-face"
 version = "0.1.0"
 description = "A UR5e in Gazebo finds the largest face of each cuboid on a table and touches its centre"
 authors = ["Robin Nagpal <robinnagpal.tiet@gmail.com>"]
