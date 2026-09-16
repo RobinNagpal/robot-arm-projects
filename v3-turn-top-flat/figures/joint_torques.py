@@ -3,11 +3,13 @@ is turned 90 degrees, from hanging to flat, for each way of doing the turn, and
 draws the charts in one-joint-or-many.md. This is the calculation behind part 1
 of v3.
 
-Run from v3-turn-top-flat/figures/, with v2's Python, which has PyBullet:
+Run from v3-turn-top-flat/figures/, with this project's own Python, which has
+PyBullet:
 
-    ../../v2-assemble-table/.pixi/envs/default/bin/python joint_torques.py
+    ../.pixi/envs/default/bin/python joint_torques.py
 
-The robot is ur5e_v2_gripper.urdf: v2's UR5e and gripper with the meshes
+The robot is ur5e_v2_gripper.urdf: the project's UR5e and gripper, first built
+for v2, with the meshes
 stripped out, because only masses, inertias and joint positions affect a
 torque. PyBullet does the dynamics. This file only sets up the three swings and
 reads the answers off.

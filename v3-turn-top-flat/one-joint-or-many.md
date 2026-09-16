@@ -1,6 +1,8 @@
 # Part 1: turning the top 90 degrees — one joint, or many?
 
-This is part 1 of v3, the part being worked on now.
+This is part 1 of v3. It is built: `make wrist` and `make whole-arm` run the
+two ways of turning the top, and [`turn-results.md`](turn-results.md) has
+what they did.
 
 The arm has gripped the table top by the middle of its upper edge and lifted it
 straight up out of its holders, so it now hangs straight down from the fingers

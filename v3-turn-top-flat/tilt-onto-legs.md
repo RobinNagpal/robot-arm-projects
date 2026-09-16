@@ -1,6 +1,9 @@
 # Part 2: rest the top on two legs, then tilt it down onto four
 
-This is part 2 of v3. It comes next, after part 1, and has not been started.
+This is part 2 of v3. It is built: `make tilt` runs it. This file is the plan
+it was built from; [what was built](#what-was-built) at the end says where the
+code differs from the plan, and why. The results are in
+[`turn-results.md`](turn-results.md).
 
 It is the way to get the table top from its holders onto the legs that copes
 with a heavy top, and it is how a person does it. They do not hold a heavy
@@ -156,7 +159,8 @@ In a real table the legs are screwed to the top or to a frame, so they
 cannot fall over. Legs standing loose on the floor are the hardest version of
 this job.
 
-To test heavier legs in Gazebo, change `LEG_DENSITY` (500 now, pine) or
+To test heavier or lighter legs in Gazebo, set `LEG_DENSITY` on the command
+line (`make tilt LEG_DENSITY=2000`; 500, pine, if not given), or change
 `LEG_THICKNESS` in `world/spec.py`. The mass and inertia follow by
 themselves, as for the top. The gripper can still lift them: even a steel leg,
 about 1 kg, is well under the 6 kg its friction holds when hanging.
@@ -252,3 +256,61 @@ procedure INSTALL_TOP_BY_TILTING(top, legs):
     check_table()                                               # exists
     check each leg is still standing where it was
 ```
+
+---
+
+## What was built
+
+`make tilt` does this, in `task.py` (`_put_on_legs()` and what it calls),
+with the geometry in `assembly/table.py` and `assembly/grasps.py`. It follows
+the plan above, with seven differences.
+
+1. **The legs start standing where the table goes.** This file assumes they
+   are already there, and the simulator puts them there: the far two where
+   the top's far edge will rest on their middles, the near two 1.2 cm in from
+   its near edge. The arm is not told any of that. It finds the four legs in
+   its survey and measures them close up.
+2. **The legs are measured before the top is picked up.** Section 4 warns
+   that the top, hanging over the far legs, hides them from the camera. So
+   they are looked at from above and from the arm's side first, and the whole
+   route — pick-up, carry, the tilt, the pull-out — is planned from those
+   measurements before the top is touched.
+3. **The top comes down on the far legs leaning 20°, not upright.** Upright,
+   it would hang its whole width plus 12 cm above them. For the flat top to
+   end far enough out that the arm can let go and pull back without folding
+   up, the far legs have to stand about 78 cm out, and the arm cannot reach
+   that high that far out. So the arm leans the top 20° towards itself in the
+   air first, 45 cm out, then carries it out over the far legs, leaning. At
+   20° the twist on the grip is a third of what it is with the top flat. If
+   the arm cannot reach the far legs leaning only 20°, it leans 30°, where
+   the twist is half. It first leaned 30° every time, and a 3 kg top sagged
+   in the fingers on the way, then twisted out during the tilt and knocked
+   all four legs over; leaning 20°, the same top made a table.
+4. **The arm feels for the far legs instead of pushing against them.**
+   Section 4 suggests a force sensor and an admittance controller. The arm
+   has neither, but it can read its own joints' efforts. It comes down half
+   a millimetre at a time and stops when the shoulder, elbow or wrist 1
+   suddenly has less to hold up, which is the legs taking some of the top's
+   weight. Then it goes back up one step, so the top sits just on them rather
+   than being pushed into them.
+5. **It lets go just above the near legs.** The tilt stops when the top is
+   3 mm above the near legs, and the top falls the rest of the way when the
+   fingers open. Driven all the way down, a near leg standing a hair taller
+   than measured would have the top pushed into it.
+6. **The legs are 15–17 cm tall, not v2's 13–16.** At the end of the tilt
+   the arm holds the top level by its near edge, a finger above and a finger
+   below. With legs 13 cm tall that is 14 cm off the floor, and in every
+   shape of the arm that reaches it, wrist 1 is down at the floor. The arm
+   checks this before it touches the top, and says so if it cannot.
+7. **The grip is loosened before the tilt.** Once the far legs hold up one
+   edge, the fingers open to 4 mm wider than the top. They stop squeezing it,
+   so any error in the arm's path is not forced into the legs. They still
+   carry the gripped edge until the near legs take it: that edge lies on the
+   lower finger and turns between the two, like a hinge. This is the "grip a
+   little lighter" of step 6, and "loosen the grip a little" in section 4.
+   With the grip loose, a fingertip losing touch no longer means the top
+   slipped, so the camera's check of the table decides.
+
+The top turns about the edge it rests on — the lower edge on the arm's side,
+the one a box tipped over turns on — so nothing slides on the leg tops. The
+tests check that that edge stays put through every step of the tilt.
