@@ -10,10 +10,11 @@ function names in it (`task.py`, `carry_round()`, and so on) are v2's.
 
 Two related files, which are v3's two parts:
 
-- [`one-joint-or-many.md`](one-joint-or-many.md) — part 1, being worked on
-  now: to turn the top 90 degrees, should the arm turn one joint or several?
-- [`tilt-onto-legs.md`](tilt-onto-legs.md) — part 2, next: rest the top on two
-  legs first, then tilt it down onto all four.
+- [`one-joint-or-many.md`](one-joint-or-many.md) — part 1, built as
+  `make wrist` and `make whole-arm`: to turn the top 90 degrees, should the
+  arm turn one joint or several?
+- [`tilt-onto-legs.md`](tilt-onto-legs.md) — part 2, built as `make tilt`:
+  rest the top on two legs first, then tilt it down onto all four.
 
 It uses the same words as the rest of the docs. If a word is new to you, look
 in [Words used here](#words-used-here) at the end.

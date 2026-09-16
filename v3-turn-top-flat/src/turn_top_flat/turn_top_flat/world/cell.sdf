@@ -1,17 +1,13 @@
 <?xml version="1.0"?>
 <sdf version="1.9">
-  <world name="work_cell">
+  <world name="assembly_cell">
 
-    <!-- 4 ms steps, so the simulator publishes its clock at 250 Hz. Gazebo
-         publishes /clock once per step, ROS nodes subscribe to it to run on
-         simulated time, and at 1 kHz that one topic is enough to swamp a
-         Python node before its camera callbacks get a look in. 250 Hz is
-         still far finer than anything in this cell moves. -->
     <!--
       The window's starting view. Without this, Gazebo opens its default camera
       8 metres back, which is framed for a world of vehicles and buildings and
-      leaves this cell a speck in the middle of the screen. This one sits just
-      off the near left corner of the table, looking down at the arm.
+      leaves this cell a speck in the middle of the screen. This one sits in
+      front of the arm and off to its left, where the top stands, looking down
+      at the floor round it.
 
       Naming a <gui> at all replaces Gazebo's whole default layout, so the
       plugins that make the window usable have to be listed with it: the view
@@ -29,61 +25,62 @@
         <ambient_light>0.5 0.5 0.5</ambient_light>
         <background_color>0.75 0.78 0.82</background_color>
         <!-- x y z roll pitch yaw. The camera looks along its own x axis. -->
-        <camera_pose>-0.35 -1.0 1.55 0 0.52 0.88</camera_pose>
+        <camera_pose>1.55 1.15 1.25 0 0.56 -2.45</camera_pose>
       </plugin>
 
-      <!-- The next six have no window of their own. Each is shrunk to 5 x 5
-           pixels, because at any larger size it prints its help text over the
-           3D view. -->
+      <!-- The plugins from here to the world control have no window of their
+           own. Each is shrunk to 5 pixels, as in Gazebo's own default layout;
+           left at their default size, they pile up in the view's top left
+           corner, their names printed over each other. -->
 
       <!-- Keeps the view in step with what the server is simulating. -->
       <plugin filename="GzSceneManager" name="Scene Manager">
         <gz-gui><property key="resizable" type="bool">false</property>
-          <property key="showTitleBar" type="bool">false</property>
-          <property key="state" type="string">floating</property>
           <property key="width" type="double">5</property>
           <property key="height" type="double">5</property>
+          <property key="showTitleBar" type="bool">false</property>
+          <property key="state" type="string">floating</property>
         </gz-gui>
       </plugin>
       <!-- Orbit, pan and zoom with the mouse. -->
       <plugin filename="InteractiveViewControl" name="Interactive view control">
         <gz-gui><property key="resizable" type="bool">false</property>
-          <property key="showTitleBar" type="bool">false</property>
-          <property key="state" type="string">floating</property>
           <property key="width" type="double">5</property>
           <property key="height" type="double">5</property>
+          <property key="showTitleBar" type="bool">false</property>
+          <property key="state" type="string">floating</property>
         </gz-gui>
       </plugin>
       <plugin filename="CameraTracking" name="Camera Tracking">
         <gz-gui><property key="resizable" type="bool">false</property>
-          <property key="showTitleBar" type="bool">false</property>
-          <property key="state" type="string">floating</property>
           <property key="width" type="double">5</property>
           <property key="height" type="double">5</property>
+          <property key="showTitleBar" type="bool">false</property>
+          <property key="state" type="string">floating</property>
         </gz-gui>
       </plugin>
       <plugin filename="SelectEntities" name="Select entities">
         <gz-gui><property key="resizable" type="bool">false</property>
-          <property key="showTitleBar" type="bool">false</property>
-          <property key="state" type="string">floating</property>
           <property key="width" type="double">5</property>
           <property key="height" type="double">5</property>
+          <property key="showTitleBar" type="bool">false</property>
+          <property key="state" type="string">floating</property>
         </gz-gui>
       </plugin>
       <plugin filename="EntityContextMenuPlugin" name="Entity context menu">
         <gz-gui><property key="resizable" type="bool">false</property>
-          <property key="showTitleBar" type="bool">false</property>
-          <property key="state" type="string">floating</property>
           <property key="width" type="double">5</property>
           <property key="height" type="double">5</property>
+          <property key="showTitleBar" type="bool">false</property>
+          <property key="state" type="string">floating</property>
         </gz-gui>
       </plugin>
       <plugin filename="VisualizationCapabilities" name="Visualization Capabilities">
         <gz-gui><property key="resizable" type="bool">false</property>
-          <property key="showTitleBar" type="bool">false</property>
-          <property key="state" type="string">floating</property>
           <property key="width" type="double">5</property>
           <property key="height" type="double">5</property>
+          <property key="showTitleBar" type="bool">false</property>
+          <property key="state" type="string">floating</property>
         </gz-gui>
       </plugin>
 
@@ -128,6 +125,11 @@
       <plugin filename="EntityTree" name="Entity tree"/>
     </gui>
 
+    <!-- 4 ms steps, so the simulator publishes its clock at 250 Hz. Gazebo
+         publishes /clock once per step, ROS nodes subscribe to it to run on
+         simulated time, and at 1 kHz that one topic is enough to swamp a
+         Python node before its camera callbacks get a look in. 250 Hz is
+         still far finer than anything in this cell moves. -->
     <physics name="4ms" type="ignored">
       <max_step_size>0.004</max_step_size>
       <real_time_factor>1.0</real_time_factor>
@@ -140,7 +142,7 @@
     <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
       <render_engine>ogre2</render_engine>
     </plugin>
-    <!-- Serves the fingertip contact sensor. -->
+    <!-- Serves the fingertip contact sensors. -->
     <plugin filename="gz-sim-contact-system" name="gz::sim::systems::Contact"/>
 
     <light type="directional" name="sun">
@@ -152,7 +154,7 @@
     </light>
 
     <!-- A second, softer light from the other side. One directional light
-         leaves the far side of every cuboid in shadow, and a face that is too
+         leaves the far side of every part in shadow, and a face that is too
          dark to read a colour off is a face the perception step loses. -->
     <light type="directional" name="fill">
       <cast_shadows>false</cast_shadows>
@@ -167,6 +169,9 @@
       <background>0.75 0.78 0.82 1</background>
     </scene>
 
+    <!-- The floor. Grey, like everything else that is not a part. The robot
+         is not told its height: it finds it as the biggest level surface the
+         camera sees. -->
     <model name="ground_plane">
       <static>true</static>
       <link name="link">
@@ -183,10 +188,8 @@
       </link>
     </model>
 
-    <!-- TABLE -->
-
-
-    <!-- CUBOIDS -->
+    <!-- world/build.py puts the table top and its holders here. -->
+    <!-- PARTS -->
 
   </world>
 </sdf>
