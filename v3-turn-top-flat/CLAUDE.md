@@ -14,9 +14,11 @@ measures it, and lifts it straight up out of them. Then one of three things:
   checks the table.
 
 Read [`README.md`](README.md) first. The plans and the calculations behind the two
-turns are in [`one-joint-or-many.md`](one-joint-or-many.md),
-[`pick-up-and-place.md`](pick-up-and-place.md) and
-[`tilt-onto-legs.md`](tilt-onto-legs.md).
+turns are in [`docs/approaches/one-joint-or-many.md`](docs/approaches/one-joint-or-many.md),
+[`docs/approaches/pick-up-and-place.md`](docs/approaches/pick-up-and-place.md) and
+[`docs/approaches/tilt-onto-legs.md`](docs/approaches/tilt-onto-legs.md). How each of the three jobs runs, step
+by step, is in [`docs/`](docs): one folder per job, one file per step, with the
+results in `docs/turn-results.md`.
 
 This folder is a project on its own. It started as a copy of
 `../v2-assemble-table`, but it shares nothing with it or with any other

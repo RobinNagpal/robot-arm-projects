@@ -20,14 +20,14 @@ It uses the same words as the rest of the docs. If a word is new to you, look
 in [Words used here](#words-used-here) at the end.
 
 The pictures are sketches, not to scale. They are drawn by
-[`figures/pick_up_and_place.py`](figures/pick_up_and_place.py). See the
-[README](README.md) for how to redraw them.
+[`figures/pick_up_and_place.py`](../figures/pick_up_and_place.py). See the
+[README](../../README.md) for how to redraw them.
 
 ---
 
 ## 1. The problem in one picture
 
-![The table top standing upright between two holders at the start, and lying flat on four legs at the end](figures/problem.png)
+![The table top standing upright between two holders at the start, and lying flat on four legs at the end](../figures/problem.png)
 
 So the top has to go from **upright** to **flat**: a turn of exactly 90
 degrees.
@@ -74,13 +74,13 @@ checking — but it is short, and straight up.
 The fix is not a new library. It is to **split the turn into small, slow,
 simple moves**, and to **check every one of them before touching the board**.
 
-![The old way does the whole turn in one planned move; the new way splits it into small moves](figures/old_vs_new.png)
+![The old way does the whole turn in one planned move; the new way splits it into small moves](../figures/old_vs_new.png)
 
 ---
 
 ## 3. The ways it can be done
 
-![The four ways: turn it flat in the air, suction cup, rest on stands, edge on two legs then tilt down](figures/ways.png)
+![The four ways: turn it flat in the air, suction cup, rest on stands, edge on two legs then tilt down](../figures/ways.png)
 
 | | Way | Gripper | Good | Bad |
 | --- | --- | --- | --- | --- |
@@ -110,7 +110,7 @@ before the grip.
 This is the order of things, in plain words. Steps marked **(exists)** are
 already done by v2's code and can stay as they are.
 
-![Way A in eight pictures, from coming in above the edge to letting go on the legs](figures/steps.png)
+![Way A in eight pictures, from coming in above the edge to letting go on the legs](../figures/steps.png)
 
 1. **Look round the room** (exists). Find the floor, the top, the legs, and the
    holders. The holders are grey, so they are obstacles, and they go into
@@ -171,7 +171,7 @@ The swing (step 11) is the new, hard part. Four rules make it safe.
 
 ### Rule 1: turn about the gripped edge, like a drawbridge
 
-![The board swinging flat about its gripped edge, 5 degrees per step](figures/swing.png)
+![The board swinging flat about its gripped edge, 5 degrees per step](../figures/swing.png)
 
 The fingers stay in one place. Only the board turns round them. The part of
 the room the board sweeps through is a quarter circle as big as the board's
@@ -210,7 +210,7 @@ lesson in the earlier version.
 It also matches the plan: the table's near edge faces the arm, and the gripped
 edge becomes that near edge.
 
-![Seen from above: the gripped edge should run across the line from the base, not along it](figures/edge_direction.png)
+![Seen from above: the gripped edge should run across the line from the base, not along it](../figures/edge_direction.png)
 
 ### Rule 4: swing it away from the arm
 
@@ -221,7 +221,7 @@ uses to carry the top and lay it on the legs.
 
 ### Why the grip can hold it
 
-![The pull on the grip against the board's angle: zero when hanging, largest when flat](figures/grip_load.png)
+![The pull on the grip against the board's angle: zero when hanging, largest when flat](../figures/grip_load.png)
 
 The board weighs 0.25 to 0.48 kg (400 kg/m³, and the size ranges in
 `world/spec.py`).

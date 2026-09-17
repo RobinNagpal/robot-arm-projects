@@ -1,6 +1,6 @@
-"""Draws the pictures in one-joint-or-many.md.
+"""Draws the pictures in docs/approaches/one-joint-or-many.md.
 
-Run from v3-turn-top-flat/figures/:  python one_joint_or_many.py
+Run from v3-turn-top-flat/docs/figures/:  python one_joint_or_many.py
 
 Sketches, not to scale, except the chart, which uses v2's numbers.
 """

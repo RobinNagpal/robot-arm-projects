@@ -117,7 +117,7 @@ After step 4, instead of carrying the top to the turning spot:
    should be, and how far from level the top is.
 
 Why it leans the top first, rather than lowering it upright as
-[`tilt-onto-legs.md`](tilt-onto-legs.md) planned: upright, the top hangs its
+[`docs/approaches/tilt-onto-legs.md`](docs/approaches/tilt-onto-legs.md) planned: upright, the top hangs its
 whole width plus 12 cm above the far legs, and they have to stand far enough
 out — about 78 cm — that the arm can let go of the flat top without folding
 up, where it cannot reach that high. The end of that file lists every way
@@ -144,7 +144,7 @@ it level to within 0.005° both times: 72 cm up after the wrist turn, and 40 cm
 up, its edge where it started, after the whole-arm turn. Seed 7, a top 19.4 cm
 wide, came out the same.
 
-It agrees with the calculation in [`one-joint-or-many.md`](one-joint-or-many.md):
+It agrees with the calculation in [`docs/approaches/one-joint-or-many.md`](docs/approaches/one-joint-or-many.md):
 
 - the whole-arm turn makes wrist 1 turn 142°, not 90, because the shoulder and
   elbow tilt the forearm as they carry the wrist round;
@@ -201,7 +201,7 @@ up to 3.8 kg — the same heavy tops that could not be turned flat in the air:
 Every leg was still standing. The first version leaned the top 30° in the
 air rather than 20°, and with it the 3.06 kg top sagged in the fingers,
 twisted out during the tilt and knocked all four legs over. All the numbers,
-and what they cannot tell, are in [`turn-results.md`](turn-results.md),
+and what they cannot tell, are in [`docs/turn-results.md`](docs/turn-results.md),
 section 5.
 
 ## Commands
@@ -263,7 +263,7 @@ The top has to turn 90 degrees, from hanging to flat. The arm can do that by
 turning a single joint, wrist 1, and holding all the others still. Or it can
 move several joints together, so that one chosen point of the board — here,
 the gripped edge — stays still while the board turns about it.
-[`one-joint-or-many.md`](one-joint-or-many.md) works out what that choice
+[`docs/approaches/one-joint-or-many.md`](docs/approaches/one-joint-or-many.md) works out what that choice
 does to the arm: the torque on every joint, how fast each one has to turn,
 and what a joint's real limits mean for which way to go.
 
@@ -273,24 +273,25 @@ Rather than turn the top flat in the air and set it down on all four legs at
 once, the arm rests the top's lower edge on the two far legs first. Then it
 turns the top down about that edge, moving the arm as it goes, until the top
 touches and settles on all four legs. It is how a person puts a heavy top on
-a table. → [`tilt-onto-legs.md`](tilt-onto-legs.md)
+a table. → [`docs/approaches/tilt-onto-legs.md`](docs/approaches/tilt-onto-legs.md)
 
 Both parts sit inside the whole job — look round, measure, stand the legs,
 pick the top up, put it down, check the table — which
-[`pick-up-and-place.md`](pick-up-and-place.md) plans from start to finish,
+[`docs/approaches/pick-up-and-place.md`](docs/approaches/pick-up-and-place.md) plans from start to finish,
 along with the other ways the top could be turned.
 
 ## What each file answers
 
 | File | Question |
 | --- | --- |
-| [`turn-by-wrist.md`](turn-by-wrist.md) | **As built.** How does `make wrist` turn the top, step by step, and what is the maths behind each step? What torque does each joint feel, and could MoveIt have moved just one joint? |
-| [`turn-by-whole-arm.md`](turn-by-whole-arm.md) | **As built.** The same for `make whole-arm`: the 18 poses about the edge, and working the joint angles out by hand. Why does wrist 1 turn 142°? |
-| [`wrist-or-whole-arm.md`](wrist-or-whole-arm.md) | **As built.** What is really different between the two turns: torque, force on the grip, space, time, and how certain the path is. |
-| [`turn-results.md`](turn-results.md) | What each run in Gazebo reported, light top and heavy, in the air and onto the legs. |
-| [`one-joint-or-many.md`](one-joint-or-many.md) | **Part 1.** To turn the top 90°, is it harder on the arm to turn one joint or several? Worked out joint by joint on the robot. What real limits does a joint have, and which way do they push the design? How heavy a top can the turn take, and how is weight set in Gazebo? |
-| [`tilt-onto-legs.md`](tilt-onto-legs.md) | **Part 2, built as `make tilt`.** Resting the top on two legs first, then tilting it down onto four: how it works, and what can go wrong — mostly, legs being knocked over. Its last section says where the build differs from the plan. |
-| [`pick-up-and-place.md`](pick-up-and-place.md) | The whole job, from the holders to the finished table. The ways the top could be turned, one of them in full detail, with pseudo code, the libraries and the gripper. |
+| [`docs/turn-by-wrist/`](docs/turn-by-wrist/README.md) | **As built.** How does `make wrist` turn the top, step by step, one file per step, written for a beginner? Where does every number come from, which are fixed and which measured? What torque does each joint feel, and could MoveIt have moved just one joint? |
+| [`docs/turn-by-whole-arm/`](docs/turn-by-whole-arm/README.md) | **As built.** The same for `make whole-arm`: the 18 poses about the edge, what MoveIt is asked for, and working the joint angles out by hand. Why does wrist 1 turn 142°? |
+| [`docs/tilt-onto-legs/`](docs/tilt-onto-legs/README.md) | **As built.** How does `make tilt` put the top on the legs, step by step, for a beginner? Measuring the legs, planning backwards from the table, feeling for the legs with the joints, tilting about the resting edge, and checking the table. |
+| [`docs/wrist-or-whole-arm.md`](docs/wrist-or-whole-arm.md) | **As built.** What is really different between the two turns: torque, force on the grip, space, time, and how certain the path is. |
+| [`docs/turn-results.md`](docs/turn-results.md) | What each run in Gazebo reported, light top and heavy, in the air and onto the legs. |
+| [`docs/approaches/one-joint-or-many.md`](docs/approaches/one-joint-or-many.md) | **Part 1.** To turn the top 90°, is it harder on the arm to turn one joint or several? Worked out joint by joint on the robot. What real limits does a joint have, and which way do they push the design? How heavy a top can the turn take, and how is weight set in Gazebo? |
+| [`docs/approaches/tilt-onto-legs.md`](docs/approaches/tilt-onto-legs.md) | **Part 2, built as `make tilt`.** Resting the top on two legs first, then tilting it down onto four: how it works, and what can go wrong — mostly, legs being knocked over. Its last section says where the build differs from the plan. |
+| [`docs/approaches/pick-up-and-place.md`](docs/approaches/pick-up-and-place.md) | The whole job, from the holders to the finished table. The ways the top could be turned, one of them in full detail, with pseudo code, the libraries and the gripper. |
 
 ## The short answers
 
@@ -313,38 +314,41 @@ all made a table this way.
 
 ## The pictures
 
-The pictures are in [`figures/`](figures). Each script there draws the
+The pictures are in [`docs/figures/`](docs/figures). Each script there draws the
 pictures for one file:
 
 | Script | Draws the pictures for |
 | --- | --- |
-| `figures/pick_up_and_place.py` | `pick-up-and-place.md` (and holds the drawing helpers the other two use) |
-| `figures/one_joint_or_many.py` | `one-joint-or-many.md` |
-| `figures/tilt_onto_legs.py` | `tilt-onto-legs.md` |
-| `figures/joint_torques.py` | the torque charts in `one-joint-or-many.md`, section 2 |
-| `figures/two_turns.py` | `turn-by-wrist.md`, `turn-by-whole-arm.md` and `wrist-or-whole-arm.md` |
+| `docs/figures/pick_up_and_place.py` | `docs/approaches/pick-up-and-place.md` (and holds the drawing helpers the other two use) |
+| `docs/figures/one_joint_or_many.py` | `docs/approaches/one-joint-or-many.md` |
+| `docs/figures/tilt_onto_legs.py` | `docs/approaches/tilt-onto-legs.md` |
+| `docs/figures/joint_torques.py` | the torque charts in `docs/approaches/one-joint-or-many.md`, section 2 |
+| `docs/figures/two_turns.py` | `docs/wrist-or-whole-arm.md`, and the arm drawn to scale in `docs/turn-by-wrist/` and `docs/turn-by-whole-arm/` |
+| `docs/turn-by-wrist/figures/draw_steps.py` | `docs/turn-by-wrist/` |
+| `docs/turn-by-whole-arm/figures/draw_whole_arm.py` | `docs/turn-by-whole-arm/` |
+| `docs/tilt-onto-legs/figures/draw_tilt.py` | `docs/tilt-onto-legs/` |
 
 To redraw them, use this project's own environment, which has matplotlib and
 numpy. Run `make setup` first if it is not installed yet:
 
 ```
-cd v3-turn-top-flat/figures
-../.pixi/envs/default/bin/python pick_up_and_place.py
-../.pixi/envs/default/bin/python one_joint_or_many.py
-../.pixi/envs/default/bin/python tilt_onto_legs.py
+cd v3-turn-top-flat/docs/figures
+../../.pixi/envs/default/bin/python pick_up_and_place.py
+../../.pixi/envs/default/bin/python one_joint_or_many.py
+../../.pixi/envs/default/bin/python tilt_onto_legs.py
 ```
 
 They are sketches to explain the idea, not drawings to scale. The charts use
 the robot's real numbers.
 
 `joint_torques.py` is different: it is a calculation, not a sketch. It loads
-the robot from `figures/ur5e_v2_gripper.urdf` and needs PyBullet, which the
+the robot from `docs/figures/ur5e_v2_gripper.urdf` and needs PyBullet, which the
 environment also has. It checks itself before printing anything, and takes
 about a minute and a half:
 
 ```
-cd v3-turn-top-flat/figures
-../.pixi/envs/default/bin/python joint_torques.py
+cd v3-turn-top-flat/docs/figures
+../../.pixi/envs/default/bin/python joint_torques.py
 ```
 
 `two_turns.py` is a calculation too, on the same robot model: the two turns
@@ -352,6 +356,6 @@ as v3 really runs them, with seed 1's top at the turning spot. It checks
 itself before drawing anything, and takes a few seconds:
 
 ```
-cd v3-turn-top-flat/figures
-../.pixi/envs/default/bin/python two_turns.py
+cd v3-turn-top-flat/docs/figures
+../../.pixi/envs/default/bin/python two_turns.py
 ```

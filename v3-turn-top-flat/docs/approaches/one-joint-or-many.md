@@ -1,7 +1,7 @@
 # Part 1: turning the top 90 degrees — one joint, or many?
 
 This is part 1 of v3. It is built: `make wrist` and `make whole-arm` run the
-two ways of turning the top, and [`turn-results.md`](turn-results.md) has
+two ways of turning the top, and [`docs/turn-results.md`](../turn-results.md) has
 what they did.
 
 The arm has gripped the table top by the middle of its upper edge and lifted it
@@ -32,7 +32,7 @@ three, the wrist joints, are the ones next to the gripper.
 So the real question is: do all six joints move, or only one wrist joint?
 Both work. They are different moves.
 
-![Way 1: the whole arm moves and the gripped edge stays put. Way 2: only wrist 1 turns and the board swings on a wide circle](figures/who_moves.png)
+![Way 1: the whole arm moves and the gripped edge stays put. Way 2: only wrist 1 turns and the board swings on a wide circle](../figures/who_moves.png)
 
 **Way 1: the whole arm moves** (this is what `pick-up-and-place.md` describes).
 The gripped edge stays in one place and the board turns about it. Wrist 1 does
@@ -100,7 +100,7 @@ spanner has a long handle.
 ### How it was worked out
 
 By calculation, on v2's own robot, not by estimate. The script
-[`figures/joint_torques.py`](figures/joint_torques.py) loads v2's UR5e and
+[`figures/joint_torques.py`](../figures/joint_torques.py) loads v2's UR5e and
 gripper — the same model Gazebo runs, with Universal Robots' own masses for
 every link — and a 0.48 kg board, v2's heaviest. It moves the arm through each
 swing, and a physics library (PyBullet) works out the torque on all six joints
@@ -147,7 +147,7 @@ moving mass is.
 
 ### What came out
 
-![Torque on wrist 1, the elbow and the shoulder through the swing, for the three swings, at v2's pace (solid) and flat out (dashed)](figures/joint_torques.png)
+![Torque on wrist 1, the elbow and the shoulder through the swing, for the three swings, at v2's pace (solid) and flat out (dashed)](../figures/joint_torques.png)
 
 **At v2's pace, the three swings are almost the same.** Peak torque on each
 joint, 0.48 kg board:
@@ -238,7 +238,7 @@ the other side of wrist 1, 10 cm towards the base instead of away from it.
 Then the two levers fight instead of adding. As the board swings out, its lever
 cancels the offset's, and halfway through they balance out almost completely.
 
-![Wrist 1's holding torque through the swing, for the normal and the flipped wrist](figures/wrist_flip.png)
+![Wrist 1's holding torque through the swing, for the normal and the flipped wrist](../figures/wrist_flip.png)
 
 | Posture, v2's pace | Wrist 1 peak | Shoulder peak | Heaviest board before any joint's limit |
 | --- | --- | --- | --- |
@@ -272,7 +272,7 @@ straight down in either posture, so the two are equal there.
   the swing on space, speed and simplicity — way 2 first — and start it from
   the flipped wrist if the space allows.
 
-To run it yourself, see [`README.md`](README.md#the-pictures).
+To run it yourself, see [`README.md`](../../README.md#the-pictures).
 
 ---
 
@@ -368,7 +368,7 @@ two hands, or rest one end on the table first.
 
 The robot has the same problem.
 
-![Hanging, friction holds the board up. Flat, the pads must stop the board twisting out of the fingers](figures/forces.png)
+![Hanging, friction holds the board up. Flat, the pads must stop the board twisting out of the fingers](../figures/forces.png)
 
 The board's weight asks three things of the robot:
 
@@ -412,7 +412,7 @@ The arm's payload is the rating for a load close to the flange. The top's
 weight sits 30 cm out, and UR's payload chart allows less there. Check that
 chart before trusting the 4 kg.
 
-![How much of each limit is used as the top gets heavier. The twist limit for a flat board is reached first, at about 0.8 kg](figures/what_fails_first.png)
+![How much of each limit is used as the top gets heavier. The twist limit for a flat board is reached first, at about 0.8 kg](../figures/what_fails_first.png)
 
 What this means:
 
@@ -454,7 +454,7 @@ Gazebo has no idea of "heavy". It only knows, for each object, a **mass** and
 how that mass is spread out (the **inertia**). Everything else follows from
 that, step by step.
 
-![Where the weight comes from and how it reaches the robot, file by file](figures/gazebo_chain.png)
+![Where the weight comes from and how it reaches the robot, file by file](../figures/gazebo_chain.png)
 
 On the simulator's side:
 

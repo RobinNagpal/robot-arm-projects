@@ -1,6 +1,6 @@
-"""Draws the pictures in tilt-onto-legs.md.
+"""Draws the pictures in docs/approaches/tilt-onto-legs.md.
 
-Run from v3-turn-top-flat/figures/:  python tilt_onto_legs.py
+Run from v3-turn-top-flat/docs/figures/:  python tilt_onto_legs.py
 
 Sketches, not to scale, except the leg chart, which uses v2's numbers.
 """

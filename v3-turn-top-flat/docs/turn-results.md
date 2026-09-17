@@ -76,7 +76,7 @@ whole-arm turn keeps the edge in one place and needs only the board's own
 width.
 
 This agrees with the calculation in
-[`one-joint-or-many.md`](one-joint-or-many.md), section 2, which predicted
+[`one-joint-or-many.md`](approaches/one-joint-or-many.md), section 2, which predicted
 wrist 1 turning 142° in the whole-arm turn, the base and wrists 2 and 3 doing
 nothing, and wrist 1's torque about the same either way.
 
@@ -136,7 +136,7 @@ Held flat, the top's weight sits out beyond the fingers and twists it about
 them. The pads resist it about their own middle, which is 2.7 cm down from
 the gripped edge, so the lever is from there to the board's centre: half the
 board's 16.5 cm width, less 2.7 cm, is 5.55 cm. That is the same way the
-estimate in [`one-joint-or-many.md`](one-joint-or-many.md), section 5, was
+estimate in [`one-joint-or-many.md`](approaches/one-joint-or-many.md), section 5, was
 worked out.
 
 | Mass | Twist when flat | Result |
@@ -155,7 +155,7 @@ has to resist more:
 
 - rest the top's lower edge on the legs before it goes flat, so it is never
   held flat in the air at all. This is part 2,
-  [`tilt-onto-legs.md`](tilt-onto-legs.md);
+  [`tilt-onto-legs.md`](approaches/tilt-onto-legs.md);
 - spread the pad rows further apart, or grip deeper;
 - squeeze harder than the fingers' 25 N.
 
@@ -189,7 +189,7 @@ has to resist more:
 holders, leans it 20° towards itself in the air, carries it out over the far
 legs, and lets it down until it feels them take its weight. Then it tilts it
 down about the edge resting on them until it is 3 mm above the near legs,
-lets go, and checks the table. [`tilt-onto-legs.md`](tilt-onto-legs.md) has
+lets go, and checks the table. [`tilt-onto-legs.md`](approaches/tilt-onto-legs.md) has
 the plan, and at its end, where the build differs from it.
 
 ### Every top made a table
