@@ -1,10 +1,10 @@
 """Works out the two turns as v3 really runs them, and draws the pictures in
-turn-by-wrist.md, turn-by-whole-arm.md and wrist-or-whole-arm.md.
+docs/wrist-or-whole-arm.md and the step-by-step docs in docs/.
 
-Run from v3-turn-top-flat/figures/, with this project's own Python, which has
+Run from v3-turn-top-flat/docs/figures/, with this project's own Python, which has
 PyBullet:
 
-    ../.pixi/envs/default/bin/python two_turns.py
+    ../../.pixi/envs/default/bin/python two_turns.py
 
 joint_torques.py works out v2's board at v2's ready pose. This file does the
 same for what v3 actually does: seed 1's top (24.4 x 16.5 x 1.9 cm, 0.31 kg),
@@ -75,7 +75,7 @@ ACCELERATION_LIMIT = 4.0 * CARRY_SPEED  # rad/s^2
 STEP = math.radians(5.0)
 ANGLES = np.radians(np.arange(0, 91, 5))
 
-# What Gazebo reported, seed 1, 400 kg/m^3 (turn-results.md). N·m, degrees.
+# What Gazebo reported, seed 1, 400 kg/m^3 (docs/turn-results.md). N·m, degrees.
 GAZEBO = {
     "wrist": {
         "peak": (0.33, 26.77, 27.25, 4.07, 0.04, 0.04),

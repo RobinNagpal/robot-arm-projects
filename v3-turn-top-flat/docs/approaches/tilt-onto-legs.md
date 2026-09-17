@@ -3,7 +3,7 @@
 This is part 2 of v3. It is built: `make tilt` runs it. This file is the plan
 it was built from; [what was built](#what-was-built) at the end says where the
 code differs from the plan, and why. The results are in
-[`turn-results.md`](turn-results.md).
+[`docs/turn-results.md`](../turn-results.md).
 
 It is the way to get the table top from its holders onto the legs that copes
 with a heavy top, and it is how a person does it. They do not hold a heavy
@@ -39,7 +39,7 @@ easy way to hold it. By the time it is flat, the legs are carrying it.
 
 ## 2. Why it helps
 
-![Held flat in the air, the fingers carry all the weight and must stop the twist. Resting on the far legs, the legs and the fingers carry half each, with no twist](figures/load_sharing.png)
+![Held flat in the air, the fingers carry all the weight and must stop the twist. Resting on the far legs, the legs and the fingers carry half each, with no twist](../figures/load_sharing.png)
 
 - **Held flat in the air**, the fingers carry all of the weight, and they
   also have to stop it twisting down out of their grip. The twist is what
@@ -57,7 +57,7 @@ nine times more than they can resist.
 
 ## 3. Step by step
 
-![The six steps: carry it hanging over the far legs, look and lower it, touch, tilt about the corner, land on the near legs, let go](figures/tilt_steps.png)
+![The six steps: carry it hanging over the far legs, look and lower it, touch, tilt about the corner, land on the near legs, let go](../figures/tilt_steps.png)
 
 1. **Lift it straight out of the holders.** This is the same as steps 6 to 9
    of `pick-up-and-place.md`: come in above the middle of the upper edge,
@@ -107,7 +107,7 @@ A leg standing on its own is easy to knock over. Its own weight, and the
 board's weight pressing down on it, try to keep it upright. A push from the
 side at its top tries to tip it over about its bottom edge.
 
-![What keeps a leg standing, and how hard a side push has to be to knock over different legs, compared with the push from a board sliding on it](figures/leg_tipping.png)
+![What keeps a leg standing, and how hard a side push has to be to knock over different legs, compared with the push from a board sliding on it](../figures/leg_tipping.png)
 
 The rule, in simple terms:
 
@@ -128,7 +128,7 @@ is any push from the side.** Three things make one:
    So the board must turn exactly about the corner that rests on the legs,
    never about the gripped edge.
 
-   ![Turning about the resting corner, nothing slides. Turning about the gripped edge, the corner slides across the leg tops and drags the legs over](figures/pivot_choice.png)
+   ![Turning about the resting corner, nothing slides. Turning about the gripped edge, the corner slides across the leg tops and drags the legs over](../figures/pivot_choice.png)
 
 2. **The arm being a few millimetres off.** v2 measures a leg to within about
    2 mm. The arm follows its path very stiffly. If the circle it follows is

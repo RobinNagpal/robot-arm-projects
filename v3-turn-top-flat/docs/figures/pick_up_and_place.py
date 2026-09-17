@@ -1,6 +1,6 @@
-"""Draws the pictures in pick-up-and-place.md.
+"""Draws the pictures in docs/approaches/pick-up-and-place.md.
 
-Run from v3-turn-top-flat/figures/:  python pick_up_and_place.py
+Run from v3-turn-top-flat/docs/figures/:  python pick_up_and_place.py
 
 These are sketches to explain the idea, not to scale.
 """

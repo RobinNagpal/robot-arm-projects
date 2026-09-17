@@ -1,12 +1,12 @@
 """Works out the torque on each of the UR5e's six joints while the table top
 is turned 90 degrees, from hanging to flat, for each way of doing the turn, and
-draws the charts in one-joint-or-many.md. This is the calculation behind part 1
+draws the charts in docs/approaches/one-joint-or-many.md. This is the calculation behind part 1
 of v3.
 
-Run from v3-turn-top-flat/figures/, with this project's own Python, which has
+Run from v3-turn-top-flat/docs/figures/, with this project's own Python, which has
 PyBullet:
 
-    ../.pixi/envs/default/bin/python joint_torques.py
+    ../../.pixi/envs/default/bin/python joint_torques.py
 
 The robot is ur5e_v2_gripper.urdf: the project's UR5e and gripper, first built
 for v2, with the meshes
@@ -49,7 +49,7 @@ MAX_SPEED = math.radians(180.0)
 # v2's largest table top: 30 cm along the gripped edge, 20 cm out from it, 2 cm
 # thick, at 400 kg/m^3. The fingers close on its thickness, 2.7 cm in from the
 # edge, so its centre sits 7.3 cm past the middle of the pads, which are 11 cm
-# from the flange. See pick-up-and-place.md.
+# from the flange. See docs/approaches/pick-up-and-place.md.
 BOARD_SIZE = np.array([0.30, 0.02, 0.20])  # along the tool's x, y, z
 PAD_CENTRE = 0.110
 BOARD_CENTRE = PAD_CENTRE + 0.073

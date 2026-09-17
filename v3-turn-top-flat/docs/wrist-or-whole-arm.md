@@ -3,8 +3,8 @@
 Both turns take the table top from hanging to flat. This file puts them side
 by side: the movement, the torque on each joint, the force on the grip, the
 space, the time. How each one works, step by step, is in
-[`turn-by-wrist.md`](turn-by-wrist.md) and
-[`turn-by-whole-arm.md`](turn-by-whole-arm.md).
+[`docs/turn-by-wrist/`](turn-by-wrist/README.md) and
+[`docs/turn-by-whole-arm/`](turn-by-whole-arm/README.md).
 
 **The short answer.** For the joints and the grip, almost nothing is
 different. Wrist 1 carries the same torque in both, angle for angle, and the
@@ -77,7 +77,7 @@ same way relative to wrist 1, tilted by however far the tool has tilted. So
 at a given tilt θ the torque is the same, whichever joints produced the tilt:
 
 ```
-τ_wrist1(θ) = 3.05 · cos θ + 2.71 · sin θ   N·m      (turn-by-wrist.md, section 10)
+τ_wrist1(θ) = 3.05 · cos θ + 2.71 · sin θ   N·m      (turn-by-wrist/07-what-each-joint-does.md)
 3.05 hanging   →   4.08 at 42°   →   2.71 flat
 ```
 
@@ -156,7 +156,7 @@ placing the moment of loss. In every case the grip gave out, never a joint:
 at 2.29 kg wrist 1 peaked at 10.5 and 12.6 N·m, under half its 28.
 
 So neither turn lets the arm turn a heavier top in the air. Resting it on the
-legs before it goes flat does ([`tilt-onto-legs.md`](tilt-onto-legs.md)).
+legs before it goes flat does ([`tilt-onto-legs.md`](approaches/tilt-onto-legs.md)).
 
 ---
 
@@ -226,6 +226,6 @@ movement:
   round the top. Use it where space is tight, or where the edge has to stay
   put. That is the move part 2 needs: tilting the top down onto the legs is
   the same kind of turn, about the edge resting on the legs instead of the
-  gripped one ([`tilt-onto-legs.md`](tilt-onto-legs.md)).
+  gripped one ([`tilt-onto-legs.md`](approaches/tilt-onto-legs.md)).
 
 For a heavy top, neither turn helps, and resting it on the legs first does.
