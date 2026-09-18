@@ -11,6 +11,7 @@ than where it was aimed.
 | [`v1-touch-biggest-face`](v1-touch-biggest-face) | Measures cuboids and touches the biggest face of each | Working |
 | [`v2-assemble-table`](v2-assemble-table) | Stands four legs up and lays a table top on them | Working |
 | [`v3-turn-top-flat`](v3-turn-top-flat) | Lifts a table top straight up out of two holders and turns it flat before building the table | Plans only |
+| [`v4-classification-shapes`](v4-classification-shapes) | Names the shape of each block on a table — triangle, square, rhombus, octagon… — with a YOLO model trained on Gazebo pictures | Dataset generator working; model not trained yet |
 | [`v6-two-arms-jenga`](v6-two-arms-jenga) | Two arms, programmed two different ways, play Jenga against each other | Plans only |
 
 Each folder's name is its version, then what it does. The projects run
@@ -57,6 +58,22 @@ There is no code yet. The work is in two parts:
    moving as it turns, until it sits on all four.
 
 → [`v3-turn-top-flat/README.md`](v3-turn-top-flat/README.md)
+
+## v4 — name the shape of each block
+
+Blocks cut in seven shapes — triangle, square, rectangle, rhombus, pentagon,
+hexagon, octagon — lie on a table, and a camera has to find each one and name
+its shape. It is the first project where the seeing is learned rather than
+written: a YOLO model trained on pictures rendered in Gazebo, compared against
+a corner-counting baseline that needs no training.
+
+So far the folder holds the dataset: a generator that renders labelled
+pictures with domain randomization — every colour, table, light and camera
+angle drawn at random — and a second test set drawn from conditions the model
+never trains on, to measure how far it generalises. Training, the baseline and
+the arm come next.
+
+→ [`v4-classification-shapes/README.md`](v4-classification-shapes/README.md)
 
 ## v6 — two arms play Jenga
 
