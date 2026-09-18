@@ -1,0 +1,40 @@
+[workspace]
+name = "classification-shapes"
+version = "0.1.0"
+description = "Synthetic images of polygon blocks rendered in Gazebo, for training a YOLO model to find and name each shape"
+channels = ["conda-forge"]
+platforms = ["linux-64", "osx-arm64"]
+
+[dependencies]
+python = "3.12.*"
+
+# Gazebo Harmonic, the same simulator the other projects run, with the Python
+# bindings that let a script spawn models, move the camera and read images
+# without going through ROS. The data generator needs nothing from ROS, so ROS
+# is left out until the arm comes back into the project.
+gz-sim8 = "*"
+gz-sim8-python = "*"
+gz-transport13-python = "*"
+gz-msgs10-python = "*"
+
+py-opencv = ">=4.9"
+numpy = ">=1.26,<3"
+
+# PyTorch from conda-forge, not PyPI. The PyPI build brings its own copy of
+# OpenMP, and a process that loads it next to conda's copy crashes.
+pytorch = ">=2.5"
+torchvision = "*"
+
+pytest = "*"
+ruff = "*"
+
+# Training. Ultralytics from 8.4 has YOLO26. With albumentations installed it
+# also blurs, greys and changes contrast in a few training pictures.
+[pypi-dependencies]
+ultralytics = ">=8.4"
+albumentations = "*"
+
+# conda-forge's torchvision has no Apple GPU version of NMS, the step that
+# drops overlapping guesses. This runs that one step on the CPU instead.
+[activation.env]
+PYTORCH_ENABLE_MPS_FALLBACK = "1"

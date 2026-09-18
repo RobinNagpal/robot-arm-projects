@@ -1,0 +1,18 @@
+# pixi
+.pixi/
+
+# generated images and labels; rebuild with `make data`
+data/
+
+# training runs, and the starting weights Ultralytics downloads
+runs/
+*.pt
+
+# python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# macOS
+.DS_Store
