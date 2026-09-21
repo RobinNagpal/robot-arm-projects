@@ -108,6 +108,9 @@ class Profile:
         """
         limit = self.widest_at if below is None else below
         inside = self.height < limit
+        # Fewer than three samples below the widest point means there is no
+        # room for a waist. That happens when the widest part is the base,
+        # which is a glass this rule does not apply to.
         if inside.sum() < 3:
             return None
 

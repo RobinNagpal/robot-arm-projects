@@ -23,9 +23,7 @@ def test_a_tapered_glass_is_much_narrower_at_the_bottom():
 
 
 def test_a_stemmed_glass_has_a_waist_between_a_wide_bowl_and_a_wide_foot():
-    outline = stemmed(
-        height=0.200, bowl_diameter=0.085, stem_diameter=0.009, foot_diameter=0.070
-    )
+    outline = stemmed(height=0.200, bowl_diameter=0.085, stem_diameter=0.009)
     narrowest = float(outline.radius.min()) * 2
     assert narrowest == pytest.approx(0.009, abs=1e-4)
     # The foot and the bowl are both wider than the stem.
@@ -34,9 +32,7 @@ def test_a_stemmed_glass_has_a_waist_between_a_wide_bowl_and_a_wide_foot():
 
 
 def test_the_widest_point_of_a_stemmed_glass_is_in_the_bowl():
-    outline = stemmed(
-        height=0.200, bowl_diameter=0.085, stem_diameter=0.009, foot_diameter=0.070
-    )
+    outline = stemmed(height=0.200, bowl_diameter=0.085, stem_diameter=0.009)
     widest_at = float(outline.height[int(np.argmax(outline.radius))])
     assert widest_at > 0.5 * outline.total_height
 
@@ -64,3 +60,13 @@ def test_a_family_spreads_across_the_range_and_repeats_for_a_seed():
 def test_an_unknown_kind_is_refused_rather_than_guessed_at():
     with pytest.raises(ValueError):
         build("teacup", height=0.08)
+
+
+def test_a_stemmed_foot_is_never_wider_than_its_bowl():
+    # Drawn independently a foot can come out wider than the bowl, and then the
+    # widest part of the glass is its base, with nothing below it for a
+    # "narrowest below widest" rule to find. Every drawn glass must avoid that.
+    for kind in ("stemmed_glass", "short_stemmed_glass"):
+        for outline, _ in family(kind, 40, seed=5):
+            widest_at = float(outline.height[int(np.argmax(outline.radius))])
+            assert widest_at > 0.5 * outline.total_height

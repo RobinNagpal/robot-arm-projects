@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 from work_cell.glasses.profile import Profile, profile_from_outline
-from work_cell.glasses.shapes import short_stemmed, stemmed, straight, tapered
+from work_cell.glasses.shapes import family, short_stemmed, stemmed, straight, tapered
 
 
 def profile_of(outline):
@@ -25,7 +25,7 @@ def test_a_profile_needs_matching_arrays():
 
 
 def test_a_stemmed_glass_has_a_waist_and_it_is_the_stem():
-    outline = stemmed(height=0.200, bowl_diameter=0.085, stem_diameter=0.009, foot_diameter=0.070)
+    outline = stemmed(height=0.200, bowl_diameter=0.085, stem_diameter=0.009)
     p = profile_of(outline)
     waist = p.waist_at()
     assert waist is not None
@@ -48,12 +48,8 @@ def test_a_tapered_glass_has_no_waist_either():
 
 def test_the_waist_is_found_whatever_the_proportions():
     # A tall thin-stemmed glass and a squat thick-stemmed one, same rule.
-    tall = profile_of(
-        stemmed(height=0.230, bowl_diameter=0.070, stem_diameter=0.006, foot_diameter=0.060)
-    )
-    squat = profile_of(
-        stemmed(height=0.130, bowl_diameter=0.100, stem_diameter=0.014, foot_diameter=0.085)
-    )
+    tall = profile_of(stemmed(height=0.230, bowl_diameter=0.070, stem_diameter=0.006))
+    squat = profile_of(stemmed(height=0.130, bowl_diameter=0.100, stem_diameter=0.014))
     for p, expected in ((tall, 0.006), (squat, 0.014)):
         waist = p.waist_at()
         assert waist is not None
@@ -106,3 +102,13 @@ def test_the_flattest_band_of_a_cone_is_at_the_bottom():
 def test_no_band_is_returned_when_the_search_range_is_too_short():
     p = profile_of(straight(height=0.090, rim_diameter=0.080))
     assert p.flattest_band(within=(0.02, 0.025), height=0.012) is None
+
+
+def test_every_stemmed_glass_in_a_wide_family_has_its_waist_found():
+    # The whole point of the design: one rule, forty different glasses.
+    for kind in ("stemmed_glass", "short_stemmed_glass"):
+        for outline, props in family(kind, 40, seed=1):
+            p = profile_of(outline)
+            waist = p.waist_at()
+            assert waist is not None, f"no waist found on {kind} {props}"
+            assert p.width_at(waist) == pytest.approx(props["stem_diameter"], abs=6e-4)

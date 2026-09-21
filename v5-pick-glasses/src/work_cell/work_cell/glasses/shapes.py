@@ -85,15 +85,22 @@ def stemmed(
     height: float,
     bowl_diameter: float,
     stem_diameter: float,
-    foot_diameter: float,
+    foot_fraction: float = 0.82,
     stem_fraction: float = 0.42,
 ) -> Outline:
     """A bowl on a stem on a foot. A wine glass, a champagne flute.
 
     ``stem_fraction`` is how far up the glass the stem ends, as a fraction of
-    the total height. Everything below the foot's own small height is the foot,
-    everything above the stem is the bowl.
+    the total height. ``foot_fraction`` is how wide the foot is as a fraction
+    of the bowl.
+
+    The foot is measured against the bowl rather than given its own size on
+    purpose. Drawn independently it can come out wider than the bowl, which no
+    wine glass is, and which quietly breaks every rule that looks for the
+    narrowest part *below the widest* — on such a glass the widest part is the
+    foot, and there is nothing below it.
     """
+    foot_diameter = bowl_diameter * foot_fraction
     h = np.linspace(0.0, height, SAMPLES)
     foot_top = 0.05 * height
     stem_top = stem_fraction * height
@@ -120,13 +127,7 @@ def stemmed(
 
 def short_stemmed(height: float, bowl_diameter: float, stem_diameter: float) -> Outline:
     """A stemmed glass with a short, thick stem. An Irish coffee glass."""
-    return stemmed(
-        height,
-        bowl_diameter,
-        stem_diameter,
-        foot_diameter=bowl_diameter * 0.75,
-        stem_fraction=0.22,
-    )
+    return stemmed(height, bowl_diameter, stem_diameter, foot_fraction=0.75, stem_fraction=0.22)
 
 
 # Each kind, and the range every proportion is drawn from. These ranges are the
@@ -148,7 +149,8 @@ KIND_RANGES: dict[str, dict[str, tuple[float, float]]] = {
         "height": (0.130, 0.230),  # a small wine glass up to a large one
         "bowl_diameter": (0.060, 0.100),
         "stem_diameter": (0.006, 0.014),
-        "foot_diameter": (0.055, 0.085),
+        # As a fraction of the bowl, and always under 1: see stemmed().
+        "foot_fraction": (0.70, 0.95),
         "stem_fraction": (0.34, 0.52),
     },
     "short_stemmed_glass": {
