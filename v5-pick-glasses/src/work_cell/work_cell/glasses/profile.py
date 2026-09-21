@@ -20,11 +20,23 @@ from dataclasses import dataclass
 
 import numpy as np
 
-# How far off vertical a wall can lean and still be worth gripping. Two flat
-# pads on a slope push the glass along that slope; on a vertical wall they just
-# press. This is a property of the gripper's pads, not of any glass, so it
+# How far off vertical a wall can lean and still be worth gripping.
+#
+# Two flat pads on a slope push the glass along that slope; on a vertical wall
+# they just press. But a soft pad does not need a perfectly vertical wall — it
+# squashes to fit. The figure that matters is how much it can squash across its
+# own height, which for the silicone pads on this gripper is a little over a
+# millimetre over a pad about 12 mm tall. That is atan(1.2 / 12), near enough
+# six degrees.
+#
+# Setting it tighter than the pad can actually manage has a specific cost:
+# every short glass with a mould taper gets refused, because a 10% taper over
+# 55 mm of height is already more than two degrees. That is a real glass and
+# the gripper can hold it perfectly well.
+#
+# This is a property of the gripper's pads, not of any glass, which is why it
 # lives here rather than in a glass record.
-VERTICAL_TOLERANCE = math.radians(2.0)
+VERTICAL_TOLERANCE = math.radians(6.0)
 
 # Widths are compared after rounding to this, so that measurement noise does
 # not invent a waist in a wall that is actually straight.
