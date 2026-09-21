@@ -1,0 +1,97 @@
+<?xml version="1.0"?>
+<!--
+  The room the pictures are taken in: two lights and a camera, and nothing
+  else. The table, the floor and everything on the table are created by the
+  generator for each picture and removed again after it.
+
+  The simulation is kept paused. The generator changes the scene, then steps
+  the world forward just far enough for the camera to take one picture. That
+  way no picture can be taken halfway through a change.
+-->
+<sdf version="1.9">
+  <world name="shapes">
+
+    <!-- 10 ms steps, and a camera that renders every 100 ms: stepping ten
+         times gives exactly one picture. Nothing moves, so the step size only
+         sets that count. -->
+    <physics name="10ms" type="ignored">
+      <max_step_size>0.01</max_step_size>
+      <real_time_factor>0</real_time_factor>
+    </physics>
+
+    <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"/>
+    <!-- Lets the generator create and remove models, move the camera, and
+         change the lights while the world runs. -->
+    <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"/>
+    <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"/>
+    <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
+      <render_engine>ogre2</render_engine>
+    </plugin>
+
+    <scene>
+      <ambient>0.35 0.35 0.35 1</ambient>
+      <background>0.72 0.74 0.78 1</background>
+      <grid>false</grid>
+    </scene>
+
+    <!-- Both lights are changed for every picture: direction, strength,
+         colour, and whether the sun casts shadows. These values only hold
+         until the first picture. -->
+    <light type="directional" name="sun">
+      <cast_shadows>true</cast_shadows>
+      <pose>0 0 10 0 0 0</pose>
+      <diffuse>0.9 0.9 0.9 1</diffuse>
+      <specular>0.3 0.3 0.3 1</specular>
+      <direction>-0.4 0.3 -0.9</direction>
+    </light>
+    <light type="directional" name="fill">
+      <cast_shadows>false</cast_shadows>
+      <pose>0 0 10 0 0 0</pose>
+      <diffuse>0.3 0.3 0.3 1</diffuse>
+      <specular>0 0 0 1</specular>
+      <direction>0.5 -0.4 -0.8</direction>
+    </light>
+
+    <!--
+      Two cameras in one place. "rgb" takes the picture. "segmentation" sees
+      exactly the same view, but instead of colours it paints each pixel with
+      the label number of the block that covers it, and 0 where no block is.
+      That second image is where every label in the dataset comes from, so a
+      label can never disagree with the picture: a block hidden behind another
+      one is hidden in both.
+
+      They must share their pose, field of view and image size, or the masks
+      would not line up with the pictures.
+    -->
+    <model name="camera">
+      <static>true</static>
+      <pose>0 0 1 0 1.5708 0</pose>
+      <link name="link">
+        <sensor name="rgb" type="camera">
+          <always_on>true</always_on>
+          <update_rate>10</update_rate>
+          <topic>camera/rgb</topic>
+          <camera>
+            <horizontal_fov>1.047</horizontal_fov>
+            <image><width>640</width><height>480</height><format>R8G8B8</format></image>
+            <clip><near>0.02</near><far>10</far></clip>
+            <!-- A little sensor noise, as every real camera has. -->
+            <noise><type>gaussian</type><mean>0</mean><stddev>0.007</stddev></noise>
+          </camera>
+        </sensor>
+        <sensor name="segmentation" type="segmentation">
+          <always_on>true</always_on>
+          <update_rate>10</update_rate>
+          <topic>camera/segmentation</topic>
+          <camera>
+            <segmentation_type>semantic</segmentation_type>
+            <horizontal_fov>1.047</horizontal_fov>
+            <image><width>640</width><height>480</height></image>
+            <clip><near>0.02</near><far>10</far></clip>
+          </camera>
+        </sensor>
+      </link>
+    </model>
+
+  </world>
+</sdf>
