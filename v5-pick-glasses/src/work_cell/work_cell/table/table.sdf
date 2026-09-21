@@ -1,9 +1,11 @@
 <!--
   The table. Its top sits at z = 0.75, which is the plane the arm, the
-  cuboids and table/layout.py all measure from.
+  glasses and table/layout.py all measure from.
 
-  Grey on purpose: the cuboids are the only saturated colours in the cell,
-  and that is what the measuring step keys on to tell them from the table.
+  Grey and plain on purpose. A glass is found by the hole it leaves in the
+  depth picture, and a hole only counts as a glass if there is something to
+  see through it. A patterned table would put edges inside every silhouette
+  and make the measured outline ragged.
 
   world/build.py splices this into the world file at its table marker.
 -->

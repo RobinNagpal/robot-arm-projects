@@ -39,7 +39,7 @@ def generate_launch_description() -> LaunchDescription:
             os.path.join(get_package_share_directory("work_cell"), "launch", "cell.launch.py")
         ),
         launch_arguments={
-            "cuboids": LaunchConfiguration("cuboids"),
+            "glasses": LaunchConfiguration("glasses"),
             "seed": LaunchConfiguration("seed"),
             "gui": LaunchConfiguration("gui"),
             "rviz": LaunchConfiguration("rviz"),
@@ -58,7 +58,7 @@ def generate_launch_description() -> LaunchDescription:
     # inside the process gets to see the robot description as well.
     task = Node(
         package="work_cell",
-        executable="touch_cuboids",
+        executable="pick_glasses",
         output="screen",
         emulate_tty=True,
         condition=IfCondition(LaunchConfiguration("task")),
@@ -67,7 +67,7 @@ def generate_launch_description() -> LaunchDescription:
 
     return LaunchDescription(
         [
-            DeclareLaunchArgument("cuboids", default_value="3"),
+            DeclareLaunchArgument("glasses", default_value="4"),
             DeclareLaunchArgument("seed", default_value="1"),
             DeclareLaunchArgument("gui", default_value="true"),
             DeclareLaunchArgument("rviz", default_value="false"),

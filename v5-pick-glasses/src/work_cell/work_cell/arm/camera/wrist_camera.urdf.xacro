@@ -5,7 +5,7 @@
     An RGB-D camera bolted beside the gripper, looking the same way the fingers
     point. Because it rides on the wrist, pointing the tool at something is the
     same as pointing the camera at it, and the arm can walk the camera around a
-    cuboid to see sides that were hidden from the first viewpoint.
+    glass to see whether it has a handle, which one side-on view cannot show.
 
     Two frames, as ROS expects for a camera:
       wrist_camera_link           x forward, the frame Gazebo renders from

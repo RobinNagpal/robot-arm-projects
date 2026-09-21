@@ -92,7 +92,7 @@ class Arm:
         self._tip_link = tip_link
         # MoveIt's own node picks up the robot description, the SRDF and the
         # planning pipelines from the parameters the launch file supplies.
-        self._moveit = MoveItPy(node_name="cuboid_task_moveit")
+        self._moveit = MoveItPy(node_name="glass_task_moveit")
         self._planner = self._moveit.get_planning_component(group)
         self._model = self._moveit.get_robot_model()
 

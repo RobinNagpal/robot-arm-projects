@@ -8,7 +8,7 @@ planning_scene_monitor_options:
   attached_collision_object_topic: "/moveit_cpp/planning_scene_monitor"
   publish_planning_scene_topic: "/moveit_cpp/publish_planning_scene"
   # Listen to the scene move_group maintains rather than keeping a private one.
-  # The table and the cuboids are added through move_group, and the planner in
+  # The table, the rack and the glasses are added through move_group, and the planner in
   # the task node has to know about them or it will plan straight through them.
   monitored_planning_scene_topic: "/monitored_planning_scene"
   wait_for_initial_state_timeout: 10.0

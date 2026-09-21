@@ -136,8 +136,9 @@
     </light>
 
     <!-- A second, softer light from the other side. One directional light
-         leaves the far side of every cuboid in shadow, and a face that is too
-         dark to read a colour off is a face the perception step loses. -->
+         leaves the far side of every glass in shadow, and a glass standing in
+         shadow is a hole in the depth picture with nothing visible through it,
+         which is exactly what the perception step throws away as background. -->
     <light type="directional" name="fill">
       <cast_shadows>false</cast_shadows>
       <pose>0 0 10 0 0 0</pose>

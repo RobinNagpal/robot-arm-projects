@@ -1,7 +1,13 @@
 """Start the simulated cell: Gazebo, the robot, its controllers and the bridge.
 
-The world file is written fresh on every start, because the cuboids in it are
-random. ``seed`` makes any one arrangement repeatable.
+The world file is written fresh on every start, and so are the glass meshes in
+it. That is not a convenience. The whole project rests on the arm not being
+told how big a glass is, and a mesh shipped with the project would be a glass
+whose size somebody wrote down. Every run draws new proportions, spins them
+into a mesh, and leaves the arm to measure what it finds.
+
+``seed`` makes any one arrangement repeatable, which is what makes a failure
+worth reporting: the same seed puts the same glasses back on the table.
 """
 
 from __future__ import annotations
@@ -27,7 +33,8 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
-from work_cell.cuboids.spawn import random_cuboids
+from work_cell.glasses.spawn import random_glasses
+from work_cell.rack.build import random_rack_pose
 from work_cell.world.build import build_world, read_parts
 
 PACKAGE = "work_cell"
@@ -44,22 +51,47 @@ def robot_description(share: Path) -> str:
 
 
 def write_world(share: Path, count: int, seed: int) -> str:
-    """Assemble the room, the table and this run's cuboids into one world file."""
+    """Assemble the room, the table, the rack and this run's glasses.
+
+    The meshes go in the same temporary directory as the world file, and the
+    world refers to them by absolute path, so the whole run is self-contained
+    and nothing is left behind in the install tree.
+    """
+    import random
+
     world_template, table = read_parts(share)
-    sdf = build_world(world_template, table, random_cuboids(count, seed))
-    path = Path(tempfile.mkdtemp(prefix="work_cell_")) / "cell.sdf"
+    folder = Path(tempfile.mkdtemp(prefix="work_cell_"))
+
+    sdf = build_world(
+        world_template,
+        table,
+        rack_pose=random_rack_pose(random.Random(seed)),
+        glasses=random_glasses(count, seed),
+        mesh_dir=folder,
+    )
+
+    path = folder / "cell.sdf"
     path.write_text(sdf)
     return str(path)
 
 
-def _chain_spawners(*names: str) -> list:
-    """Spawner nodes, each one starting only once the one before it has finished."""
+def _chain_spawners(*names) -> list:
+    """Spawner nodes, each one starting only once the one before it has finished.
+
+    A name may be a tuple, in which case everything after the first item is an
+    extra argument for that spawner. That is how a controller gets loaded
+    without being started.
+    """
     spawners = [
         Node(
             package="controller_manager",
             executable="spawner",
             output="screen",
-            arguments=[name, "--controller-manager", "/controller_manager"],
+            arguments=[
+                *([name] if isinstance(name, str) else list(name)),
+                "--controller-manager",
+                "/controller_manager",
+            ],
         )
         for name in names
     ]
@@ -71,11 +103,11 @@ def _chain_spawners(*names: str) -> list:
 
 def setup(context, *args, **kwargs):
     share = Path(get_package_share_directory(PACKAGE))
-    cuboids = int(LaunchConfiguration("cuboids").perform(context))
+    glasses = int(LaunchConfiguration("glasses").perform(context))
     seed = int(LaunchConfiguration("seed").perform(context))
     gui = LaunchConfiguration("gui").perform(context).lower() in ("true", "1")
 
-    world = write_world(share, cuboids, seed)
+    world = write_world(share, glasses, seed)
 
     # The simulator always runs as a server on its own, and the window, when
     # there is one, is a second process that connects to it. That is not a
@@ -119,10 +151,21 @@ def setup(context, *args, **kwargs):
                 {"use_sim_time": True},
             ],
         ),
-        # One controller at a time. Three spawners racing each other into a
+        # One controller at a time. Spawners racing each other into a
         # controller manager that is still starting up is enough to make one of
         # them try to configure a controller another has already activated.
-        *_chain_spawners("joint_state_broadcaster", "arm_controller", "gripper_controller"),
+        #
+        # The gripper's force controller is loaded but left inactive, because
+        # it wants the same finger joints as the position controller and only
+        # one of them may have them. arm/motion.py activates it when the pads
+        # are on a glass, and hands the joints back to let go.
+        *_chain_spawners(
+            "joint_state_broadcaster",
+            "wrist_force_broadcaster",
+            "arm_controller",
+            "gripper_controller",
+            ("gripper_force_controller", "--inactive"),
+        ),
         Node(
             package="rviz2",
             executable="rviz2",
@@ -146,9 +189,13 @@ def generate_launch_description() -> LaunchDescription:
     return LaunchDescription(
         [
             DeclareLaunchArgument(
-                "cuboids", default_value="3", description="how many cuboids to put on the table"
+                "glasses", default_value="4", description="how many glasses to put on the table"
             ),
-            DeclareLaunchArgument("seed", default_value="1", description="which random arrangement to use"),
+            DeclareLaunchArgument(
+                "seed",
+                default_value="1",
+                description="which set of glasses to make; the same seed gives the same glasses",
+            ),
             DeclareLaunchArgument("gui", default_value="true", description="show the Gazebo window"),
             DeclareLaunchArgument("rviz", default_value="false", description="also open RViz"),
             SetEnvironmentVariable("GZ_SIM_RESOURCE_PATH", resource_path),

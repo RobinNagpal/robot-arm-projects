@@ -26,17 +26,21 @@
   direction: GZ_TO_ROS
 
 # A contact sensor ignores the <topic> given in the model and always publishes
-# under its own full path, so those paths are what have to be named here. Both
-# fingers report onto the one ROS topic: the task only asks whether the
-# fingertip is touching something, not which side of it.
+# under its own full path, so those paths are what have to be named here. The
+# sensors are on the silicone pads rather than on the fingers behind them,
+# because the pads are what actually touch a glass.
+#
+# Both pads report onto the one ROS topic. The task only asks whether anything
+# is touching, and the two moments it asks are the pads meeting a glass and a
+# glass rim meeting the rack, neither of which is a question about sides.
 - ros_topic_name: "/fingertip_contacts"
-  gz_topic_name: "/world/work_cell/model/work_cell/link/left_finger/sensor/left_fingertip_contact/contact"
+  gz_topic_name: "/world/work_cell/model/work_cell/link/left_pad/sensor/left_pad_contact/contact"
   ros_type_name: "ros_gz_interfaces/msg/Contacts"
   gz_type_name: "gz.msgs.Contacts"
   direction: GZ_TO_ROS
 
 - ros_topic_name: "/fingertip_contacts"
-  gz_topic_name: "/world/work_cell/model/work_cell/link/right_finger/sensor/right_fingertip_contact/contact"
+  gz_topic_name: "/world/work_cell/model/work_cell/link/right_pad/sensor/right_pad_contact/contact"
   ros_type_name: "ros_gz_interfaces/msg/Contacts"
   gz_type_name: "gz.msgs.Contacts"
   direction: GZ_TO_ROS
