@@ -12,6 +12,7 @@ than where it was aimed.
 | [`v2-assemble-table`](v2-assemble-table) | Stands four legs up and lays a table top on them | Working |
 | [`v3-turn-top-flat`](v3-turn-top-flat) | Lifts a table top straight up out of two holders and turns it flat before building the table | Plans only |
 | [`v4-classification-shapes`](v4-classification-shapes) | Names the shape of each block on a table — triangle, square, rhombus, octagon… — with a YOLO model trained on Gazebo pictures | Dataset generator working; model not trained yet |
+| [`v5-learn-pick-place`](v5-learn-pick-place) | Picks up an irregular block and places it on a target, with the movement learned by an ACT policy from scripted demonstrations in MuJoCo, then run unchanged in Gazebo | Working: 74% on unseen blocks in MuJoCo; Gazebo runs ready |
 | [`v6-two-arms-jenga`](v6-two-arms-jenga) | Two arms, programmed two different ways, play Jenga against each other | Plans only |
 
 Each folder's name is its version, then what it does. The projects run
@@ -74,6 +75,20 @@ never trains on, to measure how far it generalises. Training, the baseline and
 the arm come next.
 
 → [`v4-classification-shapes/README.md`](v4-classification-shapes/README.md)
+
+## v5 — learn to pick and place
+
+An irregular block lies somewhere on the table and a red target somewhere
+else; the arm picks the block up and sets it down on the target. It is the
+first project where the movement is learned rather than written: a scripted
+expert does the job a few hundred times, every joint angle it commands is
+recorded, and an ACT policy (Action Chunking with Transformers, from
+LeRobot) learns to do the same from the arm's joint angles and where the
+block is. The block is found with plain geometry from a depth camera. It
+runs in MuJoCo instead of Gazebo, because learning from demonstrations needs
+hundreds of fast, repeatable episodes.
+
+→ [`v5-learn-pick-place/README.md`](v5-learn-pick-place/README.md)
 
 ## v6 — two arms play Jenga
 

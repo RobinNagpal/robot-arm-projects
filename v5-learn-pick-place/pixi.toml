@@ -1,0 +1,44 @@
+[workspace]
+name = "learn-pick-place"
+version = "0.1.0"
+description = "A UR5e in MuJoCo picks up an irregular block and places it on a target; a scripted expert records demonstrations and ACT learns the movement from them"
+channels = ["conda-forge"]
+platforms = ["linux-64", "osx-arm64"]
+
+[dependencies]
+python = "3.12.*"
+pytest = "*"
+ruff = "*"
+# pytest pulls in packaging from conda-forge; LeRobot 0.6.1 needs it below 26.
+packaging = ">=24.2,<26"
+
+# Gazebo Harmonic, for running the trained policy in a second simulator
+# (`make gazebo`). The same version and the same no-ROS Python bindings as v4:
+# the server runs as its own process, and Python only talks to it.
+gz-sim8 = "*"
+gz-transport13-python = "*"
+gz-msgs10-python = "*"
+# Gazebo's Python bindings pull NumPy in from conda-forge; LeRobot 0.6.1
+# needs it below 2.3.
+numpy = ">=2.0,<2.3"
+
+# Everything else from PyPI. LeRobot pins its own PyTorch, NumPy and OpenCV
+# from PyPI, and mixing those with conda-forge builds of the same libraries
+# loads two copies of OpenMP into one process, which crashes.
+[pypi-dependencies]
+mujoco = ">=3.3"
+# LeRobot brings ACT, its training script and the dataset format. Pinned
+# exactly: its dataset and policy APIs change between minor versions.
+lerobot = { version = "==0.6.1", extras = ["training"] }
+
+# A few PyTorch operations have no Apple GPU version yet; run those on the CPU.
+[activation.env]
+PYTORCH_ENABLE_MPS_FALLBACK = "1"
+
+# conda-forge's NumPy defaults to OpenBLAS built with OpenMP, and PyTorch from
+# PyPI brings its own OpenMP: two copies in one process abort it ("OMP: Error
+# #15"). The OpenBLAS build that uses plain threads needs no OpenMP. (Apple's
+# Accelerate also works, but prints false overflow warnings on every matmul.)
+[target.osx-arm64.dependencies]
+libblas = { version = "*", build = "*openblas" }
+libopenblas = { version = "*", build = "pthreads*" }

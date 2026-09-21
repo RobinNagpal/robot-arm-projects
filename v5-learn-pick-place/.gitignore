@@ -1,0 +1,23 @@
+# pixi
+.pixi/
+
+# robot models downloaded by `make assets`
+assets/
+
+# recorded demonstrations; rebuild with `make record`
+data/
+
+# training runs and checkpoints; rebuild with `make train`
+outputs/
+
+# videos and pictures written by `make view` and `make evaluate`
+figures/
+
+# python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# macOS
+.DS_Store
