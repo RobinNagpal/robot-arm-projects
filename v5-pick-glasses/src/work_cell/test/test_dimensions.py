@@ -6,7 +6,6 @@ an opening wider than the gripper, both fail at run time in a way that looks
 like a planning problem.
 """
 
-import pytest
 from work_cell.arm import dimensions
 from work_cell.glasses import spec
 

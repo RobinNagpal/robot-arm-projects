@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from work_cell.glasses.shapes import KIND_RANGES, build, family, straight, stemmed, tapered
+from work_cell.glasses.shapes import KIND_RANGES, build, family, stemmed, straight, tapered
 
 
 def test_an_outline_starts_at_the_table_and_ends_at_the_rim():

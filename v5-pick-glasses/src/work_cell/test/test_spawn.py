@@ -2,6 +2,7 @@ import math
 
 import numpy as np
 import pytest
+from work_cell.glasses.shapes import stemmed, straight
 from work_cell.glasses.spawn import (
     MIN_SEPARATION,
     collision_cylinders,
@@ -9,10 +10,8 @@ from work_cell.glasses.spawn import (
     random_glasses,
     revolve,
 )
-from work_cell.glasses.shapes import stemmed, straight
 from work_cell.glasses.spec import LIBRARY
 from work_cell.rack.layout import GLASS_ZONE, TABLE_TOP_Z
-
 
 # ------------------------------------------------------------ the layout
 

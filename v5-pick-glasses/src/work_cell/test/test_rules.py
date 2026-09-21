@@ -53,7 +53,8 @@ def test_a_tapered_glass_is_gripped_far_below_its_rim_width():
 
 
 def test_a_short_stemmed_glass_is_gripped_on_its_short_stem():
-    grip = grip_for(short_stemmed(height=0.150, bowl_diameter=0.070, stem_diameter=0.015), "short_stemmed_glass")
+    outline = short_stemmed(height=0.150, bowl_diameter=0.070, stem_diameter=0.015)
+    grip = grip_for(outline, "short_stemmed_glass")
     assert grip.opening == pytest.approx(0.015, abs=8e-4)
     assert grip.height < 0.4 * 0.150
 

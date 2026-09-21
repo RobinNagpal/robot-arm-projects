@@ -22,10 +22,28 @@ from dataclasses import dataclass
 
 import numpy as np
 
-# Where the table top is, and where the arm is bolted down. The table is part
-# of the cell rather than something measured, so these are known.
-TABLE_TOP_Z = 0.75
-ROBOT_BASE = np.array([0.0, 0.0, TABLE_TOP_Z])
+from ..table.layout import ROBOT_BASE, TABLE_TOP_Z
+
+# Where the table top is and where the arm is bolted down both come from
+# table/layout.py, which is the one place the cell's own measurements live.
+# They are re-exported here because everything about the rack is measured from
+# them.
+__all__ = [
+    "ARM_TILT_ACCURACY_DEG",
+    "GLASS_ZONE",
+    "RACK_BASE_HEIGHT",
+    "ROBOT_BASE",
+    "SLOT_COUNT",
+    "SLOT_SPACING",
+    "TABLE_TOP_Z",
+    "Slot",
+    "fill_order",
+    "needs_empty_neighbour",
+    "slots_consumed",
+    "slots_from_marker",
+    "tilt_budget_deg",
+    "usable_slots",
+]
 
 # The rack's own measurements. Six slots in a row.
 SLOT_COUNT = 6

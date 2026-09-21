@@ -121,7 +121,7 @@ def revolve(outline: Outline, segments: int = 48) -> tuple[np.ndarray, np.ndarra
     rings = len(outline.height)
 
     vertices = np.empty((rings * segments, 3), dtype=float)
-    for ring, (height, radius) in enumerate(zip(outline.height, outline.radius)):
+    for ring, (height, radius) in enumerate(zip(outline.height, outline.radius, strict=True)):
         vertices[ring * segments : (ring + 1) * segments] = np.column_stack(
             (radius * np.cos(angles), radius * np.sin(angles), np.full(segments, height))
         )
@@ -167,7 +167,8 @@ def collision_cylinders(outline: Outline, slices: int = COLLISION_SLICES) -> lis
     """
     edges = np.linspace(0.0, outline.total_height, slices + 1)
     stack: list[tuple[float, float, float]] = []
-    for bottom, top in zip(edges, edges[1:]):
+    # Pairwise over the edges, so the second list is one shorter on purpose.
+    for bottom, top in zip(edges, edges[1:], strict=False):
         inside = (outline.height >= bottom) & (outline.height <= top)
         if not inside.any():
             continue

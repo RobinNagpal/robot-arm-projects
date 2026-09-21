@@ -1,8 +1,14 @@
 # The controllers ros2_control loads inside Gazebo.
 #
-# Both moving groups use the same trajectory controller: it takes a list of
-# joint positions with times against them and interpolates between them, which
-# is exactly what MoveIt produces.
+# The arm uses one trajectory controller: it takes joint positions with times
+# against them and interpolates between them, which is what MoveIt produces.
+#
+# The gripper has two controllers, and only one of them is running at a time.
+# Opening the fingers and closing them to a measured width is a position job.
+# Holding a glass is not: what matters then is how hard the pads press, and a
+# position controller cannot say that. So the task swaps to the effort
+# controller once the pads are on the glass, and swaps back to let go.
+# arm/motion.py does the swapping, through /controller_manager/switch_controller.
 
 controller_manager:
   ros__parameters:
@@ -11,11 +17,17 @@ controller_manager:
     joint_state_broadcaster:
       type: joint_state_broadcaster/JointStateBroadcaster
 
+    wrist_force_broadcaster:
+      type: force_torque_sensor_broadcaster/ForceTorqueSensorBroadcaster
+
     arm_controller:
       type: joint_trajectory_controller/JointTrajectoryController
 
     gripper_controller:
       type: joint_trajectory_controller/JointTrajectoryController
+
+    gripper_force_controller:
+      type: forward_command_controller/ForwardCommandController
 
 arm_controller:
   ros__parameters:
@@ -42,9 +54,24 @@ gripper_controller:
     state_interfaces:
       - position
       - velocity
-    # Closing on a cuboid always stops the fingers short of the position they
-    # were asked for. That is the grip, not a fault, so no tolerance is set on
+    # Closing on a glass always stops the fingers short of the position they
+    # were asked for. That is contact, not a fault, so nothing is required of
     # where the fingers end up.
     constraints:
       stopped_velocity_tolerance: 0.0
       goal_time: 0.0
+
+gripper_force_controller:
+  ros__parameters:
+    joints:
+      - left_finger_joint
+      - right_finger_joint
+    interface_name: effort
+
+wrist_force_broadcaster:
+  ros__parameters:
+    sensor_name: wrist_force
+    # The reading is in the gripper's own frame, so its z axis is the direction
+    # the gripper reaches in. A glass hanging below the fingers pulls along it.
+    frame_id: gripper_body
+    topic_name: wrist_force

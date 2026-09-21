@@ -210,7 +210,7 @@ class Profile:
         leans = self.slope()[inside]
 
         best_start, best_lean = None, math.inf
-        for index, start_height in enumerate(heights):
+        for start_height in heights:
             end_height = start_height + height
             if end_height > heights[-1]:
                 break

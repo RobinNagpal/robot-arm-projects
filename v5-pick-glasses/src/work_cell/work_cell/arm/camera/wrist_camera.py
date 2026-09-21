@@ -12,6 +12,7 @@ import threading
 import time
 from dataclasses import dataclass
 
+import cv2
 import numpy as np
 import rclpy
 from cv_bridge import CvBridge
@@ -22,9 +23,16 @@ from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import CameraInfo, Image
 from tf2_ros import Buffer, TransformListener
 
-from ...cuboids.perception import Intrinsics
+from ...glasses.perception import Intrinsics
 from ...table.layout import WORLD_FRAME
 from ...transforms import transform_to_matrix
+
+# The marker glued to the middle of the rack base. A 4x4 dictionary is the
+# coarsest ArUco family, which is what to use when there is only one marker to
+# tell apart from nothing: bigger squares read reliably from further away.
+MARKER_DICTIONARY = cv2.aruco.DICT_4X4_50
+MARKER_ID = 0
+MARKER_SIZE = 0.040
 
 
 @dataclass(frozen=True)
@@ -35,6 +43,40 @@ class View:
     depth: np.ndarray
     intrinsics: Intrinsics
     camera_to_world: np.ndarray
+
+    def to_world(self, column: float, row: float, z: float) -> np.ndarray:
+        """Where a pixel meets the horizontal plane at height ``z``.
+
+        A pixel on its own is a ray, not a point: everything along it looks the
+        same. Saying which height the thing is at picks one point off that ray,
+        and here that height is the table top, which is known.
+
+        This is the only way to place a glass from above, because a depth
+        camera returns nothing where a glass is. The plane does the job the
+        missing depth reading would have done.
+        """
+        # The ray, in the camera's own frame: x right, y down, z forwards.
+        direction = np.array(
+            [
+                (column - self.intrinsics.cx) / self.intrinsics.fx,
+                (row - self.intrinsics.cy) / self.intrinsics.fy,
+                1.0,
+            ]
+        )
+        eye = self.camera_to_world[:3, 3]
+        ray = self.camera_to_world[:3, :3] @ direction
+
+        if abs(ray[2]) < 1e-9:
+            raise ValueError("this pixel looks along the plane, so it never meets it")
+        return eye + ray * ((z - eye[2]) / ray[2])
+
+
+@dataclass(frozen=True)
+class Marker:
+    """The marker on the rack base: where it is and which way it faces."""
+
+    position: np.ndarray
+    yaw: float
 
 
 class CaptureTimeout(RuntimeError):
@@ -123,6 +165,41 @@ class WristCamera:
             time.sleep(0.02)
 
         raise CaptureTimeout(f"no RGB-D frame within {timeout:.0f}s (messages so far: {self._counts})")
+
+    def capture_marker(self, table_z: float, timeout: float = 10.0) -> Marker | None:
+        """Find the rack, by reading the marker printed on its base.
+
+        The rack is one object whose shape never changes, so a single reading
+        of this marker places all six slots. It is read from a picture rather
+        than written down because the rack is put on the table by hand and is
+        never in quite the same place twice.
+
+        Returns None when the marker is not in shot, which is a real answer:
+        there is then nowhere to put anything, and the run should say so rather
+        than guess.
+        """
+        view = self.capture(timeout)
+        grey = cv2.cvtColor(view.rgb, cv2.COLOR_RGB2GRAY)
+        detector = cv2.aruco.ArucoDetector(
+            cv2.aruco.getPredefinedDictionary(MARKER_DICTIONARY),
+            cv2.aruco.DetectorParameters(),
+        )
+        corners, ids, _ = detector.detectMarkers(grey)
+        if ids is None or MARKER_ID not in ids.flatten().tolist():
+            return None
+
+        square = corners[ids.flatten().tolist().index(MARKER_ID)].reshape(4, 2)
+
+        # The marker lies flat on the rack base, so its corners are all at a
+        # known height and the plane does the work a pose estimate would.
+        # Estimating the full 6-DOF pose of a 40 mm square from one camera is
+        # famously twitchy about which way it is tilted; here it cannot be
+        # tilted at all, so that failure mode is designed out rather than
+        # filtered out.
+        world = np.array([view.to_world(x, y, table_z) for x, y in square])
+
+        along = (world[1] - world[0]) + (world[2] - world[3])
+        return Marker(position=world.mean(axis=0), yaw=float(np.arctan2(along[1], along[0])))
 
     def _build_view(self, rgb: Image, depth: Image, info: CameraInfo) -> View:
         transform = self._tf_buffer.lookup_transform(

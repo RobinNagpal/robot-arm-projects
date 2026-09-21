@@ -73,7 +73,7 @@ def test_the_decision_agrees_with_the_budget_it_is_based_on():
 def test_six_slots_are_placed_evenly_about_the_marker():
     slots = slots_from_marker(np.array([0.5, 0.3, 0.77]), marker_yaw=0.0)
     assert len(slots) == SLOT_COUNT
-    gaps = [float(np.linalg.norm(b.centre - a.centre)) for a, b in zip(slots, slots[1:])]
+    gaps = [float(np.linalg.norm(b.centre - a.centre)) for a, b in zip(slots, slots[1:], strict=False)]
     assert gaps == pytest.approx([SLOT_SPACING] * (SLOT_COUNT - 1))
 
 

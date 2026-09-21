@@ -48,9 +48,22 @@ LIFT_HEIGHT = 0.18
 # glasses/perception.py.
 MEASURE_STANDOFF = 0.30
 
+# How high above the table the wrist camera aims when measuring a glass from
+# the side. It is a fixed height rather than half the glass's own height,
+# because the overhead view cannot tell how tall a glass is — that is exactly
+# what the side view is for. Aiming here keeps anything from a 60 mm tumbler to
+# a 240 mm flute inside the frame at MEASURE_STANDOFF.
+MEASURE_VIEW_HEIGHT = 0.12
+
 # How far the glass is lifted before it is weighed. Clear of the table, and low
 # enough that setting it back down is nothing.
 WEIGH_LIFT = 0.010
+
+# How high above the rack the inverted glass is brought before it starts
+# feeling its way down. Big enough to clear an error in the measured height,
+# small enough that the descent is quick. It must stay under the descent limit
+# in arm/motion.py, or a correctly placed glass would be reported as missing.
+PLACE_CLEARANCE = 0.030
 
 # How far the glass is tilted, slowly, to find out whether it is slipping
 # before the full turn is attempted.

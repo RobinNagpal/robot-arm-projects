@@ -1,9 +1,8 @@
 import random
-from pathlib import Path
 
 import pytest
 from work_cell.glasses.spawn import random_glasses
-from work_cell.rack.build import PEG_HEIGHT, random_rack_pose, rack_sdf
+from work_cell.rack.build import PEG_HEIGHT, rack_sdf, random_rack_pose
 from work_cell.rack.layout import SLOT_COUNT
 from work_cell.world.build import build_world
 

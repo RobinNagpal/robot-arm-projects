@@ -2,23 +2,32 @@
 <robot xmlns:xacro="http://wiki.ros.org/xacro">
 
   <!--
-    A two-finger parallel gripper.
+    A two-finger parallel gripper with soft pads, and a force sensor at the
+    wrist.
 
-    Both fingers are driven independently rather than one mimicking the other,
-    because a mimic joint has to be handled by the simulated hardware as well
-    as by the model, and two joints commanded to the same number needs nothing
-    special from anybody. Closed, the two fingers meet and act as a single
-    blunt tip, which is what touches the face of a cuboid.
+    Three things about this gripper exist because it handles glass.
+
+    The pads are silicone rather than bare metal. A rigid pad touches a curved
+    glass wall at one point, and all of the grip force goes through that point.
+    A soft pad spreads over a small patch instead, which both holds better and
+    is what makes a slightly sloping wall safe to grip: the pad conforms to the
+    slope rather than sliding off it. The 6 degree figure in
+    glasses/profile.py comes from how much slope a 12 mm pad can take up.
+
+    The fingers are driven by effort as well as by position. Position alone
+    cannot hold a glass: the controller would keep driving towards a number the
+    glass is in the way of, and a thin-walled glass loses. Squeezing to a
+    commanded force is how much of the squeeze is decided, and
+    glasses/force.py decides how much.
+
+    A force sensor sits between the flange and the gripper. It is how the arm
+    finds out what a glass really weighs, which no camera can tell it, and how
+    it knows the rack has taken the weight before the fingers open.
 
     Along the tool's z axis:
       0.000  tool0, the flange
       0.050  the fingers start
       0.170  the fingertips
-
-    The fingers are long on purpose. To touch the side of a tall box the arm
-    comes in from above at an angle, and short fingers would bring the body of
-    the gripper down onto the top of the box before the fingertip reached the
-    face.
   -->
 
   <xacro:macro name="parallel_gripper" params="prefix parent">
@@ -26,10 +35,15 @@
     <xacro:property name="body_size" value="0.09"/>
     <xacro:property name="body_length" value="0.05"/>
     <xacro:property name="finger_length" value="0.12"/>
-    <xacro:property name="finger_thickness" value="0.012"/>
+    <xacro:property name="finger_thickness" value="0.010"/>
     <xacro:property name="finger_width" value="0.03"/>
-    <!-- Half the fingers' thickness, so travel 0 has them just touching. -->
-    <xacro:property name="finger_home" value="${finger_thickness / 2}"/>
+    <!-- The silicone pad on the inside face of each finger. Its height is what
+         decides how much upright wall a grip needs, which is PAD_HEIGHT in
+         arm/dimensions.py. -->
+    <xacro:property name="pad_thickness" value="0.004"/>
+    <xacro:property name="pad_height" value="0.014"/>
+    <!-- Half of finger plus pad, so travel 0 has the two pads just touching. -->
+    <xacro:property name="finger_home" value="${(finger_thickness + 2 * pad_thickness) / 2}"/>
 
     <link name="${prefix}gripper_body">
       <visual>
@@ -48,11 +62,28 @@
       </inertial>
     </link>
 
+    <!-- The mount is where the force sensor reads. It has to be a real joint
+         for Gazebo to put a sensor on it, which is why the gripper is not
+         simply welded to the flange. -->
     <joint name="${prefix}gripper_mount" type="fixed">
       <parent link="${parent}"/>
       <child link="${prefix}gripper_body"/>
       <origin xyz="0 0 0"/>
     </joint>
+
+    <gazebo reference="${prefix}gripper_mount">
+      <sensor name="wrist_force" type="force_torque">
+        <always_on>true</always_on>
+        <update_rate>100</update_rate>
+        <force_torque>
+          <!-- Reported in the frame of the link below the joint, which is the
+               gripper. That is the frame the arm reasons in: "how hard is the
+               thing I am holding pulling along my own z axis". -->
+          <frame>child</frame>
+          <measure_direction>child_to_parent</measure_direction>
+        </force_torque>
+      </sensor>
+    </gazebo>
 
     <xacro:macro name="finger" params="side reflect">
       <link name="${prefix}${side}_finger">
@@ -77,47 +108,75 @@
         <child link="${prefix}${side}_finger"/>
         <origin xyz="0 ${reflect * finger_home} ${body_length}"/>
         <axis xyz="0 ${reflect} 0"/>
-        <!-- 25 N is the grip. It is far more than the few newtons needed to
-             hold a wooden block against gravity, and far less than a finger
-             driven at full strength into a box it cannot squash, which sends
-             the box shooting out sideways. -->
-        <limit lower="0.0" upper="0.04" effort="25.0" velocity="0.1"/>
+        <!-- 25 N is what the finger can push with at most. The grip actually
+             used is commanded run by run and is usually a tenth of this: see
+             glasses/force.py, where it is worked out from the weight of the
+             glass and capped by what its walls can take. -->
+        <limit lower="0.0" upper="0.0475" effort="25.0" velocity="0.1"/>
+      </joint>
+
+      <!-- The pad. A separate link so that it can have silicone's contact
+           properties while the finger behind it stays stiff. -->
+      <link name="${prefix}${side}_pad">
+        <visual>
+          <origin xyz="0 0 0"/>
+          <geometry><box size="${finger_width} ${pad_thickness} ${pad_height}"/></geometry>
+          <material name="pad_black"><color rgba="0.1 0.1 0.12 1"/></material>
+        </visual>
+        <collision>
+          <origin xyz="0 0 0"/>
+          <geometry><box size="${finger_width} ${pad_thickness} ${pad_height}"/></geometry>
+        </collision>
+        <inertial>
+          <mass value="0.005"/>
+          <inertia ixx="1.0e-7" ixy="0" ixz="0" iyy="1.0e-7" iyz="0" izz="1.0e-7"/>
+        </inertial>
+      </link>
+
+      <!-- At the fingertip end, on the inside face. -->
+      <joint name="${prefix}${side}_pad_mount" type="fixed">
+        <parent link="${prefix}${side}_finger"/>
+        <child link="${prefix}${side}_pad"/>
+        <origin xyz="0 ${-reflect * (finger_thickness + pad_thickness) / 2}
+                     ${finger_length - pad_height / 2}"/>
       </joint>
     </xacro:macro>
 
     <xacro:finger side="left" reflect="1"/>
     <xacro:finger side="right" reflect="-1"/>
 
-    <!-- Grip needs friction, and a cuboid squeezed between two frictionless
-         plates just squirts out. -->
-    <xacro:macro name="finger_surface" params="link">
+    <!-- Silicone on glass. High friction, and soft: kp is two orders of
+         magnitude below the rigid finger, which is what lets the pad flatten
+         against a curved wall instead of touching it at one point. -->
+    <xacro:macro name="pad_surface" params="link">
       <gazebo reference="${link}">
-        <mu1>1.6</mu1>
-        <mu2>1.6</mu2>
-        <kp>1e6</kp>
-        <kd>100.0</kd>
+        <mu1>1.9</mu1>
+        <mu2>1.9</mu2>
+        <kp>1e4</kp>
+        <kd>50.0</kd>
+        <minDepth>0.0005</minDepth>
       </gazebo>
     </xacro:macro>
-    <xacro:finger_surface link="${prefix}left_finger"/>
-    <xacro:finger_surface link="${prefix}right_finger"/>
+    <xacro:pad_surface link="${prefix}left_pad"/>
+    <xacro:pad_surface link="${prefix}right_pad"/>
 
-    <!-- Contact sensors on the fingers. They are what turns "the arm went to
-         where it calculated the face centre is" into "the arm felt the face".
-         Both fingers carry one, because which of the two lands on a face first
-         depends on how the box happens to be sitting. -->
-    <xacro:macro name="finger_contact" params="side">
-      <gazebo reference="${prefix}${side}_finger">
-        <sensor name="${side}_fingertip_contact" type="contact">
+    <!-- Contact sensors on the pads. They are what turns "the arm went to
+         where it calculated the grip height is" into "the pads are on the
+         glass", and they are also what stops the descent into a rack slot,
+         since the rim touching down is a contact and nothing else is. -->
+    <xacro:macro name="pad_contact" params="side">
+      <gazebo reference="${prefix}${side}_pad">
+        <sensor name="${side}_pad_contact" type="contact">
           <always_on>true</always_on>
           <update_rate>60</update_rate>
           <contact>
-            <collision>${prefix}${side}_finger_collision</collision>
+            <collision>${prefix}${side}_pad_collision</collision>
           </contact>
         </sensor>
       </gazebo>
     </xacro:macro>
-    <xacro:finger_contact side="left"/>
-    <xacro:finger_contact side="right"/>
+    <xacro:pad_contact side="left"/>
+    <xacro:pad_contact side="right"/>
 
   </xacro:macro>
 </robot>

@@ -57,6 +57,33 @@
     </joint>
   </xacro:macro>
 
+  <!--
+    The fingers offer two ways of being commanded, and the task uses both.
+
+    Position is for opening the gripper and for closing it to a width the
+    measurement has worked out. Effort is for holding: once the pads are on the
+    glass, what matters is how hard they press, and a position controller
+    cannot express that. It would keep driving towards a number the glass is in
+    the way of.
+
+    Only one controller may hold a joint at a time, so the two are swapped
+    between during the run. arm/motion.py does the swapping.
+  -->
+  <xacro:macro name="finger_joint" params="name initial:=0.0">
+    <joint name="${name}">
+      <command_interface name="position"/>
+      <command_interface name="effort">
+        <param name="min">-25.0</param>
+        <param name="max">25.0</param>
+      </command_interface>
+      <state_interface name="position">
+        <param name="initial_value">${initial}</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+  </xacro:macro>
+
   <ros2_control name="work_cell_system" type="system">
     <hardware>
       <plugin>gz_ros2_control/GazeboSimSystem</plugin>
@@ -70,8 +97,21 @@
     <xacro:position_joint name="wrist_2_joint" initial="-1.5708"/>
     <xacro:position_joint name="wrist_3_joint" initial="0.0"/>
 
-    <xacro:position_joint name="left_finger_joint" initial="0.04"/>
-    <xacro:position_joint name="right_finger_joint" initial="0.04"/>
+    <xacro:finger_joint name="left_finger_joint" initial="0.0475"/>
+    <xacro:finger_joint name="right_finger_joint" initial="0.0475"/>
+
+    <!-- The wrist force sensor, as ros2_control sees it. The broadcaster reads
+         these and publishes a WrenchStamped; the sensor itself is declared on
+         the gripper mount in arm/gripper.urdf.xacro. -->
+    <sensor name="wrist_force">
+      <state_interface name="force.x"/>
+      <state_interface name="force.y"/>
+      <state_interface name="force.z"/>
+      <state_interface name="torque.x"/>
+      <state_interface name="torque.y"/>
+      <state_interface name="torque.z"/>
+      <param name="frame_id">gripper_body</param>
+    </sensor>
   </ros2_control>
 
   <gazebo>
