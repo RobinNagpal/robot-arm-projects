@@ -1,0 +1,39 @@
+<!--
+  One glass. world/build.py fills in the blanks and splices as many copies of
+  this as the run asks for into the world file.
+
+  The collision shape is a stack of cylinders rather than the visual mesh, and
+  that is deliberate. A detailed mesh makes contact slow and unstable, and a
+  thin rigid shell against rigid fingers is already close to the worst case for
+  a physics engine. The stack is generated from the same outline as the mesh,
+  so the two agree to within a millimetre without the solver having to work at
+  it.
+
+  The friction number is what lets the pads hold a glass rather than have it
+  slide down between them. It is high because the pads are silicone; see
+  glasses/force.py, where the same figure sets the grip force.
+-->
+    <model name="{name}">
+      <pose>{x:.4f} {y:.4f} {z:.4f} 0 0 {yaw:.4f}</pose>
+      <link name="body">
+        <inertial>
+          <mass>{mass:.4f}</mass>
+          <inertia>
+            <ixx>{ixx:.6f}</ixx><iyy>{iyy:.6f}</iyy><izz>{izz:.6f}</izz>
+            <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+          </inertia>
+        </inertial>
+{collisions}
+        <visual name="visual">
+          <geometry><mesh><uri>{mesh_uri}</uri></mesh></geometry>
+          <material>
+            <!-- Glass: mostly transparent, which is what makes the depth
+                 camera useless on it and the silhouette the only way in. -->
+            <ambient>0.80 0.85 0.88 0.25</ambient>
+            <diffuse>0.80 0.85 0.88 0.25</diffuse>
+            <specular>0.90 0.90 0.90 1</specular>
+          </material>
+          <transparency>0.75</transparency>
+        </visual>
+      </link>
+    </model>

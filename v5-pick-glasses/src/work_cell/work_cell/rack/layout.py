@@ -33,8 +33,9 @@ SLOT_SPACING = 0.100
 RACK_BASE_HEIGHT = 0.020
 
 # Where the glasses start out, as a rectangle on the table: x from, x to,
-# y from, y to.
-GLASS_ZONE = (0.35, 0.65, -0.28, 0.02)
+# y from, y to. Sized so that half a dozen glasses fit without crowding each
+# other, and so that all of it is inside a UR5e's reach from the table edge.
+GLASS_ZONE = (0.34, 0.74, -0.34, 0.16)
 
 # How much tilt the arm can be relied on to hold during the descent. A slot
 # that would demand better than this from a particular glass is a slot that
