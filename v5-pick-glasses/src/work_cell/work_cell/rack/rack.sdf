@@ -1,0 +1,49 @@
+<!--
+  The drying rack: a flat base with six pegs standing up from it, and an
+  AprilTag printed on the base so the arm can find it.
+
+  The rack is one object that does not change, so its measurements live here
+  and in rack/layout.py, which have to agree. Where it stands on the table does
+  not live here: world/build.py drops it wherever the run puts it, and the arm
+  finds it again by reading the tag.
+
+  It is deliberately light. The arm lowers a glass onto it until the force
+  sensor says the rim has touched, and a heavy rigid rack would let a
+  mis-measured descent push hard before anything noticed.
+-->
+    <model name="drying_rack">
+      <pose>{x:.4f} {y:.4f} {z:.4f} 0 0 {yaw:.4f}</pose>
+      <static>false</static>
+      <link name="base">
+        <inertial>
+          <mass>0.4</mass>
+          <inertia>
+            <ixx>0.004</ixx><iyy>0.001</iyy><izz>0.005</izz>
+            <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+          </inertia>
+        </inertial>
+        <collision name="collision">
+          <geometry><box><size>0.140 {length:.4f} {base_height:.4f}</size></box></geometry>
+          <surface>
+            <friction><ode><mu>1.0</mu><mu2>1.0</mu2></ode></friction>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.140 {length:.4f} {base_height:.4f}</size></box></geometry>
+          <material>
+            <ambient>0.15 0.18 0.22 1</ambient>
+            <diffuse>0.15 0.18 0.22 1</diffuse>
+          </material>
+        </visual>
+        <!-- The marker the arm finds the rack by. Flat on the base, facing up. -->
+        <visual name="marker">
+          <pose>0 0 {marker_z:.4f} 0 0 0</pose>
+          <geometry><box><size>0.050 0.050 0.0005</size></box></geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+          </material>
+        </visual>
+{pegs}
+      </link>
+    </model>
