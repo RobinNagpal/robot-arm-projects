@@ -187,14 +187,18 @@ class PickGlassesTask:
             target = min(found, key=lambda g: float(np.linalg.norm(g.position - ROBOT_BASE)))
             self._log.info(f"--- {target.name} ---")
 
-            # The planner is told about every glass except the one being
-            # reached for. A glass it believes is solid is a glass it will not
-            # let the fingers approach.
+            # Every glass goes in, the one being reached for included. It only
+            # comes out at the last moment, in _pick_up, once the arm is lined
+            # up above it and the one move left is straight down the tool's own
+            # axis. Leaving it out from here instead means every move of the
+            # approach — carrying the camera round it, hunting for a way to
+            # hold it — is planned as though it were not there, and the arm
+            # shoves it across the table or knocks it over before the fingers
+            # ever close.
             self._scene.set_glasses(
                 {
                     other.name: (other.position, other.rough_width, TALLEST_GLASS)
                     for other in found
-                    if other.name != target.name
                 }
             )
 
@@ -251,9 +255,6 @@ class PickGlassesTask:
             moved = float(np.linalg.norm((foot - target.position)[:2]))
             self._log.info(f"the side view puts it {moved * 1000:.0f} mm from where the survey did")
             target = replace(target, position=foot)
-            self._log.warning(
-                f"DBG corrected position {np.round(target.position, 4).tolist()}"
-            )
         self._log.info(
             f"measured {profile.total_height * 1000:.0f} mm tall, "
             f"{profile.max_width * 1000:.0f} mm at its widest"
@@ -455,6 +456,19 @@ class PickGlassesTask:
         approaches = _approach_directions(handle, target, others)
         grip_point = target.position + UP * grip.height
 
+        # Only now does the glass come out of the scene. Up to this point the
+        # arm has been carrying the camera around it, and a planner that does
+        # not know it is there routes an elbow straight through it. From here
+        # on the fingers have to end up straddling it, which no planner will
+        # agree to, so it has to go — and what is left is a hover directly
+        # above it and a descent down the tool's own axis.
+        self._scene.set_glasses(
+            {
+                other.name: (other.position, other.rough_width, TALLEST_GLASS)
+                for other in others
+            }
+        )
+
         self._arm.set_gripper(min(grip.opening + 0.020, GRIPPER_MAX_OPENING))
         rotation = self._hover_and_choose_grasp(grip_point, approaches)
         position = grip_point - rotation[:, 2] * FINGERTIP_OFFSET
@@ -482,18 +496,10 @@ class PickGlassesTask:
 
         self._arm.set_gripper_force(starting_force(profile, kind))
         time.sleep(0.3)
-        self._log.warning(
-            f"DBG squeeze={starting_force(profile, kind):.2f}N gap={self._arm.gripper_gap * 1000:.1f}mm "
-            f"wristZ={self._arm.wrist_force_z:.3f}N (empty gripper assumed {GRIPPER_WEIGHT_N}N)"
-        )
 
         # Lift a centimetre and weigh it. This is the last moment a mistake is
         # free: the glass is off the table but nothing has been turned over.
         self._arm.move_linear([make_pose(position + UP * WEIGH_LIFT, rotation)])
-        self._log.warning(
-            f"DBG after {WEIGH_LIFT * 1000:.0f}mm lift: gap={self._arm.gripper_gap * 1000:.1f}mm "
-            f"wristZ={self._arm.wrist_force_z:.3f}N"
-        )
         mass = mass_from_wrist(self._arm.wrist_force_z, GRIPPER_WEIGHT_N)
 
         needed = force_for_measured_mass(mass, kind)
@@ -505,15 +511,7 @@ class PickGlassesTask:
             self._arm.set_gripper_force(needed)
             time.sleep(0.3)
 
-        try:
-            self._arm.move_linear([make_pose(position + UP * LIFT_HEIGHT, rotation)])
-        except MotionFailed as why:
-            self._log.warning(f"DBG straight lift failed: {why}")
-            frac = self._arm.move_linear(
-                [make_pose(position + UP * LIFT_HEIGHT, rotation)], min_fraction=0.0
-            )
-            self._log.warning(f"DBG same move with no minimum: fraction {frac:.2f}")
-            raise
+        self._arm.move_linear([make_pose(position + UP * LIFT_HEIGHT, rotation)])
 
         # Now that the arm has it, the planner is told so, or it will plan the
         # turn as though the gripper were empty.

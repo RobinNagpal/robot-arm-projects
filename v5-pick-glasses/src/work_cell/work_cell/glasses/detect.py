@@ -115,21 +115,57 @@ def foot_of(mask: np.ndarray, to_world, table_z: float) -> np.ndarray | None:
     This is what turns a position good enough to look at a glass into one good
     enough to close on it. A stem is a few millimetres across, and the survey
     is not that sure of anything.
+
+    The foot is taken by its two sides rather than by its lowest point. A foot
+    is a disc, and the camera looks down on it at a slant, so its outline is an
+    ellipse: the lowest row of that ellipse is the rim nearest the camera, not
+    the middle of the glass. Reading the middle column off at that row mixes
+    the two and lands a whole foot-radius short — about 20 mm on a wine glass,
+    which is enough to close the fingers beside a stem instead of around it,
+    and it lands short by the same amount every time, so nothing downstream
+    looks wrong.
+
+    The far left and far right of the ellipse are the two places where the
+    line of sight grazes the disc side-on, and those sit at the middle's own
+    distance. Halfway between them is the middle.
     """
-    rows = np.flatnonzero(mask.any(axis=1))
-    if rows.size == 0:
+    used = np.flatnonzero(mask.any(axis=0))
+    if used.size == 0:
         return None
 
-    # The lowest rows only: higher up the glass leans away from its own foot,
-    # and on a wine glass the bowl is not even over it.
-    lowest = rows[-1]
-    band = mask[max(lowest - 2, rows[0]) : lowest + 1]
-    columns = np.argwhere(band)[:, 1]
-    if columns.size == 0:
-        return None
+    # The bottom edge of the silhouette, column by column. Every pixel along it
+    # is a place where the line of sight grazes the rim of the base, and the
+    # rim is on the table, so each one projects onto the table exactly. Read
+    # together they are the near half of the base, drawn in the room.
+    bottom = {int(column): int(np.flatnonzero(mask[:, column])[-1]) for column in used}
+    nearest = max(bottom, key=lambda column: bottom[column])
 
-    middle = (float(columns.min()) + float(columns.max())) / 2.0
-    return np.asarray(to_world(middle, float(lowest), table_z), dtype=float)
+    # Outwards from the nearest point for as long as the edge stays joined up.
+    # On a wine glass the bowl overhangs the foot, and under the overhang the
+    # bottom edge jumps to the underside of the bowl, which is not on the
+    # table and must not be read as though it were.
+    span = [nearest]
+    for step in (-1, 1):
+        column = nearest + step
+        while column in bottom and abs(bottom[column] - bottom[column - step]) <= 3:
+            span.append(column)
+            column += step
+
+    rim = np.array([to_world(float(c), float(bottom[c]), table_z) for c in span], dtype=float)
+    if len(rim) < 3:
+        return rim.mean(axis=0) if len(rim) else None
+
+    # The circle through them. Written out as least squares rather than taken
+    # from a fitting library: with x^2 + y^2 = 2ax + 2by + c it is linear in
+    # the three unknowns, and the middle is what (a, b) are.
+    x, y = rim[:, 0], rim[:, 1]
+    try:
+        a, b, _ = np.linalg.lstsq(
+            np.column_stack([2.0 * x, 2.0 * y, np.ones_like(x)]), x**2 + y**2, rcond=None
+        )[0]
+    except np.linalg.LinAlgError:
+        return rim.mean(axis=0)
+    return np.array([float(a), float(b), float(table_z)])
 
 
 def the_one_in_the_middle(mask: np.ndarray) -> np.ndarray:

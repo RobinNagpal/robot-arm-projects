@@ -145,67 +145,167 @@ two of them are only useful together.
 
 ### What each one actually does
 
-**Rules on the profile.** The arm measures the glass from the side, decides
-from that measurement what kind it is, and runs that kind's one rule over the
-outline. The rule returns a height; the finger opening is the width the camera
-saw at that height. Four checks then reject anything the gripper cannot do, and
-a rejected glass is left standing.
+#### Rules on the profile
 
-**Ranked search.** Same measurement, same rules, but the rule stops returning a
-single winner. It scores every height in the search band, every direction the
-arm could come in from and every wrist roll, on wall slope, how much pad would
-touch, whether the arm can reach that pose, and whether the wrist can still
-turn the glass over afterwards. The arm tries the best one and works down the
-list. Most refusals today are "no way to hold it *the first way tried*".
+Write down a sentence about glassware, and apply it to whatever the camera
+measured.
 
-**Feel for it.** Nothing changes until the fingers close. If they meet nothing,
-or meet the wrong width, the arm does not give up: it opens, steps a few
-millimetres up or down, and closes again, reading the pad contacts each time. A
-stem is usually found in two or three tries. This is the fix for a measurement
-that was 3 mm out, and the project already claims to work this way elsewhere —
-the last millimetres are felt, not driven. At the grasp it does not follow
-through.
+1. The camera measures the glass from the side. The result is a list: 40 mm
+   wide at 1 mm up, 41 mm wide at 2 mm up, and so on to the top. That list is
+   the profile.
+2. A few simple tests read the shape off the list. Thin in the middle? Then it
+   is stemmed. Wall leans? Then it is tapered.
+3. Each shape has one rule. For a wine glass it is "the narrowest point below
+   the widest point", which is the stem.
+4. The rule gives a height — say 31 mm up. The finger opening is the width the
+   list holds at that height — say 7 mm.
+5. Four checks follow. Can the gripper open to 7 mm? Is the flat part tall
+   enough for a pad? Is the grip low enough on the glass? Any failure and the
+   glass is left standing, with the reason written down.
 
-**Camera in the loop.** The rule says hold this glass 31 mm up. To put the hand
-there, the arm also has to know where the glass stands on the table, and that
-number can be a few millimetres wrong. So the camera keeps looking at the glass
-while the hand comes down, and the arm keeps nudging sideways to keep the glass
-between the two fingers. In the last few centimetres the hand blocks the view,
-so looking stops and feeling takes over.
+**Needs:** NumPy, and nothing else. No training, no dataset, no internet.
 
-**Score grasps on a spun mesh.** A glass is round, like a pot on a potter's
-wheel, so the measured outline can be spun around into a 3D model — trimesh
-already does this to build the glasses. Then comes the usual grasp search: look
-over the whole surface for two spots, facing each other, where the fingers
-would not slip. It works. It is also wasted work here, because the 3D model was
-made from the outline and says nothing the outline did not, so the search ends
-up where the rule ends up, slower.
+**Good:** you can read the rule, and you can read the reason when it refuses.
+A glass of a size nobody has seen needs no change at all.
 
-**Copy an expert.** Run the rules a few hundred times and record the camera
-images and the joint positions. Train a policy — ACT, or a diffusion policy —
-to produce the next stretch of movement from what it sees. At run time the
-policy drives the last part of the reach and the grasp, while the profile and
-the kind stay measured as they are now. This is what
-[`v5-learn-pick-place`](../../v5-learn-pick-place) does for blocks.
+**Bad:** it produces one answer. If that answer is 3 mm out, there is no
+second plan.
 
-**Reinforcement learning.** No expert. The arm tries, gets a reward for a glass
-that ends up on the rack, and slowly finds a policy. The workflow is a fast
-simulator, a reward function, and a very large number of episodes. Both of the
-hard parts are outside the training: writing a reward for "do not chip it, do
-not crush it, and leave it alone if unsure", and getting enough episodes.
+#### Ranked search
 
-**Off-the-shelf grasp network.** A trained model takes the point cloud of a
-scene and returns ranked gripper poses. The workflow is depth, then cloud, then
-network, then throw away the grasps the arm cannot reach. It falls over at the
-first step here: the depth picture has a hole where the glass is, so there is
-no cloud of the glass to feed it.
+The same rules, but they stop picking a single winner. They hand back a list,
+best first.
 
-**Depth completion.** A model trained on transparent objects looks at the
-colour image and the broken depth and fills in what is missing. That gives back
-a point cloud, which makes the grasp networks above usable. It is one more
-trained model, one more dataset, and one more thing that can be wrong, in front
-of a network that still does not know a stem from a bowl. The rules get there
-in one step.
+The rule scores every height in the allowed band, from every direction the arm
+could come in, and every wrist rotation. Each option gets marked on how upright
+the wall is there, how much of the pad would touch, whether the arm can reach
+that pose, and whether the wrist can still turn the glass over afterwards. The
+arm tries the best one. If that fails it tries the next.
+
+**Needs:** NumPy for the scoring, and MoveIt 2 — already in the project — to
+answer "can the arm reach this?"
+
+**Why it matters:** most failures today are not "this glass cannot be held".
+They are "this glass cannot be held *the first way tried*".
+
+#### Feel for it
+
+The fingers are sensors too. If they close and find nothing, look around with
+them.
+
+The fingers close slowly. Each fingertip has a contact sensor, so the arm knows
+the moment it touches something and what the gap was at that moment. If they
+close all the way and touch nothing, the stem is not where it was expected. So
+the arm opens, moves 3 mm up, and closes again. Still nothing? Then 3 mm down.
+A stem usually turns up in two or three tries.
+
+**Needs:** nothing new. The contact sensors and the wrist force sensor are
+already in the cell.
+
+The project already says the last millimetres should be felt rather than
+driven. At the grasp, it does not yet follow through.
+
+#### Camera in the loop
+
+Do not trust one measurement taken from a distance. Keep checking on the way
+in.
+
+The rule says hold this glass 31 mm up. To put the hand there, the arm also has
+to know where the glass stands on the table, and that number can be a few
+millimetres wrong. So the camera keeps looking at the glass while the hand
+comes down, and the arm keeps nudging sideways to keep the glass between the
+two fingers. The closer it gets, the smaller the error.
+
+**Needs:** OpenCV, on the camera already on the wrist.
+
+**Limit:** in the last few centimetres the gripper covers the glass and the
+camera sees nothing. That is where feeling takes over.
+
+#### Score grasps on a spun mesh
+
+Build a 3D model of the glass, and search its surface for good finger spots.
+
+A glass is round, like a pot made on a potter's wheel, so the measured outline
+can be spun around into a full 3D model. trimesh does this in one line — it is
+how the glasses in the simulator are built. Then comes the usual grasp search:
+take every pair of surface spots that face each other, and score whether the
+fingers would hold or slide.
+
+**Needs:** trimesh, already a dependency.
+
+**Why it is skipped:** the 3D model was built *from* the outline, so it holds
+nothing the outline did not. All that searching arrives at the same height the
+one-line rule gives, slower.
+
+#### Copy an expert
+
+Let something do the job many times, record it, and train a model to imitate
+it.
+
+1. Run the rules a few hundred times. Each run, record two things at every
+   instant: what the camera saw, and where the joints were.
+2. That is the dataset. Nothing is labelled by hand.
+3. Train a policy — ACT, or a diffusion policy — whose job is: given this
+   picture and this arm position, what is the next stretch of movement?
+4. At run time the camera still measures the glass and the rules still decide
+   where to hold it. The policy only drives the hand in over the last stretch,
+   instead of MoveIt planning a path.
+
+**Needs:** PyTorch, with LeRobot or the original ACT code, a GPU, and the
+collection runs.
+
+**Proof:** [`v5-learn-pick-place`](../../v5-learn-pick-place) does exactly this
+with blocks and reaches 74% on blocks it never saw.
+
+**The catch:** the model has only ever seen these glasses, so their proportions
+end up inside its weights — which breaks this project's one rule, quietly,
+where nobody can read it. And when it fails it cannot say why.
+
+#### Reinforcement learning
+
+No teacher. The arm tries, gets scored, and finds its own way.
+
+The arm grabs. Glass ends up on the rack, points; glass dropped, no points.
+Repeat a few hundred thousand times and the policy slowly gets good.
+
+**Needs:** Stable-Baselines3 or RSL-RL for the learning, and Isaac Lab or
+MuJoCo for the simulator — a run here takes about five minutes in Gazebo, which
+would take a lifetime.
+
+**Why it fits badly** is the three reasons set out further down.
+
+#### Off-the-shelf grasp network
+
+Someone has already trained a large model on millions of grasps. Give it a 3D
+scan, and it gives grasps back.
+
+The workflow is: depth picture, then point cloud — a cloud of dots in space
+showing the surfaces — then the network, then throw away the grasps the arm
+cannot reach, then do the best one that is left.
+
+**Needs:** Contact-GraspNet, GraspNet-1Billion or AnyGrasp, on PyTorch. No data
+collection: the weights are a download.
+
+**Why it fails here:** the first step. A depth camera cannot see glass, so the
+depth picture has a hole where the glass is. No dots, no cloud, nothing to feed
+the network. Even if it worked, it knows shapes in general, not glassware — it
+has no idea that the stem is the part to hold.
+
+#### Depth completion
+
+Use a model to invent the depth the glass did not return.
+
+A model trained on see-through objects looks at the colour picture and the
+broken depth picture, and fills in the hole with a sensible guess. Now there is
+a full depth picture, so there is a point cloud, so a grasp network becomes
+possible.
+
+**Needs:** ClearGrasp, TransCG or DREDS, on PyTorch. Also a download.
+
+**Where it sits:** it decides nothing by itself. It is only ever the first half
+of a chain — repair the picture, then a grasp network. That is two trained
+models and two things that can go wrong, in front of a network that still does
+not know a stem from a bowl. The rules get there in one step.
 
 ### The three that need a trained model
 
@@ -219,19 +319,11 @@ over, and who has to train it.
 | **Grasp network** | what a good grasp looks like on any object | a 3D point cloud of the scene | a ranked list of gripper poses | someone else; you download it |
 | **Depth completion** | what the missing depth should have been | the colour picture and the broken depth | a full depth picture | someone else; you download it |
 
-**Copy an expert replaces the moving, not the deciding.** The rules still say
-where to hold the glass. The policy only drives the hand there. It is the one
-of the three you have to collect data for, and the data is your own cell doing
-the job it already does.
-
-**A grasp network replaces the deciding.** It never measures a glass and never
-names a kind; it looks at the shape in front of it and offers poses. That also
-means it does not know a stem from a bowl — it has no idea that this one part
-of a wine glass is the part to hold.
-
-**Depth completion decides nothing.** It repairs the picture, and that is all.
-On its own it does not get the glass held. It is only useful as the first half
-of a chain, with a grasp network behind it.
+The split that matters is what each model takes over. Copying an expert
+replaces the *moving* — the rules still decide where to hold the glass. A grasp
+network replaces the *deciding* — it never measures a glass or names a kind.
+Depth completion replaces neither; it repairs the picture so that a grasp
+network has something to work on.
 
 ## Which of them to do next
 

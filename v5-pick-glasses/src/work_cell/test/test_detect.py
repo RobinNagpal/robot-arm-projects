@@ -4,6 +4,7 @@ from work_cell.glasses.detect import (
     Detection,
     classify,
     find_glasses,
+    foot_of,
     glass_mask,
     merge_sightings,
     the_one_in_the_middle,
@@ -376,3 +377,76 @@ def test_a_pair_implying_an_impossible_glass_is_refused():
 def test_the_camera_has_to_be_above_the_tallest_glass():
     with pytest.raises(ValueError, match="above the tallest"):
         where_they_stand([], np.array([0.4, -0.3]), [], np.array([0.4, -0.2]), 0.20, tallest=0.26)
+
+
+# --- the foot, seen at a slant ---------------------------------------------
+
+
+def _side_on_camera(height=0.120, fx=277.2, size=(240, 320)):
+    """A camera that many metres of this project assume: level, looking along
+    +x, that many metres above the table. Returns its to_world and a projector."""
+    rows, columns = size
+    cx, cy = columns / 2.0, rows / 2.0
+    eye = np.array([0.0, 0.0, height])
+    # Image right is -y in the room, image down is -z: the usual optical frame.
+    rotation = np.array([[0.0, 0.0, 1.0], [-1.0, 0.0, 0.0], [0.0, -1.0, 0.0]])
+
+    def to_world(column, row, z):
+        direction = np.array([(column - cx) / fx, (row - cy) / fx, 1.0])
+        ray = rotation @ direction
+        return eye + ray * ((z - eye[2]) / ray[2])
+
+    def to_pixel(point):
+        relative = np.asarray(point, float) - eye
+        camera = rotation.T @ relative
+        return (cx + fx * camera[0] / camera[2], cy + fx * camera[1] / camera[2])
+
+    return to_world, to_pixel, size
+
+
+def _disc_mask(centre, radius, to_pixel, size):
+    """The silhouette of a disc lying flat on the table."""
+    mask = np.zeros(size, dtype=bool)
+    angles = np.linspace(0.0, 2.0 * np.pi, 400, endpoint=False)
+    by_row: dict[int, list[float]] = {}
+    for angle in angles:
+        point = (centre[0] + radius * np.cos(angle), centre[1] + radius * np.sin(angle), 0.0)
+        column, row = to_pixel(point)
+        by_row.setdefault(int(round(row)), []).append(column)
+    for row, columns in by_row.items():
+        if 0 <= row < size[0]:
+            left, right = int(round(min(columns))), int(round(max(columns)))
+            mask[row, max(left, 0) : min(right, size[1] - 1) + 1] = True
+    return mask
+
+
+def test_the_foot_is_found_at_its_middle_not_at_its_near_rim():
+    """A foot is a disc seen at a slant, so its outline is an ellipse.
+
+    Taking the middle column at the lowest row mixes two different points: the
+    lowest row is the rim nearest the camera. It lands one foot-radius short,
+    towards the camera, every single time — which is exactly the kind of error
+    that never looks like an error, because it is the same on every glass.
+    """
+    to_world, to_pixel, size = _side_on_camera()
+    for distance in (0.34, 0.38, 0.45):
+        for sideways in (-0.05, 0.0, 0.07):
+            for radius in (0.026, 0.040):
+                centre = np.array([distance, sideways])
+                mask = _disc_mask(centre, radius, to_pixel, size)
+                found = foot_of(mask, to_world, table_z=0.0)
+                assert found is not None
+                off = float(np.linalg.norm(found[:2] - centre))
+                assert off < 0.004, (
+                    f"foot found {off * 1000:.1f} mm from the middle of a disc "
+                    f"{radius * 2000:.0f} mm across at {distance * 1000:.0f} mm"
+                )
+
+
+def test_the_foot_does_not_land_on_the_rim_nearest_the_camera():
+    # The specific wrong answer, named so it cannot come back quietly.
+    to_world, to_pixel, size = _side_on_camera()
+    centre, radius = np.array([0.38, 0.0]), 0.026
+    found = foot_of(_disc_mask(centre, radius, to_pixel, size), to_world, table_z=0.0)
+    near_rim = np.array([centre[0] - radius, centre[1]])
+    assert np.linalg.norm(found[:2] - centre) < np.linalg.norm(found[:2] - near_rim)
