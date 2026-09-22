@@ -33,6 +33,15 @@ illustrative. If a rule changes, the pictures change with it.
   Rotating about the grip rather than the wrist, the wrist limit that has to be
   checked before the fingers close, the tilt budget, and feeling for the rack.
 
+Alongside those six, one document is not about the design at all:
+
+- [**What went wrong, and what was done about it**](what-went-wrong.md). The
+  record of getting this to actually run: every place the code said one thing
+  and the world did another, what the evidence looked like at the time, and
+  what turned out to be wrong. It ends with the things still unsolved. Worth
+  reading before changing anything near the simulator, because almost none of
+  these faults announced themselves anywhere near where they lived.
+
 For the reasoning behind these choices, read
 [`../implementation-notes.md`](../implementation-notes.md). For which file and
 function each stage lives in, read [`../pseudocode.md`](../pseudocode.md).

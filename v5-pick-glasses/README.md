@@ -283,3 +283,7 @@ the glass you had in mind and fails on the glass someone else owns.
   are split up the way they are.
 - [`implementation-notes.md`](implementation-notes.md) — why each choice was
   made, and what breaks it.
+- [`docs/what-went-wrong.md`](docs/what-went-wrong.md) — every place the code
+  said one thing and the simulator did another, what the evidence looked like
+  at the time, and what was actually wrong. It ends with what is still
+  unsolved. Read it before changing anything near the simulator.

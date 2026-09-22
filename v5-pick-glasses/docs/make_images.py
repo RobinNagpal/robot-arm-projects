@@ -25,7 +25,15 @@ import numpy as np  # noqa: E402
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src" / "work_cell"))
 
-from work_cell.arm.dimensions import GRIPPER_MAX_OPENING, PAD_HEIGHT  # noqa: E402
+from work_cell.arm.dimensions import (  # noqa: E402
+    COMFORTABLE_REACH,
+    FINGERTIP_OFFSET,
+    GRIPPER_MAX_OPENING,
+    LOWEST_GRIP,
+    PAD_HEIGHT,
+    SURVEY_HEIGHT,
+    TURNING_ROOM,
+)
 from work_cell.glasses import spec  # noqa: E402
 from work_cell.glasses.detect import classify  # noqa: E402
 from work_cell.glasses.force import (  # noqa: E402
@@ -39,8 +47,11 @@ from work_cell.glasses.shapes import draw, family  # noqa: E402
 from work_cell.rack.layout import (  # noqa: E402
     ARM_TILT_ACCURACY_DEG,
     SLOT_SPACING,
+    rack_box,
+    slots_from_marker,
     tilt_budget_deg,
 )
+from work_cell.table.layout import ROBOT_BASE, TABLE_TOP_Z  # noqa: E402
 
 IMAGES = ROOT / "images"
 INK = "#1b1b1f"
@@ -429,6 +440,202 @@ def classification() -> None:
     _save(fig, "classify-from-profile.png")
 
 
+# --- what went wrong, and what was done about it -------------------------
+
+
+def laying_a_glass_on_the_table() -> None:
+    """Why one look from above puts a glass further away than it is."""
+    height, camera = 0.151, SURVEY_HEIGHT
+    fig, axes = plt.subplots(1, 2, figsize=(9.5, 3.6))
+
+    for ax, pair in zip(axes, (False, True), strict=True):
+        ax.plot([-0.05, 0.46], [0, 0], color=INK, lw=1.4)
+        ax.text(-0.04, 0.008, "table", fontsize=7, color=INK, ha="left")
+
+        glass = 0.24
+        ax.add_patch(plt.Rectangle((glass - 0.031, 0), 0.062, height, facecolor=GLASS, alpha=0.30))
+        ax.plot([glass, glass], [0, height], color=GLASS, lw=1.0)
+        ax.text(glass, height + 0.012, "where it\nreally stands", fontsize=7, color=GLASS, ha="center")
+
+        eyes = [0.03] if not pair else [0.03, 0.12]
+        for index, eye in enumerate(eyes):
+            ax.plot([eye], [camera], marker="v", color=INK, ms=7)
+            # The ray that grazes the top of the glass, carried on to the table.
+            fell = eye + (glass - eye) * camera / (camera - height)
+            ax.plot([eye, fell], [camera, 0], color=GRIP, lw=1.0, ls="--")
+            ax.plot([fell], [0], marker="o", color=GRIP, ms=5)
+            if index == 0:
+                ax.text(fell, -0.022, "where one look\nputs it", fontsize=7, color=GRIP, ha="center")
+
+        if pair:
+            ax.annotate(
+                "", xy=(0.12, camera + 0.03), xytext=(0.03, camera + 0.03),
+                arrowprops={"arrowstyle": "<->", "color": INK, "lw": 1.0},
+            )
+            ax.text(0.075, camera + 0.050, "a known step sideways", fontsize=7, color=INK, ha="center")
+            ax.text(
+                0.24, camera * 0.55,
+                "how much the mark moves\nbetween the two says how\nhigh up the glass it was,\nand that gives the distance",
+                fontsize=7, color=INK, ha="center",
+            )
+
+        ax.set_xlim(-0.05, 0.50)
+        ax.set_ylim(-0.07, camera + 0.10)
+        ax.set_aspect("equal")
+        ax.axis("off")
+        ax.set_title("One look: too far out" if not pair else "Two looks: right place", fontsize=10, color=INK)
+
+    _save(fig, "one-look-two-looks.png")
+
+
+def the_gripper_has_a_body() -> None:
+    """Why a glass cannot be held close to the table."""
+    body = 0.09
+    fig, axes = plt.subplots(1, 2, figsize=(9.0, 3.4))
+
+    for ax, hold in zip(axes, (0.018, LOWEST_GRIP), strict=True):
+        ax.plot([-0.02, 0.30], [0, 0], color=INK, lw=1.6)
+        ax.add_patch(plt.Rectangle((0.20, 0), 0.062, 0.16, facecolor=GLASS, alpha=0.30))
+
+        # The gripper comes in level, so its body sits across the grip height.
+        clashes = hold - body / 2 < 0
+        ax.add_patch(
+            plt.Rectangle(
+                (0.03, hold - body / 2), body, body,
+                facecolor=GRIP if clashes else FAINT, alpha=0.35,
+            )
+        )
+        ax.plot([0.03 + body, 0.20], [hold, hold], color=INK, lw=2.0)
+        ax.text(0.155, hold + 0.008, "fingers", fontsize=7, color=INK, ha="center")
+        ax.text(0.075, hold, "body", fontsize=7, color=INK, ha="center", va="center")
+
+        ax.annotate(
+            "", xy=(0.19, 0), xytext=(0.19, hold),
+            arrowprops={"arrowstyle": "<->", "color": INK, "lw": 0.8},
+        )
+        ax.text(0.185, hold / 2, f"{hold * 1000:.0f} mm", fontsize=7, color=INK, ha="right", va="center")
+
+        ax.set_xlim(-0.02, 0.30)
+        ax.set_ylim(-0.06, 0.20)
+        ax.set_aspect("equal")
+        ax.axis("off")
+        ax.set_title(
+            "Held too low: the body is through the table" if clashes
+            else f"Held at {LOWEST_GRIP * 1000:.0f} mm: the body clears it",
+            fontsize=10, color=GRIP if clashes else INK,
+        )
+
+    _save(fig, "the-gripper-has-a-body.png")
+
+
+def the_rack_the_planner_saw() -> None:
+    """The rack, and the box that was standing in for it."""
+    marker = np.array([0.35, 0.355, TABLE_TOP_Z])
+    slots = slots_from_marker(marker, np.pi / 2)
+    centre, size, turned = rack_box(slots)
+
+    fig, axes = plt.subplots(1, 2, figsize=(9.0, 4.0))
+    for ax, correct in zip(axes, (False, True), strict=True):
+        for slot in slots:
+            ax.plot([slot.centre[0]], [slot.centre[1]], marker="o", color=GLASS, ms=6)
+        ax.plot(
+            [slots[0].centre[0], slots[-1].centre[0]],
+            [slots[0].centre[1], slots[-1].centre[1]],
+            color=GLASS, lw=2.0, label="the rack, and its six slots",
+        )
+
+        if correct:
+            corners = np.array([[-1, -1], [1, -1], [1, 1], [-1, 1], [-1, -1]], dtype=float)
+            corners = corners * np.array([size[0] / 2, size[1] / 2])
+            drawn = (turned[:2, :2] @ corners.T).T + centre[:2]
+        else:
+            # What it used to be: the row's length laid out along y.
+            half = np.array([SLOT_SPACING / 2, size[1] / 2])
+            corners = np.array([[-1, -1], [1, -1], [1, 1], [-1, 1], [-1, -1]], dtype=float) * half
+            drawn = corners + centre[:2]
+
+        ax.plot(drawn[:, 0], drawn[:, 1], color=INK if correct else GRIP, lw=1.4, ls="--",
+                label="what the planner was told")
+        ax.plot([ROBOT_BASE[0]], [ROBOT_BASE[1]], marker="s", color=INK, ms=7)
+        ax.text(ROBOT_BASE[0], ROBOT_BASE[1] - 0.05, "arm", fontsize=7, color=INK, ha="center")
+
+        ax.set_xlim(-0.15, 0.85)
+        ax.set_ylim(-0.25, 0.75)
+        ax.set_aspect("equal")
+        ax.axis("off")
+        ax.legend(fontsize=7, loc="lower right", frameon=False)
+        ax.set_title(
+            "A slab across open table, at right angles to the rack" if not correct
+            else "The box now lies along the row",
+            fontsize=10, color=GRIP if not correct else INK,
+        )
+
+    _save(fig, "the-rack-the-planner-saw.png")
+
+
+def which_way_is_down() -> None:
+    """Why the wrist said every glass weighed nothing."""
+    fig, ax = plt.subplots(figsize=(6.4, 3.4))
+    ax.plot([-0.05, 0.34], [0, 0], color=INK, lw=1.6)
+    ax.add_patch(plt.Rectangle((0.22, 0), 0.062, 0.16, facecolor=GLASS, alpha=0.30))
+
+    hold = 0.09
+    ax.add_patch(plt.Rectangle((0.03, hold - 0.045), 0.09, 0.09, facecolor=FAINT, alpha=0.35))
+    ax.plot([0.12, 0.22], [hold, hold], color=INK, lw=2.0)
+
+    ax.annotate("", xy=(0.20, hold), xytext=(0.07, hold),
+                arrowprops={"arrowstyle": "->", "color": GRIP, "lw": 1.6})
+    ax.text(0.135, hold + 0.012, "the axis the gripper reaches along —\nthis is what was being read",
+            fontsize=7, color=GRIP, ha="center")
+
+    ax.annotate("", xy=(0.075, hold - 0.075), xytext=(0.075, hold - 0.005),
+                arrowprops={"arrowstyle": "->", "color": INK, "lw": 1.6})
+    ax.text(0.085, hold - 0.045, "the weight goes this way", fontsize=7, color=INK, va="center")
+
+    ax.set_xlim(-0.05, 0.34)
+    ax.set_ylim(-0.06, 0.22)
+    ax.set_aspect("equal")
+    ax.axis("off")
+    ax.set_title("Reaching in level, the gripper's own axis carries none of the weight",
+                 fontsize=10, color=INK)
+    _save(fig, "which-way-is-down.png")
+
+
+def the_turn_swings_the_arm() -> None:
+    """Why where a glass is turned over decides whether it can be."""
+    low, high = COMFORTABLE_REACH
+    fig, ax = plt.subplots(figsize=(6.4, 4.2))
+
+    for radius, label in ((low, "as close as it works"), (high, "as far as it reaches")):
+        circle = plt.Circle((0, 0), radius, fill=False, color=FAINT, ls="--", lw=1.0)
+        ax.add_patch(circle)
+        ax.text(radius * 0.72, -radius * 0.72, label, fontsize=7, color=FAINT)
+
+    for glass_out, colour, name in ((0.45, GRIP, "tool parked at 450 mm"), (TURNING_ROOM[0], GLASS, "glass parked at 500 mm")):
+        if colour is GRIP:
+            grip_at = glass_out + FINGERTIP_OFFSET  # the old way: the tool was placed
+            before, after = glass_out, glass_out + 2 * FINGERTIP_OFFSET
+        else:
+            grip_at = glass_out
+            before, after = glass_out - FINGERTIP_OFFSET, glass_out + FINGERTIP_OFFSET
+        y = -0.06 if colour is GRIP else 0.06
+        ax.plot([before, after], [y, y], color=colour, lw=1.6)
+        ax.plot([before, after], [y, y], marker="o", color=colour, ms=5, ls="none")
+        ax.plot([grip_at], [y], marker="*", color=colour, ms=11)
+        ax.text(after + 0.02, y, f"{after * 1000:.0f} mm" + ("  — past the arm" if after > high else ""),
+                fontsize=7, color=colour, va="center")
+        ax.text(before - 0.02, y, name, fontsize=7, color=colour, va="center", ha="right")
+
+    ax.plot([0], [0], marker="s", color=INK, ms=8)
+    ax.set_xlim(-0.05, 1.05)
+    ax.set_ylim(-0.30, 0.30)
+    ax.set_aspect("equal")
+    ax.axis("off")
+    ax.set_title("A turn swings the tool a fingertip's length either side of the glass (star)",
+                 fontsize=10, color=INK)
+    _save(fig, "the-turn-swings-the-arm.png")
+
+
 if __name__ == "__main__":
     four_kinds()
     a_family_of_wine_glasses()
@@ -436,3 +643,8 @@ if __name__ == "__main__":
     the_estimate_is_not_enough()
     tilt_budget()
     classification()
+    laying_a_glass_on_the_table()
+    the_gripper_has_a_body()
+    the_rack_the_planner_saw()
+    which_way_is_down()
+    the_turn_swings_the_arm()
