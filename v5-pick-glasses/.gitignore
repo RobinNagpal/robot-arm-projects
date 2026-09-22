@@ -1,6 +1,9 @@
 # pixi
 .pixi/
 
+# what each run wrote about itself
+runs/
+
 # colcon
 build/
 install/

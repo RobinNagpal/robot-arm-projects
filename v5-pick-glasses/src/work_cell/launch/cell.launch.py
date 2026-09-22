@@ -12,6 +12,7 @@ worth reporting: the same seed puts the same glasses back on the table.
 
 from __future__ import annotations
 
+import math
 import os
 import tempfile
 from pathlib import Path
@@ -36,6 +37,7 @@ from launch_ros.parameter_descriptions import ParameterValue
 from work_cell.glasses.shapes import KIND_RANGES
 from work_cell.glasses.spawn import random_glasses
 from work_cell.rack.build import random_rack_pose
+from work_cell.report import Report
 from work_cell.world.build import build_world, read_parts
 
 PACKAGE = "work_cell"
@@ -49,6 +51,35 @@ def robot_description(share: Path) -> str:
         str(share / "arm" / "arm.urdf.xacro"),
         mappings={"controllers_file": str(share / "arm" / "controllers.yaml")},
     ).toxml()
+
+
+def _describe_the_table(report, glasses, rack_pose, settings) -> None:
+    """What was actually put on the table, written before the arm sees any of it.
+
+    This is the one part of the report the arm does not get to have. It is the
+    simulator's own truth, and it is here so that a reader can hold what the
+    arm measured against what was really there. Nothing downstream reads it.
+    """
+    report.step("What was put on the table")
+    report.table(settings)
+    report.say(
+        "The arm is told none of this. It is written down first so that what "
+        "the arm works out can be held against it."
+    )
+
+    rows = ["| glass | kind | stands at | height | widest |", "| --- | --- | --- | --- | --- |"]
+    for glass in glasses:
+        rows.append(
+            f"| `{glass.name}` | {glass.kind} | "
+            f"({glass.position[0]:.3f}, {glass.position[1]:.3f}) | "
+            f"{glass.outline.total_height * 1000:.0f} mm | "
+            f"{2 * float(glass.outline.radius.max()) * 1000:.0f} mm |"
+        )
+    report.say("\n".join(rows))
+    report.say(
+        f"The rack stands at ({rack_pose[0]:.3f}, {rack_pose[1]:.3f}), "
+        f"turned {math.degrees(rack_pose[2]):.0f}°."
+    )
 
 
 def _kinds(named: str) -> list[str] | None:
@@ -71,7 +102,7 @@ def _kinds(named: str) -> list[str] | None:
     return wanted
 
 
-def write_world(share: Path, count: int, seed: int, kinds: list[str] | None) -> str:
+def write_world(share: Path, count: int, seed: int, kinds: list[str] | None, report) -> str:
     """Assemble the room, the table, the rack and this run's glasses.
 
     The meshes go in the same temporary directory as the world file, and the
@@ -87,11 +118,25 @@ def write_world(share: Path, count: int, seed: int, kinds: list[str] | None) -> 
     world_template, table = read_parts(share)
     folder = Path(tempfile.mkdtemp(prefix="work_cell_"))
 
+    rack_pose = random_rack_pose(random.Random(seed))
+    glasses = random_glasses(count, seed, kinds)
+    if report is not None:
+        _describe_the_table(
+            report,
+            glasses,
+            rack_pose,
+            {
+                "glasses": count,
+                "kinds": ", ".join(kinds) if kinds else "any",
+                "seed": seed,
+            },
+        )
+
     sdf = build_world(
         world_template,
         table,
-        rack_pose=random_rack_pose(random.Random(seed)),
-        glasses=random_glasses(count, seed, kinds),
+        rack_pose=rack_pose,
+        glasses=glasses,
         mesh_dir=folder,
     )
 
@@ -133,7 +178,9 @@ def setup(context, *args, **kwargs):
     gui = LaunchConfiguration("gui").perform(context).lower() in ("true", "1")
     kinds = _kinds(LaunchConfiguration("kinds").perform(context))
 
-    world = write_world(share, glasses, seed, kinds)
+    folder = LaunchConfiguration("report_dir").perform(context)
+    report = Report(Path(folder), "Picking up glasses") if folder else None
+    world = write_world(share, glasses, seed, kinds, report)
 
     # The simulator always runs as a server on its own, and the window, when
     # there is one, is a second process that connects to it. That is not a
@@ -228,6 +275,11 @@ def generate_launch_description() -> LaunchDescription:
                 "seed",
                 default_value="1",
                 description="which set of glasses to make; the same seed gives the same glasses",
+            ),
+            DeclareLaunchArgument(
+                "report_dir",
+                default_value="",
+                description="folder this run writes its report and pictures into",
             ),
             DeclareLaunchArgument(
                 "kinds",

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import threading
 import traceback
+from pathlib import Path
 
 import rclpy
 from rclpy.executors import MultiThreadedExecutor
@@ -11,6 +12,7 @@ from rclpy.node import Node
 
 from .arm.camera import WristCamera
 from .arm.motion import Arm
+from .report import Report
 from .scene import PlanningSceneClient
 from .task import PickGlassesTask
 
@@ -19,10 +21,19 @@ def main(args=None) -> None:
     rclpy.init(args=args)
     node = Node("glass_task")
 
+    # Where this run writes its account of itself. The launch makes the folder
+    # and has already written what it put on the table, so the two halves —
+    # what was there and what the arm made of it — end up in one file.
+    node.declare_parameter("report_dir", "")
+    folder = node.get_parameter("report_dir").get_parameter_value().string_value
+    report = Report(Path(folder), "Picking up glasses") if folder else None
+    if report:
+        node.get_logger().info(f"writing this run to {report.path}")
+
     # Everything that subscribes or calls a service is built before the node
     # starts being spun, so the executor sees the full set from its first pass.
     arm = Arm(node)
-    task = PickGlassesTask(node, arm, WristCamera(node), PlanningSceneClient(node))
+    task = PickGlassesTask(node, arm, WristCamera(node), PlanningSceneClient(node), report)
 
     # The workflow blocks on services, actions and camera frames, so those have
     # to keep being served from somewhere else. The executor runs on its own
@@ -41,6 +52,13 @@ def main(args=None) -> None:
     try:
         placed, refused = task.run()
         _report(node, placed, refused)
+        if report:
+            report.finish(_ending(placed, refused))
+    except Exception:
+        if report:
+            report.trouble("The run stopped here.")
+            report.finish("```\n" + traceback.format_exc() + "```")
+        raise
     finally:
         executor.shutdown()
         rclpy.shutdown()
@@ -68,6 +86,21 @@ def _report(node: Node, placed, refused) -> None:
 
     for index, glass in enumerate(refused, start=1):
         log.info(f"  {index}. {glass.name}: left standing, {glass.reason}")
+
+
+def _ending(placed, refused) -> str:
+    """The same two columns the log prints, for the report."""
+    lines = [f"**{len(placed)} racked, {len(refused)} left standing.**", ""]
+    for glass in placed:
+        lines.append(
+            f"- `{glass.name}` racked: {glass.kind}, "
+            f"{glass.profile.total_height * 1000:.0f} mm tall, "
+            f"{glass.profile.max_width * 1000:.0f} mm wide, {glass.mass * 1000:.0f} g, "
+            f"slot {glass.slot}"
+        )
+    for glass in refused:
+        lines.append(f"- `{glass.name}` left standing: {glass.reason}")
+    return "\n".join(lines)
 
 
 if __name__ == "__main__":

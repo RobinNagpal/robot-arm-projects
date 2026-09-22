@@ -15,6 +15,7 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from moveit_configs_utils import MoveItConfigsBuilder
+from work_cell.report import run_folder
 
 
 def _moveit_config() -> MoveItConfigsBuilder:
@@ -34,12 +35,19 @@ def generate_launch_description() -> LaunchDescription:
     task_params = _moveit_config().moveit_cpp(file_path="config/moveit_cpp.yaml").to_dict()
     sim_time = {"use_sim_time": True}
 
+    # One folder for the whole run, made here because both halves of the
+    # report write into it: the world builder records what it put on the
+    # table, and the task records what it made of it.
+    folder = str(run_folder())
+
     cell = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(get_package_share_directory("work_cell"), "launch", "cell.launch.py")
         ),
         launch_arguments={
             "glasses": LaunchConfiguration("glasses"),
+            "kinds": LaunchConfiguration("kinds"),
+            "report_dir": folder,
             "seed": LaunchConfiguration("seed"),
             "gui": LaunchConfiguration("gui"),
             "rviz": LaunchConfiguration("rviz"),
@@ -62,12 +70,13 @@ def generate_launch_description() -> LaunchDescription:
         output="screen",
         emulate_tty=True,
         condition=IfCondition(LaunchConfiguration("task")),
-        parameters=[task_params, sim_time],
+        parameters=[task_params, sim_time, {"report_dir": folder}],
     )
 
     return LaunchDescription(
         [
             DeclareLaunchArgument("glasses", default_value="4"),
+            DeclareLaunchArgument("kinds", default_value=""),
             DeclareLaunchArgument("seed", default_value="1"),
             DeclareLaunchArgument("gui", default_value="true"),
             DeclareLaunchArgument("rviz", default_value="false"),
