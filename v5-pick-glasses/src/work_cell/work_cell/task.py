@@ -257,6 +257,7 @@ class PickGlassesTask:
             except MotionFailed as why:
                 # One glass the arm cannot manage is not a reason to stop.
                 self._log.error(f"giving up on {target.name}: {why}")
+                self._say_why_stuck()
                 refused.append(Refused(target.name, None, f"the arm could not do it: {why}"))
                 skip.add(target.name)
                 self._arm.set_gripper(GRIPPER_MAX_OPENING)
@@ -627,13 +628,33 @@ class PickGlassesTask:
         """
         try:
             self._arm.move_linear([make_pose(position, rotation)])
+            return
         except MotionFailed as why:
             self._log.info(f"no straight line {what} ({why}), planning a way instead")
+            self._report.say(f"No straight line {what}: {why}.")
+            self._say_why_stuck()
             self._report.say(
-                f"No straight line {what}: {why}. Planning a way round instead, which is "
-                "checked against everything on the table just the same."
+                "Planning a way round instead, which is checked against everything on the "
+                "table just the same."
             )
-            self._arm.move_to_pose(position, rotation)
+
+        self._arm.move_to_pose(position, rotation)
+
+    def _say_why_stuck(self) -> None:
+        """Ask MoveIt what it thinks is touching, and write it down.
+
+        A path that solves none of the way is nearly always a path whose first
+        step was already impossible, and the percentage on its own does not
+        say which part of the arm is the problem.
+        """
+        touching = self._scene.why_stuck()
+        if not touching:
+            return
+        self._log.info("the planner thinks these are touching: " + "; ".join(touching))
+        self._report.trouble(
+            "The planner already considers the arm to be in collision here, before the "
+            "move even starts: " + "; ".join(touching)
+        )
 
     def _hover_and_choose_grasp(
         self, grip_point: np.ndarray, approaches: list[np.ndarray]

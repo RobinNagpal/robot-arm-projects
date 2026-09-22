@@ -191,3 +191,25 @@ def test_the_table_model_is_the_table_that_layout_py_describes():
     assert f"{TABLE_CENTRE_XY[0]:.4f} {TABLE_CENTRE_XY[1]:.4f}" in sdf
     # Four legs, and all of them under the top rather than beyond its corners.
     assert sdf.count('<visual name="leg_') == 4
+
+
+def test_the_pads_may_touch_the_glass_they_are_holding():
+    """The pads are the only parts of the gripper that touch a held glass.
+
+    Left off this list, every move with a glass in hand starts in collision
+    and the arm cannot lift anything.
+    """
+    from work_cell.scene import GRIPPER_LINKS
+
+    assert "left_pad" in GRIPPER_LINKS
+    assert "right_pad" in GRIPPER_LINKS
+
+
+def test_every_link_that_can_touch_a_held_glass_is_listed():
+    """Whatever the gripper is made of, the parts that close on a glass are
+    the parts allowed to be against it."""
+    from work_cell.scene import GRIPPER_LINKS
+
+    for side in ("left", "right"):
+        assert f"{side}_finger" in GRIPPER_LINKS
+        assert f"{side}_pad" in GRIPPER_LINKS

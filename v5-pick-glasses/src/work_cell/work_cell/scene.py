@@ -22,7 +22,7 @@ from __future__ import annotations
 import numpy as np
 from geometry_msgs.msg import Pose
 from moveit_msgs.msg import AttachedCollisionObject, CollisionObject, PlanningScene
-from moveit_msgs.srv import ApplyPlanningScene
+from moveit_msgs.srv import ApplyPlanningScene, GetStateValidity
 from rclpy.node import Node
 from shape_msgs.msg import SolidPrimitive
 
@@ -32,13 +32,27 @@ from .transforms import frame, make_pose
 
 # Links the held glass is allowed to be touching without that counting as a
 # collision: the ones doing the holding.
-GRIPPER_LINKS = ["gripper_body", "left_finger", "right_finger"]
+#
+# The pads belong on this list above all. They are the only parts that touch a
+# held glass at all — the fingers never reach it, because the pads are what
+# stand between. Leaving them off made every move with a glass in hand start
+# in collision, and a Cartesian path from a state the planner has already
+# rejected comes back having solved none of the way, which reads as an arm
+# that cannot lift a glass rather than as a list with two names missing.
+GRIPPER_LINKS = [
+    "gripper_body",
+    "left_finger",
+    "right_finger",
+    "left_pad",
+    "right_pad",
+]
 
 
 class PlanningSceneClient:
     def __init__(self, node: Node) -> None:
         self._node = node
         self._client = node.create_client(ApplyPlanningScene, "/apply_planning_scene")
+        self._validity = node.create_client(GetStateValidity, "/check_state_validity")
         self._known: set[str] = set()
 
     def wait_until_ready(self, timeout: float = 120.0) -> None:
@@ -57,6 +71,33 @@ class PlanningSceneClient:
         self._client.call(request)
 
     # ------------------------------------------------------------ fixed parts
+
+    def why_stuck(self, group: str = "ur_manipulator") -> list[str]:
+        """Which pairs of things MoveIt believes are touching, right now.
+
+        Asked when a move comes back having solved none of the way, because
+        that almost always means the arm is already somewhere the planner
+        considers impossible, and the planner will not say which part unless
+        it is asked. Without this the only evidence is a percentage.
+
+        Best effort: a diagnosis that cannot be had is not worth failing a run
+        over, so anything going wrong here comes back as an empty list.
+        """
+        try:
+            if not self._validity.wait_for_service(timeout_sec=2.0):
+                return []
+            request = GetStateValidity.Request()
+            request.group_name = group
+            response = self._validity.call(request)
+            if response is None or response.valid:
+                return []
+            return [
+                f"{contact.contact_body_1} against {contact.contact_body_2}"
+                for contact in response.contacts
+            ] or ["the state is invalid, but no contact was named"]
+        except Exception as why:  # noqa: BLE001 - a diagnosis must never fail a run
+            self._node.get_logger().info(f"could not ask why the arm is stuck: {why}")
+            return []
 
     def add_table(self) -> None:
         pose = Pose()

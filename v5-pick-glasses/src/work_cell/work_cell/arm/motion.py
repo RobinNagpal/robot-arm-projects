@@ -386,7 +386,18 @@ class Arm:
         moved = turn @ rotation
         landing = about + turn @ (position - about)
 
-        self.move_linear([make_pose(landing, moved)], avoid_collisions=True)
+        try:
+            self.move_linear([make_pose(landing, moved)], avoid_collisions=True)
+        except MotionFailed as why:
+            # Turning a held glass about a point is asked for as a straight
+            # line so that the glass sweeps as little as possible, and a
+            # Cartesian path is all or nothing: half a turn solved is no turn.
+            # Interpolating a large rotation is where it gives up most often,
+            # and half way through turning a glass over is the worst place to
+            # stop, so a planned path to the same pose is better than none.
+            # The glass is attached by now, so the planner carries it too.
+            self._node.get_logger().info(f"no straight turn ({why}), planning the turn instead")
+            self.move_to_pose(landing, moved)
         return moved
 
     def tilt(self, angle: float, *, about: np.ndarray | None = None) -> np.ndarray:
