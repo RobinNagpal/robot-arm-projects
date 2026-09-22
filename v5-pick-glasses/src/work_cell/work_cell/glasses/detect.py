@@ -104,6 +104,34 @@ def glass_mask(rgb: np.ndarray, depth: np.ndarray) -> np.ndarray:
 SAME_GLASS = 0.04
 
 
+def foot_of(mask: np.ndarray, to_world, table_z: float) -> np.ndarray | None:
+    """Where the glass in this side-on mask is standing, in the room.
+
+    The one part of a glass whose position a single picture can fix exactly is
+    the foot, because the foot is on the table and the table is a plane the
+    camera already knows. Everything above it is guesswork without a second
+    view; the foot is not.
+
+    This is what turns a position good enough to look at a glass into one good
+    enough to close on it. A stem is a few millimetres across, and the survey
+    is not that sure of anything.
+    """
+    rows = np.flatnonzero(mask.any(axis=1))
+    if rows.size == 0:
+        return None
+
+    # The lowest rows only: higher up the glass leans away from its own foot,
+    # and on a wine glass the bowl is not even over it.
+    lowest = rows[-1]
+    band = mask[max(lowest - 2, rows[0]) : lowest + 1]
+    columns = np.argwhere(band)[:, 1]
+    if columns.size == 0:
+        return None
+
+    middle = (float(columns.min()) + float(columns.max())) / 2.0
+    return np.asarray(to_world(middle, float(lowest), table_z), dtype=float)
+
+
 def the_one_in_the_middle(mask: np.ndarray) -> np.ndarray:
     """Just the glass the camera was aimed at, out of everything in the mask.
 

@@ -40,6 +40,13 @@ SMOOTH_ROWS = 5
 # about.
 MAX_RAGGEDNESS = 0.02
 
+# The same limit said in pixels, for a glass too narrow in the picture for the
+# fraction above to mean anything. Any mask edge wanders by about a pixel, and
+# on a glass forty pixels wide that alone is two and a half per cent — so a
+# fraction on its own throws out clean pictures of narrow glasses and keeps
+# ragged pictures of wide ones. Whichever limit is the more forgiving wins.
+RAGGED_PIXELS = 2.0
+
 
 @dataclass(frozen=True)
 class Intrinsics:
@@ -148,10 +155,14 @@ def profile_from_mask(
     # only looks clean because it was filtered is not one to trust with a
     # grasp. So the raw edge decides whether the picture is worth using, and
     # the smoothed one is what gets measured.
-    if raggedness(raw_px) > MAX_RAGGEDNESS:
+    ragged = raggedness(raw_px)
+    across = float(np.median(raw_px))
+    limit = max(MAX_RAGGEDNESS, RAGGED_PIXELS / across) if across > 0 else MAX_RAGGEDNESS
+    if ragged > limit:
         raise NotMeasurable(
-            "the outline is too ragged to measure; the mask has probably caught "
-            "a reflection or a neighbouring glass"
+            f"the outline is too ragged to measure ({ragged:.3f} against a limit of "
+            f"{limit:.3f} for a glass {across:.0f} pixels across); the mask has probably "
+            "caught a reflection or a neighbouring glass"
         )
     widths_px = smooth(raw_px, smooth_rows)
 

@@ -63,12 +63,20 @@ SURVEY_OVERLAP = 0.35
 # whether a pose is really reachable is the planner's answer, not ours.
 COMFORTABLE_REACH = (0.30, 0.78)
 
-# How far the wrist camera stands off a glass to measure it. Close enough that
-# a glass fills a useful part of the frame, far enough that a tall one fits in
-# it at all. The measurement converts pixels to millimetres using this
-# distance, so it has to be known rather than guessed — see
+# The closest the wrist camera is ever stood off a glass to measure it. The
+# distance actually used is worked out per cell from the lens, because what
+# has to fit in the frame — the table at the bottom, the rim of the tallest
+# glass at the top — is a question about the lens as much as about the glass.
+# This is the floor on that: nearer than it and the glass fills the frame
+# before it is all in it. The measurement converts pixels to millimetres using
+# whatever distance was used, so it has to be known rather than guessed — see
 # glasses/perception.py.
 MEASURE_STANDOFF = 0.30
+
+# How much of the half frame the glass may fill, top to bottom. The rest is
+# margin: the arm does not arrive exactly where it was sent, and a rim that
+# lands one row outside the picture is a glass measured short.
+MEASURE_FRAME_MARGIN = 0.85
 
 # How high above the table the wrist camera aims when measuring a glass from
 # the side. It is a fixed height rather than half the glass's own height,

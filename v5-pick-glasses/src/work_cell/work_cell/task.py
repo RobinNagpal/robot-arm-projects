@@ -28,7 +28,7 @@ from __future__ import annotations
 
 import math
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 import numpy as np
 
@@ -37,9 +37,11 @@ from .arm.dimensions import (
     CAMERA_OFFSET,
     COMFORTABLE_REACH,
     FINGERTIP_OFFSET,
+    GRASP_OFFSET,
     GRIPPER_MAX_OPENING,
     GRIPPER_WEIGHT_N,
     LIFT_HEIGHT,
+    MEASURE_FRAME_MARGIN,
     MEASURE_STANDOFF,
     MEASURE_VIEW_HEIGHT,
     PLACE_CLEARANCE,
@@ -55,6 +57,7 @@ from .glasses.detect import (
     Detection,
     classify,
     find_glasses,
+    foot_of,
     glass_mask,
     merge_sightings,
     the_one_in_the_middle,
@@ -137,6 +140,7 @@ class PickGlassesTask:
         self._camera = camera
         self._scene = scene
         self._survey_stations: list[np.ndarray] | None = None
+        self._standoff: float | None = None
 
     # ------------------------------------------------------------------ run
 
@@ -208,6 +212,7 @@ class PickGlassesTask:
                 refused.append(Refused(target.name, None, f"the arm could not do it: {why}"))
                 skip.add(target.name)
                 self._arm.set_gripper(GRIPPER_MAX_OPENING)
+                self._stand_clear()
                 continue
 
             placed.append(result)
@@ -224,7 +229,14 @@ class PickGlassesTask:
         # 1. Measure it. Everything after this uses what comes back and
         #    nothing that was written down in advance.
         others = [g for g in found if g.name != target.name]
-        profile = self._view_from(target, others, angle=0.0)
+        profile, foot = self._view_from(target, others, angle=0.0)
+        if foot is not None:
+            # The survey put the arm in front of the right glass; the picture
+            # it took there says where that glass actually stands, to within
+            # the width of a stem. Everything from here on is a grasp.
+            moved = float(np.linalg.norm((foot - target.position)[:2]))
+            self._log.info(f"the side view puts it {moved * 1000:.0f} mm from where the survey did")
+            target = replace(target, position=foot)
         self._log.info(
             f"measured {profile.total_height * 1000:.0f} mm tall, "
             f"{profile.max_width * 1000:.0f} mm at its widest"
@@ -242,7 +254,7 @@ class PickGlassesTask:
 
         handle = None
         if kind.expects_handle:
-            second = self._view_from(target, others, angle=math.radians(SECOND_VIEW_DEG))
+            second, _ = self._view_from(target, others, angle=math.radians(SECOND_VIEW_DEG))
             handle = handle_direction(profile, second)
             if handle is not None:
                 self._log.info("it has a handle, so the approach comes in square to it")
@@ -261,7 +273,7 @@ class PickGlassesTask:
             self._log.info("wide and tall, so the slot beside it stays empty")
 
         # 5. Pick it up and find out what it weighs.
-        mass = self._pick_up(target, profile, grip, kind, handle)
+        mass = self._pick_up(target, others, profile, grip, kind, handle)
         self._log.info(f"it weighs {mass * 1000:.0f} g")
 
         # 6. Turn it over and stand it in the rack.
@@ -271,7 +283,9 @@ class PickGlassesTask:
 
     # ------------------------------------------------------------- measuring
 
-    def _view_from(self, target, others: list[Detection], angle: float) -> Profile:
+    def _view_from(
+        self, target, others: list[Detection], angle: float
+    ) -> tuple[Profile, np.ndarray | None]:
         """Put the camera to one side of the glass and measure its outline.
 
         The camera looks horizontally at the glass, from a known distance,
@@ -293,22 +307,61 @@ class PickGlassesTask:
             ROBOT_BASE[1] - target.position[1], ROBOT_BASE[0] - target.position[0]
         )
 
-        last: MotionFailed | None = None
+        trouble: Exception | None = None
         for eye, rotation in self._standoffs(target, others, angle + toward_base):
             try:
                 # tool0 does not go to the eye point: the camera is bolted to
                 # one side of the tool, and that offset turns with the tool.
                 self._arm.move_to_pose(eye - rotation @ CAMERA_OFFSET, rotation)
-                break
             except MotionFailed as why:
-                last = why
-        else:
-            raise last if last else MotionFailed("nowhere to stand to look at this glass")
+                trouble = why
+                continue
 
-        view = self._camera.capture()
+            view = self._camera.capture()
+            mask = the_one_in_the_middle(glass_mask(view.rgb, view.depth))
+            import os
 
-        mask = the_one_in_the_middle(glass_mask(view.rgb, view.depth))
-        return profile_from_mask(mask, view.intrinsics, MEASURE_STANDOFF)
+            import cv2 as _cv2
+
+            n = 0
+            while os.path.exists(f"/tmp/o_{target.name}_{n}.png"):
+                n += 1
+            _cv2.imwrite(f"/tmp/o_{target.name}_{n}.png", (mask * 255).astype("uint8"))
+            try:
+                measured = profile_from_mask(mask, view.intrinsics, self._measuring_distance())
+                if measured.total_height > TALLEST_GLASS:
+                    # Taller than any glass this cell handles, so it is not
+                    # one glass. Two standing one behind the other read as a
+                    # single tall one, and the height is the cheapest way to
+                    # notice: the rules downstream would take it seriously.
+                    raise NotMeasurable(
+                        f"it measures {measured.total_height * 1000:.0f} mm tall, over the "
+                        f"{TALLEST_GLASS * 1000:.0f} mm this cell handles, so the mask has "
+                        "caught more than one glass"
+                    )
+                foot = foot_of(mask, view.to_world, TABLE_TOP_Z)
+                if foot is not None:
+                    strayed = float(np.linalg.norm((foot - target.position)[:2]))
+                    if strayed > GRIPPER_MAX_OPENING:
+                        # Further off than a glass is wide, so whatever is in
+                        # the middle of this picture is not the glass the arm
+                        # came to measure. Measuring it would be bad enough;
+                        # correcting the target's position onto it and then
+                        # closing the fingers there would be worse.
+                        raise NotMeasurable(
+                            f"what is in the middle of the picture stands {strayed * 1000:.0f} mm "
+                            "from the glass this was aimed at, so it is a different glass"
+                        )
+                return measured, foot
+            except NotMeasurable as why:
+                # Which is what the next side is for. A glass with a
+                # neighbour touching it in this picture usually stands clear
+                # in one taken from somewhere else, and the arm is already up
+                # and holding nothing, so another look is cheap.
+                self._log.info(f"that side did not measure ({why}), trying another")
+                trouble = why
+
+        raise trouble if trouble else MotionFailed("nowhere to stand to look at this glass")
 
     def _standoffs(self, target, others: list[Detection], preferred: float):
         """Places to stand the camera to look at one glass, best first.
@@ -328,37 +381,59 @@ class PickGlassesTask:
         for step in range(-4, 5):
             angle = preferred + step * math.radians(40.0)
             direction = np.array([math.cos(angle), math.sin(angle), 0.0])
-            eye = target.position + direction * MEASURE_STANDOFF + UP * MEASURE_VIEW_HEIGHT
+            eye = target.position + direction * self._measuring_distance() + UP * MEASURE_VIEW_HEIGHT
             out = float(np.linalg.norm((eye - ROBOT_BASE)[:2]))
             if not COMFORTABLE_REACH[0] <= out <= COMFORTABLE_REACH[1]:
                 continue
-            offered.append((self._blocked(target, others, direction), abs(step), eye, direction))
+            offered.append((self._blocked(target, others, eye), abs(step), eye, direction))
 
         for _, _, eye, direction in sorted(offered, key=lambda row: (row[0], row[1])):
-            yield eye, look_along(-direction)
+            # The roll is pinned so that up in the picture is up in the room,
+            # the same way round from every side of the glass. It matters here
+            # and nowhere else: the profile is measured row by row, with a row
+            # meaning a height, so a picture that comes out rolled measures
+            # the glass across instead of up. The default hint is chosen for
+            # poses that look downwards, and for one looking along the table
+            # it gives a different roll for each way round the arm stands.
+            forward = -direction
+            yield eye, look_along(forward, up_hint=np.cross(UP, forward))
 
     @staticmethod
-    def _blocked(target, others: list[Detection], direction: np.ndarray) -> int:
-        """How many other glasses stand behind this one, looking in along ``direction``.
+    def _blocked(target, others: list[Detection], eye: np.ndarray) -> int:
+        """How many other glasses would share the picture with this one.
 
-        Behind means further along the line of sight and close enough to it to
-        overlap in the picture. Both of those come from the survey, which by
-        now knows where every glass stands and roughly how wide it is.
+        Judged as an angle at the camera rather than as a distance from the
+        line of sight, because that is what decides whether two glasses touch
+        in the picture. A glass well off to the side but twice as far away
+        covers the same part of the frame as one just beside the target, and
+        the mask cannot tell the two apart once they meet.
+
+        Both the positions and the widths come from the survey, which by now
+        knows where every glass stands and roughly how wide each one is.
         """
+        to_target = (target.position - eye)[:2]
+        range_to_target = float(np.linalg.norm(to_target))
+        if range_to_target <= 0.0:
+            return len(others)
+        half_target = math.atan2(target.rough_width / 2.0, range_to_target)
+
         count = 0
         for other in others:
-            offset = (other.position - target.position)[:2]
-            along = float(np.dot(offset, -direction[:2]))
-            if along <= 0.0:
+            to_other = (other.position - eye)[:2]
+            range_to_other = float(np.linalg.norm(to_other))
+            if range_to_other <= 0.0:
                 continue
-            across = float(np.linalg.norm(offset - along * -direction[:2]))
-            if across < (other.rough_width + target.rough_width) / 2.0:
+            turn = to_target[0] * to_other[1] - to_target[1] * to_other[0]
+            between = abs(math.atan2(float(turn), float(np.dot(to_target, to_other))))
+            if between < half_target + math.atan2(other.rough_width / 2.0, range_to_other):
                 count += 1
         return count
 
     # --------------------------------------------------------------- picking
 
-    def _pick_up(self, target, profile: Profile, grip: Grip, kind, handle) -> float:
+    def _pick_up(
+        self, target, others: list[Detection], profile: Profile, grip: Grip, kind, handle
+    ) -> float:
         """Close on the glass, lift it a little, and weigh it.
 
         The order matters. Which way round the gripper holds the glass is
@@ -368,13 +443,22 @@ class PickGlassesTask:
         and discovering that with the glass already in the gripper leaves
         nothing to do but put it back down.
         """
-        approach = _approach_direction(handle)
+        approaches = _approach_directions(handle, target, others)
         grip_point = target.position + UP * grip.height
 
         self._arm.set_gripper(min(grip.opening + 0.020, GRIPPER_MAX_OPENING))
-        rotation = self._hover_and_choose_grasp(grip_point, approach)
+        rotation = self._hover_and_choose_grasp(grip_point, approaches)
         position = grip_point - rotation[:, 2] * FINGERTIP_OFFSET
-        self._arm.move_linear([make_pose(position, rotation)])
+        try:
+            self._arm.move_linear([make_pose(position, rotation)])
+        except MotionFailed as why:
+            # A straight line in is what keeps the fingers from sweeping
+            # sideways through a neighbour on the way down, so it is what is
+            # asked for first. When there is no straight line to be had, a
+            # planned path is not a free-for-all: every other glass is in the
+            # planning scene by now, and the planner has to miss them too.
+            self._log.info(f"no straight line in ({why}), planning a way down instead")
+            self._arm.move_to_pose(position, rotation)
 
         # Take up the slack gently. The width when contact arrives is the true
         # width of the glass, measured by touch rather than by camera.
@@ -417,25 +501,36 @@ class PickGlassesTask:
         )
         return mass
 
-    def _hover_and_choose_grasp(self, grip_point: np.ndarray, approach: np.ndarray) -> np.ndarray:
+    def _hover_and_choose_grasp(
+        self, grip_point: np.ndarray, approaches: list[np.ndarray]
+    ) -> np.ndarray:
         """Hover above the glass, holding it whichever way round can be turned.
 
         A parallel gripper is symmetric, so the two orientations half a turn
-        apart are the same grip on the same glass. They are not the same to the
-        arm: one of them may leave the wrist with no room to invert.
+        apart are the same grip on the same glass. They are not the same to
+        the arm: one of them may leave the wrist with no room to invert. Nor
+        are the ways round the glass — so both are tried, direction by
+        direction, until one is found that the arm can both reach and turn.
+
+        Asked here rather than after the fingers close, because finding out
+        with the glass in the gripper leaves nothing to do but put it back.
         """
-        for index, rotation in enumerate(grasp_options(_grasp_rotation(approach))):
-            hover = grip_point + UP * LIFT_HEIGHT - rotation[:, 2] * FINGERTIP_OFFSET
-            try:
-                self._arm.move_to_pose(hover, rotation)
-            except MotionFailed:
-                continue
-            if self._arm.can_rotate_tool(math.pi):
-                return rotation
-            self._log.info("that way round the wrist could not turn it over, trying the other")
-            if index:
-                break
-        raise MotionFailed("no way of holding this glass leaves the wrist able to turn it over")
+        tried = 0
+        for approach in approaches:
+            for rotation in grasp_options(_grasp_rotation(approach)):
+                hover = grip_point + UP * LIFT_HEIGHT - rotation[:, 2] * FINGERTIP_OFFSET
+                tried += 1
+                try:
+                    self._arm.move_to_pose(hover, rotation)
+                except MotionFailed:
+                    continue
+                if self._arm.can_rotate_tool(math.pi):
+                    return rotation
+
+        raise MotionFailed(
+            f"none of the {tried} ways of holding this glass leave the wrist able to "
+            "turn it over"
+        )
 
     # -------------------------------------------------------- turn and place
 
@@ -560,6 +655,29 @@ class PickGlassesTask:
             np.asarray(view.camera_to_world[:3, 3], dtype=float),
         )
 
+    def _measuring_distance(self) -> float:
+        """How far back to stand to measure a glass, worked out from the lens.
+
+        The camera looks level at ``MEASURE_VIEW_HEIGHT``, so the frame has to
+        reach down that far to catch the foot the glass stands on and up the
+        rest of the way to the rim of the tallest glass the cell handles. Both
+        are angles, so how far back that puts the camera depends on the lens,
+        and a number written down here would be right for one camera only.
+
+        The foot matters as much as the rim. A wine glass with its foot cut
+        off the bottom of the picture is a bowl narrowing to a stem and
+        nothing below it, which has no waist in it, and a glass with no waist
+        is not a stemmed glass to any rule that looks for one.
+        """
+        if self._standoff is None:
+            view = self._camera.capture()
+            rows = view.rgb.shape[0]
+            half_frame = (rows / 2.0) / view.intrinsics.fy
+            reach = max(MEASURE_VIEW_HEIGHT, TALLEST_GLASS - MEASURE_VIEW_HEIGHT)
+            self._standoff = max(MEASURE_STANDOFF, reach / (half_frame * MEASURE_FRAME_MARGIN))
+            self._log.info(f"measuring glasses from {self._standoff * 1000:.0f} mm back")
+        return self._standoff
+
     def _stations(self) -> list[np.ndarray]:
         """Where to stand the camera so every glass is in some picture.
 
@@ -602,22 +720,98 @@ class PickGlassesTask:
             )
         return fill_order(candidates)[0]
 
+    def _stand_clear(self) -> None:
+        """Back to somewhere ordinary, after a glass the arm could not manage.
+
+        A pick that fails leaves the arm wherever it gave up, which is usually
+        folded in over the table with the planner unable to get anywhere from
+        it — and then the next survey cannot be reached either, and one glass
+        the arm could not manage turns into a run that does nothing. Failing
+        to stand clear is not itself worth stopping for.
+        """
+        try:
+            # Straight up first. Wherever the arm gave up, it gave up close to
+            # the table with the glass beside it, and a planner asked to get
+            # from there to anywhere has to find its way out of that corner
+            # first. Up is the one direction that is always clear.
+            position, rotation = self._arm.current_pose()
+            self._arm.move_linear([make_pose(position + UP * LIFT_HEIGHT, rotation)])
+        except MotionFailed as why:
+            self._log.info(f"could not lift clear, trying to park from here: {why}")
+
+        try:
+            self._park()
+        except MotionFailed as why:
+            self._log.warning(f"could not stand clear after that: {why}")
+
     def _park(self) -> None:
         self._arm.set_gripper(GRIPPER_MAX_OPENING)
         self._arm.move_to_pose(ROBOT_BASE + np.array([0.5, 0.0, SURVEY_HEIGHT]), look_along(-UP))
 
 
-def _approach_direction(handle: float | None) -> np.ndarray:
-    """Which way the fingers come in from.
+def _approach_directions(
+    handle: float | None, target: Detection, others: list[Detection]
+) -> list[np.ndarray]:
+    """Which ways the fingers may come in from, best first.
 
-    A glass is round, so for most of them the direction is free and the arm
-    takes the one that keeps it clear of its neighbours. A handle is the
-    exception: come in square to it, so that neither finger lands on it.
+    A glass is round, so for most of them the direction is free, and that
+    freedom is worth spending: the wrist's last joint stops short of a full
+    turn, so whether a glass can be turned over at all depends on which way
+    round it was picked up. One direction is one chance; the ring is several.
+
+    A handle is the exception. There the direction is not free — the fingers
+    come in square to it so that neither lands on it — and the only choice
+    left is which of the two square-on directions to use.
+
+    Order is by least reach first, which means coming in from the side of the
+    glass nearest the arm's own base, and directions that would sweep the
+    fingers through a neighbour are left out.
     """
-    if handle is None:
-        return np.array([1.0, 0.0, 0.0])
-    across = handle + math.pi / 2
-    return np.array([math.cos(across), math.sin(across), 0.0])
+    if handle is not None:
+        across = handle + math.pi / 2
+        return [
+            np.array([math.cos(across), math.sin(across), 0.0]),
+            np.array([-math.cos(across), -math.sin(across), 0.0]),
+        ]
+
+    # The tool ends up a fingertip's length back along the approach, so coming
+    # in along the line out from the base puts it between the base and the
+    # glass: the shortest reach of any direction on the ring.
+    outward = math.atan2(target.position[1] - ROBOT_BASE[1], target.position[0] - ROBOT_BASE[0])
+
+    directions = []
+    for step in sorted(range(-5, 6), key=abs):
+        angle = outward + step * math.radians(30.0)
+        direction = np.array([math.cos(angle), math.sin(angle), 0.0])
+        if not _fingers_clear(target, others, direction):
+            continue
+
+        # The tool ends up a fingertip's length back along the approach, and
+        # that is the point the arm has to reach. Coming straight in from the
+        # base is the shortest reach of any direction, which for a glass
+        # already close in can be shorter than the arm can fold itself to.
+        tool = (target.position - direction * FINGERTIP_OFFSET - ROBOT_BASE)[:2]
+        if not COMFORTABLE_REACH[0] <= float(np.linalg.norm(tool)) <= COMFORTABLE_REACH[1]:
+            continue
+        directions.append(direction)
+    return directions
+
+
+def _fingers_clear(target: Detection, others: list[Detection], approach: np.ndarray) -> bool:
+    """Whether the fingers can come in this way without meeting another glass.
+
+    The gripper comes in along ``approach``, so what has to be clear is the
+    length of it behind the glass, not the whole ring.
+    """
+    for other in others:
+        offset = (other.position - target.position)[:2]
+        along = float(np.dot(offset, -approach[:2]))
+        if not 0.0 < along < FINGERTIP_OFFSET + GRASP_OFFSET:
+            continue
+        across = float(np.linalg.norm(offset - along * -approach[:2]))
+        if across < (other.rough_width + GRIPPER_MAX_OPENING) / 2.0:
+            return False
+    return True
 
 
 def _grasp_rotation(approach: np.ndarray) -> np.ndarray:

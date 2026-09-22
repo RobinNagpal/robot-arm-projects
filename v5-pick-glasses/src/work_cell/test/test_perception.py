@@ -170,3 +170,29 @@ def test_a_view_that_is_much_wider_than_the_other_is_a_handle():
     from work_cell.glasses.profile import Profile
 
     assert handle_direction(Profile(plain.height, widened), plain) is not None
+
+
+def test_a_narrow_glass_is_not_called_ragged_for_wandering_one_pixel():
+    """The limit is a fraction of the glass's width, so on a narrow glass the
+    ordinary one-pixel wander of any mask edge eats all of it."""
+    rows = 120
+    mask = np.zeros((rows, 200), dtype=bool)
+    rng = np.random.default_rng(1)
+    for row in range(rows):
+        half = 20 + int(rng.integers(0, 2))  # a glass 40 px across, wandering a pixel
+        mask[row, 100 - half : 100 + half] = True
+
+    profile = profile_from_mask(mask, Intrinsics(fx=280.0, fy=280.0, cx=100.0, cy=60.0), 0.38)
+    assert profile.total_height > 0
+
+
+def test_a_genuinely_ragged_outline_is_still_refused():
+    rows = 120
+    mask = np.zeros((rows, 200), dtype=bool)
+    rng = np.random.default_rng(2)
+    for row in range(rows):
+        half = 20 + int(rng.integers(0, 12))  # jumping about by a lot more
+        mask[row, 100 - half : 100 + half] = True
+
+    with pytest.raises(NotMeasurable):
+        profile_from_mask(mask, Intrinsics(fx=280.0, fy=280.0, cx=100.0, cy=60.0), 0.38)
