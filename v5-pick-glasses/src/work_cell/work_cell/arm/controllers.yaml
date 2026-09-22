@@ -74,4 +74,5 @@ wrist_force_broadcaster:
     # The reading is in the gripper's own frame, so its z axis is the direction
     # the gripper reaches in. A glass hanging below the fingers pulls along it.
     frame_id: gripper_body
-    topic_name: wrist_force
+    # The topic is not set here. This broadcaster has no topic_name parameter
+    # and always publishes on ~/wrench, so the launch remaps it to /wrist_force.

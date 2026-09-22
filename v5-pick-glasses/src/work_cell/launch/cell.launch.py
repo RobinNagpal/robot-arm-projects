@@ -161,7 +161,14 @@ def setup(context, *args, **kwargs):
         # are on a glass, and hands the joints back to let go.
         *_chain_spawners(
             "joint_state_broadcaster",
-            "wrist_force_broadcaster",
+            # ForceTorqueSensorBroadcaster has no topic_name parameter: it always
+            # publishes on ~/wrench. The remap is what puts it on /wrist_force,
+            # which is the name arm/motion.py listens on.
+            (
+                "wrist_force_broadcaster",
+                "--controller-ros-args",
+                "-r ~/wrench:=/wrist_force",
+            ),
             "arm_controller",
             "gripper_controller",
             ("gripper_force_controller", "--inactive"),
