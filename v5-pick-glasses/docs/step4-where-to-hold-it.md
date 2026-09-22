@@ -124,4 +124,95 @@ shape for this problem.
 One rule covers all of them. Adding a ninth glass to the left panel needs no
 change at all, and *that* is the property the project is really built around.
 
+## Could the arm learn where to hold it instead
+
+A fair question, and worth answering with evidence rather than taste, because
+the rules above are the most opinionated part of the project.
+
+The rules are not producing wrong numbers. A glass that really is 189 mm tall
+and 64 mm across measures 180 × 63, is called a stemmed glass, and the stem is
+found. What goes wrong is narrower than that: the rules produce **one** answer,
+and when that answer is three millimetres out the arm has nowhere to go. The
+fingers close on a 5 mm stem, meet nothing, and the glass is left standing.
+
+So the real weakness is not that the grip point is calculated. It is that it is
+calculated *once*.
+
+### What would actually help
+
+**Search instead of a single answer.** Each rule returns its best height. It
+could return a ranked list instead — every height where a pad would fit, across
+every approach direction and wrist roll, scored on wall slope, how much pad is
+in contact, whether the arm can reach it and whether the wrist can still turn
+it over. The arm then works down the list. This is the cheapest change on this
+page and the one that would fix the most, because "no way of holding this
+glass" is usually "no way of holding it *the first way tried*".
+
+**Feel for it.** The project already says the last millimetres are felt rather
+than driven, and then does not follow through: if the fingers meet nothing, the
+glass is refused. They could instead open, move a few millimetres using the
+wrist force and the fingertip contacts, and close again. A stem is findable by
+touch in two or three tries.
+
+**Close the loop with the camera on the way in.** The approach is open-loop —
+compute a pose, move to it, hope. Watching the glass during the descent would
+take out the error that is left after the measurement.
+
+None of those three is learning. All three attack the failures that are
+actually happening.
+
+### Learning it
+
+**Copying an expert works and is proven next door.**
+[`v5-learn-pick-place`](../../v5-learn-pick-place) does exactly this: a
+scripted expert does the job a few hundred times, and an ACT policy learns to
+copy it, reaching 74% on blocks it never saw. Note what that project did *not*
+learn — the block is still found with plain geometry from a depth camera. Only
+the movement is learned. That split is the useful one, and it would carry over
+here: the profile and the kind stay measured, the last part of the reach
+becomes a policy, and MoveIt stops being in the way.
+
+**Reinforcement learning is the wrong member of that family for this job.**
+Three reasons, in order of how much they matter:
+
+1. *The reward is the hard part.* "Do not chip the rim, do not crush it, and
+   leave it standing if you are unsure" is a set of constraints, not a score.
+   This project treats a refused glass as a success, and there is no natural
+   way to reward an arm for declining.
+2. *It would not touch most of the failures.* A glass that is measured wrongly
+   is refused by the rules before anything moves. No policy sees that.
+3. *The sample cost.* Contact-rich grasping wants a number of episodes with
+   five or more zeroes on it. A run here takes about five minutes in Gazebo,
+   so this would mean rebuilding the cell in a fast simulator first — most of
+   a project before the first episode.
+
+Copying an expert avoids all three, and there *is* an expert to copy: the rules
+on this page, on the glasses they already handle.
+
+**A grasp network off the shelf does not fit.** Contact-GraspNet and the like
+take a point cloud and return grasps. A glass returns no point cloud — that is
+the whole premise of this project, and the reason the depth picture has a hole
+in it. Feeding one of these models the input that glass destroys is not a
+promising start.
+
+### What learning would cost
+
+Two things, and neither is the training time.
+
+The project's one rule is that no glass's size appears anywhere in it. A policy
+trained on this family of glasses has their proportions in its weights. Nothing
+would be written down, and the rule would still be broken — just somewhere
+nobody can read it.
+
+And a rule can say why it refused. "The rule wants the fingers 246 mm apart,
+outside the 20 to 95 mm a straight glass should ever need" is a sentence that
+sends you to the bug. A policy that does not grasp a glass has no reason to
+offer, and a project whose refusals are results needs its refusals to be
+legible.
+
+The honest summary: search and touch first, because they are cheap and they fix
+what is broken. Learn the movement after that, if the reach is still the weak
+part. Learning where to hold a glass is the last thing to give away, not the
+first.
+
 → [Step 5 — how hard to squeeze](step5-how-hard-to-squeeze.md)
