@@ -6,8 +6,12 @@ an opening wider than the gripper, both fail at run time in a way that looks
 like a planning problem.
 """
 
+import numpy as np
+import pytest
 from work_cell.arm import dimensions
+from work_cell.arm.dimensions import survey_stations
 from work_cell.glasses import spec
+from work_cell.rack.layout import GLASS_ZONE
 
 
 def test_no_rule_allows_an_opening_the_gripper_cannot_reach():
@@ -49,3 +53,44 @@ def test_the_camera_is_offset_from_the_tool():
     # If it were not, pointing the tool at a glass would point the camera at it
     # too, and the code that corrects for the offset would be untested.
     assert float(abs(dimensions.CAMERA_OFFSET).max()) > 0.01
+
+
+# --- where the camera stands to survey -----------------------------------
+
+
+def _covered(zone, footprint, stations):
+    """Is every corner of the zone inside some station's picture?"""
+    x_from, x_to, y_from, y_to = zone
+    for x in np.linspace(x_from, x_to, 21):
+        for y in np.linspace(y_from, y_to, 21):
+            if not any(
+                abs(x - c[0]) <= footprint[0] / 2 + 1e-9 and abs(y - c[1]) <= footprint[1] / 2 + 1e-9
+                for c in stations
+            ):
+                return False
+    return True
+
+
+def test_the_stations_cover_the_whole_zone():
+    zone = GLASS_ZONE
+    footprint = (0.519, 0.389)
+    assert _covered(zone, footprint, survey_stations(zone, footprint))
+
+
+def test_a_narrower_lens_just_means_more_stations():
+    """No number here assumes a particular camera."""
+    zone = GLASS_ZONE
+    wide = survey_stations(zone, (0.519, 0.389))
+    narrow = survey_stations(zone, (0.20, 0.15))
+    assert len(narrow) > len(wide)
+    assert _covered(zone, (0.20, 0.15), narrow)
+
+
+def test_one_station_is_enough_when_one_picture_covers_it_all():
+    zone = (0.4, 0.6, -0.1, 0.1)
+    assert len(survey_stations(zone, (1.0, 1.0))) == 1
+
+
+def test_a_camera_that_sees_nothing_is_refused_rather_than_looped_on():
+    with pytest.raises(ValueError):
+        survey_stations(GLASS_ZONE, (0.0, 0.3))

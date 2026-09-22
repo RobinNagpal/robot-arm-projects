@@ -98,6 +98,158 @@ def glass_mask(rgb: np.ndarray, depth: np.ndarray) -> np.ndarray:
     return missing & lit
 
 
+# Two sightings of the same glass, from cameras this far apart or less, are
+# taken to be the same glass when the pictures are merged. Glasses are set out
+# further apart than this, so it cannot join two of them into one.
+SAME_GLASS = 0.04
+
+
+def the_one_in_the_middle(mask: np.ndarray) -> np.ndarray:
+    """Just the glass the camera was aimed at, out of everything in the mask.
+
+    A side-on picture catches whatever else is standing on the table behind
+    and beside the glass being measured, and every one of them is a hole in
+    the depth picture too. Measured together they make one impossible glass:
+    as tall as the picture and as wide as the table.
+
+    The camera was pointed at one glass, so the one wanted is the one in the
+    middle. Anything that does not reach the middle column belongs to some
+    other glass and is dropped.
+    """
+    labels = _label(mask)
+    if labels.max() < 1:
+        return mask
+
+    middle = mask.shape[1] / 2.0
+    best, best_gap = None, None
+    for index in range(1, labels.max() + 1):
+        columns = np.argwhere(labels == index)[:, 1]
+        # Nothing to choose by position alone, so it is the blob the middle
+        # column falls inside, or failing that the nearest one to it.
+        gap = 0.0 if columns.min() <= middle <= columns.max() else float(
+            min(abs(columns.min() - middle), abs(columns.max() - middle))
+        )
+        size = int((labels == index).sum())
+        if best_gap is None or (gap, -size) < best_gap:
+            best, best_gap = index, (gap, -size)
+
+    return labels == best
+
+
+def where_they_stand(
+    first: list[Detection],
+    first_camera: np.ndarray,
+    second: list[Detection],
+    second_camera: np.ndarray,
+    camera_height: float,
+    *,
+    tolerance: float = 0.02,
+) -> list[Detection]:
+    """Where the glasses really stand, from two pictures taken from above.
+
+    One picture from above cannot say where a glass stands. ``find_glasses()``
+    has to put the silhouette somewhere, and the only plane it knows is the
+    table, so it lays the glass's widest part down on the table. That part is
+    not on the table — it is ``h`` above it — and laying it down pushes it
+    outwards, away from the point under the camera, by ``H / (H - h)``. The
+    direction comes out right and the distance comes out too far.
+
+    Two pictures fix it, because that same unknown ``h`` decides how far the
+    glass appears to move when the camera moves. Slide the camera by a known
+    ``d`` and a glass laid down on the table appears to move by ``d / k``,
+    where ``k = (H - h) / H``. So the apparent movement measures ``k``, ``k``
+    gives back the true position and the true width, and nothing about any
+    glass had to be known in advance.
+
+    A glass that only one of the two pictures caught is left out. Its height
+    cannot be measured from one view, so where it stands is not known, and a
+    guess would be worse than a gap: another station usually catches it.
+    """
+    baseline = np.asarray(first_camera, dtype=float)[:2] - np.asarray(second_camera, dtype=float)[:2]
+    span = float(np.dot(baseline, baseline))
+    if span <= 0.0:
+        raise ValueError("the two pictures were taken from the same place, so they say nothing new")
+
+    candidates = []
+    for one in first:
+        for other in second:
+            moved = (other.position[:2] - np.asarray(second_camera, dtype=float)[:2]) - (
+                one.position[:2] - np.asarray(first_camera, dtype=float)[:2]
+            )
+            travelled = float(np.dot(moved, moved))
+            if travelled <= 0.0:
+                continue
+
+            # Least squares, because the two are parallel only up to the error
+            # in either sighting.
+            shrink = float(np.dot(baseline, moved)) / travelled
+            if not 0.0 < shrink <= 1.0:
+                continue
+
+            residual = float(np.linalg.norm(baseline - shrink * moved))
+            if residual > tolerance:
+                continue
+            candidates.append((residual, one, other, shrink))
+
+    found: list[Detection] = []
+    taken_first: set[int] = set()
+    taken_second: set[int] = set()
+    for _residual, one, other, shrink in sorted(candidates, key=lambda row: row[0]):
+        if id(one) in taken_first or id(other) in taken_second:
+            continue
+        taken_first.add(id(one))
+        taken_second.add(id(other))
+
+        # Both pictures place it; averaging them costs nothing and halves the
+        # effect of a ragged edge on either one.
+        from_first = np.asarray(first_camera, dtype=float)[:2] + shrink * (
+            one.position[:2] - np.asarray(first_camera, dtype=float)[:2]
+        )
+        from_second = np.asarray(second_camera, dtype=float)[:2] + shrink * (
+            other.position[:2] - np.asarray(second_camera, dtype=float)[:2]
+        )
+        middle = (from_first + from_second) / 2.0
+
+        found.append(
+            Detection(
+                name=one.name,
+                position=np.array([middle[0], middle[1], float(one.position[2])]),
+                # The width was laid down on the table with the rest of the
+                # glass, so it is too big by the same factor.
+                rough_width=shrink * (one.rough_width + other.rough_width) / 2.0,
+            )
+        )
+
+    return found
+
+
+def merge_sightings(found: list[Detection], *, apart: float = SAME_GLASS) -> list[Detection]:
+    """One entry per glass, from stations whose pictures overlap.
+
+    Renamed in a fixed order rather than in the order they were seen, so that
+    the same table gives the same names whichever station happened to catch
+    which glass first.
+    """
+    kept: list[Detection] = []
+    for one in found:
+        for index, already in enumerate(kept):
+            if float(np.linalg.norm(already.position[:2] - one.position[:2])) <= apart:
+                kept[index] = Detection(
+                    name=already.name,
+                    position=(already.position + one.position) / 2.0,
+                    rough_width=max(already.rough_width, one.rough_width),
+                )
+                break
+        else:
+            kept.append(one)
+
+    kept.sort(key=lambda d: (round(float(d.position[0]), 3), round(float(d.position[1]), 3)))
+    return [
+        Detection(name=f"glass_{index}", position=d.position, rough_width=d.rough_width)
+        for index, d in enumerate(kept)
+    ]
+
+
 def find_glasses(mask: np.ndarray, to_world, table_z: float, min_pixels: int = 150) -> list[Detection]:
     """Group a mask into one detection per glass, seen from above.
 

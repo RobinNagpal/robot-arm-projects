@@ -1,6 +1,14 @@
 import numpy as np
 import pytest
-from work_cell.glasses.detect import classify, find_glasses, glass_mask
+from work_cell.glasses.detect import (
+    Detection,
+    classify,
+    find_glasses,
+    glass_mask,
+    merge_sightings,
+    the_one_in_the_middle,
+    where_they_stand,
+)
 from work_cell.glasses.profile import profile_from_outline
 from work_cell.glasses.shapes import family, short_stemmed, stemmed, straight, tapered
 
@@ -151,3 +159,154 @@ def test_a_shape_no_rule_describes_is_refused_rather_than_forced():
 
     flat = Profile(np.array([0.0, 0.001, 0.002]), np.array([0.08, 0.08, 0.08]))
     assert classify(flat) is None
+
+
+# --- two views from above ------------------------------------------------
+
+
+def _laid_on_the_table(true_xy, height, width, camera_xy, camera_height, name="glass_0"):
+    """What one picture from above reports for a glass it cannot range on.
+
+    The camera lays the glass's widest part down on the table, which pushes it
+    away from the point under the camera. This is that, and nothing else.
+    """
+    stretch = camera_height / (camera_height - height)
+    here = np.asarray(camera_xy, float)
+    seen = here + stretch * (np.asarray(true_xy, float) - here)
+    return Detection(
+        name=name,
+        position=np.array([seen[0], seen[1], 0.75]),
+        rough_width=width * stretch,
+    )
+
+
+def test_two_views_put_a_glass_back_where_it_really_stands():
+    camera_height, baseline = 0.45, 0.12
+    truth, height, width = np.array([0.62, -0.21]), 0.19, 0.082
+    first_camera = np.array([0.54, -0.09 - baseline / 2])
+    second_camera = np.array([0.54, -0.09 + baseline / 2])
+
+    found = where_they_stand(
+        [_laid_on_the_table(truth, height, width, first_camera, camera_height)],
+        first_camera,
+        [_laid_on_the_table(truth, height, width, second_camera, camera_height)],
+        second_camera,
+        camera_height,
+    )
+
+    assert len(found) == 1
+    assert np.allclose(found[0].position[:2], truth, atol=1e-6)
+    assert found[0].rough_width == pytest.approx(width, abs=1e-6)
+
+
+def test_it_works_across_a_family_of_glasses_not_one_example():
+    """A correction that only works at one height is not a correction."""
+    camera_height, baseline = 0.45, 0.12
+    first_camera = np.array([0.54, -0.09 - baseline / 2])
+    second_camera = np.array([0.54, -0.09 + baseline / 2])
+
+    rng = np.random.default_rng(4)
+    for _ in range(40):
+        truth = np.array([rng.uniform(0.36, 0.72), rng.uniform(-0.32, 0.14)])
+        height = float(rng.uniform(0.05, 0.30))
+        width = float(rng.uniform(0.04, 0.12))
+
+        found = where_they_stand(
+            [_laid_on_the_table(truth, height, width, first_camera, camera_height)],
+            first_camera,
+            [_laid_on_the_table(truth, height, width, second_camera, camera_height)],
+            second_camera,
+            camera_height,
+        )
+        assert len(found) == 1, f"lost a glass {height * 1000:.0f} mm tall"
+        assert np.allclose(found[0].position[:2], truth, atol=1e-6)
+        assert found[0].rough_width == pytest.approx(width, abs=1e-6)
+
+
+def test_a_flat_thing_on_the_table_is_left_where_it_was():
+    """Zero height means no correction: the marker on the rack is exactly this."""
+    camera_height = 0.45
+    truth = np.array([0.5, 0.1])
+    first_camera = np.array([0.54, -0.15])
+    second_camera = np.array([0.54, -0.03])
+
+    found = where_they_stand(
+        [_laid_on_the_table(truth, 0.0, 0.05, first_camera, camera_height)],
+        first_camera,
+        [_laid_on_the_table(truth, 0.0, 0.05, second_camera, camera_height)],
+        second_camera,
+        camera_height,
+    )
+    assert np.allclose(found[0].position[:2], truth, atol=1e-9)
+
+
+def test_a_glass_only_one_picture_caught_is_left_out():
+    """Its height cannot be measured, so where it stands is not known."""
+    camera_height = 0.45
+    first_camera, second_camera = np.array([0.54, -0.15]), np.array([0.54, -0.03])
+    seen = _laid_on_the_table(np.array([0.62, -0.21]), 0.19, 0.082, first_camera, camera_height)
+    assert where_they_stand([seen], first_camera, [], second_camera, camera_height) == []
+
+
+def test_two_glasses_are_not_mixed_up_with_each_other():
+    camera_height, baseline = 0.45, 0.12
+    first_camera = np.array([0.54, -0.09 - baseline / 2])
+    second_camera = np.array([0.54, -0.09 + baseline / 2])
+    both = [(np.array([0.45, -0.25]), 0.09, 0.07), (np.array([0.66, 0.05]), 0.24, 0.10)]
+
+    found = where_they_stand(
+        [
+            _laid_on_the_table(xy, h, w, first_camera, camera_height, f"glass_{i}")
+            for i, (xy, h, w) in enumerate(both)
+        ],
+        first_camera,
+        [
+            _laid_on_the_table(xy, h, w, second_camera, camera_height, f"glass_{i}")
+            for i, (xy, h, w) in enumerate(both)
+        ],
+        second_camera,
+        camera_height,
+    )
+    assert len(found) == 2
+    placed = sorted(found, key=lambda d: d.position[0])
+    for got, (xy, _, width) in zip(placed, both, strict=True):
+        assert np.allclose(got.position[:2], xy, atol=1e-6)
+        assert got.rough_width == pytest.approx(width, abs=1e-6)
+
+
+def test_overlapping_stations_report_each_glass_once():
+    here = Detection(name="glass_0", position=np.array([0.5, 0.1, 0.75]), rough_width=0.08)
+    again = Detection(name="glass_1", position=np.array([0.507, 0.103, 0.75]), rough_width=0.081)
+    apart = Detection(name="glass_2", position=np.array([0.66, -0.2, 0.75]), rough_width=0.07)
+
+    merged = merge_sightings([here, again, apart])
+    assert len(merged) == 2
+    assert [d.name for d in merged] == ["glass_0", "glass_1"]
+
+
+def test_only_the_glass_in_the_middle_is_measured():
+    """A side-on picture catches the neighbours too, and measured together
+    they make one glass as tall as the picture."""
+    mask = np.zeros((40, 60), dtype=bool)
+    mask[5:35, 26:34] = True   # the one being looked at, across the middle
+    mask[0:40, 2:8] = True     # a taller neighbour off to the left
+    mask[10:20, 52:58] = True  # and another to the right
+
+    only = the_one_in_the_middle(mask)
+    assert only[5:35, 26:34].all()
+    assert not only[:, :20].any()
+    assert not only[:, 40:].any()
+
+
+def test_the_middle_one_is_kept_even_when_it_is_not_the_biggest():
+    mask = np.zeros((40, 60), dtype=bool)
+    mask[18:22, 28:32] = True  # small, in the middle
+    mask[0:40, 0:10] = True    # big, off to one side
+    only = the_one_in_the_middle(mask)
+    assert only[18:22, 28:32].all()
+    assert not only[:, 0:10].any()
+
+
+def test_an_empty_picture_is_handed_back_unchanged():
+    mask = np.zeros((10, 10), dtype=bool)
+    assert not the_one_in_the_middle(mask).any()

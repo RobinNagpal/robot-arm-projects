@@ -16,6 +16,8 @@ gripper.urdf.xacro, and the two have to move together.
 
 from __future__ import annotations
 
+import math
+
 import numpy as np
 
 # The gripper. Every grip the rules propose is checked against this, and a
@@ -40,6 +42,26 @@ GRASP_OFFSET = 0.110
 # Heights the arm works at, measured from the table top.
 SURVEY_HEIGHT = 0.45
 LIFT_HEIGHT = 0.18
+
+# How far the camera slides sideways between the two pictures that make a
+# survey. It has to be wide enough that the apparent movement of a glass is
+# much bigger than the error in finding its middle, and narrow enough that
+# both pictures still catch the same glasses. A glass standing a third of the
+# survey height tall shifts by half as much again as the camera does.
+SURVEY_BASELINE = 0.12
+
+# How much of one picture the next one repeats. A glass caught at the very
+# edge of a picture is cut off, and a cut-off silhouette has its middle in the
+# wrong place, so the stations are set close enough that anything cut off at
+# one is well inside another.
+SURVEY_OVERLAP = 0.35
+
+# How far out from its base the arm works comfortably, measured flat on the
+# table. Closer than the first and it is folded over itself; further than the
+# second and it is reaching straight out with nothing left for the wrist. Used
+# to choose which side of a glass to stand the camera on, not as a hard limit:
+# whether a pose is really reachable is the planner's answer, not ours.
+COMFORTABLE_REACH = (0.30, 0.78)
 
 # How far the wrist camera stands off a glass to measure it. Close enough that
 # a glass fills a useful part of the frame, far enough that a tall one fits in
@@ -79,3 +101,40 @@ GRIPPER_WEIGHT_N = 9.5
 # most expensive mistake available in this task, because it is only discovered
 # once the glass is already held.
 WRIST_JOINT_LIMIT_DEG = 175.0
+
+
+def survey_stations(
+    zone: tuple[float, float, float, float],
+    footprint: tuple[float, float],
+    *,
+    overlap: float = SURVEY_OVERLAP,
+) -> list[np.ndarray]:
+    """Where to stand the camera so that every part of ``zone`` is in a picture.
+
+    One picture from survey height does not cover the whole table. The zone is
+    therefore tiled: as few stations as will cover it, spread evenly, each
+    overlapping its neighbour so that nothing lands only on an edge.
+
+    ``zone`` is (x from, x to, y from, y to) and ``footprint`` is how much
+    table one picture covers, which the camera works out from its own lens
+    rather than being told.
+    """
+    x_from, x_to, y_from, y_to = zone
+    centres = []
+    for span, reach, low in (
+        (x_to - x_from, footprint[0], x_from),
+        (y_to - y_from, footprint[1], y_from),
+    ):
+        step = reach * (1.0 - overlap)
+        if reach <= 0.0 or step <= 0.0:
+            raise ValueError("a picture that covers nothing cannot be tiled into a survey")
+
+        # One station is enough when the whole span already fits in one picture.
+        count = 1 if span <= reach else int(math.ceil((span - reach) / step)) + 1
+        if count == 1:
+            centres.append([low + span / 2.0])
+        else:
+            gap = (span - reach) / (count - 1)
+            centres.append([low + reach / 2.0 + index * gap for index in range(count)])
+
+    return [np.array([x, y]) for x in centres[0] for y in centres[1]]

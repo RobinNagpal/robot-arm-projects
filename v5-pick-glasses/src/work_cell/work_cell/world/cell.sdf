@@ -157,9 +157,11 @@
            comes back empty, and the rule that tells a glass from an empty
            background is whether anything is visible through the hole. A bright
            sky reads as something visible and turns the whole horizon into
-           glass. The window has its own background colour in the GUI plugin
-           above, so this does not change what a person sees. -->
-      <background>0.02 0.02 0.03 1</background>
+           glass. Black rather than merely dark: Gazebo writes this out gamma
+           encoded, so a linear 0.02 arrives as 41 of 255 and still counts as
+           something visible. The window has its own background colour in the
+           GUI plugin above, so this does not change what a person sees. -->
+      <background>0 0 0 1</background>
     </scene>
 
     <model name="ground_plane">

@@ -35,6 +35,7 @@ import numpy as np
 from .arm.camera import WristCamera
 from .arm.dimensions import (
     CAMERA_OFFSET,
+    COMFORTABLE_REACH,
     FINGERTIP_OFFSET,
     GRIPPER_MAX_OPENING,
     GRIPPER_WEIGHT_N,
@@ -43,12 +44,22 @@ from .arm.dimensions import (
     MEASURE_VIEW_HEIGHT,
     PLACE_CLEARANCE,
     SLIP_TEST_DEG,
+    SURVEY_BASELINE,
     SURVEY_HEIGHT,
     WEIGH_LIFT,
+    survey_stations,
 )
 from .arm.motion import Arm, MotionFailed
 from .glasses import spec
-from .glasses.detect import Detection, classify, find_glasses, glass_mask
+from .glasses.detect import (
+    Detection,
+    classify,
+    find_glasses,
+    glass_mask,
+    merge_sightings,
+    the_one_in_the_middle,
+    where_they_stand,
+)
 from .glasses.force import (
     CONTACT_FORCE_N,
     TooHeavyToHold,
@@ -61,6 +72,7 @@ from .glasses.perception import NotMeasurable, handle_direction, profile_from_ma
 from .glasses.profile import Profile
 from .glasses.rules import Grip, NoGrip, find_grip
 from .rack.layout import (
+    GLASS_ZONE,
     ROBOT_BASE,
     TABLE_TOP_Z,
     Slot,
@@ -124,6 +136,7 @@ class PickGlassesTask:
         self._arm = arm
         self._camera = camera
         self._scene = scene
+        self._survey_stations: list[np.ndarray] | None = None
 
     # ------------------------------------------------------------------ run
 
@@ -168,20 +181,24 @@ class PickGlassesTask:
             )
 
             try:
-                result = self._do_one(target, slots, free)
+                result = self._do_one(target, found, slots, free)
             except UnknownShape as why:
+                self._log.error(f"giving up on {target.name}: {why}")
                 refused.append(Refused(target.name, None, str(why)))
                 skip.add(target.name)
                 continue
             except NotMeasurable as why:
+                self._log.error(f"giving up on {target.name}: could not measure it: {why}")
                 refused.append(Refused(target.name, None, f"could not measure it: {why}"))
                 skip.add(target.name)
                 continue
             except NoGrip as why:
+                self._log.error(f"giving up on {target.name}: nowhere safe to hold it: {why}")
                 refused.append(Refused(target.name, None, f"nowhere safe to hold it: {why}"))
                 skip.add(target.name)
                 continue
             except TooHeavyToHold as why:
+                self._log.error(f"giving up on {target.name}: {why}")
                 refused.append(Refused(target.name, None, str(why)))
                 skip.add(target.name)
                 continue
@@ -201,10 +218,13 @@ class PickGlassesTask:
 
     # ------------------------------------------------------------- one glass
 
-    def _do_one(self, target: Detection, slots: list[Slot], free: set[int]) -> Placed:
+    def _do_one(
+        self, target: Detection, found: list[Detection], slots: list[Slot], free: set[int]
+    ) -> Placed:
         # 1. Measure it. Everything after this uses what comes back and
         #    nothing that was written down in advance.
-        profile = self._view_from(target, angle=0.0)
+        others = [g for g in found if g.name != target.name]
+        profile = self._view_from(target, others, angle=0.0)
         self._log.info(
             f"measured {profile.total_height * 1000:.0f} mm tall, "
             f"{profile.max_width * 1000:.0f} mm at its widest"
@@ -222,7 +242,7 @@ class PickGlassesTask:
 
         handle = None
         if kind.expects_handle:
-            second = self._view_from(target, angle=math.radians(SECOND_VIEW_DEG))
+            second = self._view_from(target, others, angle=math.radians(SECOND_VIEW_DEG))
             handle = handle_direction(profile, second)
             if handle is not None:
                 self._log.info("it has a handle, so the approach comes in square to it")
@@ -251,7 +271,7 @@ class PickGlassesTask:
 
     # ------------------------------------------------------------- measuring
 
-    def _view_from(self, target, angle: float) -> Profile:
+    def _view_from(self, target, others: list[Detection], angle: float) -> Profile:
         """Put the camera to one side of the glass and measure its outline.
 
         The camera looks horizontally at the glass, from a known distance,
@@ -259,18 +279,82 @@ class PickGlassesTask:
         because the glass stands on the table and the table has been measured —
         the arm never needs a depth reading of the glass itself, which through
         transparent glass it could not get.
-        """
-        direction = np.array([math.cos(angle), math.sin(angle), 0.0])
-        eye = target.position + direction * MEASURE_STANDOFF + UP * MEASURE_VIEW_HEIGHT
-        rotation = look_along(-direction)
 
-        # tool0 does not go to the eye point: the camera is bolted to one side
-        # of the tool, and that offset turns with the tool.
-        self._arm.move_to_pose(eye - rotation @ CAMERA_OFFSET, rotation)
+        Which side it looks from is not free. Standing off a glass means
+        putting the camera a further ``MEASURE_STANDOFF`` away from it, and on
+        the far side that is a third of a metre added to a reach that is
+        already most of what the arm has. So the near side is the default:
+        ``angle`` is measured from the line back to the arm's own base, and
+        zero means standing between the glass and the arm. A second view for a
+        handle is then a turn off that, and lands somewhere the arm can still
+        reach.
+        """
+        toward_base = math.atan2(
+            ROBOT_BASE[1] - target.position[1], ROBOT_BASE[0] - target.position[0]
+        )
+
+        last: MotionFailed | None = None
+        for eye, rotation in self._standoffs(target, others, angle + toward_base):
+            try:
+                # tool0 does not go to the eye point: the camera is bolted to
+                # one side of the tool, and that offset turns with the tool.
+                self._arm.move_to_pose(eye - rotation @ CAMERA_OFFSET, rotation)
+                break
+            except MotionFailed as why:
+                last = why
+        else:
+            raise last if last else MotionFailed("nowhere to stand to look at this glass")
+
         view = self._camera.capture()
 
-        mask = glass_mask(view.rgb, view.depth)
+        mask = the_one_in_the_middle(glass_mask(view.rgb, view.depth))
         return profile_from_mask(mask, view.intrinsics, MEASURE_STANDOFF)
+
+    def _standoffs(self, target, others: list[Detection], preferred: float):
+        """Places to stand the camera to look at one glass, best first.
+
+        Two things decide the order. A glass standing behind the one being
+        measured is a second hole in the same depth picture, touching the
+        first, and the two measure as one glass the width of the table — so a
+        line of sight with nothing behind it comes first. After that, the
+        least reach: straight in from the arm's own base, because a glass far
+        out leaves nowhere to stand beyond it and one close in leaves nowhere
+        on the near side.
+
+        Whether a pose can really be reached is still the planner's business.
+        This only avoids asking it questions whose answer is obviously no.
+        """
+        offered = []
+        for step in range(-4, 5):
+            angle = preferred + step * math.radians(40.0)
+            direction = np.array([math.cos(angle), math.sin(angle), 0.0])
+            eye = target.position + direction * MEASURE_STANDOFF + UP * MEASURE_VIEW_HEIGHT
+            out = float(np.linalg.norm((eye - ROBOT_BASE)[:2]))
+            if not COMFORTABLE_REACH[0] <= out <= COMFORTABLE_REACH[1]:
+                continue
+            offered.append((self._blocked(target, others, direction), abs(step), eye, direction))
+
+        for _, _, eye, direction in sorted(offered, key=lambda row: (row[0], row[1])):
+            yield eye, look_along(-direction)
+
+    @staticmethod
+    def _blocked(target, others: list[Detection], direction: np.ndarray) -> int:
+        """How many other glasses stand behind this one, looking in along ``direction``.
+
+        Behind means further along the line of sight and close enough to it to
+        overlap in the picture. Both of those come from the survey, which by
+        now knows where every glass stands and roughly how wide it is.
+        """
+        count = 0
+        for other in others:
+            offset = (other.position - target.position)[:2]
+            along = float(np.dot(offset, -direction[:2]))
+            if along <= 0.0:
+                continue
+            across = float(np.linalg.norm(offset - along * -direction[:2]))
+            if across < (other.rough_width + target.rough_width) / 2.0:
+                count += 1
+        return count
 
     # --------------------------------------------------------------- picking
 
@@ -419,16 +503,95 @@ class PickGlassesTask:
         return slots
 
     def _survey(self) -> list[Detection]:
-        """One picture from above: where the glasses are, and roughly how big.
+        """Pictures from above: where the glasses are, and roughly how big.
 
         Deliberately not what kind each one is. From overhead a tall glass and
         a short one look almost the same and a stem is invisible, so the kind
         is decided later from the side-on measurement.
+
+        Two pictures at each station, not one. A single picture from above
+        cannot say how far away a glass is, only which direction it lies in;
+        the pair measures the rest. See ``where_they_stand()``.
         """
-        self._arm.move_to_pose(ROBOT_BASE + np.array([0.54, -0.09, SURVEY_HEIGHT]), look_along(-UP))
+        found: list[Detection] = []
+        for centre in self._stations():
+            sideways = np.array([0.0, SURVEY_BASELINE / 2.0, 0.0])
+            middle = np.array([centre[0], centre[1], SURVEY_HEIGHT])
+            try:
+                here = self._look_down_from(middle - sideways)
+                there = self._look_down_from(middle + sideways)
+            except MotionFailed as why:
+                # A station the arm cannot reach from where it is standing is
+                # a station that goes unphotographed, not a run that stops.
+                # The others still cover most of the table, and the next time
+                # round the arm is somewhere else and may well manage it.
+                self._log.warning(f"skipping a survey station: {why}")
+                continue
+
+            # Both pictures are taken from the same commanded height, so one
+            # measured height is as good as the other; the mean drops the
+            # little the arm missed it by.
+            above_table = (here[1][2] + there[1][2]) / 2.0 - TABLE_TOP_Z
+            placed = where_they_stand(here[0], here[1], there[0], there[1], above_table)
+            # A glass in one picture and not the other is a glass this station
+            # cannot place, so the count is worth seeing: a station that keeps
+            # dropping them is a station whose two pictures are too far apart.
+            self._log.info(
+                f"station at {np.round(centre, 3).tolist()}: "
+                f"{len(here[0])} and {len(there[0])} seen, {len(placed)} placed"
+            )
+            found += placed
+
+        return merge_sightings(found)
+
+    def _look_down_from(self, position: np.ndarray) -> tuple[list[Detection], np.ndarray]:
+        """One picture straight down, and where the camera really was for it.
+
+        Where the camera really was, rather than where the arm was sent: the
+        camera sits off to one side of the wrist, and the pair of pictures
+        measures a distance between them, so being a centimetre out would go
+        straight into every position the survey reports.
+        """
+        self._arm.move_to_pose(ROBOT_BASE + position, look_along(-UP))
         view = self._camera.capture()
         mask = glass_mask(view.rgb, view.depth)
-        return find_glasses(mask, view.to_world, TABLE_TOP_Z)
+        return (
+            find_glasses(mask, view.to_world, TABLE_TOP_Z),
+            np.asarray(view.camera_to_world[:3, 3], dtype=float),
+        )
+
+    def _stations(self) -> list[np.ndarray]:
+        """Where to stand the camera so every glass is in some picture.
+
+        Worked out once, from how much table the camera actually covers at
+        survey height, which comes from its own lens rather than from a number
+        written down here.
+        """
+        if self._survey_stations is None:
+            view = self._camera.capture()
+            rows, columns = view.rgb.shape[:2]
+            footprint = (
+                SURVEY_HEIGHT * columns / view.intrinsics.fx,
+                SURVEY_HEIGHT * rows / view.intrinsics.fy,
+            )
+
+            # A station is only worth as much as the part of the table both of
+            # its pictures show, because a glass in one and not the other
+            # cannot be placed. Sliding sideways for the second picture costs
+            # the baseline off that axis, and a glass has to be inside far
+            # enough not to be cut off at the edge, which costs the widest
+            # glass the gripper could ever close on off both.
+            shared = (
+                footprint[0] - GRIPPER_MAX_OPENING,
+                footprint[1] - SURVEY_BASELINE - GRIPPER_MAX_OPENING,
+            )
+            self._survey_stations = survey_stations(GLASS_ZONE, shared)
+            self._log.info(
+                f"surveying from {len(self._survey_stations)} stations, each picture covering "
+                f"{footprint[0] * 1000:.0f} x {footprint[1] * 1000:.0f} mm, "
+                f"of which {shared[0] * 1000:.0f} x {shared[1] * 1000:.0f} mm is in both"
+            )
+        return self._survey_stations
 
     def _choose_slot(self, slots: list[Slot], free: set[int], needs_gap: bool) -> Slot:
         candidates = usable_slots([s for s in slots if s.index in free], needs_gap=needs_gap)
