@@ -38,6 +38,21 @@ import numpy as np
 # lives here rather than in a glass record.
 VERTICAL_TOLERANCE = math.radians(6.0)
 
+# Over how much height the lean of a wall is judged.
+#
+# The pads are what decide this too. What a pad cares about is whether the wall
+# is flat across the pad's own height; the wall between two rows a pixel apart
+# is not a thing the gripper can feel, and not a thing a camera can measure
+# either.
+#
+# Taking it row by row instead is not merely noisy, it is wrong in one
+# direction. A measured width is quantised to whole pixels, so on a gently
+# sloping wall it stays flat for several rows and then jumps. Row to row, most
+# of the wall reads as exactly vertical and the rest as a cliff — a cone comes
+# out straight, and the steps chop the upright runs too short to grip. Over a
+# pad's height the same wall reads as the slope it is.
+LEAN_SPAN = 0.012
+
 # Widths are compared after rounding to this, so that measurement noise does
 # not invent a waist in a wall that is actually straight.
 WIDTH_RESOLUTION = 0.0002  # 0.2 mm
@@ -157,17 +172,33 @@ class Profile:
             return None
         return float(heights[(best_start + best_end - 1) // 2])
 
-    def slope(self) -> np.ndarray:
+    def slope(self, *, span: float = LEAN_SPAN) -> np.ndarray:
         """How far off vertical the wall leans at each height, in radians.
 
         Zero is a vertical wall. The sign is dropped, because a wall leaning in
         and a wall leaning out are equally bad for two flat pads.
+
+        Measured across ``span`` of height rather than between neighbouring
+        samples: see LEAN_SPAN for why row-to-row cannot work on a width that
+        came from a picture.
         """
+        count = self.height.size
+        if count < 2:
+            return np.zeros(count)
+
         # The wall moves out by half the width change, because width is a
         # diameter and the wall is one side of it.
-        d_radius = np.gradient(self.width / 2.0)
-        d_height = np.gradient(self.height)
-        return np.abs(np.arctan2(d_radius, d_height))
+        radius = self.width / 2.0
+        spacing = float(np.median(np.diff(self.height)))
+        reach = 1 if spacing <= 0.0 else max(1, int(round(span / (2.0 * spacing))))
+
+        index = np.arange(count)
+        below = np.clip(index - reach, 0, count - 1)
+        above = np.clip(index + reach, 0, count - 1)
+
+        d_radius = radius[above] - radius[below]
+        d_height = self.height[above] - self.height[below]
+        return np.abs(np.arctan2(d_radius, np.where(d_height > 0.0, d_height, np.inf)))
 
     def vertical_bands(
         self, *, within: tuple[float, float] | None = None, tolerance: float = VERTICAL_TOLERANCE

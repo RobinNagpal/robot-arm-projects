@@ -196,3 +196,50 @@ def test_a_genuinely_ragged_outline_is_still_refused():
 
     with pytest.raises(NotMeasurable):
         profile_from_mask(mask, Intrinsics(fx=280.0, fy=280.0, cx=100.0, cy=60.0), 0.38)
+
+
+# ------------------------------------- from a measured mask through to a grip
+
+
+@pytest.mark.parametrize(
+    "kind_name", ["straight_glass", "tapered_glass", "stemmed_glass", "short_stemmed_glass"]
+)
+def test_a_measured_glass_gets_a_kind_whose_rule_can_hold_it(kind_name):
+    """The same promise as the ideal-profile test, but through a picture.
+
+    Measuring from an outline and measuring from a mask are not the same
+    problem, and only the second one is what happens on a run. A mask's widths
+    are whole pixels, so a gently sloping wall stays flat for several rows and
+    then jumps; anything that reads the wall between neighbouring rows sees a
+    staircase rather than a slope. This is the test that catches it — the
+    ideal-profile version cannot, because an outline has no pixels in it.
+    """
+    from work_cell.glasses import spec
+    from work_cell.glasses.detect import classify
+    from work_cell.glasses.rules import NoGrip, find_grip
+    from work_cell.glasses.shapes import family
+
+    failures = []
+    for outline, props in family(kind_name, 40, seed=5):
+        measured = profile_from_mask(draw_mask(outline), CAMERA, DISTANCE)
+        got = classify(measured)
+        if got is None:
+            failures.append(("no kind", props))
+            continue
+        try:
+            find_grip(measured, spec.kind(got), gripper_max_opening=0.095)
+        except NoGrip as why:
+            failures.append((f"{got}: {why}", {k: round(v, 4) for k, v in props.items()}))
+
+    # Not every one: a cone that leans just under the threshold is called
+    # straight, and the straight rule then wants an upright run it has not got.
+    # That glass is refused, which is a result. A whole kind failing is not.
+    assert len(failures) <= 4, f"{len(failures)} of 40 failed, first: {failures[:2]}"
+
+
+def test_a_cone_measured_from_a_mask_is_still_a_cone():
+    """It read as straight before the lean was measured across a pad."""
+    from work_cell.glasses.detect import classify
+
+    outline = tapered(height=0.175, rim_diameter=0.090)
+    assert classify(profile_from_mask(draw_mask(outline), CAMERA, DISTANCE)) == "tapered_glass"

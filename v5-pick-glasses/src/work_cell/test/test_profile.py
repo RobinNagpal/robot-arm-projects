@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 import pytest
 from work_cell.glasses.profile import Profile, profile_from_outline
@@ -112,3 +114,21 @@ def test_every_stemmed_glass_in_a_wide_family_has_its_waist_found():
             waist = p.waist_at()
             assert waist is not None, f"no waist found on {kind} {props}"
             assert p.width_at(waist) == pytest.approx(props["stem_diameter"], abs=6e-4)
+
+
+def test_the_lean_of_a_wall_survives_being_measured_in_whole_pixels():
+    """A width that came from a picture goes up in steps, not smoothly.
+
+    Between neighbouring rows such a wall is either exactly vertical or a
+    cliff, and neither is the wall. Measured across a pad's height it is the
+    slope it really is.
+    """
+    # A wall leaning 8 degrees, with its width rounded to half a millimetre the
+    # way a pixel would round it.
+    height = np.arange(0, 0.150, 0.0005)
+    true_radius = 0.020 + height * math.tan(math.radians(8.0))
+    stepped = np.round(true_radius * 2.0 / 0.0005) * 0.0005
+
+    lean = np.degrees(Profile(height, stepped).slope())
+    middle = lean[20:-20]
+    assert abs(float(np.median(middle)) - 8.0) < 1.5

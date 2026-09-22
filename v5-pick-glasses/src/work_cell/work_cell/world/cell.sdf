@@ -32,11 +32,19 @@
         <camera_pose>-0.35 -1.0 1.55 0 0.52 0.88</camera_pose>
       </plugin>
 
+      <!--
+        The six plugins below do the window's work but draw nothing. They are
+        pinned to 5 px because a floating plugin with no size given gets a
+        default-sized card in the top left corner, and six of those overlap
+        into a pile of unreadable titles over the view.
+      -->
       <!-- Keeps the view in step with what the server is simulating. -->
       <plugin filename="GzSceneManager" name="Scene Manager">
         <gz-gui><property key="resizable" type="bool">false</property>
           <property key="showTitleBar" type="bool">false</property>
           <property key="state" type="string">floating</property>
+          <property key="width" type="double">5</property>
+          <property key="height" type="double">5</property>
         </gz-gui>
       </plugin>
       <!-- Orbit, pan and zoom with the mouse. -->
@@ -44,30 +52,40 @@
         <gz-gui><property key="resizable" type="bool">false</property>
           <property key="showTitleBar" type="bool">false</property>
           <property key="state" type="string">floating</property>
+          <property key="width" type="double">5</property>
+          <property key="height" type="double">5</property>
         </gz-gui>
       </plugin>
       <plugin filename="CameraTracking" name="Camera Tracking">
         <gz-gui><property key="resizable" type="bool">false</property>
           <property key="showTitleBar" type="bool">false</property>
           <property key="state" type="string">floating</property>
+          <property key="width" type="double">5</property>
+          <property key="height" type="double">5</property>
         </gz-gui>
       </plugin>
       <plugin filename="SelectEntities" name="Select entities">
         <gz-gui><property key="resizable" type="bool">false</property>
           <property key="showTitleBar" type="bool">false</property>
           <property key="state" type="string">floating</property>
+          <property key="width" type="double">5</property>
+          <property key="height" type="double">5</property>
         </gz-gui>
       </plugin>
       <plugin filename="EntityContextMenuPlugin" name="Entity context menu">
         <gz-gui><property key="resizable" type="bool">false</property>
           <property key="showTitleBar" type="bool">false</property>
           <property key="state" type="string">floating</property>
+          <property key="width" type="double">5</property>
+          <property key="height" type="double">5</property>
         </gz-gui>
       </plugin>
       <plugin filename="VisualizationCapabilities" name="Visualization Capabilities">
         <gz-gui><property key="resizable" type="bool">false</property>
           <property key="showTitleBar" type="bool">false</property>
           <property key="state" type="string">floating</property>
+          <property key="width" type="double">5</property>
+          <property key="height" type="double">5</property>
         </gz-gui>
       </plugin>
 

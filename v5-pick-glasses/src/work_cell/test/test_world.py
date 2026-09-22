@@ -1,16 +1,26 @@
+import math
 import random
+from pathlib import Path
 
+import numpy as np
 import pytest
+from work_cell.arm.dimensions import COMFORTABLE_REACH
 from work_cell.glasses.spawn import random_glasses
 from work_cell.rack.build import PEG_HEIGHT, rack_sdf, random_rack_pose, write_marker
 from work_cell.rack.layout import (
+    GLASS_ZONE,
     MARKER_DICTIONARY,
     MARKER_ID,
     MARKER_SIZE,
     SLOT_COUNT,
     SLOT_SPACING,
+    slots_from_marker,
 )
+from work_cell.table.build import table_sdf
+from work_cell.table.layout import TABLE_CENTRE_XY, TABLE_SIZE, TABLE_TOP_Z
 from work_cell.world.build import build_world
+
+TABLE_TEMPLATE = (Path(__file__).resolve().parents[1] / "work_cell" / "table" / "table.sdf").read_text()
 
 TEMPLATE = "<sdf><world>\n<!-- TABLE -->\n<!-- RACK -->\n<!-- GLASSES -->\n</world></sdf>"
 
@@ -105,3 +115,79 @@ def test_the_meshes_are_all_different_because_the_glasses_are(tmp_path):
 def test_a_template_missing_a_marker_says_which_one(tmp_path):
     with pytest.raises(ValueError, match="RACK"):
         build_world("<sdf><!-- TABLE --><!-- GLASSES --></sdf>", "", (0, 0, 0), [], tmp_path)
+
+
+# --------------------------------------------- the two sides of the table
+#
+# The rack stands on the arm's left and the glasses on its right. These are
+# the facts that keep them apart, and they are checked over every rack pose
+# and every set of glasses the run can draw, not over one of each: a gap that
+# holds for the arrangement someone had in mind and closes for the next one is
+# the failure worth catching.
+
+RACK_HALF_LENGTH = (SLOT_COUNT - 1) * SLOT_SPACING / 2.0 + 0.04
+RACK_HALF_WIDTH = 0.070
+
+
+def _rack_poses(count=60):
+    return [random_rack_pose(random.Random(seed)) for seed in range(count)]
+
+
+def test_the_rack_stands_square_to_the_table():
+    """A rack at an angle is what put a slot out of reach at one end."""
+    for _, _, yaw in _rack_poses():
+        assert math.isclose(yaw % (math.pi / 2), 0.0, abs_tol=1e-9)
+
+
+def test_every_slot_is_inside_the_arm_s_comfortable_reach():
+    near, far = COMFORTABLE_REACH
+    for x, y, yaw in _rack_poses():
+        for slot in slots_from_marker(np.array([x, y, TABLE_TOP_Z]), yaw):
+            out = math.hypot(*slot.centre[:2])
+            assert near <= out <= far, f"slot {slot.index} is {out:.3f} m out"
+
+
+def test_no_glass_ever_stands_on_or_beside_the_rack():
+    """The gap is what keeps the rack out of the back of a survey picture."""
+    for seed, (rx, ry, _) in enumerate(_rack_poses(30)):
+        for glass in random_glasses(6, seed):
+            gx, gy = glass.position[:2]
+            clear = math.hypot(
+                max(abs(gx - rx) - RACK_HALF_LENGTH, 0.0),
+                max(abs(gy - ry) - RACK_HALF_WIDTH, 0.0),
+            )
+            assert clear > 0.15, f"a glass came {clear:.3f} m from the rack"
+
+
+def test_the_glasses_are_all_on_one_side_and_the_rack_on_the_other():
+    _, _, _, y_max = GLASS_ZONE
+    for _, ry, _ in _rack_poses():
+        assert y_max < ry, "the rack is meant to be the far side of the arm"
+
+
+def test_the_table_is_big_enough_for_everything_standing_on_it():
+    """The table is generated from table/layout.py, so this checks the numbers
+    rather than the file: nothing may hang over an edge."""
+    half_x, half_y, _ = (TABLE_SIZE[0] / 2.0, TABLE_SIZE[1] / 2.0, 0)
+    x_from, x_to, y_from, y_to = GLASS_ZONE
+    left = TABLE_CENTRE_XY[0] - half_x, TABLE_CENTRE_XY[1] - half_y
+    right = TABLE_CENTRE_XY[0] + half_x, TABLE_CENTRE_XY[1] + half_y
+
+    # Widest a drawn glass gets, so its edge is covered and not just its middle.
+    margin = 0.06
+    assert left[0] < x_from - margin and x_to + margin < right[0]
+    assert left[1] < y_from - margin and y_to + margin < right[1]
+
+    for x, y, _ in _rack_poses():
+        assert left[0] < x - RACK_HALF_LENGTH and x + RACK_HALF_LENGTH < right[0]
+        assert left[1] < y - RACK_HALF_WIDTH and y + RACK_HALF_WIDTH < right[1]
+
+
+def test_the_table_model_is_the_table_that_layout_py_describes():
+    """table.sdf holds no measurements of its own, so the box the simulator
+    loads and the box MoveIt is told about cannot drift apart."""
+    sdf = table_sdf(TABLE_TEMPLATE)
+    assert f"{TABLE_SIZE[0]:.4f} {TABLE_SIZE[1]:.4f} {TABLE_SIZE[2]:.4f}" in sdf
+    assert f"{TABLE_CENTRE_XY[0]:.4f} {TABLE_CENTRE_XY[1]:.4f}" in sdf
+    # Four legs, and all of them under the top rather than beyond its corners.
+    assert sdf.count('<visual name="leg_') == 4

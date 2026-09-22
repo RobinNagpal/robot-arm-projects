@@ -4,6 +4,7 @@ from work_cell.glasses.detect import (
     Detection,
     classify,
     find_glasses,
+    foot_of,
     glass_mask,
     merge_sightings,
     the_one_in_the_middle,
@@ -163,6 +164,11 @@ def test_a_shape_no_rule_describes_is_refused_rather_than_forced():
 
 # --- two views from above ------------------------------------------------
 
+# The tallest glass this cell handles. A limit of the cell, not the size of any
+# glass: it is what tells a pair of sightings of one glass from a pair of
+# sightings of two different ones.
+TALLEST = 0.26
+
 
 def _laid_on_the_table(true_xy, height, width, camera_xy, camera_height, name="glass_0"):
     """What one picture from above reports for a glass it cannot range on.
@@ -192,6 +198,7 @@ def test_two_views_put_a_glass_back_where_it_really_stands():
         [_laid_on_the_table(truth, height, width, second_camera, camera_height)],
         second_camera,
         camera_height,
+        tallest=TALLEST,
     )
 
     assert len(found) == 1
@@ -208,7 +215,7 @@ def test_it_works_across_a_family_of_glasses_not_one_example():
     rng = np.random.default_rng(4)
     for _ in range(40):
         truth = np.array([rng.uniform(0.36, 0.72), rng.uniform(-0.32, 0.14)])
-        height = float(rng.uniform(0.05, 0.30))
+        height = float(rng.uniform(0.05, TALLEST))
         width = float(rng.uniform(0.04, 0.12))
 
         found = where_they_stand(
@@ -217,6 +224,7 @@ def test_it_works_across_a_family_of_glasses_not_one_example():
             [_laid_on_the_table(truth, height, width, second_camera, camera_height)],
             second_camera,
             camera_height,
+            tallest=TALLEST,
         )
         assert len(found) == 1, f"lost a glass {height * 1000:.0f} mm tall"
         assert np.allclose(found[0].position[:2], truth, atol=1e-6)
@@ -236,6 +244,7 @@ def test_a_flat_thing_on_the_table_is_left_where_it_was():
         [_laid_on_the_table(truth, 0.0, 0.05, second_camera, camera_height)],
         second_camera,
         camera_height,
+        tallest=TALLEST,
     )
     assert np.allclose(found[0].position[:2], truth, atol=1e-9)
 
@@ -245,7 +254,7 @@ def test_a_glass_only_one_picture_caught_is_left_out():
     camera_height = 0.45
     first_camera, second_camera = np.array([0.54, -0.15]), np.array([0.54, -0.03])
     seen = _laid_on_the_table(np.array([0.62, -0.21]), 0.19, 0.082, first_camera, camera_height)
-    assert where_they_stand([seen], first_camera, [], second_camera, camera_height) == []
+    assert where_they_stand([seen], first_camera, [], second_camera, camera_height, tallest=TALLEST) == []
 
 
 def test_two_glasses_are_not_mixed_up_with_each_other():
@@ -266,6 +275,7 @@ def test_two_glasses_are_not_mixed_up_with_each_other():
         ],
         second_camera,
         camera_height,
+        tallest=TALLEST,
     )
     assert len(found) == 2
     placed = sorted(found, key=lambda d: d.position[0])
@@ -310,3 +320,133 @@ def test_the_middle_one_is_kept_even_when_it_is_not_the_biggest():
 def test_an_empty_picture_is_handed_back_unchanged():
     mask = np.zeros((10, 10), dtype=bool)
     assert not the_one_in_the_middle(mask).any()
+
+
+def test_two_glasses_are_not_read_as_one_glass_somewhere_else():
+    """The failure this pair of pictures is most prone to.
+
+    Pairing a sighting of one glass with a sighting of a *different* one gives
+    an apparent movement that is still parallel to the baseline, so long as the
+    two stand apart along it — and parallel is all the arithmetic asks for.
+    The pair then reports a glass at a place where nothing is standing, which
+    is how the arm ends up reaching into thin air or into its neighbour.
+
+    What rules it out is the height such a pair implies, which is taller than
+    any glass the cell handles.
+    """
+    camera_height, baseline = 0.45, 0.12
+    first_camera = np.array([0.47, -0.29 - baseline / 2])
+    second_camera = np.array([0.47, -0.29 + baseline / 2])
+
+    # Two glasses a slot apart along the baseline, which is the awkward case.
+    left = np.array([0.47, -0.40])
+    right = np.array([0.47, -0.18])
+    first = [
+        _laid_on_the_table(left, 0.12, 0.07, first_camera, camera_height, "a"),
+        _laid_on_the_table(right, 0.12, 0.07, first_camera, camera_height, "b"),
+    ]
+    second = [
+        _laid_on_the_table(left, 0.12, 0.07, second_camera, camera_height, "a"),
+        _laid_on_the_table(right, 0.12, 0.07, second_camera, camera_height, "b"),
+    ]
+
+    found = where_they_stand(
+        first, first_camera, second, second_camera, camera_height, tallest=TALLEST
+    )
+    assert len(found) == 2
+    for glass in found:
+        nearest = min(np.linalg.norm(glass.position[:2] - real) for real in (left, right))
+        assert nearest < 0.01, "reported a glass where none is standing"
+
+
+def test_a_pair_implying_an_impossible_glass_is_refused():
+    camera_height = 0.45
+    first_camera = np.array([0.47, -0.35])
+    second_camera = np.array([0.47, -0.23])
+    # Drawn as a glass far taller than the cell handles, so the pair cannot be
+    # two sightings of one glass the arm could ever be asked to pick up.
+    truth = np.array([0.50, -0.30])
+    first = [_laid_on_the_table(truth, 0.40, 0.07, first_camera, camera_height)]
+    second = [_laid_on_the_table(truth, 0.40, 0.07, second_camera, camera_height)]
+    assert (
+        where_they_stand(first, first_camera, second, second_camera, camera_height, tallest=TALLEST)
+        == []
+    )
+
+
+def test_the_camera_has_to_be_above_the_tallest_glass():
+    with pytest.raises(ValueError, match="above the tallest"):
+        where_they_stand([], np.array([0.4, -0.3]), [], np.array([0.4, -0.2]), 0.20, tallest=0.26)
+
+
+# --- the foot, seen at a slant ---------------------------------------------
+
+
+def _side_on_camera(height=0.120, fx=277.2, size=(240, 320)):
+    """A camera that many metres of this project assume: level, looking along
+    +x, that many metres above the table. Returns its to_world and a projector."""
+    rows, columns = size
+    cx, cy = columns / 2.0, rows / 2.0
+    eye = np.array([0.0, 0.0, height])
+    # Image right is -y in the room, image down is -z: the usual optical frame.
+    rotation = np.array([[0.0, 0.0, 1.0], [-1.0, 0.0, 0.0], [0.0, -1.0, 0.0]])
+
+    def to_world(column, row, z):
+        direction = np.array([(column - cx) / fx, (row - cy) / fx, 1.0])
+        ray = rotation @ direction
+        return eye + ray * ((z - eye[2]) / ray[2])
+
+    def to_pixel(point):
+        relative = np.asarray(point, float) - eye
+        camera = rotation.T @ relative
+        return (cx + fx * camera[0] / camera[2], cy + fx * camera[1] / camera[2])
+
+    return to_world, to_pixel, size
+
+
+def _disc_mask(centre, radius, to_pixel, size):
+    """The silhouette of a disc lying flat on the table."""
+    mask = np.zeros(size, dtype=bool)
+    angles = np.linspace(0.0, 2.0 * np.pi, 400, endpoint=False)
+    by_row: dict[int, list[float]] = {}
+    for angle in angles:
+        point = (centre[0] + radius * np.cos(angle), centre[1] + radius * np.sin(angle), 0.0)
+        column, row = to_pixel(point)
+        by_row.setdefault(int(round(row)), []).append(column)
+    for row, columns in by_row.items():
+        if 0 <= row < size[0]:
+            left, right = int(round(min(columns))), int(round(max(columns)))
+            mask[row, max(left, 0) : min(right, size[1] - 1) + 1] = True
+    return mask
+
+
+def test_the_foot_is_found_at_its_middle_not_at_its_near_rim():
+    """A foot is a disc seen at a slant, so its outline is an ellipse.
+
+    Taking the middle column at the lowest row mixes two different points: the
+    lowest row is the rim nearest the camera. It lands one foot-radius short,
+    towards the camera, every single time — which is exactly the kind of error
+    that never looks like an error, because it is the same on every glass.
+    """
+    to_world, to_pixel, size = _side_on_camera()
+    for distance in (0.34, 0.38, 0.45):
+        for sideways in (-0.05, 0.0, 0.07):
+            for radius in (0.026, 0.040):
+                centre = np.array([distance, sideways])
+                mask = _disc_mask(centre, radius, to_pixel, size)
+                found = foot_of(mask, to_world, table_z=0.0)
+                assert found is not None
+                off = float(np.linalg.norm(found[:2] - centre))
+                assert off < 0.004, (
+                    f"foot found {off * 1000:.1f} mm from the middle of a disc "
+                    f"{radius * 2000:.0f} mm across at {distance * 1000:.0f} mm"
+                )
+
+
+def test_the_foot_does_not_land_on_the_rim_nearest_the_camera():
+    # The specific wrong answer, named so it cannot come back quietly.
+    to_world, to_pixel, size = _side_on_camera()
+    centre, radius = np.array([0.38, 0.0]), 0.026
+    found = foot_of(_disc_mask(centre, radius, to_pixel, size), to_world, table_z=0.0)
+    near_rim = np.array([centre[0] - radius, centre[1]])
+    assert np.linalg.norm(found[:2] - centre) < np.linalg.norm(found[:2] - near_rim)

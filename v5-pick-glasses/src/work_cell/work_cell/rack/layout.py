@@ -72,7 +72,13 @@ MARKER_SIZE = 0.070
 # Where the glasses start out, as a rectangle on the table: x from, x to,
 # y from, y to. Sized so that half a dozen glasses fit without crowding each
 # other, and so that all of it is inside a UR5e's reach from the table edge.
-GLASS_ZONE = (0.34, 0.74, -0.34, 0.16)
+#
+# All of it is on the arm's right, because the rack stands on its left. The two
+# never share a stretch of table, which is what keeps the rack out of the back
+# of a survey picture and makes it obvious, watching the run, which side the
+# arm is working on. The gap between the near edge of the rack and the far edge
+# of this zone is about 270 mm.
+GLASS_ZONE = (0.30, 0.64, -0.52, -0.06)
 
 # How much tilt the arm can be relied on to hold during the descent. A slot
 # that would demand better than this from a particular glass is a slot that

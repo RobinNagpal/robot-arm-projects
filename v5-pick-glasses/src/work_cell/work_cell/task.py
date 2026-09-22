@@ -163,8 +163,22 @@ class PickGlassesTask:
         refused: list[Refused] = []
         skip: set[str] = set()
 
+        standing: list[Detection] = []
         while free:
-            found = [g for g in self._survey() if g.name not in skip]
+            # Everything known to be standing goes into the scene before the
+            # arm moves again, because the survey is itself a series of moves.
+            # Until this was done here the planner was told about the glasses
+            # only *after* the survey, so the arm crossed the table each round
+            # believing it was empty, and the first round it still does —
+            # nothing has seen the table yet. That is why the survey is flown
+            # high enough to clear the tallest glass the cell handles.
+            self._scene.set_glasses(
+                {g.name: (g.position, g.rough_width, TALLEST_GLASS) for g in standing}
+            )
+
+            seen = self._survey()
+            standing = seen
+            found = [g for g in seen if g.name not in skip]
             if not found:
                 break
 
@@ -173,14 +187,18 @@ class PickGlassesTask:
             target = min(found, key=lambda g: float(np.linalg.norm(g.position - ROBOT_BASE)))
             self._log.info(f"--- {target.name} ---")
 
-            # The planner is told about every glass except the one being
-            # reached for. A glass it believes is solid is a glass it will not
-            # let the fingers approach.
+            # Every glass goes in, the one being reached for included. It only
+            # comes out at the last moment, in _pick_up, once the arm is lined
+            # up above it and the one move left is straight down the tool's own
+            # axis. Leaving it out from here instead means every move of the
+            # approach — carrying the camera round it, hunting for a way to
+            # hold it — is planned as though it were not there, and the arm
+            # shoves it across the table or knocks it over before the fingers
+            # ever close.
             self._scene.set_glasses(
                 {
                     other.name: (other.position, other.rough_width, TALLEST_GLASS)
                     for other in found
-                    if other.name != target.name
                 }
             )
 
@@ -319,14 +337,6 @@ class PickGlassesTask:
 
             view = self._camera.capture()
             mask = the_one_in_the_middle(glass_mask(view.rgb, view.depth))
-            import os
-
-            import cv2 as _cv2
-
-            n = 0
-            while os.path.exists(f"/tmp/o_{target.name}_{n}.png"):
-                n += 1
-            _cv2.imwrite(f"/tmp/o_{target.name}_{n}.png", (mask * 255).astype("uint8"))
             try:
                 measured = profile_from_mask(mask, view.intrinsics, self._measuring_distance())
                 if measured.total_height > TALLEST_GLASS:
@@ -445,6 +455,19 @@ class PickGlassesTask:
         """
         approaches = _approach_directions(handle, target, others)
         grip_point = target.position + UP * grip.height
+
+        # Only now does the glass come out of the scene. Up to this point the
+        # arm has been carrying the camera around it, and a planner that does
+        # not know it is there routes an elbow straight through it. From here
+        # on the fingers have to end up straddling it, which no planner will
+        # agree to, so it has to go — and what is left is a hover directly
+        # above it and a descent down the tool's own axis.
+        self._scene.set_glasses(
+            {
+                other.name: (other.position, other.rough_width, TALLEST_GLASS)
+                for other in others
+            }
+        )
 
         self._arm.set_gripper(min(grip.opening + 0.020, GRIPPER_MAX_OPENING))
         rotation = self._hover_and_choose_grasp(grip_point, approaches)
@@ -627,7 +650,9 @@ class PickGlassesTask:
             # measured height is as good as the other; the mean drops the
             # little the arm missed it by.
             above_table = (here[1][2] + there[1][2]) / 2.0 - TABLE_TOP_Z
-            placed = where_they_stand(here[0], here[1], there[0], there[1], above_table)
+            placed = where_they_stand(
+                here[0], here[1], there[0], there[1], above_table, tallest=TALLEST_GLASS
+            )
             # A glass in one picture and not the other is a glass this station
             # cannot place, so the count is worth seeing: a station that keeps
             # dropping them is a station whose two pictures are too far apart.

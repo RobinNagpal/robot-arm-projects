@@ -67,9 +67,41 @@ class SpawnedGlass:
         return (lateral + base) * thickness * GLASS_DENSITY
 
 
+# How many times the whole arrangement is redrawn before giving up.
+#
+# Glasses are placed one after another, each one somewhere the ones already
+# down leave room for, and that fails far more often than the zone being full
+# would suggest: one glass dropped in the middle early on can leave a zone that
+# still has plenty of space but none of it usable. Starting the whole
+# arrangement again costs nothing and clears it, where trying yet another spot
+# for the last glass cannot.
+LAYOUT_ATTEMPTS = 8
+
+
 def random_glasses(count: int, seed: int, kinds: list[str] | None = None) -> list[SpawnedGlass]:
     """Lay out ``count`` glasses of random kinds and sizes in the glass zone."""
-    rng = random.Random(seed)
+    for attempt in range(LAYOUT_ATTEMPTS):
+        try:
+            # Derived from the seed, so the same seed still gives the same
+            # glasses however many attempts it took to place them. One value
+            # per (seed, attempt) pair, so no two attempts redraw the same
+            # arrangement.
+            return _layout(random.Random(seed * LAYOUT_ATTEMPTS + attempt), count, kinds)
+        except _Crowded:
+            continue
+    raise RuntimeError(
+        f"could not fit {count} glasses in the glass zone without them crowding "
+        f"each other, in {LAYOUT_ATTEMPTS} attempts; try fewer, or widen "
+        f"GLASS_ZONE in rack/layout.py"
+    )
+
+
+class _Crowded(Exception):
+    """No room left for the next glass. Caught by the retry above."""
+
+
+def _layout(rng, count: int, kinds: list[str] | None) -> list[SpawnedGlass]:
+    """One attempt at an arrangement, which may run out of room."""
     choices = kinds or sorted(KIND_RANGES)
     x_min, x_max, y_min, y_max = GLASS_ZONE
 
@@ -101,10 +133,7 @@ def _free_spot(rng, placed, x_min, x_max, y_min, y_max) -> tuple[float, float]:
         y = rng.uniform(y_min, y_max)
         if all(math.dist((x, y), g.position[:2]) >= MIN_SEPARATION for g in placed):
             return x, y
-    raise RuntimeError(
-        f"could not fit {len(placed) + 1} glasses in the glass zone without them "
-        f"crowding each other; try fewer, or widen GLASS_ZONE in rack/layout.py"
-    )
+    raise _Crowded(f"no room for glass {len(placed) + 1}")
 
 
 # ------------------------------------------------------------------- meshes
@@ -134,17 +163,32 @@ def revolve(outline: Outline, segments: int = 48) -> tuple[np.ndarray, np.ndarra
             b = ring * segments + nxt
             c = (ring + 1) * segments + segment
             d = (ring + 1) * segments + nxt
-            faces.append((a, c, d))
-            faces.append((a, d, b))
+            # Wound so the face points away from the axis. A renderer with no
+            # normals to go on works them out from this order, and one wound
+            # the other way is a glass seen from the inside.
+            faces.append((a, d, c))
+            faces.append((a, b, d))
     return vertices, np.array(faces, dtype=int)
 
 
 def write_mesh(outline: Outline, path: Path, segments: int = 48) -> Path:
-    """Write one glass as an STL the simulator can load."""
+    """Write one glass as an STL the simulator can load.
+
+    Each facet carries its own normal. Writing zeroes there is legal STL and
+    means "work it out from the winding", but it leaves the surface at the
+    mercy of whatever the renderer decides, and a glass whose foot does not
+    draw is a glass with no waist in it — which is a wine glass the arm will
+    try to hold by the bowl.
+    """
     vertices, faces = revolve(outline, segments)
     lines = ["solid glass"]
     for a, b, c in faces:
-        lines.append("facet normal 0 0 0")
+        corners = vertices[[a, b, c]]
+        normal = np.cross(corners[1] - corners[0], corners[2] - corners[0])
+        length = float(np.linalg.norm(normal))
+        if length > 0.0:
+            normal = normal / length
+        lines.append(f"facet normal {normal[0]:.6f} {normal[1]:.6f} {normal[2]:.6f}")
         lines.append("  outer loop")
         for index in (a, b, c):
             x, y, z = vertices[index]
