@@ -535,16 +535,7 @@ class PickGlassesTask:
         self._arm.set_gripper(min(grip.opening + 0.020, GRIPPER_MAX_OPENING))
         rotation = self._hover_and_choose_grasp(grip_point, approaches)
         position = grip_point - rotation[:, 2] * FINGERTIP_OFFSET
-        try:
-            self._arm.move_linear([make_pose(position, rotation)])
-        except MotionFailed as why:
-            # A straight line in is what keeps the fingers from sweeping
-            # sideways through a neighbour on the way down, so it is what is
-            # asked for first. When there is no straight line to be had, a
-            # planned path is not a free-for-all: every other glass is in the
-            # planning scene by now, and the planner has to miss them too.
-            self._log.info(f"no straight line in ({why}), planning a way down instead")
-            self._arm.move_to_pose(position, rotation)
+        self._straight_if_possible(position, rotation, "in to the glass")
 
         # Take up the slack gently. The width when contact arrives is the true
         # width of the glass, measured by touch rather than by camera.
@@ -596,18 +587,53 @@ class PickGlassesTask:
             self._arm.set_gripper_force(needed)
             time.sleep(0.3)
 
-        self._arm.move_linear([make_pose(position + UP * LIFT_HEIGHT, rotation)])
+        self._straight_if_possible(position + UP * LIFT_HEIGHT, rotation, "up off the table")
 
         # Now that the arm has it, the planner is told so, or it will plan the
         # turn as though the gripper were empty.
+        #
+        # Both of these are where things are *now*, after the lift, and that
+        # is the whole of it: attach() works out where the glass sits in the
+        # gripper by comparing them, so a glass taken from before the lift and
+        # a tool taken from after it hangs the glass the height of the lift
+        # below where it really is. That reads as a glass through the table,
+        # every move afterwards starts in collision, and a Cartesian path
+        # comes back having solved none of the way — including the one that
+        # would have stood the arm clear.
+        lifted = position + UP * LIFT_HEIGHT
         self._scene.attach(
             target.name,
-            held_at=target.position,
+            held_at=target.position + UP * LIFT_HEIGHT,
             width=profile.max_width,
             height=profile.total_height,
-            tool_pose=frame(position + UP * LIFT_HEIGHT, rotation),
+            tool_pose=frame(lifted, rotation),
         )
         return mass
+
+    def _straight_if_possible(self, position: np.ndarray, rotation: np.ndarray, what: str) -> None:
+        """Go there in a straight line, or by any path the planner will allow.
+
+        A straight line is asked for first, and for good reason: it is what
+        keeps the fingers from sweeping sideways through a neighbour on the
+        way down, and what keeps a held glass over the table rather than over
+        the floor. But a Cartesian path is all or nothing — it comes back
+        having solved none of the way as readily as all of it, and a run that
+        has measured a glass, reached it and closed on it should not end
+        because the last 180 mm could not be done in a straight line.
+
+        The fallback is not a free-for-all. Every other glass is in the
+        planning scene, so the planner has to miss them too; what is given up
+        is the shape of the path, not the checking of it.
+        """
+        try:
+            self._arm.move_linear([make_pose(position, rotation)])
+        except MotionFailed as why:
+            self._log.info(f"no straight line {what} ({why}), planning a way instead")
+            self._report.say(
+                f"No straight line {what}: {why}. Planning a way round instead, which is "
+                "checked against everything on the table just the same."
+            )
+            self._arm.move_to_pose(position, rotation)
 
     def _hover_and_choose_grasp(
         self, grip_point: np.ndarray, approaches: list[np.ndarray]
