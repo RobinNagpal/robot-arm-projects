@@ -461,10 +461,12 @@ def laying_a_glass_on_the_table() -> None:
         )
 
         eyes = [0.03] if not pair else [0.03, 0.12]
+        eyes_fell: list[float] = []
         for index, eye in enumerate(eyes):
             ax.plot([eye], [camera], marker="v", color=INK, ms=7)
             # The ray that grazes the top of the glass, carried on to the table.
             fell = eye + (glass - eye) * camera / (camera - height)
+            eyes_fell.append(fell)
             ax.plot([eye, fell], [camera, 0], color=GRIP, lw=1.0, ls="--")
             ax.plot([fell], [0], marker="o", color=GRIP, ms=5)
             if index == 0:
@@ -476,17 +478,24 @@ def laying_a_glass_on_the_table() -> None:
                 arrowprops={"arrowstyle": "<->", "color": INK, "lw": 1.0},
             )
             ax.text(0.075, camera + 0.050, "a known step sideways", fontsize=7, color=INK, ha="center")
+            ax.annotate(
+                "", xy=(fell, -0.048), xytext=(eyes_fell[0], -0.048),
+                arrowprops={"arrowstyle": "<->", "color": GRIP, "lw": 1.0},
+            )
             ax.text(
-                0.24, camera * 0.55,
-                "how much the mark moves\nbetween the two says how\nhigh up the glass it was,\nand that gives the distance",
-                fontsize=7, color=INK, ha="center",
+                (eyes_fell[0] + fell) / 2, -0.062,
+                "how far the mark moved",
+                fontsize=7, color=GRIP, ha="center", va="top",
             )
 
         ax.set_xlim(-0.05, 0.50)
-        ax.set_ylim(-0.07, camera + 0.10)
+        ax.set_ylim(-0.11, camera + 0.10)
         ax.set_aspect("equal")
         ax.axis("off")
-        ax.set_title("One look: too far out" if not pair else "Two looks: right place", fontsize=10, color=INK)
+        ax.set_title(
+            "One look: too far out" if not pair else "Two looks: right place",
+            fontsize=10, color=INK,
+        )
 
     _save(fig, "one-look-two-looks.png")
 
