@@ -1,9 +1,12 @@
 import math
+import re
 
 import numpy as np
 import pytest
 from work_cell.glasses.shapes import stemmed, straight
 from work_cell.glasses.spawn import (
+    GLASS_LABEL,
+    GLASS_TINTS,
     MIN_SEPARATION,
     collision_cylinders,
     glass_sdf,
@@ -125,6 +128,25 @@ def test_the_model_carries_the_mass_and_the_mesh():
     assert f"{glass.mass:.4f}" in sdf
 
 
-def test_the_model_is_transparent_because_that_is_the_whole_problem():
+def test_the_model_is_labelled_because_that_is_the_whole_problem():
+    """What makes a glass invisible to the depth camera is the label, not the
+    material. The model is painted a solid colour so a person can see it, and
+    that has to stay true without the arm noticing."""
     glass = random_glasses(1, seed=1)[0]
-    assert "<transparency>" in glass_sdf(glass, mesh_uri="x.stl")
+    assert f"<label>{GLASS_LABEL}</label>" in glass_sdf(glass, mesh_uri="x.stl")
+
+
+def test_every_glass_in_a_run_is_a_different_colour():
+    """Only so a person can tell them apart. Nothing in the arm reads it."""
+    glasses = random_glasses(len(GLASS_TINTS), seed=3)
+    colours = {
+        re.search(r"<diffuse>([\d. ]+)</diffuse>", glass_sdf(g, mesh_uri="x.stl")).group(1)
+        for g in glasses
+    }
+    assert len(colours) == len(glasses)
+
+
+def test_a_glass_is_never_so_dark_it_reads_as_background():
+    """The mask keeps a hole only where something is visible through it."""
+    for tint in GLASS_TINTS:
+        assert max(tint) > 0.2

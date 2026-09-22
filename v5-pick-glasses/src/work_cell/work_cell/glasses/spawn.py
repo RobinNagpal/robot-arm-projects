@@ -181,6 +181,34 @@ def collision_cylinders(outline: Outline, slices: int = COLLISION_SLICES) -> lis
 # the reader cannot disagree.
 GLASS_LABEL = 10
 
+# A tint per glass, so that a person watching can tell them apart and see
+# which one the arm is working on. Nothing reads these: the arm finds a glass
+# by the hole it leaves in the depth picture, and that hole comes from the
+# label above. They are kept bright enough that a glass never reads as the
+# unlit background, and there are more of them than a run ever spawns.
+GLASS_TINTS = (
+    (0.90, 0.35, 0.35),  # red
+    (0.35, 0.65, 0.90),  # blue
+    (0.45, 0.80, 0.45),  # green
+    (0.95, 0.75, 0.30),  # amber
+    (0.75, 0.45, 0.85),  # violet
+    (0.35, 0.80, 0.80),  # teal
+    (0.95, 0.55, 0.75),  # pink
+    (0.70, 0.70, 0.40),  # olive
+)
+
+# Opaque. Any transparency at all washes the tint out against the pale table
+# — at 0.15 a green glass already measures within 12 counts of neutral — and
+# a glass nobody can see is the thing this is meant to fix. What the arm can
+# see is not affected either way: that is decided by the label, not by this.
+GLASS_TRANSPARENCY = 0.0
+
+
+def _index_of(name: str) -> int:
+    """The number on the end of a spawned glass's name, or 0 if it has none."""
+    tail = name.rsplit("_", 1)[-1]
+    return int(tail) if tail.isdigit() else 0
+
 
 def glass_sdf(glass: SpawnedGlass, mesh_uri: str) -> str:
     """One glass as the simulator's own model format."""
@@ -206,6 +234,9 @@ def glass_sdf(glass: SpawnedGlass, mesh_uri: str) -> str:
         )
 
     x, y, z = glass.position
+    # By position in the run rather than at random, so two glasses in one run
+    # never come out the same colour and a repeated seed repaints them the same.
+    tint = GLASS_TINTS[_index_of(glass.name) % len(GLASS_TINTS)]
     return (
         TEMPLATE.read_text()
         .split("-->\n", 1)[1]
@@ -224,5 +255,10 @@ def glass_sdf(glass: SpawnedGlass, mesh_uri: str) -> str:
             collisions="\n".join(collisions),
             mesh_uri=mesh_uri,
             label=GLASS_LABEL,
+            red=tint[0],
+            green=tint[1],
+            blue=tint[2],
+            opacity=1.0 - GLASS_TRANSPARENCY,
+            transparency=GLASS_TRANSPARENCY,
         )
     )

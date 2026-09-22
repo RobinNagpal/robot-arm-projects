@@ -75,6 +75,13 @@ labels, or read the glass's depth because Gazebo happens to offer it — would
 have been fewer moving parts and worth nothing, because the pipeline would
 then depend on something no real cell has.
 
+Once the hole comes from the label, the glass's material stops mattering to
+the arm entirely, and the models are painted solid colours, one per glass, so
+that a person can follow what is happening. Clear glass is nearly invisible
+against a pale table, and any transparency at all washes the colour out: at
+0.15 a green glass already measures within twelve counts of neutral grey. The
+paint buys the watcher a lot and costs the perception nothing.
+
 `glass_mask()` is therefore three lines, and the comment above it is longer
 than the code, because the code is not the interesting part.
 

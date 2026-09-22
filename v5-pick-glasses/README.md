@@ -56,6 +56,14 @@ the glass is. This project reads the hole. That is not a way of cheating the
 simulator — it is the same signal a real depth camera gives, and building on it
 means the pipeline meets the same difficulty a real one would.
 
+The glasses in the simulator are painted solid colours, a different one each,
+so that a person watching can tell them apart. That is a change to what a
+person sees and to nothing else. Gazebo's depth camera can see through
+nothing, transparent or not, so the hole is put into the depth picture by the
+wrist camera, from a segmentation camera that says which pixels are glass —
+see [`implementation-notes.md`](implementation-notes.md). The arm is no better
+off for the paint.
+
 **Its walls are not parallel.** A flat gripper pad on a sloping wall slides.
 Finding a grip means finding somewhere the wall is upright over at least the
 height of a pad, and on a wine glass there is exactly one such place.
