@@ -273,6 +273,87 @@ across the plausible range, and checks that every one of them gets a grip the
 gripper can actually make. That is the test that catches a rule which works on
 the glass you had in mind and fails on the glass someone else owns.
 
+## Open items and questions
+
+What is not finished, roughly in the order it is worth picking up. The faults
+that *were* fixed are written up at the step each one belongs to in
+[`docs/`](docs/).
+
+**No glass has been placed in the rack yet.** The arm finds the rack, surveys
+the table, measures a glass to within a few millimetres, names its kind, works
+out where to hold it, reaches in, closes on it, lifts it, weighs it at 267 g,
+carries it to the middle of the table, turns it over and lowers it onto a slot
+— and then comes down the full 60 mm without feeling anything. The arithmetic
+says the rim should touch after about 10 mm: it hangs 102 mm below the grip,
+the grip is put 132 mm above the slot, and the rack's base stands 20 mm above
+the plane the slots are measured in. So the rim is not where the geometry says
+it is once the glass has been turned over.
+
+**The likeliest cause of that is a second fault in how a held glass is
+attached.** In the same run the planner reported the arm's own forearm to be
+in collision with the held glass, which means the shape standing in for that
+glass is not where the glass is. One fault of that kind has already been fixed
+— the glass's position taken from before the lift and the tool's from after it
+— and this looks like another in the same place, most probably the glass's
+orientation after the turn rather than its position. It can be checked without
+the simulator by comparing the attached shape's pose against the tool's pose
+immediately after `turn_over()`.
+
+**The survey is out by about 30 mm along one axis.** Across four runs of the
+same table it placed a glass within 4 mm along one axis every time and about
+30 mm out along the other, and the axis it is wrong about is the one the two
+pictures step along — which is the very thing the second picture is there to
+measure. The side-on view happens to correct most of it, which is why the
+error stayed invisible so long and why that correction is always about the
+same size. The shrink figure the arithmetic produces, 0.868 where the geometry
+says about 0.826, accounts for only a few millimetres of it, so most of the
+error is in finding the middle of the outline or in merging the stations
+rather than in the arithmetic that follows. The clean test is to compare each
+single picture's answer against the truth before any correction is applied.
+
+**Runs fail in different places from one attempt to the next.** Every stage
+works, but several are close to the edge of what the arm can do and a run has
+to get through all of them, so recent attempts have stopped at the measuring
+view, at the reach in, at the grip rules and at the set-down. The honest
+summary is that each stage works most of the time and that end to end is
+therefore much less often. Whether to attack that stage by stage or by giving
+the arm more room to work in is undecided.
+
+**The arm is bolted to the middle of the table.** Its base sits at table
+height, so its lower links are near the surface and graze the table whenever
+it reaches low, which is genuinely the case rather than a modelling error and
+makes low reaches tight. A good deal of the marginal planning above may come
+back to this. Moving the arm to the edge of the table, or raising it, would be
+a change to the cell rather than to the code and wants to be a deliberate
+decision.
+
+**Short glasses cannot be picked up at all.** Below `LOWEST_GRIP` the
+gripper's body is through the table, and above half its own height a glass
+cannot be turned over, so anything under roughly 120 mm tall has no band left
+to grip. The arm says so clearly and leaves the glass standing, which is the
+right behaviour, but it does mean part of the range this project generates can
+never be handled by this gripper. Either the generator should not draw them,
+or the gripper wants a slimmer body, or such glasses want picking up a
+different way.
+
+**A full table has not been tried since any of this was fixed.** All of the
+recent work was chased with one glass on the table, which was the right way to
+do it, but the survey, the collision scene and the slot bookkeeping all behave
+differently with five or six. That is the obvious next test once a single
+glass goes in reliably.
+
+**The measured width comes out a little under the truth.** A glass really
+71 mm across its widest measured 66, and one really 78 mm across measured 77.
+It has not caused a failure, because the fingers close on the glass and check
+the width by touch before anything is lifted, and it may be no more than the
+outline being found a pixel inside the glass on each side. It has not been
+looked into.
+
+**Lint does not pass on the project as a whole.** Ten files were already
+failing the formatter before this work started and none of them are files it
+touched, so they are left alone — but it does mean `make lint` cannot be used
+as a gate until somebody decides whether to reformat them.
+
 ## Reading further
 
 - [`docs/`](docs/) — a walk through one run, one document per step, with the
@@ -283,7 +364,4 @@ the glass you had in mind and fails on the glass someone else owns.
   are split up the way they are.
 - [`implementation-notes.md`](implementation-notes.md) — why each choice was
   made, and what breaks it.
-- [`docs/what-went-wrong.md`](docs/what-went-wrong.md) — every place the code
-  said one thing and the simulator did another, what the evidence looked like
-  at the time, and what was actually wrong. It ends with what is still
-  unsolved. Read it before changing anything near the simulator.
+

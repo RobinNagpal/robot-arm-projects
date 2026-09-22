@@ -117,4 +117,36 @@ degrees puts some of the weight on the pads sideways, which is what makes a
 marginal grip fail, and a glass leaning 20 degrees can be brought back upright.
 A glass at 180 degrees cannot.
 
+## Which way is down
+
+![The gripper's own axis is level, so it carries none of the weight](../images/which-way-is-down.png)
+
+For a long time every glass weighed nothing, and the reason is a good example
+of a reading that is not wrong so much as pointing the wrong way. The wrist
+sensor reports in the gripper's own frame, and the number being taken from it
+was the axis the gripper reaches along. That axis points down only when the
+gripper points down, and in this task it never does: a glass is gripped by
+reaching in level at it, so the axis lies flat across the room and carries
+none of the glass's weight at all. Everything above — the estimate, the
+correction after weighing, the check that the rack has taken the load — was
+being fed a number that had nothing to do with how heavy anything was.
+
+The reading is now turned into the room's frame first and the upright part of
+it taken, which is what every caller was already subtracting the gripper's own
+weight from, and a glass came back at 267 g. Two smaller repairs came with it.
+
+The code no longer falls back to the raw reading when it cannot work out which
+way is down. That fallback looked harmless and was not: it reported every
+glass as weighing nothing, and a glass that weighs nothing is gripped as
+gently as the estimate allows and then slides out of the fingers during the
+lean described above. A refusal to weigh is something the run can recover
+from; a confident wrong weight is not.
+
+And the weight is taken as the middle of about a third of a second of readings
+rather than from one sample. The fingers squeeze hard and sideways and the arm
+starts and stops, and either of those throws a spike through the sensor many
+times the weight of a glass — one reading gave 0 g and the next 9577 g, which
+is the gripper's own squeeze arriving where the weight should be. A scale is
+read when it has settled, and this one is no different.
+
 → [Step 6 — turning it over and standing it down](step6-turning-it-over.md)

@@ -108,9 +108,17 @@ The height at which the rim lands is
 and *both* of those glass numbers were measured, so both carry error, and the
 errors add. Driving to a calculated height is how a rim gets chipped.
 
-`descend_until_contact()` comes down in 2 mm steps until the contact sensors on
-the pads report something, up to a 60 mm limit. Two millimetres because a rim
-meeting a peg at that step size is a touch rather than a knock.
+`descend_until_contact()` comes down in 2 mm steps until something reports a
+touch, up to a 60 mm limit. Two millimetres because a rim meeting a peg at
+that step size is a touch rather than a knock.
+
+What counts as a touch took a correction. It originally watched the contact
+sensors on the pads, which is the right signal when the pads are what arrives
+first — and setting a glass down, they are not. The rim lands and the pads
+touch nothing at all, so the descent reported an empty 60 mm every time while
+the glass was already standing on the rack. What does give it away is the
+weight going out of the wrist as the rack takes it, so that is watched as
+well, which is the same reading the check below the next heading depends on.
 
 Reaching the limit without touching anything is itself an answer — the glass is
 not where it was thought to be — and it raises rather than carrying on.
@@ -132,6 +140,76 @@ the reading, and the arm says so instead of letting go.
 
 Only then do the fingers open, MoveIt is told the arm is empty, and the arm
 lifts away for the next glass.
+
+## What the planner had to be told, and what it was told wrongly
+
+Three separate faults lived in what MoveIt believed about the world at this
+point in the run, and all three arrived as the same symptom: a path that
+solved none of the way, which is indistinguishable from a move that is simply
+impossible.
+
+**The pads were not allowed to touch the glass they were holding.** When a
+glass is attached to the gripper, MoveIt is given a list of links that may be
+against it without that counting as a collision, and the list named the
+gripper body and the two fingers but not the two pads. The pads are the only
+parts that ever touch a held glass — the fingers never reach it, because the
+pads are what stands between — so from the moment a glass was picked up it was
+in collision with the gripper holding it, and the arm could not move at all.
+It could not even stand clear, because standing clear is also a move, so one
+stuck glass ended the whole run.
+
+**The glass was attached in the wrong place.** Where a glass sits in the
+gripper is worked out by comparing where the glass is with where the tool is,
+and the two were being taken a lift apart: the glass from before the 180 mm
+lift off the table, the tool from after it. MoveIt therefore believed in a
+glass hanging 180 mm below the real one, straight through the table, and
+everything after that started in collision.
+
+**The rack the planner saw was turned a quarter circle from the rack.**
+
+![The box the planner was given, against the rack](../images/the-rack-the-planner-saw.png)
+
+The box describing the rack was built from the length of the row of slots and
+never turned to match it, so it came out at right angles to the thing it was
+standing in for. That put a 600 mm slab across open table where the arm has to
+work — which is what the arm kept meeting when it failed to reach places with
+nothing in them — and left the real rack covered by nothing at all.
+
+The same quarter turn appeared again, independently, in the marker. The way
+that printed square is oriented is what says which way the rack is facing, and
+every slot is placed from it; it is painted onto a box face, and how a texture
+lies on a box face is the simulator's business rather than ours. The arm read
+a rack square to the world when the rack is turned across it, laid its six
+slots out at right angles to the real rack, and lowered a glass over bare
+table — which is the other reason the descent above kept finding nothing.
+
+## Where a glass is turned over, and which slot it goes in
+
+![A turn swings the tool either side of the glass](../images/the-turn-swings-the-arm.png)
+
+Turning in place asks more of the wrist than anything else in this task, and
+it was being done wherever the pick happened to leave the arm — usually
+stretched out towards the far corner of the glass zone, which is exactly where
+the last joint has least left to give. The glass is now carried to the middle
+of the table first, so that the turn is the same problem every time rather
+than a different one for every glass.
+
+That needed a second go, and the reason is the picture above. The first
+version parked the *tool* at a comfortable reach, and since a turn swings the
+tool a fingertip's length either side of the glass, a tool parked at 450 mm
+came out of the turn at 790 mm — past the end of the arm, with the glass in
+hand. The glass is the thing that stays still during a turn, so the glass is
+what gets parked: at 500 mm the tool starts the turn at 330 mm and finishes it
+at 670, and the arm can do both.
+
+The same arithmetic decides which slot a glass may go in. Standing a glass in
+a slot puts the tool a fingertip's length to one side of it, and which side is
+settled long before, by how the glass was picked up and which way it was
+turned. A slot that only works from one side is a coin toss with a glass
+already in hand, so slots are filtered to the ones the arm can stand over from
+either side — the far end of the row put the tool 796 mm out. If none qualify
+the list is left alone, because a slot that might not work still beats
+refusing a glass that is already held.
 
 ## What the run reports
 

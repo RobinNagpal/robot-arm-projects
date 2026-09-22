@@ -106,6 +106,61 @@ the arm already moving:
 Each raises `NoGrip` with the reason written out, and that reason is what ends
 up in the run report next to the glass that was left standing.
 
+There is a fifth, added later and for a reason nobody had thought about: the
+gripper has a body, and it has to go somewhere.
+
+## The gripper has a body
+
+![Held too low, the body is through the table](../images/the-gripper-has-a-body.png)
+
+`lowest_vertical_section` did its job on the first straight glass it was given
+and came back with a grip 18 mm above the table, which is a perfectly good
+piece of upright wall and an impossible place to hold a glass. The gripper
+comes in level, so its body lies *across* the grip height rather than above
+it, and the body is a 90 mm box — holding a glass 18 mm up therefore puts
+27 mm of gripper through the table.
+
+What came back from that was not a refusal but a path that solved none of the
+way, which reads exactly like an arm that cannot lift a glass and sent the
+search off in entirely the wrong direction for some time. `LOWEST_GRIP` is
+half the body plus a little clearance, and it bounds the band each rule
+*searches* rather than checking the answer at the end. That distinction is the
+whole of it: every rule on this page looks for the lowest wall that will do,
+so a floor applied afterwards would turn "hold it a little higher" into "this
+glass cannot be held" on every single glass.
+
+It does mean some glasses cannot be held at all. Below 50 mm the gripper is
+through the table and above half the glass's own height the fingers end up
+among the rack pegs after the turn, so a glass under roughly 120 mm tall has
+nothing left in between. That is a fact about this gripper and this rack
+rather than a failure of measurement, and it is now reported as a reason,
+which is the behaviour this whole page is built around.
+
+## Looking down the fingers before closing
+
+Everything on this page decides *where* to hold a glass from pictures taken
+half a metre away, and the answer was landing about 10 mm out — enough that
+the fingers arrived beside the glass rather than around it, closed on its
+shoulder or on nothing, and the width check in step 5 refused the grasp. The
+measurement was not the problem; the aim was.
+
+The camera is bolted to the wrist, so at the grasp pose it is looking straight
+down the approach at the glass from a hand's breadth away, which is by far the
+best view of the glass anything in this task ever gets — a millimetre on the
+table is worth many pixels from there. The arm now takes one look from that
+position and shifts sideways onto what it sees before the fingers close, along
+the axis the fingers close on and no further than half the gripper's opening,
+since a glass further off than that is not the one about to be held. The width
+at first contact went from 10 mm out to the fingers finding 76.6 mm where the
+camera had said 76.9.
+
+It corrects sideways and nothing else on purpose. How high up to hold the
+glass came from the measured profile and is better known than anything this
+view could say about it, and how far *along* the approach the glass is, this
+view cannot see at all. What it can see better than anything else is whether
+the glass is between the fingers or beside them, which is exactly what was
+going wrong.
+
 ## Why this beats a table of measurements
 
 ![Eight wine glasses, and where the rule holds each one](../images/why-rules-not-sizes.png)

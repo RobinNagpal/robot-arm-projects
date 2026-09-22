@@ -98,10 +98,18 @@ Two things the mask is not:
 The camera cannot range on the glass. But it does not need to, because the
 glass stands on the table, and where the table is has been known since startup.
 
-So the arm puts the camera a fixed distance to one side of the glass
-(`MEASURE_STANDOFF`, 300 mm) and that distance is what converts an angle into a
-length. A pixel subtends `1/fx` radians; at 300 mm it covers `300/fx`
-millimetres. That is the entire conversion.
+So the arm puts the camera a known distance to one side of the glass and that
+distance is what converts an angle into a length. A pixel subtends `1/fx`
+radians; at 380 mm it covers `380/fx` millimetres. That is the entire
+conversion.
+
+How far back to stand is worked out per cell rather than written down, because
+what has to fit in the frame — the foot of the glass at the bottom, the rim of
+the tallest glass the cell handles at the top — is as much a question about the
+lens as about the glass. `MEASURE_STANDOFF` is only the floor on it. It came to
+380 mm here, and it used to be a flat 300, which put the foot of the glass in
+the last few pixels of the picture and cost more than it saved: see
+[`docs/step2-measuring-one.md`](docs/step2-measuring-one.md).
 
 Three details in `perception.py` matter more than they look:
 
@@ -115,12 +123,16 @@ was a bug for a while. Smoothing is a five-row median, which is enough to make
 any mask look clean, so a check after it never fires. The check asks whether
 the mask was worth trusting; the smoothed profile is what gets measured.
 `MAX_RAGGEDNESS` is 0.02 — two per cent of the glass's own width, averaged over
-neighbouring rows.
+neighbouring rows — or two pixels, whichever is the more forgiving. The second
+half of that is not a hedge: a fraction of the glass's own width assumes a
+glass a hundred-odd pixels across, and on one forty pixels across the
+one-pixel wander any mask edge has is already two and a half per cent, so the
+fraction alone throws out clean pictures of narrow glasses.
 
 **A half pixel matters at the edges.** A pixel's world position is its centre,
 so the outside of the leftmost pixel is half a pixel further out. Without that
-correction every width comes out one pixel short, which at 300 mm is about half
-a millimetre — small, but it is a bias, not noise, and it is in the number the
+correction every width comes out one pixel short, which at this standoff is
+about seven tenths of a millimetre — small, but it is a bias, not noise, and it is in the number the
 fingers are set to.
 
 ## Classifying from the profile
@@ -340,6 +352,49 @@ clause makes it unusable in a commercial product without buying a licence. If
 you need a segmentation model here, torchvision's Mask R-CNN (BSD-3),
 Detectron2 (Apache-2.0) and mmdetection (Apache-2.0) do the same job under
 licences that will not surprise you.
+
+## Where the faults were, and where they appeared
+
+Getting this to run at all turned up a long run of faults, and they are
+written up at the step each one belongs to in [`docs/`](docs/). What is worth
+saying here is the pattern they share, because it shaped how the project is
+debugged now.
+
+Nearly every one of them announced itself a long way from where it lived. A
+sensor missing from the model arrived as an arm that could not plan a path. A
+texture drawn at the wrong angle arrived as a glass lowered onto bare table. A
+force read along an axis that happens to be level arrived as a glass sliding
+out of the fingers during a lean. In every case the log said what failed, and
+what failed was almost never what was wrong — so time went on the wrong thing
+until somebody looked at what the arm could actually see at the time.
+
+Four of them sat below everything else and are worth recording here rather
+than in a step, because they are about the model and the plumbing rather than
+about glasses. The wrist force sensor is mounted on the fixed joint where the
+gripper bolts on, and the tool that turns the robot description into something
+the simulator loads folds fixed joints into the part above them, taking the
+sensor with them; the model was right, the simulator loaded it without
+complaint, and the sensor was simply not there. Once it existed nothing served
+it, because the world loaded the system that draws camera pictures and force
+sensors are handled by a different one that was never listed. Once it was
+served the readings went nowhere useful, because the part that publishes them
+has no setting for which name to publish under, so the name written in the
+configuration was read by nobody while the arm listened on it. And the gripper
+was in collision with itself before it had moved, because each pad is bolted
+flat to its fingertip and the planner had never been told that this is normal.
+
+Two habits came out of all this and have paid for themselves. Moves are
+planned up to three times before being called impossible, because the planner
+grows its tree from samples that fall at random and a move it fails once it
+often solves next time — while a pose that genuinely cannot be reached still
+fails every attempt just as fast. And every run now writes an account of
+itself into `runs/`, as a markdown file with the pictures it took beside the
+sentences, flushed as it happens so that a run which dies half way still
+leaves everything up to the moment it died. The one thing in that file the arm
+does not get to have is what was actually put on the table, written by the
+world builder before the arm sees any of it, so that what the arm worked out
+can be held against what was really there. Most of the later faults were found
+by reading one of those files, several of them in a single pass.
 
 ## What simulation will not tell you
 

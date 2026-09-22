@@ -33,14 +33,14 @@ illustrative. If a rule changes, the pictures change with it.
   Rotating about the grip rather than the wrist, the wrist limit that has to be
   checked before the fingers close, the tilt budget, and feeling for the rack.
 
-Alongside those six, one document is not about the design at all:
-
-- [**What went wrong, and what was done about it**](what-went-wrong.md). The
-  record of getting this to actually run: every place the code said one thing
-  and the world did another, what the evidence looked like at the time, and
-  what turned out to be wrong. It ends with the things still unsolved. Worth
-  reading before changing anything near the simulator, because almost none of
-  these faults announced themselves anywhere near where they lived.
+Each of the six ends with what went wrong at that step when the task was
+first put in front of a simulator, and what was done about it. Those parts are
+worth reading before changing anything near the simulator, because almost none
+of the faults announced themselves anywhere near where they lived: a missing
+line in a model file arrived as an arm that could not plan a path, and a
+texture drawn at the wrong angle arrived as a glass lowered onto bare table.
+What is still unsolved is gathered at the end of
+[`../README.md`](../README.md).
 
 For the reasoning behind these choices, read
 [`../implementation-notes.md`](../implementation-notes.md). For which file and

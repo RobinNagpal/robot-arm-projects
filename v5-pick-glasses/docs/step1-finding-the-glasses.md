@@ -53,6 +53,36 @@ outline. The production answer there is a segmentation model, and
 `glass_mask()` is the function it would be called from. Everything downstream
 takes a boolean mask and does not care where it came from.
 
+## What it took to make the hole real
+
+Everything above is true of a real depth camera and was not true of this one,
+which is worth recording because it cost a long time to find. Gazebo's depth
+camera measures a glass as though it were painted wood: transparency is
+something its renderer applies to colour and not to depth, so the picture
+arriving at `glass_mask()` had nothing missing from it anywhere, the mask came
+back empty, and every run ended with nothing found and no explanation.
+
+The repair keeps the idea and fixes the simulation, because the alternative
+would have quietly thrown the idea away. A segmentation camera sits beside the
+depth one and reports which pixels are glass, and `WristCamera` blanks the
+depth at those pixels before handing the frame on, so what leaves the camera
+is an ordinary depth picture with holes in it — which is exactly what a real
+sensor hands over, and everything downstream is unchanged and none the wiser.
+Letting the perception read those labels directly would have been less work
+and worth nothing, because the pipeline would then depend on something no
+real cell has.
+
+With holes in the picture at last, the sky turned into a glass. Past the edge
+of the table a camera looking level sees nothing at all, so the depth comes
+back empty there too, and the only thing separating that from a glass is the
+second line of the mask: whether anything is visible through the hole. The
+background had been set dark for exactly that reason, but not dark enough —
+the simulator writes colours out gamma encoded, so a nearly black two per cent
+grey arrives as 41 out of 255, which counts as something visible. The whole
+horizon read as a single glass 346 mm across. Black is black now, and the
+window keeps its own lighter background so that none of this changes what a
+person sees.
+
 ## From a blob to a place on the table
 
 `_label()` groups the mask into blobs with a flood fill — a few glasses in a
@@ -114,5 +144,36 @@ taken first, so the arm never reaches over one glass for another it could have
 taken first. Then every *other* glass is handed to MoveIt as a cylinder, and
 the target is left out — because the planner will not let the fingers enter a
 space it believes is solid.
+
+## One look cannot say how far away a glass is
+
+![One look against two](../images/one-look-two-looks.png)
+
+The projection above is exact for anything lying *on* the table, which is why
+the marker on the rack is found perfectly every run — it is printed flat on
+the rack's base. A glass is not flat. What the camera sees from overhead is
+the widest part of the glass, standing some way above the table, and following
+that ray down to the table carries it past where the glass actually is, out
+and away from the point directly under the camera. The further off to one side
+the glass is, the worse it gets: measured against a glass whose true position
+was known, one standing 157 mm from the camera was being reported 244 mm away.
+
+The arm cannot correct for this from one picture, because the correction needs
+the glass's height and the height is exactly what the overhead view cannot
+see. It can correct for it from two. That same unknown height decides how far
+the glass appears to shift when the camera steps sideways by a known amount,
+so the shift measures it: step by `d`, and a glass laid down on the table
+appears to move by `d` divided by however much it was stretched. The survey
+therefore takes two pictures at each station, a known distance apart, and
+`where_they_stand()` works the rest out.
+
+Two things follow from that. Stations are tiled over the part of the table
+that *both* pictures of a pair cover rather than over one picture, because a
+glass caught in only one of them cannot be placed at all and is better left to
+the next station. And a glass so short that it barely leans reads as having
+moved exactly as far as the camera did, which the arithmetic turns into a
+glass below the table; that is not a different glass, it is one with almost no
+lean to measure, so it is taken as standing on the table rather than thrown
+away.
 
 → [Step 2 — measuring one](step2-measuring-one.md)
