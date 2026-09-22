@@ -23,6 +23,7 @@ from pathlib import Path
 
 from ..glasses.spawn import SpawnedGlass, glass_sdf, write_mesh
 from ..rack.build import rack_sdf, write_marker
+from ..table.build import table_sdf
 
 TABLE_MARKER = "<!-- TABLE -->"
 RACK_MARKER = "<!-- RACK -->"
@@ -54,5 +55,12 @@ def build_world(
 
 
 def read_parts(share: Path) -> tuple[str, str]:
-    """The two fixed pieces of the world, as they sit on disk."""
-    return (share / "world" / "cell.sdf").read_text(), (share / "table" / "table.sdf").read_text()
+    """The two fixed pieces of the world: the room, and the table in it.
+
+    The table comes back already filled in from table/layout.py, so the box
+    Gazebo loads is the same box MoveIt is told about.
+    """
+    return (
+        (share / "world" / "cell.sdf").read_text(),
+        table_sdf((share / "table" / "table.sdf").read_text()),
+    )

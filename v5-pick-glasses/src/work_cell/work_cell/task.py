@@ -163,8 +163,22 @@ class PickGlassesTask:
         refused: list[Refused] = []
         skip: set[str] = set()
 
+        standing: list[Detection] = []
         while free:
-            found = [g for g in self._survey() if g.name not in skip]
+            # Everything known to be standing goes into the scene before the
+            # arm moves again, because the survey is itself a series of moves.
+            # Until this was done here the planner was told about the glasses
+            # only *after* the survey, so the arm crossed the table each round
+            # believing it was empty, and the first round it still does —
+            # nothing has seen the table yet. That is why the survey is flown
+            # high enough to clear the tallest glass the cell handles.
+            self._scene.set_glasses(
+                {g.name: (g.position, g.rough_width, TALLEST_GLASS) for g in standing}
+            )
+
+            seen = self._survey()
+            standing = seen
+            found = [g for g in seen if g.name not in skip]
             if not found:
                 break
 
@@ -237,6 +251,9 @@ class PickGlassesTask:
             moved = float(np.linalg.norm((foot - target.position)[:2]))
             self._log.info(f"the side view puts it {moved * 1000:.0f} mm from where the survey did")
             target = replace(target, position=foot)
+            self._log.warning(
+                f"DBG corrected position {np.round(target.position, 4).tolist()}"
+            )
         self._log.info(
             f"measured {profile.total_height * 1000:.0f} mm tall, "
             f"{profile.max_width * 1000:.0f} mm at its widest"
@@ -319,14 +336,6 @@ class PickGlassesTask:
 
             view = self._camera.capture()
             mask = the_one_in_the_middle(glass_mask(view.rgb, view.depth))
-            import os
-
-            import cv2 as _cv2
-
-            n = 0
-            while os.path.exists(f"/tmp/o_{target.name}_{n}.png"):
-                n += 1
-            _cv2.imwrite(f"/tmp/o_{target.name}_{n}.png", (mask * 255).astype("uint8"))
             try:
                 measured = profile_from_mask(mask, view.intrinsics, self._measuring_distance())
                 if measured.total_height > TALLEST_GLASS:
@@ -473,10 +482,18 @@ class PickGlassesTask:
 
         self._arm.set_gripper_force(starting_force(profile, kind))
         time.sleep(0.3)
+        self._log.warning(
+            f"DBG squeeze={starting_force(profile, kind):.2f}N gap={self._arm.gripper_gap * 1000:.1f}mm "
+            f"wristZ={self._arm.wrist_force_z:.3f}N (empty gripper assumed {GRIPPER_WEIGHT_N}N)"
+        )
 
         # Lift a centimetre and weigh it. This is the last moment a mistake is
         # free: the glass is off the table but nothing has been turned over.
         self._arm.move_linear([make_pose(position + UP * WEIGH_LIFT, rotation)])
+        self._log.warning(
+            f"DBG after {WEIGH_LIFT * 1000:.0f}mm lift: gap={self._arm.gripper_gap * 1000:.1f}mm "
+            f"wristZ={self._arm.wrist_force_z:.3f}N"
+        )
         mass = mass_from_wrist(self._arm.wrist_force_z, GRIPPER_WEIGHT_N)
 
         needed = force_for_measured_mass(mass, kind)
@@ -488,7 +505,15 @@ class PickGlassesTask:
             self._arm.set_gripper_force(needed)
             time.sleep(0.3)
 
-        self._arm.move_linear([make_pose(position + UP * LIFT_HEIGHT, rotation)])
+        try:
+            self._arm.move_linear([make_pose(position + UP * LIFT_HEIGHT, rotation)])
+        except MotionFailed as why:
+            self._log.warning(f"DBG straight lift failed: {why}")
+            frac = self._arm.move_linear(
+                [make_pose(position + UP * LIFT_HEIGHT, rotation)], min_fraction=0.0
+            )
+            self._log.warning(f"DBG same move with no minimum: fraction {frac:.2f}")
+            raise
 
         # Now that the arm has it, the planner is told so, or it will plan the
         # turn as though the gripper were empty.
@@ -627,7 +652,9 @@ class PickGlassesTask:
             # measured height is as good as the other; the mean drops the
             # little the arm missed it by.
             above_table = (here[1][2] + there[1][2]) / 2.0 - TABLE_TOP_Z
-            placed = where_they_stand(here[0], here[1], there[0], there[1], above_table)
+            placed = where_they_stand(
+                here[0], here[1], there[0], there[1], above_table, tallest=TALLEST_GLASS
+            )
             # A glass in one picture and not the other is a glass this station
             # cannot place, so the count is worth seeing: a station that keeps
             # dropping them is a station whose two pictures are too far apart.

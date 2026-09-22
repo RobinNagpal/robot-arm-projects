@@ -163,6 +163,11 @@ def test_a_shape_no_rule_describes_is_refused_rather_than_forced():
 
 # --- two views from above ------------------------------------------------
 
+# The tallest glass this cell handles. A limit of the cell, not the size of any
+# glass: it is what tells a pair of sightings of one glass from a pair of
+# sightings of two different ones.
+TALLEST = 0.26
+
 
 def _laid_on_the_table(true_xy, height, width, camera_xy, camera_height, name="glass_0"):
     """What one picture from above reports for a glass it cannot range on.
@@ -192,6 +197,7 @@ def test_two_views_put_a_glass_back_where_it_really_stands():
         [_laid_on_the_table(truth, height, width, second_camera, camera_height)],
         second_camera,
         camera_height,
+        tallest=TALLEST,
     )
 
     assert len(found) == 1
@@ -208,7 +214,7 @@ def test_it_works_across_a_family_of_glasses_not_one_example():
     rng = np.random.default_rng(4)
     for _ in range(40):
         truth = np.array([rng.uniform(0.36, 0.72), rng.uniform(-0.32, 0.14)])
-        height = float(rng.uniform(0.05, 0.30))
+        height = float(rng.uniform(0.05, TALLEST))
         width = float(rng.uniform(0.04, 0.12))
 
         found = where_they_stand(
@@ -217,6 +223,7 @@ def test_it_works_across_a_family_of_glasses_not_one_example():
             [_laid_on_the_table(truth, height, width, second_camera, camera_height)],
             second_camera,
             camera_height,
+            tallest=TALLEST,
         )
         assert len(found) == 1, f"lost a glass {height * 1000:.0f} mm tall"
         assert np.allclose(found[0].position[:2], truth, atol=1e-6)
@@ -236,6 +243,7 @@ def test_a_flat_thing_on_the_table_is_left_where_it_was():
         [_laid_on_the_table(truth, 0.0, 0.05, second_camera, camera_height)],
         second_camera,
         camera_height,
+        tallest=TALLEST,
     )
     assert np.allclose(found[0].position[:2], truth, atol=1e-9)
 
@@ -245,7 +253,7 @@ def test_a_glass_only_one_picture_caught_is_left_out():
     camera_height = 0.45
     first_camera, second_camera = np.array([0.54, -0.15]), np.array([0.54, -0.03])
     seen = _laid_on_the_table(np.array([0.62, -0.21]), 0.19, 0.082, first_camera, camera_height)
-    assert where_they_stand([seen], first_camera, [], second_camera, camera_height) == []
+    assert where_they_stand([seen], first_camera, [], second_camera, camera_height, tallest=TALLEST) == []
 
 
 def test_two_glasses_are_not_mixed_up_with_each_other():
@@ -266,6 +274,7 @@ def test_two_glasses_are_not_mixed_up_with_each_other():
         ],
         second_camera,
         camera_height,
+        tallest=TALLEST,
     )
     assert len(found) == 2
     placed = sorted(found, key=lambda d: d.position[0])
@@ -310,3 +319,60 @@ def test_the_middle_one_is_kept_even_when_it_is_not_the_biggest():
 def test_an_empty_picture_is_handed_back_unchanged():
     mask = np.zeros((10, 10), dtype=bool)
     assert not the_one_in_the_middle(mask).any()
+
+
+def test_two_glasses_are_not_read_as_one_glass_somewhere_else():
+    """The failure this pair of pictures is most prone to.
+
+    Pairing a sighting of one glass with a sighting of a *different* one gives
+    an apparent movement that is still parallel to the baseline, so long as the
+    two stand apart along it — and parallel is all the arithmetic asks for.
+    The pair then reports a glass at a place where nothing is standing, which
+    is how the arm ends up reaching into thin air or into its neighbour.
+
+    What rules it out is the height such a pair implies, which is taller than
+    any glass the cell handles.
+    """
+    camera_height, baseline = 0.45, 0.12
+    first_camera = np.array([0.47, -0.29 - baseline / 2])
+    second_camera = np.array([0.47, -0.29 + baseline / 2])
+
+    # Two glasses a slot apart along the baseline, which is the awkward case.
+    left = np.array([0.47, -0.40])
+    right = np.array([0.47, -0.18])
+    first = [
+        _laid_on_the_table(left, 0.12, 0.07, first_camera, camera_height, "a"),
+        _laid_on_the_table(right, 0.12, 0.07, first_camera, camera_height, "b"),
+    ]
+    second = [
+        _laid_on_the_table(left, 0.12, 0.07, second_camera, camera_height, "a"),
+        _laid_on_the_table(right, 0.12, 0.07, second_camera, camera_height, "b"),
+    ]
+
+    found = where_they_stand(
+        first, first_camera, second, second_camera, camera_height, tallest=TALLEST
+    )
+    assert len(found) == 2
+    for glass in found:
+        nearest = min(np.linalg.norm(glass.position[:2] - real) for real in (left, right))
+        assert nearest < 0.01, "reported a glass where none is standing"
+
+
+def test_a_pair_implying_an_impossible_glass_is_refused():
+    camera_height = 0.45
+    first_camera = np.array([0.47, -0.35])
+    second_camera = np.array([0.47, -0.23])
+    # Drawn as a glass far taller than the cell handles, so the pair cannot be
+    # two sightings of one glass the arm could ever be asked to pick up.
+    truth = np.array([0.50, -0.30])
+    first = [_laid_on_the_table(truth, 0.40, 0.07, first_camera, camera_height)]
+    second = [_laid_on_the_table(truth, 0.40, 0.07, second_camera, camera_height)]
+    assert (
+        where_they_stand(first, first_camera, second, second_camera, camera_height, tallest=TALLEST)
+        == []
+    )
+
+
+def test_the_camera_has_to_be_above_the_tallest_glass():
+    with pytest.raises(ValueError, match="above the tallest"):
+        where_they_stand([], np.array([0.4, -0.3]), [], np.array([0.4, -0.2]), 0.20, tallest=0.26)

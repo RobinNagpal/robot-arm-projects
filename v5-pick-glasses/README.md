@@ -203,9 +203,9 @@ is 100 mm across — wider than the rack's slot spacing — and it takes two slo
 | Arm | **UR5e**, a 6-axis arm from Universal Robots. The model comes from their own `ur_description` package. |
 | Gripper | A two-finger parallel gripper with silicone pads, defined in this repo. The pads matter: a rigid pad touches a curved glass at one point, a soft one spreads over a patch. |
 | Sensors | An RGB-D camera on the wrist, a contact sensor on each pad, and a force sensor between the flange and the gripper. |
-| Table | 1.4 m by 1.2 m, top at 75 cm. The arm stands on it. |
-| Rack | Six slots, 100 mm apart. Its shape is fixed and known; where it is standing is not, and the arm reads a marker on its base to find out. |
-| Glasses | Four kinds, in random proportions within each kind. `SEED` picks the set; no two runs get the same glasses. |
+| Table | 1.6 m by 1.4 m, top at 75 cm. The arm stands on it, at the middle of one long edge. |
+| Rack | Six slots, 100 mm apart, on the arm's left. Its shape is fixed and known, and it stands square to the table; where along the table it stands is not known, and the arm reads a marker on its base to find out. |
+| Glasses | Four kinds, in random proportions within each kind, standing on the arm's right. `SEED` picks the set; no two runs get the same glasses. |
 
 Everything in it is open source:
 

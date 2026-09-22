@@ -171,6 +171,7 @@ def where_they_stand(
     second_camera: np.ndarray,
     camera_height: float,
     *,
+    tallest: float,
     tolerance: float = 0.02,
 ) -> list[Detection]:
     """Where the glasses really stand, from two pictures taken from above.
@@ -192,11 +193,26 @@ def where_they_stand(
     A glass that only one of the two pictures caught is left out. Its height
     cannot be measured from one view, so where it stands is not known, and a
     guess would be worse than a gap: another station usually catches it.
+
+    ``tallest`` is the tallest glass the cell handles, and it is what keeps two
+    different glasses from being read as one. Pairing a glass in one picture
+    with a *different* glass in the other produces an apparent movement that is
+    still parallel to the baseline whenever the two stand apart along it — the
+    one direction this method cannot tell from a difference in height. Such a
+    pair satisfies every other test here and reports a position a hundred
+    millimetres or more from any real glass. What gives it away is the height
+    it implies, which is taller than any glass the cell is built for.
     """
     baseline = np.asarray(first_camera, dtype=float)[:2] - np.asarray(second_camera, dtype=float)[:2]
     span = float(np.dot(baseline, baseline))
     if span <= 0.0:
         raise ValueError("the two pictures were taken from the same place, so they say nothing new")
+    if not 0.0 < tallest < camera_height:
+        raise ValueError("the camera has to be above the tallest glass for a picture to mean anything")
+
+    # h = camera_height * (1 - k), so the tallest glass allowed is the smallest
+    # k allowed. Anything below this is two glasses being read as one.
+    least_shrink = (camera_height - tallest) / camera_height
 
     candidates = []
     for one in first:
@@ -211,7 +227,7 @@ def where_they_stand(
             # Least squares, because the two are parallel only up to the error
             # in either sighting.
             shrink = float(np.dot(baseline, moved)) / travelled
-            if not 0.0 < shrink <= 1.0:
+            if not least_shrink <= shrink <= 1.0:
                 continue
 
             residual = float(np.linalg.norm(baseline - shrink * moved))

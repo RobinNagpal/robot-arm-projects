@@ -98,11 +98,30 @@ def rack_sdf(x: float, y: float, yaw: float, marker_uri: str) -> str:
     )
 
 
+# The rack stands square to the table, with its row of slots running along x.
+#
+# Its slots run along its own y, so a quarter turn is what lays them out in a
+# line beside the arm rather than pointing away from it. That keeps every slot
+# at much the same distance from the base: a row running away along y has one
+# end folded under the arm and the other at full stretch, and the far end of it
+# was outside the reach in arm/dimensions.py.
+RACK_YAW = math.pi / 2
+
+
 def random_rack_pose(rng) -> tuple[float, float, float]:
     """Where the rack stands this run.
 
-    Drawn rather than fixed, because the whole point of the marker is that the
-    arm finds the rack instead of being told where it is. A test that always
-    put the rack in the same place would never exercise that.
+    The place is drawn rather than fixed, because the whole point of the marker
+    is that the arm finds the rack instead of being told where it is. A test
+    that always put the rack in the same place would never exercise that.
+
+    The angle is not drawn. The rack is square to the table, on the arm's left,
+    with the glasses on its right — far enough apart that a survey picture of
+    the glasses has bare table behind it rather than the rack. What the arm
+    still has to find is where along the table it is standing.
+
+    The band it is drawn in keeps all six slots inside COMFORTABLE_REACH: the
+    row is 580 mm long, so the middle may only wander about 30 mm before one
+    end or the other leaves it.
     """
-    return rng.uniform(0.40, 0.62), rng.uniform(0.26, 0.40), rng.uniform(-math.pi / 8, math.pi / 8)
+    return rng.uniform(0.32, 0.38), rng.uniform(0.34, 0.38), RACK_YAW

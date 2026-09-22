@@ -150,3 +150,23 @@ def test_a_glass_is_never_so_dark_it_reads_as_background():
     """The mask keeps a hole only where something is visible through it."""
     for tint in GLASS_TINTS:
         assert max(tint) > 0.2
+
+
+def test_a_full_table_can_always_be_laid_out():
+    """Six is the most the table is meant to hold, and it has to fit every
+    time, not most times: this runs before the simulator starts, so a layout
+    that cannot be drawn is a run that never begins.
+
+    Placing glasses one at a time fails on its own far short of a full zone —
+    one glass early on in the wrong place is enough — which is why the whole
+    arrangement is redrawn rather than the last spot retried."""
+    for seed in range(200):
+        glasses = random_glasses(6, seed)
+        assert len(glasses) == 6
+
+
+def test_the_same_seed_survives_a_redrawn_layout():
+    # The retry must not make a seed mean two different tables.
+    assert [g.position for g in random_glasses(6, 11)] == [
+        g.position for g in random_glasses(6, 11)
+    ]

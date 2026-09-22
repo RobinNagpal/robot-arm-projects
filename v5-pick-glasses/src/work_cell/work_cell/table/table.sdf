@@ -2,6 +2,11 @@
   The table. Its top sits at z = 0.75, which is the plane the arm, the
   glasses and table/layout.py all measure from.
 
+  Its size is not written here. table/build.py fills these lines in from
+  table/layout.py, so the box the simulator loads and the box MoveIt is told
+  about cannot disagree — they are the same numbers twice over rather than two
+  numbers that have to be kept in step by hand.
+
   Grey and plain on purpose. A glass is found by the hole it leaves in the
   depth picture, and a hole only counts as a glass if there is something to
   see through it. A patterned table would put edges inside every silhouette
@@ -11,36 +16,21 @@
 -->
     <model name="table">
       <static>true</static>
-      <pose>0.35 0 0 0 0 0</pose>
+      <pose>{x:.4f} {y:.4f} 0 0 0 0</pose>
       <link name="link">
         <collision name="top_collision">
-          <pose>0 0 0.725 0 0 0</pose>
-          <geometry><box><size>1.4 1.2 0.05</size></box></geometry>
+          <pose>0 0 {top_z:.4f} 0 0 0</pose>
+          <geometry><box><size>{size_x:.4f} {size_y:.4f} {size_z:.4f}</size></box></geometry>
           <surface><friction><ode><mu>0.8</mu><mu2>0.8</mu2></ode></friction></surface>
         </collision>
         <visual name="top_visual">
-          <pose>0 0 0.725 0 0 0</pose>
-          <geometry><box><size>1.4 1.2 0.05</size></box></geometry>
+          <pose>0 0 {top_z:.4f} 0 0 0</pose>
+          <geometry><box><size>{size_x:.4f} {size_y:.4f} {size_z:.4f}</size></box></geometry>
           <material>
             <ambient>0.55 0.55 0.56 1</ambient>
             <diffuse>0.68 0.68 0.70 1</diffuse>
           </material>
         </visual>
-        <visual name="leg_a"><pose>0.63 0.53 0.35 0 0 0</pose>
-          <geometry><box><size>0.06 0.06 0.7</size></box></geometry>
-          <material><ambient>0.3 0.3 0.32 1</ambient><diffuse>0.4 0.4 0.42 1</diffuse></material>
-        </visual>
-        <visual name="leg_b"><pose>0.63 -0.53 0.35 0 0 0</pose>
-          <geometry><box><size>0.06 0.06 0.7</size></box></geometry>
-          <material><ambient>0.3 0.3 0.32 1</ambient><diffuse>0.4 0.4 0.42 1</diffuse></material>
-        </visual>
-        <visual name="leg_c"><pose>-0.63 0.53 0.35 0 0 0</pose>
-          <geometry><box><size>0.06 0.06 0.7</size></box></geometry>
-          <material><ambient>0.3 0.3 0.32 1</ambient><diffuse>0.4 0.4 0.42 1</diffuse></material>
-        </visual>
-        <visual name="leg_d"><pose>-0.63 -0.53 0.35 0 0 0</pose>
-          <geometry><box><size>0.06 0.06 0.7</size></box></geometry>
-          <material><ambient>0.3 0.3 0.32 1</ambient><diffuse>0.4 0.4 0.42 1</diffuse></material>
-        </visual>
+{legs}
       </link>
     </model>
