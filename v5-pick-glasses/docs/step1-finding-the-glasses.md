@@ -176,4 +176,78 @@ glass below the table; that is not a different glass, it is one with almost no
 lean to measure, so it is taken as standing on the table rather than thrown
 away.
 
+## Other ways to find a glass
+
+Finding transparent things is a small field of its own, and the depth hole is
+only one answer to it. The others are worth knowing, partly because two of
+them would be the right answer on real hardware and partly because one of them
+is the reason this project does not need a neural network at all.
+
+| Approach | What it does | What it runs on | Suitability here |
+| --- | --- | --- | --- |
+| **The hole in the depth picture** | treats the sensor's failure as the measurement | [OpenCV](https://github.com/opencv/opencv), in `glasses/detect.py` | good, and in use |
+| **A trained segmentation model** | learns to outline glass in the colour picture | [Segment Anything](https://github.com/facebookresearch/segment-anything), [Detectron2](https://github.com/facebookresearch/detectron2) or [Ultralytics YOLO](https://docs.ultralytics.com/), on [PyTorch](https://pytorch.org/) | what a real cell would use |
+| **Depth completion for glass** | fills in the depth the glass did not return | [ClearGrasp](https://sites.google.com/view/cleargrasp), [TransCG](https://github.com/Galaxies99/TransCG), [DREDS](https://github.com/PKU-EPIC/DREDS) | solves a problem this does not have |
+| **Many views into one shape** | builds the glass from a set of pictures | [NeRF-style methods](https://sites.google.com/view/dex-nerf), [3D Gaussian splatting](https://repo-sam.inria.fr/fungraph/3d-gaussian-splatting/) | far too slow per glass |
+| **Polarised light** | glass changes the polarisation of reflected light | a polarisation camera, then OpenCV | real, but needs a camera this cell does not have |
+| **Plain background subtraction** | anything that is not the table | OpenCV | brittle the moment the table is not empty |
+| **Ask the simulator** | read the glass's true position out of Gazebo | [Gazebo](https://gazebosim.org/) directly | cheating, and it teaches nothing |
+
+**The hole, which is what is used here.** Its virtue is that the hardest
+property of the object is turned into the measurement rather than fought:
+nothing has to be trained, there is no model to ship or to keep in step with
+the glassware, and the same three lines work on a glass the project has never
+seen. Its weakness is that the hole is only as clean as the sensor, and a real
+kitchen adds reflections, one glass seen through another, and highlights that
+break the outline — none of which are modelled here. It also cannot tell two
+touching glasses apart, which is why the side-on step has to pick the one in
+the middle.
+
+**A trained segmentation model** is what a real cell would use, and the
+project is arranged so that it would drop straight in: `glass_mask()` is the
+function it would be called from, everything downstream takes a plain boolean
+mask, and nothing else would change. [Segment Anything](https://github.com/facebookresearch/segment-anything)
+will outline a glass with no training at all, which makes it an unusually good
+fit for a first try, though it is heavy and needs prompting. A smaller
+[YOLO segmentation model](https://docs.ultralytics.com/tasks/segment/) trained
+on a few hundred labelled pictures would be faster and more reliable in one
+kitchen, at the cost of needing those pictures and of going stale when the
+glassware changes. The honest trade is that a model handles reflections far
+better than a depth hole ever will, and brings with it a training set, a
+training pipeline, and a thing that fails in ways nobody can explain from a
+log line.
+
+**Depth completion** — [ClearGrasp](https://sites.google.com/view/cleargrasp)
+and the work that followed it — takes the broken depth picture and guesses the
+surface the sensor could not see, so that the glass arrives as an ordinary
+point cloud and everything written for opaque objects starts working. It is
+the right move if what you want is a *point cloud*, because it unlocks every
+off-the-shelf grasp planner in the next few steps. It is the wrong move here,
+because this project never wanted a point cloud: it wants a silhouette and a
+distance it already knows, and completing the depth would be inventing data in
+order to throw most of it away.
+
+**Building the glass from many views**, whether by classical photogrammetry or
+by the newer radiance-field and splatting methods, gives by far the richest
+answer — a full three-dimensional model rather than an outline. It also takes
+a circuit of the table and seconds to minutes of computation per object, and
+the whole point of the solid-of-revolution argument in the next step is that
+one picture already carries everything the shape rules need. Paying minutes
+for information the task does not use is a bad trade.
+
+**Polarisation** deserves a mention because it is the one physically different
+idea on the list: glass changes how reflected light is polarised, so a
+polarisation camera sees it where an ordinary camera does not. It is used in
+industrial inspection for exactly this. It needs hardware this cell does not
+have, and it is not modelled in Gazebo at all, so it could not be tried here
+even in principle.
+
+**Background subtraction** and reading poses out of the simulator are on the
+list to be dismissed. The first works on an empty table and stops working the
+moment anything else is on it, which is the situation this task is about. The
+second is the one option that would certainly work and would make the project
+worthless, because a pipeline that depends on ground truth cannot be moved to
+a real cell at all — which is the same argument the depth-blanking fix above
+had to be careful about.
+
 → [Step 2 — measuring one](step2-measuring-one.md)

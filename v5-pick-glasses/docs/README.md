@@ -33,8 +33,14 @@ illustrative. If a rule changes, the pictures change with it.
   Rotating about the grip rather than the wrist, the wrist limit that has to be
   checked before the fingers close, the tilt budget, and feeling for the rack.
 
-Each of the six ends with what went wrong at that step when the task was
-first put in front of a simulator, and what was done about it. Those parts are
+Each of the six ends with two things. First, what went wrong at that step when
+the task was first put in front of a simulator, and what was done about it.
+Then, the other ways that step could have been done — the models, the
+frameworks and the classical methods, what each one would be good and bad at
+here, and why the thing in the code was chosen over them. Those comparisons
+are the quickest way to see what this project is trading away, which is
+usually accuracy on a hard real-world case in exchange for being able to
+explain every refusal. Those parts are
 worth reading before changing anything near the simulator, because almost none
 of the faults announced themselves anywhere near where they lived: a missing
 line in a model file arrived as an arm that could not plan a path, and a

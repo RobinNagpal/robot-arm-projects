@@ -227,4 +227,91 @@ it: the rule wants the fingers 61 mm apart, outside the 4 to 40 mm a
 stemmed_glass should ever need". That is a working run, not a failed one. The
 run to worry about is the one that racks everything by ignoring a doubt.
 
+## Other ways to move the arm and place the glass
+
+Two separate questions hide in this step: how the arm works out a path, and
+how it knows the glass has landed. Both have well-trodden alternatives.
+
+| Approach | What it does | What it runs on | Suitability here |
+| --- | --- | --- | --- |
+| **Sampling planner, with straight lines where it matters** | plans free moves by random sampling, and forces a straight line for the delicate ones | [MoveIt 2](https://moveit.ai/) with [OMPL](https://ompl.kavrakilab.org/) | good, and in use |
+| **Plan the whole task at once** | treats pick, turn and place as one problem with alternatives at each stage | [MoveIt Task Constructor](https://github.com/moveit/moveit_task_constructor) | already a dependency, and a good fit |
+| **Optimising planners** | starts from a rough path and smooths it against a cost | CHOMP and STOMP in [MoveIt](https://moveit.ai/), [TrajOpt](https://github.com/tesseract-robotics/trajopt) | steadier paths, worse at squeezing through gaps |
+| **Planning on a GPU** | solves thousands of candidate paths at once | [cuRobo](https://curobo.org/) | would make the retries free |
+| **Full dynamics and contact** | plans with the physics of contact in the loop | [Drake](https://drake.mit.edu/) | more than this task needs |
+| **Servo on the goal** | streams small corrections instead of planning a path | [MoveIt Servo](https://moveit.ai/) | good for the last few centimetres |
+| **A learned policy** | outputs joint moves directly, with no planner at all | [ACT](https://tonyzhaozh.github.io/aloha/), [Diffusion Policy](https://diffusion-policy.cs.columbia.edu/) on [PyTorch](https://pytorch.org/) | would sidestep most of the failures above |
+
+**What is in use** is the ordinary ROS arrangement: free moves go to a
+sampling planner, which is very good at finding a way around the rack, and the
+delicate moves — in to the glass, off the table, down into the slot — ask for
+a straight line so the fingers cannot sweep sideways through a neighbour. The
+weakness of that split is written all over the faults above: a straight-line
+request is all or nothing, so it comes back having solved none of the way as
+readily as all of it, and a sampling planner gives a different answer every
+time you ask, which is why moves are now planned up to three times before
+being believed.
+
+**[MoveIt Task Constructor](https://github.com/moveit/moveit_task_constructor)**
+is the most interesting entry, because the project already depends on it and
+does not use it. It is built for exactly this shape of problem: a sequence of
+stages, each with several possible ways of being done, solved together so that
+a choice made early is not allowed to make a later stage impossible. Almost
+every failure in this document is that class of mistake — a grasp chosen
+without knowing which side the tool would end up on at the rack, a turn
+attempted from wherever the pick happened to finish. Planning the whole task
+at once would have prevented several of them outright. The cost is that it is
+a much larger way of expressing the task, and that the sequencing, which
+currently reads top to bottom in `task.py`, would become a tree.
+
+**Optimising planners** such as CHOMP, STOMP and
+[TrajOpt](https://github.com/tesseract-robotics/trajopt) start from a guess
+and push it away from obstacles, which gives smooth, repeatable paths — the
+opposite of the sampling planner's habit of finding a different contortion
+each time. They are worse in tight spaces, because a path that has to thread a
+gap is exactly where a local method gets stuck, and this cell is tight:
+an arm bolted to the middle of its own table, with a rack alongside.
+
+**[cuRobo](https://curobo.org/)** solves many candidate paths in parallel on a
+GPU, fast enough to plan inside a control loop. Given that the fix for
+marginal planning here was to ask three times and hope, a planner that can ask
+a thousand times in the same wall-clock second is an appealing answer to the
+same problem, and it needs a GPU the development machine may not have.
+**[Drake](https://drake.mit.edu/)** goes further again and plans with contact
+physics in the loop, which is the right tool for assembly or in-hand
+manipulation and more than a pick-and-place needs.
+
+**[MoveIt Servo](https://moveit.ai/)** streams small velocity corrections
+rather than planning a path, and it is the natural home for the two closed
+loops this task has grown by hand: the sideways nudge onto the glass in step 4
+and the feel-for-the-rack descent on this page. Both are servo loops written
+as a sequence of small planned moves, which works and is clumsy.
+
+**A learned policy** — [ACT](https://tonyzhaozh.github.io/aloha/) or a
+[diffusion policy](https://diffusion-policy.cs.columbia.edu/) — would replace
+the planner entirely for the parts near the object, outputting joint moves
+directly from what the arm sees and feels. That is attractive here for a
+specific reason rather than a general one: a large share of the failures in
+this document are the planner refusing a pose that the arm could physically
+hold, and a policy never asks the planner anything. The sibling project
+[`v5-learn-pick-place`](../../v5-learn-pick-place) does exactly this and
+reaches 74 per cent on blocks it never saw. What it gives up is the thing this
+project is built on — a policy cannot say why it refused a glass, and the
+refusals here are supposed to be legible.
+
+### And for knowing the glass has landed
+
+Feeling for the rack has alternatives too, and they are much simpler. The
+honest one is a **table of known slot heights**: the rack is a fixed object,
+so the height its base sits at could be written down once and the glass driven
+to it. That is a good deal simpler than the descent on this page, and it fails
+the moment either the glass measurement or the marker reading is a couple of
+millimetres out, which is the case this project is about — so the same
+argument that rules out a table of glass sizes rules this out too. A
+**downward-looking camera check** before letting go would confirm the glass is
+standing rather than leaning, which is a real gap: nothing currently checks
+that. And a **load cell under the rack** would say the rack had taken the
+weight far more directly than watching it leave the wrist, at the cost of
+instrumenting the furniture.
+
 ← [Back to the walkthrough](README.md)

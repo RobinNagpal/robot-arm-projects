@@ -189,14 +189,14 @@ two of them are only useful together.
 | Approach | What it does | What it runs on | Suitability here |
 | --- | --- | --- | --- |
 | **Rules on the profile** | one sentence per kind, applied to the measured outline | NumPy, in `glasses/rules.py` | good, and in use |
-| **Ranked search** | scores every possible grip instead of returning the first one | NumPy for the scoring, MoveIt 2 to ask what the arm can reach | best next step |
-| **Feel for it** | when the fingers meet nothing, hunt for the stem by touch | the pad contact and wrist force sensors already in the cell, through ros2_control | cheap, and nothing new to install |
-| **Camera in the loop** | corrects the aim on the way down | OpenCV, on the wrist camera the arm already carries | useful, but only fixes aiming error |
-| **Score grasps on a spun mesh** | classical grasp planning on a mesh built from the profile | trimesh, already used to build the glasses | redundant — same answer, more arithmetic |
-| **Copy an expert** | learns the movement by watching the rules do the job | PyTorch, with LeRobot or the original ACT code | fits, once search and touch are done |
-| **Reinforcement learning** | discovers a grasp by trial and reward | Stable-Baselines3 or RSL-RL, on Isaac Lab or MuJoCo | poor fit |
-| **Off-the-shelf grasp network** | point cloud in, ranked grasps out | Contact-GraspNet, GraspNet-1Billion or AnyGrasp, on PyTorch | does not apply as things stand |
-| **Depth completion** | invents the depth the glass did not return | ClearGrasp, TransCG or DREDS, on PyTorch | only worth it to feed the row above |
+| **Ranked search** | scores every possible grip instead of returning the first one | NumPy, [MoveIt 2](https://moveit.ai/) to ask what the arm can reach | best next step |
+| **Feel for it** | when the fingers meet nothing, hunt for the stem by touch | the sensors already in the cell, through [ros2_control](https://control.ros.org/) | cheap, and nothing new to install |
+| **Camera in the loop** | corrects the aim on the way down | [OpenCV](https://github.com/opencv/opencv), on the wrist camera | useful, but only fixes aiming error |
+| **Score grasps on a spun mesh** | classical grasp planning on a mesh built from the profile | [trimesh](https://trimesh.org/), already a dependency | redundant — same answer, more arithmetic |
+| **Copy an expert** | learns the movement by watching the rules do the job | [PyTorch](https://pytorch.org/), [LeRobot](https://github.com/huggingface/lerobot) or [ACT](https://tonyzhaozh.github.io/aloha/) | fits, once search and touch are done |
+| **Reinforcement learning** | discovers a grasp by trial and reward | [Stable-Baselines3](https://stable-baselines3.readthedocs.io/), on [Isaac Lab](https://isaac-sim.github.io/IsaacLab/) or [MuJoCo](https://mujoco.org/) | poor fit |
+| **Off-the-shelf grasp network** | point cloud in, ranked grasps out | [Contact-GraspNet](https://github.com/NVlabs/contact_graspnet), [GraspNet-1Billion](https://graspnet.net/), [AnyGrasp](https://graspnet.net/anygrasp.html) | does not apply as things stand |
+| **Depth completion** | invents the depth the glass did not return | [ClearGrasp](https://sites.google.com/view/cleargrasp), [TransCG](https://github.com/Galaxies99/TransCG), [DREDS](https://github.com/PKU-EPIC/DREDS) | only worth it to feed the row above |
 
 ### What each one actually does
 
@@ -237,7 +237,7 @@ the wall is there, how much of the pad would touch, whether the arm can reach
 that pose, and whether the wrist can still turn the glass over afterwards. The
 arm tries the best one. If that fails it tries the next.
 
-**Needs:** NumPy for the scoring, and MoveIt 2 — already in the project — to
+**Needs:** NumPy for the scoring, and [MoveIt 2](https://moveit.ai/) — already in the project — to
 answer "can the arm reach this?"
 
 **Why it matters:** most failures today are not "this glass cannot be held".
@@ -271,7 +271,7 @@ millimetres wrong. So the camera keeps looking at the glass while the hand
 comes down, and the arm keeps nudging sideways to keep the glass between the
 two fingers. The closer it gets, the smaller the error.
 
-**Needs:** OpenCV, on the camera already on the wrist.
+**Needs:** [OpenCV](https://github.com/opencv/opencv), on the camera already on the wrist.
 
 **Limit:** in the last few centimetres the gripper covers the glass and the
 camera sees nothing. That is where feeling takes over.
@@ -286,11 +286,24 @@ how the glasses in the simulator are built. Then comes the usual grasp search:
 take every pair of surface spots that face each other, and score whether the
 fingers would hold or slide.
 
-**Needs:** trimesh, already a dependency.
+**Needs:** [trimesh](https://trimesh.org/), already a dependency.
 
 **Why it is skipped:** the 3D model was built *from* the outline, so it holds
 nothing the outline did not. All that searching arrives at the same height the
 one-line rule gives, slower.
+
+This is the family the older grasp planners belong to, and it is worth naming
+them because they are what a robotics textbook would reach for first.
+[GraspIt!](https://graspit-simulator.github.io/) scores grasps on a known mesh
+by simulating the contacts, [GPD](https://github.com/atenpas/gpd) samples
+candidate grasps straight out of a point cloud and ranks them with a small
+classifier, and [Dex-Net](https://berkeleyautomation.github.io/dex-net/) built
+the bridge to the learned methods by generating millions of scored grasps in
+simulation and training on them. All three are strong on an object whose shape
+you have and whose shape is awkward. None of them earns its place here,
+because a solid of revolution has no awkwardness left to find once the
+profile is known: the interesting question has already been answered by the
+time you would call them.
 
 #### Copy an expert
 
@@ -306,7 +319,7 @@ it.
    where to hold it. The policy only drives the hand in over the last stretch,
    instead of MoveIt planning a path.
 
-**Needs:** PyTorch, with LeRobot or the original ACT code, a GPU, and the
+**Needs:** [PyTorch](https://pytorch.org/), with [LeRobot](https://github.com/huggingface/lerobot) or the original [ACT](https://tonyzhaozh.github.io/aloha/) code, a GPU, and the
 collection runs.
 
 **Proof:** [`v5-learn-pick-place`](../../v5-learn-pick-place) does exactly this
@@ -323,7 +336,7 @@ No teacher. The arm tries, gets scored, and finds its own way.
 The arm grabs. Glass ends up on the rack, points; glass dropped, no points.
 Repeat a few hundred thousand times and the policy slowly gets good.
 
-**Needs:** Stable-Baselines3 or RSL-RL for the learning, and Isaac Lab or
+**Needs:** [Stable-Baselines3](https://stable-baselines3.readthedocs.io/) for the learning, and [Isaac Lab](https://isaac-sim.github.io/IsaacLab/) or
 MuJoCo for the simulator — a run here takes about five minutes in Gazebo, which
 would take a lifetime.
 
@@ -338,7 +351,7 @@ The workflow is: depth picture, then point cloud — a cloud of dots in space
 showing the surfaces — then the network, then throw away the grasps the arm
 cannot reach, then do the best one that is left.
 
-**Needs:** Contact-GraspNet, GraspNet-1Billion or AnyGrasp, on PyTorch. No data
+**Needs:** [Contact-GraspNet](https://github.com/NVlabs/contact_graspnet), [GraspNet-1Billion](https://graspnet.net/) or [AnyGrasp](https://graspnet.net/anygrasp.html), on PyTorch. No data
 collection: the weights are a download.
 
 **Why it fails here:** the first step. A depth camera cannot see glass, so the
@@ -355,7 +368,7 @@ broken depth picture, and fills in the hole with a sensible guess. Now there is
 a full depth picture, so there is a point cloud, so a grasp network becomes
 possible.
 
-**Needs:** ClearGrasp, TransCG or DREDS, on PyTorch. Also a download.
+**Needs:** [ClearGrasp](https://sites.google.com/view/cleargrasp), [TransCG](https://github.com/Galaxies99/TransCG) or [DREDS](https://github.com/PKU-EPIC/DREDS), on PyTorch. Also a download.
 
 **Where it sits:** it decides nothing by itself. It is only ever the first half
 of a chain — repair the picture, then a grasp network. That is two trained

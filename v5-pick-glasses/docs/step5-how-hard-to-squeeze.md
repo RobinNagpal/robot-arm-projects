@@ -149,4 +149,68 @@ times the weight of a glass — one reading gave 0 g and the next 9577 g, which
 is the gripper's own squeeze arriving where the weight should be. A scale is
 read when it has settled, and this one is no different.
 
+## Other ways to decide how hard to squeeze
+
+Everything on this page works out a force from a friction sum and then checks
+it against a weight. There are two other families: measure the contact itself
+with a better sensor, or let the hardware take the problem away.
+
+| Approach | What it does | What it runs on | Suitability here |
+| --- | --- | --- | --- |
+| **Friction sum, then weigh** | works the force out, then corrects it once the weight is known | NumPy, in `glasses/force.py`, over [ros2_control](https://control.ros.org/) | good, and in use |
+| **Tactile skin on the pads** | feels the contact patch, and sees a slip start | [GelSight](https://github.com/gelsightinc/gsrobotics), [DIGIT](https://digit.ml/) | the real answer, and needs hardware |
+| **Learned slip detection** | learns what the moment before a slip looks like | [PyTorch](https://pytorch.org/) on tactile or force traces | needs the sensor above first |
+| **Squeeze until it slips, then back off** | finds the limit by walking up to it | the sensors already in the cell | sound for a tin, reckless for glass |
+| **A compliant or underactuated hand** | the hand's own springs spread the load | soft and underactuated grippers | removes the problem instead of solving it |
+| **Learn the force from a picture** | predicts a squeeze from how the object looks | [PyTorch](https://pytorch.org/) | guesses the one property that cannot be seen |
+
+**The friction sum, which is what is used here.** Its real virtue is the
+second stage rather than the first: the estimate from the profile is openly a
+guess, the ten-millimetre lift turns it into a measurement, and the force is
+corrected before the glass has been anywhere. It needs no sensor the arm does
+not already have, every number in it can be traced to a property of the pads
+or of the glass, and when it refuses it can say that holding 300 g would need
+more force than the wall is rated for. What it cannot do is notice a grip that
+is *about* to fail for a reason the sum does not model — a wet glass, a greasy
+pad, a wall thinner on one side.
+
+**Tactile skin on the pads** is what a serious version of this would use.
+[GelSight](https://github.com/gelsightinc/gsrobotics) and [DIGIT](https://digit.ml/) style
+sensors put a camera behind a soft pad and watch the pad deform, which gives
+the contact patch, the shear, and the first millimetre of a slip directly,
+rather than inferring a slip from the fingers creeping closed as
+`is_slipping()` does. That difference matters most in exactly the case this
+project cares about: a slip caught in its first millimetre is recoverable, and
+one caught after the gap has changed by half a millimetre may already have
+scraped the glass. The cost is hardware the cell does not have, a much larger
+software stack, and pads that wear out.
+
+**Learned slip detection** sits on top of that: given a tactile or force trace
+it is a small supervised problem to learn what the moment before a slip looks
+like, and it works well in the literature. It is not an alternative to the
+sensor, it is what you do once you have one, which is why it is listed under
+the same heading rather than as a rival.
+
+**Squeezing until it slips and then backing off** is how you would calibrate a
+gripper on a tin of beans, and it is the one idea on the list that this
+project's subject rules out completely. The test destroys what it is testing.
+The whole reason the force has two stages is to arrive at a number *without*
+ever finding the failure point.
+
+**A compliant or underactuated hand** is the honest structural answer: a hand
+whose fingers have springs and joints of their own spreads the load over a
+curved surface by itself, so the exact force matters much less. Fruit picking
+and warehouse suction are full of this idea for good reason. It would make
+most of this page unnecessary, and it is a change to the robot rather than to
+the code, so it belongs in a conversation about the cell — alongside the note
+in the README about the arm being bolted to the middle of its own table.
+
+**Learning the force from a picture** is the one that sounds plausible and is
+not, for the reason the top of this page already gives: wall thickness is
+invisible, and two glasses with identical outlines can differ in weight by a
+factor of three. A model trained on pictures would learn the average glass and
+be confidently wrong about the heavy one, which is the failure that ends with
+a glass on the floor. The ten-millimetre lift exists precisely because no
+amount of looking can answer this.
+
 → [Step 6 — turning it over and standing it down](step6-turning-it-over.md)
