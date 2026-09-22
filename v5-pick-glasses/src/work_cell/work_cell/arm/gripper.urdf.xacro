@@ -72,6 +72,11 @@
     </joint>
 
     <gazebo reference="${prefix}gripper_mount">
+      <!-- sdformat folds fixed joints into the parent link, and a sensor on a
+           folded joint is dropped with it. These two keep the joint in the SDF
+           so the sensor has something to sit on. -->
+      <disableFixedJointLumping>true</disableFixedJointLumping>
+      <preserveFixedJoint>true</preserveFixedJoint>
       <sensor name="wrist_force" type="force_torque">
         <always_on>true</always_on>
         <update_rate>100</update_rate>

@@ -126,6 +126,9 @@
     </plugin>
     <!-- Serves the fingertip contact sensor. -->
     <plugin filename="gz-sim-contact-system" name="gz::sim::systems::Contact"/>
+    <!-- Serves the wrist force sensor. The Sensors system above only drives the
+         ones that render, so force-torque needs its own. -->
+    <plugin filename="gz-sim-forcetorque-system" name="gz::sim::systems::ForceTorque"/>
 
     <light type="directional" name="sun">
       <cast_shadows>true</cast_shadows>
