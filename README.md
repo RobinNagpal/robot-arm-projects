@@ -11,6 +11,7 @@ than where it was aimed.
 | [`v1-touch-biggest-face`](v1-touch-biggest-face) | Measures cuboids and touches the biggest face of each | Working |
 | [`v2-assemble-table`](v2-assemble-table) | Stands four legs up and lays a table top on them | Working |
 | [`v3-turn-top-flat`](v3-turn-top-flat) | Lifts a table top straight up out of two holders and turns it flat before building the table | Plans only |
+| [`v5-pick-glasses`](v5-pick-glasses) | Measures each drinking glass on a table, picks it up, turns it over and stands it on a drying rack | Working |
 | [`v6-two-arms-jenga`](v6-two-arms-jenga) | Two arms, programmed two different ways, play Jenga against each other | Plans only |
 
 Each folder's name is its version, then what it does. The projects run
@@ -57,6 +58,31 @@ There is no code yet. The work is in two parts:
    moving as it turns, until it sits on all four.
 
 → [`v3-turn-top-flat/README.md`](v3-turn-top-flat/README.md)
+
+## v5 — pick up a glass and stand it upside down
+
+Drinking glasses of several shapes stand on a table. The arm measures each one,
+works out where on it there is anything safe to hold, picks it up, turns it
+through 180 degrees and stands it mouth-down on a drying rack.
+
+The constraint that shapes the whole project is that **the shapes are known and
+the sizes are not**. The arm knows what a wine glass is — a bowl on a stem on a
+foot — but not how tall this one is or where its stem begins, and it cannot be
+told, because two wine glasses from different sets do not share proportions.
+So there is no table of measurements anywhere in it. There are rules about
+shapes, applied to a profile the camera measured a second earlier, and adding a
+new kind of glass means writing a rule rather than measuring a glass.
+
+It is also where this repo stops being able to rely on the things that make a
+cuboid easy. A depth camera returns nothing where a glass is, so the hole in
+the depth image is the signal. A glass's walls are not parallel, so there is
+usually exactly one place on it a flat pad can sit. Its weight does not follow
+from its size, because wall thickness is invisible, so the arm lifts it ten
+millimetres and weighs it before committing. And dropping one costs more than a
+retry, so every doubtful glass is left standing with a reason written next
+to it.
+
+→ [`v5-pick-glasses/README.md`](v5-pick-glasses/README.md)
 
 ## v6 — two arms play Jenga
 
