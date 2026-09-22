@@ -57,7 +57,14 @@ GRASP_OFFSET = 0.110
 # glass here first costs one move and makes the turn the same problem every
 # time, in the middle of what the arm can do, instead of a different one for
 # each glass.
-TURNING_ROOM = (0.45, 0.0, 0.35)
+#
+# It says where the *glass* goes, not where the tool goes. The turn swings the
+# tool through a fingertip's length either side of the glass, so a tool parked
+# at a comfortable reach comes out of the turn 340 mm further out than it went
+# in — past the end of the arm. The glass is the thing that stays put, so the
+# glass is what this places: 500 mm out leaves the tool at 330 before the turn
+# and 670 after it, and both of those the arm can do.
+TURNING_ROOM = (0.50, 0.0, 0.35)
 
 # Heights the arm works at, measured from the table top.
 SURVEY_HEIGHT = 0.45

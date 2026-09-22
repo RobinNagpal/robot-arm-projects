@@ -286,6 +286,11 @@ class PickGlassesTask:
             # the width of a stem. Everything from here on is a grasp.
             moved = float(np.linalg.norm((foot - target.position)[:2]))
             self._log.info(f"the side view puts it {moved * 1000:.0f} mm from where the survey did")
+            self._report.say(
+                f"The side view puts the glass {moved * 1000:.0f} mm from where the survey "
+                "did. That correction is what the fingers are aimed by, so a wrong one is a "
+                "miss."
+            )
             target = replace(target, position=foot)
         self._log.info(
             f"measured {profile.total_height * 1000:.0f} mm tall, "
@@ -543,9 +548,22 @@ class PickGlassesTask:
         # width of the glass, measured by touch rather than by camera.
         self._report.say(
             f"Reaching in along ({rotation[0, 2]:.2f}, {rotation[1, 2]:.2f}) with the fingers "
-            f"opened to {min(grip.opening + 0.020, GRIPPER_MAX_OPENING) * 1000:.0f} mm, then "
-            "closing gently until they touch."
+            f"opened to {min(grip.opening + 0.020, GRIPPER_MAX_OPENING) * 1000:.0f} mm."
         )
+        # Taken from the grasp pose rather than from the hover above it. The
+        # camera is on the wrist looking the way the gripper reaches, so from
+        # here it looks straight down the approach at the glass; from the
+        # hover, a fifth of a metre higher and still looking level, it looks
+        # over the top of everything at the empty sky.
+        self._report.picture(
+            self._camera.capture().rgb,
+            "in position, looking along the fingers at what they are about to close on",
+            then=(
+                "If the glass is not in the middle of this picture, it is not between the "
+                "fingers, and what they close on will not be the width the camera measured."
+            ),
+        )
+        self._report.say("Closing gently until they touch.")
         self._arm.set_gripper_force(CONTACT_FORCE_N)
         time.sleep(0.4)
         touched = self._arm.gripper_gap
@@ -688,15 +706,6 @@ class PickGlassesTask:
                 except MotionFailed:
                     continue
                 if self._arm.can_rotate_tool(math.pi):
-                    self._report.picture(
-                        self._camera.capture().rgb,
-                        f"hovering over the glass, about to come down and close "
-                        f"(way {tried} of the ones tried)",
-                        then=(
-                            "This is the last look before the fingers go in. If the glass is "
-                            "not under them here, it will not be between them a moment later."
-                        ),
-                    )
                     return rotation
 
         raise MotionFailed(
@@ -718,7 +727,9 @@ class PickGlassesTask:
             "pick happened to end makes it a different problem for every glass."
         )
         try:
-            self._arm.move_to_pose(ROBOT_BASE + np.array(TURNING_ROOM), rotation)
+            self._arm.move_to_pose(
+                ROBOT_BASE + np.array(TURNING_ROOM) - rotation[:, 2] * FINGERTIP_OFFSET, rotation
+            )
         except MotionFailed as why:
             # Not worth losing a held glass over: the turn may still be
             # possible from where it is, and if it is not, that is the failure

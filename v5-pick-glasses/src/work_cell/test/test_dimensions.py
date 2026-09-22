@@ -144,3 +144,14 @@ def test_the_zone_still_holds_a_run_of_glasses():
     """Tightening it must not make the usual run impossible to lay out."""
     for count in (1, 2, 4):
         assert len(random_glasses(count, seed=3)) == count
+
+
+def test_the_turn_leaves_the_arm_inside_its_own_reach():
+    """Turning swings the tool a fingertip's length either side of the glass,
+    so where the glass is parked decides whether the arm can finish the turn."""
+    glass_out = dimensions.TURNING_ROOM[0]
+    before = glass_out - dimensions.FINGERTIP_OFFSET
+    after = glass_out + dimensions.FINGERTIP_OFFSET
+    lo, hi = dimensions.COMFORTABLE_REACH
+    assert lo <= before <= hi, f"the arm starts the turn {before * 1000:.0f} mm out"
+    assert lo <= after <= hi, f"the arm ends the turn {after * 1000:.0f} mm out"
