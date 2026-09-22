@@ -44,6 +44,7 @@ __all__ = [
     "fill_order",
     "needs_empty_neighbour",
     "slots_consumed",
+    "slots_within_stretch",
     "rack_box",
     "slots_from_marker",
     "tilt_budget_deg",
@@ -109,6 +110,29 @@ class Slot:
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "centre", np.asarray(self.centre, dtype=float))
+
+
+def slots_within_stretch(
+    slots: list[Slot], base: np.ndarray, reach: tuple[float, float], tool_offset: float
+) -> list[Slot]:
+    """The slots the arm can stand over whichever way round it is holding the glass.
+
+    Standing a glass in a slot puts the tool a fingertip's length to one side
+    of the slot, and which side is settled long before — by how the glass was
+    picked up and which way it was turned. So a slot is only safe to promise
+    if the arm can reach it from either side, which rules out the far end of
+    the row and the near end alike.
+
+    An empty answer is a real answer and the caller may ignore it: better to
+    try a slot that may not work than to refuse a glass already in hand.
+    """
+    low, high = reach
+    keep = []
+    for slot in slots:
+        out = float(np.linalg.norm((slot.centre - base)[:2]))
+        if low + tool_offset <= out <= high - tool_offset:
+            keep.append(slot)
+    return keep
 
 
 def rack_box(slots: list[Slot]) -> tuple[np.ndarray, tuple[float, float, float], np.ndarray]:

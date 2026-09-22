@@ -46,6 +46,12 @@ CAMERA_OFFSET = np.array([0.085, 0.0, 0.015])
 # result and not a failure.
 LOWEST_GRIP = 0.050
 
+# How far sideways the fingers may be shifted at the last moment, on the
+# strength of the close-up look down them. Half the gripper's opening: a glass
+# further off than that is not the one about to be closed on, and shifting
+# onto it would be aiming at the wrong thing rather than aiming better.
+GRASP_NUDGE_LIMIT = 0.045
+
 FINGERTIP_OFFSET = 0.170
 GRASP_OFFSET = 0.110
 

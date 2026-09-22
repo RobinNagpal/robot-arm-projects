@@ -12,6 +12,7 @@ from work_cell.rack.layout import (
     rack_box,
     slots_consumed,
     slots_from_marker,
+    slots_within_stretch,
     tilt_budget_deg,
     usable_slots,
 )
@@ -160,3 +161,26 @@ def test_the_box_is_square_when_there_is_nothing_to_point_along():
     _, size, turned = rack_box(one)
     assert size[0] == size[1]
     assert np.allclose(turned, np.eye(3))
+
+
+def test_only_slots_the_arm_can_stand_over_from_either_side_are_offered():
+    """Which side the tool ends up on is settled when the glass is picked up,
+    long before the slot is used, so a slot has to work either way."""
+    base = np.array([0.0, 0.0, 0.75])
+    slots = slots_from_marker(np.array([0.35, 0.355, 0.75]), math.pi / 2)
+    kept = slots_within_stretch(slots, base, (0.30, 0.78), 0.17)
+
+    assert kept, "some slot in the middle of the row must be usable"
+    for slot in kept:
+        out = float(np.linalg.norm((slot.centre - base)[:2]))
+        assert 0.30 + 0.17 <= out <= 0.78 - 0.17
+
+    # The far end of the row is exactly what this is for.
+    furthest = max(slots, key=lambda s: float(np.linalg.norm((s.centre - base)[:2])))
+    assert furthest not in kept
+
+
+def test_an_empty_answer_is_allowed():
+    base = np.array([0.0, 0.0, 0.75])
+    slots = slots_from_marker(np.array([2.0, 2.0, 0.75]), 0.0)
+    assert slots_within_stretch(slots, base, (0.30, 0.78), 0.17) == []

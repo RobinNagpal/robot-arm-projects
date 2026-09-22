@@ -58,6 +58,9 @@ def peg_sdf(index: int) -> str:
 # blurring the marker.
 MARKER_CELLS_PX = 40
 
+# Which way the marker is printed on the base. See write_marker().
+MARKER_TURNED_ON_THE_BOX = cv2.ROTATE_90_CLOCKWISE
+
 
 def write_marker(path: Path) -> Path:
     """Draw the rack's marker to a PNG, and hand back where it landed.
@@ -71,6 +74,16 @@ def write_marker(path: Path) -> Path:
     # detector needs in order to find the square at all.
     side = MARKER_CELLS_PX * 6
     image = cv2.aruco.generateImageMarker(dictionary, MARKER_ID, side)
+
+    # Turned a quarter, because a marker is not just a thing to be found: the
+    # way it is printed says which way the rack it is printed on is facing,
+    # and every slot is placed from that. It is painted onto a box face, and
+    # the way a texture lies on a box face is Gazebo's business rather than
+    # ours, so what the arm read was a rack square to the world when the rack
+    # is in fact turned across it — and six slots laid out at right angles to
+    # the rack, over bare table. Printing it turned puts the two back in
+    # agreement.
+    image = cv2.rotate(image, MARKER_TURNED_ON_THE_BOX)
     path.parent.mkdir(parents=True, exist_ok=True)
     cv2.imwrite(str(path), image)
     return path

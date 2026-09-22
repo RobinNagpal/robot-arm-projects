@@ -37,6 +37,7 @@ from .arm.dimensions import (
     CAMERA_OFFSET,
     COMFORTABLE_REACH,
     FINGERTIP_OFFSET,
+    GRASP_NUDGE_LIMIT,
     GRASP_OFFSET,
     GRIPPER_MAX_OPENING,
     GRIPPER_WEIGHT_N,
@@ -85,6 +86,7 @@ from .rack.layout import (
     needs_empty_neighbour,
     slots_consumed,
     slots_from_marker,
+    slots_within_stretch,
     usable_slots,
 )
 from .report import with_mask
@@ -555,14 +557,7 @@ class PickGlassesTask:
         # here it looks straight down the approach at the glass; from the
         # hover, a fifth of a metre higher and still looking level, it looks
         # over the top of everything at the empty sky.
-        self._report.picture(
-            self._camera.capture().rgb,
-            "in position, looking along the fingers at what they are about to close on",
-            then=(
-                "If the glass is not in the middle of this picture, it is not between the "
-                "fingers, and what they close on will not be the width the camera measured."
-            ),
-        )
+        position = self._centre_on_what_is_there(position, rotation, grip_point)
         self._report.say("Closing gently until they touch.")
         self._arm.set_gripper_force(CONTACT_FORCE_N)
         time.sleep(0.4)
@@ -595,7 +590,7 @@ class PickGlassesTask:
 
         # Lift a centimetre and weigh it. This is the last moment a mistake is
         # free: the glass is off the table but nothing has been turned over.
-        self._arm.move_linear([make_pose(position + UP * WEIGH_LIFT, rotation)])
+        self._straight_if_possible(position + UP * WEIGH_LIFT, rotation, "a centimetre off the table")
         mass = mass_from_wrist(self._arm.wrist_load, GRIPPER_WEIGHT_N)
 
         needed = force_for_measured_mass(mass, kind)
@@ -603,7 +598,7 @@ class PickGlassesTask:
             # Setting it down and re-gripping is safe; increasing the squeeze
             # while holding it arrives as a shock.
             self._log.info(f"heavier than it looked, re-gripping at {needed:.1f} N")
-            self._arm.move_linear([make_pose(position, rotation)])
+            self._straight_if_possible(position, rotation, "back down to re-grip")
             self._arm.set_gripper_force(needed)
             time.sleep(0.3)
 
@@ -629,6 +624,86 @@ class PickGlassesTask:
             tool_pose=frame(lifted, rotation),
         )
         return mass
+
+    def _centre_on_what_is_there(
+        self, position: np.ndarray, rotation: np.ndarray, grip_point: np.ndarray
+    ) -> np.ndarray:
+        """Look down the fingers and shift sideways onto the glass before closing.
+
+        Everything up to here aimed the fingers from pictures taken half a
+        metre away. This is the one look taken from where the fingers actually
+        are — the camera is on the wrist, so at the grasp pose it stares
+        straight down the approach at the glass from a hand's breadth away,
+        and a millimetre of error on the table is worth many pixels here.
+
+        Only sideways, and only along the axis the fingers close on. How high
+        up to hold the glass came from its measured profile and is better
+        known than anything this view could say about it; how far along the
+        approach the glass is, this view cannot see at all. What it can see,
+        better than anything else, is whether the glass is between the fingers
+        or beside them, which is exactly what was going wrong.
+        """
+        view = self._camera.capture()
+        mask = the_one_in_the_middle(glass_mask(view.rgb, view.depth))
+        self._report.picture(
+            with_mask(view.rgb, mask),
+            "in position, looking along the fingers at what they are about to close on",
+            then=(
+                "The outline is what the arm takes to be the glass. If it is off to one "
+                "side, the fingers are beside the glass rather than around it."
+            ),
+        )
+        if not mask.any():
+            self._report.say("Nothing glass-shaped in view, so the aim is left as it is.")
+            return position
+
+        # The middle of what is there, across the picture.
+        columns = np.nonzero(mask.any(axis=0))[0]
+        rows = np.nonzero(mask.any(axis=1))[0]
+        middle = np.array(
+            [
+                (float(columns.min()) + float(columns.max())) / 2.0,
+                (float(rows.min()) + float(rows.max())) / 2.0,
+            ]
+        )
+
+        # Where that is in the room, at the distance the glass is already
+        # believed to be along the line of sight. The camera frame is x right,
+        # y down, z forwards, so this needs no assumption about which way the
+        # wrist happens to be rolled.
+        eye = np.asarray(view.camera_to_world[:3, 3], dtype=float)
+        forwards = np.asarray(view.camera_to_world[:3, 2], dtype=float)
+        away = float(np.dot(grip_point - eye, forwards))
+        ray = view.camera_to_world[:3, :3] @ np.array(
+            [
+                (middle[0] - view.intrinsics.cx) / view.intrinsics.fx,
+                (middle[1] - view.intrinsics.cy) / view.intrinsics.fy,
+                1.0,
+            ]
+        )
+        seen = eye + ray * away
+
+        across = rotation[:, 1]
+        sideways = float(np.dot(seen - grip_point, across))
+        if abs(sideways) > GRASP_NUDGE_LIMIT:
+            self._report.trouble(
+                f"What is in the middle of this picture is {sideways * 1000:.0f} mm off to "
+                "one side, which is further than the glass can be and still be the one "
+                "about to be held. The aim is left alone and the fingers will report what "
+                "they meet."
+            )
+            return position
+
+        self._report.say(
+            f"The glass is {sideways * 1000:.1f} mm off to one side of the fingers. Shifting "
+            "onto it before closing."
+        )
+        if abs(sideways) < 0.001:
+            return position
+
+        moved = position + across * sideways
+        self._arm.move_linear([make_pose(moved, rotation)])
+        return moved
 
     def _straight_if_possible(self, position: np.ndarray, rotation: np.ndarray, what: str) -> None:
         """Go there in a straight line, or by any path the planner will allow.
@@ -754,8 +829,34 @@ class PickGlassesTask:
         _, rotation = self._arm.current_pose()
         rim_to_grip = profile.total_height - grip.height
         above = slot.centre + UP * (rim_to_grip + PLACE_CLEARANCE)
+
+        self._report.step(f"Standing {name} in slot {slot.index}")
+        self._report.table(
+            {
+                "the slot is at": f"({slot.centre[0]:.3f}, {slot.centre[1]:.3f}, "
+                f"{slot.centre[2]:.3f})",
+                "rim to grip": f"{rim_to_grip * 1000:.0f} mm "
+                f"({profile.total_height * 1000:.0f} mm tall, held {grip.height * 1000:.0f} up)",
+                "so the rim starts": f"{PLACE_CLEARANCE * 1000:.0f} mm above the slot",
+                "weight in the wrist": f"{self._arm.wrist_load:.1f} N",
+            }
+        )
         self._arm.move_to_pose(above - rotation[:, 2] * FINGERTIP_OFFSET, rotation)
-        self._arm.descend_until_contact()
+
+        try:
+            came_down = self._arm.descend_until_contact()
+        except MotionFailed:
+            self._report.trouble(
+                "It went the whole way down without feeling anything. Either the rim is not "
+                "where the measurement says it is, or nothing reported the touch: the pads "
+                "cannot feel a rim, so what should have said so is the weight leaving the "
+                f"wrist, and that still reads {self._arm.wrist_load:.1f} N."
+            )
+            raise
+        self._report.say(
+            f"The rim found the rack {came_down * 1000:.0f} mm down, and the wrist now "
+            f"carries {self._arm.wrist_load:.1f} N."
+        )
 
         # Before letting go, check the rack is carrying it. If the load has not
         # transferred, the glass is caught on a peg and opening the fingers
@@ -984,6 +1085,18 @@ class PickGlassesTask:
 
     def _choose_slot(self, slots: list[Slot], free: set[int], needs_gap: bool) -> Slot:
         candidates = usable_slots([s for s in slots if s.index in free], needs_gap=needs_gap)
+
+        # Of those, the ones the arm can stand over from either side. Which
+        # side it will be standing on is settled by how the glass was picked
+        # up, and that is not known yet, so a slot that only works from one
+        # side is a coin toss with a glass in hand. If none qualify the list
+        # is left alone: a slot that might not work beats refusing a glass
+        # that is already held.
+        within = slots_within_stretch(candidates, ROBOT_BASE, COMFORTABLE_REACH, FINGERTIP_OFFSET)
+        if within:
+            candidates = within
+        else:
+            self._log.info("no slot is reachable from both sides; taking the best of the rest")
         if not candidates:
             raise MotionFailed(
                 "no slot left that this glass fits in"
