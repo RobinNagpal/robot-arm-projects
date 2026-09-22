@@ -47,6 +47,16 @@ from ..transforms import make_pose, spin
 
 FINGER_JOINTS = ("left_finger_joint", "right_finger_joint")
 
+# The link the wrist force sensor is bolted to, used when the reading does not
+# say for itself. See arm/gripper.urdf.xacro.
+WRIST_SENSOR_LINK = "gripper_body"
+
+# How many readings the weight is taken over. The sensor reports at 100 Hz, so
+# this is about a third of a second: long enough to ride out the spike from the
+# fingers closing or the arm stopping, short enough that the arm is still where
+# it was when the run began.
+WRIST_SAMPLES = 32
+
 # The two controllers that drive the fingers. Only one of them may hold the
 # joints at a time, so they are swapped rather than both left running.
 POSITION_CONTROLLER = "gripper_controller"
@@ -61,6 +71,10 @@ TURN_AXIS = 1
 # How far the arm feels its way down in one step when lowering a glass into a
 # slot, and how far down it is willing to go before giving up. Two millimetres
 # is small enough that a rim meeting a rack peg is a touch rather than a knock.
+# How many times a move is planned before it is called impossible. The planner
+# samples at random, so a move it fails once it often solves next time.
+PLANNING_TRIES = 3
+
 DESCENT_STEP = 0.002
 DESCENT_LIMIT = 0.060
 
@@ -118,7 +132,7 @@ class Arm:
         node.create_subscription(
             JointState, "/joint_states", self._on_joint_states, 10, callback_group=sensors
         )
-        self._wrist_force: np.ndarray | None = None
+        self._wrist_recent: list[np.ndarray] = []
         self._wrist_frame = "gripper_body"
         node.create_subscription(
             WrenchStamped, "/wrist_force", self._on_wrist_force, 10, callback_group=sensors
@@ -153,7 +167,7 @@ class Arm:
                 raise MotionFailed(f"{what} did not come up within {timeout:.0f}s")
 
         # The force sensor is not a service, so it is waited for by listening.
-        while self._wrist_force is None:
+        while not self._wrist_recent:
             if time.monotonic() > deadline:
                 raise MotionFailed(f"the wrist force sensor said nothing within {timeout:.0f}s")
             time.sleep(0.05)
@@ -231,11 +245,30 @@ class Arm:
         self._send(self._arm_controller, response.solution.joint_trajectory, "the straight-line move")
         return float(response.fraction)
 
-    def _run_plan(self, what: str) -> None:
-        result = self._planner.plan()
-        if not result:
-            raise MotionFailed(f"no plan found for {what}")
-        self._moveit.execute(result.trajectory, controllers=[])
+    def _run_plan(self, what: str, *, tries: int = PLANNING_TRIES) -> None:
+        """Plan and run a move, asking more than once before giving up.
+
+        The planner is a randomised one: it grows a tree from wherever its
+        samples happen to fall, and on a move it finds hard it will fail one
+        attempt and solve the next from a different set of samples. The cost
+        of asking again is seconds; the cost of not asking is a glass left
+        standing, or worse, one left held while the arm decides it cannot move.
+
+        This is not a way of forcing through a move that is really impossible.
+        A pose that cannot be reached at all fails every attempt just as fast.
+        """
+        for attempt in range(tries):
+            result = self._planner.plan()
+            if result:
+                self._moveit.execute(result.trajectory, controllers=[])
+                return
+            if attempt + 1 < tries:
+                self._node.get_logger().info(
+                    f"no plan found for {what} on attempt {attempt + 1}, asking again"
+                )
+                self._planner.set_start_state_to_current_state()
+
+        raise MotionFailed(f"no plan found for {what} in {tries} attempts")
 
     def _send(self, client: ActionClient, trajectory: JointTrajectory, what: str) -> None:
         """Run a joint trajectory on a controller and wait for it to finish."""
@@ -337,27 +370,51 @@ class Arm:
         part of it taken. What comes back is the gripper plus whatever it is
         holding, which is what the callers subtract from.
         """
-        if self._wrist_force is None:
+        if not self._wrist_recent:
             raise MotionFailed("the wrist force sensor has not reported yet")
+        readings = list(self._wrist_recent)
 
-        try:
-            with self._moveit.get_planning_scene_monitor().read_only() as scene:
-                matrix = np.asarray(
-                    scene.current_state.get_global_link_transform(self._wrist_frame)
-                )
-            return abs(float((matrix[:3, :3] @ self._wrist_force)[2]))
-        except Exception:  # noqa: BLE001 - see below
-            # If the sensor's frame is not one the robot model knows, the
-            # unturned reading is still better than refusing to weigh
-            # anything; it is what this did before it was turned at all.
-            return abs(float(self._wrist_force[2]))
+        # The sensor's own frame first, then the link it is bolted to. Both,
+        # because the reading is worth nothing without knowing which way it is
+        # pointing, and reading the planning scene can fail for a moment while
+        # something else is writing to it.
+        for frame in (self._wrist_frame, WRIST_SENSOR_LINK):
+            for _ in range(2):
+                try:
+                    with self._moveit.get_planning_scene_monitor().read_only() as scene:
+                        matrix = np.asarray(
+                            scene.current_state.get_global_link_transform(frame)
+                        )
+                    turned = matrix[:3, :3]
+                    return float(
+                        np.median([abs(float((turned @ one)[2])) for one in readings])
+                    )
+                except Exception:  # noqa: BLE001, S112 - tried again, then given up on
+                    continue
+
+        # Deliberately not falling back to the raw reading. That is the axis
+        # the gripper reaches along, which is level for every grasp here, so
+        # it would quietly report that every glass weighs nothing — and a
+        # glass that weighs nothing is gripped too gently and dropped. A
+        # refusal to weigh is recoverable; a wrong weight is not.
+        raise MotionFailed(
+            "the wrist reading cannot be turned the right way up, so what is held "
+            "cannot be weighed"
+        )
 
     def _on_wrist_force(self, msg: WrenchStamped) -> None:
         # All three, because which of them carries the weight depends on how
         # the gripper is turned, and it is turned differently for every glass.
-        self._wrist_force = np.array(
-            [msg.wrench.force.x, msg.wrench.force.y, msg.wrench.force.z], dtype=float
+        #
+        # Kept as a short run of readings rather than only the latest. The
+        # fingers squeeze hard and sideways, the arm starts and stops, and
+        # either throws a spike many times the weight of a glass through the
+        # sensor. A glass is weighed off the middle of a settled run, the way
+        # any scale is read.
+        self._wrist_recent.append(
+            np.array([msg.wrench.force.x, msg.wrench.force.y, msg.wrench.force.z], dtype=float)
         )
+        del self._wrist_recent[:-WRIST_SAMPLES]
         self._wrist_frame = msg.header.frame_id or self._wrist_frame
 
     def _weight_now(self) -> float | None:
