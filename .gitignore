@@ -1,0 +1,22 @@
+# Built by colcon at the repo root, the way each project's own folder is.
+build/
+install/
+log/
+
+# pixi
+.pixi/
+
+# python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# editors / IDEs
+.idea/
+*.iml
+.vscode/
+
+# macOS
+.DS_Store
