@@ -36,6 +36,16 @@ CAMERA_OFFSET = np.array([0.085, 0.0, 0.015])
 
 # Distances from tool0, measured along the tool's own z axis, which is the
 # direction the gripper reaches in. See arm/gripper.urdf.xacro.
+# The lowest a glass can be held. The gripper comes in level, so its body
+# sits across the grip height rather than above it, and the body is a 90 mm
+# box: hold a glass 18 mm up and 27 mm of gripper is through the table. Half
+# the body, and a little clearance, is how low it can go.
+#
+# Not a fact about glasses. A glass too short to be held this far up and still
+# below its own half height is a glass this gripper cannot pick up, which is a
+# result and not a failure.
+LOWEST_GRIP = 0.050
+
 FINGERTIP_OFFSET = 0.170
 GRASP_OFFSET = 0.110
 

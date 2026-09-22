@@ -58,25 +58,41 @@ class NoGrip(Exception):
     """
 
 
-def find_grip(profile: Profile, kind: Kind, *, gripper_max_opening: float) -> Grip:
+def find_grip(
+    profile: Profile, kind: Kind, *, gripper_max_opening: float, lowest_grip: float = 0.0
+) -> Grip:
     """Work out where to hold a glass, and check the answer before returning it.
 
     Raises NoGrip with a reason if the rule cannot find somewhere safe.
     """
-    band = _apply_rule(profile, kind)
+    band = _apply_rule(profile, kind, lowest_grip)
     height = (band[0] + band[1]) / 2.0
     opening = profile.width_at(height)
     grip = Grip(height=height, opening=opening, band=band)
-    _check(grip, profile, kind, gripper_max_opening)
+    _check(grip, profile, kind, gripper_max_opening, lowest_grip)
     return grip
 
 
 # ----------------------------------------------------------------- the rules
 
 
-def _apply_rule(profile: Profile, kind: Kind) -> tuple[float, float]:
-    """Run the kind's rule, and return the run of wall to grip."""
+def _apply_rule(profile: Profile, kind: Kind, lowest_grip: float) -> tuple[float, float]:
+    """Run the kind's rule, and return the run of wall to grip.
+
+    The band the rule searches starts no lower than ``lowest_grip``. The floor
+    belongs here rather than only in the check at the end: every one of these
+    rules looks for the *lowest* wall that will do, so a floor applied
+    afterwards would turn "hold it a little higher" into "this glass cannot be
+    held", on every glass.
+    """
     within = kind.band_for(profile.total_height)
+    within = (max(within[0], lowest_grip), within[1])
+    if within[0] >= within[1]:
+        raise NoGrip(
+            f"the gripper cannot reach below {lowest_grip * 1000:.0f} mm without the table, "
+            f"and this glass has nothing to hold above that and below "
+            f"{within[1] * 1000:.0f} mm"
+        )
 
     if kind.grip_rule == LOWEST_VERTICAL_SECTION:
         return _lowest_vertical_section(profile, kind, within)
@@ -142,7 +158,9 @@ def _flattest_in_band(
 # ---------------------------------------------------------------- the checks
 
 
-def _check(grip: Grip, profile: Profile, kind: Kind, gripper_max_opening: float) -> None:
+def _check(
+    grip: Grip, profile: Profile, kind: Kind, gripper_max_opening: float, lowest_grip: float
+) -> None:
     """Reject an answer that is real arithmetic but a bad idea.
 
     A rule can return something silly on an odd glass — a waist found in a
@@ -166,6 +184,16 @@ def _check(grip: Grip, profile: Profile, kind: Kind, gripper_max_opening: float)
         raise NoGrip(
             f"the pads need {kind.min_band_height_m * 1000:.0f} mm of wall and this grip "
             f"has {grip.band_height * 1000:.0f} mm"
+        )
+
+    # The gripper comes in level, so its body lies across the grip height. Held
+    # too low and the body is through the table before the fingers ever reach
+    # the glass, which the planner reports as a move it cannot make rather than
+    # as a grip it should not have been given.
+    if grip.height < lowest_grip:
+        raise NoGrip(
+            f"the rule wants to hold it {grip.height * 1000:.0f} mm up, and the gripper "
+            f"body will not clear the table below {lowest_grip * 1000:.0f} mm"
         )
 
     # Rule one, enforced rather than assumed. After the turn the fingers are

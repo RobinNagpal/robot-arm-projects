@@ -41,6 +41,7 @@ from .arm.dimensions import (
     GRIPPER_MAX_OPENING,
     GRIPPER_WEIGHT_N,
     LIFT_HEIGHT,
+    LOWEST_GRIP,
     MEASURE_FRAME_MARGIN,
     MEASURE_STANDOFF,
     MEASURE_VIEW_HEIGHT,
@@ -321,7 +322,9 @@ class PickGlassesTask:
                 self._log.info("it has a handle, so the approach comes in square to it")
 
         # 3. Work out where to hold it.
-        grip = find_grip(profile, kind, gripper_max_opening=GRIPPER_MAX_OPENING)
+        grip = find_grip(
+            profile, kind, gripper_max_opening=GRIPPER_MAX_OPENING, lowest_grip=LOWEST_GRIP
+        )
         self._log.info(
             f"holding it {grip.height * 1000:.0f} mm up, fingers "
             f"{grip.opening * 1000:.0f} mm apart"
@@ -776,8 +779,9 @@ class PickGlassesTask:
             # measured height is as good as the other; the mean drops the
             # little the arm missed it by.
             above_table = (here[1][2] + there[1][2]) / 2.0 - TABLE_TOP_Z
+            notes: list[str] = []
             placed = where_they_stand(
-                here[0], here[1], there[0], there[1], above_table, tallest=TALLEST_GLASS
+                here[0], here[1], there[0], there[1], above_table, tallest=TALLEST_GLASS, notes=notes
             )
             for label, (dets, picture) in (
                 ("left", (here[0], here[2])),
@@ -788,13 +792,18 @@ class PickGlassesTask:
                     f"station ({centre[0]:.2f}, {centre[1]:.2f}), the {label} picture of the pair: "
                     f"{len(dets)} glass-shaped holes",
                     then=(
-                        "Where each one is laid down on the table, before the pair is used: "
+                        f"Camera at ({(here[1] if label == 'left' else there[1])[0]:.3f}, "
+                        f"{(here[1] if label == 'left' else there[1])[1]:.3f}), "
+                        f"{above_table * 1000:.0f} mm above the table. "
+                        "Where each hole is laid down on the table, before the pair is used: "
                         + ("; ".join(
                             f"({d.position[0]:.3f}, {d.position[1]:.3f}) {d.rough_width * 1000:.0f} mm wide"
                             for d in dets
                         ) or "nothing")
                     ),
                 )
+            for note in notes:
+                self._report.say(f"- {note}")
             self._report.say(
                 f"From that pair: **{len(placed)} placed** out of {len(here[0])} and "
                 f"{len(there[0])} seen."

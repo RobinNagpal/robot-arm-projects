@@ -24,6 +24,7 @@ profile. No ROS anywhere, so the whole module can be tested directly.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
 import numpy as np
@@ -102,6 +103,12 @@ def glass_mask(rgb: np.ndarray, depth: np.ndarray) -> np.ndarray:
 # taken to be the same glass when the pictures are merged. Glasses are set out
 # further apart than this, so it cannot join two of them into one.
 SAME_GLASS = 0.04
+
+# How far out finding the middle of a glass-shaped hole can be. The edge of a
+# mask wanders, a silhouette is cut off at the edge of a picture, and the arm
+# does not arrive exactly where it was sent. It is used to say how much a pair
+# of sightings may disagree before the pair is not worth believing.
+SIGHTING_ERROR = 0.010
 
 
 def foot_of(mask: np.ndarray, to_world, table_z: float) -> np.ndarray | None:
@@ -209,6 +216,7 @@ def where_they_stand(
     *,
     tallest: float,
     tolerance: float = 0.02,
+    notes: list[str] | None = None,
 ) -> list[Detection]:
     """Where the glasses really stand, from two pictures taken from above.
 
@@ -263,10 +271,32 @@ def where_they_stand(
             # Least squares, because the two are parallel only up to the error
             # in either sighting.
             shrink = float(np.dot(baseline, moved)) / travelled
-            if not least_shrink <= shrink <= 1.0:
-                continue
+
+            # A shrink over 1 says the glass is below the table, which it is
+            # not. It says instead that this glass is short enough to have
+            # almost no lean to measure, and that the little there is has been
+            # swamped by the error in finding its middle. Believing that much
+            # is right — a short glass is nearly where a single picture puts
+            # it — so it is taken as standing on the table rather than thrown
+            # away. How far over 1 is forgiven depends on how far the glass
+            # appeared to move: the same few millimetres of error matter more
+            # when there is less movement to measure them against.
+            slack = SIGHTING_ERROR / math.sqrt(travelled)
+            if 1.0 < shrink <= 1.0 + slack:
+                shrink = 1.0
 
             residual = float(np.linalg.norm(baseline - shrink * moved))
+            if notes is not None:
+                notes.append(
+                    f"{one.name} against {other.name}: it appears to move "
+                    f"{float(np.linalg.norm(moved)) * 1000:.0f} mm while the camera moved "
+                    f"{float(np.linalg.norm(baseline)) * 1000:.0f} mm, so shrink={shrink:.3f} "
+                    f"(allowed {least_shrink:.3f} to 1.000) and residual="
+                    f"{residual * 1000:.1f} mm (allowed {tolerance * 1000:.0f} mm)"
+                    + _verdict(shrink, least_shrink, residual, tolerance)
+                )
+            if not least_shrink <= shrink <= 1.0:
+                continue
             if residual > tolerance:
                 continue
             candidates.append((residual, one, other, shrink))
@@ -301,6 +331,20 @@ def where_they_stand(
         )
 
     return found
+
+
+def _verdict(shrink: float, least: float, residual: float, tolerance: float) -> str:
+    """Why a pair was turned down, in words, for the run report."""
+    if shrink > 1.0:
+        return (
+            " — REJECTED: shrink this far over 1 would put the glass below the table, and "
+            "further over than the error in finding its middle can account for."
+        )
+    if shrink < least:
+        return " — REJECTED: shrink that small means something taller than any glass here."
+    if residual > tolerance:
+        return " — REJECTED: the two sightings do not lie along the line the camera moved."
+    return " — accepted"
 
 
 def merge_sightings(found: list[Detection], *, apart: float = SAME_GLASS) -> list[Detection]:

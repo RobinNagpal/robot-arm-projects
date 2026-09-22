@@ -6,11 +6,17 @@ an opening wider than the gripper, both fail at run time in a way that looks
 like a planning problem.
 """
 
+import math
+
 import numpy as np
 import pytest
 from work_cell.arm import dimensions
 from work_cell.arm.dimensions import survey_stations
 from work_cell.glasses import spec
+from work_cell.glasses.profile import profile_from_outline
+from work_cell.glasses.rules import NoGrip, find_grip
+from work_cell.glasses.shapes import straight
+from work_cell.glasses.spawn import random_glasses
 from work_cell.rack.layout import GLASS_ZONE
 
 
@@ -94,3 +100,47 @@ def test_one_station_is_enough_when_one_picture_covers_it_all():
 def test_a_camera_that_sees_nothing_is_refused_rather_than_looped_on():
     with pytest.raises(ValueError):
         survey_stations(GLASS_ZONE, (0.0, 0.3))
+
+
+def test_the_gripper_body_has_to_clear_the_table():
+    """The gripper comes in level, so its body lies across the grip height,
+    not above it. Half the body is how low the fingers can go."""
+    assert dimensions.LOWEST_GRIP >= 0.045
+
+
+def test_a_glass_cannot_be_asked_to_be_held_below_that():
+    profile = profile_from_outline(straight(height=0.20, rim_diameter=0.07))
+    kind = spec.kind("straight_glass")
+    grip = find_grip(profile, kind, gripper_max_opening=0.095, lowest_grip=dimensions.LOWEST_GRIP)
+    assert grip.height >= dimensions.LOWEST_GRIP
+
+
+def test_a_glass_too_short_to_hold_that_high_is_refused_with_a_reason():
+    """Held above half its height it cannot be turned over, and below
+    LOWEST_GRIP the gripper is through the table. A glass with no room
+    between the two is one this gripper cannot pick up."""
+    profile = profile_from_outline(straight(height=0.05, rim_diameter=0.06))
+    kind = spec.kind("straight_glass")
+    with pytest.raises(NoGrip):
+        find_grip(profile, kind, gripper_max_opening=0.095, lowest_grip=dimensions.LOWEST_GRIP)
+
+
+def test_no_glass_can_be_put_where_the_arm_cannot_work():
+    """The zone and the arm's reach live in different files and have to agree.
+
+    A glass drawn beyond the arm's reach is refused however well it was
+    measured, which looks like a perception failure and is not one.
+    """
+    x_from, x_to, y_from, y_to = GLASS_ZONE
+    for x in (x_from, x_to):
+        for y in (y_from, y_to):
+            out = math.hypot(x, y)
+            assert dimensions.COMFORTABLE_REACH[0] <= out <= dimensions.COMFORTABLE_REACH[1], (
+                f"a glass at the corner ({x}, {y}) stands {out * 1000:.0f} mm from the base"
+            )
+
+
+def test_the_zone_still_holds_a_run_of_glasses():
+    """Tightening it must not make the usual run impossible to lay out."""
+    for count in (1, 2, 4):
+        assert len(random_glasses(count, seed=3)) == count

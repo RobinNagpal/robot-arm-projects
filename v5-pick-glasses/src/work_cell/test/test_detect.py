@@ -450,3 +450,40 @@ def test_the_foot_does_not_land_on_the_rim_nearest_the_camera():
     found = foot_of(_disc_mask(centre, radius, to_pixel, size), to_world, table_z=0.0)
     near_rim = np.array([centre[0] - radius, centre[1]])
     assert np.linalg.norm(found[:2] - centre) < np.linalg.norm(found[:2] - near_rim)
+
+
+def test_a_short_glass_is_not_thrown_out_for_looking_flat():
+    """A glass with almost no lean to measure reads as shrink just over 1 as
+    often as just under it, and half of those were being refused."""
+    camera_height, baseline = 0.434, 0.118
+    first_camera = np.array([0.469, -0.408])
+    second_camera = np.array([0.469, -0.408 + baseline])
+    truth = np.array([0.315, -0.457])
+
+    # The sighting from one camera is out by a few millimetres, which for a
+    # glass this short is bigger than the lean being measured.
+    one = _laid_on_the_table(truth, 0.098, 0.062, first_camera, camera_height)
+    other = _laid_on_the_table(truth, 0.098, 0.062, second_camera, camera_height)
+    other = Detection(
+        name=other.name,
+        position=other.position + np.array([0.006, 0.0, 0.0]),
+        rough_width=other.rough_width,
+    )
+
+    found = where_they_stand(
+        [one], first_camera, [other], second_camera, camera_height, tallest=0.26
+    )
+    assert found, "a short glass must survive the error in finding its middle"
+    assert float(np.linalg.norm(found[0].position[:2] - truth)) < 0.02
+
+
+def test_a_pair_that_cannot_be_the_same_glass_is_still_refused():
+    """The forgiveness above must not become a free pass."""
+    camera_height = 0.434
+    first_camera = np.array([0.469, -0.408])
+    second_camera = np.array([0.469, -0.290])
+    one = _laid_on_the_table(np.array([0.315, -0.457]), 0.098, 0.062, first_camera, camera_height)
+    far = _laid_on_the_table(np.array([0.60, -0.10]), 0.098, 0.062, second_camera, camera_height)
+    assert where_they_stand(
+        [one], first_camera, [far], second_camera, camera_height, tallest=0.26
+    ) == []

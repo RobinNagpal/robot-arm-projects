@@ -70,15 +70,28 @@ MARKER_ID = 0
 MARKER_SIZE = 0.070
 
 # Where the glasses start out, as a rectangle on the table: x from, x to,
-# y from, y to. Sized so that half a dozen glasses fit without crowding each
-# other, and so that all of it is inside a UR5e's reach from the table edge.
+# y from, y to.
+#
+# Every corner of it is inside the band of reach the arm works well over —
+# `COMFORTABLE_REACH` in arm/dimensions.py — and `test_dimensions.py` holds
+# the two to that. The rectangle used to run out to 825 mm from the base at
+# its far corner, past what the arm can reach at all, so a glass drawn there
+# was refused however well it had been measured. A glass the arm cannot get to
+# teaches nothing about picking glasses up.
+#
+# The far corner is the one that binds: a rectangle is a clumsy shape to cut
+# out of an annulus, and squaring it off costs some table. It is kept as a
+# rectangle because that is what is easy to read, to draw and to argue about.
+# As drawn the corners stand 330 to 777 mm from the base, against a band that
+# ends at 780, so it is as much table as the reach allows. Six glasses still
+# lay out without crowding on all of the first two hundred seeds; much smaller
+# and they stop fitting.
 #
 # All of it is on the arm's right, because the rack stands on its left. The two
 # never share a stretch of table, which is what keeps the rack out of the back
 # of a survey picture and makes it obvious, watching the run, which side the
-# arm is working on. The gap between the near edge of the rack and the far edge
-# of this zone is about 270 mm.
-GLASS_ZONE = (0.30, 0.64, -0.52, -0.06)
+# arm is working on.
+GLASS_ZONE = (0.32, 0.64, -0.44, -0.08)
 
 # How much tilt the arm can be relied on to hold during the descent. A slot
 # that would demand better than this from a particular glass is a slot that

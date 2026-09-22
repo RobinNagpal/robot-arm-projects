@@ -137,8 +137,12 @@ def test_the_model_is_labelled_because_that_is_the_whole_problem():
 
 
 def test_every_glass_in_a_run_is_a_different_colour():
-    """Only so a person can tell them apart. Nothing in the arm reads it."""
-    glasses = random_glasses(len(GLASS_TINTS), seed=3)
+    """Only so a person can tell them apart. Nothing in the arm reads it.
+
+    A run of four, not one of every tint there is: more glasses than a table
+    holds is a different test, and it belongs with the layout.
+    """
+    glasses = random_glasses(4, seed=3)
     colours = {
         re.search(r"<diffuse>([\d. ]+)</diffuse>", glass_sdf(g, mesh_uri="x.stl")).group(1)
         for g in glasses
