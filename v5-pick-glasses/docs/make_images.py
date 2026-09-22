@@ -455,7 +455,10 @@ def laying_a_glass_on_the_table() -> None:
         glass = 0.24
         ax.add_patch(plt.Rectangle((glass - 0.031, 0), 0.062, height, facecolor=GLASS, alpha=0.30))
         ax.plot([glass, glass], [0, height], color=GLASS, lw=1.0)
-        ax.text(glass, height + 0.012, "where it\nreally stands", fontsize=7, color=GLASS, ha="center")
+        ax.text(
+            glass, height + 0.012, "where it\nreally stands",
+            fontsize=7, color=GLASS, ha="center",
+        )
 
         eyes = [0.03] if not pair else [0.03, 0.12]
         for index, eye in enumerate(eyes):
@@ -611,7 +614,11 @@ def the_turn_swings_the_arm() -> None:
         ax.add_patch(circle)
         ax.text(radius * 0.72, -radius * 0.72, label, fontsize=7, color=FAINT)
 
-    for glass_out, colour, name in ((0.45, GRIP, "tool parked at 450 mm"), (TURNING_ROOM[0], GLASS, "glass parked at 500 mm")):
+    parked = (
+        (0.45, GRIP, "tool parked at 450 mm"),
+        (TURNING_ROOM[0], GLASS, "glass parked at 500 mm"),
+    )
+    for glass_out, colour, name in parked:
         if colour is GRIP:
             grip_at = glass_out + FINGERTIP_OFFSET  # the old way: the tool was placed
             before, after = glass_out, glass_out + 2 * FINGERTIP_OFFSET
