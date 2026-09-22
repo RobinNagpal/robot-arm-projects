@@ -3,7 +3,7 @@ import re
 
 import numpy as np
 import pytest
-from work_cell.glasses.shapes import stemmed, straight
+from work_cell.glasses.shapes import KIND_RANGES, stemmed, straight
 from work_cell.glasses.spawn import (
     GLASS_LABEL,
     GLASS_TINTS,
@@ -170,3 +170,20 @@ def test_the_same_seed_survives_a_redrawn_layout():
     assert [g.position for g in random_glasses(6, 11)] == [
         g.position for g in random_glasses(6, 11)
     ]
+
+
+def test_a_run_can_be_asked_for_one_kind_of_glass_only():
+    """So that one problem can be looked at without the other kinds in the way."""
+    for kind in KIND_RANGES:
+        drawn = random_glasses(3, seed=5, kinds=[kind])
+        assert {g.kind for g in drawn} == {kind}
+
+
+def test_asking_for_two_kinds_gives_only_those_two():
+    drawn = random_glasses(6, seed=6, kinds=["straight_glass", "tapered_glass"])
+    assert {g.kind for g in drawn} <= {"straight_glass", "tapered_glass"}
+
+
+def test_asking_for_nothing_in_particular_still_draws_any_kind():
+    drawn = random_glasses(6, seed=7)
+    assert {g.kind for g in drawn} <= set(KIND_RANGES)

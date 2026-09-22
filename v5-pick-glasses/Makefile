@@ -6,6 +6,7 @@ SHELL := /bin/bash
 .DEFAULT_GOAL := help
 
 GLASSES ?= 4
+KINDS   ?=
 SEED    ?= 1
 GUI     ?= true
 RVIZ    ?= false
@@ -13,7 +14,7 @@ RVIZ    ?= false
 # Run a command inside the pixi environment with the workspace overlay sourced.
 ros = pixi run bash -c 'source install/setup.bash && $(1)'
 
-.PHONY: help setup build run cell test lint clean doctor
+.PHONY: help setup build run one cell test lint clean doctor
 
 help: ## Show this help
 	@echo ""
@@ -21,19 +22,24 @@ help: ## Show this help
 		/^##@/ { printf "\n  \033[1m%s\033[0m\n", substr($$0, 5) } \
 		/^[a-zA-Z_.-]+:.*?##/ { printf "    \033[36m%-8s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
 	@echo ""
-	@echo "  Settings: GLASSES=$(GLASSES) SEED=$(SEED) GUI=$(GUI) RVIZ=$(RVIZ)"
+	@echo "  Settings: GLASSES=$(GLASSES) KINDS=$(KINDS) SEED=$(SEED) GUI=$(GUI) RVIZ=$(RVIZ)"
 	@echo "  For example: make run GLASSES=6 SEED=7"
+	@echo "  KINDS is comma separated, empty for any: straight_glass, tapered_glass,"
+	@echo "                                           stemmed_glass, short_stemmed_glass"
 	@echo ""
 
 ##@ Running
 
 run: build ## Start the cell and run the task (this is the one command)
 	$(call ros,ros2 launch work_cell run.launch.py \
-		glasses:=$(GLASSES) seed:=$(SEED) gui:=$(GUI) rviz:=$(RVIZ))
+		glasses:=$(GLASSES) kinds:=$(KINDS) seed:=$(SEED) gui:=$(GUI) rviz:=$(RVIZ))
+
+one: build ## One straight glass on its own, which is the easiest thing to pick up
+	$(MAKE) run GLASSES=1 KINDS=straight_glass
 
 cell: build ## Start the cell but leave the arm alone, for poking at by hand
 	$(call ros,ros2 launch work_cell run.launch.py task:=false \
-		glasses:=$(GLASSES) seed:=$(SEED) gui:=$(GUI) rviz:=$(RVIZ))
+		glasses:=$(GLASSES) kinds:=$(KINDS) seed:=$(SEED) gui:=$(GUI) rviz:=$(RVIZ))
 
 ##@ Project
 

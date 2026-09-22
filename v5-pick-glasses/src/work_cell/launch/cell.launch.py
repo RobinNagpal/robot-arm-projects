@@ -33,6 +33,7 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
+from work_cell.glasses.shapes import KIND_RANGES
 from work_cell.glasses.spawn import random_glasses
 from work_cell.rack.build import random_rack_pose
 from work_cell.world.build import build_world, read_parts
@@ -50,12 +51,36 @@ def robot_description(share: Path) -> str:
     ).toxml()
 
 
-def write_world(share: Path, count: int, seed: int) -> str:
+def _kinds(named: str) -> list[str] | None:
+    """The kinds named on the command line, checked against the ones that exist.
+
+    Checked here rather than left to the spawner, because a name with a typo in
+    it would otherwise simply never be drawn, and the run would look like a
+    kind of glass the arm cannot handle rather than one it was never given.
+    """
+    wanted = [name.strip() for name in named.split(",") if name.strip()]
+    if not wanted:
+        return None
+
+    unknown = sorted(set(wanted) - set(KIND_RANGES))
+    if unknown:
+        raise ValueError(
+            f"no such kind of glass: {', '.join(unknown)}. "
+            f"The kinds are {', '.join(sorted(KIND_RANGES))}"
+        )
+    return wanted
+
+
+def write_world(share: Path, count: int, seed: int, kinds: list[str] | None) -> str:
     """Assemble the room, the table, the rack and this run's glasses.
 
     The meshes go in the same temporary directory as the world file, and the
     world refers to them by absolute path, so the whole run is self-contained
     and nothing is left behind in the install tree.
+
+    ``kinds`` narrows what may be drawn. None means any kind, which is what a
+    real run wants; naming one is for looking at a single problem without the
+    other three getting in the way.
     """
     import random
 
@@ -66,7 +91,7 @@ def write_world(share: Path, count: int, seed: int) -> str:
         world_template,
         table,
         rack_pose=random_rack_pose(random.Random(seed)),
-        glasses=random_glasses(count, seed),
+        glasses=random_glasses(count, seed, kinds),
         mesh_dir=folder,
     )
 
@@ -106,8 +131,9 @@ def setup(context, *args, **kwargs):
     glasses = int(LaunchConfiguration("glasses").perform(context))
     seed = int(LaunchConfiguration("seed").perform(context))
     gui = LaunchConfiguration("gui").perform(context).lower() in ("true", "1")
+    kinds = _kinds(LaunchConfiguration("kinds").perform(context))
 
-    world = write_world(share, glasses, seed)
+    world = write_world(share, glasses, seed, kinds)
 
     # The simulator always runs as a server on its own, and the window, when
     # there is one, is a second process that connects to it. That is not a
@@ -202,6 +228,14 @@ def generate_launch_description() -> LaunchDescription:
                 "seed",
                 default_value="1",
                 description="which set of glasses to make; the same seed gives the same glasses",
+            ),
+            DeclareLaunchArgument(
+                "kinds",
+                default_value="",
+                description=(
+                    "which kinds of glass to draw from, comma separated, or empty for any of "
+                    f"them: {', '.join(sorted(KIND_RANGES))}"
+                ),
             ),
             DeclareLaunchArgument("gui", default_value="true", description="show the Gazebo window"),
             DeclareLaunchArgument("rviz", default_value="false", description="also open RViz"),
