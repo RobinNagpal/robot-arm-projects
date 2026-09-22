@@ -9,6 +9,7 @@ from work_cell.rack.layout import (
     Slot,
     fill_order,
     needs_empty_neighbour,
+    rack_box,
     slots_consumed,
     slots_from_marker,
     tilt_budget_deg,
@@ -124,3 +125,38 @@ def test_slots_are_filled_from_the_far_end_first():
     slots = [Slot(i, np.array([0.5, 0.1 * i, 0.77])) for i in range(3)]
     order = fill_order(slots, reach_from=np.zeros(3))
     assert [slot.index for slot in order] == [2, 1, 0]
+
+
+# --- the box the planner is given -----------------------------------------
+
+
+def test_the_box_lies_along_the_row_of_slots():
+    """The rack stands across the arm, not along x. A box built from the
+    slots' extent without turning it to match stands at right angles to the
+    rack it is standing in for."""
+    marker = np.array([0.35, 0.36, 0.75])
+    slots = slots_from_marker(marker, math.pi / 2)
+    centre, size, turned = rack_box(slots)
+
+    # The slots run along x, so the long side of the box has to as well.
+    along_world_x = abs(float(turned[:, 1] @ np.array([1.0, 0.0, 0.0])))
+    assert along_world_x > 0.99, "the long side of the box is not along the row"
+    assert size[1] > size[0], "the long side is the one across the slots"
+    assert np.allclose(centre[:2], marker[:2], atol=1e-9)
+
+
+def test_the_box_covers_every_slot():
+    for yaw in (0.0, math.pi / 2, 0.4, -1.1):
+        slots = slots_from_marker(np.array([0.35, 0.36, 0.75]), yaw)
+        centre, size, turned = rack_box(slots)
+        for slot in slots:
+            local = turned.T @ (slot.centre - centre)
+            assert abs(local[0]) <= size[0] / 2 + 1e-9
+            assert abs(local[1]) <= size[1] / 2 + 1e-9
+
+
+def test_the_box_is_square_when_there_is_nothing_to_point_along():
+    one = slots_from_marker(np.array([0.35, 0.36, 0.75]), 0.0)[:1]
+    _, size, turned = rack_box(one)
+    assert size[0] == size[1]
+    assert np.allclose(turned, np.eye(3))

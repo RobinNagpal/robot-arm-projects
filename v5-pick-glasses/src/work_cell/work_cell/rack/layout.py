@@ -44,6 +44,7 @@ __all__ = [
     "fill_order",
     "needs_empty_neighbour",
     "slots_consumed",
+    "rack_box",
     "slots_from_marker",
     "tilt_budget_deg",
     "usable_slots",
@@ -108,6 +109,37 @@ class Slot:
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "centre", np.asarray(self.centre, dtype=float))
+
+
+def rack_box(slots: list[Slot]) -> tuple[np.ndarray, tuple[float, float, float], np.ndarray]:
+    """One box around the whole rack: where it is, how big, and which way round.
+
+    Which way round is the part that matters. The rack stands square to the
+    table but not square to the world — its row of slots runs across the arm,
+    not along x — and a box built from the slots' extent without turning it to
+    match is a box at right angles to the rack it is standing in for. That
+    leaves the real rack unprotected and puts a six hundred millimetre slab
+    across open table, where the arm meets it as a collision it cannot explain.
+
+    Returned as position, size and orientation rather than built here, because
+    this file may not import ROS and a collision object is a ROS message.
+    """
+    centre = np.mean([slot.centre for slot in slots], axis=0)
+    along = np.asarray(slots[-1].centre - slots[0].centre, dtype=float)
+    length = float(np.linalg.norm(along))
+
+    # A rack of one slot has no direction of its own; square to the world will
+    # do, since the box is then as wide as it is long.
+    if length <= 0.0:
+        return centre, (SLOT_SPACING, SLOT_SPACING, RACK_BASE_HEIGHT), np.eye(3)
+
+    across = along / length
+    up = np.array([0.0, 0.0, 1.0])
+    return (
+        centre,
+        (SLOT_SPACING, length + SLOT_SPACING, RACK_BASE_HEIGHT),
+        np.column_stack((np.cross(across, up), across, up)),
+    )
 
 
 def slots_from_marker(marker_position: np.ndarray, marker_yaw: float) -> list[Slot]:

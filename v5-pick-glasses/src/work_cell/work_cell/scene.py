@@ -26,7 +26,7 @@ from moveit_msgs.srv import ApplyPlanningScene, GetStateValidity
 from rclpy.node import Node
 from shape_msgs.msg import SolidPrimitive
 
-from .rack.layout import RACK_BASE_HEIGHT, SLOT_SPACING, Slot
+from .rack.layout import RACK_BASE_HEIGHT, Slot, rack_box
 from .table.layout import TABLE_CENTRE_XY, TABLE_SIZE, TABLE_TOP_Z, WORLD_FRAME
 from .transforms import frame, make_pose
 
@@ -113,13 +113,9 @@ class PlanningSceneClient:
         down onto a slot from directly above, so one box over the base is
         enough and is far cheaper to plan against than ten separate pegs.
         """
-        centre = np.mean([slot.centre for slot in slots], axis=0)
-        across = float(np.linalg.norm(slots[-1].centre - slots[0].centre)) + SLOT_SPACING
-        pose = Pose()
-        pose.position.x, pose.position.y = float(centre[0]), float(centre[1])
-        pose.position.z = TABLE_TOP_Z + RACK_BASE_HEIGHT / 2.0
-        pose.orientation.w = 1.0
-        self._apply([_box("rack", pose, (SLOT_SPACING, across, RACK_BASE_HEIGHT))])
+        centre, size, turned = rack_box(slots)
+        standing = np.array([float(centre[0]), float(centre[1]), TABLE_TOP_Z + RACK_BASE_HEIGHT / 2.0])
+        self._apply([_box("rack", make_pose(standing, turned), size)])
 
     # ---------------------------------------------------------------- glasses
 

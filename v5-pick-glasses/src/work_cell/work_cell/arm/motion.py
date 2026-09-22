@@ -43,7 +43,7 @@ from std_msgs.msg import Float64MultiArray
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 
 from ..table.layout import WORLD_FRAME
-from ..transforms import make_pose
+from ..transforms import make_pose, spin
 
 FINGER_JOINTS = ("left_finger_joint", "right_finger_joint")
 
@@ -386,19 +386,39 @@ class Arm:
         moved = turn @ rotation
         landing = about + turn @ (position - about)
 
-        try:
-            self.move_linear([make_pose(landing, moved)], avoid_collisions=True)
-        except MotionFailed as why:
-            # Turning a held glass about a point is asked for as a straight
-            # line so that the glass sweeps as little as possible, and a
-            # Cartesian path is all or nothing: half a turn solved is no turn.
-            # Interpolating a large rotation is where it gives up most often,
-            # and half way through turning a glass over is the worst place to
-            # stop, so a planned path to the same pose is better than none.
-            # The glass is attached by now, so the planner carries it too.
-            self._node.get_logger().info(f"no straight turn ({why}), planning the turn instead")
-            self.move_to_pose(landing, moved)
-        return moved
+        # A parallel gripper is symmetric about the line it reaches along, and
+        # so is a glass, so the orientation half a turn round that line holds
+        # the same glass in the same place by the same part of it. To the arm
+        # they are not the same at all: one may need a wrist angle it does not
+        # have, or fold the elbow into the table. Both are offered, because
+        # the second costs nothing and is often the one that works.
+        #
+        # The grip point is on that line, so spinning about it leaves the
+        # glass exactly where it is.
+        trouble: MotionFailed | None = None
+        for attempt, candidate in enumerate((moved, spin(moved, math.pi))):
+            try:
+                # Straight first, so the glass sweeps as little as possible. A
+                # Cartesian path is all or nothing — half a turn solved is no
+                # turn — and interpolating a large rotation is where it gives
+                # up most often, so a planned path to the same pose is better
+                # than none. The glass is attached by now, so the planner
+                # carries it too.
+                try:
+                    self.move_linear([make_pose(landing, candidate)], avoid_collisions=True)
+                except MotionFailed as why:
+                    self._node.get_logger().info(f"no straight turn ({why}), planning it instead")
+                    self.move_to_pose(landing, candidate)
+                return candidate
+            except MotionFailed as why:
+                trouble = why
+                if attempt == 0:
+                    self._node.get_logger().info(
+                        "that way round will not plan; trying the other way round, which "
+                        "holds the glass the same"
+                    )
+
+        raise trouble if trouble else MotionFailed("the turn was not attempted")
 
     def tilt(self, angle: float, *, about: np.ndarray | None = None) -> np.ndarray:
         """Lean the held glass over by a small angle, to see whether it slips."""

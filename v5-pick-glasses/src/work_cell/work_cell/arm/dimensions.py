@@ -49,6 +49,16 @@ LOWEST_GRIP = 0.050
 FINGERTIP_OFFSET = 0.170
 GRASP_OFFSET = 0.110
 
+# Where the arm takes a glass to turn it over, measured from the base and the
+# table top. Turning in place asks more of the wrist than anything else in the
+# task, and where the pick happens to leave the arm is not chosen with that in
+# mind — reaching out to the far corner of the glass zone leaves it stretched,
+# which is exactly where the last joint has least left to give. Carrying the
+# glass here first costs one move and makes the turn the same problem every
+# time, in the middle of what the arm can do, instead of a different one for
+# each glass.
+TURNING_ROOM = (0.45, 0.0, 0.35)
+
 # Heights the arm works at, measured from the table top.
 SURVEY_HEIGHT = 0.45
 LIFT_HEIGHT = 0.18

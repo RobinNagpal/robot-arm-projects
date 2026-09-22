@@ -49,6 +49,7 @@ from .arm.dimensions import (
     SLIP_TEST_DEG,
     SURVEY_BASELINE,
     SURVEY_HEIGHT,
+    TURNING_ROOM,
     WEIGH_LIFT,
     survey_stations,
 )
@@ -708,6 +709,21 @@ class PickGlassesTask:
     def _invert_and_place(self, name: str, grip: Grip, slot: Slot, profile: Profile) -> None:
         """Tilt, check for slip, turn right over, then lower until it touches."""
         held_at = self._arm.gripper_gap
+
+        # Carry it somewhere with room before turning it. See TURNING_ROOM.
+        _, rotation = self._arm.current_pose()
+        self._report.say(
+            "Carrying it to the middle of the table before turning it over. Turning in place "
+            "asks more of the wrist than anything else here, and doing it from wherever the "
+            "pick happened to end makes it a different problem for every glass."
+        )
+        try:
+            self._arm.move_to_pose(ROBOT_BASE + np.array(TURNING_ROOM), rotation)
+        except MotionFailed as why:
+            # Not worth losing a held glass over: the turn may still be
+            # possible from where it is, and if it is not, that is the failure
+            # that gets reported.
+            self._log.info(f"could not carry it to the middle ({why}), turning it where it is")
 
         # Lean it over a little first. Twenty degrees is enough to put some of
         # the glass's weight on the pads sideways, which is what makes it slip
