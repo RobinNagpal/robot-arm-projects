@@ -59,6 +59,10 @@ arm and moves with it.
   a glass gets a position without a depth reading. `capture_marker()` reads the
   marker on the rack base, using the dictionary and id that `rack/layout.py`
   defines, so it hunts for the square the rack actually carries.
+  `_depth_without_glass()` blanks the depth wherever the segmentation camera
+  says glass, because Gazebo's depth camera can see glass and a real one
+  cannot. It is the only place the simulator's own knowledge is used, and it
+  goes no further than the frame it returns.
 
 **The glasses** are in `work_cell/glasses/`. Nothing in this folder imports
 ROS.

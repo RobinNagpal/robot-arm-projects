@@ -176,6 +176,12 @@ def collision_cylinders(outline: Outline, slices: int = COLLISION_SLICES) -> lis
     return stack
 
 
+# The label the segmentation camera reports glass under. Any value but 0,
+# which means "no label"; the camera side reads it from here so the model and
+# the reader cannot disagree.
+GLASS_LABEL = 10
+
+
 def glass_sdf(glass: SpawnedGlass, mesh_uri: str) -> str:
     """One glass as the simulator's own model format."""
     mass = glass.mass
@@ -217,5 +223,6 @@ def glass_sdf(glass: SpawnedGlass, mesh_uri: str) -> str:
             izz=mass * radius**2 / 2.0,
             collisions="\n".join(collisions),
             mesh_uri=mesh_uri,
+            label=GLASS_LABEL,
         )
     )

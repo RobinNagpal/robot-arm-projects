@@ -57,6 +57,24 @@ as it is of the simulator. A pipeline built on the hole meets the same
 difficulty a real one meets, which a pipeline built on, say, the simulator's
 ground-truth object poses would not.
 
+Gazebo, though, does not have this difficulty, and that is a problem. Its
+depth camera measures a glass as though it were painted wood: transparency is
+a thing its renderer does in colour, not in depth, so the picture that reaches
+`glass_mask()` has no hole in it and nothing is ever found.
+
+The hole is therefore put back where it would have been lost, in the sensor.
+A segmentation camera sits beside the depth one and says which pixels are
+glass, and `WristCamera` blanks the depth at those pixels before handing the
+frame on. In a real cell that answer comes from a trained model; here it comes
+from the simulator, which knows. Either way it stops at the camera: what
+leaves is an ordinary depth picture with holes in it, and everything
+downstream is told nothing it could not have measured.
+
+Doing it the other way round — letting the perception read the simulator's
+labels, or read the glass's depth because Gazebo happens to offer it — would
+have been fewer moving parts and worth nothing, because the pipeline would
+then depend on something no real cell has.
+
 `glass_mask()` is therefore three lines, and the comment above it is longer
 than the code, because the code is not the interesting part.
 
