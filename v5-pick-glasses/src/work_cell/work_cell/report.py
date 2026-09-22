@@ -65,9 +65,14 @@ def run_folder(root: Path | None = None) -> Path:
 
     Named by the clock rather than by the settings, so that two runs of the
     same thing do not overwrite each other. Comparing a run that worked with
-    one that did not is most of what these are for.
+    one that did not is most of what these are for, so nothing here ever
+    deletes an old one.
+
+    Down to the second, and separated all the way through: two runs a minute
+    apart have to land in different folders, and a reader has to be able to
+    tell which is which without counting digits.
     """
-    folder = (Path(root) if root else Path.cwd() / "runs") / f"{datetime.now():%Y-%m-%d-%H%M%S}"
+    folder = (Path(root) if root else Path.cwd() / "runs") / f"{datetime.now():%Y-%m-%d-%H-%M-%S}"
     folder.mkdir(parents=True, exist_ok=True)
     return folder
 

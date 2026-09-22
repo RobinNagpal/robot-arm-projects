@@ -64,6 +64,12 @@ TURN_AXIS = 1
 DESCENT_STEP = 0.002
 DESCENT_LIMIT = 0.060
 
+# How much of the weight has to leave the wrist before the thing being lowered
+# counts as having landed. Small, because it only has to be bigger than the
+# sensor's own wander: as soon as the rack is taking any real share of the
+# glass, the rim is down.
+TOUCHDOWN_UNLOADING_N = 0.4
+
 
 def _describe(pose: Pose) -> str:
     p = pose.position
@@ -112,7 +118,8 @@ class Arm:
         node.create_subscription(
             JointState, "/joint_states", self._on_joint_states, 10, callback_group=sensors
         )
-        self._wrist_force: float | None = None
+        self._wrist_force: np.ndarray | None = None
+        self._wrist_frame = "gripper_body"
         node.create_subscription(
             WrenchStamped, "/wrist_force", self._on_wrist_force, 10, callback_group=sensors
         )
@@ -315,18 +322,55 @@ class Arm:
         self._force_held = abs(float(newtons))
 
     @property
-    def wrist_force_z(self) -> float:
-        """Pull along the gripper's own reaching axis, in newtons.
+    def wrist_load(self) -> float:
+        """The weight hanging below the wrist, in newtons.
 
-        With the gripper pointing down this is the weight of everything below
-        the sensor: the gripper itself, and whatever it is holding.
+        Straight down in the room, not along any axis of the gripper. The
+        sensor reports in the gripper's own frame, and the gripper is turned
+        on its side for most of this task — a glass is gripped by reaching in
+        level at it, so the axis it reaches along lies flat and carries none
+        of the weight at all. Reading that axis said every glass weighed
+        nothing, and a glass that weighs nothing is one the arm will neither
+        squeeze properly nor notice it has put down.
+
+        So the reading is turned into the room's frame first and the upright
+        part of it taken. What comes back is the gripper plus whatever it is
+        holding, which is what the callers subtract from.
         """
         if self._wrist_force is None:
             raise MotionFailed("the wrist force sensor has not reported yet")
-        return abs(float(self._wrist_force))
+
+        try:
+            with self._moveit.get_planning_scene_monitor().read_only() as scene:
+                matrix = np.asarray(
+                    scene.current_state.get_global_link_transform(self._wrist_frame)
+                )
+            return abs(float((matrix[:3, :3] @ self._wrist_force)[2]))
+        except Exception:  # noqa: BLE001 - see below
+            # If the sensor's frame is not one the robot model knows, the
+            # unturned reading is still better than refusing to weigh
+            # anything; it is what this did before it was turned at all.
+            return abs(float(self._wrist_force[2]))
 
     def _on_wrist_force(self, msg: WrenchStamped) -> None:
-        self._wrist_force = msg.wrench.force.z
+        # All three, because which of them carries the weight depends on how
+        # the gripper is turned, and it is turned differently for every glass.
+        self._wrist_force = np.array(
+            [msg.wrench.force.x, msg.wrench.force.y, msg.wrench.force.z], dtype=float
+        )
+        self._wrist_frame = msg.header.frame_id or self._wrist_frame
+
+    def _weight_now(self) -> float | None:
+        """What the wrist is carrying, or None if it cannot say.
+
+        Separate from ``wrist_load`` because the descent asks repeatedly and
+        must not fall over mid-descent with a glass in hand if one reading
+        cannot be turned into the room's frame.
+        """
+        try:
+            return self.wrist_load
+        except MotionFailed:
+            return None
 
     def load_transferred(self, gripper_newtons: float, *, margin: float = 0.3) -> bool:
         """Whether something else is now carrying the weight.
@@ -336,7 +380,7 @@ class Arm:
         reading the gripper alone; if it has not, the glass is still hanging
         and letting go would drop it.
         """
-        return self.wrist_force_z <= gripper_newtons + margin
+        return self.wrist_load <= gripper_newtons + margin
 
     def _use_controller(self, wanted: str) -> None:
         """Make ``wanted`` the controller holding the finger joints."""
@@ -460,12 +504,24 @@ class Arm:
         millimetres early is a contact; a rim driven two millimetres past where
         it should have stopped is a chipped rim.
 
+        What counts as touching depends on what is coming down. The fingertip
+        sensors feel a pad meeting something, which is the right signal when
+        the pads are what arrives first. Setting a glass down, they are not:
+        the rim lands and the pads touch nothing, so the fingertips report an
+        empty descent all the way to the limit while the rim is already on the
+        rack. What gives it away is the weight going out of the wrist as the
+        rack takes it, so that is watched as well.
+
         Returns how far it went down.
         """
         position, rotation = self.current_pose()
+        carried = self._weight_now()
         gone = 0.0
         while gone < limit:
             if self.in_contact:
+                return gone
+            now = self._weight_now()
+            if carried is not None and now is not None and carried - now > TOUCHDOWN_UNLOADING_N:
                 return gone
             gone += DESCENT_STEP
             self.move_linear(

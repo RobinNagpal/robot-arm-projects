@@ -68,3 +68,24 @@ def test_the_outline_is_drawn_where_the_glass_was_found():
 def test_a_mark_is_drawn_where_it_was_told_to():
     rgb = np.zeros((40, 40, 3), dtype=np.uint8)
     assert with_marks(rgb, [(20.0, 20.0, "here")]).any()
+
+
+def test_two_runs_in_the_same_minute_do_not_share_a_folder(tmp_path):
+    """Down to the second, because runs come a few minutes apart at most and
+    a run that overwrote the one before it would be worth nothing."""
+    import re
+
+    from work_cell.report import run_folder
+
+    folder = run_folder(tmp_path)
+    assert re.fullmatch(r"\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}", folder.name), folder.name
+
+
+def test_an_earlier_run_is_left_alone(tmp_path):
+    from work_cell.report import run_folder
+
+    older = run_folder(tmp_path)
+    Report(older, "The first run").say("something worth keeping")
+
+    run_folder(tmp_path)
+    assert "something worth keeping" in (older / "report.md").read_text()

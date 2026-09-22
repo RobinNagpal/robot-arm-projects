@@ -578,7 +578,7 @@ class PickGlassesTask:
         # Lift a centimetre and weigh it. This is the last moment a mistake is
         # free: the glass is off the table but nothing has been turned over.
         self._arm.move_linear([make_pose(position + UP * WEIGH_LIFT, rotation)])
-        mass = mass_from_wrist(self._arm.wrist_force_z, GRIPPER_WEIGHT_N)
+        mass = mass_from_wrist(self._arm.wrist_load, GRIPPER_WEIGHT_N)
 
         needed = force_for_measured_mass(mass, kind)
         if needed > starting_force(profile, kind):
