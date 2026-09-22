@@ -11,6 +11,8 @@ than where it was aimed.
 | [`v1-touch-biggest-face`](v1-touch-biggest-face) | Measures cuboids and touches the biggest face of each | Working |
 | [`v2-assemble-table`](v2-assemble-table) | Stands four legs up and lays a table top on them | Working |
 | [`v3-turn-top-flat`](v3-turn-top-flat) | Lifts a table top straight up out of two holders and turns it flat before building the table | Plans only |
+| [`v4-classification-shapes`](v4-classification-shapes) | Names the shape of each block on a table — triangle, square, rhombus, octagon… — with a YOLO model trained on Gazebo pictures | Dataset generator working; model not trained yet |
+| [`v5-learn-pick-place`](v5-learn-pick-place) | Picks up an irregular block and places it on a target, with the movement learned by an ACT policy from scripted demonstrations in MuJoCo, then run unchanged in Gazebo | Working: 74% on unseen blocks in MuJoCo; Gazebo runs ready |
 | [`v5-pick-glasses`](v5-pick-glasses) | Measures each drinking glass on a table, picks it up, turns it over and stands it on a drying rack | Working |
 | [`v6-two-arms-jenga`](v6-two-arms-jenga) | Two arms, programmed two different ways, play Jenga against each other | Plans only |
 
@@ -58,6 +60,36 @@ There is no code yet. The work is in two parts:
    moving as it turns, until it sits on all four.
 
 → [`v3-turn-top-flat/README.md`](v3-turn-top-flat/README.md)
+
+## v4 — name the shape of each block
+
+Blocks cut in seven shapes — triangle, square, rectangle, rhombus, pentagon,
+hexagon, octagon — lie on a table, and a camera has to find each one and name
+its shape. It is the first project where the seeing is learned rather than
+written: a YOLO model trained on pictures rendered in Gazebo, compared against
+a corner-counting baseline that needs no training.
+
+So far the folder holds the dataset: a generator that renders labelled
+pictures with domain randomization — every colour, table, light and camera
+angle drawn at random — and a second test set drawn from conditions the model
+never trains on, to measure how far it generalises. Training, the baseline and
+the arm come next.
+
+→ [`v4-classification-shapes/README.md`](v4-classification-shapes/README.md)
+
+## v5 — learn to pick and place
+
+An irregular block lies somewhere on the table and a red target somewhere
+else; the arm picks the block up and sets it down on the target. It is the
+first project where the movement is learned rather than written: a scripted
+expert does the job a few hundred times, every joint angle it commands is
+recorded, and an ACT policy (Action Chunking with Transformers, from
+LeRobot) learns to do the same from the arm's joint angles and where the
+block is. The block is found with plain geometry from a depth camera. It
+runs in MuJoCo instead of Gazebo, because learning from demonstrations needs
+hundreds of fast, repeatable episodes.
+
+→ [`v5-learn-pick-place/README.md`](v5-learn-pick-place/README.md)
 
 ## v5 — pick up a glass and stand it upside down
 

@@ -1,0 +1,11 @@
+# Line length matches the width the code and comments are written to.
+line-length = 110
+target-version = "py312"
+
+[lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM"]
+
+# The SDF templates are XML written out in full; breaking their lines to fit
+# would make them harder to read than the few long ones are.
+[lint.per-file-ignores]
+"pick_place/gazebo/models.py" = ["E501"]
