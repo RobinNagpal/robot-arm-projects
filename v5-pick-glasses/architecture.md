@@ -113,8 +113,8 @@ This is where the project lives.
 
 | File | What it owns |
 | --- | --- |
-| `rack/layout.py` | Where the six slots are, given where the marker was seen, and the tilt budget that decides whether a glass needs the slot beside it left empty. |
-| `rack/build.py` | The rack's SDF, and where it stands this run. |
+| `rack/layout.py` | Where the six slots are, given where the marker was seen, the tilt budget that decides whether a glass needs the slot beside it left empty, and which ArUco marker the rack carries. |
+| `rack/build.py` | The rack's SDF, where it stands this run, and drawing the marker image the base is textured with. |
 | `rack/rack.sdf` | The base and the marker. |
 
 ### The rest

@@ -24,15 +24,13 @@ from sensor_msgs.msg import CameraInfo, Image
 from tf2_ros import Buffer, TransformListener
 
 from ...glasses.perception import Intrinsics
+from ...rack.layout import MARKER_DICTIONARY, MARKER_ID
 from ...table.layout import WORLD_FRAME
 from ...transforms import transform_to_matrix
 
-# The marker glued to the middle of the rack base. A 4x4 dictionary is the
-# coarsest ArUco family, which is what to use when there is only one marker to
-# tell apart from nothing: bigger squares read reliably from further away.
-MARKER_DICTIONARY = cv2.aruco.DICT_4X4_50
-MARKER_ID = 0
-MARKER_SIZE = 0.040
+# The marker is the rack's, not the camera's, so which marker it is lives in
+# rack/layout.py next to the rest of the rack. Importing it here is what stops
+# the camera hunting for a square the rack does not carry.
 
 
 @dataclass(frozen=True)

@@ -57,7 +57,8 @@ arm and moves with it.
   picture from a moving camera means anything. `View.to_world()` follows the
   ray through a pixel until it meets a horizontal plane you name — that is how
   a glass gets a position without a depth reading. `capture_marker()` reads the
-  marker on the rack base.
+  marker on the rack base, using the dictionary and id that `rack/layout.py`
+  defines, so it hunts for the square the rack actually carries.
 
 **The glasses** are in `work_cell/glasses/`. Nothing in this folder imports
 ROS.
@@ -92,9 +93,14 @@ ROS.
 
 **The rack** is in `work_cell/rack/`.
 
-- `rack.sdf` is the base and the marker on it.
+- `rack.sdf` is the base and the marker on it. The marker visual is textured
+  with a picture rather than being a plain square; a blank square is invisible
+  to the detector.
 - `build.py` writes the rack into the world and picks where it stands this run.
-- `layout.py` is the geometry. `slots_from_marker()` places all six slots from
+  `write_marker()` draws the marker image beside the glass meshes, from the
+  same dictionary and id the camera looks for, so the two cannot drift apart.
+- `layout.py` is the geometry, and the marker's identity and size, because the
+  rack is what carries it. `slots_from_marker()` places all six slots from
   one sighting of the marker. `tilt_budget_deg()` says how far a glass of a
   given width and height may lean going in, and `needs_empty_neighbour()` turns
   that into a yes or no. `usable_slots()`, `slots_consumed()` and

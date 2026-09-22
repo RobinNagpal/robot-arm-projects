@@ -13,7 +13,8 @@ Gazebo is started on.
 
 The glass meshes are written out at the same time, one per glass, because no
 two glasses in a run are the same size and so none of them can be a file
-shipped with the project.
+shipped with the project. The rack's marker image goes there too, for the
+same reason the meshes do: the run should carry everything it needs.
 """
 
 from __future__ import annotations
@@ -21,7 +22,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from ..glasses.spawn import SpawnedGlass, glass_sdf, write_mesh
-from ..rack.build import rack_sdf
+from ..rack.build import rack_sdf, write_marker
 
 TABLE_MARKER = "<!-- TABLE -->"
 RACK_MARKER = "<!-- RACK -->"
@@ -45,8 +46,10 @@ def build_world(
         mesh_path = write_mesh(glass.outline, mesh_dir / f"{glass.name}.stl")
         models.append(glass_sdf(glass, mesh_uri=f"file://{mesh_path}"))
 
+    marker_path = write_marker(mesh_dir / "rack_marker.png")
+
     filled = world_template.replace(TABLE_MARKER, table)
-    filled = filled.replace(RACK_MARKER, rack_sdf(*rack_pose))
+    filled = filled.replace(RACK_MARKER, rack_sdf(*rack_pose, marker_uri=f"file://{marker_path}"))
     return filled.replace(GLASSES_MARKER, "".join(models))
 
 

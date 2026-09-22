@@ -20,6 +20,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
+import cv2
 import numpy as np
 
 from ..table.layout import ROBOT_BASE, TABLE_TOP_Z
@@ -31,6 +32,9 @@ from ..table.layout import ROBOT_BASE, TABLE_TOP_Z
 __all__ = [
     "ARM_TILT_ACCURACY_DEG",
     "GLASS_ZONE",
+    "MARKER_DICTIONARY",
+    "MARKER_ID",
+    "MARKER_SIZE",
     "RACK_BASE_HEIGHT",
     "ROBOT_BASE",
     "SLOT_COUNT",
@@ -49,6 +53,21 @@ __all__ = [
 SLOT_COUNT = 6
 SLOT_SPACING = 0.100
 RACK_BASE_HEIGHT = 0.020
+
+# The marker printed on the middle of the base. It belongs to the rack rather
+# than to the camera: the rack carries it, and the camera reads whatever the
+# rack carries. A 4x4 dictionary is the coarsest ArUco family, which is what to
+# use when there is only one marker to tell apart from nothing, because bigger
+# squares read reliably from further away.
+MARKER_DICTIONARY = cv2.aruco.DICT_4X4_50
+MARKER_ID = 0
+# Sized by what the camera can resolve and what the rack has room for. A 4x4
+# marker is six cells across counting its border, and the detector needs
+# several pixels per cell, so a small marker is simply invisible from survey
+# height. The limit the other way is the pegs either side of the middle: the
+# marker has to stay clear of them, and of the shadow they cast across it when
+# the rack is off to one side of the picture.
+MARKER_SIZE = 0.070
 
 # Where the glasses start out, as a rectangle on the table: x from, x to,
 # y from, y to. Sized so that half a dozen glasses fit without crowding each

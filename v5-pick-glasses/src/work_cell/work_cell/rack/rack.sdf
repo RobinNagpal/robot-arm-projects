@@ -1,11 +1,11 @@
 <!--
   The drying rack: a flat base with six pegs standing up from it, and an
-  AprilTag printed on the base so the arm can find it.
+  ArUco marker printed on the base so the arm can find it.
 
   The rack is one object that does not change, so its measurements live here
   and in rack/layout.py, which have to agree. Where it stands on the table does
   not live here: world/build.py drops it wherever the run puts it, and the arm
-  finds it again by reading the tag.
+  finds it again by reading the marker.
 
   It is deliberately light. The arm lowers a glass onto it until the force
   sensor says the rim has touched, and a heavy rigid rack would let a
@@ -35,13 +35,23 @@
             <diffuse>0.15 0.18 0.22 1</diffuse>
           </material>
         </visual>
-        <!-- The marker the arm finds the rack by. Flat on the base, facing up. -->
+        <!-- The marker the arm finds the rack by. Flat on the base, facing up.
+             Its size and its pattern both come from rack/layout.py, so the
+             square the camera hunts for is the square that is printed here. -->
         <visual name="marker">
           <pose>0 0 {marker_z:.4f} 0 0 0</pose>
-          <geometry><box><size>0.050 0.050 0.0005</size></box></geometry>
+          <geometry><box><size>{marker_size:.4f} {marker_size:.4f} 0.0005</size></box></geometry>
           <material>
             <ambient>1 1 1 1</ambient>
             <diffuse>1 1 1 1</diffuse>
+            <specular>0 0 0 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>{marker_uri}</albedo_map>
+                <metalness>0.0</metalness>
+                <roughness>1.0</roughness>
+              </metal>
+            </pbr>
           </material>
         </visual>
 {pegs}

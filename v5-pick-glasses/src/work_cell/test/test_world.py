@@ -2,29 +2,67 @@ import random
 
 import pytest
 from work_cell.glasses.spawn import random_glasses
-from work_cell.rack.build import PEG_HEIGHT, rack_sdf, random_rack_pose
-from work_cell.rack.layout import SLOT_COUNT
+from work_cell.rack.build import PEG_HEIGHT, rack_sdf, random_rack_pose, write_marker
+from work_cell.rack.layout import (
+    MARKER_DICTIONARY,
+    MARKER_ID,
+    MARKER_SIZE,
+    SLOT_COUNT,
+    SLOT_SPACING,
+)
 from work_cell.world.build import build_world
 
 TEMPLATE = "<sdf><world>\n<!-- TABLE -->\n<!-- RACK -->\n<!-- GLASSES -->\n</world></sdf>"
 
 
 def test_the_rack_has_one_peg_per_slot():
-    sdf = rack_sdf(0.5, 0.3, 0.0)
+    sdf = rack_sdf(0.5, 0.3, 0.0, marker_uri="file:///marker.png")
     for index in range(SLOT_COUNT):
         assert f"peg_{index}_collision" in sdf
         assert f"peg_{index}_visual" in sdf
 
 
 def test_the_rack_carries_a_marker_for_the_arm_to_find_it_by():
-    assert 'name="marker"' in rack_sdf(0.5, 0.3, 0.0)
+    sdf = rack_sdf(0.5, 0.3, 0.0, marker_uri="file:///somewhere/marker.png")
+    assert 'name="marker"' in sdf
+    # A marker visual with no picture on it is a blank white square, which the
+    # detector cannot see and which nothing else here would notice.
+    assert "file:///somewhere/marker.png" in sdf
+    assert f"{MARKER_SIZE:.4f}" in sdf
 
 
 def test_the_rack_stands_where_it_is_put():
-    here = rack_sdf(0.50, 0.30, 0.0)
-    there = rack_sdf(0.60, 0.35, 0.2)
+    here = rack_sdf(0.50, 0.30, 0.0, marker_uri="file:///marker.png")
+    there = rack_sdf(0.60, 0.35, 0.2, marker_uri="file:///marker.png")
     assert here != there
     assert "0.5000 0.3000" in here
+
+
+def test_the_drawn_marker_is_one_the_detector_can_actually_read(tmp_path):
+    """The point of drawing it is that it reads back. Anything else is a square."""
+    import cv2
+
+    path = write_marker(tmp_path / "rack_marker.png")
+    image = cv2.imread(str(path), cv2.IMREAD_GRAYSCALE)
+    assert image is not None
+
+    detector = cv2.aruco.ArucoDetector(
+        cv2.aruco.getPredefinedDictionary(MARKER_DICTIONARY),
+        cv2.aruco.DetectorParameters(),
+    )
+    # A marker touching the edge of its own image has no quiet zone, so it is
+    # padded here the way the rack's dark base pads it in the world.
+    padded = cv2.copyMakeBorder(image, 40, 40, 40, 40, cv2.BORDER_CONSTANT, value=255)
+    _, ids, _ = detector.detectMarkers(padded)
+    assert ids is not None
+    assert MARKER_ID in ids.flatten().tolist()
+
+
+def test_the_marker_stays_clear_of_the_pegs_either_side_of_it():
+    """A peg standing on the marker hides a corner, and a hidden corner is a
+    marker the detector drops."""
+    nearest_peg = SLOT_SPACING / 2.0
+    assert nearest_peg > MARKER_SIZE / 2.0
 
 
 def test_the_rack_pose_is_drawn_rather_than_fixed():
