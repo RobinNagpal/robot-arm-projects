@@ -148,7 +148,7 @@ def standing_on_the_table(
 # further apart than this, so it cannot join two of them into one.
 SAME_GLASS = 0.04
 
-# How far out finding the middle of a glass-shaped hole can be. The edge of a
+# How far out finding the middle of a glass-shaped patch can be. The edge of a
 # mask wanders, a silhouette is cut off at the edge of a picture, and the arm
 # does not arrive exactly where it was sent. It is used to say how much a pair
 # of sightings may disagree before the pair is not worth believing.
@@ -223,9 +223,9 @@ def the_one_in_the_middle(mask: np.ndarray) -> np.ndarray:
     """Just the glass the camera was aimed at, out of everything in the mask.
 
     A side-on picture catches whatever else is standing on the table behind
-    and beside the glass being measured, and every one of them is a hole in
-    the depth picture too. Measured together they make one impossible glass:
-    as tall as the picture and as wide as the table.
+    and beside the glass being measured, and every one of them stands above
+    the table too. Measured together they make one impossible glass: as tall
+    as the picture and as wide as the table.
 
     The camera was pointed at one glass, so the one wanted is the one in the
     middle. Anything that does not reach the middle column belongs to some

@@ -1,7 +1,7 @@
 """Turning a side-on picture of a glass into a measured profile.
 
-The wrist camera is moved to one side of a glass and takes one picture. A
-segmentation model says which pixels are glass. This module turns that mask
+The wrist camera is moved to one side of a glass and takes one picture.
+Something upstream says which pixels are glass. This module turns that mask
 into widths in millimetres.
 
 Two things make it possible.
@@ -9,11 +9,10 @@ Two things make it possible.
 A drinking glass is a solid of revolution, so the outline seen from any side is
 the full shape: the width on screen at some height *is* the diameter there.
 
-And the glass stands on the table, whose position the depth camera already
-measured. That gives the distance from the wrist camera to the glass, and
-distance is what turns an angle into a length. This is the one place where the
-transparency of glass helps: the arm never needs a depth reading of the glass
-itself, which it could not get, only of the table, which is opaque.
+And the glass stands on the table, whose height is known. The arm chose how far
+back to stand, so it knows how far away the glass is without ever needing a
+depth reading of the glass itself. Distance is what turns an angle into a
+length.
 
 Plain numpy, no ROS, so the whole module can be tested with drawn masks.
 """
@@ -71,9 +70,10 @@ def row_widths(mask: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     """The width in pixels of each row of the mask that holds any glass.
 
     The width is the distance from the leftmost glass pixel to the rightmost,
-    not the number of glass pixels. A transparent object segments with holes in
-    the middle — the model sees the table through it — and only the outline is
-    wanted.
+    not the number of glass pixels. Only the outline is wanted, and counting
+    pixels would measure something else entirely the moment the mask has a gap
+    in the middle of it — which is what a reflection, or a see-through glass,
+    gives you.
 
     Returns the row indices, top to bottom, and their widths.
     """

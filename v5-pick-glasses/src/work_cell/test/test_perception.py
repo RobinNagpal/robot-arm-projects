@@ -41,8 +41,8 @@ def draw_mask(outline, intrinsics=CAMERA, distance=DISTANCE, size=(480, 640), ho
         right = int(round(centre_column + half))
         mask[row, left : right + 1] = True
         if hollow and right - left > 6:
-            # A transparent glass segments with holes: the model sees the table
-            # through the middle of it.
+            # A mask with a gap up the middle of it: what a reflection, or a
+            # see-through glass, leaves behind.
             mask[row, left + 3 : right - 2] = False
     return mask
 
@@ -51,8 +51,8 @@ def draw_mask(outline, intrinsics=CAMERA, distance=DISTANCE, size=(480, 640), ho
 
 
 def test_a_row_is_measured_edge_to_edge_not_by_counting_pixels():
-    # A hollow silhouette has to measure the same as a solid one, because a
-    # transparent object always segments with holes in the middle.
+    # A hollow silhouette has to measure the same as a solid one: the outline
+    # is the measurement, and a gap up the middle is not part of it.
     outline = straight(height=0.090, rim_diameter=0.080)
     solid = row_widths(draw_mask(outline))[1]
     hollow = row_widths(draw_mask(outline, hollow=True))[1]

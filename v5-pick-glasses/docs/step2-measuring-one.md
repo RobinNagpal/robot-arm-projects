@@ -1,27 +1,91 @@
 # Step 2 — measuring one
 
 Step 1 handed over a place on the table and a rough width. That is enough to
-walk up to a glass and nothing like enough to pick one up, because every
-decision still to come — which kind of glass this is, where on it the fingers
-can close, how far apart they go, how hard they squeeze — needs the *shape*.
+walk up to a glass. It is nothing like enough to pick one up. Every decision
+still to come needs the *shape* — which kind of glass this is, where on it the
+fingers can close, how far apart they go, how hard they squeeze.
 
-This step produces it. The arm carries the wrist camera round to the side of
-the glass and takes one picture, and out of that comes a **profile**: the
-glass's width at every height up it, in millimetres. That profile is the only
+This step produces that shape. The arm carries the wrist camera round to the
+side of the glass and takes one picture. Out of that comes a **profile**: the
+glass's width at every height up it, in millimetres. The profile is the only
 thing the next three steps ever see. If it is wrong, everything downstream is
-confidently wrong with it, which is why this document spends as long on how
-the measurement can go bad as on how it works.
+confidently wrong with it. That is why this document spends as long on how the
+measurement goes bad as on how it works.
 
-One picture is enough for a reason worth stating early, because it is the
-assumption the whole project leans on: a drinking glass is a solid of
-revolution, so the outline seen from any one side is the whole shape.
+One picture is enough, and the reason is worth stating early, because the whole
+project leans on it. A drinking glass is a solid of revolution. So the outline
+seen from any one side is the whole shape.
 
 Code: `glasses/perception.py`, and `_view_from()` in `task.py`.
 
-Below: why one picture suffices, how pixels become millimetres without a depth
-reading, how good the result is, the five things that were wrong with this
-picture when it was first taken for real, and how else a glass could be
-measured.
+What follows, in order:
+
+- the step in pseudocode, and the libraries it uses
+- why one picture is enough
+- how pixels become millimetres without a depth reading
+- how good the result really is
+- the five things that were wrong with this picture when it was first taken
+- where the method can still fail
+- how else a glass could be measured
+
+## The step in pseudocode
+
+Each line says who does the work: **ours** means code in this repo, and a named
+library means the work is not ours.
+
+```text
+work out how far back to stand                  ours: task.py
+    from the lens, the height the camera           _measuring_distance()
+      looks at, and the tallest glass the        ROS 2: /camera_info topic
+      cell handles
+
+list the places to stand, best first            ours: task.py _standoffs()
+    prefer a line of sight with no other
+      glass behind the target
+    then prefer the least reach
+
+for each of those places until one works:
+    move the camera there, looking level        MoveIt 2: plan a path
+      at the glass                              ros2_control: drive the joints
+    take one RGB-D frame                        Gazebo -> ros_gz_bridge
+                                                cv_bridge: message -> array
+    mask = points above the table and           ours: glasses/detect.py
+      within a band around the standoff           standing_on_the_table()
+    mask = just the patch in the middle         ours: detect.py
+                                                  the_one_in_the_middle()
+    profile = a width for every row of mask     ours: glasses/perception.py
+        measure each row edge to edge             row_widths()
+        median filter down the rows               smooth()
+        refuse an outline that is too ragged      raggedness()
+        scale pixels to millimetres by the        profile_from_mask()
+          standoff
+    check the answer is possible                ours: task.py _view_from()
+        not taller than the cell's tallest glass
+        foot near where the arm aimed
+
+if this kind of glass may have a handle:        ours: glasses/spec.py
+    take a second picture a quarter turn round    Kind.expects_handle
+    compare the two profiles                    ours: perception.py
+                                                  handle_direction()
+```
+
+### What each library gives this step
+
+| Piece | Ours or a library | What it does here |
+| --- | --- | --- |
+| `glasses/perception.py` | ours | the whole measurement: mask to widths, widths to millimetres, and the refusal when the mask is not worth trusting |
+| `glasses/detect.py` | ours | which pixels are the glass, and which patch is the one the camera was aimed at |
+| `glasses/profile.py` | ours | the `Profile` itself — height, widths, and the questions steps 3 and 4 ask of it |
+| `task.py` | ours | where to stand, in what order, and what to do when a view does not work |
+| [NumPy](https://numpy.org/) | library | all of the arithmetic: row widths, the median filter, the scaling |
+| [Gazebo Harmonic](https://gazebosim.org/docs/harmonic/) | library | simulates the camera that takes the picture |
+| [ros_gz_bridge](https://github.com/gazebosim/ros_gz) + [cv_bridge](https://github.com/ros-perception/vision_opencv) | library | carry the frame from Gazebo to a NumPy array |
+| [MoveIt 2](https://moveit.picknik.ai/main/index.html) | library | gets the camera to a spot beside the glass without hitting anything, and says so when it cannot |
+| [tf2](https://docs.ros.org/en/jazzy/Concepts/Intermediate/About-Tf2.html) | library | the camera pose the mask bounds are worked out in |
+
+There is no computer-vision library doing the measuring. OpenCV is linked into
+the project for the rack's marker, and it is not used on this page at all. A
+row width is `argmax` on a boolean array, and the scale factor is one division.
 
 ## Why one picture is enough
 
@@ -49,38 +113,39 @@ about 277 pixels. At the standoff this works out at:
 
     380 / 277 = 1.37 mm per pixel
 
-and the frame is 240 × 1.37 ≈ 330 mm tall, which is what lets the camera aim
-at 120 mm above the table and still catch both the foot a glass stands on and
-the rim of the tallest glass the cell handles.
+and the frame is 240 × 1.37 ≈ 330 mm tall. That is what lets the camera aim at
+120 mm above the table and still catch two things at once: the foot a glass
+stands on, and the rim of the tallest glass the cell handles.
 
-The standoff itself is not written down. It is worked out per cell from the
-lens, the height the camera aims at and that tallest glass, because what has
-to fit in the frame is as much a question about the lens as about the glass,
-and a number written down here would be right for one camera only. It comes to
-380 mm with this one. It used to be a flat 300, and the last section on this
-page is about what that cost.
+The standoff itself is not written down. It is worked out per cell, from the
+lens, the height the camera aims at, and that tallest glass. What has to fit in
+the frame is as much a question about the lens as about the glass, so a number
+written down here would be right for one camera only. It comes to 380 mm with
+this one. It used to be a flat 300 mm, and the faults section below is about
+what that cost.
 
 The standoff is the whole conversion, so the arm has to *know* it rather than
-measure it. It does, and for a reason that has nothing to do with the glass:
-the glass stands on the table, the table's position has been known since
-startup, and the arm put the camera there itself. **At no point does the arm
-need a depth reading of the glass** — which, as step 1 established, it could
-not get anyway.
+measure it. It does, for a reason that has nothing to do with the glass. The
+arm put the camera there itself, and it can read its own joints. **At no point
+does the arm need a depth reading of the glass.** That matters more than it
+looks. It is the one part of this step that would still work on real, clear
+glassware, where a depth reading of the glass is not available at all.
 
 ## Reading the silhouette
 
 Three details in `row_widths()` and `smooth()` do more work than they look.
 
-**The width is edge to edge, not a pixel count.** A mask can come back with
-gaps in the middle of an object — a highlight, a patch the sensor missed, or,
-on a real see-through glass, the table showing through and being labelled
-background. Counting glass pixels in a row makes every one of those into a
-glass that is too narrow. Measuring from the leftmost glass pixel in a row to
-the rightmost does not care what happened between them.
+**The width is edge to edge, not a pixel count.** A mask can come back with a
+gap up the middle of an object. A highlight does it. So does a patch the
+sensor missed. So does real clear glassware, where the table shows through and
+gets labelled background. Counting glass pixels in a row turns every one of
+those into a glass that is too narrow. Measuring from the leftmost glass pixel
+in the row to the rightmost does not care what happened in between.
 
-**The profile is smoothed with a five-row median.** A segmentation edge wanders
-by a pixel or two, and an unsmoothed profile has a waist in every wobble — which
-matters here, because "find the waist" is a rule the project actually uses.
+**The profile is smoothed with a five-row median.** A mask edge wanders by a
+pixel or two, and an unsmoothed profile then has a waist in every wobble. That
+matters here more than it would elsewhere, because "find the waist" is a rule
+the project actually uses.
 
 **The raggedness check runs on the raw widths, not the smoothed ones.** This
 was a bug for a while and is worth spelling out. Smoothing makes any mask look
@@ -131,51 +196,90 @@ first time, and most of its answers came back wrong. They were five separate
 faults that happened to look like one, and untangling them is most of what it
 took to measure a glass at all.
 
-**The picture came out rolled.** The function that points the camera pins the
-last free angle — the roll about the direction it is looking — using a hint
-chosen for poses that look downwards, and every pose here looks along the
-table instead. For those it handed back a different roll for each side of the
-glass the arm happened to stand on, so the same glass measured differently
-depending on where the arm was. Since the profile is read one row at a time
-with a row meaning a height, a picture that comes out turned measures the
-glass across instead of up. The roll is now pinned against the room's own
-upright, the same from every side.
+**The picture came out rolled.** Pointing a camera leaves one angle free: the
+roll about the direction it is looking. The function that points the camera
+pinned that angle with a hint chosen for poses that look downwards. Every pose
+here looks along the table instead. For those, it handed back a different roll
+for each side of the glass the arm happened to stand on. The same glass
+therefore measured differently depending on where the arm was standing. That
+matters because the profile is read one row at a time, with a row meaning a
+height. A picture that comes out turned measures the glass across instead of
+up. The roll is now pinned against the room's own upright, the same from every
+side.
 
 **The camera stood too close.** It looks level from `MEASURE_VIEW_HEIGHT`
-above the table, so at the old 300 mm the foot of the glass sat 21.8 degrees
-below the middle of the picture against a half frame of 23.4 — inside the
-picture, but in the last few pixels of it, and seen almost edge on. A wine
-glass with its foot cut off the bottom is a bowl narrowing into a stem with
-nothing below it, and that shape has no waist in it, and a glass with no waist
-is not a stemmed glass to any rule that looks for one. How far back to stand
-is now worked out per cell from the lens, the height the camera aims at and
-the tallest glass the cell handles, which comes to 380 mm here — and that is
-why the resolution above is 1.37 mm rather than 1.08.
+above the table. At the old 300 mm the foot of the glass sat 21.8 degrees below
+the middle of the picture, against a half frame of 23.4 degrees. So the foot
+was inside the picture, but in the last few pixels of it, and seen almost edge
+on. That matters more than a few lost pixels. A wine glass with its foot cut
+off the bottom is a bowl narrowing into a stem with nothing below it. That
+shape has no waist in it. And a glass with no waist is not a stemmed glass to
+any rule that looks for one. How far back to stand is now worked out per cell,
+from the lens, the height the camera aims at, and the tallest glass the cell
+handles. It comes to 380 mm here, which is why the resolution above is 1.37 mm
+rather than 1.08.
 
-**It measured everything else in the frame too.** A glass with a neighbour
-standing behind it measured as one glass the width of the table, because
-`row_widths()` measures the full width of the mask in each row, whatever is
-in it. It now measures the
-one in the middle, which is the one the camera was aimed at, and the arm
-prefers a line of sight with nothing behind it — judged as an angle at the
-camera rather than as a distance on the table, because an angle is what
-decides whether two glasses touch in a picture.
+**It measured everything else in the frame too.** `row_widths()` measures the
+full width of the mask in each row, whatever is in that row. So a glass with a
+neighbour standing behind it measured as one glass the width of the table. Two
+things fixed it. The mask is now cut down to the patch in the middle, which is
+the one the camera was aimed at. And the arm now prefers a line of sight with
+nothing behind it. That preference is judged as an angle at the camera, not as
+a distance on the table, because an angle is what decides whether two glasses
+overlap in a picture.
 
 **The test for a ragged outline assumed a bigger glass.** `MAX_RAGGEDNESS` is
-a fraction of the glass's own width, which quietly assumes a glass a
-hundred-odd pixels across; standing further back made them forty, and the
-one-pixel wander that any mask edge has is already two and a half per cent of
-forty. Clean pictures of narrow glasses were being refused. Whichever of the
-fraction and two pixels is the more forgiving now wins, which leaves the test
-doing its real job — catching a reflection or a neighbour — without catching
-ordinary noise.
+a fraction of the glass's own width. That quietly assumes a glass a
+hundred-odd pixels across. Standing further back made them forty pixels across
+instead. Any mask edge wanders by about a pixel, and one pixel in forty is
+already two and a half per cent. So clean pictures of narrow glasses were being
+refused. Now whichever limit is the more forgiving wins — the fraction, or two
+pixels. The test still catches a reflection or a neighbour, and no longer
+catches ordinary noise.
 
 **Nothing checked that the answer was possible.** A profile taller than the
-tallest glass the cell handles is two glasses standing one behind the other,
-and a foot further from where the arm aimed than a glass is wide belongs to a
-different glass. Either of those now sends the arm round to look from another
-side, which is what the retry was always for and what the note under
-`raggedness()` had been recommending all along.
+tallest glass the cell handles is not one glass. It is two, standing one behind
+the other. A foot further from where the arm aimed than a glass is wide belongs
+to some other glass. Either of those now sends the arm round to look from
+another side. That is what the retry was always for.
+
+## Where this approach can fail
+
+The measurement is good to about 1.5 mm when it works. These are the ways it
+does not work.
+
+**Anything that is not a solid of revolution is measured wrongly.** This is the
+assumption the whole step rests on. A jug, a square tumbler, a glass with a
+spout: each is measured as if it were round, and the number that comes back is
+the width of one particular side. A handle is the only exception the project
+handles, and only because `expects_handle` sends the arm round for a second
+picture.
+
+**Whatever is behind the glass can still get in.** The mask keeps points within
+a band around the standoff, and takes the patch in the middle. That deals with
+the ordinary case. Two glasses almost exactly one behind the other, at almost
+the same distance, still merge into one patch. The height check catches the
+worst of it, because two glasses read as one very tall one.
+
+**A glass outside the cell's size range is refused rather than measured.** Over
+260 mm tall, the profile is rejected. That is right when the cause is two
+glasses, and wrong when the glass really is that tall.
+
+**The scale factor is only as good as the arm's own position.** Every
+millimetre comes from the standoff, and the standoff is where the arm believes
+it put the camera. A systematic error in the arm's kinematics scales every
+width by the same wrong factor, and nothing in the picture would reveal it.
+This is the one error a second camera would catch and this design cannot.
+
+**A glass not standing on the table is measured against the wrong plane.** The
+foot is found by laying the bottom of the mask down on the table top. A glass
+standing on a mat, or on another glass, reads as too short and the wrong
+distance away.
+
+**The outline is refused, not guessed at, when the mask is poor.** That is the
+intended behaviour, and it is still a way the step "fails": a glass with a
+strong reflection down one side is left standing rather than measured badly. In
+Gazebo this is rare. On real hardware it would be the common case.
 
 ## Other ways to measure a glass
 
@@ -195,14 +299,14 @@ it in time, in hardware, or in both.
 | **Match against known models** | line the glass up against a library of CAD models | [Open3D](https://www.open3d.org/) ICP, [trimesh](https://trimesh.org/) | needs the library this project refuses to have |
 
 **One silhouette, which is what is used here.** A glass spun about its axis
-looks the same from every side, so one outline carries the diameter at every
-height and a second picture would add nothing — which is the whole reason the
-arm takes one picture and moves on. It is fast, it needs no model of any
-particular glass, and the only number it needs from outside is a distance the
-arm already knows because it put the camera there itself. What it cannot do is
-see anything that breaks the symmetry, which is why a handle costs a second
-picture a quarter turn round, and why a glass with a chip or a badge on one
-side is measured as though it were plain.
+looks the same from every side. One outline therefore carries the diameter at
+every height, and a second picture would add nothing. That is the whole reason
+the arm takes one picture and moves on. It is fast. It needs no model of any
+particular glass. The only number it needs from outside is a distance the arm
+already knows, because it put the camera there itself. What it cannot do is see
+anything that breaks the symmetry. That is why a handle costs a second picture
+a quarter turn round, and why a glass with a chip or a badge on one side is
+measured as though it were plain.
 
 **Silhouettes from several sides** is the same idea taken further: photograph
 the object from several angles and keep only the space that every outline
@@ -234,11 +338,10 @@ measuring a profile and then asking which kind of glass it resembles, you
 assume a family — a bowl on a stem on a foot, with a handful of free numbers —
 and fit the member that best matches the silhouette. What comes out is the
 kind and the dimensions in one go, with an error bar attached, which is more
-than the current arrangement gives. The catch is that it only works for
-families somebody has written down, so a glass of a shape nobody anticipated
-fits badly and reports a confident wrong answer, where the rules in step 3
-return `None` and leave it standing. That difference — a bad fit against an
-honest refusal — is why it was not chosen.
+than the current arrangement gives. The catch is that it only works for families somebody has written down. A glass
+of a shape nobody anticipated fits badly and reports a confident wrong answer.
+The rules in step 3 return `None` and leave it standing instead. That
+difference — a bad fit against an honest refusal — is why it was not chosen.
 
 **Matching against a library of CAD models** is common in warehouses, where
 there are a few thousand known products and a new one arrives with a model

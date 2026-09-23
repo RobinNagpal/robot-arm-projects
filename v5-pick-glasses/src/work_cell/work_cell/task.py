@@ -370,9 +370,8 @@ class PickGlassesTask:
 
         The camera looks horizontally at the glass, from a known distance,
         which is what lets pixels become millimetres. The distance is known
-        because the glass stands on the table and the table has been measured —
-        the arm never needs a depth reading of the glass itself, which through
-        transparent glass it could not get.
+        because the arm chose how far back to stand — it never needs a depth
+        reading of the glass itself, only the table's height, which it has.
 
         Which side it looks from is not free. Standing off a glass means
         putting the camera a further ``MEASURE_STANDOFF`` away from it, and on
@@ -452,9 +451,9 @@ class PickGlassesTask:
         """Places to stand the camera to look at one glass, best first.
 
         Two things decide the order. A glass standing behind the one being
-        measured is a second hole in the same depth picture, touching the
-        first, and the two measure as one glass the width of the table — so a
-        line of sight with nothing behind it comes first. After that, the
+        measured is a second patch in the same mask, touching the first, and
+        the two measure as one glass the width of the table — so a line of
+        sight with nothing behind it comes first. After that, the
         least reach: straight in from the arm's own base, because a glass far
         out leaves nowhere to stand beyond it and one close in leaves nowhere
         on the near side.
@@ -972,12 +971,12 @@ class PickGlassesTask:
                 self._report.picture(
                     picture,
                     f"station ({centre[0]:.2f}, {centre[1]:.2f}), the {label} picture of the pair: "
-                    f"{len(dets)} glass-shaped holes",
+                    f"{len(dets)} glass-shaped patches",
                     then=(
                         f"Camera at ({(here[1] if label == 'left' else there[1])[0]:.3f}, "
                         f"{(here[1] if label == 'left' else there[1])[1]:.3f}), "
                         f"{above_table * 1000:.0f} mm above the table. "
-                        "Where each hole is laid down on the table, before the pair is used: "
+                        "Where each patch is laid down on the table, before the pair is used: "
                         + ("; ".join(
                             f"({d.position[0]:.3f}, {d.position[1]:.3f}) {d.rough_width * 1000:.0f} mm wide"
                             for d in dets

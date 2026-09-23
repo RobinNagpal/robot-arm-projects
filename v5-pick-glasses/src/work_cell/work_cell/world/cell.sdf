@@ -157,9 +157,9 @@
     </light>
 
     <!-- A second, softer light from the other side. One directional light
-         leaves the far side of every glass in shadow, and a glass standing in
-         shadow is a hole in the depth picture with nothing visible through it,
-         which is exactly what the perception step throws away as background. -->
+         leaves the far side of every glass in deep shadow, and a run is read
+         back from its pictures: a glass nobody can see in the report is a
+         glass nobody can check the arm against. -->
     <light type="directional" name="fill">
       <cast_shadows>false</cast_shadows>
       <pose>0 0 10 0 0 0</pose>
@@ -170,15 +170,15 @@
 
     <scene>
       <ambient>0.6 0.6 0.6 1</ambient>
-      <!-- Dark, because this is what the cameras see where a ray hits nothing
-           at all. Past the edge of the table there is no surface, so the depth
-           comes back empty, and the rule that tells a glass from an empty
-           background is whether anything is visible through the hole. A bright
-           sky reads as something visible and turns the whole horizon into
-           glass. Black rather than merely dark: Gazebo writes this out gamma
-           encoded, so a linear 0.02 arrives as 41 of 255 and still counts as
-           something visible. The window has its own background colour in the
-           GUI plugin above, so this does not change what a person sees. -->
+      <!-- Black: this is what the cameras see past the edge of the table,
+           where a ray hits nothing at all. It no longer decides anything —
+           those pixels come back with no depth and are dropped outright — but
+           it did once, and the way it failed is worth not repeating. A merely
+           dark background was tried first, and Gazebo writes colour out gamma
+           encoded, so a linear 0.02 arrived as 41 of 255, bright enough for
+           the whole horizon to read as one glass. The window has its own
+           background colour in the GUI plugin above, so this does not change
+           what a person sees. -->
       <background>0 0 0 1</background>
     </scene>
 

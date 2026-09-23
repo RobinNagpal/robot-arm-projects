@@ -1,37 +1,100 @@
 # Step 4 — where to hold it
 
 Everything so far has been about looking. This is the step where looking turns
-into a decision the arm has to live with, and it is the heart of the project:
-the arm knows the shape and it knows the kind, and it now has to choose a
-height to grip at and a distance to open the fingers to.
+into a decision the arm has to live with, and it is the heart of the project.
+The arm knows the shape and it knows the kind. It now has to choose a height to
+grip at, and a distance to open the fingers to.
 
-Both numbers come out of the measurement taken seconds earlier, and neither is
-looked up anywhere. That is the whole claim of the
-[problem statement](../problem-statement.md) made concrete — "hold the
-narrowest part below the bowl" is a sentence about wine glasses in general,
-and the 9 mm it turns into is about this wine glass only.
+Both numbers come out of the measurement taken seconds earlier. Neither is
+looked up anywhere. That is the claim of the
+[problem statement](../problem-statement.md) made concrete. "Hold the narrowest
+part below the bowl" is a sentence about wine glasses in general. The 9 mm it
+turns into is about this wine glass only.
 
-A grip has to satisfy three things at once, any of which can fail, and a rule
-that returns an answer satisfying two of them is worse than one that refuses:
-the pads need a wall they will not slide on, they need enough of it to sit on,
-and the grip has to be low enough that the glass can still be turned over
-afterwards without putting the fingers into the rack.
+A grip has to satisfy three things at once, and any of them can fail. The pads
+need a wall they will not slide on. They need enough of it to sit on. And the
+grip has to be low enough that the glass can still be turned over afterwards
+without putting the fingers into the rack. A rule that returns an answer
+satisfying two of the three is worse than a rule that refuses.
 
 Code: `glasses/rules.py`, `glasses/profile.py`, `glasses/spec.py`.
 
-Below: what makes a grip good, the three rules and the shapes they read, why
-the finger opening is never looked up, the five ways an answer gets rejected,
-why all of this beats a table of measurements, the two things that went wrong
-when an arm first tried to reach one of these grips, and every other way this
-decision could be made.
+What follows, in order:
+
+- the step in pseudocode, and the libraries it uses
+- what makes a grip point good
+- the three rules, and the shapes they read
+- why the finger opening is never looked up
+- the five ways an answer gets rejected
+- why all of this beats a table of measurements
+- the two things that went wrong when an arm first tried one of these grips
+- where the method can still fail
+- every other way this decision could be made
+
+## The step in pseudocode
+
+Each line says who does the work: **ours** means code in this repo, and a named
+library means the work is not ours.
+
+```text
+look up what this kind of glass asks for        ours: glasses/spec.py
+    which rule to apply                           Kind.grip_rule
+    which band of height to search in             Kind.band_for()
+    how far apart the fingers may end up          min/max_opening_m
+    how much wall a pad needs                     min_band_height_m
+
+raise the bottom of that band to LOWEST_GRIP    ours: glasses/rules.py
+    so the gripper body clears the table.         _apply_rule()
+    Done before the search, not after it.
+
+run the rule on the measured profile            ours: rules.py
+    straight glass: lowest upright band           _lowest_vertical_section()
+    stemmed glass:  narrowest below widest        _narrowest_below_widest()
+    tapered glass:  least sloping band            _flattest_in_band()
+  each of those is a question about the curve   ours: glasses/profile.py
+                                                  vertical_bands(), waist_at(),
+                                                  flattest_band()
+
+height  = the middle of the band the rule chose ours: rules.py find_grip()
+opening = the measured width at that height     ours: profile.py width_at()
+
+check the answer five ways                      ours: rules.py _check()
+    any failure raises NoGrip with its reason,
+    and the glass is left standing
+
+when the arm has reached the grasp pose:        ours: task.py
+    take one more picture down the fingers        _centre_on_what_is_there()
+    find the glass in it                        ours: detect.py
+                                                  standing_on_the_table()
+    shift sideways onto its middle, by no       ours: arm/dimensions.py
+      more than GRASP_NUDGE_LIMIT                 GRASP_NUDGE_LIMIT
+```
+
+### What each library gives this step
+
+| Piece | Ours or a library | What it does here |
+| --- | --- | --- |
+| `glasses/rules.py` | ours | the three rules, and the five checks that can reject their answers |
+| `glasses/profile.py` | ours | the shape questions the rules are built from: upright bands, the waist, the flattest run |
+| `glasses/spec.py` | ours | what each kind asks for — its rule, its search band, its limits |
+| `arm/dimensions.py` | ours | the gripper's own numbers: how wide it opens, how low its body may go, how far the aim may be nudged |
+| [NumPy](https://numpy.org/) | library | slopes, medians and runs over the profile arrays |
+| [MoveIt 2](https://moveit.picknik.ai/main/index.html) | library | says whether the chosen grasp pose can actually be reached, and plans the approach to it |
+| [ros2_control](https://control.ros.org/jazzy/index.html) | library | opens the fingers to the width the rule asked for |
+
+No grasp-planning library appears in that list, and that is the point of the
+step. The alternatives section below is largely about the libraries that are
+*not* here — [Contact-GraspNet](https://github.com/NVlabs/contact_graspnet),
+[GraspNet-1Billion](https://graspnet.net/), [trimesh](https://trimesh.org/) —
+and why a measured profile makes them unnecessary rather than unavailable.
 
 ## What makes a grip point good
 
 Three things, and every rule in the project is an attempt to satisfy all three
 at once.
 
-**The wall must be upright enough.** Flat pads on a sloping wall slide, and the
-steeper the slope the more of the grip force turns into a push down the wall
+**The wall must be upright enough.** Flat pads on a sloping wall slide. The
+steeper the slope, the more of the grip force turns into a push down the wall
 instead of into it. `VERTICAL_TOLERANCE` is 6 degrees, and the number comes
 from the pads: a 12 mm silicone pad conforms by about 1.2 mm across its height,
 and `atan(1.2/12)` is 5.7 degrees.
@@ -84,10 +147,10 @@ It now returns the **middle of the longest narrowest run**, which on a parallel
 stem is the middle of the stem.
 
 A second bug in the same area is worth recording because it only appeared once
-in forty glasses. The generator drew the foot diameter independently of the
-bowl diameter, so occasionally the foot came out wider than the bowl — which
-makes the *base* the widest point of the glass, leaves `waist_at()` searching a
-slice below the base, and crashes on an empty array. Real glasses do not have
+in forty glasses. The generator drew the foot diameter independently of the bowl diameter. So
+occasionally the foot came out wider than the bowl. That makes the *base* the
+widest point of the glass. `waist_at()` is then searching a slice below the
+base, and it crashes on an empty array. Real glasses do not have
 feet wider than their bowls, and the generator now draws the foot as a fraction
 of the bowl.
 
@@ -111,8 +174,8 @@ Change the glass and both numbers change, with nothing to edit.
 
 ## Five ways an answer is rejected
 
-A rule can return a number that is arithmetically correct and a bad idea — a
-"waist" found in a mask artefact, a stem on a glass far too wide for the
+A rule can return a number that is arithmetically correct and a bad idea. A
+"waist" found in a mask artefact. A stem on a glass far too wide for the
 gripper. `_check()` catches five cases, each one much cheaper to catch here
 than with the arm already moving:
 
@@ -141,10 +204,10 @@ different depths, stems of different lengths and thicknesses. The red mark on
 each is where `narrowest_below_widest` decided to hold it.
 
 The right panel is the same information as a table of measurements would have
-to hold it — one dot per glass, and a spread of 25 mm in grip height for a
-glass height that varies by 100 mm. The relationship is loose enough that no
-single number works, which is exactly what makes a lookup table the wrong
-shape for this problem.
+to hold it: one dot per glass. The grip height spreads over 25 mm for a glass
+height that varies by 100 mm. The relationship is loose enough that no single
+number works, which is exactly what makes a lookup table the wrong shape for
+this problem.
 
 One rule covers all of them. Adding a ninth glass to the left panel needs no
 change at all, and *that* is the property the project is really built around.
@@ -153,53 +216,83 @@ change at all, and *that* is the property the project is really built around.
 
 ![Held too low, the body is through the table](../images/the-gripper-has-a-body.png)
 
-`lowest_vertical_section` did its job on the first straight glass it was given
-and came back with a grip 18 mm above the table, which is a perfectly good
-piece of upright wall and an impossible place to hold a glass. The gripper
-comes in level, so its body lies *across* the grip height rather than above
-it, and the body is a 90 mm box — holding a glass 18 mm up therefore puts
-27 mm of gripper through the table.
+`lowest_vertical_section` did its job on the first straight glass it was given.
+It came back with a grip 18 mm above the table. That is a perfectly good piece
+of upright wall, and an impossible place to hold a glass. The gripper comes in
+level, so its body lies *across* the grip height rather than above it. The body
+is a 90 mm box. Holding a glass 18 mm up therefore puts 27 mm of gripper
+through the table.
 
-What came back from that was not a refusal but a path that solved none of the
-way, which reads exactly like an arm that cannot lift a glass and sent the
-search off in entirely the wrong direction for some time. `LOWEST_GRIP` is
-half the body plus a little clearance, and it bounds the band each rule
-*searches* rather than checking the answer at the end. That distinction is the
-whole of it: every rule on this page looks for the lowest wall that will do,
-so a floor applied afterwards would turn "hold it a little higher" into "this
-glass cannot be held" on every single glass.
+What came back from that was not a refusal. It was a path that solved none of
+the way, which reads exactly like an arm that cannot lift a glass, and it sent
+the search off in the wrong direction for some time. `LOWEST_GRIP` is half the
+body plus a little clearance. It bounds the band each rule *searches*, rather
+than checking the answer at the end. That distinction is the whole of it. Every
+rule on this page looks for the lowest wall that will do. A floor applied
+afterwards would therefore turn "hold it a little higher" into "this glass
+cannot be held", on every single glass.
 
 It does mean some glasses cannot be held at all. Below 50 mm the gripper is
-through the table and above half the glass's own height the fingers end up
-among the rack pegs after the turn, so a glass under roughly 120 mm tall has
-nothing left in between. That is a fact about this gripper and this rack
-rather than a failure of measurement, and it is now reported as a reason,
-which is the behaviour this whole page is built around.
+through the table. Above half the glass's own height the fingers end up among
+the rack pegs after the turn. A glass under roughly 120 mm tall has nothing
+left in between. That is a fact about this gripper and this rack, not a failure
+of measurement, and it is now reported as a reason rather than as a crash.
 
 ## Looking down the fingers before closing
 
 Everything on this page decides *where* to hold a glass from pictures taken
-half a metre away, and the answer was landing about 10 mm out — enough that
-the fingers arrived beside the glass rather than around it, closed on its
-shoulder or on nothing, and the width check in step 5 refused the grasp. The
-measurement was not the problem; the aim was.
+half a metre away. The answer was landing about 10 mm out. That was enough for
+the fingers to arrive beside the glass rather than around it, close on its
+shoulder or on nothing, and have the width check in step 5 refuse the grasp.
+The measurement was not the problem. The aim was.
 
-The camera is bolted to the wrist, so at the grasp pose it is looking straight
-down the approach at the glass from a hand's breadth away, which is by far the
-best view of the glass anything in this task ever gets — a millimetre on the
-table is worth many pixels from there. The arm now takes one look from that
-position and shifts sideways onto what it sees before the fingers close, along
-the axis the fingers close on and no further than half the gripper's opening,
-since a glass further off than that is not the one about to be held. The width
-at first contact went from 10 mm out to the fingers finding 76.6 mm where the
-camera had said 76.9.
+The camera is bolted to the wrist. At the grasp pose it is therefore looking
+straight down the approach at the glass, from a hand's breadth away. That is by
+far the best view of the glass anything in this task ever gets: a millimetre on
+the table is worth many pixels from there. So the arm takes one look from that
+position before the fingers close, and shifts sideways onto what it sees. The
+shift is along the axis the fingers close on, and no further than half the
+gripper's opening — a glass further off than that is not the one about to be
+held. The width at first contact went from 10 mm out to the fingers finding
+76.6 mm where the camera had said 76.9.
 
-It corrects sideways and nothing else on purpose. How high up to hold the
-glass came from the measured profile and is better known than anything this
-view could say about it, and how far *along* the approach the glass is, this
-view cannot see at all. What it can see better than anything else is whether
-the glass is between the fingers or beside them, which is exactly what was
-going wrong.
+It corrects sideways and nothing else, on purpose. How high up to hold the
+glass came from the measured profile, which knows it better than this view
+could. How far *along* the approach the glass is, this view cannot see at all.
+What it can see better than anything else is whether the glass is between the
+fingers or beside them. That is exactly what was going wrong.
+
+## Where this approach can fail
+
+**The rule is only as good as the profile.** Everything here is arithmetic on
+step 2's measurement. A waist invented by a reflection becomes a grip in mid
+air. Nothing on this page can tell a real stem from a measured one.
+
+**Every kind needs a rule written by hand.** Four kinds, three rules. A fifth
+shape — a coupe, a tankard, a bowl — has no rule, so step 3 returns nothing and
+the glass is left standing. That is the honest outcome, and it is still a
+glass not picked up.
+
+**Short glasses have nowhere to be held.** The gripper body may not go below
+50 mm, and the grip may not go above half the glass's height. So a glass under
+about 120 mm tall has no band left in between, and is refused every time. It is
+a fact about this gripper and this rack rather than about the glass.
+
+**The pad-slip limit is a guess dressed as arithmetic.** `VERTICAL_TOLERANCE`
+is 6 degrees, from `atan(1.2/12)` on a 12 mm pad that conforms by 1.2 mm. The
+1.2 mm was estimated, not measured. The friction between silicone and wet glass
+is not in the calculation at all, and a wet glass is the whole point of a
+drying rack.
+
+**Nudging the aim assumes the right glass is in the picture.** The look down
+the fingers shifts sideways onto whatever it sees, up to `GRASP_NUDGE_LIMIT`.
+If a neighbouring glass is closer to the middle of that view than the target,
+the arm nudges towards the wrong one. The limit caps the damage; it does not
+prevent it.
+
+**The choice is made once, and not reconsidered.** If the grasp fails, the arm
+does not try a different height on the same glass. It refuses the glass. A
+ranked search — the first alternative below — is what would change that.
 
 ## Every way of choosing a grip point
 
@@ -322,10 +415,10 @@ candidate grasps straight out of a point cloud and ranks them with a small
 classifier, and [Dex-Net](https://berkeleyautomation.github.io/dex-net/) built
 the bridge to the learned methods by generating millions of scored grasps in
 simulation and training on them. All three are strong on an object whose shape
-you have and whose shape is awkward. None of them earns its place here,
-because a solid of revolution has no awkwardness left to find once the
-profile is known: the interesting question has already been answered by the
-time you would call them.
+you have and whose shape is awkward. None of them earns its place here. A solid of
+revolution has no awkwardness left to find once the profile is known, so the
+interesting question has already been answered by the time you would call
+them.
 
 #### Copy an expert
 
@@ -369,9 +462,9 @@ would take a lifetime.
 Someone has already trained a large model on millions of grasps. Give it a 3D
 scan, and it gives grasps back.
 
-The workflow is: depth picture, then point cloud — a cloud of dots in space
-showing the surfaces — then the network, then throw away the grasps the arm
-cannot reach, then do the best one that is left.
+The workflow is: depth picture, then point cloud, then the network, then throw
+away the grasps the arm cannot reach, then do the best one left. A point cloud
+is a cloud of dots in space, one per bit of surface the camera saw.
 
 **Needs:** [Contact-GraspNet](https://github.com/NVlabs/contact_graspnet), [GraspNet-1Billion](https://graspnet.net/) or [AnyGrasp](https://graspnet.net/anygrasp.html), on PyTorch. No data
 collection: the weights are a download.
@@ -379,9 +472,9 @@ collection: the weights are a download.
 **Why it is skipped:** this one used to be impossible here and now is not,
 which is worth saying plainly. The glasses are opaque by assumption, so the
 depth camera sees them and there is a point cloud to feed the network after
-all. What is left against it is not the input but the output: these models
-know shapes in general, not glassware, and nothing in them knows that the stem
-is the part of a wine glass to hold. They would return a ranked list of places
+all. What is left against it is not the input but the output. These models know
+shapes in general, not glassware. Nothing in them knows that the stem is the
+part of a wine glass to hold. They would return a ranked list of places
 a two-finger gripper could close on a curved object, and the project already
 has that answer, from a rule that can say why. On real see-through glassware
 they would be impossible again, for the reason in the row below.

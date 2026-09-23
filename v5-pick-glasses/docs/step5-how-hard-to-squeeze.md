@@ -4,24 +4,88 @@ The arm knows where to hold the glass and how far apart to put the fingers.
 How hard they press is a separate question, and it is the one question in this
 project that no amount of looking can answer.
 
-The reason is in the [problem statement](../problem-statement.md): wall
-thickness is invisible from outside, so two glasses with identical outlines
-can differ in weight by a factor of three, and the force needed to hold a
-glass depends on what it weighs. A camera can measure everything about a glass
-except the one property this step needs.
+The reason is in the [problem statement](../problem-statement.md). Wall
+thickness is invisible from outside, so two glasses with identical outlines can
+differ in weight by a factor of three. And the force needed to hold a glass
+depends on what it weighs. A camera can measure everything about a glass except
+the one property this step needs.
 
-That is why the grip has two stages rather than one. The arm estimates a
-squeeze from the shape, closes on the glass, and then lifts it ten millimetres
-— far enough to weigh it on the wrist sensor, near enough that nothing has
-happened yet — and corrects the squeeze before carrying it anywhere. Too
-little and the glass slides; too much and the stem of a wine glass is a lever
-against the pads.
+That is why the grip has stages rather than one squeeze. The arm estimates a
+squeeze from the shape and closes on the glass. Then it lifts the glass ten
+millimetres — far enough to weigh it on the wrist sensor, near enough that
+nothing has happened yet — and corrects the squeeze before carrying it
+anywhere. Too little force and the glass slides. Too much and the stem of a
+wine glass becomes a lever against the pads.
 
 Code: `glasses/force.py`, and `_pick_up()` in `task.py`.
 
-Below: the friction sum, the part the camera cannot see, the three stages, why
-refusing is part of the design, how the wrist is read, and the other ways this
-decision could be made.
+What follows, in order:
+
+- the step in pseudocode, and the libraries it uses
+- the friction sum
+- the part the camera cannot see
+- the three stages of the grip
+- why refusing is part of the design
+- how the wrist is read, and how it was read wrongly
+- where the method can fail
+- the other ways this decision could be made
+
+## The step in pseudocode
+
+Each line says who does the work: **ours** means code in this repo, and a named
+library means the work is not ours.
+
+```text
+guess = estimate the mass from the shape        ours: glasses/force.py
+    surface swept by the outline x a wall         estimate_mass()
+      thickness that comes from the kind        ours: glasses/spec.py
+    plus a solid disc for the base                Kind.wall
+
+force = mass * g / (friction * pads), doubled   ours: force.py
+                                                  required_force()
+
+stage one — take up the slack:
+    close the fingers at 1 N                    ros2_control: effort controller
+    read the gap they stopped at                ros2_control: joint states
+    compare with the width the camera said      ours: task.py _pick_up()
+        more than 4 mm out -> refuse the grasp
+
+stage two — lift and weigh:
+    squeeze to the estimated force              ros2_control: effort controller
+    lift 10 mm in a straight line               MoveIt 2: Cartesian path
+    read the wrist force-torque sensor          Gazebo: forcetorque system
+                                                ros2_control: broadcaster
+    turn it into the room's frame and take      ours: arm/motion.py wrist_load
+      the upright part, median of 32 samples
+    mass = that, less the gripper's own weight  ours: force.py mass_from_wrist()
+
+stage three — correct:
+    if the glass needs more than the kind's     ours: force.py
+      cap -> refuse and put it back               force_for_measured_mass()
+    if it needs more than the estimate:
+        set it down, re-squeeze, lift again     ours: task.py _pick_up()
+
+then, during a slow 20 degree lean:
+    if the finger gap has shrunk, it is         ours: force.py is_slipping()
+      slipping -> stop
+```
+
+### What each library gives this step
+
+| Piece | Ours or a library | What it does here |
+| --- | --- | --- |
+| `glasses/force.py` | ours | the mass estimate, the friction sum, the caps, and the slip test |
+| `arm/motion.py` | ours | reading the wrist sensor properly: into the world frame, upright part, median over 32 samples |
+| `task.py` | ours | the order of the three stages, and what to do when one refuses |
+| [ros2_control](https://control.ros.org/jazzy/index.html) | library | two controllers on the same joints, one on position and one on effort, and the handover between them |
+| [Gazebo Harmonic](https://gazebosim.org/docs/harmonic/) | library | the `forcetorque` sensor plugin that makes a wrist reading exist at all |
+| [MoveIt 2](https://moveit.picknik.ai/main/index.html) | library | the straight 10 mm lift, as a Cartesian path rather than a free plan |
+| [tf2](https://docs.ros.org/en/jazzy/Concepts/Intermediate/About-Tf2.html) | library | which way is down, in the gripper's own frame |
+| [NumPy](https://numpy.org/) | library | the median over the force samples, and the volume sum |
+
+The interesting entry is `ros2_control`. Everything else in this project could
+be done with pictures and arithmetic. Commanding a *force* cannot, and the
+"Commanding a force at all" section below is about why.
 
 ## The sum, when you know the weight
 
@@ -73,9 +137,9 @@ if abs(touched - grip.opening) > 0.004:
 
 Four millimetres, because the camera measurement is good to about one (see
 [step 2](step2-measuring-one.md)) and a tolerance tighter than the measurement
-reports noise as failure. What this catches is the grasp being in the wrong
-*place* — fingers that close at 40 mm where the stem should have been are
-fingers around the bowl, and that is worth stopping for.
+reports noise as failure. What this catches is the grasp being in the wrong *place*. Fingers that close
+at 40 mm where the stem should have been are fingers around the bowl, and that
+is worth stopping for.
 
 **Stage two: squeeze to the estimate, lift 10 mm, and weigh it.** The wrist
 force sensor reads everything hanging below it, so subtracting the known weight
@@ -94,7 +158,7 @@ self._arm.set_gripper_force(needed)
 ```
 
 Increasing the squeeze on a glass already in the air arrives as a step change
-in force, and a step change is what cracks a thin wall. Setting it down,
+in force. A step change is what cracks a thin wall. Setting the glass down,
 re-gripping and lifting again costs two seconds.
 
 ## Refusing is part of the design
@@ -111,8 +175,8 @@ the lift, the arm would simply squeeze harder until something gave.
 ## Commanding a force at all
 
 A position controller cannot express any of this. Told to close to 9 mm on a
-9 mm stem, it keeps driving towards 9 mm, and what happens next depends on the
-joint's effort limit rather than on anything the task decided.
+9 mm stem, it keeps driving towards 9 mm. What happens next then depends on the
+joint's effort limit, rather than on anything the task decided.
 
 So the gripper has two controllers on the same two joints —
 `gripper_controller` on position, `gripper_force_controller` on effort — and
@@ -138,33 +202,65 @@ A glass at 180 degrees cannot.
 
 ![The gripper's own axis is level, so it carries none of the weight](../images/which-way-is-down.png)
 
-For a long time every glass weighed nothing, and the reason is a good example
-of a reading that is not wrong so much as pointing the wrong way. The wrist
-sensor reports in the gripper's own frame, and the number being taken from it
-was the axis the gripper reaches along. That axis points down only when the
-gripper points down, and in this task it never does: a glass is gripped by
-reaching in level at it, so the axis lies flat across the room and carries
-none of the glass's weight at all. Everything above — the estimate, the
-correction after weighing, the check that the rack has taken the load — was
-being fed a number that had nothing to do with how heavy anything was.
+For a long time every glass weighed nothing. The reason is a good example of a
+reading that is not wrong so much as pointing the wrong way. The wrist sensor
+reports in the gripper's own frame, and the number being read from it was the
+axis the gripper reaches along. That axis points down only when the gripper
+points down, and in this task it never does. A glass is gripped by reaching in
+level at it, so the axis lies flat across the room and carries none of the
+glass's weight. Everything above — the estimate, the correction after weighing,
+the check that the rack has taken the load — was being fed a number with
+nothing to do with how heavy anything was.
 
-The reading is now turned into the room's frame first and the upright part of
-it taken, which is what every caller was already subtracting the gripper's own
-weight from, and a glass came back at 267 g. Two smaller repairs came with it.
+The reading is now turned into the room's frame first, and the upright part of
+it taken. That is the number every caller was already subtracting the gripper's
+own weight from. A glass came back at 267 g. Two smaller repairs came with it.
 
 The code no longer falls back to the raw reading when it cannot work out which
-way is down. That fallback looked harmless and was not: it reported every
-glass as weighing nothing, and a glass that weighs nothing is gripped as
-gently as the estimate allows and then slides out of the fingers during the
-lean described above. A refusal to weigh is something the run can recover
-from; a confident wrong weight is not.
+way is down. That fallback looked harmless and was not. It reported every glass
+as weighing nothing. A glass that weighs nothing is gripped as gently as the
+estimate allows, and then slides out of the fingers during the lean described
+above. A refusal to weigh is something the run can recover from. A confident
+wrong weight is not.
 
-And the weight is taken as the middle of about a third of a second of readings
-rather than from one sample. The fingers squeeze hard and sideways and the arm
-starts and stops, and either of those throws a spike through the sensor many
-times the weight of a glass — one reading gave 0 g and the next 9577 g, which
-is the gripper's own squeeze arriving where the weight should be. A scale is
-read when it has settled, and this one is no different.
+And the weight is taken as the middle of about a third of a second of
+readings, rather than from one sample. The fingers squeeze hard and sideways,
+and the arm starts and stops. Either of those throws a spike through the sensor
+many times the weight of a glass. One reading gave 0 g and the next 9577 g,
+which is the gripper's own squeeze arriving where the weight should be. A scale
+is read once it has settled, and this one is no different.
+
+## Where this approach can fail
+
+**The mass estimate is a category, not a measurement.** The wall thickness
+comes from the kind: thin, normal, or thick. A thin-walled glass of a kind
+marked normal is squeezed with the wrong first force. The weighing step is what
+saves it, and the weighing step happens after the first squeeze.
+
+**A glass whose walls are thick enough to be heavy is refused.** Each kind has
+a force cap. Anything demanding more goes in the refused column. That is
+deliberate, and it means a heavy glass this gripper could in fact hold gets
+left standing.
+
+**Weighing assumes nothing else is touching the glass.** The wrist reads
+everything hanging below it. A glass still resting on the table, or caught on a
+neighbour, weighs less than it is. The 10 mm lift is what is supposed to
+guarantee it hangs free, and 10 mm is not much.
+
+**Slip is only checked during the lean.** `is_slipping()` compares the finger
+gap now against the gap at the grasp. Between those checks, a glass can slide
+without anything noticing. The check also cannot see a glass rotating in the
+pads, which does not change the gap at all.
+
+**Friction is a single number for silicone on glass.** `GRIP_FACTOR` is 0.6
+everywhere, doubled by a safety factor. A wet glass — which is the entire
+premise of a drying rack — has a materially lower coefficient, and nothing
+measures it.
+
+**The force sensor is noisier than the thing being measured.** A spike of
+9577 g was recorded where a 267 g glass should have been. A median over 32
+samples handles it now. A sensor that drifts rather than spikes would not be
+caught this way.
 
 ## Other ways to decide how hard to squeeze
 
@@ -181,24 +277,24 @@ with a better sensor, or let the hardware take the problem away.
 | **A compliant or underactuated hand** | the hand's own springs spread the load | soft and underactuated grippers | removes the problem instead of solving it |
 | **Learn the force from a picture** | predicts a squeeze from how the object looks | [PyTorch](https://pytorch.org/) | guesses the one property that cannot be seen |
 
-**The friction sum, which is what is used here.** Its real virtue is the
-second stage rather than the first: the estimate from the profile is openly a
-guess, the ten-millimetre lift turns it into a measurement, and the force is
+**The friction sum, which is what is used here.** Its real virtue is the second
+stage rather than the first. The estimate from the profile is openly a guess.
+The ten-millimetre lift turns that guess into a measurement, and the force is
 corrected before the glass has been anywhere. It needs no sensor the arm does
-not already have, every number in it can be traced to a property of the pads
-or of the glass, and when it refuses it can say that holding 300 g would need
+not already have. Every number in it can be traced to a property of the pads or
+of the glass. And when it refuses, it can say that holding 300 g would need
 more force than the wall is rated for. What it cannot do is notice a grip that
 is *about* to fail for a reason the sum does not model — a wet glass, a greasy
 pad, a wall thinner on one side.
 
 **Tactile skin on the pads** is what a serious version of this would use.
 [GelSight](https://github.com/gelsightinc/gsrobotics) and [DIGIT](https://digit.ml/) style
-sensors put a camera behind a soft pad and watch the pad deform, which gives
-the contact patch, the shear, and the first millimetre of a slip directly,
-rather than inferring a slip from the fingers creeping closed as
-`is_slipping()` does. That difference matters most in exactly the case this
-project cares about: a slip caught in its first millimetre is recoverable, and
-one caught after the gap has changed by half a millimetre may already have
+sensors put a camera behind a soft pad and watch the pad deform. That gives the
+contact patch, the shear, and the first millimetre of a slip directly.
+`is_slipping()` has to infer a slip from the fingers creeping closed instead.
+The difference matters most in exactly the case this project cares about. A
+slip caught in its first millimetre is recoverable. One caught after the gap
+has changed by half a millimetre may already have
 scraped the glass. The cost is hardware the cell does not have, a much larger
 software stack, and pads that wear out.
 

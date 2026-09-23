@@ -49,9 +49,9 @@ class View:
         same. Saying which height the thing is at picks one point off that ray,
         and here that height is the table top, which is known.
 
-        This is the only way to place a glass from above, because a depth
-        camera returns nothing where a glass is. The plane does the job the
-        missing depth reading would have done.
+        This is how a glass is placed from above. The camera has a distance
+        to the top of the glass, but the glass is what is wanted, not its rim,
+        so the plane is what the answer is built on rather than the reading.
         """
         # The ray, in the camera's own frame: x right, y down, z forwards.
         direction = np.array(

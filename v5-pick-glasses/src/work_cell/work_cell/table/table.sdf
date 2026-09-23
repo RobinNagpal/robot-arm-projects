@@ -7,10 +7,11 @@
   about cannot disagree — they are the same numbers twice over rather than two
   numbers that have to be kept in step by hand.
 
-  Grey and plain on purpose. A glass is found by the hole it leaves in the
-  depth picture, and a hole only counts as a glass if there is something to
-  see through it. A patterned table would put edges inside every silhouette
-  and make the measured outline ragged.
+  Grey and plain on purpose. The table is the reference everything is
+  measured against: its height decides which points are a glass, and its
+  surface is where a silhouette is laid down. A patterned table gives a real
+  depth camera edges to trip over inside every silhouette, and a ragged
+  outline is a ragged profile.
 
   world/build.py splices this into the world file at its table marker.
 -->

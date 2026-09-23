@@ -1,32 +1,106 @@
 # Step 6 — turning it over and standing it down
 
-The glass is held, weighed and squeezed correctly. What is left is the part
-that a person does without thinking and a robot cannot: turn it through 180
-degrees and stand it mouth-down in a rack slot, without touching anything on
-the way and without driving the rim into the rack at the end.
+The glass is held, weighed and squeezed correctly. What is left is the part a
+person does without thinking and a robot cannot. Turn the glass through 180
+degrees. Stand it mouth-down in a rack slot. Touch nothing on the way, and do
+not drive the rim into the rack at the end.
 
-Three things make this harder than it sounds. Turning a held glass is a
-rotation about the grip rather than a move to a new pose, and asking for it
-the wrong way lets the planner take the glass on a detour. The wrist has a
-limit and cannot turn forever, so whether a glass *can* be inverted depends on
-which way round it was picked up — which means it has to be checked before the
-fingers ever close. And the height the rim lands at is the sum of two measured
-numbers, so both carry error and the errors add, which is why the last
+Three things make this harder than it sounds. First, turning a held glass is a
+rotation about the grip, not a move to a new pose, and asking for it the wrong
+way lets the planner take the glass on a detour. Second, the wrist has a limit
+and cannot turn forever. Whether a glass *can* be inverted therefore depends on
+which way round it was picked up, and that has to be checked before the fingers
+ever close. Third, the height the rim lands at is the sum of two measured
+numbers. Both carry error, and the errors add, which is why the last
 millimetres are felt rather than driven.
 
 This is also the step the project currently does not finish. The arm turns the
-glass over and lowers it, and never feels it land; what is known about that is
-at the end of this document and under *Decisions still open* in the
+glass over and lowers it, and never feels it land. What is known about that is
+at the end of this document, and under *Decisions still open* in the
 [problem statement](../problem-statement.md).
 
 Code: `rotate_tool()` and `descend_until_contact()` in `arm/motion.py`,
 `rack/layout.py`, and `_invert_and_place()` in `task.py`.
 
-Below: turning about the grip, the wrist limit and why it is checked early,
-how much room a glass needs in a slot, feeling for the rack, the last check
-before letting go, what the run reports, the three things the planner was told
-wrongly, where a glass is turned over, and the other ways all of this could be
-done.
+What follows, in order:
+
+- the step in pseudocode, and the libraries it uses
+- turning about the grip, not about the wrist
+- the wrist limit, and why it is checked early
+- how much room a glass needs in a slot
+- feeling for the rack
+- the last check before letting go
+- what the run reports
+- the three things the planner was told wrongly
+- where a glass is turned over, and which slot it goes in
+- where the method can still fail
+- the other ways all of this could be done
+
+## The step in pseudocode
+
+Each line says who does the work: **ours** means code in this repo, and a named
+library means the work is not ours.
+
+```text
+before the fingers ever close:
+    could the wrist turn 180 degrees from       ours: arm/motion.py
+      this approach?                              can_rotate_tool()
+    if not, approach from the other side        MoveIt 2: inverse kinematics
+                                                  and joint limits
+
+with the glass held:
+    carry the glass to the middle of the        ours: arm/dimensions.py
+      table                                       TURNING_ROOM
+        the glass is parked there, not the      MoveIt 2: plan the carry
+          tool, because the tool swings
+
+    turn 180 degrees about the grip point       ours: motion.py rotate_tool()
+        the grip point is recomputed live         and task.py _grip_point()
+          from where the tool is now
+        if the turn will not plan, try the      ours: motion.py rotate_tool()
+          same turn the other way round
+
+choose a slot                                   ours: rack/layout.py
+    only slots this glass fits in                 usable_slots()
+    only slots reachable from either side        slots_within_stretch()
+    furthest from the arm first                   fill_order()
+    leave a neighbour empty if the glass         needs_empty_neighbour()
+      is too wide to tilt safely                  and tilt_budget_deg()
+
+lower onto the slot:
+    move above it, then come down in 2 mm       MoveIt 2: Cartesian path
+      steps                                     ours: motion.py
+        stop when the pads report contact,        descend_until_contact()
+          or the weight leaves the wrist        ros2_control: contact sensors
+                                                  and the wrist broadcaster
+        60 mm with no touch -> the glass is
+          not where it was thought to be
+
+    is the rack really taking the weight?       ours: motion.py
+        no -> the rim is caught; do not let go    load_transferred()
+
+open the fingers                                ros2_control: position
+tell the planner the arm is empty               MoveIt 2: planning scene
+```
+
+### What each library gives this step
+
+| Piece | Ours or a library | What it does here |
+| --- | --- | --- |
+| `arm/motion.py` | ours | rotating about a point that is not the tool origin, and feeling the way down |
+| `rack/layout.py` | ours | where the slots are, which ones this glass fits, and the tilt budget |
+| `task.py` | ours | the order: check, carry, turn, choose, lower, check again, release |
+| [MoveIt 2](https://moveit.picknik.ai/main/index.html) | library | plans every move; `compute_cartesian_path` for the straight ones, and the planning scene that keeps the held glass out of the rack |
+| [OMPL](https://ompl.kavrakilab.org/) | library | the sampling planner MoveIt runs underneath for the free moves |
+| [ros2_control](https://control.ros.org/jazzy/index.html) | library | runs the trajectories, and publishes the contact and wrist-force readings the descent watches |
+| [Gazebo Harmonic](https://gazebosim.org/docs/harmonic/) | library | simulates the contact between rim and rack that the descent is feeling for |
+| [tf2](https://docs.ros.org/en/jazzy/Concepts/Intermediate/About-Tf2.html) | library | the live tool pose the grip point is recomputed from |
+| [OpenCV](https://github.com/opencv/opencv) | library | read the rack's ArUco marker, which is where every slot position comes from |
+
+This is the step that leans on libraries most heavily. Steps 1 to 5 are mostly
+NumPy on arrays we produced. Here MoveIt decides almost everything about how
+the arm actually moves. The work in this repo is telling it the truth about the
+world. The fault section below is three occasions when we did not.
 
 ## Turning about the grip, not about the wrist
 
@@ -84,9 +158,9 @@ for rotation in grasp_options(_grasp_rotation(approach)):
 question while hovering, **before the fingers close**, and takes the second way
 round if the first cannot be turned.
 
-Getting this wrong is the most expensive mistake available in the whole task,
-because it is discovered with the glass already in the gripper and there is
-nothing left to do but put it back down. It is also the kind of mistake that
+Getting this wrong is the most expensive mistake available in the whole task.
+It is discovered with the glass already in the gripper, and there is nothing
+left to do but put it back down. It is also the kind of mistake that
 works fine in testing and fails on the glass that happens to be standing at an
 awkward angle.
 
@@ -138,8 +212,8 @@ sensors on the pads, which is the right signal when the pads are what arrives
 first — and setting a glass down, they are not. The rim lands and the pads
 touch nothing at all, so the descent reported an empty 60 mm every time while
 the glass was already standing on the rack. What does give it away is the
-weight going out of the wrist as the rack takes it, so that is watched as
-well, which is the same reading the check below the next heading depends on.
+weight leaving the wrist as the rack takes it. So that is watched as well. It
+is the same reading the check under the next heading depends on.
 
 Reaching the limit without touching anything is itself an answer — the glass is
 not where it was thought to be — and it raises rather than carrying on.
@@ -188,80 +262,116 @@ stemmed glass whose stem was too narrow for the rules to allow:
 That second one is a working run, not a failed one, and the distinction is the
 point of printing both columns at all. A glass the arm declines to touch, with
 a sentence saying why, is the behaviour the
-[problem statement](../problem-statement.md) asks for. The run to worry about
-is the one that racks everything by ignoring a doubt, because the doubt it
-ignored will still be there on the next run and the glass may not survive it
-twice.
+[problem statement](../problem-statement.md) asks for. The run to worry about is the one that racks everything by ignoring a doubt.
+The doubt it ignored will still be there on the next run, and the glass may not
+survive it twice.
 
 ## What the planner had to be told, and what it was told wrongly
 
 Three separate faults lived in what MoveIt believed about the world at this
-point in the run, and all three arrived as the same symptom: a path that
-solved none of the way, which is indistinguishable from a move that is simply
+point in the run. All three arrived as the same symptom: a path that solved
+none of the way. That is indistinguishable from a move that is simply
 impossible.
 
 **The pads were not allowed to touch the glass they were holding.** When a
 glass is attached to the gripper, MoveIt is given a list of links that may be
-against it without that counting as a collision, and the list named the
-gripper body and the two fingers but not the two pads. The pads are the only
+against it without that counting as a collision. The list named the gripper
+body and the two fingers. It did not name the two pads. The pads are the only
 parts that ever touch a held glass — the fingers never reach it, because the
-pads are what stands between — so from the moment a glass was picked up it was
-in collision with the gripper holding it, and the arm could not move at all.
-It could not even stand clear, because standing clear is also a move, so one
-stuck glass ended the whole run.
+pads are what stands between. So from the moment a glass was picked up, it was
+in collision with the gripper holding it, and the arm could not move at all. It
+could not even stand clear, because standing clear is also a move. One stuck
+glass ended the whole run.
 
 **The glass was attached in the wrong place.** Where a glass sits in the
-gripper is worked out by comparing where the glass is with where the tool is,
-and the two were being taken a lift apart: the glass from before the 180 mm
-lift off the table, the tool from after it. MoveIt therefore believed in a
-glass hanging 180 mm below the real one, straight through the table, and
-everything after that started in collision.
+gripper is worked out by comparing where the glass is with where the tool is.
+The two were being taken a lift apart: the glass from before the 180 mm lift
+off the table, and the tool from after it. MoveIt therefore believed in a glass
+hanging 180 mm below the real one, straight through the table. Everything after
+that started in collision.
 
 **The rack the planner saw was turned a quarter circle from the rack.**
 
 ![The box the planner was given, against the rack](../images/the-rack-the-planner-saw.png)
 
-The box describing the rack was built from the length of the row of slots and
-never turned to match it, so it came out at right angles to the thing it was
-standing in for. That put a 600 mm slab across open table where the arm has to
-work — which is what the arm kept meeting when it failed to reach places with
-nothing in them — and left the real rack covered by nothing at all.
+The box describing the rack was built from the length of the row of slots, and
+never turned to match it. So it came out at right angles to the thing it was
+standing in for. That put a 600 mm slab across open table, right where the arm
+has to work. It is what the arm kept meeting when it failed to reach places
+with nothing in them. And it left the real rack covered by nothing at all.
 
 The same quarter turn appeared again, independently, in the marker. The way
 that printed square is oriented is what says which way the rack is facing, and
-every slot is placed from it; it is painted onto a box face, and how a texture
-lies on a box face is the simulator's business rather than ours. The arm read
-a rack square to the world when the rack is turned across it, laid its six
-slots out at right angles to the real rack, and lowered a glass over bare
-table — which is the other reason the descent above kept finding nothing.
+every slot is placed from it. The square is painted onto a box face, and how a
+texture lies on a box face is the simulator's business rather than ours. So the
+arm read a rack square to the world, when the rack is in fact turned across it.
+It laid its six slots out at right angles to the real rack and lowered a glass
+over bare table. That is the other reason the descent above kept finding
+nothing.
 
 ## Where a glass is turned over, and which slot it goes in
 
 ![A turn swings the tool either side of the glass](../images/the-turn-swings-the-arm.png)
 
-Turning in place asks more of the wrist than anything else in this task, and
-it was being done wherever the pick happened to leave the arm — usually
-stretched out towards the far corner of the glass zone, which is exactly where
+Turning in place asks more of the wrist than anything else in this task. It was
+being done wherever the pick happened to leave the arm, which was usually
+stretched out towards the far corner of the glass zone. That is exactly where
 the last joint has least left to give. The glass is now carried to the middle
-of the table first, so that the turn is the same problem every time rather
-than a different one for every glass.
+of the table first, so the turn is the same problem every time rather than a
+different one for every glass.
 
-That needed a second go, and the reason is the picture above. The first
-version parked the *tool* at a comfortable reach, and since a turn swings the
-tool a fingertip's length either side of the glass, a tool parked at 450 mm
-came out of the turn at 790 mm — past the end of the arm, with the glass in
-hand. The glass is the thing that stays still during a turn, so the glass is
-what gets parked: at 500 mm the tool starts the turn at 330 mm and finishes it
-at 670, and the arm can do both.
+That needed a second go, and the reason is the picture above. The first version
+parked the *tool* at a comfortable reach. But a turn swings the tool a
+fingertip's length either side of the glass, so a tool parked at 450 mm came
+out of the turn at 790 mm — past the end of the arm, with the glass in hand.
+The glass is the thing that stays still during a turn, so the glass is what
+gets parked. At 500 mm the tool starts the turn at 330 mm and finishes it at
+670 mm, and the arm can do both.
 
-The same arithmetic decides which slot a glass may go in. Standing a glass in
-a slot puts the tool a fingertip's length to one side of it, and which side is
-settled long before, by how the glass was picked up and which way it was
-turned. A slot that only works from one side is a coin toss with a glass
-already in hand, so slots are filtered to the ones the arm can stand over from
-either side — the far end of the row put the tool 796 mm out. If none qualify
-the list is left alone, because a slot that might not work still beats
-refusing a glass that is already held.
+The same arithmetic decides which slot a glass may go in. Standing a glass in a slot puts the tool a fingertip's length to one side of
+it. Which side is settled long before, by how the glass was picked up and which
+way it was turned. A slot that only works from one side is a coin toss with a glass already in
+hand. So slots are filtered to the ones the arm can stand over from either
+side. The far end of the row put the tool 796 mm out. If none qualify, the list
+is left alone: a slot that might not work still beats refusing a glass that is
+already held.
+
+## Where this approach can fail
+
+**The set-down does not work yet.** This is the open failure, not a
+hypothetical one. The arm turns the glass over, lowers it the full 60 mm, and
+never feels it land. No glass has been stood in the rack. The suspected cause
+is what the planner is told about the attached glass, which is the subject of
+the fault section above.
+
+**Everything downstream of the marker depends on the marker.** Every slot
+position comes from one printed square on the rack base. If the marker is
+misread, or read at the wrong angle, the arm lowers a glass over bare table and
+has no way to know. That has already happened once, for exactly that reason.
+
+**A slot is chosen before the glass is known to fit through the approach.** The
+tilt budget says whether a glass fits in a slot. It does not say whether the
+arm can get it there without brushing the glass already in the next slot.
+
+**The descent feels for contact, not for the right contact.** A rim landing on
+the edge of a peg, or on a neighbouring glass, reads as a touch. The load check
+afterwards is what catches it, and it is a threshold on a noisy sensor.
+
+**The turn is checked, and then assumed.** `can_rotate_tool()` asks whether the
+180 degrees is possible before the fingers close. Between that check and the
+turn itself, the arm has moved: it has gripped, lifted, leaned 20 degrees, and
+carried the glass to the middle of the table. The check is re-run at the turn,
+and a refusal there comes with a glass already in hand.
+
+**Carrying to the middle assumes the middle is free.** `TURNING_ROOM` is a
+fixed point over the table. Nothing checks whether a glass is standing there.
+The planner will refuse a path through it, which turns into a refused glass
+rather than a collision, but it is a refusal that a smarter choice of turning
+place would avoid.
+
+**Nothing watches the glass after it is released.** The fingers open, the arm
+lifts away, and the run moves on. A glass that topples out of its slot a second
+later is recorded as racked.
 
 ## Other ways to move the arm and place the glass
 
@@ -278,21 +388,22 @@ how it knows the glass has landed. Both have well-trodden alternatives.
 | **Servo on the goal** | streams small corrections instead of planning a path | [MoveIt Servo](https://moveit.ai/) | good for the last few centimetres |
 | **A learned policy** | outputs joint moves directly, with no planner at all | [ACT](https://tonyzhaozh.github.io/aloha/), [Diffusion Policy](https://diffusion-policy.cs.columbia.edu/) on [PyTorch](https://pytorch.org/) | would sidestep most of the failures above |
 
-**What is in use** is the ordinary ROS arrangement: free moves go to a
-sampling planner, which is very good at finding a way around the rack, and the
-delicate moves — in to the glass, off the table, down into the slot — ask for
-a straight line so the fingers cannot sweep sideways through a neighbour. The
-weakness of that split is written all over the faults above: a straight-line
-request is all or nothing, so it comes back having solved none of the way as
-readily as all of it, and a sampling planner gives a different answer every
-time you ask, which is why moves are now planned up to three times before
-being believed.
+**What is in use** is the ordinary ROS arrangement. Free moves go to a sampling
+planner, which is very good at finding a way around the rack. The delicate
+moves — in to the glass, off the table, down into the slot — ask for a straight
+line instead, so the fingers cannot sweep sideways through a neighbour.
+
+The weakness of that split is written all over the faults above. A
+straight-line request is all or nothing, so it comes back having solved none of
+the way as readily as all of it. And a sampling planner gives a different
+answer every time you ask it. That is why moves are now planned up to three
+times before being believed.
 
 **[MoveIt Task Constructor](https://github.com/moveit/moveit_task_constructor)**
 is the most interesting entry, because the project already depends on it and
-does not use it. It is built for exactly this shape of problem: a sequence of
-stages, each with several possible ways of being done, solved together so that
-a choice made early is not allowed to make a later stage impossible. Almost
+does not use it. It is built for exactly this shape of problem. A sequence of stages, each with
+several possible ways of being done, solved together. A choice made early is
+then not allowed to make a later stage impossible. Almost
 every failure in this document is that class of mistake — a grasp chosen
 without knowing which side the tool would end up on at the rack, a turn
 attempted from wherever the pick happened to finish. Planning the whole task
@@ -301,35 +412,34 @@ a much larger way of expressing the task, and that the sequencing, which
 currently reads top to bottom in `task.py`, would become a tree.
 
 **Optimising planners** such as CHOMP, STOMP and
-[TrajOpt](https://github.com/tesseract-robotics/trajopt) start from a guess
-and push it away from obstacles, which gives smooth, repeatable paths — the
-opposite of the sampling planner's habit of finding a different contortion
-each time. They are worse in tight spaces, because a path that has to thread a
-gap is exactly where a local method gets stuck, and this cell is tight:
-an arm bolted to the middle of its own table, with a rack alongside.
+[TrajOpt](https://github.com/tesseract-robotics/trajopt) start from a guess and push it away from
+obstacles. That gives smooth, repeatable paths — the opposite of the sampling
+planner's habit of finding a different contortion each time. They are worse in tight spaces. A path that has to thread a gap is
+exactly where a local method gets stuck, and this cell is tight — an arm
+bolted to the middle of its own table, with a rack alongside.
 
 **[cuRobo](https://curobo.org/)** solves many candidate paths in parallel on a
-GPU, fast enough to plan inside a control loop. Given that the fix for
-marginal planning here was to ask three times and hope, a planner that can ask
-a thousand times in the same wall-clock second is an appealing answer to the
-same problem, and it needs a GPU the development machine may not have.
+GPU, fast enough to plan inside a control loop. The fix for marginal planning
+here was to ask three times and hope. A planner that can ask a thousand times
+in the same wall-clock second is an appealing answer to that. It also needs a
+GPU the development machine may not have.
 **[Drake](https://drake.mit.edu/)** goes further again and plans with contact
 physics in the loop, which is the right tool for assembly or in-hand
 manipulation and more than a pick-and-place needs.
 
-**[MoveIt Servo](https://moveit.ai/)** streams small velocity corrections
-rather than planning a path, and it is the natural home for the two closed
-loops this task has grown by hand: the sideways nudge onto the glass in step 4
-and the feel-for-the-rack descent on this page. Both are servo loops written
+**[MoveIt Servo](https://moveit.ai/)** streams small velocity corrections rather
+than planning a path. It is the natural home for the two closed loops this task
+has grown by hand: the sideways nudge onto the glass in step 4, and the
+feel-for-the-rack descent on this page. Both are servo loops written
 as a sequence of small planned moves, which works and is clumsy.
 
 **A learned policy** — [ACT](https://tonyzhaozh.github.io/aloha/) or a
 [diffusion policy](https://diffusion-policy.cs.columbia.edu/) — would replace
 the planner entirely for the parts near the object, outputting joint moves
 directly from what the arm sees and feels. That is attractive here for a
-specific reason rather than a general one: a large share of the failures in
-this document are the planner refusing a pose that the arm could physically
-hold, and a policy never asks the planner anything. The sibling project
+specific reason rather than a general one. A large share of the failures in
+this document are the planner refusing a pose the arm could physically hold. A
+policy never asks the planner anything. The sibling project
 [`v5-learn-pick-place`](../../v5-learn-pick-place) does exactly this and
 reaches 74 per cent on blocks it never saw. What it gives up is the thing this
 project is built on — a policy cannot say why it refused a glass, and the
@@ -340,9 +450,9 @@ refusals here are supposed to be legible.
 Feeling for the rack has alternatives too, and they are much simpler. The
 honest one is a **table of known slot heights**: the rack is a fixed object,
 so the height its base sits at could be written down once and the glass driven
-to it. That is a good deal simpler than the descent on this page, and it fails
-the moment either the glass measurement or the marker reading is a couple of
-millimetres out, which is the case this project is about — so the same
+to it. That is a good deal simpler than the descent on this page. It fails the
+moment either the glass measurement or the marker reading is a couple of
+millimetres out, which is exactly the case this project is about. The same
 argument that rules out a table of glass sizes rules this out too. A
 **downward-looking camera check** before letting go would confirm the glass is
 standing rather than leaning, which is a real gap: nothing currently checks

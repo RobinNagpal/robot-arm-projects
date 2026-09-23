@@ -14,39 +14,38 @@ The first run downloads the environment, which is a few gigabytes.
 ## Start here
 
 [**`problem-statement.md`**](problem-statement.md) is the document to read
-first. It says what the task is, why glasses were chosen over something
-easier, what the arm is allowed to know, what counts as done and what counts
-as a glass fairly left alone. Everything else in this project follows from it,
-and none of the rest will make much sense without it.
+first. It says what the task is and why glasses were chosen over something
+easier. It says what the arm is allowed to know, what counts as done, and what
+counts as a glass fairly left alone. Everything else in this project follows
+from it, and none of the rest will make much sense without it.
 
-The one sentence it all comes back to is this: **the shapes are known and the
-sizes are not.** The arm knows what a wine glass is — a bowl on a stem on a
-foot — and it does not know how tall this one is, because two wine glasses
-from different sets do not share proportions. So there is no table of
-measurements anywhere in this project. There are rules about shapes, applied
-to a profile the camera measured a second earlier, and adding a new kind of
-glass means writing a sentence rather than measuring a glass.
+It all comes back to one sentence: **the shapes are known and the sizes are
+not.** The arm knows what a wine glass is — a bowl on a stem on a foot. It does
+not know how tall this one is, because two wine glasses from different sets do
+not share proportions. So there is no table of measurements anywhere in this
+project. There are rules about shapes, applied to a profile the camera measured
+a second earlier. Adding a new kind of glass means writing a sentence, not
+measuring a glass.
 
 ## Where this actually is
 
-Worth knowing before you run it, because the walkthrough describes a task that
-is designed all the way through and the code does not yet finish it.
+Worth knowing before you run it. The walkthrough describes a task that is
+designed all the way through, and the code does not yet finish it.
 
 **Everything up to setting the glass down works.** On a good run the arm finds
-the rack, surveys the table, measures a glass to within a few millimetres of
-its real size, names its kind, works out where to hold it, closes the fingers
-on it to better than a millimetre, lifts it, weighs it, carries it to the
-middle of the table and turns it over.
+the rack and surveys the table. It measures a glass to within a few millimetres
+of its real size, names its kind, and works out where to hold it. It closes the
+fingers on it to better than a millimetre, lifts it, weighs it, carries it to
+the middle of the table, and turns it over.
 
-**No glass has been stood in the rack yet.** The set-down comes up short: the
+**No glass has been stood in the rack yet.** The set-down comes up short. The
 arm lowers the glass the full sixty millimetres it is allowed and never feels
-the rim touch, which means the rim is not where the geometry says it should be
-once the glass has been turned. There is a specific suspect, written up under
-*Decisions still open* in the problem statement along with the other things
-that are not settled.
+the rim touch. So the rim is not where the geometry says it should be, once the
+glass has been turned. There is a specific suspect, written up under *Decisions
+still open* in the problem statement.
 
 **Runs also fail in different places from one attempt to the next.** Every
-stage works, but several are close to the edge of what the arm can reach, and
+stage works. But several are close to the edge of what the arm can reach, and
 a run has to get through all of them in a row.
 
 The six walkthrough documents each end with what went wrong at that step and
@@ -58,14 +57,17 @@ Every glass goes through the same six steps.
 
 **1. Find the glasses.** Pictures from above. The glasses are opaque — that is
 an assumption, set out in the problem statement — so the depth camera sees
-them, and a glass is a patch of the picture whose points stand above the table
-top. Two pictures are taken
-at each place the camera stops, a known distance apart, because one picture
-can only say which direction a glass lies in and not how far away it is — a
-glass stands above the table, and laying its outline down on the table puts it
-too far out. What comes back is a position on the table and the width of each
-glass's footprint, and deliberately nothing else, because from directly above
-a tall glass and a short one look the same.
+them. A glass is then a patch of the picture whose points stand above the table
+top.
+
+Two pictures are taken at each place the camera stops, a known distance apart.
+One picture can only say which direction a glass lies in, not how far away it
+is: a glass stands above the table, and laying its outline down on the table
+puts it too far out. The pair fixes that.
+
+What comes back is a position on the table and the width of each glass's
+footprint. Deliberately nothing else, because from directly above a tall glass
+and a short one look the same.
 
 **2. Measure one, from the side.** The arm carries the wrist camera to a point
 beside the glass and takes one picture. A drinking glass is a solid of
@@ -73,14 +75,14 @@ revolution, so the outline seen from any side is the whole shape: the width on
 screen at some height *is* the diameter at that height. The result is a
 **profile** — a width for every height up the glass, in millimetres.
 
-Pixels become millimetres because the distance to the glass is known, and it is
-known because the glass stands on the table and the table has been measured.
-The arm never needs a depth reading of the glass itself, which it could not
-get.
+Pixels become millimetres because the distance to the glass is known. It is
+known because the arm chose how far back to stand and put the camera there
+itself. The arm never needs a depth reading of the glass at all — which is the
+one part of this that would still work on real, clear glassware.
 
 **3. Decide what kind of glass it is — from the measurement.** A kind here is a
-shape, and the profile is a description of the shape, so a few tests read it
-off. Is there a waist? Then it is stemmed, and where the waist sits decides
+shape. The profile is a description of the shape. So a few tests read the kind
+straight off it. Is there a waist? Then it is stemmed, and where the waist sits decides
 whether the stem is a long one or a short one. No waist? Then the question is
 whether the wall leans, which decides between a tumbler and a tapered glass.
 
@@ -112,29 +114,29 @@ arrives as a shock. If it is heavier than that kind of glass can take, it is
 refused.
 
 **6. Turn it over and stand it down.** The glass is first leaned over twenty
-degrees while the finger gap is watched: fingers that creep closed mean the
+degrees while the finger gap is watched. Fingers that creep closed mean the
 glass is sliding, and twenty degrees is a lean it can be brought back from. If
-it holds, the arm turns it the rest of the way — rotating about the grip point
+it holds, the arm turns it the rest of the way. It rotates about the grip point
 itself, so the glass turns in place rather than swinging through an arc.
 
-Then it comes down over a free slot and *feels* for the rack rather than
-driving to a calculated height, because both the glass's height and the height
-it is held at were measured and both carry error. When the rim touches, the arm
+Then it comes down over a free slot and *feels* for the rack, rather than
+driving to a calculated height. Both the glass's height and the height it is
+held at were measured, and both carry error. When the rim touches, the arm
 checks that the weight really has transferred before opening its fingers. A
 glass caught on a peg still hanging from the gripper would otherwise be
 dropped.
 
 ## The slot the glass can use
 
-A glass in a rack slot has a few millimetres of room each side, and tilt eats
-that room far faster than sideways error does, because a glass is tall. How
-much tilt a glass can afford is
+A glass in a rack slot has a few millimetres of room each side. Tilt eats that
+room far faster than sideways error does, because a glass is tall. How much
+tilt a glass can afford is
 
     atan(clearance / height)
 
-which for an 80 mm glass in slots 100 mm apart is 10 mm of clearance — 6.3
-degrees at 90 mm tall, 3.3 degrees at 175 mm, and 1.6 degrees if it is also 90
-mm wide. The arm holds about 3 degrees. So a glass that is both wide and tall
+An 80 mm glass in slots 100 mm apart has 10 mm of clearance a side. That is
+6.3 degrees at 90 mm tall, 3.3 degrees at 175 mm, and 1.6 degrees if the glass
+is 90 mm wide as well. The arm holds about 3 degrees. So a glass that is both wide and tall
 gets the slot beside it left empty, which doubles the spacing and turns 1.6
 degrees into 17.4.
 
@@ -160,12 +162,12 @@ giving up on glass_0: came down 60 mm without touching anything, so the glass
 is not where it was thought to be
 ```
 
-Two lines are worth stopping on. **"fingers 77 mm apart"** is not a number
-from a file: it is the width the camera measured at the height the rule chose,
-a second earlier, and on a different glass it would be different. **"it weighs
-267 g"** could not have been known by looking at all, because wall thickness is
-invisible — it comes from lifting the glass ten millimetres and reading the
-wrist.
+Two lines are worth stopping on. **"fingers 77 mm apart"** is not a number from
+a file. It is the width the camera measured at the height the rule chose, a
+second earlier, and on a different glass it would be a different number. **"it
+weighs 267 g"** could not have been known by looking at all, because wall
+thickness is invisible. It comes from lifting the glass ten millimetres and
+reading the wrist.
 
 The last line is where the project currently stops, and the report the run
 leaves behind in `runs/` shows the pictures the arm was working from when it

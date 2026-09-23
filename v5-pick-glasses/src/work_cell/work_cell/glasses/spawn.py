@@ -221,10 +221,11 @@ def collision_cylinders(outline: Outline, slices: int = COLLISION_SLICES) -> lis
 
 
 # A tint per glass, so that a person watching can tell them apart and see
-# which one the arm is working on. Nothing reads these: the arm finds a glass
-# by the hole it leaves in the depth picture, and that hole comes from the
-# label above. They are kept bright enough that a glass never reads as the
-# unlit background, and there are more of them than a run ever spawns.
+# which one the arm is working on. Nothing in the arm reads these: a glass is
+# found by its points standing above the table, which is a measurement of
+# shape and not of colour. They are kept bright so that a glass is easy to
+# pick out in the run report, and there are more of them than a run ever
+# spawns.
 GLASS_TINTS = (
     (0.90, 0.35, 0.35),  # red
     (0.35, 0.65, 0.90),  # blue

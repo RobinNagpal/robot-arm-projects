@@ -150,7 +150,9 @@ def test_every_glass_in_a_run_is_a_different_colour():
 
 
 def test_a_glass_is_never_so_dark_it_reads_as_background():
-    """The mask keeps a hole only where something is visible through it."""
+    """A run is read back from its pictures, so a glass has to be visible in
+    them. Nothing in the arm reads the tint — it finds a glass by shape — but a
+    glass the colour of the unlit background cannot be checked by a person."""
     for tint in GLASS_TINTS:
         assert max(tint) > 0.2
 
