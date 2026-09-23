@@ -1,10 +1,27 @@
 # Step 5 — how hard to squeeze
 
-The arm knows where to hold the glass and how far apart to put the fingers. How
-hard they press is a separate question, and it is the one the camera cannot
-answer at all.
+The arm knows where to hold the glass and how far apart to put the fingers.
+How hard they press is a separate question, and it is the one question in this
+project that no amount of looking can answer.
+
+The reason is in the [problem statement](../problem-statement.md): wall
+thickness is invisible from outside, so two glasses with identical outlines
+can differ in weight by a factor of three, and the force needed to hold a
+glass depends on what it weighs. A camera can measure everything about a glass
+except the one property this step needs.
+
+That is why the grip has two stages rather than one. The arm estimates a
+squeeze from the shape, closes on the glass, and then lifts it ten millimetres
+— far enough to weigh it on the wrist sensor, near enough that nothing has
+happened yet — and corrects the squeeze before carrying it anywhere. Too
+little and the glass slides; too much and the stem of a wine glass is a lever
+against the pads.
 
 Code: `glasses/force.py`, and `_pick_up()` in `task.py`.
+
+Below: the friction sum, the part the camera cannot see, the three stages, why
+refusing is part of the design, how the wrist is read, and the other ways this
+decision could be made.
 
 ## The sum, when you know the weight
 

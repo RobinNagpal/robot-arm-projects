@@ -1,9 +1,27 @@
 # Step 3 — what kind of glass is it
 
-The arm now has a profile. Before it can choose a grip it has to decide which
-rule applies, and that means deciding what kind of glass this is.
+The arm now has a profile — a width at every height — and it is about to have
+to decide where on the glass to close the fingers. It cannot, yet, because
+where to hold a glass depends on what sort of glass it is: the stem of a wine
+glass and the lower wall of a tumbler are both right answers to the same
+question asked of different objects.
+
+So this step puts a name to the shape. The four names it can give are the four
+kinds the [problem statement](../problem-statement.md) sets out — straight,
+tapered, stemmed and short-stemmed — and it may also decline to give one,
+which is a real answer and not an error.
+
+This is the step where the absence of a neural network is most obvious, and
+the reason is the point of the document. Naming an object from a picture is
+the textbook job for a trained model. Naming a *shape* from a measurement of
+that shape is arithmetic, and by the time this step runs the glass has already
+been reduced to a curve.
 
 Code: `classify()` in `glasses/detect.py`.
+
+Below: why the measurement removes the need for a classifier, the three tests
+and the order they have to be asked in, why returning nothing matters, and
+what a trained model would have bought and cost.
 
 ## The realisation that removes a whole component
 

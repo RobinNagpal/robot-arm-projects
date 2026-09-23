@@ -1,11 +1,32 @@
 # Step 6 — turning it over and standing it down
 
-The glass is held, weighed and squeezed correctly. What remains is to turn it
-through 180 degrees and stand it mouth-down in a rack slot without touching
-anything on the way.
+The glass is held, weighed and squeezed correctly. What is left is the part
+that a person does without thinking and a robot cannot: turn it through 180
+degrees and stand it mouth-down in a rack slot, without touching anything on
+the way and without driving the rim into the rack at the end.
+
+Three things make this harder than it sounds. Turning a held glass is a
+rotation about the grip rather than a move to a new pose, and asking for it
+the wrong way lets the planner take the glass on a detour. The wrist has a
+limit and cannot turn forever, so whether a glass *can* be inverted depends on
+which way round it was picked up — which means it has to be checked before the
+fingers ever close. And the height the rim lands at is the sum of two measured
+numbers, so both carry error and the errors add, which is why the last
+millimetres are felt rather than driven.
+
+This is also the step the project currently does not finish. The arm turns the
+glass over and lowers it, and never feels it land; what is known about that is
+at the end of this document and under *Decisions still open* in the
+[problem statement](../problem-statement.md).
 
 Code: `rotate_tool()` and `descend_until_contact()` in `arm/motion.py`,
 `rack/layout.py`, and `_invert_and_place()` in `task.py`.
+
+Below: turning about the grip, the wrist limit and why it is checked early,
+how much room a glass needs in a slot, feeling for the rack, the last check
+before letting go, what the run reports, the three things the planner was told
+wrongly, where a glass is turned over, and the other ways all of this could be
+done.
 
 ## Turning about the grip, not about the wrist
 
@@ -141,6 +162,37 @@ the reading, and the arm says so instead of letting go.
 Only then do the fingers open, MoveIt is told the arm is empty, and the arm
 lifts away for the next glass.
 
+## What the run reports
+
+Both columns, with the same weight given to each. A racked glass gets a line
+saying what it turned out to be and where it went; a glass left standing gets
+a line saying which step gave up and what it said. Here is a real one, from a
+run with a single glass on the table:
+
+```
+finished: 0 racked, 1 left standing
+  1. glass_0: left standing, the arm could not do it: came down 60 mm without
+     touching anything, so the glass is not where it was thought to be
+```
+
+That is the failure this step currently ends on, and it is described at the
+end of this document. A more ordinary refusal reads like this one, from a
+stemmed glass whose stem was too narrow for the rules to allow:
+
+```
+  1. glass_0: left standing, nowhere safe to hold it: the rule wants the
+     fingers 61 mm apart, outside the 4 to 40 mm a stemmed_glass should ever
+     need
+```
+
+That second one is a working run, not a failed one, and the distinction is the
+point of printing both columns at all. A glass the arm declines to touch, with
+a sentence saying why, is the behaviour the
+[problem statement](../problem-statement.md) asks for. The run to worry about
+is the one that racks everything by ignoring a doubt, because the doubt it
+ignored will still be there on the next run and the glass may not survive it
+twice.
+
 ## What the planner had to be told, and what it was told wrongly
 
 Three separate faults lived in what MoveIt believed about the world at this
@@ -210,22 +262,6 @@ already in hand, so slots are filtered to the ones the arm can stand over from
 either side — the far end of the row put the tool 796 mm out. If none qualify
 the list is left alone, because a slot that might not work still beats
 refusing a glass that is already held.
-
-## What the run reports
-
-Both columns, with the same weight given to each:
-
-```
-finished: 4 racked, 0 left standing
-  1. glass_0: straight_glass, 164 mm tall, 63 mm wide, 244 g, held 14 mm up, slot 5
-  2. glass_1: stemmed_glass, 134 mm tall, 77 mm wide, 77 g, held 31 mm up, slot 4
-  ...
-```
-
-A refused glass gets a line saying which one and why — "nowhere safe to hold
-it: the rule wants the fingers 61 mm apart, outside the 4 to 40 mm a
-stemmed_glass should ever need". That is a working run, not a failed one. The
-run to worry about is the one that racks everything by ignoring a doubt.
 
 ## Other ways to move the arm and place the glass
 

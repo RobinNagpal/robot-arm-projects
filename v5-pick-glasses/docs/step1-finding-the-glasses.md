@@ -1,11 +1,30 @@
 # Step 1 — finding the glasses
 
-The arm starts by taking one picture from above, 45 cm over the table. It comes
-away with a position for each glass and the width of its footprint. Nothing
-else — and the things it deliberately does not learn here matter as much as the
-things it does.
+The run starts with the arm knowing nothing about the table in front of it. It
+does not know how many glasses are on it, where they are, or how big any of
+them is, and the [problem statement](../problem-statement.md) does not let it
+be told: everything it uses from here on it has to have measured. This step is
+where that begins.
+
+What it has to produce is modest and deliberately so — a position on the table
+for each glass, and roughly how wide each one's footprint is. What it must not
+produce is anything about height or shape, because from directly above a tall
+glass and a short one look almost identical and a stem is invisible. Those
+belong to step 2, which looks from the side, and asking for them here would
+mean guessing.
+
+The difficulty is that the one sensor built for this job does not work. A
+depth camera gets nothing back through glass, so where a glass is, the depth
+picture has a hole in it. This document is mostly about why that hole is the
+answer rather than the obstacle, and about the one thing a single picture from
+above still cannot tell you however good the hole is.
 
 Code: `glasses/detect.py`, and `_survey()` in `task.py`.
+
+Below: why the hole is the signal, what it took to make the simulator honest
+about glass, how a blob becomes a place on the table, what this step refuses
+to guess at, why one look from above is not enough on its own, how else it
+could have been done, and what the arm does with the answer.
 
 ## The depth camera sees nothing where the glass is
 
@@ -137,14 +156,6 @@ A `Detection` is therefore three fields: a name, a position, and a rough width.
 Being this sparse is the point. Everything the arm decides about a glass is
 decided after it has looked at it properly.
 
-## What the arm does next
-
-The glasses are sorted by distance from the robot base and the nearest one is
-taken first, so the arm never reaches over one glass for another it could have
-taken first. Then every *other* glass is handed to MoveIt as a cylinder, and
-the target is left out — because the planner will not let the fingers enter a
-space it believes is solid.
-
 ## One look cannot say how far away a glass is
 
 ![One look against two](../images/one-look-two-looks.png)
@@ -249,5 +260,13 @@ second is the one option that would certainly work and would make the project
 worthless, because a pipeline that depends on ground truth cannot be moved to
 a real cell at all — which is the same argument the depth-blanking fix above
 had to be careful about.
+
+## What the arm does next
+
+The glasses are sorted by distance from the robot base and the nearest one is
+taken first, so the arm never reaches over one glass for another it could have
+taken first. Then every *other* glass is handed to MoveIt as a cylinder, and
+the target is left out — because the planner will not let the fingers enter a
+space it believes is solid.
 
 → [Step 2 — measuring one](step2-measuring-one.md)

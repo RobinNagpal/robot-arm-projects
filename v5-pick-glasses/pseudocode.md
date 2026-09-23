@@ -2,8 +2,12 @@
 
 A walk through the project at the level of files and functions. It says what
 each thing is for and who calls it, and stops short of what happens inside a
-function. For the reasoning behind the choices, read
-[`implementation-notes.md`](implementation-notes.md).
+function.
+
+This is the map. [`problem-statement.md`](problem-statement.md) says what the
+journey is for, [`docs/`](docs/) is the walk itself, and
+[`implementation-notes.md`](implementation-notes.md) has the reasoning behind
+the choices.
 
 ## What is in the cell, and where each thing is described
 

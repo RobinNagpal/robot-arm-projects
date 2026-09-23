@@ -1,5 +1,10 @@
 # Architecture
 
+Where everything lives, and why it is split up this way. If you have not read
+[`problem-statement.md`](problem-statement.md) yet, read it first: the folder
+layout below is a direct consequence of the rule that the arm may hold rules
+about shapes and may not hold the size of any glass.
+
 Two ROS 2 packages under `src/`.
 
 ```

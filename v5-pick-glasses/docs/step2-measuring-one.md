@@ -1,10 +1,27 @@
 # Step 2 — measuring one
 
-The arm carries the wrist camera to a point beside the glass, 380 mm away and
-120 mm above the table, and takes **one** picture. Out of it comes a width for
-every height up the glass, in millimetres.
+Step 1 handed over a place on the table and a rough width. That is enough to
+walk up to a glass and nothing like enough to pick one up, because every
+decision still to come — which kind of glass this is, where on it the fingers
+can close, how far apart they go, how hard they squeeze — needs the *shape*.
+
+This step produces it. The arm carries the wrist camera round to the side of
+the glass and takes one picture, and out of that comes a **profile**: the
+glass's width at every height up it, in millimetres. That profile is the only
+thing the next three steps ever see. If it is wrong, everything downstream is
+confidently wrong with it, which is why this document spends as long on how
+the measurement can go bad as on how it works.
+
+One picture is enough for a reason worth stating early, because it is the
+assumption the whole project leans on: a drinking glass is a solid of
+revolution, so the outline seen from any one side is the whole shape.
 
 Code: `glasses/perception.py`, and `_view_from()` in `task.py`.
+
+Below: why one picture suffices, how pixels become millimetres without a depth
+reading, how good the result is, the five things that were wrong with this
+picture when it was first taken for real, and how else a glass could be
+measured.
 
 ## Why one picture is enough
 

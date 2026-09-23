@@ -11,83 +11,59 @@ make run
 
 The first run downloads the environment, which is a few gigabytes.
 
-## The problem
+## Start here
 
-Glasses of several shapes stand on a table. For each of them the arm has to:
+[**`problem-statement.md`**](problem-statement.md) is the document to read
+first. It says what the task is, why glasses were chosen over something
+easier, what the arm is allowed to know, what counts as done and what counts
+as a glass fairly left alone. Everything else in this project follows from it,
+and none of the rest will make much sense without it.
 
-- measure it, because nobody has told it how big this one is;
-- work out where on the glass it can be held;
-- work out how hard to squeeze, without knowing what the glass weighs;
-- pick it up, turn it through 180 degrees, and stand it mouth-down in a free
-  slot on the rack.
+The one sentence it all comes back to is this: **the shapes are known and the
+sizes are not.** The arm knows what a wine glass is — a bowl on a stem on a
+foot — and it does not know how tall this one is, because two wine glasses
+from different sets do not share proportions. So there is no table of
+measurements anywhere in this project. There are rules about shapes, applied
+to a profile the camera measured a second earlier, and adding a new kind of
+glass means writing a sentence rather than measuring a glass.
 
-The interesting constraint is in the first line, and it is worth being precise
-about it.
+## Where this actually is
 
-**The shapes are known. The sizes are not.** The arm knows what a wine glass is
-— a bowl on a stem on a foot. It does not know how tall this wine glass is, how
-wide its bowl is, or how thick its stem is, and it cannot be told, because two
-wine glasses from different sets do not share proportions. A 150 mm glass is
-not a 190 mm glass scaled down: the stem is a different fraction of the height
-and the bowl is a different fraction of the width.
+Worth knowing before you run it, because the walkthrough describes a task that
+is designed all the way through and the code does not yet finish it.
 
-So there is no table of measurements anywhere in this project. What the project
-holds instead is a set of **rules** — "hold a stemmed glass on its stem, which
-is the narrowest part below the widest part" — and those rules are applied to
-what the camera measured a moment ago. The consequence is that adding a new
-kind of glass is writing a rule, not measuring a glass, and a rule can be
-checked against forty randomly proportioned examples in a second.
+**Everything up to setting the glass down works.** On a good run the arm finds
+the rack, surveys the table, measures a glass to within a few millimetres of
+its real size, names its kind, works out where to hold it, closes the fingers
+on it to better than a millimetre, lifts it, weighs it, carries it to the
+middle of the table and turns it over.
 
-One thing is assumed: the glasses stand apart from each other, upright, and not
-inside one another.
+**No glass has been stood in the rack yet.** The set-down comes up short: the
+arm lowers the glass the full sixty millimetres it is allowed and never feels
+the rim touch, which means the rim is not where the geometry says it should be
+once the glass has been turned. There is a specific suspect, written up under
+*Decisions still open* in the problem statement along with the other things
+that are not settled.
 
-## Why a glass is harder than a box
+**Runs also fail in different places from one attempt to the next.** Every
+stage works, but several are close to the edge of what the arm can reach, and
+a run has to get through all of them in a row.
 
-The earlier projects in this repo move cuboids and table parts around. A
-cuboid is generous: it is opaque, so the camera sees it; it has flat parallel
-sides, so the gripper has somewhere obvious to go; it is solid, so its weight
-follows from its size; and dropping one costs nothing.
-
-A glass takes all four of those away.
-
-**A depth camera cannot see it.** Most of the light goes straight through and
-the rest is bent by the curved wall, so the depth picture has a *hole* where
-the glass is. This project reads the hole. That is not a way of cheating the
-simulator — it is the same signal a real depth camera gives, and building on it
-means the pipeline meets the same difficulty a real one would.
-
-The glasses in the simulator are painted solid colours, a different one each,
-so that a person watching can tell them apart. That is a change to what a
-person sees and to nothing else. Gazebo's depth camera can see through
-nothing, transparent or not, so the hole is put into the depth picture by the
-wrist camera, from a segmentation camera that says which pixels are glass —
-see [`implementation-notes.md`](implementation-notes.md). The arm is no better
-off for the paint.
-
-**Its walls are not parallel.** A flat gripper pad on a sloping wall slides.
-Finding a grip means finding somewhere the wall is upright over at least the
-height of a pad, and on a wine glass there is exactly one such place.
-
-**Its weight does not follow from its size.** Wall thickness is invisible from
-outside, and a thin-walled 190 mm flute weighs less than a squat tumbler. So
-the arm estimates a squeeze, lifts the glass ten millimetres, weighs it on the
-wrist sensor, and adjusts — a two-stage grip, because one stage cannot be done.
-
-**Getting it wrong costs more than a retry.** A dropped glass leaves shards,
-and the arm will carry on moving through them. So every step that could be
-wrong has a check after it, and a glass that fails a check is left standing on
-the table with a reason written next to it. A run that racks three glasses and
-refuses one is working correctly.
+The six walkthrough documents each end with what went wrong at that step and
+what was done about it, which is the honest history of getting this far.
 
 ## How it works
 
 Every glass goes through the same six steps.
 
-**1. Find the glasses.** One picture from above. The glasses are the holes in
-the depth picture that have something visible through them. This gives each
-glass a position on the table and the width of its footprint — and deliberately
-nothing else, because from directly above a tall glass and a short one look the
-same.
+**1. Find the glasses.** Pictures from above. The glasses are the holes in the
+depth picture that have something visible through them. Two pictures are taken
+at each place the camera stops, a known distance apart, because one picture
+can only say which direction a glass lies in and not how far away it is — a
+glass stands above the table, and laying its outline down on the table puts it
+too far out. What comes back is a position on the table and the width of each
+glass's footprint, and deliberately nothing else, because from directly above
+a tall glass and a short one look the same.
 
 **2. Measure one, from the side.** The arm carries the wrist camera to a point
 beside the glass and takes one picture. A drinking glass is a solid of
@@ -165,36 +141,33 @@ six glasses on one run and four on another.
 
 ## What it looks like when it runs
 
-The numbers below come from the project's own functions, run on the glasses
-`SEED=7` puts on the table:
+This is a real run, with one straight glass on the table so that one thing is
+being watched at a time:
 
 ```
-[glass_task]: rack found, 6 slots
-[glass_task]: --- glass_0 ---
-[glass_task]: measured 164 mm tall, 63 mm at its widest
-[glass_task]: that shape is a straight_glass
-[glass_task]: holding it 14 mm up, fingers 61 mm apart
-[glass_task]: it weighs 244 g
-[glass_task]: --- glass_1 ---
-[glass_task]: measured 134 mm tall, 77 mm at its widest
-[glass_task]: that shape is a stemmed_glass
-[glass_task]: holding it 31 mm up, fingers 7 mm apart
-[glass_task]: it weighs 77 g
-...
-[glass_task]: finished: 4 racked, 0 left standing
-[glass_task]:   1. glass_0: straight_glass, 164 mm tall, 63 mm wide, 244 g, held 14 mm up, slot 5
-[glass_task]:   2. glass_1: stemmed_glass, 134 mm tall, 77 mm wide, 77 g, held 31 mm up, slot 4
-[glass_task]:   3. glass_2: tapered_glass, 124 mm tall, 82 mm wide, 175 g, held 12 mm up, slot 3
-[glass_task]:   4. glass_3: short_stemmed_glass, 144 mm tall, 72 mm wide, 260 g, held 19 mm up, slot 2
+rack found, 6 slots
+surveying from 3 stations, each picture covering 519 x 390 mm, of which 424 x 175 mm is in both
+--- glass_0 ---
+measuring glasses from 380 mm back
+the side view puts it 17 mm from where the survey did
+measured 159 mm tall, 80 mm at its widest
+that shape is a straight_glass
+holding it 57 mm up, fingers 77 mm apart
+it weighs 267 g
+giving up on glass_0: came down 60 mm without touching anything, so the glass
+is not where it was thought to be
 ```
 
-The line worth looking at is the second glass: 77 mm wide, held with the
-fingers 7 mm apart. That is the stem. Nothing told the arm this glass had a 7
-mm stem, or that its stem was 31 mm up; both came out of a picture taken a
-second earlier.
+Two lines are worth stopping on. **"fingers 77 mm apart"** is not a number
+from a file: it is the width the camera measured at the height the rule chose,
+a second earlier, and on a different glass it would be different. **"it weighs
+267 g"** could not have been known by looking at all, because wall thickness is
+invisible — it comes from lifting the glass ten millimetres and reading the
+wrist.
 
-On `SEED=1` the report has a different shape, because one of the glasses there
-is 100 mm across — wider than the rack's slot spacing — and it takes two slots.
+The last line is where the project currently stops, and the report the run
+leaves behind in `runs/` shows the pictures the arm was working from when it
+did.
 
 ## The cell
 
@@ -273,91 +246,23 @@ across the plausible range, and checks that every one of them gets a grip the
 gripper can actually make. That is the test that catches a rule which works on
 the glass you had in mind and fails on the glass someone else owns.
 
-## Open items and questions
+## What is not settled
 
-What is not finished, roughly in the order it is worth picking up. The faults
-that *were* fixed are written up at the step each one belongs to in
-[`docs/`](docs/).
-
-**No glass has been placed in the rack yet.** The arm finds the rack, surveys
-the table, measures a glass to within a few millimetres, names its kind, works
-out where to hold it, reaches in, closes on it, lifts it, weighs it at 267 g,
-carries it to the middle of the table, turns it over and lowers it onto a slot
-— and then comes down the full 60 mm without feeling anything. The arithmetic
-says the rim should touch after about 10 mm: it hangs 102 mm below the grip,
-the grip is put 132 mm above the slot, and the rack's base stands 20 mm above
-the plane the slots are measured in. So the rim is not where the geometry says
-it is once the glass has been turned over.
-
-**The likeliest cause of that is a second fault in how a held glass is
-attached.** In the same run the planner reported the arm's own forearm to be
-in collision with the held glass, which means the shape standing in for that
-glass is not where the glass is. One fault of that kind has already been fixed
-— the glass's position taken from before the lift and the tool's from after it
-— and this looks like another in the same place, most probably the glass's
-orientation after the turn rather than its position. It can be checked without
-the simulator by comparing the attached shape's pose against the tool's pose
-immediately after `turn_over()`.
-
-**The survey is out by about 30 mm along one axis.** Across four runs of the
-same table it placed a glass within 4 mm along one axis every time and about
-30 mm out along the other, and the axis it is wrong about is the one the two
-pictures step along — which is the very thing the second picture is there to
-measure. The side-on view happens to correct most of it, which is why the
-error stayed invisible so long and why that correction is always about the
-same size. The shrink figure the arithmetic produces, 0.868 where the geometry
-says about 0.826, accounts for only a few millimetres of it, so most of the
-error is in finding the middle of the outline or in merging the stations
-rather than in the arithmetic that follows. The clean test is to compare each
-single picture's answer against the truth before any correction is applied.
-
-**Runs fail in different places from one attempt to the next.** Every stage
-works, but several are close to the edge of what the arm can do and a run has
-to get through all of them, so recent attempts have stopped at the measuring
-view, at the reach in, at the grip rules and at the set-down. The honest
-summary is that each stage works most of the time and that end to end is
-therefore much less often. Whether to attack that stage by stage or by giving
-the arm more room to work in is undecided.
-
-**The arm is bolted to the middle of the table.** Its base sits at table
-height, so its lower links are near the surface and graze the table whenever
-it reaches low, which is genuinely the case rather than a modelling error and
-makes low reaches tight. A good deal of the marginal planning above may come
-back to this. Moving the arm to the edge of the table, or raising it, would be
-a change to the cell rather than to the code and wants to be a deliberate
-decision.
-
-**Short glasses cannot be picked up at all.** Below `LOWEST_GRIP` the
-gripper's body is through the table, and above half its own height a glass
-cannot be turned over, so anything under roughly 120 mm tall has no band left
-to grip. The arm says so clearly and leaves the glass standing, which is the
-right behaviour, but it does mean part of the range this project generates can
-never be handled by this gripper. Either the generator should not draw them,
-or the gripper wants a slimmer body, or such glasses want picking up a
-different way.
-
-**A full table has not been tried since any of this was fixed.** All of the
-recent work was chased with one glass on the table, which was the right way to
-do it, but the survey, the collision scene and the slot bookkeeping all behave
-differently with five or six. That is the obvious next test once a single
-glass goes in reliably.
-
-**The measured width comes out a little under the truth.** A glass really
-71 mm across its widest measured 66, and one really 78 mm across measured 77.
-It has not caused a failure, because the fingers close on the glass and check
-the width by touch before anything is lifted, and it may be no more than the
-outline being found a pixel inside the glass on each side. It has not been
-looked into.
-
-**Lint does not pass on the project as a whole.** Ten files were already
-failing the formatter before this work started and none of them are files it
-touched, so they are left alone — but it does mean `make lint` cannot be used
-as a gate until somebody decides whether to reformat them.
+The design questions that are genuinely open — the last few millimetres of
+aim, whether short glasses can be picked up by this gripper at all, whether
+the task should be planned as a whole, and where the arm ought to stand — are
+written up under *Decisions still open* in
+[`problem-statement.md`](problem-statement.md), where they sit next to the
+reasoning they come from.
 
 ## Reading further
 
-- [`docs/`](docs/) — a walk through one run, one document per step, with the
-  arithmetic for the parts that are hard to see in the code.
+- [`problem-statement.md`](problem-statement.md) — what the task is, why it is
+  worth doing, what the arm is allowed to know, and what is still undecided.
+  Read this one first.
+- [`docs/`](docs/) — a walk through one run, one document per step. Each ends
+  with what went wrong at that step and how else that step could have been
+  done.
 - [`pseudocode.md`](pseudocode.md) — what every file and function is for, and
   what calls what when you type `make run`.
 - [`architecture.md`](architecture.md) — the folder layout, and why the pieces

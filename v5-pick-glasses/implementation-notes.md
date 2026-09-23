@@ -1,8 +1,14 @@
 # Implementation notes
 
-Why the project is built the way it is. The code says what happens;
-[`pseudocode.md`](pseudocode.md) says in what order; this says why, and what
-each number was derived from.
+Why the project is built the way it is, and what each number was derived from.
+
+It sits behind the other documents rather than beside them.
+[`problem-statement.md`](problem-statement.md) says what the task is and why
+it is worth doing; [`docs/`](docs/) walks through how a run does it, stage by
+stage; [`pseudocode.md`](pseudocode.md) says which file and function each
+stage lives in. This one is for the questions those raise and do not answer —
+why six degrees rather than two, why the force has two stages, why a rule and
+not a table.
 
 ## The design decision the rest follows from
 

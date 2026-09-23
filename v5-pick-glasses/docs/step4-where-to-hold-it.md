@@ -1,9 +1,29 @@
 # Step 4 — where to hold it
 
-The arm knows the shape and it knows the kind. Now it has to pick a height to
-grip at and a distance to open the fingers to.
+Everything so far has been about looking. This is the step where looking turns
+into a decision the arm has to live with, and it is the heart of the project:
+the arm knows the shape and it knows the kind, and it now has to choose a
+height to grip at and a distance to open the fingers to.
+
+Both numbers come out of the measurement taken seconds earlier, and neither is
+looked up anywhere. That is the whole claim of the
+[problem statement](../problem-statement.md) made concrete — "hold the
+narrowest part below the bowl" is a sentence about wine glasses in general,
+and the 9 mm it turns into is about this wine glass only.
+
+A grip has to satisfy three things at once, any of which can fail, and a rule
+that returns an answer satisfying two of them is worse than one that refuses:
+the pads need a wall they will not slide on, they need enough of it to sit on,
+and the grip has to be low enough that the glass can still be turned over
+afterwards without putting the fingers into the rack.
 
 Code: `glasses/rules.py`, `glasses/profile.py`, `glasses/spec.py`.
+
+Below: what makes a grip good, the three rules and the shapes they read, why
+the finger opening is never looked up, the five ways an answer gets rejected,
+why all of this beats a table of measurements, the two things that went wrong
+when an arm first tried to reach one of these grips, and every other way this
+decision could be made.
 
 ## What makes a grip point good
 
@@ -89,12 +109,12 @@ The camera saw 9.2 mm at 30.8 mm up, so the fingers go to 9.2 mm.
 
 Change the glass and both numbers change, with nothing to edit.
 
-## Four ways an answer is rejected
+## Five ways an answer is rejected
 
 A rule can return a number that is arithmetically correct and a bad idea — a
 "waist" found in a mask artefact, a stem on a glass far too wide for the
-gripper. `_check()` catches four cases, each one much cheaper here than with
-the arm already moving:
+gripper. `_check()` catches five cases, each one much cheaper to catch here
+than with the arm already moving:
 
 1. **The opening is outside what this kind should ever need.** A stem 60 mm
    across is not a stem; the rule found something else.
@@ -102,12 +122,32 @@ the arm already moving:
 3. **The band is shorter than the pads need.**
 4. **The grip is more than halfway up the glass**, which after the turn puts
    the fingers among the rack pegs.
+5. **The grip is too low for the gripper's own body to clear the table**,
+   which is the next section, and which was added only after an arm tried it.
 
 Each raises `NoGrip` with the reason written out, and that reason is what ends
 up in the run report next to the glass that was left standing.
 
-There is a fifth, added later and for a reason nobody had thought about: the
-gripper has a body, and it has to go somewhere.
+The fifth is worth its own section, because unlike the other four it is not
+about the glass at all.
+
+## Why this beats a table of measurements
+
+![Eight wine glasses, and where the rule holds each one](../images/why-rules-not-sizes.png)
+
+The left panel is eight wine glasses the project generated. They are all called
+the same thing and no two are alike: heights from 131 to 230 mm, bowls of
+different depths, stems of different lengths and thicknesses. The red mark on
+each is where `narrowest_below_widest` decided to hold it.
+
+The right panel is the same information as a table of measurements would have
+to hold it — one dot per glass, and a spread of 25 mm in grip height for a
+glass height that varies by 100 mm. The relationship is loose enough that no
+single number works, which is exactly what makes a lookup table the wrong
+shape for this problem.
+
+One rule covers all of them. Adding a ninth glass to the left panel needs no
+change at all, and *that* is the property the project is really built around.
 
 ## The gripper has a body
 
@@ -160,24 +200,6 @@ view could say about it, and how far *along* the approach the glass is, this
 view cannot see at all. What it can see better than anything else is whether
 the glass is between the fingers or beside them, which is exactly what was
 going wrong.
-
-## Why this beats a table of measurements
-
-![Eight wine glasses, and where the rule holds each one](../images/why-rules-not-sizes.png)
-
-The left panel is eight wine glasses the project generated. They are all called
-the same thing and no two are alike: heights from 131 to 230 mm, bowls of
-different depths, stems of different lengths and thicknesses. The red mark on
-each is where `narrowest_below_widest` decided to hold it.
-
-The right panel is the same information as a table of measurements would have
-to hold it — one dot per glass, and a spread of 25 mm in grip height for a
-glass height that varies by 100 mm. The relationship is loose enough that no
-single number works, which is exactly what makes a lookup table the wrong
-shape for this problem.
-
-One rule covers all of them. Adding a ninth glass to the left panel needs no
-change at all, and *that* is the property the project is really built around.
 
 ## Every way of choosing a grip point
 
