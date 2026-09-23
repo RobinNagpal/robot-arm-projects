@@ -13,94 +13,73 @@ glass and a short one look almost identical and a stem is invisible. Those
 belong to step 2, which looks from the side, and asking for them here would
 mean guessing.
 
-The difficulty is that the one sensor built for this job does not work. A
-depth camera gets nothing back through glass, so where a glass is, the depth
-picture has a hole in it. This document is mostly about why that hole is the
-answer rather than the obstacle, and about the one thing a single picture from
-above still cannot tell you however good the hole is.
+Finding them at all rests on an assumption, and it is the first thing to say.
+The glasses in this cell are **opaque** — each is painted a solid colour, and
+the camera sees it as plainly as it sees the table. That is written down in
+the problem statement as an assumption rather than a fact about glassware,
+because real glass defeats a depth camera completely, and the last section of
+this document is about what changes when the assumption is dropped.
 
 Code: `glasses/detect.py`, and `_survey()` in `task.py`.
 
-Below: why the hole is the signal, what it took to make the simulator honest
-about glass, how a blob becomes a place on the table, what this step refuses
-to guess at, why one look from above is not enough on its own, how else it
-could have been done, and what the arm does with the answer.
+Below: how a picture becomes places in the room, what keeps the rack and the
+arm's own fingers out of the answer, how a patch of pixels becomes one glass,
+what this step refuses to guess at, why one look from above is not enough on
+its own, what went wrong when this was first run, how else it could have been
+done, and what the arm does with the answer.
 
-## The depth camera sees nothing where the glass is
+## A picture of distances, turned into places in the room
 
-An RGB-D camera works by measuring how far away each pixel is. Most of them do
-it by projecting a pattern of infrared light and watching where it lands.
+The wrist camera is an RGB-D camera, which means it returns two pictures at
+once. One is the ordinary colour picture. The other is a **depth picture**: an
+image the same size, where each pixel holds a distance instead of a colour —
+how far the camera was from whatever that pixel was pointing at. A pixel
+looking at the table top a third of a metre away holds 0.33.
 
-Point one at a drinking glass and almost none of that light comes back. Some
-goes straight through, some is bent sideways by the curved wall, and a little
-scatters off at an angle that misses the sensor. The result is that the depth
-image has a **hole** exactly the shape of the glass, while the colour image
-shows the glass perfectly well.
+A distance on its own is not a place. What turns it into one is knowing where
+the camera was and which way it was facing, and the arm knows both, because it
+put the camera there itself and can read its own joints. With those, any pixel
+becomes a point in the room: the pixel says which direction the camera was
+looking in, the distance says how far along that direction to go, and the
+camera's own pose says where that direction starts and where it points.
 
-This is the single most common complaint about using depth cameras with
-glassware, and it is usually treated as the obstacle to get past.
-
-It is better treated as the measurement.
+Once every pixel is a point in the room, finding a glass is almost too simple
+to write down. The table top is a known height. Anything whose points sit
+above that height is standing on the table, and anything at that height is the
+table.
 
 ```python
-missing = ~np.isfinite(depth) | (depth <= 0.0)
-lit = rgb.max(axis=2) > 25
-return missing & lit
+standing = np.isfinite(depth) & (depth > 0.0) & (height > table_z + clearance)
 ```
 
-A pixel where the depth is missing but the colour camera can see something is a
-pixel looking through a transparent object. That is what a glass is.
+`clearance` is five millimetres, which is comfortably more than the wobble on
+a depth reading and far less than the shortest glass, so nothing real falls
+between the two. The first two tests drop pixels that have no distance at all
+— sky, and anything past the camera's three-metre range — because a pixel with
+no distance cannot be turned into a point and so cannot be judged.
 
-The second line matters. A hole on its own is not enough — the depth image is
-also blank over the far wall, over anything beyond the camera's 3 m range, and
-around the edges of the frame. Requiring that *something is visible there*
-throws all of that away.
+## Keeping the rack and the arm out of the answer
 
-## Why this is honest rather than convenient
+"Anything standing on the table" is honest and slightly too generous. The rack
+stands on the table. So does the arm's own gripper, which is frequently in the
+bottom of its own pictures. Both would be found, and on the first run after
+this was written the arm measured a glass 78 mm tall that is really 145,
+because what it had actually found was the rack.
 
-It would be fair to ask whether this only works because it is a simulator.
+Two bounds fix that, and neither of them is a fact about glasses — which
+matters, because a number describing a particular glass is the one thing this
+project may not hold.
 
-It is the reverse. A simulated depth sensor is configured to return nothing
-where it cannot get a reading, which is precisely what a real one does with
-glass. Building the pipeline on the hole means the code meets the same
-difficulty a real cell would, and the piece that would have to change on real
-hardware is one function.
+**Nothing taller than the tallest glass the cell handles.** That is a limit of
+the cell, written down once, and it removes the gripper, the arm and anything
+else that reaches up through the frame.
 
-What would change is the *quality* of the hole. In a real kitchen there are
-reflections, one glass seen through another, and highlights that confuse the
-outline. The production answer there is a segmentation model, and
-`glass_mask()` is the function it would be called from. Everything downstream
-takes a boolean mask and does not care where it came from.
-
-## What it took to make the hole real
-
-Everything above is true of a real depth camera and was not true of this one,
-which is worth recording because it cost a long time to find. Gazebo's depth
-camera measures a glass as though it were painted wood: transparency is
-something its renderer applies to colour and not to depth, so the picture
-arriving at `glass_mask()` had nothing missing from it anywhere, the mask came
-back empty, and every run ended with nothing found and no explanation.
-
-The repair keeps the idea and fixes the simulation, because the alternative
-would have quietly thrown the idea away. A segmentation camera sits beside the
-depth one and reports which pixels are glass, and `WristCamera` blanks the
-depth at those pixels before handing the frame on, so what leaves the camera
-is an ordinary depth picture with holes in it — which is exactly what a real
-sensor hands over, and everything downstream is unchanged and none the wiser.
-Letting the perception read those labels directly would have been less work
-and worth nothing, because the pipeline would then depend on something no
-real cell has.
-
-With holes in the picture at last, the sky turned into a glass. Past the edge
-of the table a camera looking level sees nothing at all, so the depth comes
-back empty there too, and the only thing separating that from a glass is the
-second line of the mask: whether anything is visible through the hole. The
-background had been set dark for exactly that reason, but not dark enough —
-the simulator writes colours out gamma encoded, so a nearly black two per cent
-grey arrives as 41 out of 255, which counts as something visible. The whole
-horizon read as a single glass 346 mm across. Black is black now, and the
-window keeps its own lighter background so that none of this changes what a
-person sees.
+**Only what lies at roughly the distance the arm stood off at.** This one is
+for the side-on view in step 2 rather than for the survey. The arm chose how
+far away to stand, so it knows how far away the glass ought to be, and keeping
+only the pixels in a band around that distance drops the rack and the other
+glasses standing behind the one it came to measure. It is not a guess about
+the scene; it is the arm remembering what it did.
 
 ## From a blob to a place on the table
 
@@ -187,79 +166,114 @@ glass below the table; that is not a different glass, it is one with almost no
 lean to measure, so it is taken as standing on the table rather than thrown
 away.
 
+## What went wrong here
+
+For most of this project's life the glasses were treated as though they were
+really see-through, and the history is worth keeping because it explains a
+large part of the code that is no longer there.
+
+**The arm used to look for a hole.** A real depth camera gets nothing back
+through glass, so on real glassware the depth picture arrives with a
+glass-shaped gap in it — a patch of pixels with no distance at all, where
+every other object would have had one. That gap is what "the hole" meant. The
+original design treated it as the measurement rather than the obstacle: a
+pixel with no distance, but with something visible in the colour picture, is a
+pixel looking through a glass.
+
+**The simulator would not produce one.** Gazebo's depth camera measures a
+glass as though it were painted wood — transparency is something its renderer
+applies to colour and not to depth — so the picture arriving at the perception
+had nothing missing from it anywhere, the mask came back empty, and every run
+ended with nothing found. The fix at the time was to manufacture the hole: a
+second camera reported which pixels were glass, and the wrist camera blanked
+the depth at those pixels before handing the picture on, so that what left the
+camera looked like what a real sensor would have produced.
+
+**And then the sky became a glass.** Past the edge of the table a camera
+looking level sees nothing at all, so those pixels have no distance either,
+and the only thing separating them from a glass was whether the colour picture
+showed something there. The background had been set dark for exactly that
+reason, but not dark enough: the simulator writes colours out gamma encoded,
+so a nearly black two per cent grey arrives as 41 out of 255, which counts as
+something visible. The whole horizon read as a single glass 346 mm across.
+
+All of that is gone. Once the glasses are assumed opaque the camera simply
+sees them, and every one of those faults goes with the assumption: there is no
+hole to manufacture, and a pixel with no distance is dropped rather than
+argued about. What replaced it brought one fault of its own, the rack being
+measured as a glass, which the two bounds above now prevent.
+
 ## Other ways to find a glass
 
-Finding transparent things is a small field of its own, and the depth hole is
-only one answer to it. The others are worth knowing, partly because two of
-them would be the right answer on real hardware and partly because one of them
-is the reason this project does not need a neural network at all.
+The method above is chosen for opaque glasses and is the weakest part of the
+project to lean on, because the assumption it rests on is the one a real
+kitchen would take away first. So this section is in two halves: other ways to
+find an opaque object, and what to do when the glasses really are glass.
 
 | Approach | What it does | What it runs on | Suitability here |
 | --- | --- | --- | --- |
-| **The hole in the depth picture** | treats the sensor's failure as the measurement | [OpenCV](https://github.com/opencv/opencv), in `glasses/detect.py` | good, and in use |
-| **A trained segmentation model** | learns to outline glass in the colour picture | [Segment Anything](https://github.com/facebookresearch/segment-anything), [Detectron2](https://github.com/facebookresearch/detectron2) or [Ultralytics YOLO](https://docs.ultralytics.com/), on [PyTorch](https://pytorch.org/) | what a real cell would use |
-| **Depth completion for glass** | fills in the depth the glass did not return | [ClearGrasp](https://sites.google.com/view/cleargrasp), [TransCG](https://github.com/Galaxies99/TransCG), [DREDS](https://github.com/PKU-EPIC/DREDS) | solves a problem this does not have |
-| **Many views into one shape** | builds the glass from a set of pictures | [NeRF-style methods](https://sites.google.com/view/dex-nerf), [3D Gaussian splatting](https://repo-sam.inria.fr/fungraph/3d-gaussian-splatting/) | far too slow per glass |
-| **Polarised light** | glass changes the polarisation of reflected light | a polarisation camera, then OpenCV | real, but needs a camera this cell does not have |
-| **Plain background subtraction** | anything that is not the table | OpenCV | brittle the moment the table is not empty |
+| **Points above the table** | anything standing higher than the table top | NumPy, in `glasses/detect.py` | good, and in use |
+| **Colour** | finds the glass by the colour it is painted | [OpenCV](https://github.com/opencv/opencv) | works here, and only here |
+| **A trained segmentation model** | learns to outline glass in the colour picture | [Segment Anything](https://github.com/facebookresearch/segment-anything), [Detectron2](https://github.com/facebookresearch/detectron2), [Ultralytics YOLO](https://docs.ultralytics.com/) | what a real cell would use |
+| **The hole in the depth picture** | treats a real sensor's failure as the measurement | [OpenCV](https://github.com/opencv/opencv) | the answer if the assumption is dropped |
+| **Depth completion for glass** | fills in the depth the glass did not return | [ClearGrasp](https://sites.google.com/view/cleargrasp), [TransCG](https://github.com/Galaxies99/TransCG), [DREDS](https://github.com/PKU-EPIC/DREDS) | for real glass, and only worth it to feed a point cloud |
+| **Polarised light** | glass changes the polarisation of reflected light | a polarisation camera, then OpenCV | real, and needs hardware this cell has not got |
 | **Ask the simulator** | read the glass's true position out of Gazebo | [Gazebo](https://gazebosim.org/) directly | cheating, and it teaches nothing |
 
-**The hole, which is what is used here.** Its virtue is that the hardest
-property of the object is turned into the measurement rather than fought:
-nothing has to be trained, there is no model to ship or to keep in step with
-the glassware, and the same three lines work on a glass the project has never
-seen. Its weakness is that the hole is only as clean as the sensor, and a real
-kitchen adds reflections, one glass seen through another, and highlights that
-break the outline — none of which are modelled here. It also cannot tell two
-touching glasses apart, which is why the side-on step has to pick the one in
-the middle.
+**Points above the table, which is what is used here.** It needs no training,
+no model to ship, and nothing about any particular glass; it works on a glass
+the project has never seen, and it fails honestly, because a pixel it cannot
+place it simply drops. Its weakness is the assumption underneath it, and a
+second one worth naming: it cannot tell two touching objects apart, which is
+why the side-on step has to pick the one in the middle of the picture.
 
-**A trained segmentation model** is what a real cell would use, and the
-project is arranged so that it would drop straight in: `glass_mask()` is the
-function it would be called from, everything downstream takes a plain boolean
-mask, and nothing else would change. [Segment Anything](https://github.com/facebookresearch/segment-anything)
-will outline a glass with no training at all, which makes it an unusually good
-fit for a first try, though it is heavy and needs prompting. A smaller
+**Colour** would work perfectly in this cell and nowhere else. The glasses are
+painted, so a colour threshold would find them, and it is tempting because it
+is three lines. It is left alone because the paint exists so that a *person*
+can follow a run, and a pipeline that depends on it would break the moment a
+glass was not painted — which is to say, always, outside this simulator.
+
+**A trained segmentation model** is what a real cell would use, for opaque
+glasses and see-through ones alike, and the project is arranged so that it
+would drop straight in: one function decides which pixels are a glass, and
+everything downstream takes a plain boolean mask.
+[Segment Anything](https://github.com/facebookresearch/segment-anything) will
+outline a glass with no training at all, which makes it a good first try,
+though it is heavy and needs prompting; a smaller
 [YOLO segmentation model](https://docs.ultralytics.com/tasks/segment/) trained
-on a few hundred labelled pictures would be faster and more reliable in one
+on a few hundred labelled pictures would be faster and steadier in one
 kitchen, at the cost of needing those pictures and of going stale when the
-glassware changes. The honest trade is that a model handles reflections far
-better than a depth hole ever will, and brings with it a training set, a
-training pipeline, and a thing that fails in ways nobody can explain from a
-log line.
+glassware changes. Either handles reflections far better than anything
+geometric, and either brings a training set, a training pipeline, and a thing
+that fails in ways nobody can read off a log line.
+
+**The hole** is the honest answer if the opacity assumption is dropped, and it
+is what this project used to do — the section above explains how it worked and
+why it went. On real hardware it has a real virtue: the hardest property of
+the object becomes the measurement rather than the obstacle, and nothing has
+to be trained. It has a real weakness too, which the simulator never showed,
+because the quality of the hole depends entirely on the scene: reflections,
+one glass seen through another, and highlights all break the outline.
 
 **Depth completion** — [ClearGrasp](https://sites.google.com/view/cleargrasp)
-and the work that followed it — takes the broken depth picture and guesses the
-surface the sensor could not see, so that the glass arrives as an ordinary
-point cloud and everything written for opaque objects starts working. It is
-the right move if what you want is a *point cloud*, because it unlocks every
-off-the-shelf grasp planner in the next few steps. It is the wrong move here,
-because this project never wanted a point cloud: it wants a silhouette and a
-distance it already knows, and completing the depth would be inventing data in
-order to throw most of it away.
+and the work after it — guesses the surface the sensor could not see, so that
+a real glass arrives as an ordinary point cloud and everything written for
+opaque objects starts working. It is the right move if what you want is a
+point cloud, because it unlocks the off-the-shelf grasp planners discussed in
+step 4. It is the wrong move here even on real glass, because this project
+never wanted a point cloud: it wants a silhouette and a distance it already
+knows.
 
-**Building the glass from many views**, whether by classical photogrammetry or
-by the newer radiance-field and splatting methods, gives by far the richest
-answer — a full three-dimensional model rather than an outline. It also takes
-a circuit of the table and seconds to minutes of computation per object, and
-the whole point of the solid-of-revolution argument in the next step is that
-one picture already carries everything the shape rules need. Paying minutes
-for information the task does not use is a bad trade.
+**Polarisation** is the one physically different idea on the list. Glass
+changes how reflected light is polarised, so a polarisation camera sees it
+where an ordinary camera does not, and it is used in industrial inspection for
+exactly this. It needs hardware this cell has not got and is not modelled in
+Gazebo, so it could not be tried here even in principle.
 
-**Polarisation** deserves a mention because it is the one physically different
-idea on the list: glass changes how reflected light is polarised, so a
-polarisation camera sees it where an ordinary camera does not. It is used in
-industrial inspection for exactly this. It needs hardware this cell does not
-have, and it is not modelled in Gazebo at all, so it could not be tried here
-even in principle.
-
-**Background subtraction** and reading poses out of the simulator are on the
-list to be dismissed. The first works on an empty table and stops working the
-moment anything else is on it, which is the situation this task is about. The
-second is the one option that would certainly work and would make the project
+**Reading poses out of the simulator** is on the list to be dismissed. It is
+the one option that would certainly work and would make the project
 worthless, because a pipeline that depends on ground truth cannot be moved to
-a real cell at all — which is the same argument the depth-blanking fix above
-had to be careful about.
+a real cell at all.
 
 ## What the arm does next
 

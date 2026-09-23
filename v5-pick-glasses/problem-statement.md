@@ -33,12 +33,8 @@ narrowest part below the bowl — and the only way to use it is to measure the
 glass in front of you, now.
 
 That premise would be a small thing on its own. What makes it a project is
-that a glass fights every ordinary way of measuring it.
-
-**It is invisible to a depth camera.** Most of the light goes straight through
-and the rest is bent by the curved wall, so where the glass is, the depth
-picture has a hole in it. Every technique that begins "take the point cloud"
-begins by not working.
+that a glass fights most of the ordinary ways of handling it, even once you
+assume — as this project does — that you can at least see the thing.
 
 **Its weight cannot be seen.** Wall thickness is invisible from outside, and
 two glasses with the same outline can differ in weight by a factor of three.
@@ -71,7 +67,8 @@ through.
   seen: an RGB-D camera on the wrist, a contact sensor in each pad, and a
   force sensor between the flange and the gripper.
 - **The glasses**, standing on the arm's right, at least 150 mm apart so that
-  the arm can get to any of them. Each run draws them fresh from four kinds —
+  the arm can get to any of them. They are opaque and each is a different
+  solid colour, which is an assumption rather than an accident — see below. Each run draws them fresh from four kinds —
   straight, tapered, stemmed and short-stemmed — with the proportions of each
   one drawn at random inside a plausible range. A seed picks the set, so a run
   can be repeated exactly, and no two seeds give the same glasses.
@@ -81,6 +78,39 @@ through.
   marker on its base.
 
 Everything runs in simulation, in Gazebo.
+
+## What we assume
+
+Two assumptions make this a task that can be finished rather than a research
+project. Both are deliberate, both make the problem easier than the real
+world, and both are written here so that nobody has to work out from the code
+which difficulties are being faced and which are being stepped around.
+
+**The glasses are opaque and plainly coloured.** Each one is painted a solid
+colour, a different colour per glass, and you can see it in the window and in
+every picture the arm takes. It is not see-through, and nothing in this
+project has to cope with looking through one glass at another.
+
+That assumption removes a real difficulty, and it is worth being honest about
+which one. A depth camera works by sending light out and timing what comes
+back, and real glass sends almost none of it back — most goes straight
+through and the rest is bent away by the curved wall. So pointing a depth
+camera at a real glass gives no distance reading at all for the pixels the
+glass covers: the depth picture comes back with a glass-shaped gap in it
+where every other object would have had a distance. Every method that starts
+with "take the point cloud" starts, on real glassware, by not working.
+
+Assuming the glasses are opaque means the camera simply sees them, the way it
+sees the table and the rack, and the arm can find one by noticing that its
+points stand above the table top. That is a much easier problem, and it is the
+one this project solves. Dropping the assumption later means replacing one
+function — the one that decides which pixels are a glass — and the ways of
+doing that are compared at the end of
+[`docs/step1-finding-the-glasses.md`](docs/step1-finding-the-glasses.md).
+
+**The glasses stand apart, upright, and separate.** They are set out at least
+150 mm from each other, none is lying down, none is inside another, and none
+is being held. A tray of glasses jumbled together is a different task.
 
 ## The task, written out precisely
 

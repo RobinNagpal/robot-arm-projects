@@ -13,7 +13,11 @@ way to understand the design.
 
 The arm begins knowing nothing about the table. **Step 1** finds the glasses
 from above and produces a position and a rough width for each — and nothing
-else, because from overhead a tall glass and a short one look the same. That
+else, because from overhead a tall glass and a short one look the same. It can
+find them at all because the glasses here are opaque, which is an assumption
+the [problem statement](../problem-statement.md) sets out rather than a fact
+about glassware, and the one that would have to go first to make this a
+kitchen. That
 missing shape is exactly what **step 2** goes round to the side to measure,
 turning one picture into a width at every height up the glass. That profile is
 a description of the shape, which is why **step 3** can name the kind of glass
@@ -52,10 +56,11 @@ Every one of them has the same three parts, in the same order:
 
 ## The six
 
-- [**Step 1 — finding the glasses**](step1-finding-the-glasses.md). Why a depth
-  camera returns nothing where a glass is, why that is the signal rather than
-  the problem, how a pixel becomes a place on the table without a depth
-  reading, and why one look from above is not enough.
+- [**Step 1 — finding the glasses**](step1-finding-the-glasses.md). How a
+  picture of distances becomes places in the room, why a glass is simply
+  something standing above the table once you assume it is opaque, what keeps
+  the rack and the arm's own fingers out of the answer, and why one look from
+  above is not enough.
 - [**Step 2 — measuring one**](step2-measuring-one.md). One picture from the
   side, and why one is enough. Pixels to millimetres using a distance the arm
   knows for a reason that has nothing to do with the glass.

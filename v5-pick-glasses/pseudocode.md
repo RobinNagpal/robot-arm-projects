@@ -63,10 +63,8 @@ arm and moves with it.
   a glass gets a position without a depth reading. `capture_marker()` reads the
   marker on the rack base, using the dictionary and id that `rack/layout.py`
   defines, so it hunts for the square the rack actually carries.
-  `_depth_without_glass()` blanks the depth wherever the segmentation camera
-  says glass, because Gazebo's depth camera can see glass and a real one
-  cannot. It is the only place the simulator's own knowledge is used, and it
-  goes no further than the frame it returns.
+  The depth it hands over is the depth the camera reported, unaltered: the
+  glasses here are opaque, so there is nothing to correct for.
 
 **The glasses** are in `work_cell/glasses/`. Nothing in this folder imports
 ROS.
@@ -78,7 +76,8 @@ ROS.
 - `spawn.py` puts them on the table. `random_glasses()` picks the kinds,
   proportions and positions for a run; `revolve()` and `write_mesh()` spin an
   outline into a solid; `glass_sdf()` writes the model.
-- `detect.py` finds them and names them. `glass_mask()` is the depth hole,
+- `detect.py` finds them and names them. `standing_on_the_table()` picks out
+  whatever is standing higher than the table top,
   `find_glasses()` groups it into one detection per glass, and `classify()`
   says what kind a *measured profile* describes.
 - `perception.py` measures one. `row_widths()` reads the silhouette edge to

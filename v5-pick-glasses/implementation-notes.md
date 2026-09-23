@@ -50,54 +50,58 @@ A handle breaks the assumption, because a mug with a handle is not a solid of
 revolution. That is the one case that takes a second picture, a quarter turn
 round, and it is the only reason `expects_handle` exists.
 
-## Finding a glass: the hole is the signal
+## Finding a glass: it stands above the table
 
-A depth camera returns nothing where a glass is. Most of the light passes
-through and the rest is bent by the curved wall, so the depth image has a hole
-in the shape of the glass.
+A glass here is an ordinary opaque object. That is an assumption and not a
+fact about glassware — it is set out in
+[`problem-statement.md`](problem-statement.md) with what it buys and what it
+costs — and everything in this section follows from it.
 
-The obvious reaction is to treat this as the problem. It is better treated as
-the measurement. A hole in the depth image, with something visible through it
-in the colour image, is a glass — and that is exactly as true of a real RealSense
-as it is of the simulator. A pipeline built on the hole meets the same
-difficulty a real one meets, which a pipeline built on, say, the simulator's
-ground-truth object poses would not.
+Because the camera can see a glass, finding one needs no cleverness at all.
+A depth picture gives a distance for every pixel; the camera's own pose turns
+any pixel and its distance into a point in the room; the table top is a known
+height; so a glass is a run of pixels whose points sit above it.
 
-Gazebo, though, does not have this difficulty, and that is a problem. Its
-depth camera measures a glass as though it were painted wood: transparency is
-a thing its renderer does in colour, not in depth, so the picture that reaches
-`glass_mask()` has no hole in it and nothing is ever found.
+Two bounds keep the rest of the cell out of the answer, and it matters that
+neither is a fact about any glass. Nothing taller than the tallest glass the
+cell handles counts, which removes the arm's own gripper from its own
+pictures. And the side-on view keeps only what lies at roughly the distance it
+deliberately stood off at, which removes the rack and the glasses behind the
+one being measured. Both are things the arm knows because it chose them.
 
-The hole is therefore put back where it would have been lost, in the sensor.
-A segmentation camera sits beside the depth one and says which pixels are
-glass, and `WristCamera` blanks the depth at those pixels before handing the
-frame on. In a real cell that answer comes from a trained model; here it comes
-from the simulator, which knows. Either way it stops at the camera: what
-leaves is an ordinary depth picture with holes in it, and everything
-downstream is told nothing it could not have measured.
+### What this replaced, and why it is worth knowing
 
-Doing it the other way round — letting the perception read the simulator's
-labels, or read the glass's depth because Gazebo happens to offer it — would
-have been fewer moving parts and worth nothing, because the pipeline would
-then depend on something no real cell has.
+For most of this project's life the glasses were treated as really
+see-through, and the design was built on the opposite idea: that the *absence*
+of a reading is the reading. A real depth camera gets nothing back through
+glass — most of the light passes through and the rest is bent away by the
+curved wall — so on real glassware the depth picture arrives with a
+glass-shaped gap in it, a patch of pixels with no distance where every other
+object would have had one. Treating that gap as the measurement rather than
+the obstacle is a genuinely good idea, and it is exactly as true of a real
+RealSense as of a simulator.
 
-Once the hole comes from the label, the glass's material stops mattering to
-the arm entirely, and the models are painted solid colours, one per glass, so
-that a person can follow what is happening. Clear glass is nearly invisible
-against a pale table, and any transparency at all washes the colour out: at
-0.15 a green glass already measures within twelve counts of neutral grey. The
-paint buys the watcher a lot and costs the perception nothing.
+It failed for a reason that has nothing to do with whether it is a good idea.
+Gazebo has no such difficulty: its depth camera measures a glass as though it
+were painted wood, because transparency is something its renderer applies to
+colour and not to depth. So the gap never appeared, the mask came back empty,
+and nothing was ever found. The repair at the time was to manufacture the gap
+— a second camera reported which pixels were glass, and the wrist camera
+blanked the depth at those pixels before handing the picture on.
 
-`glass_mask()` is therefore three lines, and the comment above it is longer
-than the code, because the code is not the interesting part.
+That worked, and it was a lot of machinery to make a simulator lie in a
+specific way so that the code downstream could believe it. When the glasses
+became opaque by assumption, all of it came out: the second camera, the label
+on each glass model, the topic that carried it, and the blanking. What is
+left is shorter, and it fails more honestly, because a pixel it cannot place
+it simply drops rather than arguing about what the colour picture shows there.
 
-Two things the mask is not:
-
-- **It is not a segmentation model.** In a real cell it would be, and
-  `glass_mask()` is where that model would be called. The interface would not
-  change.
-- **It is not reliable in colour alone.** A hole over the empty background is
-  the far wall, not a glass, which is why the lit test is there.
+The cost is real and should not be hidden. On real glassware this method does
+not work at all, and the one that does is the one that was removed. The
+comparison at the end of
+[`docs/step1-finding-the-glasses.md`](docs/step1-finding-the-glasses.md) sets
+out what to use instead, and the interface is arranged so that it is one
+function.
 
 ## Measuring: pixels to millimetres without a depth reading
 
@@ -119,10 +123,12 @@ the last few pixels of the picture and cost more than it saved: see
 
 Three details in `perception.py` matter more than they look:
 
-**Width is edge to edge, not a pixel count.** A transparent object segments
-with holes in the middle — the model sees the table through it — so counting
-glass pixels in a row undercounts badly. The distance from the leftmost glass
-pixel to the rightmost does not care about the holes.
+**Width is edge to edge, not a pixel count.** Counting glass pixels in a row
+is fragile: a mask can come back with gaps in the middle of an object — a
+highlight, a patch the sensor missed, or, on a real see-through glass, the
+table showing through — and every one of those makes a count too small. The
+distance from the leftmost glass pixel in a row to the rightmost does not care
+what happened between them.
 
 **The raggedness check runs on the raw widths, not the smoothed ones.** This
 was a bug for a while. Smoothing is a five-row median, which is enough to make
@@ -406,9 +412,11 @@ by reading one of those files, several of them in a single pass.
 
 Worth being honest about, because the whole project runs in a simulator.
 
-- **Real glass segmentation is harder than a depth hole.** The hole is the
-  right signal, but reflections, specular highlights and one glass seen through
-  another are not modelled here.
+- **Real glass is not opaque.** This project assumes it is, which is the
+  single largest difference between the cell here and a kitchen. On real
+  glassware the depth camera returns nothing where the glass is, and finding
+  one means a trained segmentation model or one of the other methods compared
+  in step 1 — none of which are as simple as the height test used here.
 - **Contact with a curved, slippery, brittle surface is the weakest part of any
   physics engine.** The friction and softness numbers in
   `gripper.urdf.xacro` are plausible, not measured.

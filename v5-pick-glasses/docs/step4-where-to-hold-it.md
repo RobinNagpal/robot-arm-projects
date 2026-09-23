@@ -217,8 +217,8 @@ two of them are only useful together.
 | **Score grasps on a spun mesh** | classical grasp planning on a mesh built from the profile | [trimesh](https://trimesh.org/), already a dependency | redundant — same answer, more arithmetic |
 | **Copy an expert** | learns the movement by watching the rules do the job | [PyTorch](https://pytorch.org/), [LeRobot](https://github.com/huggingface/lerobot) or [ACT](https://tonyzhaozh.github.io/aloha/) | fits, once search and touch are done |
 | **Reinforcement learning** | discovers a grasp by trial and reward | [Stable-Baselines3](https://stable-baselines3.readthedocs.io/), on [Isaac Lab](https://isaac-sim.github.io/IsaacLab/) or [MuJoCo](https://mujoco.org/) | poor fit |
-| **Off-the-shelf grasp network** | point cloud in, ranked grasps out | [Contact-GraspNet](https://github.com/NVlabs/contact_graspnet), [GraspNet-1Billion](https://graspnet.net/), [AnyGrasp](https://graspnet.net/anygrasp.html) | does not apply as things stand |
-| **Depth completion** | invents the depth the glass did not return | [ClearGrasp](https://sites.google.com/view/cleargrasp), [TransCG](https://github.com/Galaxies99/TransCG), [DREDS](https://github.com/PKU-EPIC/DREDS) | only worth it to feed the row above |
+| **Off-the-shelf grasp network** | point cloud in, ranked grasps out | [Contact-GraspNet](https://github.com/NVlabs/contact_graspnet), [GraspNet-1Billion](https://graspnet.net/), [AnyGrasp](https://graspnet.net/anygrasp.html) | possible now, and still answers the wrong question |
+| **Depth completion** | invents the depth a see-through glass did not return | [ClearGrasp](https://sites.google.com/view/cleargrasp), [TransCG](https://github.com/Galaxies99/TransCG), [DREDS](https://github.com/PKU-EPIC/DREDS) | not needed while the glasses are opaque |
 
 ### What each one actually does
 
@@ -376,19 +376,29 @@ cannot reach, then do the best one that is left.
 **Needs:** [Contact-GraspNet](https://github.com/NVlabs/contact_graspnet), [GraspNet-1Billion](https://graspnet.net/) or [AnyGrasp](https://graspnet.net/anygrasp.html), on PyTorch. No data
 collection: the weights are a download.
 
-**Why it fails here:** the first step. A depth camera cannot see glass, so the
-depth picture has a hole where the glass is. No dots, no cloud, nothing to feed
-the network. Even if it worked, it knows shapes in general, not glassware — it
-has no idea that the stem is the part to hold.
+**Why it is skipped:** this one used to be impossible here and now is not,
+which is worth saying plainly. The glasses are opaque by assumption, so the
+depth camera sees them and there is a point cloud to feed the network after
+all. What is left against it is not the input but the output: these models
+know shapes in general, not glassware, and nothing in them knows that the stem
+is the part of a wine glass to hold. They would return a ranked list of places
+a two-finger gripper could close on a curved object, and the project already
+has that answer, from a rule that can say why. On real see-through glassware
+they would be impossible again, for the reason in the row below.
 
 #### Depth completion
 
 Use a model to invent the depth the glass did not return.
 
 A model trained on see-through objects looks at the colour picture and the
-broken depth picture, and fills in the hole with a sensible guess. Now there is
-a full depth picture, so there is a point cloud, so a grasp network becomes
-possible.
+depth picture with the glass-shaped gap in it, and fills that gap with a
+sensible guess. Now there is a full depth picture, so there is a point cloud,
+so a grasp network becomes possible.
+
+None of that is needed while the glasses are opaque, since the depth picture
+has no gap in it. This row is here for the day the assumption is dropped, when
+it becomes the bridge between real glassware and everything written for
+ordinary objects.
 
 **Needs:** [ClearGrasp](https://sites.google.com/view/cleargrasp), [TransCG](https://github.com/Galaxies99/TransCG) or [DREDS](https://github.com/PKU-EPIC/DREDS), on PyTorch. Also a download.
 

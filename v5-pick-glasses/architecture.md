@@ -95,7 +95,7 @@ the simulator and MoveIt read.
 | `arm/controllers.yaml` | The five `ros2_control` controllers. Two of them drive the same finger joints and only one runs at a time — see below. |
 | `arm/dimensions.py` | The measurements the model does not carry: fingertip reach, camera offset, working heights, how far to lift before weighing. |
 | `arm/motion.py` | The `Arm` class: planning, straight lines, squeezing to a force, turning in place, feeling for contact. |
-| `arm/camera/wrist_camera.urdf.xacro` | The RGB-D sensor, the segmentation camera beside it that says which pixels are glass, and the two frames a ROS camera needs. |
+| `arm/camera/wrist_camera.urdf.xacro` | The RGB-D sensor, and the two frames a ROS camera needs. |
 | `arm/camera/wrist_camera.py` | The `WristCamera` class: a frame plus the pose the camera was at, projection onto the table, the rack marker, and blanking the depth where glass stands so the frame reads like a real sensor's. |
 
 ### The glasses

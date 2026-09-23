@@ -56,8 +56,10 @@ what was done about it, which is the honest history of getting this far.
 
 Every glass goes through the same six steps.
 
-**1. Find the glasses.** Pictures from above. The glasses are the holes in the
-depth picture that have something visible through them. Two pictures are taken
+**1. Find the glasses.** Pictures from above. The glasses are opaque — that is
+an assumption, set out in the problem statement — so the depth camera sees
+them, and a glass is a patch of the picture whose points stand above the table
+top. Two pictures are taken
 at each place the camera stops, a known distance apart, because one picture
 can only say which direction a glass lies in and not how far away it is — a
 glass stands above the table, and laying its outline down on the table puts it

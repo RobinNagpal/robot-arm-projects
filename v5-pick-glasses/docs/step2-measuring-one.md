@@ -71,12 +71,12 @@ not get anyway.
 
 Three details in `row_widths()` and `smooth()` do more work than they look.
 
-**The width is edge to edge, not a pixel count.** A transparent object
-segments with holes in the middle: the model sees the table through it and
-labels those pixels as background. Counting glass pixels in a row therefore
-undercounts badly, and gets worse the more transparent the glass is. The
-distance from the leftmost glass pixel to the rightmost does not care about
-holes in the middle.
+**The width is edge to edge, not a pixel count.** A mask can come back with
+gaps in the middle of an object — a highlight, a patch the sensor missed, or,
+on a real see-through glass, the table showing through and being labelled
+background. Counting glass pixels in a row makes every one of those into a
+glass that is too narrow. Measuring from the leftmost glass pixel in a row to
+the rightmost does not care what happened between them.
 
 **The profile is smoothed with a five-row median.** A segmentation edge wanders
 by a pixel or two, and an unsmoothed profile has a waist in every wobble — which
@@ -154,7 +154,8 @@ why the resolution above is 1.37 mm rather than 1.08.
 
 **It measured everything else in the frame too.** A glass with a neighbour
 standing behind it measured as one glass the width of the table, because
-`row_widths()` measures every hole in the mask at once. It now measures the
+`row_widths()` measures the full width of the mask in each row, whatever is
+in it. It now measures the
 one in the middle, which is the one the camera was aimed at, and the arm
 prefers a line of sight with nothing behind it — judged as an angle at the
 camera rather than as a distance on the table, because an angle is what
