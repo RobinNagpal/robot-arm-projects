@@ -26,6 +26,15 @@ import numpy as np
 # tall still gets several samples on a 200 mm glass.
 SAMPLES = 240
 
+# How thick the solid base of a tumbler is, as a fraction of its height. Real
+# ones run from about a twentieth to a tenth; a heavy base is what keeps a tall
+# glass from tipping.
+TUMBLER_BASE_FRACTION = 0.06
+
+# How far above the top of the stem the inside of the bowl starts, as a
+# fraction of the height. The bottom of a bowl is solid where it meets the stem.
+BOWL_FLOOR_FRACTION = 0.03
+
 
 @dataclass(frozen=True)
 class Outline:
@@ -33,10 +42,15 @@ class Outline:
 
     ``height`` and ``radius`` are matching arrays in metres. ``height[0]`` is
     always 0, which is where the glass meets the table.
+
+    ``floor`` is the height of the inside bottom: everything below it is solid
+    glass. It is what makes one end closed and the other open, so a glass
+    turned over can be seen to be upside down.
     """
 
     height: np.ndarray
     radius: np.ndarray
+    floor: float = 0.0
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "height", np.asarray(self.height, dtype=float))
@@ -66,7 +80,7 @@ def straight(height: float, rim_diameter: float, taper: float = 0.04) -> Outline
     h = np.linspace(0.0, height, SAMPLES)
     rim = rim_diameter / 2.0
     base = rim * (1.0 - taper)
-    return Outline(h, base + (rim - base) * (h / height))
+    return Outline(h, base + (rim - base) * (h / height), floor=TUMBLER_BASE_FRACTION * height)
 
 
 def tapered(height: float, rim_diameter: float, base_fraction: float = 0.45) -> Outline:
@@ -78,7 +92,7 @@ def tapered(height: float, rim_diameter: float, base_fraction: float = 0.45) -> 
     h = np.linspace(0.0, height, SAMPLES)
     rim = rim_diameter / 2.0
     base = rim * base_fraction
-    return Outline(h, base + (rim - base) * (h / height))
+    return Outline(h, base + (rim - base) * (h / height), floor=TUMBLER_BASE_FRACTION * height)
 
 
 def stemmed(
@@ -122,7 +136,7 @@ def stemmed(
             # it, which is what a real bowl does.
             fraction = (y - stem_top) / (height - stem_top)
             radius[index] = stem + (bowl - stem) * math.sqrt(fraction)
-    return Outline(h, radius)
+    return Outline(h, radius, floor=(stem_fraction + BOWL_FLOOR_FRACTION) * height)
 
 
 def short_stemmed(height: float, bowl_diameter: float, stem_diameter: float) -> Outline:

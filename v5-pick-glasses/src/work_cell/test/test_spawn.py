@@ -1,14 +1,18 @@
 import math
 import re
+from collections import Counter
 
 import numpy as np
 import pytest
-from work_cell.glasses.shapes import KIND_RANGES, stemmed, straight
+from work_cell.glasses.force import GLASS_DENSITY
+from work_cell.glasses.shapes import KIND_RANGES, family, stemmed, straight
 from work_cell.glasses.spawn import (
     GLASS_TINTS,
     MIN_SEPARATION,
+    SpawnedGlass,
     collision_cylinders,
     glass_sdf,
+    hollow,
     random_glasses,
     revolve,
 )
@@ -72,17 +76,53 @@ def test_a_glass_weighs_something_a_kitchen_scale_would_recognise():
 # -------------------------------------------------------------- the mesh
 
 
-def test_spinning_an_outline_gives_a_closed_band_of_triangles():
-    outline = straight(height=0.090, rim_diameter=0.080)
-    vertices, faces = revolve(outline, segments=16)
-    assert len(vertices) == len(outline.height) * 16
-    # Two triangles per quad, one quad per segment per gap between rings.
-    assert len(faces) == 2 * 16 * (len(outline.height) - 1)
+WALL = 0.003
+
+
+def _signed_volume(vertices, faces):
+    corners = vertices[faces]
+    return float(np.einsum("ij,ij->i", corners[:, 0], np.cross(corners[:, 1], corners[:, 2])).sum() / 6.0)
+
+
+def test_the_mesh_is_closed_so_no_wall_disappears_from_any_side():
+    # Every edge is shared by exactly two triangles, running opposite ways. An
+    # open skin fails this at the rim and the base, and a renderer drawing one
+    # side of each triangle shows its far wall as missing.
+    for kind in KIND_RANGES:
+        for outline, _ in family(kind, 10, seed=2):
+            vertices, faces = revolve(outline, WALL, segments=16)
+            points = np.round(vertices, 9)
+            edges = Counter()
+            for triangle in faces:
+                for i, j in ((0, 1), (1, 2), (2, 0)):
+                    edges[(tuple(points[triangle[i]]), tuple(points[triangle[j]]))] += 1
+            for (start, end), count in edges.items():
+                assert count == 1 and edges[(end, start)] == 1
+
+
+def test_the_mesh_faces_outward_and_holds_the_glass_it_weighs():
+    for kind in KIND_RANGES:
+        for outline, _ in family(kind, 10, seed=4):
+            glass = SpawnedGlass("glass_0", kind, outline, (0.0, 0.0, 0.0), 0.0)
+            vertices, faces = revolve(outline, glass.wall, segments=64)
+            volume = _signed_volume(vertices, faces)
+            assert volume * GLASS_DENSITY == pytest.approx(glass.mass, rel=0.02)
+
+
+def test_the_bottom_is_closed_and_the_top_is_open():
+    # This is what lets a turned glass be seen to be upside down.
+    for kind in KIND_RANGES:
+        for outline, _ in family(kind, 10, seed=6):
+            assert 0.0 < outline.floor < 0.6 * outline.total_height
+            height, radius = hollow(outline, WALL)
+            assert height[0] == pytest.approx(outline.floor)
+            assert height[-1] == pytest.approx(outline.total_height)
+            assert radius[-1] > 0.0
 
 
 def test_the_mesh_is_the_size_the_outline_said():
     outline = straight(height=0.090, rim_diameter=0.080)
-    vertices, _ = revolve(outline, segments=32)
+    vertices, _ = revolve(outline, WALL, segments=32)
     assert vertices[:, 2].max() == pytest.approx(0.090)
     assert vertices[:, 2].min() == pytest.approx(0.0)
     radius = np.hypot(vertices[:, 0], vertices[:, 1])

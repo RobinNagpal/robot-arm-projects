@@ -113,6 +113,30 @@ def release_options(rotation: np.ndarray, count: int = 8) -> list[np.ndarray]:
     return _turns(rotation, count)
 
 
+def facing_options(rotation: np.ndarray, outward: np.ndarray, count: int = 12) -> list[np.ndarray]:
+    """The same held glass, with the gripper swung round the vertical.
+
+    Turning a glass over flips which way the gripper points: the flange ends
+    up on the far side of the glass from the base, a grasp's depth further out
+    than the glass, and over a slot that can be past the end of the arm. A
+    glass is round, so any swing about the vertical through it holds it the
+    same way up. The one that points the gripper along ``outward`` puts the
+    flange between the base and the glass, which is the shortest reach, so it
+    comes first and the rest follow in order of how far they swing from it.
+    """
+    z = rotation[:, 2]
+    start = math.atan2(z[1], z[0])
+    wanted = math.atan2(outward[1], outward[0])
+    angles = [wanted + 2 * math.pi * i / count for i in range(count)]
+    angles.sort(key=lambda a: abs(_wrap(a - wanted)))
+    return [_about_vertical(a - start) @ rotation for a in angles]
+
+
+def _about_vertical(angle: float) -> np.ndarray:
+    c, s = math.cos(angle), math.sin(angle)
+    return np.array([[c, -s, 0.0], [s, c, 0.0], [0.0, 0.0, 1.0]])
+
+
 def _turns(rotation: np.ndarray, count: int) -> list[np.ndarray]:
     """``count`` turns about the tool z axis, smallest first.
 

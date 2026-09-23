@@ -67,7 +67,9 @@ Every one of them has the same five parts, in the same order:
    would be good and bad at here, and why the code does what it does instead.
    These comparisons are the quickest way to see what the project trades away.
    It is usually the same trade: accuracy on a hard real-world case, against
-   being able to say why a glass was refused.
+   being able to say why a glass was refused. For steps 1 and 4 this part
+   grew long enough to have its own document, `step1-approaches.md` and
+   `step4-approaches.md`, and the step document links to it.
 
 ## The six
 
@@ -76,6 +78,9 @@ Every one of them has the same five parts, in the same order:
   something standing above the table, once you assume it is opaque. What keeps
   the rack and the arm's own fingers out of the answer. And why one look from
   above is not enough.
+  - [Other ways to find a glass](step1-approaches.md): the current method
+    beside twelve others, from fixed cameras and feeling with the fingers to
+    the ways of finding a glass that really is glass, explained from the start.
 - [**Step 2 — measuring one**](step2-measuring-one.md). One picture from the
   side, and why one is enough. Pixels to millimetres using a distance the arm
   knows for a reason that has nothing to do with the glass.
@@ -85,6 +90,8 @@ Every one of them has the same five parts, in the same order:
 - [**Step 4 — where to hold it**](step4-where-to-hold-it.md). Three rules, the
   features they read, the ways an answer gets rejected, and why the opening is
   never a number from a file.
+  - [Other ways to choose where to hold it](step4-approaches.md): ranked
+    search, touch, grasp networks and learning, and which of them to try next.
 - [**Step 5 — how hard to squeeze**](step5-how-hard-to-squeeze.md). Why the
   weight of a glass cannot be seen, what the estimate is good for, and the
   ten-millimetre lift that settles it.

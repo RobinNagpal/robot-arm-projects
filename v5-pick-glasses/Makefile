@@ -32,14 +32,14 @@ help: ## Show this help
 
 run: build ## Start the cell and run the task (this is the one command)
 	$(call ros,ros2 launch work_cell run.launch.py \
-		glasses:=$(GLASSES) kinds:=$(KINDS) seed:=$(SEED) gui:=$(GUI) rviz:=$(RVIZ))
+		glasses:=$(GLASSES) $(if $(KINDS),kinds:=$(KINDS)) seed:=$(SEED) gui:=$(GUI) rviz:=$(RVIZ))
 
 one: build ## One straight glass on its own, which is the easiest thing to pick up
 	$(MAKE) run GLASSES=1 KINDS=straight_glass
 
 cell: build ## Start the cell but leave the arm alone, for poking at by hand
 	$(call ros,ros2 launch work_cell run.launch.py task:=false \
-		glasses:=$(GLASSES) kinds:=$(KINDS) seed:=$(SEED) gui:=$(GUI) rviz:=$(RVIZ))
+		glasses:=$(GLASSES) $(if $(KINDS),kinds:=$(KINDS)) seed:=$(SEED) gui:=$(GUI) rviz:=$(RVIZ))
 
 ##@ Project
 

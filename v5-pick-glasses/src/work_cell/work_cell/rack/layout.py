@@ -117,7 +117,7 @@ def slots_within_stretch(
 ) -> list[Slot]:
     """The slots the arm can stand over whichever way round it is holding the glass.
 
-    Standing a glass in a slot puts the tool a fingertip's length to one side
+    Standing a glass in a slot puts the tool a grasp's depth to one side
     of the slot, and which side is settled long before — by how the glass was
     picked up and which way it was turned. So a slot is only safe to promise
     if the arm can reach it from either side, which rules out the far end of

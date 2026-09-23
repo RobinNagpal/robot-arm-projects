@@ -44,7 +44,7 @@ def build_world(
 
     models = []
     for glass in glasses:
-        mesh_path = write_mesh(glass.outline, mesh_dir / f"{glass.name}.stl")
+        mesh_path = write_mesh(glass.outline, glass.wall, mesh_dir / f"{glass.name}.stl")
         models.append(glass_sdf(glass, mesh_uri=f"file://{mesh_path}"))
 
     marker_path = write_marker(mesh_dir / "rack_marker.png")

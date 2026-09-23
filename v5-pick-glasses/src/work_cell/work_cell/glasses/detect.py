@@ -112,8 +112,8 @@ def standing_on_the_table(
 
     This works because a glass is an ordinary opaque object here — see the
     assumptions in ``problem-statement.md``. It would not work on real
-    glassware, and what to do instead is discussed at the end of
-    ``docs/step1-finding-the-glasses.md``.
+    glassware, and what to do instead is discussed in
+    ``docs/step1-approaches.md``.
     """
     depth = np.asarray(depth, dtype=float)
     if depth.ndim != 2:
@@ -155,7 +155,9 @@ SAME_GLASS = 0.04
 SIGHTING_ERROR = 0.010
 
 
-def foot_of(mask: np.ndarray, to_world, table_z: float) -> np.ndarray | None:
+def foot_of(
+    mask: np.ndarray, to_world, table_z: float, *, edge_above: float = 0.0
+) -> np.ndarray | None:
     """Where the glass in this side-on mask is standing, in the room.
 
     The one part of a glass whose position a single picture can fix exactly is
@@ -179,14 +181,22 @@ def foot_of(mask: np.ndarray, to_world, table_z: float) -> np.ndarray | None:
     The far left and far right of the ellipse are the two places where the
     line of sight grazes the disc side-on, and those sit at the middle's own
     distance. Halfway between them is the middle.
+
+    ``edge_above`` is how far above the table the mask's bottom edge really
+    is. A mask built from depth leaves out the first few millimetres of the
+    glass, because nothing that low can be told apart from the table. The
+    camera looks at the foot almost level, so projecting that edge onto the
+    table instead of onto its own height throws the foot far behind the
+    glass: 5 mm of clearance puts it about 19 mm out, enough to close the
+    fingers on a chord of the glass rather than across it.
     """
     used = np.flatnonzero(mask.any(axis=0))
     if used.size == 0:
         return None
 
     # The bottom edge of the silhouette, column by column. Every pixel along it
-    # is a place where the line of sight grazes the rim of the base, and the
-    # rim is on the table, so each one projects onto the table exactly. Read
+    # is a place where the line of sight grazes the side of the base at the
+    # edge's height, so each one projects onto that height exactly. Read
     # together they are the near half of the base, drawn in the room.
     bottom = {int(column): int(np.flatnonzero(mask[:, column])[-1]) for column in used}
     nearest = max(bottom, key=lambda column: bottom[column])
@@ -202,7 +212,9 @@ def foot_of(mask: np.ndarray, to_world, table_z: float) -> np.ndarray | None:
             span.append(column)
             column += step
 
-    rim = np.array([to_world(float(c), float(bottom[c]), table_z) for c in span], dtype=float)
+    edge_z = table_z + edge_above
+    rim = np.array([to_world(float(c), float(bottom[c]), edge_z) for c in span], dtype=float)
+    rim[:, 2] = table_z
     if len(rim) < 3:
         return rim.mean(axis=0) if len(rim) else None
 

@@ -70,6 +70,10 @@ with the glass held:                              ours: task.py _invert_and_plac
                                                   _grip_point() recomputes live
 
     move above the slot                           MoveIt 2: plan the move
+    point the gripper away from the base          ours: transforms.py facing_options().
+                                                  Turning over leaves the flange
+                                                  past the glass; swinging it round
+                                                  puts it back between base and slot.
     come down in 2 mm steps until it touches      ours: motion.py
                                                   descend_until_contact()
                                                   ros2_control: the pad contact

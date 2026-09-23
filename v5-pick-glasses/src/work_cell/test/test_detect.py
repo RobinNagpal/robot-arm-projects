@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 from work_cell.glasses.detect import (
+    STANDING_CLEARANCE,
     Detection,
     classify,
     find_glasses,
@@ -486,6 +487,62 @@ def test_the_foot_does_not_land_on_the_rim_nearest_the_camera():
     found = foot_of(_disc_mask(centre, radius, to_pixel, size), to_world, table_z=0.0)
     near_rim = np.array([centre[0] - radius, centre[1]])
     assert np.linalg.norm(found[:2] - centre) < np.linalg.norm(found[:2] - near_rim)
+
+
+def _cylinder_depth(centre, radius, height, camera_height=0.120, fx=277.2, size=(240, 320)):
+    """What a level depth camera sees of a cylinder standing on the table.
+
+    The same camera as ``_side_on_camera()``. Returns the depth picture and
+    the camera-to-world matrix that ``standing_on_the_table()`` wants.
+    """
+    rows, columns = np.indices(size)
+    cx, cy = size[1] / 2.0, size[0] / 2.0
+    rotation = np.array([[0.0, 0.0, 1.0], [-1.0, 0.0, 0.0], [0.0, -1.0, 0.0]])
+    eye = np.array([0.0, 0.0, camera_height])
+    rays = np.stack([(columns - cx) / fx, (rows - cy) / fx, np.ones(size)], axis=-1) @ rotation.T
+
+    # Depth is distance along the optical axis, and every ray has 1 there.
+    with np.errstate(divide="ignore"):
+        to_table = np.where(rays[..., 2] < 0, -eye[2] / rays[..., 2], np.inf)
+    offset = eye[:2] - np.asarray(centre)
+    a = (rays[..., :2] ** 2).sum(-1)
+    b = 2.0 * (rays[..., :2] * offset).sum(-1)
+    c = offset @ offset - radius**2
+    reach = b * b - 4.0 * a * c
+    to_side = (-b - np.sqrt(np.maximum(reach, 0.0))) / (2.0 * a)
+    side_z = eye[2] + to_side * rays[..., 2]
+    on_side = (reach > 0) & (to_side > 0) & (side_z >= 0.0) & (side_z <= height)
+    depth = np.where(on_side & (to_side < to_table), to_side, to_table)
+
+    camera_to_world = np.eye(4)
+    camera_to_world[:3, :3], camera_to_world[:3, 3] = rotation, eye
+    return depth, camera_to_world
+
+
+def test_the_foot_is_found_from_a_depth_mask_that_leaves_out_the_bottom():
+    """The mask a real run uses starts a few millimetres up the glass.
+
+    Nothing lower can be told from the table. Projecting that edge onto the
+    table rather than onto its own height, from a camera looking almost
+    level, put the foot about 19 mm behind the glass, and the fingers closed
+    on a chord of it.
+    """
+    to_world, _, size = _side_on_camera()
+    lens = _Lens()
+    lens.fx = lens.fy = 277.2
+    for distance in (0.34, 0.38, 0.45):
+        for sideways in (-0.05, 0.0, 0.07):
+            for radius in (0.026, 0.040):
+                centre = np.array([distance, sideways])
+                depth, camera_to_world = _cylinder_depth(centre, radius, 0.15)
+                mask = standing_on_the_table(depth, lens, camera_to_world, 0.0)
+                found = foot_of(mask, to_world, table_z=0.0, edge_above=STANDING_CLEARANCE)
+                assert found is not None
+                off = float(np.linalg.norm(found[:2] - centre))
+                assert off < 0.005, (
+                    f"foot found {off * 1000:.1f} mm from the middle of a glass "
+                    f"{radius * 2000:.0f} mm across at {distance * 1000:.0f} mm"
+                )
 
 
 def test_a_short_glass_is_not_thrown_out_for_looking_flat():

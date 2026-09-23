@@ -27,6 +27,8 @@
     Along the tool's z axis:
       0.000  tool0, the flange
       0.050  the fingers start
+      0.130  the pads start
+      0.150  the glass's axis, in the middle of the pads (GRASP_DEPTH)
       0.170  the fingertips
   -->
 
@@ -37,11 +39,12 @@
     <xacro:property name="finger_length" value="0.12"/>
     <xacro:property name="finger_thickness" value="0.010"/>
     <xacro:property name="finger_width" value="0.03"/>
-    <!-- The silicone pad on the inside face of each finger. Its height is what
-         decides how much upright wall a grip needs, which is PAD_HEIGHT in
-         arm/dimensions.py. -->
+    <!-- The silicone pad on the inside face of each finger. It is as tall as
+         the finger is wide, and runs pad_length back from the tip, which is
+         PAD_LENGTH in arm/dimensions.py. The glass is held in the middle of
+         that length rather than at the tip. -->
     <xacro:property name="pad_thickness" value="0.004"/>
-    <xacro:property name="pad_height" value="0.014"/>
+    <xacro:property name="pad_length" value="0.040"/>
     <!-- Half of finger plus pad, so travel 0 has the two pads just touching. -->
     <xacro:property name="finger_home" value="${(finger_thickness + 2 * pad_thickness) / 2}"/>
 
@@ -125,12 +128,12 @@
       <link name="${prefix}${side}_pad">
         <visual>
           <origin xyz="0 0 0"/>
-          <geometry><box size="${finger_width} ${pad_thickness} ${pad_height}"/></geometry>
+          <geometry><box size="${finger_width} ${pad_thickness} ${pad_length}"/></geometry>
           <material name="pad_black"><color rgba="0.1 0.1 0.12 1"/></material>
         </visual>
         <collision>
           <origin xyz="0 0 0"/>
-          <geometry><box size="${finger_width} ${pad_thickness} ${pad_height}"/></geometry>
+          <geometry><box size="${finger_width} ${pad_thickness} ${pad_length}"/></geometry>
         </collision>
         <inertial>
           <mass value="0.005"/>
@@ -143,7 +146,7 @@
         <parent link="${prefix}${side}_finger"/>
         <child link="${prefix}${side}_pad"/>
         <origin xyz="0 ${-reflect * (finger_thickness + pad_thickness) / 2}
-                     ${finger_length - pad_height / 2}"/>
+                     ${finger_length - pad_length / 2}"/>
       </joint>
     </xacro:macro>
 
