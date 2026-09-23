@@ -10,6 +10,15 @@ measurement, or learn it from examples. Everything below is one of those two,
 or a way of correcting the answer once it exists. Some of them overlap, and
 two of them are only useful together.
 
+The family this project does not use has its own section in robotics-basics —
+[models that choose where to grip](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/04_models-that-find.md#2-models-that-choose-where-to-grip) —
+and it states the argument for the rules better than this page does: *if your
+object has a sentence — hold the narrowest part below the widest — the sentence
+beats the network*, because a grasp model is trained to predict whether a grip
+will slip, and there is nowhere in it to say that a wine glass must be held by
+the stem, or that a grip above half the glass's height cannot be inverted
+afterwards.
+
 | Approach | What it does | What it runs on | Suitability here |
 | --- | --- | --- | --- |
 | **Rules on the profile** | one sentence per kind, applied to the measured outline | NumPy, in `glasses/rules.py` | good, and in use |
@@ -58,6 +67,10 @@ They are "this glass cannot be held *the first way tried*".
 
 ### Feel for it
 
+Longer treatment: [what you can actually do with
+touch](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/02_sensors.md#21-what-you-can-actually-do-with-it) and
+[measuring by touching it](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#27-measuring-by-touching-it).
+
 The fingers are sensors too. If they close and find nothing, look around with
 them.
 
@@ -74,6 +87,12 @@ The project already says the last millimetres should be felt rather than
 driven. At the grasp, it does not yet follow through.
 
 ### Camera in the loop
+
+Longer treatment: [how fast does it actually have to
+be](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/07_making-it-work.md#2-how-fast-does-it-actually-have-to-be), which
+separates the two regimes this sits between — look-then-move, where half a
+second of perception is five per cent of the cycle, and visual servoing, which
+needs 30 Hz and where latency turns into instability rather than slowness.
 
 Do not trust one measurement taken from a distance. Keep checking on the way
 in.
@@ -157,6 +176,12 @@ would take a lifetime.
 
 ### Off-the-shelf grasp network
 
+Longer treatment: [models that choose where to
+grip](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/04_models-that-find.md#2-models-that-choose-where-to-grip), with the
+licence on each. Of the five that exist, one is permissive and stale, three are
+non-commercial or bespoke, and the strongest is licence-keyed to a machine you
+register.
+
 Someone has already trained a large model on millions of grasps. Give it a 3D
 scan, and it gives grasps back.
 
@@ -178,6 +203,9 @@ has that answer, from a rule that can say why. On real see-through glassware
 they would be impossible again, for the reason in the next section.
 
 ### Depth completion
+
+Longer treatment: [transparent and shiny
+objects](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/04_models-that-find.md#17-transparent-and-shiny-objects).
 
 Use a model to invent the depth the glass did not return. How it works is
 explained under approach 10 in [`step1-approaches.md`](step1-approaches.md).
