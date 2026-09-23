@@ -85,6 +85,7 @@ from .glasses.rules import Grip, NoGrip, find_grip
 from .rack.layout import (
     GLASS_ZONE,
     PEG_HEIGHT,
+    RACK_AREA,
     ROBOT_BASE,
     TABLE_TOP_Z,
     Slot,
@@ -1204,9 +1205,11 @@ class PickGlassesTask:
 
     def _find_rack(self) -> list[Slot]:
         """Read the marker on the rack, and place all six slots from it."""
-        self._arm.move_to_pose(
-            ROBOT_BASE + np.array([0.5, 0.3, SURVEY_HEIGHT]), look_along(-UP)
-        )
+        # The camera, not the tool, straight above the middle of RACK_AREA.
+        x_from, x_to, y_from, y_to = RACK_AREA
+        down = look_along(-UP)
+        eye = ROBOT_BASE + np.array([(x_from + x_to) / 2.0, (y_from + y_to) / 2.0, SURVEY_HEIGHT])
+        self._arm.move_to_pose(eye - down @ CAMERA_OFFSET, down)
         self._report.step(
             "Before the steps — finding the rack",
             doc="step6-turning-it-over.md",

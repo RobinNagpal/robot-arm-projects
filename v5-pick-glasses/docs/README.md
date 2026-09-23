@@ -67,10 +67,10 @@ Every one of them has the same five parts, in the same order:
    would be good and bad at here, and why the code does what it does instead.
    These comparisons are the quickest way to see what the project trades away.
    It is usually the same trade: accuracy on a hard real-world case, against
-   being able to say why a glass was refused. For steps 1, 2 and 4 this part
-   grew long enough to have its own document, `step1-approaches.md`,
-   `step2-approaches.md` and `step4-approaches.md`, and the step document
-   links to it.
+   being able to say why a glass was refused. For steps 1, 2, 4 and 6 this
+   part grew long enough to have its own document, `step1-approaches.md`,
+   `step2-approaches.md`, `step4-approaches.md` and `step6-approaches.md`, and
+   the step document links to it.
 
 ## The six
 
@@ -102,6 +102,8 @@ Every one of them has the same five parts, in the same order:
 - [**Step 6 — turning it over and standing it down**](step6-turning-it-over.md).
   Rotating about the grip rather than the wrist, the wrist limit that has to be
   checked before the fingers close, the tilt budget, and feeling for the rack.
+  - [Other ways to turn a glass over](step6-approaches.md): why a glass swings
+    in two flat pads, and the turns, grips and pads that would stop it.
 
 ## What does not work yet
 

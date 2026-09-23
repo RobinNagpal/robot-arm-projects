@@ -12,6 +12,7 @@ Needs matplotlib, which is not a dependency of the project itself.
 
 from __future__ import annotations
 
+import math
 import random
 import sys
 from pathlib import Path
@@ -28,9 +29,13 @@ sys.path.insert(0, str(ROOT / "src" / "work_cell"))
 from work_cell.arm.dimensions import (  # noqa: E402
     COMFORTABLE_REACH,
     FINGERTIP_OFFSET,
+    GRASP_DEPTH,
     GRIPPER_MAX_OPENING,
     LOWEST_GRIP,
     PAD_HEIGHT,
+    PAD_LENGTH,
+    PLACE_CLEARANCE,
+    SLIP_TEST_DEG,
     SURVEY_HEIGHT,
     TURNING_ROOM,
 )
@@ -52,6 +57,9 @@ from work_cell.glasses.rules import NoGrip, find_grip  # noqa: E402
 from work_cell.glasses.shapes import draw, family  # noqa: E402
 from work_cell.rack.layout import (  # noqa: E402
     ARM_TILT_ACCURACY_DEG,
+    PEG_HEIGHT,
+    PEG_RADIUS,
+    RACK_BASE_HEIGHT,
     SLOT_SPACING,
     rack_box,
     slots_from_marker,
@@ -817,6 +825,382 @@ def the_turn_swings_the_arm() -> None:
     _save(fig, "the-turn-swings-the-arm.png")
 
 
+# --------------------------------------------------------------------------
+# Step 6 approaches: why a held glass swings, and ways to turn it over
+
+
+def _gripped(name: str, seed: int = 4):
+    """A generated glass of this kind, and where the rules would hold it."""
+    outline, _ = draw(name, random.Random(seed))
+    profile = profile_from_outline(outline)
+    grip = find_grip(profile, spec.kind(name), gripper_max_opening=GRIPPER_MAX_OPENING)
+    return profile, grip
+
+
+def _centre_of_mass(profile) -> float:
+    """Height of the centre of mass, in metres, for an even wall and a solid base.
+
+    The same shell that estimate_mass() weighs: the wall swept up the outline,
+    plus a disc for the base. The thickness is the same everywhere, so it
+    cancels. It is the estimate "from the outline" the doc talks about, and it
+    is wrong by as much as a real glass's base is thicker than its wall.
+    """
+    radius = profile.width / 2.0
+    ring = 2.0 * np.pi * radius
+    wall = float(np.trapezoid(ring, profile.height))
+    moment = float(np.trapezoid(ring * profile.height, profile.height))
+    base = float(np.pi * radius[0] ** 2)
+    return moment / (wall + base)
+
+
+def _outline_polygon(profile) -> np.ndarray:
+    """The side-on outline as a closed polygon, in millimetres, x across and y up."""
+    half = profile.width * 500.0
+    up = profile.height * 1000.0
+    right = np.column_stack([half, up])
+    left = np.column_stack([-half[::-1], up[::-1]])
+    return np.vstack([right, left])
+
+
+def _turned(points: np.ndarray, angle_deg: float, about: tuple[float, float]) -> np.ndarray:
+    a = math.radians(angle_deg)
+    turn = np.array([[math.cos(a), -math.sin(a)], [math.sin(a), math.cos(a)]])
+    centre = np.asarray(about)
+    return (points - centre) @ turn.T + centre
+
+
+def _curved_arrow(ax, centre, radius, start_deg, end_deg, colour=INK) -> None:
+    angles = np.radians(np.linspace(start_deg, end_deg, 40))
+    xs = centre[0] + radius * np.cos(angles)
+    ys = centre[1] + radius * np.sin(angles)
+    ax.plot(xs[:-1], ys[:-1], color=colour, linewidth=1.3)
+    ax.annotate("", xy=(xs[-1], ys[-1]), xytext=(xs[-3], ys[-3]),
+                arrowprops={"arrowstyle": "->", "color": colour, "linewidth": 1.3})
+
+
+def the_hinge() -> None:
+    profile, grip = _gripped("straight_glass")
+    r = grip.opening * 500.0
+    g = grip.height * 1000.0
+    pad_t = 4.0
+    pad_h = PAD_HEIGHT * 1000.0
+    pad_l = PAD_LENGTH * 1000.0
+    tip = (FINGERTIP_OFFSET - GRASP_DEPTH) * 1000.0
+
+    fig, (top, strong, weak) = plt.subplots(1, 3, figsize=(13, 4.8))
+
+    # Seen from above: the glass is a circle, each flat pad meets it at a point.
+    top.add_patch(plt.Circle((0, 0), r, color=GLASS, alpha=0.15))
+    top.add_patch(plt.Circle((0, 0), r, fill=False, color=GLASS, linewidth=1.6))
+    for side in (-1, 1):
+        top.add_patch(plt.Rectangle((tip - pad_l, side * r if side > 0 else -r - pad_t),
+                                    pad_l, pad_t, color=INK))
+        top.add_patch(plt.Rectangle((-95, side * (r + pad_t) if side > 0 else -r - pad_t - 8),
+                                    95 + tip, 8, color=FAINT, alpha=0.6))
+        top.plot(0, side * r, "o", color=GRIP, markersize=7)
+    top.plot([0, 0], [-r - 25, r + 25], color=GRIP, linestyle="--", linewidth=1.2)
+    top.text(3, r + 18, "hinge: the line\nbetween the pads", fontsize=8, color=GRIP)
+    top.annotate("", xy=(r + 30, -r - 20), xytext=(-90, -r - 20),
+                 arrowprops={"arrowstyle": "->", "color": INK})
+    top.text(-90, -r - 32, "the fingers reach along this line;\nthe wrist turns about it",
+             fontsize=8, color=INK, va="top")
+    top.text(-90, r + 24, "fingers", fontsize=8, color=FAINT)
+    top.text(r + 4, 2, "each flat pad\ntouches the round\nglass at one spot",
+             fontsize=8, color=GRIP)
+    _style(top, "Seen from above")
+    top.set_xlim(-100, 90)
+    top.set_ylim(-r - 60, r + 45)
+    top.set_aspect("equal")
+    top.axis("off")
+
+    # Looking down the fingers: the wrist turn. The pads are in the way of
+    # the glass lagging behind.
+    glass = _outline_polygon(profile)
+    strong.fill(glass[:, 0], glass[:, 1], color=GLASS, alpha=0.15)
+    strong.plot(glass[:, 0], glass[:, 1], color=GLASS, linewidth=1.6)
+    for side in (-1, 1):
+        x = side * r if side > 0 else -r - pad_t
+        strong.add_patch(plt.Rectangle((x, g - pad_h / 2), pad_t, pad_h, color=INK))
+    _curved_arrow(strong, (0, g), r + 22, 200, 110)
+    for side in (-1, 1):
+        strong.annotate("", xy=(side * r * 0.55, g + side * pad_h * 0.4),
+                        xytext=(side * (r + 16), g + side * pad_h * 0.4),
+                        arrowprops={"arrowstyle": "->", "color": GRIP, "linewidth": 1.4})
+    strong.text(0, -22, "the pads push straight on the glass,\nso it turns with them",
+                fontsize=8, color=GRIP, ha="center", va="top")
+    _style(strong, "Turning across the fingers\n(the wrist turn): strong")
+    strong.set_xlim(-90, 90)
+    strong.set_ylim(-50, 130)
+    strong.set_aspect("equal")
+    strong.axis("off")
+
+    # Looking along the hinge: tipping over the fingertips. Nothing but
+    # friction on a short contact stops it.
+    weak.fill(glass[:, 0], glass[:, 1], color=GLASS, alpha=0.15)
+    weak.plot(glass[:, 0], glass[:, 1], color=GLASS, linewidth=1.6)
+    weak.add_patch(plt.Rectangle((-95, g - 4), 95 + tip, 8, color=FAINT, alpha=0.6))
+    weak.plot([0, 0], [g - pad_h / 2, g + pad_h / 2], color=GRIP, linewidth=4)
+    weak.plot(0, g, "o", color=GRIP, markersize=6)
+    _curved_arrow(weak, (0, g), r + 22, 70, -20)
+    weak.text(0, -22, "only friction on this short contact\nstops the glass swinging",
+              fontsize=8, color=GRIP, ha="center", va="top")
+    weak.text(-90, g + 8, "finger", fontsize=8, color=FAINT)
+    _style(weak, "Tipping over the fingertips\n(about the hinge): weak")
+    weak.set_xlim(-100, 90)
+    weak.set_ylim(-50, 130)
+    weak.set_aspect("equal")
+    weak.axis("off")
+
+    _save(fig, "the-hinge.png")
+
+
+def weight_and_the_hinge() -> None:
+    fig, axes = plt.subplots(1, 4, figsize=(12, 4.8))
+    cases = [("straight_glass", False), ("straight_glass", True),
+             ("stemmed_glass", False), ("stemmed_glass", True)]
+    for ax, (name, flipped) in zip(axes, cases, strict=True):
+        profile, grip = _gripped(name)
+        g = grip.height * 1000.0
+        com = _centre_of_mass(profile) * 1000.0
+        glass = _outline_polygon(profile)
+        if flipped:
+            glass = _turned(glass, 180.0, (0.0, g))
+            com_y = 2 * g - com
+        else:
+            com_y = com
+        ax.fill(glass[:, 0], glass[:, 1], color=GLASS, alpha=0.15)
+        ax.plot(glass[:, 0], glass[:, 1], color=GLASS, linewidth=1.6)
+        half = grip.opening * 500.0
+        pad_h = PAD_HEIGHT * 1000.0
+        for side in (-1, 1):
+            ax.add_patch(plt.Rectangle((side * half if side > 0 else -half - 4, g - pad_h / 2),
+                                       4, pad_h, color=GRIP))
+        ax.axhline(g, color=GRIP, linestyle="--", linewidth=0.8)
+        ax.plot(0, com_y, "o", color=INK, markersize=8)
+        ax.plot(0, com_y, "+", color="white", markersize=8, markeredgewidth=1.5)
+        # The weight pulls straight down, wherever the glass is turned.
+        ax.annotate("", xy=(0, com_y - 18), xytext=(0, com_y),
+                    arrowprops={"arrowstyle": "->", "color": INK})
+        ax.text(half + 8, com_y, "centre of mass", fontsize=8, color=INK, va="center")
+        ax.text(half + 8, g - 10, "grip", fontsize=8, color=GRIP, va="center")
+
+        above = com_y > g
+        gap = abs(com - g)
+        verdict = (
+            f"weight {gap:.0f} mm above the grip:\ntop-heavy, it can tip over"
+            if above
+            else f"weight {gap:.0f} mm below the grip:\nit hangs, and settles"
+        )
+        way = "upside down" if flipped else "upright"
+        _style(ax, f"{name.replace('_', ' ')}, {way}")
+        ax.set_xlabel(verdict, fontsize=8, color=INK)
+        ax.set_xlim(-60, 100)
+        ax.set_ylim(-130, 240)
+        ax.set_aspect("equal")
+        ax.set_xticks([])
+        ax.set_yticks([])
+        for side in ("left", "bottom"):
+            ax.spines[side].set_visible(False)
+
+    fig.suptitle(
+        "The grip is where the rules hold each glass. The centre of mass is estimated from "
+        "the outline, assuming an even wall.",
+        fontsize=9,
+        color=INK,
+    )
+    _save(fig, "weight-and-the-hinge.png")
+
+
+def pad_shapes() -> None:
+    profile, grip = _gripped("straight_glass")
+    r = grip.opening * 500.0
+    fig, (flat, vee, tall) = plt.subplots(1, 3, figsize=(12, 4.2))
+
+    def glass_from_above(ax):
+        ax.add_patch(plt.Circle((0, 0), r, color=GLASS, alpha=0.15))
+        ax.add_patch(plt.Circle((0, 0), r, fill=False, color=GLASS, linewidth=1.6))
+
+    glass_from_above(flat)
+    for side in (-1, 1):
+        flat.add_patch(plt.Rectangle((-20, side * r if side > 0 else -r - 5), 40, 5, color=INK))
+        flat.plot(0, side * r, "o", color=GRIP, markersize=8)
+    _style(flat, "Flat pad: one contact each side")
+
+    glass_from_above(vee)
+    # A shallow V: two faces at 30 degrees, touching the circle where their
+    # normals point at its centre.
+    face = math.radians(30)
+    for side in (-1, 1):
+        apex = np.array([0.0, side * r / math.cos(face)])
+        touches = [np.array([lr * r * math.sin(face), side * r * math.cos(face)]) for lr in (-1, 1)]
+        groove = np.array([apex + 1.8 * (touches[0] - apex), apex, apex + 1.8 * (touches[1] - apex)])
+        vee.plot(groove[:, 0], groove[:, 1], color=INK, linewidth=4, solid_joinstyle="miter")
+        for point in touches:
+            vee.plot(*point, "o", color=GRIP, markersize=8)
+    _style(vee, "V-shaped pad: two contacts each side")
+
+    for ax in (flat, vee):
+        ax.set_xlim(-60, 60)
+        ax.set_ylim(-r - 30, r + 30)
+        ax.set_aspect("equal")
+        ax.axis("off")
+
+    # Side on: a taller pad means a longer contact line to resist tipping.
+    for x, height, label in ((-35, PAD_HEIGHT * 1000.0, "short pad"), (35, 3 * PAD_HEIGHT * 1000.0, "tall pad")):
+        tall.add_patch(plt.Rectangle((x - 20, 0), 40, 100, color=GLASS, alpha=0.15))
+        tall.plot([x - 20, x - 20], [0, 100], color=GLASS, linewidth=1.6)
+        tall.plot([x - 20, x - 20], [50 - height / 2, 50 + height / 2], color=GRIP, linewidth=5)
+        tall.text(x - 20, -8, label, fontsize=8, color=INK, ha="center", va="top")
+    tall.text(0, 112, "the red line is where pad meets glass:\nlonger resists tipping better",
+              fontsize=8, color=GRIP, ha="center")
+    _style(tall, "Seen from the side")
+    tall.set_xlim(-75, 75)
+    tall.set_ylim(-20, 130)
+    tall.set_aspect("equal")
+    tall.axis("off")
+
+    _save(fig, "pad-shapes.png")
+
+
+def ways_to_turn() -> None:
+    profile, grip = _gripped("straight_glass")
+    g = grip.height * 1000.0
+    glass = _outline_polygon(profile)
+    fig, (spot, curve, regrip) = plt.subplots(1, 3, figsize=(13, 4.6))
+
+    def draw_at(ax, angle, offset, alpha, colour=GLASS):
+        shape = _turned(glass, angle, (0.0, g)) + np.asarray(offset) - np.array([0.0, g])
+        ax.fill(shape[:, 0], shape[:, 1], color=colour, alpha=alpha * 0.25)
+        ax.plot(shape[:, 0], shape[:, 1], color=colour, linewidth=1.2, alpha=alpha)
+        ax.plot(offset[0], offset[1], "o", color=GRIP, markersize=4, alpha=alpha)
+
+    # On the spot: the grip point stays put and the glass turns about it.
+    for step, angle in enumerate((0, 60, 120, 180)):
+        draw_at(spot, angle, (0.0, 150.0), 0.3 + 0.7 * step / 3)
+    _curved_arrow(spot, (0.0, 150.0), 130, 100, 250)
+    spot.text(40, 250, "start: upright", fontsize=8, color=FAINT)
+    spot.text(40, 40, "end: upside down", fontsize=8, color=INK)
+    spot.text(0, 0, "the grip point stays still;\nthe glass turns about it",
+              fontsize=8, color=INK, ha="center")
+    _style(spot, "Turn the last wrist joint\n(in use)")
+
+    # On a curve: the glass travels over an arc and turns as it goes.
+    centre, radius = np.array([0.0, 120.0]), 120.0
+    for step in range(5):
+        share = step / 4
+        at = centre + radius * np.array([-math.cos(math.pi * share), math.sin(math.pi * share)])
+        draw_at(curve, -180.0 * share, at, 0.3 + 0.7 * share)
+    arc = np.radians(np.linspace(180, 0, 60))
+    curve.plot(centre[0] + radius * np.cos(arc), centre[1] + radius * np.sin(arc),
+               color=FAINT, linestyle=":", linewidth=1.0)
+    curve.text(0, -20, "it tips as it travels, and lands\nupside down, further along",
+               fontsize=8, color=INK, ha="center")
+    _style(curve, "Roll it over on a curve")
+
+    # Put down and grip again: two quarter turns with a rest in between.
+    table = 0.0
+    for x, angle, label in ((-170, 0, "1. upright"), (0, 90, "2. on its side,\nin a cradle"),
+                            (170, 180, "3. gripped again,\nupside down")):
+        draw_at(regrip, angle, (x, 150.0), 1.0)
+        regrip.text(x, table - 12, label, fontsize=8, color=INK, ha="center", va="top")
+    for x in (-120, 60):
+        regrip.annotate("", xy=(x + 50, 150), xytext=(x, 150),
+                        arrowprops={"arrowstyle": "->", "color": INK})
+    regrip.text(0, 280, "never more than a quarter turn in one grip",
+                fontsize=8, color=INK, ha="center")
+    _style(regrip, "Put it down and grip again")
+
+    for ax in (spot, curve, regrip):
+        ax.set_aspect("equal")
+        ax.axis("off")
+    spot.set_xlim(-160, 160)
+    spot.set_ylim(-30, 300)
+    curve.set_xlim(-230, 230)
+    curve.set_ylim(-40, 320)
+    regrip.set_xlim(-260, 260)
+    regrip.set_ylim(-60, 300)
+    _save(fig, "ways-to-turn.png")
+
+
+def step_six_in_pictures() -> None:
+    """The whole of step 6, side on, looking down the fingers, in six frames."""
+    profile, grip = _gripped("straight_glass")
+    g = grip.height * 1000.0
+    half = grip.opening * 500.0
+    pad_h = PAD_HEIGHT * 1000.0
+    glass = _outline_polygon(profile)
+    tall = profile.total_height * 1000.0
+    base_top = RACK_BASE_HEIGHT * 1000.0
+    peg = PEG_HEIGHT * 1000.0
+    clearance = PLACE_CLEARANCE * 1000.0
+
+    def pads(opening):
+        return [np.array([[x, g - pad_h / 2], [x + 4, g - pad_h / 2], [x + 4, g + pad_h / 2], [x, g + pad_h / 2]])
+                for x in (-opening - 4, opening)]
+
+    def draw_held(ax, angle, lift, opening=half):
+        """The glass and the pads, turned by ``angle`` about the grip and moved up by ``lift``."""
+        shape = _turned(glass, angle, (0.0, g)) + np.array([0.0, lift])
+        ax.fill(shape[:, 0], shape[:, 1], color=GLASS, alpha=0.2)
+        ax.plot(shape[:, 0], shape[:, 1], color=GLASS, linewidth=1.5)
+        for pad in pads(opening):
+            turned = _turned(pad, angle, (0.0, g)) + np.array([0.0, lift])
+            ax.fill(turned[:, 0], turned[:, 1], color=GRIP)
+
+    def draw_rack(ax):
+        ax.add_patch(plt.Rectangle((-80, 0), 160, base_top, color=FAINT, alpha=0.6))
+        ax.add_patch(plt.Rectangle((-PEG_RADIUS * 1000, base_top), 2 * PEG_RADIUS * 1000, peg,
+                                   color=FAINT))
+        ax.text(-76, base_top / 2, "rack", fontsize=7, color=INK, va="center")
+
+    fig, axes = plt.subplots(1, 6, figsize=(15, 4.6))
+    # Upside down and turned about the grip, the rim sits (height - grip) below
+    # the grip. These lifts put the rim where each frame says it is.
+    rim_below_grip = tall - g
+    over_slot = base_top + peg + clearance + rim_below_grip - g
+    landed = base_top + rim_below_grip - g
+
+    frames = [
+        ("1. Carry it to the\nmiddle of the table", 0, 60.0, None),
+        (f"2. Lean it {SLIP_TEST_DEG:.0f}°:\nhave the fingers crept shut?", SLIP_TEST_DEG, 60.0, None),
+        (f"3. Turn the last wrist\njoint the other {180 - SLIP_TEST_DEG:.0f}°", 180, 60.0, None),
+        ("4. Carry it over the slot,\nrim above the peg", 180, over_slot, "rack"),
+        ("5. Come down 2 mm at a\ntime until it touches", 180, landed, "rack"),
+        ("6. Rack has the weight?\nThen open and lift away", 180, landed, "open"),
+    ]
+    for ax, (title, angle, lift, extra) in zip(axes, frames, strict=True):
+        if extra in ("rack", "open"):
+            draw_rack(ax)
+        draw_held(ax, angle, lift, opening=half + 12 if extra == "open" else half)
+        _style(ax, title)
+        ax.set_xlim(-85, 85)
+        ax.set_ylim(-15, 230)
+        ax.set_aspect("equal")
+        ax.axis("off")
+
+    # Frame 2: the pivot is the grip, and the lean is small enough to undo.
+    _curved_arrow(axes[1], (0.0, g + 60.0), 70, 90, 90 + SLIP_TEST_DEG + 15)
+    # Frame 3: the rest of the turn.
+    _curved_arrow(axes[2], (0.0, g + 60.0), 70, 110, 260)
+    # Frame 4: the gap between rim and peg top.
+    rim = base_top + peg + clearance
+    axes[3].annotate("", xy=(30, base_top + peg), xytext=(30, rim),
+                     arrowprops={"arrowstyle": "<->", "color": INK, "linewidth": 0.9})
+    axes[3].text(34, base_top + peg + clearance / 2, f"{clearance:.0f} mm", fontsize=7,
+                 color=INK, va="center")
+    # Frame 5: feeling the way down.
+    axes[4].annotate("", xy=(55, base_top + 10), xytext=(55, base_top + 70),
+                     arrowprops={"arrowstyle": "->", "color": INK})
+    axes[4].text(0, -10, "the peg goes up inside\nthe glass; the rim lands\non the rack top",
+                 fontsize=7, color=INK, ha="center", va="top")
+    # Frame 6: away.
+    axes[5].annotate("", xy=(55, 200), xytext=(55, 140),
+                     arrowprops={"arrowstyle": "->", "color": INK})
+    axes[1].text(0, -10, "the red pads are the fingers,\nseen looking down them",
+                 fontsize=7, color=GRIP, ha="center", va="top")
+    _save(fig, "step6-in-pictures.png")
+
+
 if __name__ == "__main__":
     four_kinds()
     a_family_of_wine_glasses()
@@ -831,3 +1215,8 @@ if __name__ == "__main__":
     the_rack_the_planner_saw()
     which_way_is_down()
     the_turn_swings_the_arm()
+    the_hinge()
+    weight_and_the_hinge()
+    pad_shapes()
+    ways_to_turn()
+    step_six_in_pictures()

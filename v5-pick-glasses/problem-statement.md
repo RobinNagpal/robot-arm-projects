@@ -216,7 +216,7 @@ that comes in level. So it cannot hold a glass lower than about 50 mm without
 going through the table. And a glass cannot be held above half its own height,
 or it cannot be turned over afterwards. Glasses shorter than about 120 mm
 therefore have nothing left in between, and the generator draws straight
-glasses as short as 55 mm. Either the generator should not draw them, or the
+glasses as short as 65 mm. Either the generator should not draw them, or the
 gripper needs a slimmer body, or short glasses need picking up a different
 way. Nothing has been decided.
 

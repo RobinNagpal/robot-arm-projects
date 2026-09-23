@@ -5,15 +5,17 @@ fails, why, and the numbers that show it.
 
 ## Most glass sizes cannot be held
 
-Checked on 23 September 2026. 200 random glasses of each kind, across the full
-size range in `glasses/shapes.py`, were given to the real classifier and grip
-rules. Each used its exact shape, with no camera error, so this is the best case.
+Checked on 23 September 2026, after the shortest straight glasses and the
+smallest wine glasses were dropped to fit the taller rack pegs. 200 random
+glasses of each kind, across the full size range in `glasses/shapes.py`, were
+given to the real classifier and grip rules. Each used its exact shape, with no
+camera error, so this is the best case.
 
 | Kind | Classified right | Grip found | Heights that got a grip |
 |---|---|---|---|
-| Straight | 200 / 200 | 74 / 200 | 125–170 mm only |
+| Straight | 200 / 200 | 85 / 200 | 125–170 mm only |
 | Tapered | 190 / 200 | 45 / 200 | 180–200 mm only |
-| Stemmed | 200 / 200 | 52 / 200 | 179–230 mm only |
+| Stemmed | 200 / 200 | 70 / 200 | 180–230 mm only |
 | Short-stemmed | 200 / 200 | 0 / 200 | none |
 
 Steps 1 to 3 mostly work: 5% of tapered glasses are called straight. The gap is
