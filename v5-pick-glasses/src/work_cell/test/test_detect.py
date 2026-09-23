@@ -5,8 +5,8 @@ from work_cell.glasses.detect import (
     classify,
     find_glasses,
     foot_of,
-    glass_mask,
     merge_sightings,
+    standing_on_the_table,
     the_one_in_the_middle,
     where_they_stand,
 )
@@ -21,30 +21,66 @@ def profile_of(outline):
 # ------------------------------------------------------------- the mask
 
 
-def test_a_hole_in_the_depth_picture_over_something_lit_is_glass():
-    rgb = np.full((20, 20, 3), 120, dtype=np.uint8)
-    depth = np.full((20, 20), 1.2)
-    depth[5:15, 5:15] = np.nan  # the camera saw straight through
-    mask = glass_mask(rgb, depth)
-    assert mask[10, 10]
-    assert not mask[1, 1]
+class _Lens:
+    """The intrinsics of a plain 320x240 camera, for the tests below."""
+
+    fx = fy = 277.19
+    cx, cy = 160.0, 120.0
 
 
-def test_a_hole_over_darkness_is_the_far_wall_rather_than_a_glass():
-    rgb = np.zeros((20, 20, 3), dtype=np.uint8)
+def _looking_straight_down(height: float) -> np.ndarray:
+    """A camera ``height`` above the world origin, pointing at the floor.
+
+    Camera axes are x right, y down, z forwards, so pointing z downwards means
+    the camera's y runs along world -y and its x along world x.
+    """
+    return np.array(
+        [
+            [1.0, 0.0, 0.0, 0.0],
+            [0.0, -1.0, 0.0, 0.0],
+            [0.0, 0.0, -1.0, height],
+            [0.0, 0.0, 0.0, 1.0],
+        ]
+    )
+
+
+def test_something_standing_on_the_table_is_found():
+    table_z, camera_z = 0.75, 1.20
+    depth = np.full((40, 40), camera_z - table_z)  # the bare table
+    depth[15:25, 15:25] = camera_z - table_z - 0.15  # a 150 mm glass on it
+
+    mask = standing_on_the_table(depth, _Lens(), _looking_straight_down(camera_z), table_z)
+    assert mask[20, 20], "the glass should be found"
+    assert not mask[2, 2], "the table itself should not"
+
+
+def test_the_table_itself_is_never_a_glass():
+    table_z, camera_z = 0.75, 1.20
+    depth = np.full((30, 30), camera_z - table_z)
+    assert not standing_on_the_table(depth, _Lens(), _looking_straight_down(camera_z), table_z).any()
+
+
+def test_a_pixel_with_no_distance_cannot_be_placed_and_is_dropped():
+    """Sky, and anything past the camera's range, comes back empty."""
+    table_z, camera_z = 0.75, 1.20
     depth = np.full((20, 20), np.nan)
-    assert not glass_mask(rgb, depth).any()
+    assert not standing_on_the_table(depth, _Lens(), _looking_straight_down(camera_z), table_z).any()
+
+    depth = np.zeros((20, 20))  # zero is how "no reading" is reported too
+    assert not standing_on_the_table(depth, _Lens(), _looking_straight_down(camera_z), table_z).any()
 
 
-def test_zero_depth_counts_as_missing_because_that_is_how_it_is_reported():
-    rgb = np.full((10, 10, 3), 200, dtype=np.uint8)
-    depth = np.zeros((10, 10))
-    assert glass_mask(rgb, depth).all()
+def test_something_lying_flat_on_the_table_is_not_standing_on_it():
+    """The rack's marker is printed flat on its base, and must not read as a glass."""
+    table_z, camera_z = 0.75, 1.20
+    depth = np.full((30, 30), camera_z - table_z)
+    depth[10:20, 10:20] = camera_z - table_z - 0.001  # a millimetre proud
+    assert not standing_on_the_table(depth, _Lens(), _looking_straight_down(camera_z), table_z).any()
 
 
-def test_mismatched_pictures_are_refused():
+def test_a_depth_picture_has_to_be_a_picture():
     with pytest.raises(ValueError):
-        glass_mask(np.zeros((10, 10, 3), np.uint8), np.zeros((8, 8)))
+        standing_on_the_table(np.zeros((4, 4, 3)), _Lens(), np.eye(4), 0.75)
 
 
 # --------------------------------------------------------- finding blobs

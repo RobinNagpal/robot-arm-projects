@@ -26,14 +26,6 @@
 {collisions}
         <visual name="visual">
           <geometry><mesh><uri>{mesh_uri}</uri></mesh></geometry>
-          <!-- Labelled so the wrist's segmentation camera can say which
-               pixels are glass. That is what stands in for the trained
-               segmentation model a real cell would run, and it is how
-               arm/camera/wrist_camera.py knows where a real depth sensor
-               would have returned nothing. -->
-          <plugin filename="gz-sim-label-system" name="gz::sim::systems::Label">
-            <label>{label}</label>
-          </plugin>
           <!-- Tinted a different colour per glass, and only lightly
                transparent, so a person watching can tell one glass from
                another and see what the arm is reaching for. This is a

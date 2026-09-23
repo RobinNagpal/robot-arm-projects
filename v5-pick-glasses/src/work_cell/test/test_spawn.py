@@ -5,7 +5,6 @@ import numpy as np
 import pytest
 from work_cell.glasses.shapes import KIND_RANGES, stemmed, straight
 from work_cell.glasses.spawn import (
-    GLASS_LABEL,
     GLASS_TINTS,
     MIN_SEPARATION,
     collision_cylinders,
@@ -128,12 +127,12 @@ def test_the_model_carries_the_mass_and_the_mesh():
     assert f"{glass.mass:.4f}" in sdf
 
 
-def test_the_model_is_labelled_because_that_is_the_whole_problem():
-    """What makes a glass invisible to the depth camera is the label, not the
-    material. The model is painted a solid colour so a person can see it, and
-    that has to stay true without the arm noticing."""
+def test_the_model_is_opaque_because_the_arm_has_to_see_it():
+    """Glasses here are ordinary opaque objects — see the assumptions in
+    problem-statement.md. The depth camera finds one by seeing it stand above
+    the table, which a see-through glass would defeat."""
     glass = random_glasses(1, seed=1)[0]
-    assert f"<label>{GLASS_LABEL}</label>" in glass_sdf(glass, mesh_uri="x.stl")
+    assert "<transparency>0.00</transparency>" in glass_sdf(glass, mesh_uri="x.stl")
 
 
 def test_every_glass_in_a_run_is_a_different_colour():

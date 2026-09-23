@@ -66,28 +66,6 @@
         </camera>
       </sensor>
 
-      <!-- Ground truth about which pixels are glass. It stands in for the
-           trained segmentation model a real cell would run, and the wrist
-           camera uses it to blank the depth a real sensor would not have
-           returned. See the note in arm/camera/wrist_camera.py. -->
-      <sensor name="wrist_segmentation" type="segmentation_camera">
-        <always_on>true</always_on>
-        <update_rate>15</update_rate>
-        <topic>wrist_camera/segmentation</topic>
-        <camera>
-          <segmentation_type>semantic</segmentation_type>
-          <horizontal_fov>1.047</horizontal_fov>
-          <image>
-            <width>320</width>
-            <height>240</height>
-          </image>
-          <clip>
-            <near>0.05</near>
-            <far>3.0</far>
-          </clip>
-          <optical_frame_id>${prefix}wrist_camera_optical_frame</optical_frame_id>
-        </camera>
-      </sensor>
     </gazebo>
 
   </xacro:macro>

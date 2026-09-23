@@ -61,8 +61,8 @@ from .glasses.detect import (
     classify,
     find_glasses,
     foot_of,
-    glass_mask,
     merge_sightings,
+    standing_on_the_table,
     the_one_in_the_middle,
     where_they_stand,
 )
@@ -398,7 +398,10 @@ class PickGlassesTask:
                 continue
 
             view = self._camera.capture()
-            mask = the_one_in_the_middle(glass_mask(view.rgb, view.depth))
+            standoff = self._measuring_distance()
+            mask = the_one_in_the_middle(
+                self._things_standing_up(view, within=(standoff - 0.12, standoff + 0.12))
+            )
             try:
                 self._report.picture(
                     with_mask(view.rgb, mask),
@@ -644,7 +647,14 @@ class PickGlassesTask:
         or beside them, which is exactly what was going wrong.
         """
         view = self._camera.capture()
-        mask = the_one_in_the_middle(glass_mask(view.rgb, view.depth))
+        # The fingers are around the glass by now and stand on the table
+        # themselves, so the picture is restricted to the depth the glass is
+        # believed to be at. The arm put the tool there, so it knows it.
+        eye = np.asarray(view.camera_to_world[:3, 3], dtype=float)
+        away = float(np.dot(grip_point - eye, np.asarray(view.camera_to_world[:3, 2], dtype=float)))
+        mask = the_one_in_the_middle(
+            self._things_standing_up(view, within=(away - 0.06, away + 0.06))
+        )
         self._report.picture(
             with_mask(view.rgb, mask),
             "in position, looking along the fingers at what they are about to close on",
@@ -671,9 +681,6 @@ class PickGlassesTask:
         # believed to be along the line of sight. The camera frame is x right,
         # y down, z forwards, so this needs no assumption about which way the
         # wrist happens to be rolled.
-        eye = np.asarray(view.camera_to_world[:3, 3], dtype=float)
-        forwards = np.asarray(view.camera_to_world[:3, 2], dtype=float)
-        away = float(np.dot(grip_point - eye, forwards))
         ray = view.camera_to_world[:3, :3] @ np.array(
             [
                 (middle[0] - view.intrinsics.cx) / view.intrinsics.fx,
@@ -1016,7 +1023,7 @@ class PickGlassesTask:
         """
         self._arm.move_to_pose(ROBOT_BASE + position, look_along(-UP))
         view = self._camera.capture()
-        mask = glass_mask(view.rgb, view.depth)
+        mask = self._things_standing_up(view)
         return (
             find_glasses(mask, view.to_world, TABLE_TOP_Z),
             np.asarray(view.camera_to_world[:3, 3], dtype=float),
@@ -1025,6 +1032,28 @@ class PickGlassesTask:
             # about the wrong thing look identical in a number and obvious
             # here.
             with_mask(view.rgb, mask),
+        )
+
+    @staticmethod
+    def _things_standing_up(view, *, within: tuple[float, float] | None = None) -> np.ndarray:
+        """Whatever in this picture is standing on the table rather than being it.
+
+        The glasses are opaque, so the depth camera sees them like anything
+        else, and a glass is a patch of the picture whose points are above the
+        table top. See ``standing_on_the_table()``.
+
+        Nothing taller than the tallest glass the cell handles counts, which
+        keeps the arm's own fingers out of its own pictures. ``within`` adds a
+        band of distance when the caller knows roughly how far away the thing
+        it came to look at should be.
+        """
+        return standing_on_the_table(
+            view.depth,
+            view.intrinsics,
+            view.camera_to_world,
+            TABLE_TOP_Z,
+            tallest=TALLEST_GLASS,
+            within=within,
         )
 
     def _measuring_distance(self) -> float:

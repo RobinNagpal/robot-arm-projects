@@ -31,6 +31,11 @@ import numpy as np
 
 from .profile import Profile
 
+# How far above the table something has to stand before it counts as an object
+# rather than as the table. Bigger than the noise on a depth reading and much
+# smaller than the shortest glass, so nothing real falls between the two.
+STANDING_CLEARANCE = 0.005
+
 # A glass is classed as tapered if its wall leans more than this over the lower
 # part of it. Below this it is straight enough for flat pads to press on
 # without sliding, which is the only difference that matters to the gripper.
@@ -73,30 +78,69 @@ class Detection:
         object.__setattr__(self, "position", np.asarray(self.position, dtype=float))
 
 
-def glass_mask(rgb: np.ndarray, depth: np.ndarray) -> np.ndarray:
-    """Which pixels are glass.
+def standing_on_the_table(
+    depth: np.ndarray,
+    intrinsics,
+    camera_to_world: np.ndarray,
+    table_z: float,
+    *,
+    clearance: float = STANDING_CLEARANCE,
+    tallest: float | None = None,
+    within: tuple[float, float] | None = None,
+) -> np.ndarray:
+    """Which pixels are looking at something standing on the table.
 
-    In a real cell this is a trained segmentation model, and this function is
-    where it would be called. In simulation it uses the property that makes
-    glass hard in the first place: a depth camera cannot see it. Most of the
-    light goes straight through and the rest is bent by the curved wall, so the
-    depth picture has a hole exactly where the glass is.
+    A depth picture is an ordinary image whose pixels hold a distance instead
+    of a colour: for each one, how far the camera is from whatever that pixel
+    is pointing at. Given the camera's own position and which way it is
+    facing, that is enough to turn any pixel into a point in the room, and
+    once a pixel is a point in the room the question "is this the table, or
+    something standing on it?" is just its height.
 
-    Reading the hole is therefore not a trick to get around the simulator. It
-    is the same signal a real depth camera gives, and a pipeline built on it
-    meets the same difficulty a real one does.
+    So a glass is a run of pixels whose points sit more than ``clearance``
+    above the table top. The table itself comes out at zero and is dropped,
+    and sky and anything else the camera got no distance for is dropped with
+    it, because a pixel with no distance cannot be placed at all.
+
+    Two optional bounds keep other standing things out. ``tallest`` drops
+    anything reaching higher than the tallest glass the cell handles, which is
+    mostly the arm's own fingers passing through the picture. ``within`` keeps
+    only what lies in a band of distance from the camera, which is how the
+    side-on view ignores the rack and the other glasses behind the one it came
+    to measure: the arm chose how far to stand off, so it knows the distance
+    the glass ought to be at.
+
+    This works because a glass is an ordinary opaque object here — see the
+    assumptions in ``problem-statement.md``. It would not work on real
+    glassware, and what to do instead is discussed at the end of
+    ``docs/step1-finding-the-glasses.md``.
     """
-    if rgb.shape[:2] != depth.shape[:2]:
-        raise ValueError("the colour and depth pictures must be the same size")
+    depth = np.asarray(depth, dtype=float)
+    if depth.ndim != 2:
+        raise ValueError("a depth picture is a 2D array of distances")
 
-    # Depth that is missing, zero, or absurdly far is depth that did not come
-    # back. Through a glass, that is what happens.
-    missing = ~np.isfinite(depth) | (depth <= 0.0)
+    rows, columns = np.indices(depth.shape)
+    # Where each pixel points, in the camera's own frame: x right, y down,
+    # z forwards, and the stored distance is how far along z it went.
+    forward = np.where(np.isfinite(depth), depth, 0.0)
+    points = np.stack(
+        [
+            (columns - intrinsics.cx) / intrinsics.fx * forward,
+            (rows - intrinsics.cy) / intrinsics.fy * forward,
+            forward,
+        ],
+        axis=-1,
+    )
 
-    # A hole in the depth picture is only a glass if there is something to see
-    # there. A hole over the empty background is just the far wall.
-    lit = rgb.max(axis=2) > 25 if rgb.ndim == 3 else rgb > 25
-    return missing & lit
+    turn = np.asarray(camera_to_world, dtype=float)
+    height = points @ turn[:3, :3].T[:, 2] + turn[2, 3]
+
+    standing = np.isfinite(depth) & (depth > 0.0) & (height > table_z + clearance)
+    if tallest is not None:
+        standing &= height < table_z + tallest
+    if within is not None:
+        standing &= (depth >= within[0]) & (depth <= within[1])
+    return standing
 
 
 # Two sightings of the same glass, from cameras this far apart or less, are

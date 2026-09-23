@@ -220,11 +220,6 @@ def collision_cylinders(outline: Outline, slices: int = COLLISION_SLICES) -> lis
     return stack
 
 
-# The label the segmentation camera reports glass under. Any value but 0,
-# which means "no label"; the camera side reads it from here so the model and
-# the reader cannot disagree.
-GLASS_LABEL = 10
-
 # A tint per glass, so that a person watching can tell them apart and see
 # which one the arm is working on. Nothing reads these: the arm finds a glass
 # by the hole it leaves in the depth picture, and that hole comes from the
@@ -298,7 +293,6 @@ def glass_sdf(glass: SpawnedGlass, mesh_uri: str) -> str:
             izz=mass * radius**2 / 2.0,
             collisions="\n".join(collisions),
             mesh_uri=mesh_uri,
-            label=GLASS_LABEL,
             red=tint[0],
             green=tint[1],
             blue=tint[2],

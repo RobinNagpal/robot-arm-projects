@@ -24,7 +24,6 @@ from sensor_msgs.msg import CameraInfo, Image
 from tf2_ros import Buffer, TransformListener
 
 from ...glasses.perception import Intrinsics
-from ...glasses.spawn import GLASS_LABEL
 from ...rack.layout import MARKER_DICTIONARY, MARKER_ID
 from ...table.layout import WORLD_FRAME
 from ...transforms import transform_to_matrix
@@ -89,7 +88,6 @@ class WristCamera:
         *,
         image_topic: str = "/wrist_camera/image",
         depth_topic: str = "/wrist_camera/depth_image",
-        labels_topic: str = "/wrist_camera/segmentation",
         info_topic: str = "/wrist_camera/camera_info",
         optical_frame: str = "wrist_camera_optical_frame",
     ) -> None:
@@ -99,9 +97,8 @@ class WristCamera:
         self._lock = threading.Lock()
         self._rgb: Image | None = None
         self._depth: Image | None = None
-        self._bare: Image | None = None
         self._info: CameraInfo | None = None
-        self._counts = {"rgb": 0, "depth": 0, "bare": 0, "info": 0}
+        self._counts = {"rgb": 0, "depth": 0, "info": 0}
 
         self._tf_buffer = Buffer()
         self._tf_listener = TransformListener(self._tf_buffer, node)
@@ -113,9 +110,6 @@ class WristCamera:
         sensor = qos_profile_sensor_data
         node.create_subscription(Image, image_topic, self._on_rgb, sensor, callback_group=group)
         node.create_subscription(Image, depth_topic, self._on_depth, sensor, callback_group=group)
-        node.create_subscription(
-            Image, labels_topic, self._on_labels, sensor, callback_group=group
-        )
         node.create_subscription(CameraInfo, info_topic, self._on_info, sensor, callback_group=group)
 
     def _on_rgb(self, msg: Image) -> None:
@@ -127,11 +121,6 @@ class WristCamera:
         with self._lock:
             self._depth = msg
             self._counts["depth"] += 1
-
-    def _on_labels(self, msg: Image) -> None:
-        with self._lock:
-            self._bare = msg
-            self._counts["bare"] += 1
 
     def _on_info(self, msg: CameraInfo) -> None:
         with self._lock:
@@ -147,12 +136,7 @@ class WristCamera:
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
             with self._lock:
-                ready = (
-                    self._rgb is not None
-                    and self._depth is not None
-                    and self._bare is not None
-                    and self._info is not None
-                )
+                ready = self._rgb is not None and self._depth is not None and self._info is not None
             if ready:
                 return
             time.sleep(0.05)
@@ -169,14 +153,13 @@ class WristCamera:
         with self._lock:
             self._rgb = None
             self._depth = None
-            self._bare = None
 
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
             with self._lock:
-                rgb, depth, bare, info = self._rgb, self._depth, self._bare, self._info
-            if rgb is not None and depth is not None and bare is not None and info is not None:
-                return self._build_view(rgb, depth, bare, info)
+                rgb, depth, info = self._rgb, self._depth, self._info
+            if rgb is not None and depth is not None and info is not None:
+                return self._build_view(rgb, depth, info)
             time.sleep(0.02)
 
         raise CaptureTimeout(f"no RGB-D frame within {timeout:.0f}s (messages so far: {self._counts})")
@@ -216,7 +199,7 @@ class WristCamera:
         along = (world[1] - world[0]) + (world[2] - world[3])
         return Marker(position=world.mean(axis=0), yaw=float(np.arctan2(along[1], along[0])))
 
-    def _build_view(self, rgb: Image, depth: Image, labels: Image, info: CameraInfo) -> View:
+    def _build_view(self, rgb: Image, depth: Image, info: CameraInfo) -> View:
         transform = self._tf_buffer.lookup_transform(
             WORLD_FRAME,
             self._optical_frame,
@@ -225,34 +208,10 @@ class WristCamera:
         )
         return View(
             rgb=self._bridge.imgmsg_to_cv2(rgb, desired_encoding="rgb8"),
-            depth=self._depth_without_glass(depth, labels),
+            depth=np.asarray(
+                self._bridge.imgmsg_to_cv2(depth, desired_encoding="32FC1"), dtype=float
+            ),
             intrinsics=Intrinsics.from_camera_info(info),
             camera_to_world=transform_to_matrix(transform.transform),
         )
 
-    def _depth_without_glass(self, depth: Image, labels: Image) -> np.ndarray:
-        """The depth picture a real camera would have returned.
-
-        A real depth camera gets nothing back through glass: the light goes
-        straight on or is bent away, and the pixel comes back empty. Gazebo's
-        depth camera has no such trouble — it measures a glass as though it
-        were painted wood — so the hole the rest of the pipeline reads has to
-        be put back here, in the sensor, rather than worked around later.
-
-        Which pixels are glass comes from the segmentation camera beside the
-        depth one. In a real cell that answer comes from a trained model; here
-        it comes from the simulator, which knows. Either way it goes no
-        further than this method: what leaves is an ordinary depth picture
-        with holes in it, and the perception downstream is told nothing it
-        could not have measured.
-        """
-        seen = np.asarray(self._bridge.imgmsg_to_cv2(depth, desired_encoding="32FC1"), dtype=float)
-        marks = np.asarray(self._bridge.imgmsg_to_cv2(labels, desired_encoding="passthrough"))
-        if marks.ndim == 3:
-            # Semantic labels come back with the class in every channel.
-            marks = marks[:, :, 0]
-        if marks.shape != seen.shape:
-            return seen
-
-        seen[marks == GLASS_LABEL] = np.nan
-        return seen
