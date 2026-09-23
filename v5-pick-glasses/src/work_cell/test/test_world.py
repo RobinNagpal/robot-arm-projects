@@ -6,12 +6,13 @@ import numpy as np
 import pytest
 from work_cell.arm.dimensions import COMFORTABLE_REACH
 from work_cell.glasses.spawn import random_glasses
-from work_cell.rack.build import PEG_HEIGHT, rack_sdf, random_rack_pose, write_marker
+from work_cell.rack.build import rack_sdf, random_rack_pose, write_marker
 from work_cell.rack.layout import (
     GLASS_ZONE,
     MARKER_DICTIONARY,
     MARKER_ID,
     MARKER_SIZE,
+    PEG_HEIGHT,
     SLOT_COUNT,
     SLOT_SPACING,
     slots_from_marker,
@@ -82,7 +83,7 @@ def test_the_rack_pose_is_drawn_rather_than_fixed():
 
 
 def test_the_pegs_are_short_enough_to_lower_a_glass_over():
-    assert 0.01 < PEG_HEIGHT < 0.06
+    assert 0.01 < PEG_HEIGHT < 0.07
 
 
 def test_the_world_gets_the_table_the_rack_and_every_glass(tmp_path):

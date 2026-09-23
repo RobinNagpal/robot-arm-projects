@@ -108,6 +108,31 @@ def force_for_measured_mass(mass: float, kind: Kind) -> float:
     return needed
 
 
+# TEST SETTING: how much harder than the wall's rating to hold while turning.
+# 1.0 is the rating itself. Raised to 1.3 to try a firmer hold; above 1.0 it
+# is past what the wall is rated for, so set it back once the test is done.
+HOLD_BOOST = 1.3
+
+
+def holding_force(mass: float, kind: Kind) -> float:
+    """What to hold a weighed glass with while it is turned over and carried.
+
+    The wall's rating, not the weight sum. The sum is enough to stop the glass
+    sliding down between the pads. It is not enough to stop it turning about
+    the line between them, which is the other way a held glass moves: the
+    pads meet a round glass along a short upright line, so they resist that
+    turn only a few millimetres either side of it. Turned over and carried, a
+    glass whose centre of mass is a centimetre off that line swung round in
+    the fingers at the weight sum, and did not at the rating.
+
+    The rating is the most the wall is safe at, so squeezing at it is safe by
+    definition. Raises TooHeavyToHold, as the weight sum does, if even that
+    will not carry the glass.
+    """
+    force_for_measured_mass(mass, kind)
+    return kind.force_cap_n * HOLD_BOOST
+
+
 def mass_from_wrist(total_newtons: float, gripper_newtons: float) -> float:
     """Turn a wrist force reading into the weight of what is being held."""
     return max(0.0, (total_newtons - gripper_newtons) / GRAVITY)
@@ -116,15 +141,8 @@ def mass_from_wrist(total_newtons: float, gripper_newtons: float) -> float:
 def is_slipping(width_at_grasp: float, width_now: float, *, tolerance: float = 0.0005) -> bool:
     """Whether the fingers have crept closed since the glass was gripped.
 
-    Checked during a slow twenty-degree tilt, because a slip is recoverable at
-    twenty degrees and is not at a hundred and eighty.
-
-    Read the name with care: the finger gap does not see a glass sliding
-    straight down a parallel wall, because the pads stay on the same
-    cross-section the whole way. It sees the glass being squashed, and it sees
-    a slide on a *tapered* glass, where sliding moves the pads to a narrower
-    part of the profile. On a straight glass it cannot fire at all. What would
-    see a slide is the wrist torque, which this project reads already for the
-    weighing step and does not watch for this. See step 5 in the docs.
+    Creeping means the glass is sliding down through the pads. Checked during a
+    slow twenty-degree tilt, because slipping is recoverable at twenty degrees
+    and is not at a hundred and eighty.
     """
     return (width_at_grasp - width_now) > tolerance

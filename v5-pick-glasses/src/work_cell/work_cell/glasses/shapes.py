@@ -150,7 +150,9 @@ def short_stemmed(height: float, bowl_diameter: float, stem_diameter: float) -> 
 # that only works in the middle of the range is not a rule.
 KIND_RANGES: dict[str, dict[str, tuple[float, float]]] = {
     "straight_glass": {
-        "height": (0.055, 0.170),  # a shot glass up to a tall highball
+        # A tall shot glass up to a tall highball. Nothing shorter, because it
+        # has to fit over a rack peg upside down; see PEG_HEIGHT.
+        "height": (0.065, 0.170),
         "rim_diameter": (0.045, 0.090),
         "taper": (0.02, 0.10),
     },
@@ -160,7 +162,10 @@ KIND_RANGES: dict[str, dict[str, tuple[float, float]]] = {
         "base_fraction": (0.38, 0.58),
     },
     "stemmed_glass": {
-        "height": (0.130, 0.230),  # a small wine glass up to a large one
+        # A mid-sized wine glass up to a large one. The smallest wine glasses
+        # are left out: their bowl narrows so soon that a rack peg reaches the
+        # narrow part; see PEG_HEIGHT.
+        "height": (0.165, 0.230),
         "bowl_diameter": (0.060, 0.100),
         "stem_diameter": (0.006, 0.014),
         # As a fraction of the bowl, and always under 1: see stemmed().

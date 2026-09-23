@@ -35,13 +35,18 @@ __all__ = [
     "MARKER_DICTIONARY",
     "MARKER_ID",
     "MARKER_SIZE",
+    "PEG_HEIGHT",
+    "PEG_RADIUS",
+    "RACK_AREA",
     "RACK_BASE_HEIGHT",
+    "RACK_TOP_Z",
     "ROBOT_BASE",
     "SLOT_COUNT",
     "SLOT_SPACING",
     "TABLE_TOP_Z",
     "Slot",
     "fill_order",
+    "landing_point",
     "needs_empty_neighbour",
     "slots_consumed",
     "slots_within_stretch",
@@ -55,6 +60,22 @@ __all__ = [
 SLOT_COUNT = 6
 SLOT_SPACING = 0.100
 RACK_BASE_HEIGHT = 0.020
+
+# The rack stands on the table, so its top is where a rim comes to rest.
+RACK_TOP_Z = TABLE_TOP_Z + RACK_BASE_HEIGHT
+
+# The pegs a glass is stood over, one in the middle of each slot. They only
+# have to keep a glass from sliding sideways, not hold it up. A glass has to
+# arrive with its rim above the tops of these, or it is carried sideways into
+# one.
+#
+# The height is a trade against the glasses. Upside down, a glass goes over its
+# peg, so the peg must end below the glass's solid base and inside the part of
+# a wine glass's bowl that is still wide. At this height that rules out the
+# shortest shot glasses and the smallest wine glasses, so shapes.py does not
+# draw them.
+PEG_HEIGHT = 0.055
+PEG_RADIUS = 0.008
 
 # The marker printed on the middle of the base. It belongs to the rack rather
 # than to the camera: the rack carries it, and the camera reads whatever the
@@ -94,6 +115,19 @@ MARKER_SIZE = 0.070
 # of a survey picture and makes it obvious, watching the run, which side the
 # arm is working on.
 GLASS_ZONE = (0.32, 0.64, -0.44, -0.08)
+
+# Where the middle of the rack may stand, as x from, x to, y from, y to. The arm
+# is not told where in here it is; it looks down on the middle of this area
+# and reads the marker.
+#
+# Straight down on the middle, because the pegs stand either side of the
+# marker. Seen from off to one side, a peg's top appears shifted away from the
+# camera, and a tall peg on the near side then covers the marker's border,
+# which is all the detector reads.
+#
+# The row is 580 mm long, so the middle may only wander about 30 mm before one
+# end or the other leaves COMFORTABLE_REACH.
+RACK_AREA = (0.32, 0.38, 0.34, 0.38)
 
 # How much tilt the arm can be relied on to hold during the descent. A slot
 # that would demand better than this from a particular glass is a slot that
@@ -243,6 +277,16 @@ def slots_consumed(slot: Slot, *, needs_gap: bool) -> set[int]:
     if not needs_gap:
         return {slot.index}
     return {slot.index - 1, slot.index, slot.index + 1} & set(range(SLOT_COUNT))
+
+
+def landing_point(slot: Slot) -> np.ndarray:
+    """Where the rim of a glass comes to rest in ``slot``: on the rack's top.
+
+    A slot's centre is placed from the marker and carries the marker's height,
+    which is not the height of the rack top. The rack stands on the known
+    table, so its top is known and is used instead.
+    """
+    return np.array([slot.centre[0], slot.centre[1], RACK_TOP_Z])
 
 
 def fill_order(slots: list[Slot], reach_from: np.ndarray = ROBOT_BASE) -> list[Slot]:

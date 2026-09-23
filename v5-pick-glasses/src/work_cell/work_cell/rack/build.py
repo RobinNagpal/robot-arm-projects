@@ -16,6 +16,9 @@ from .layout import (
     MARKER_DICTIONARY,
     MARKER_ID,
     MARKER_SIZE,
+    PEG_HEIGHT,
+    PEG_RADIUS,
+    RACK_AREA,
     RACK_BASE_HEIGHT,
     SLOT_COUNT,
     SLOT_SPACING,
@@ -23,12 +26,6 @@ from .layout import (
 )
 
 TEMPLATE = Path(__file__).parent / "rack.sdf"
-
-# The pegs a glass is stood over. Short, because they only have to keep a glass
-# from sliding sideways, not hold it up.
-PEG_HEIGHT = 0.035
-PEG_RADIUS = 0.005
-
 
 def peg_sdf(index: int) -> str:
     """One peg, positioned along the rack from its middle."""
@@ -133,8 +130,7 @@ def random_rack_pose(rng) -> tuple[float, float, float]:
     the glasses has bare table behind it rather than the rack. What the arm
     still has to find is where along the table it is standing.
 
-    The band it is drawn in keeps all six slots inside COMFORTABLE_REACH: the
-    row is 580 mm long, so the middle may only wander about 30 mm before one
-    end or the other leaves it.
+    It is drawn from RACK_AREA, which is also where the arm looks for it.
     """
-    return rng.uniform(0.32, 0.38), rng.uniform(0.34, 0.38), RACK_YAW
+    x_from, x_to, y_from, y_to = RACK_AREA
+    return rng.uniform(x_from, x_to), rng.uniform(y_from, y_to), RACK_YAW

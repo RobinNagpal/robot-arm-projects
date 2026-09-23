@@ -174,7 +174,7 @@ the glasses and this step would report it as a glass.
 **Nothing taller than the tallest glass the cell handles.** That is 260 mm, a
 limit of the cell written down once. It removes the gripper, the arm, and
 anything else reaching down through the frame. It does not remove the rack. The
-rack is only 55 mm tall, so it passes this test easily, which is why the rack
+rack is only 75 mm tall to the tops of its pegs, so it passes this test easily, which is why the rack
 is handled by where the camera looks and by the bound below.
 
 **Only what lies at roughly the distance the arm stood off at.** This bound is

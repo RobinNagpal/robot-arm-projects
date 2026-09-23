@@ -163,7 +163,7 @@ height, an Irish coffee glass's at about 13. Putting the threshold at 17 leaves
 room on both sides.
 
 **If there is no waist, does the wall lean?** `TAPER_THRESHOLD_DEG` is 6,
-measured over the lower half. Below six degrees the wall is upright enough for
+measured from 5% to 45% of the glass's height. Below six degrees the wall is upright enough for
 flat pads to press on without sliding, which is the only difference that
 matters to the gripper — so the threshold is a statement about the gripper, not
 about glassware.
@@ -301,8 +301,9 @@ carry error, and they add. Driving to a calculated height is therefore how a
 rim gets chipped.
 
 `descend_until_contact()` goes down in 2 mm steps until the pad contact sensors
-report something, up to `DESCENT_LIMIT` (60 mm). Coming down 60 mm without
-touching anything is itself an answer: the glass is not where it was thought to
+report something, up to `DESCENT_LIMIT` (60 mm) past the top of the peg. It
+starts with the rim above the peg, because the move over the slot is sideways.
+Coming down that far without touching anything is itself an answer: the glass is not where it was thought to
 be.
 
 Then `load_transferred()` checks the wrist sensor is back to reading the

@@ -41,9 +41,19 @@ TEMPLATE = Path(__file__).parent / "glass.sdf"
 # two widest that could ever stand side by side.
 MIN_SEPARATION = 0.15
 
-# How many cylinders the collision shape is built from. Enough that a stem is
-# its own cylinder rather than being averaged into the bowl above it.
+# How many slices the collision shape is cut into, top to bottom. Enough that a
+# stem is its own cylinder rather than being averaged into the bowl above it.
 COLLISION_SLICES = 8
+
+# How many pieces the wall is built from around the glass. Each is a flat box,
+# so the outside is a polygon rather than a circle; at 24 its corners stand
+# under 1% proud of the circle, well inside what the fingers allow for.
+COLLISION_STAVES = 24
+
+# The thinnest a wall piece is made, whatever the real wall. A physics engine
+# lets fast or heavily loaded contacts sink a little way in, and a wall thinner
+# than that sinkage is one a peg can pass straight through.
+MIN_STAVE_THICKNESS = 0.003
 
 
 @dataclass(frozen=True)
@@ -63,16 +73,47 @@ class SpawnedGlass:
 
     @property
     def mass(self) -> float:
-        """What this glass really weighs, which the arm has to find out.
+        """What this glass really weighs, which the arm has to find out."""
+        return self.mass_properties[0]
 
-        The solid it is modelled as: everything inside the outline, less the
-        hollow the drink goes in.
+    @property
+    def mass_properties(self) -> tuple[float, float, float, float]:
+        """Mass, height of the centre of mass, and inertia across and about the axis.
+
+        All worked out from the solid it is modelled as: everything inside the
+        outline, less the hollow the drink goes in. The inertia is about the
+        centre of mass, which is where the simulator applies it.
+
+        The centre of mass matters more than it looks. Left out, the simulator
+        puts all the weight at the model's origin, the bottom of the glass. A
+        glass held above its base and turned over then has all its weight
+        above the pads, balanced like a pencil on its point, and it tips back
+        over in the fingers. Where it really is — up in the walls — it hangs
+        below the pads and stays put.
         """
         outline = self.outline
-        solid = float(np.trapezoid(np.pi * outline.radius**2, outline.height))
-        height, radius = hollow(outline, self.wall)
-        empty = float(np.trapezoid(np.pi * radius**2, height))
-        return (solid - empty) * GLASS_DENSITY
+        solid = (outline.height, outline.radius)
+        empty = hollow(outline, self.wall)
+        # Per unit height: area, area times height, the disc's own spin about
+        # the axis, and its own tumble across it (r^2/2 and r^2/4 per unit area).
+        terms = []
+        for height, radius in (solid, empty):
+            area = np.pi * radius**2
+            terms.append(
+                np.array(
+                    [
+                        np.trapezoid(area, height),
+                        np.trapezoid(area * height, height),
+                        np.trapezoid(area * height**2, height),
+                        np.trapezoid(area * radius**2 / 2.0, height),
+                        np.trapezoid(area * radius**2 / 4.0, height),
+                    ]
+                )
+            )
+        mass, first, second, spin, tumble = (terms[0] - terms[1]) * GLASS_DENSITY
+        centre = first / mass
+        across = tumble + second - mass * centre**2
+        return float(mass), float(centre), float(across), float(spin)
 
 
 # How many times the whole arrangement is redrawn before giving up.
@@ -154,8 +195,9 @@ def hollow(outline: Outline, wall: float) -> tuple[np.ndarray, np.ndarray]:
     floor there is no inside at all, which is the solid base or stem.
     """
     above = outline.height > outline.floor
+    at_floor = np.interp(outline.floor, outline.height, outline.radius)
     height = np.concatenate(([outline.floor], outline.height[above]))
-    radius = np.concatenate(([np.interp(outline.floor, outline.height, outline.radius)], outline.radius[above]))
+    radius = np.concatenate(([at_floor], outline.radius[above]))
     return height, np.maximum(radius - wall, 0.0)
 
 
@@ -245,22 +287,98 @@ def write_mesh(outline: Outline, wall: float, path: Path, segments: int = 48) ->
     return path
 
 
-def collision_cylinders(outline: Outline, slices: int = COLLISION_SLICES) -> list[tuple[float, float, float]]:
-    """The collision shape, as a stack of cylinders.
+def _slice_edges(outline: Outline, slices: int) -> tuple[np.ndarray, np.ndarray]:
+    """Where to cut the solid part and the hollow part into slices.
 
-    Each entry is (bottom height, top height, radius). The radius of a slice is
-    the largest the glass reaches inside it, so the collision shape is never
-    thinner than the glass and the fingers cannot pass through the wall.
+    The floor is always a cut, so no slice is half solid and half hollow. The
+    slices are shared between the two parts by how tall each is.
     """
-    edges = np.linspace(0.0, outline.total_height, slices + 1)
-    stack: list[tuple[float, float, float]] = []
+    height = outline.total_height
+    solid = max(1, round(slices * outline.floor / height))
+    hollow_part = max(1, slices - solid)
+    return (
+        np.linspace(0.0, outline.floor, solid + 1),
+        np.linspace(outline.floor, height, hollow_part + 1),
+    )
+
+
+def _widest_in(outline: Outline, bottom: float, top: float) -> float:
+    """The largest radius the glass reaches between two heights."""
+    inside = (outline.height >= bottom) & (outline.height <= top)
+    ends = np.interp([bottom, top], outline.height, outline.radius)
+    return float(max(outline.radius[inside].max(initial=0.0), ends.max()))
+
+
+def collision_cylinders(outline: Outline, slices: int = COLLISION_SLICES) -> list[tuple[float, float, float]]:
+    """The solid part of the collision shape: base, foot and stem.
+
+    Each entry is (bottom height, top height, radius), from the table up to the
+    floor. The radius of a slice is the largest the glass reaches inside it, so
+    the shape is never thinner than the glass and the fingers cannot pass
+    through it.
+    """
+    solid, _ = _slice_edges(outline, slices)
     # Pairwise over the edges, so the second list is one shorter on purpose.
-    for bottom, top in zip(edges, edges[1:], strict=False):
-        inside = (outline.height >= bottom) & (outline.height <= top)
-        if not inside.any():
-            continue
-        stack.append((float(bottom), float(top), float(outline.radius[inside].max())))
-    return stack
+    return [
+        (float(bottom), float(top), _widest_in(outline, bottom, top))
+        for bottom, top in zip(solid, solid[1:], strict=False)
+    ]
+
+
+def collision_staves(
+    outline: Outline, wall: float, slices: int = COLLISION_SLICES, staves: int = COLLISION_STAVES
+) -> list[tuple[float, float, float, float, float]]:
+    """The hollow part of the collision shape: a ring of flat pieces per slice.
+
+    Each entry is (bottom height, top height, outer radius, thickness, angle).
+    The outer faces stand at the widest radius in the slice, like the
+    cylinders, and meet edge to edge, so the fingers cannot close through the
+    wall. Inside there is room, which is what lets a glass stood mouth down go
+    over a peg instead of balancing on top of it.
+    """
+    thickness = max(wall, MIN_STAVE_THICKNESS)
+    _, hollow_edges = _slice_edges(outline, slices)
+    ring: list[tuple[float, float, float, float, float]] = []
+    for bottom, top in zip(hollow_edges, hollow_edges[1:], strict=False):
+        radius = _widest_in(outline, bottom, top)
+        for index in range(staves):
+            ring.append((float(bottom), float(top), radius, thickness, 2.0 * np.pi * index / staves))
+    return ring
+
+
+_SURFACE = (
+    "          <surface>\n"
+    "            <friction><ode><mu>1.1</mu><mu2>1.1</mu2></ode></friction>\n"
+    "            <contact><ode><kp>5e5</kp><kd>50</kd></ode></contact>\n"
+    "          </surface>\n"
+)
+
+
+def _collisions(outline: Outline, wall: float) -> list[str]:
+    """Every collision element of one glass, as SDF."""
+    parts = []
+    for index, (bottom, top, radius) in enumerate(collision_cylinders(outline)):
+        parts.append(
+            f'        <collision name="solid_{index}">\n'
+            f"          <pose>0 0 {(bottom + top) / 2.0:.4f} 0 0 0</pose>\n"
+            f"          <geometry><cylinder>"
+            f"<radius>{radius:.4f}</radius><length>{top - bottom:.4f}</length>"
+            f"</cylinder></geometry>\n" + _SURFACE + "        </collision>"
+        )
+    staves = collision_staves(outline, wall)
+    for index, (bottom, top, radius, thickness, angle) in enumerate(staves):
+        # Wide enough that neighbours meet at the outside face.
+        width = 2.0 * radius * np.tan(np.pi / COLLISION_STAVES)
+        middle = radius - thickness / 2.0
+        parts.append(
+            f'        <collision name="wall_{index}">\n'
+            f"          <pose>{middle * np.cos(angle):.4f} {middle * np.sin(angle):.4f} "
+            f"{(bottom + top) / 2.0:.4f} 0 0 {angle:.4f}</pose>\n"
+            f"          <geometry><box>"
+            f"<size>{thickness:.4f} {width:.4f} {top - bottom:.4f}</size>"
+            f"</box></geometry>\n" + _SURFACE + "        </collision>"
+        )
+    return parts
 
 
 # A tint per glass, so that a person watching can tell them apart and see
@@ -295,26 +413,10 @@ def _index_of(name: str) -> int:
 
 def glass_sdf(glass: SpawnedGlass, mesh_uri: str) -> str:
     """One glass as the simulator's own model format."""
-    mass = glass.mass
+    mass, centre, across, about_axis = glass.mass_properties
     outline = glass.outline
-    radius = float(outline.radius.max())
-    height = outline.total_height
 
-    collisions = []
-    for index, (bottom, top, slice_radius) in enumerate(collision_cylinders(outline)):
-        middle = (bottom + top) / 2.0
-        collisions.append(
-            f'        <collision name="collision_{index}">\n'
-            f"          <pose>0 0 {middle:.4f} 0 0 0</pose>\n"
-            f"          <geometry><cylinder>"
-            f"<radius>{slice_radius:.4f}</radius><length>{top - bottom:.4f}</length>"
-            f"</cylinder></geometry>\n"
-            f"          <surface>\n"
-            f"            <friction><ode><mu>1.1</mu><mu2>1.1</mu2></ode></friction>\n"
-            f"            <contact><ode><kp>5e5</kp><kd>50</kd></ode></contact>\n"
-            f"          </surface>\n"
-            f"        </collision>"
-        )
+    collisions = _collisions(outline, glass.wall)
 
     x, y, z = glass.position
     # By position in the run rather than at random, so two glasses in one run
@@ -330,11 +432,10 @@ def glass_sdf(glass: SpawnedGlass, mesh_uri: str) -> str:
             z=z,
             yaw=glass.yaw,
             mass=mass,
-            # A thin-walled tube about its own centre is close enough for a
-            # glass, and much closer than a solid cylinder would be.
-            ixx=mass * (3.0 * radius**2 + height**2) / 12.0,
-            iyy=mass * (3.0 * radius**2 + height**2) / 12.0,
-            izz=mass * radius**2 / 2.0,
+            centre=centre,
+            ixx=across,
+            iyy=across,
+            izz=about_axis,
             collisions="\n".join(collisions),
             mesh_uri=mesh_uri,
             red=tint[0],

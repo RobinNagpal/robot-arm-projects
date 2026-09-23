@@ -23,6 +23,7 @@ take the glass on a detour to get there.
 
 from __future__ import annotations
 
+import contextlib
 import math
 import threading
 import time
@@ -150,6 +151,7 @@ class Arm:
         )
         self._wrist_recent: list[np.ndarray] = []
         self._wrist_frame = "gripper_body"
+        self._hanging_sign = 1.0
         node.create_subscription(
             WrenchStamped, "/wrist_force", self._on_wrist_force, 10, callback_group=sensors
         )
@@ -228,8 +230,11 @@ class Arm:
         step: float = 0.005,
         min_fraction: float = 0.9,
         avoid_collisions: bool = True,
+        speed: float = 0.2,
     ) -> float:
         """Move the tip link along straight lines through ``waypoints``.
+
+        ``speed`` scales both the arm's velocity and acceleration limits.
 
         Returns the fraction of the path that was executed. With collision
         checking on, a path that would drive the fingers into the table comes
@@ -245,8 +250,8 @@ class Arm:
         request.waypoints = waypoints
         request.max_step = step
         request.avoid_collisions = avoid_collisions
-        request.max_velocity_scaling_factor = 0.2
-        request.max_acceleration_scaling_factor = 0.2
+        request.max_velocity_scaling_factor = speed
+        request.max_acceleration_scaling_factor = speed
 
         response = self._cartesian.call(request)
         if response.fraction < min_fraction:
@@ -388,6 +393,15 @@ class Arm:
         part of it taken. What comes back is the gripper plus whatever it is
         holding, which is what the callers subtract from.
         """
+        return abs(self._vertical_force())
+
+    def _vertical_force(self) -> float:
+        """The upright part of the wrist reading, in the room's frame, with its sign.
+
+        The sign is what says which way the force points. Hanging, it is the
+        weight. Set down and pressed on, it can go the other way, and without
+        the sign that reads as a heavier glass rather than no glass at all.
+        """
         if not self._wrist_recent:
             raise MotionFailed("the wrist force sensor has not reported yet")
         readings = list(self._wrist_recent)
@@ -404,9 +418,7 @@ class Arm:
                             scene.current_state.get_global_link_transform(frame)
                         )
                     turned = matrix[:3, :3]
-                    return float(
-                        np.median([abs(float((turned @ one)[2])) for one in readings])
-                    )
+                    return float(np.median([float((turned @ one)[2]) for one in readings]))
                 except Exception:  # noqa: BLE001, S112 - tried again, then given up on
                     continue
 
@@ -436,14 +448,21 @@ class Arm:
         self._wrist_frame = msg.header.frame_id or self._wrist_frame
 
     def _weight_now(self) -> float | None:
-        """What the wrist is carrying, or None if it cannot say.
+        """What the wrist is carrying, signed so that hanging weight is positive.
 
-        Separate from ``wrist_load`` because the descent asks repeatedly and
-        must not fall over mid-descent with a glass in hand if one reading
-        cannot be turned into the room's frame.
+        None if it cannot say. Separate from ``wrist_load`` because the descent
+        asks repeatedly and must not fall over mid-descent with a glass in hand
+        if one reading cannot be turned into the room's frame.
+
+        Signed because of what happens at touchdown. Each step down is a
+        position the arm is sent to, and one step past the rim meeting the rack
+        presses the glass down harder than it weighs, so the force turns round.
+        Taken as a size only, that reads as more weight than before and the
+        touch is never noticed: the arm carries on down and pushes the glass up
+        through the fingers.
         """
         try:
-            return self.wrist_load
+            return self._vertical_force() * self._hanging_sign
         except MotionFailed:
             return None
 
@@ -455,7 +474,8 @@ class Arm:
         reading the gripper alone; if it has not, the glass is still hanging
         and letting go would drop it.
         """
-        return self.wrist_load <= gripper_newtons + margin
+        now = self._weight_now()
+        return now is not None and now <= gripper_newtons + margin
 
     def _use_controller(self, wanted: str) -> None:
         """Make ``wanted`` the controller holding the finger joints."""
@@ -536,9 +556,15 @@ class Arm:
         """Lean the held glass over by a small angle, to see whether it slips."""
         return self.turn_wrist(angle)
 
-    def turn_over(self) -> float:
-        """Turn the held glass all the way upside down."""
-        return self.turn_wrist(math.pi)
+    def turn_over(self, already: float = 0.0) -> float:
+        """Turn the held glass the rest of the way upside down.
+
+        ``already`` is how far it has been leaned in the same direction. A turn
+        of a full half circle on top of that overshoots by the same amount, and
+        the glass arrives at the rack leaning by the whole slip test, which is
+        several times what a slot allows.
+        """
+        return self.turn_wrist(math.pi - already)
 
     def can_rotate_tool(self, angle: float) -> bool:
         """Whether the last wrist joint has room to turn this far from here.
@@ -585,6 +611,11 @@ class Arm:
         Returns how far it went down.
         """
         position, rotation = self.current_pose()
+        # Which way the weight points while hanging, so that pressing down
+        # afterwards reads as less than carried and not more. Best effort: a
+        # sign that cannot be read leaves the last one in place.
+        with contextlib.suppress(MotionFailed):
+            self._hanging_sign = math.copysign(1.0, self._vertical_force())
         carried = self._weight_now()
         gone = 0.0
         while gone < limit:
