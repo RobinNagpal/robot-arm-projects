@@ -152,8 +152,9 @@ def survey_stations(
 ) -> list[np.ndarray]:
     """Where to stand the camera so that every part of ``zone`` is in a picture.
 
-    One picture from survey height does not cover the whole table. The zone is
-    therefore tiled: as few stations as will cover it, spread evenly, each
+    A station is one place to park the camera and take a picture from. One
+    picture from survey height does not cover the whole table, so the zone is
+    covered by several of them: as few as will do, spread evenly, each picture
     overlapping its neighbour so that nothing lands only on an edge.
 
     ``zone`` is (x from, x to, y from, y to) and ``footprint`` is how much
@@ -168,7 +169,7 @@ def survey_stations(
     ):
         step = reach * (1.0 - overlap)
         if reach <= 0.0 or step <= 0.0:
-            raise ValueError("a picture that covers nothing cannot be tiled into a survey")
+            raise ValueError("a picture that covers nothing cannot be spread into a survey")
 
         # One station is enough when the whole span already fits in one picture.
         count = 1 if span <= reach else int(math.ceil((span - reach) / step)) + 1

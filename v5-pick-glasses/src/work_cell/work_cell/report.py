@@ -6,12 +6,20 @@ could see at the time. This writes the other half: what it was looking at,
 what it made of it, and what it did next, as a markdown file with the
 pictures beside the sentences.
 
-Two rules make it worth having.
+Three rules make it worth having.
 
 **It is written as it happens.** Every call appends and flushes, so a run that
 dies half way through still leaves everything up to the moment it died. A
 report assembled at the end is a report you do not get on the runs you most
 want it for.
+
+**It follows the walkthrough.** The headings are the six steps of `docs/`, in
+order, and under each one the lines written by ``doing()`` are the lines of
+that step's pseudocode block, word for word. A reader can hold the two side by
+side: the document says what is meant to happen, and the report says what
+happened, with the real numbers and the real pictures against the same lines.
+That is only true as long as somebody keeps them the same, which is what
+`test_report.py` checks.
 
 **The pictures carry their own caption.** An image file found on its own, or
 opened from the folder rather than through the markdown, still says what the
@@ -34,6 +42,9 @@ import numpy as np
 CAPTION_HEIGHT = 22
 CAPTION_FONT = cv2.FONT_HERSHEY_SIMPLEX
 CAPTION_SCALE = 0.4
+
+# Where the walkthrough is, from inside a run folder: runs/<when>/report.md.
+WALKTHROUGH = "../../docs"
 
 
 def annotate(image: np.ndarray, doing: str) -> np.ndarray:
@@ -87,13 +98,53 @@ class Report:
         self.path = self.folder / "report.md"
         self._taken = 0
 
-        self._write(f"# {title}\n\n_{datetime.now():%Y-%m-%d %H:%M:%S}_\n\n")
+        # The launch file opens one of these to write down what it put on the
+        # table, and the task opens another when it starts. They are the same
+        # run and the same file, so only the first one lays the header down.
+        if not self.path.exists():
+            self._write(
+                f"# {title}\n\n_{datetime.now():%Y-%m-%d %H:%M:%S}_\n\n"
+                "Read this beside [the walkthrough](../../docs/README.md). The headings "
+                "below are its six steps, in order, and the lines in **`bold code`** are "
+                "the lines of that step's pseudocode block, word for word, each followed "
+                "by what it produced on this run.\n\n"
+            )
 
     # ---------------------------------------------------------------- words
 
-    def step(self, title: str) -> None:
-        """A heading, for one part of the run."""
-        self._write(f"\n## {title}\n\n")
+    def step(
+        self,
+        title: str,
+        *,
+        doc: str | None = None,
+        code: str | None = None,
+        level: int = 2,
+    ) -> None:
+        """A heading, for one step of the run.
+
+        ``doc`` is the walkthrough page this step is explained on, and ``code``
+        is where it lives in the source. Both are written under the heading as
+        links, because the first question anybody has about a line in a report
+        is where the thing that wrote it is.
+        """
+        self._write(f"\n{'#' * level} {title}\n\n")
+        trail = []
+        if doc:
+            trail.append(f"Walkthrough: [`docs/{doc}`]({WALKTHROUGH}/{doc})")
+        if code:
+            trail.append(f"Code: `{code}`")
+        if trail:
+            self._write("_" + " · ".join(trail) + "_\n\n")
+
+    def doing(self, line: str, result: str | None = None) -> None:
+        """One line of this step's pseudocode, and what it produced.
+
+        ``line`` is copied from the pseudocode block in the step's walkthrough
+        page rather than reworded, so that the two can be read against each
+        other. ``result`` is the part the document cannot have: the actual
+        number, this run, on this glass.
+        """
+        self._write(f"**`{line}`**" + (f" — {result}" if result else "") + "\n\n")
 
     def say(self, text: str) -> None:
         """A sentence about what is happening, or about to."""

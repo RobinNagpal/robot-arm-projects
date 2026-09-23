@@ -92,6 +92,20 @@ Every one of them has the same five parts, in the same order:
   Rotating about the grip rather than the wrist, the wrist limit that has to be
   checked before the fingers close, the tilt budget, and feeling for the rack.
 
+## Reading a run against these pages
+
+Every run writes its own account of itself into `runs/<when>/report.md`, and it
+is laid out to be read beside these six documents. Its headings are the six
+steps, in order. Under each one, the lines in **`bold code`** are the lines of
+that step's pseudocode block, word for word, each followed by what that line
+produced on that run — the real distance, the real width, the real picture.
+
+So a number in a report can always be traced to a line of pseudocode, and a
+line of pseudocode can be watched happening. `test_report.py` is what keeps the
+two the same: it reads every line the report writes and fails if one of them is
+not in some step's pseudocode block. Reword one side and the test asks you to
+reword the other.
+
 ## The pictures
 
 Every picture in `../images/` is drawn by [`make_images.py`](make_images.py),

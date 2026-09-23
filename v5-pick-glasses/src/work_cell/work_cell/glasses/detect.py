@@ -332,7 +332,8 @@ def where_they_stand(
             residual = float(np.linalg.norm(baseline - shrink * moved))
             if notes is not None:
                 notes.append(
-                    f"{one.name} against {other.name}: it appears to move "
+                    f"{one.name} in the first picture against {other.name} in the "
+                    "second: it appears to move "
                     f"{float(np.linalg.norm(moved)) * 1000:.0f} mm while the camera moved "
                     f"{float(np.linalg.norm(baseline)) * 1000:.0f} mm, so shrink={shrink:.3f} "
                     f"(allowed {least_shrink:.3f} to 1.000) and residual="
@@ -450,8 +451,12 @@ def find_glasses(mask: np.ndarray, to_world, table_z: float, min_pixels: int = 1
         edges = [np.asarray(to_world(edge, float(row), table_z), dtype=float) for edge in (left, right)]
 
         found.append(
+            # Named for the patch it came from, not for a glass. Nothing here
+            # knows yet whether two patches in two pictures are one glass or
+            # two, and calling them glasses in the run report before that is
+            # settled is how a reader ends up counting the same glass twice.
             Detection(
-                name=f"glass_{index - 1}",
+                name=f"patch_{index - 1}",
                 position=position,
                 rough_width=float(np.linalg.norm(edges[1] - edges[0])),
             )

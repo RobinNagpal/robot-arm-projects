@@ -34,24 +34,19 @@ Each line says who does the work: **ours** means code in this repo, and a named
 library means the work is not ours.
 
 ```text
-waist = the narrowest point with wider          ours: glasses/profile.py
-  glass above and below it                        waist_at()
+waist = the narrowest point below the widest      ours: glasses/profile.py
+                                                  waist_at()
 
-if there is a waist:
-    fraction = waist height / total height      ours: detect.py classify()
-    if fraction < 0.17: short-stemmed glass
-    else:               stemmed glass
-
-otherwise:
-    slope = how fast the width changes with     ours: profile.py slope()
-      height, row by row
-    lean = median slope over the lower half     NumPy: np.median
-    if lean > 6 degrees: tapered glass          ours: detect.py classify()
-    else:                straight glass
-
-if the profile has too few rows to judge:
-    return nothing, and the glass is left       ours: task.py, UnknownShape
-      standing with a line in the report
+name the kind from the waist, or from the lean    ours: detect.py classify()
+    a waist below 0.17 of the height              short-stemmed glass
+    a waist above it                              stemmed glass
+    no waist, and the wall leans over 6 deg       tapered glass
+                                                  the lean is the median of
+                                                  profile.py slope() over the
+                                                  lower half, via NumPy
+    no waist, and the wall is upright             straight glass
+    too few rows of profile to judge              nothing, and the glass is left
+                                                  standing with a line in the report
 ```
 
 ### What each library gives this step

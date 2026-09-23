@@ -36,38 +36,36 @@ Each line says who does the work: **ours** means code in this repo, and a named
 library means the work is not ours.
 
 ```text
-guess = estimate the mass from the shape        ours: glasses/force.py
-    surface swept by the outline x a wall         estimate_mass()
-      thickness that comes from the kind        ours: glasses/spec.py
-    plus a solid disc for the base                Kind.wall
+guess = estimate the mass from the shape          ours: glasses/force.py
+                                                  estimate_mass(): the surface swept
+                                                  by the outline times a wall
+                                                  thickness that comes from the kind,
+                                                  plus a solid disc for the base
+force = mass * g / (friction * pads), doubled     ours: force.py required_force()
 
-force = mass * g / (friction * pads), doubled   ours: force.py
-                                                  required_force()
+stage one: close the fingers at 1 N               ros2_control: the effort
+                                                  controller, in place of position
+read the gap they stopped at                      ros2_control: joint states
+compare with the width the camera said            ours: task.py _pick_up(). More
+                                                  than 4 mm out refuses the grasp.
 
-stage one — take up the slack:
-    close the fingers at 1 N                    ros2_control: effort controller
-    read the gap they stopped at                ros2_control: joint states
-    compare with the width the camera said      ours: task.py _pick_up()
-        more than 4 mm out -> refuse the grasp
+stage two: squeeze to the estimated force         ros2_control: effort controller
+lift 10 mm in a straight line                     MoveIt 2: a Cartesian path
+read the wrist force-torque sensor                Gazebo: the forcetorque system
+                                                  ros2_control: the broadcaster
+                                                  ours: arm/motion.py wrist_load,
+                                                  into the world frame, upright part,
+                                                  median of 32 samples
+mass = that, less the gripper's own weight        ours: force.py mass_from_wrist()
 
-stage two — lift and weigh:
-    squeeze to the estimated force              ros2_control: effort controller
-    lift 10 mm in a straight line               MoveIt 2: Cartesian path
-    read the wrist force-torque sensor          Gazebo: forcetorque system
-                                                ros2_control: broadcaster
-    turn it into the room's frame and take      ours: arm/motion.py wrist_load
-      the upright part, median of 32 samples
-    mass = that, less the gripper's own weight  ours: force.py mass_from_wrist()
+stage three: refuse if it needs too much          ours: force.py
+                                                  force_for_measured_mass(), against
+                                                  this kind's force cap
+re-squeeze if the guess was low                   ours: task.py _pick_up(): set it
+                                                  down first, because raising the
+                                                  squeeze in the air is a shock
 
-stage three — correct:
-    if the glass needs more than the kind's     ours: force.py
-      cap -> refuse and put it back               force_for_measured_mass()
-    if it needs more than the estimate:
-        set it down, re-squeeze, lift again     ours: task.py _pick_up()
-
-then, during a slow 20 degree lean:
-    if the finger gap has shrunk, it is         ours: force.py is_slipping()
-      slipping -> stop
+(the slip check is the lean at the start of step 6)
 ```
 
 ### What each library gives this step

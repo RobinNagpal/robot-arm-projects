@@ -37,37 +37,45 @@ Each line says who does the work: **ours** means code in this repo, and a named
 library means the work is not ours.
 
 ```text
-look up what this kind of glass asks for        ours: glasses/spec.py
+look up what this kind of glass asks for          ours: glasses/spec.py
     which rule to apply                           Kind.grip_rule
     which band of height to search in             Kind.band_for()
     how far apart the fingers may end up          min/max_opening_m
     how much wall a pad needs                     min_band_height_m
 
-raise the bottom of that band to LOWEST_GRIP    ours: glasses/rules.py
-    so the gripper body clears the table.         _apply_rule()
-    Done before the search, not after it.
+raise the bottom of that band to LOWEST_GRIP      ours: glasses/rules.py
+                                                  _apply_rule(). Before the search,
+                                                  not after it.
 
-run the rule on the measured profile            ours: rules.py
+run the rule on the measured profile              ours: rules.py
     straight glass: lowest upright band           _lowest_vertical_section()
-    stemmed glass:  narrowest below widest        _narrowest_below_widest()
-    tapered glass:  least sloping band            _flattest_in_band()
-  each of those is a question about the curve   ours: glasses/profile.py
+    stemmed glass: narrowest below widest         _narrowest_below_widest()
+    tapered glass: least sloping band             _flattest_in_band()
+                                                  each asks profile.py:
                                                   vertical_bands(), waist_at(),
                                                   flattest_band()
 
-height  = the middle of the band the rule chose ours: rules.py find_grip()
-opening = the measured width at that height     ours: profile.py width_at()
+height = the middle of the band it chose          ours: rules.py find_grip()
+opening = the measured width at that height       ours: profile.py width_at()
+check the answer five ways                        ours: rules.py _check(). Any
+                                                  failure raises NoGrip with its
+                                                  reason, and the glass is left
+                                                  standing.
 
-check the answer five ways                      ours: rules.py _check()
-    any failure raises NoGrip with its reason,
-    and the glass is left standing
+choose which way round to hold it                 ours: task.py
+                                                  _approach_directions() and
+                                                  arm/motion.py grasp_options()
+    can the arm reach the hover pose?             MoveIt 2: inverse kinematics
+    can the wrist still turn 180 degrees?         ours: motion.py
+                                                  can_rotate_tool()
+take the first the arm can reach and turn         asked now, because finding out
+                                                  with the glass held leaves nothing
+                                                  to do but put it back. Step 6
+                                                  explains why the wrist limits it.
 
-when the arm has reached the grasp pose:        ours: task.py
-    take one more picture down the fingers        _centre_on_what_is_there()
-    find the glass in it                        ours: detect.py
-                                                  standing_on_the_table()
-    shift sideways onto its middle, by no       ours: arm/dimensions.py
-      more than GRASP_NUDGE_LIMIT                 GRASP_NUDGE_LIMIT
+look down the fingers and shift sideways          ours: task.py
+                                                  _centre_on_what_is_there(), by no
+                                                  more than GRASP_NUDGE_LIMIT
 ```
 
 ### What each library gives this step

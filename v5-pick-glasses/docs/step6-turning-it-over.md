@@ -42,45 +42,45 @@ Each line says who does the work: **ours** means code in this repo, and a named
 library means the work is not ours.
 
 ```text
-before the fingers ever close:
-    could the wrist turn 180 degrees from       ours: arm/motion.py
-      this approach?                              can_rotate_tool()
-    if not, approach from the other side        MoveIt 2: inverse kinematics
-                                                  and joint limits
+before any glass:                                 ours: task.py _find_rack()
+    read the rack's ArUco marker                  OpenCV: cv2.aruco, on the wrist
+                                                  camera's colour picture
+    place the six slots from it                   ours: rack/layout.py
+                                                  slots_from_marker()
 
-with the glass held:
-    carry the glass to the middle of the        ours: arm/dimensions.py
-      table                                       TURNING_ROOM
-        the glass is parked there, not the      MoveIt 2: plan the carry
-          tool, because the tool swings
-
-    turn 180 degrees about the grip point       ours: motion.py rotate_tool()
-        the grip point is recomputed live         and task.py _grip_point()
-          from where the tool is now
-        if the turn will not plan, try the      ours: motion.py rotate_tool()
-          same turn the other way round
-
-choose a slot                                   ours: rack/layout.py
+choose a slot                                     ours: rack/layout.py. Done before
+                                                  the pick-up, so a glass with
+                                                  nowhere to go is never lifted.
     only slots this glass fits in                 usable_slots()
-    only slots reachable from either side        slots_within_stretch()
+    only slots reachable from either side         slots_within_stretch()
     furthest from the arm first                   fill_order()
-    leave a neighbour empty if the glass         needs_empty_neighbour()
-      is too wide to tilt safely                  and tilt_budget_deg()
+    leave a neighbour empty if it may tilt        needs_empty_neighbour() and
+                                                  tilt_budget_deg()
 
-lower onto the slot:
-    move above it, then come down in 2 mm       MoveIt 2: Cartesian path
-      steps                                     ours: motion.py
-        stop when the pads report contact,        descend_until_contact()
-          or the weight leaves the wrist        ros2_control: contact sensors
-                                                  and the wrist broadcaster
-        60 mm with no touch -> the glass is
-          not where it was thought to be
+with the glass held:                              ours: task.py _invert_and_place()
+    carry the glass to the middle of the table    ours: arm/dimensions.py
+                                                  TURNING_ROOM. The glass is parked
+                                                  there, not the tool, because the
+                                                  tool swings during the turn.
+    lean it 20 degrees and watch the finger gap   ours: glasses/force.py
+                                                  is_slipping(). A gap that has
+                                                  shrunk means the glass is sliding.
+    turn 180 degrees about the grip point         ours: arm/motion.py rotate_tool(),
+                                                  about the point task.py
+                                                  _grip_point() recomputes live
 
-    is the rack really taking the weight?       ours: motion.py
-        no -> the rim is caught; do not let go    load_transferred()
-
-open the fingers                                ros2_control: position
-tell the planner the arm is empty               MoveIt 2: planning scene
+    move above the slot                           MoveIt 2: plan the move
+    come down in 2 mm steps until it touches      ours: motion.py
+                                                  descend_until_contact()
+                                                  ros2_control: the pad contact
+                                                  sensors and the wrist broadcaster
+                                                  60 mm with no touch means the glass
+                                                  is not where it was thought to be
+    is the rack really taking the weight?         ours: motion.py
+                                                  load_transferred(). No means the
+                                                  rim is caught: do not let go.
+    open the fingers                              ros2_control: back to position
+    tell the planner the arm is empty             MoveIt 2: the planning scene
 ```
 
 ### What each library gives this step

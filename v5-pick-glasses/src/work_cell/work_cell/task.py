@@ -69,6 +69,7 @@ from .glasses.detect import (
 from .glasses.force import (
     CONTACT_FORCE_N,
     TooHeavyToHold,
+    estimate_mass,
     force_for_measured_mass,
     is_slipping,
     mass_from_wrist,
@@ -188,7 +189,9 @@ class PickGlassesTask:
         skip: set[str] = set()
 
         standing: list[Detection] = []
+        rounds = 0
         while free:
+            rounds += 1
             # Everything known to be standing goes into the scene before the
             # arm moves again, because the survey is itself a series of moves.
             # Until this was done here the planner was told about the glasses
@@ -200,7 +203,7 @@ class PickGlassesTask:
                 {g.name: (g.position, g.rough_width, TALLEST_GLASS) for g in standing}
             )
 
-            seen = self._survey()
+            seen = self._survey(rounds)
             standing = seen
             found = [g for g in seen if g.name not in skip]
             if not found:
@@ -210,14 +213,17 @@ class PickGlassesTask:
             # another it could have taken first.
             target = min(found, key=lambda g: float(np.linalg.norm(g.position - ROBOT_BASE)))
             self._log.info(f"--- {target.name} ---")
-            self._report.step(f"Working on {target.name}")
+            self._report.step(f"{target.name}")
+            self._report.doing(
+                "sort by distance from the arm's base",
+                f"the nearest of the {len(found)} it can see, standing at "
+                f"({target.position[0]:.3f}, {target.position[1]:.3f}) and about "
+                f"{target.rough_width * 1000:.0f} mm across from above",
+            )
             self._report.say(
-                f"The nearest of the {len(found)} it can see, so it goes first: reaching over "
-                "one glass for another it could have taken is how neighbours get knocked over. "
-                f"It stands at ({target.position[0]:.3f}, {target.position[1]:.3f}) and looks "
-                f"about {target.rough_width * 1000:.0f} mm across from above. Next it goes round "
-                "to the side to measure it properly, because from overhead a tall glass and a "
-                "short one look the same and a stem is invisible."
+                "Nearest first, because reaching over one glass for another it could have "
+                "taken is how neighbours get knocked over. Steps 2 to 6 below are this one "
+                "glass, all the way to the rack."
             )
 
             # Every glass goes in, the one being reached for included. It only
@@ -233,6 +239,11 @@ class PickGlassesTask:
                     other.name: (other.position, other.rough_width, TALLEST_GLASS)
                     for other in found
                 }
+            )
+            self._report.doing(
+                "hand every glass to the planner as a cylinder",
+                f"{_count(len(found), 'cylinder')} in the planning scene. The target only comes out "
+                "later, in step 5, once the one move left is straight down the tool's axis",
             )
 
             try:
@@ -280,6 +291,12 @@ class PickGlassesTask:
     ) -> Placed:
         # 1. Measure it. Everything after this uses what comes back and
         #    nothing that was written down in advance.
+        self._report.step(
+            f"Step 2 — measuring {target.name}",
+            doc="step2-measuring-one.md",
+            code="_view_from() in task.py, glasses/perception.py",
+            level=3,
+        )
         others = [g for g in found if g.name != target.name]
         profile, foot = self._view_from(target, others, angle=0.0)
         if foot is not None:
@@ -298,23 +315,42 @@ class PickGlassesTask:
             f"measured {profile.total_height * 1000:.0f} mm tall, "
             f"{profile.max_width * 1000:.0f} mm at its widest"
         )
-
-        # 2. Decide what kind of glass it is, from the shape just measured
-        #    rather than from the view above. A stem is invisible from overhead.
         self._report.table(
             {
                 "measured height": f"{profile.total_height * 1000:.0f} mm",
                 "measured width": f"{profile.max_width * 1000:.0f} mm",
+                "width at the rim": f"{profile.rim_width * 1000:.0f} mm",
+                "width at the base": f"{profile.base_width * 1000:.0f} mm",
             }
         )
+
+        # 2. Decide what kind of glass it is, from the shape just measured
+        #    rather than from the view above. A stem is invisible from overhead.
+        self._report.step(
+            "Step 3 — what kind of glass it is",
+            doc="step3-what-kind-of-glass.md",
+            code="classify() in glasses/detect.py",
+            level=3,
+        )
+        # Asked again here only so the report can show the evidence the
+        # decision was made on. classify() is still the one that decides.
+        waist = profile.waist_at()
+        self._report.doing(
+            "waist = the narrowest point below the widest",
+            f"at {waist * 1000:.0f} mm up, which is "
+            f"{waist / profile.total_height:.2f} of the height"
+            if waist is not None
+            else "none — so the question is whether the wall leans",
+        )
         name = classify(profile)
-        self._report.say(
-            f"From that shape it is **{name or 'no kind any rule describes'}**."
+        self._report.doing(
+            "name the kind from the waist, or from the lean",
+            f"**{name or 'no kind any rule describes'}**"
             + (
                 ""
                 if name
-                else " Nothing is known about how to hold it, so it is left standing."
-            )
+                else ". Nothing is known about how to hold it, so it is left standing"
+            ),
         )
         if name is None:
             raise UnknownShape(
@@ -331,24 +367,73 @@ class PickGlassesTask:
                 self._log.info("it has a handle, so the approach comes in square to it")
 
         # 3. Work out where to hold it.
-        grip = find_grip(
-            profile, kind, gripper_max_opening=GRIPPER_MAX_OPENING, lowest_grip=LOWEST_GRIP
+        self._report.step(
+            "Step 4 — where to hold it",
+            doc="step4-where-to-hold-it.md",
+            code="find_grip() in glasses/rules.py",
+            level=3,
+        )
+        band = kind.band_for(profile.total_height)
+        self._report.doing(
+            "look up what this kind of glass asks for",
+            f"the `{kind.grip_rule}` rule, searching {band[0] * 1000:.0f} to "
+            f"{band[1] * 1000:.0f} mm up, with {kind.min_band_height_m * 1000:.0f} mm of "
+            "wall needed for the pads",
+        )
+        self._report.doing(
+            "raise the bottom of that band to LOWEST_GRIP",
+            f"so the search starts at {max(band[0], LOWEST_GRIP) * 1000:.0f} mm, because the "
+            f"gripper body will not clear the table below {LOWEST_GRIP * 1000:.0f} mm",
+        )
+        try:
+            grip = find_grip(
+                profile, kind, gripper_max_opening=GRIPPER_MAX_OPENING, lowest_grip=LOWEST_GRIP
+            )
+        except NoGrip as why:
+            self._report.doing("run the rule on the measured profile", f"**no grip**: {why}")
+            self._report.trouble(
+                f"There is nowhere on this glass the fingers can safely go, so it is left "
+                f"standing. {str(why).capitalize()}."
+            )
+            raise
+        self._report.doing(
+            "run the rule on the measured profile",
+            f"it picks the band {grip.band[0] * 1000:.0f}–{grip.band[1] * 1000:.0f} mm up",
+        )
+        self._report.doing(
+            "height = the middle of the band it chose",
+            f"hold it **{grip.height * 1000:.0f} mm up**",
+        )
+        self._report.doing(
+            "opening = the measured width at that height",
+            f"the fingers go to **{grip.opening * 1000:.0f} mm apart**",
+        )
+        self._report.doing(
+            "check the answer five ways",
+            "all five passed, or this would have raised `NoGrip` with the reason",
         )
         self._log.info(
             f"holding it {grip.height * 1000:.0f} mm up, fingers "
             f"{grip.opening * 1000:.0f} mm apart"
         )
         self._report.say(
-            f"The rule for a {name} picks a height of **{grip.height * 1000:.0f} mm** up the "
-            f"glass, where the camera measured it **{grip.opening * 1000:.0f} mm** across. That "
-            "opening is not looked up anywhere: it is the width that was measured at that "
-            "height a moment ago. The fingers will go there and close until they touch, and if "
-            "what they touch is not that wide, the grasp is not where it should be."
+            "That opening is not looked up anywhere: it is the width that was measured at "
+            "that height a moment ago. The fingers will go there and close until they touch, "
+            "and if what they touch is not that wide, the grasp is not where it should be."
         )
 
         # 4. Pick a slot, now that the width is known.
         needs_gap = needs_empty_neighbour(profile.max_width, profile.total_height)
         slot = self._choose_slot(slots, free, needs_gap)
+        self._report.doing(
+            "choose a slot",
+            f"**slot {slot.index}**, at ({slot.centre[0]:.3f}, {slot.centre[1]:.3f})"
+            + (
+                ", with the slot beside it left empty because this glass is both wide and tall"
+                if needs_gap
+                else ""
+            ),
+        )
         if needs_gap:
             self._log.info("wide and tall, so the slot beside it stays empty")
 
@@ -386,8 +471,21 @@ class PickGlassesTask:
             ROBOT_BASE[1] - target.position[1], ROBOT_BASE[0] - target.position[0]
         )
 
+        standing_back = self._measuring_distance()
+        self._report.doing(
+            "work out how far back to stand",
+            f"**{standing_back * 1000:.0f} mm**, from the lens, the height the camera looks "
+            f"at, and the {TALLEST_GLASS * 1000:.0f} mm tallest glass this cell handles",
+        )
+        places = list(self._standoffs(target, others, angle + toward_base))
+        self._report.doing(
+            "list the places to stand, best first",
+            f"{len(places)} of them, a line of sight with nothing behind it first and the "
+            "least reach after that",
+        )
+
         trouble: Exception | None = None
-        for eye, rotation in self._standoffs(target, others, angle + toward_base):
+        for eye, rotation in places:
             try:
                 # tool0 does not go to the eye point: the camera is bolted to
                 # one side of the tool, and that offset turns with the tool.
@@ -396,10 +494,24 @@ class PickGlassesTask:
                 trouble = why
                 continue
 
+            self._report.doing(
+                "move the camera there, looking level",
+                f"standing at ({eye[0]:.3f}, {eye[1]:.3f}, {eye[2]:.3f})",
+            )
             view = self._camera.capture()
             standoff = self._measuring_distance()
-            mask = the_one_in_the_middle(
-                self._things_standing_up(view, within=(standoff - 0.12, standoff + 0.12))
+            everything = self._things_standing_up(
+                view, within=(standoff - 0.12, standoff + 0.12)
+            )
+            self._report.doing(
+                "mask = what stands up, near the standoff",
+                f"{int(everything.sum())} pixels, within 120 mm either side of the standoff, "
+                "which is what drops the rack and the glasses behind this one",
+            )
+            mask = the_one_in_the_middle(everything)
+            self._report.doing(
+                "mask = just the patch in the middle",
+                f"{int(mask.sum())} pixels left, the one the camera was aimed at",
             )
             try:
                 self._report.picture(
@@ -413,6 +525,12 @@ class PickGlassesTask:
                     ),
                 )
                 measured = profile_from_mask(mask, view.intrinsics, self._measuring_distance())
+                self._report.doing(
+                    "profile = a width for every row of mask",
+                    f"**{measured.total_height * 1000:.0f} mm tall**, "
+                    f"**{measured.max_width * 1000:.0f} mm at its widest**, from "
+                    f"{measured.height.size} rows of mask",
+                )
                 if measured.total_height > TALLEST_GLASS:
                     # Taller than any glass this cell handles, so it is not
                     # one glass. Two standing one behind the other read as a
@@ -423,9 +541,22 @@ class PickGlassesTask:
                         f"{TALLEST_GLASS * 1000:.0f} mm this cell handles, so the mask has "
                         "caught more than one glass"
                     )
+                self._report.doing(
+                    "not taller than the cell's tallest glass",
+                    f"{measured.total_height * 1000:.0f} mm is under the "
+                    f"{TALLEST_GLASS * 1000:.0f} mm limit, so this is one glass and not two "
+                    "standing one behind the other",
+                )
                 foot = foot_of(mask, view.to_world, TABLE_TOP_Z)
                 if foot is not None:
                     strayed = float(np.linalg.norm((foot - target.position)[:2]))
+                    self._report.doing(
+                        "foot near where the arm aimed",
+                        f"the foot of what is in the picture stands {strayed * 1000:.0f} mm "
+                        f"from where the survey put this glass, and up to "
+                        f"{GRIPPER_MAX_OPENING * 1000:.0f} mm — a gripper's width — is "
+                        "taken as the same glass",
+                    )
                     if strayed > GRIPPER_MAX_OPENING:
                         # Further off than a glass is wide, so whatever is in
                         # the middle of this picture is not the glass the arm
@@ -443,8 +574,17 @@ class PickGlassesTask:
                 # in one taken from somewhere else, and the arm is already up
                 # and holding nothing, so another look is cheap.
                 self._log.info(f"that side did not measure ({why}), trying another")
+                self._report.say(
+                    f"**This side did not measure: {why}.** The arm goes round to another "
+                    "one. A glass with a neighbour touching it in one picture usually "
+                    "stands clear in a picture taken from somewhere else."
+                )
                 trouble = why
 
+        self._report.trouble(
+            f"None of the {len(places)} places it could stand gave a measurement worth "
+            "using, so the glass is left standing."
+        )
         raise trouble if trouble else MotionFailed("nowhere to stand to look at this glass")
 
     def _standoffs(self, target, others: list[Detection], preferred: float):
@@ -543,8 +683,18 @@ class PickGlassesTask:
             }
         )
 
+        self._report.doing(
+            "choose which way round to hold it",
+            f"{len(approaches)} directions the fingers could come in from, two ways round "
+            "each, and the arm has to be able to reach it *and* still turn the wrist far "
+            "enough to put the glass upside down afterwards",
+        )
         self._arm.set_gripper(min(grip.opening + 0.020, GRIPPER_MAX_OPENING))
         rotation = self._hover_and_choose_grasp(grip_point, approaches)
+        self._report.doing(
+            "take the first the arm can reach and turn",
+            f"coming in along ({rotation[0, 2]:.2f}, {rotation[1, 2]:.2f})",
+        )
         position = grip_point - rotation[:, 2] * FINGERTIP_OFFSET
         self._straight_if_possible(position, rotation, "in to the glass")
 
@@ -560,16 +710,35 @@ class PickGlassesTask:
         # hover, a fifth of a metre higher and still looking level, it looks
         # over the top of everything at the empty sky.
         position = self._centre_on_what_is_there(position, rotation, grip_point)
-        self._report.say("Closing gently until they touch.")
+
+        self._report.step(
+            "Step 5 — how hard to squeeze",
+            doc="step5-how-hard-to-squeeze.md",
+            code="glasses/force.py, _pick_up() in task.py",
+            level=3,
+        )
+        guessed = estimate_mass(profile, kind)
+        self._report.doing(
+            "guess = estimate the mass from the shape",
+            f"about **{guessed * 1000:.0f} g**, from a {kind.wall} wall. Openly a guess: the "
+            "camera cannot see wall thickness, and the lift below is what settles it",
+        )
+        self._report.doing(
+            "force = mass * g / (friction * pads), doubled",
+            f"**{starting_force(profile, kind):.1f} N** to start with",
+        )
+        self._report.doing("stage one: close the fingers at 1 N")
         self._arm.set_gripper_force(CONTACT_FORCE_N)
         time.sleep(0.4)
         touched = self._arm.gripper_gap
-        self._report.table(
-            {
-                "the camera said": f"{grip.opening * 1000:.1f} mm",
-                "the fingers found": f"{touched * 1000:.1f} mm",
-                "difference": f"{(touched - grip.opening) * 1000:.1f} mm (4 mm is allowed)",
-            }
+        self._report.doing(
+            "read the gap they stopped at",
+            f"the fingers found **{touched * 1000:.1f} mm**, by touch rather than by camera",
+        )
+        self._report.doing(
+            "compare with the width the camera said",
+            f"the camera said {grip.opening * 1000:.1f} mm, so they are "
+            f"{abs(touched - grip.opening) * 1000:.1f} mm apart and 4 mm is allowed",
         )
         if abs(touched - grip.opening) > 0.004:
             self._report.trouble(
@@ -587,15 +756,47 @@ class PickGlassesTask:
                 f"said {grip.opening * 1000:.0f} mm, so the grasp is not where it should be"
             )
 
+        self._report.doing(
+            "stage two: squeeze to the estimated force",
+            f"squeezing at {starting_force(profile, kind):.1f} N",
+        )
         self._arm.set_gripper_force(starting_force(profile, kind))
         time.sleep(0.3)
 
         # Lift a centimetre and weigh it. This is the last moment a mistake is
         # free: the glass is off the table but nothing has been turned over.
+        self._report.doing(
+            "lift 10 mm in a straight line",
+            "the last moment a mistake is free: the glass is off the table and nothing has "
+            "been turned over",
+        )
         self._straight_if_possible(position + UP * WEIGH_LIFT, rotation, "a centimetre off the table")
+        self._report.doing(
+            "read the wrist force-torque sensor",
+            f"{self._arm.wrist_load:.1f} N, upright, as the median of 32 samples",
+        )
         mass = mass_from_wrist(self._arm.wrist_load, GRIPPER_WEIGHT_N)
+        self._report.doing(
+            "mass = that, less the gripper's own weight",
+            f"**{mass * 1000:.0f} g**, against the {guessed * 1000:.0f} g guessed from the "
+            f"shape — {abs(mass - guessed) / max(guessed, 1e-6) * 100:.0f}% out",
+        )
 
         needed = force_for_measured_mass(mass, kind)
+        self._report.doing(
+            "stage three: refuse if it needs too much",
+            f"it wants {needed:.1f} N, and a {kind.wall}-walled {kind.name} is capped at "
+            f"{kind.force_cap_n:.1f} N",
+        )
+        self._report.doing(
+            "re-squeeze if the guess was low",
+            f"the estimate gave {starting_force(profile, kind):.1f} N, so "
+            + (
+                "it is set down and re-gripped harder"
+                if needed > starting_force(profile, kind)
+                else "the first squeeze stands"
+            ),
+        )
         if needed > starting_force(profile, kind):
             # Setting it down and re-gripping is safe; increasing the squeeze
             # while holding it arrives as a shock.
@@ -663,7 +864,10 @@ class PickGlassesTask:
             ),
         )
         if not mask.any():
-            self._report.say("Nothing glass-shaped in view, so the aim is left as it is.")
+            self._report.doing(
+                "look down the fingers and shift sideways",
+                "nothing glass-shaped in view, so the aim is left as it is",
+            )
             return position
 
         # The middle of what is there, across the picture.
@@ -691,6 +895,11 @@ class PickGlassesTask:
 
         across = rotation[:, 1]
         sideways = float(np.dot(seen - grip_point, across))
+        self._report.doing(
+            "look down the fingers and shift sideways",
+            f"what is in the middle of this picture is **{sideways * 1000:.1f} mm** to one "
+            f"side of the fingers, and up to {GRASP_NUDGE_LIMIT * 1000:.0f} mm is allowed",
+        )
         if abs(sideways) > GRASP_NUDGE_LIMIT:
             self._report.trouble(
                 f"What is in the middle of this picture is {sideways * 1000:.0f} mm off to "
@@ -700,10 +909,6 @@ class PickGlassesTask:
             )
             return position
 
-        self._report.say(
-            f"The glass is {sideways * 1000:.1f} mm off to one side of the fingers. Shifting "
-            "onto it before closing."
-        )
         if abs(sideways) < 0.001:
             return position
 
@@ -770,13 +975,6 @@ class PickGlassesTask:
         Asked here rather than after the fingers close, because finding out
         with the glass in the gripper leaves nothing to do but put it back.
         """
-        self._report.say(
-            f"Looking for a way to hold it: {len(approaches)} directions the fingers could come "
-            "in from, two ways round for each, and the arm has to be able to reach it *and* "
-            "still turn the wrist far enough to put the glass upside down afterwards. Asked "
-            "now rather than later, because finding out with the glass already held leaves "
-            "nothing to do but put it back."
-        )
         tried = 0
         for approach in approaches:
             for rotation in grasp_options(_grasp_rotation(approach)):
@@ -800,12 +998,26 @@ class PickGlassesTask:
         """Tilt, check for slip, turn right over, then lower until it touches."""
         held_at = self._arm.gripper_gap
 
+        self._report.step(
+            f"Step 6 — turning {name} over and standing it down",
+            doc="step6-turning-it-over.md",
+            code="_invert_and_place() in task.py, rotate_tool() in arm/motion.py",
+            level=3,
+        )
+
         # Carry it somewhere with room before turning it. See TURNING_ROOM.
         _, rotation = self._arm.current_pose()
+        self._report.doing(
+            "carry the glass to the middle of the table",
+            f"the glass is parked {TURNING_ROOM[0] * 1000:.0f} mm out and "
+            f"{TURNING_ROOM[2] * 1000:.0f} mm up, not the tool — a turn swings the tool a "
+            "fingertip's length either side of the glass, so parking the tool at a "
+            "comfortable reach puts it past the end of the arm on the way round",
+        )
         self._report.say(
-            "Carrying it to the middle of the table before turning it over. Turning in place "
-            "asks more of the wrist than anything else here, and doing it from wherever the "
-            "pick happened to end makes it a different problem for every glass."
+            "Turning in place asks more of the wrist than anything else here, and doing it "
+            "from wherever the pick happened to end makes it a different problem for every "
+            "glass."
         )
         try:
             self._arm.move_to_pose(
@@ -823,9 +1035,19 @@ class PickGlassesTask:
         # from. A hundred and eighty degrees is not.
         self._arm.tilt(math.radians(SLIP_TEST_DEG), about=self._grip_point())
         time.sleep(0.4)
-        if is_slipping(held_at, self._arm.gripper_gap):
+        leaning = self._arm.gripper_gap
+        self._report.doing(
+            "lean it 20 degrees and watch the finger gap",
+            f"{held_at * 1000:.1f} mm before the lean, {leaning * 1000:.1f} mm during it"
+            + (" — **slipping**" if is_slipping(held_at, leaning) else ", so it is holding"),
+        )
+        if is_slipping(held_at, leaning):
             raise MotionFailed("the glass slid in the fingers during the tilt")
 
+        self._report.doing(
+            "turn 180 degrees about the grip point",
+            "about the grip point, not the tool origin, so the glass turns on the spot",
+        )
         self._arm.turn_over(about=self._grip_point())
 
         # Upside down, the rim is as far below the pads as it was above them.
@@ -836,7 +1058,10 @@ class PickGlassesTask:
         rim_to_grip = profile.total_height - grip.height
         above = slot.centre + UP * (rim_to_grip + PLACE_CLEARANCE)
 
-        self._report.step(f"Standing {name} in slot {slot.index}")
+        self._report.doing(
+            "move above the slot",
+            f"the rim starts {PLACE_CLEARANCE * 1000:.0f} mm above slot {slot.index}",
+        )
         self._report.table(
             {
                 "the slot is at": f"({slot.centre[0]:.3f}, {slot.centre[1]:.3f}, "
@@ -849,6 +1074,11 @@ class PickGlassesTask:
         )
         self._arm.move_to_pose(above - rotation[:, 2] * FINGERTIP_OFFSET, rotation)
 
+        self._report.doing(
+            "come down in 2 mm steps until it touches",
+            "watching the pad contact sensors and the weight leaving the wrist, for up to "
+            "60 mm",
+        )
         try:
             came_down = self._arm.descend_until_contact()
         except MotionFailed:
@@ -867,9 +1097,22 @@ class PickGlassesTask:
         # Before letting go, check the rack is carrying it. If the load has not
         # transferred, the glass is caught on a peg and opening the fingers
         # would drop it.
-        if not self._arm.load_transferred(GRIPPER_WEIGHT_N):
+        taken = self._arm.load_transferred(GRIPPER_WEIGHT_N)
+        self._report.doing(
+            "is the rack really taking the weight?",
+            f"the wrist reads {self._arm.wrist_load:.1f} N against "
+            f"{GRIPPER_WEIGHT_N:.1f} N for the gripper alone, so "
+            + (
+                "the rack has it"
+                if taken
+                else "**it has not** — the rim is caught, and the fingers stay shut"
+            ),
+        )
+        if not taken:
             raise MotionFailed("the rack is not taking the weight, so the glass is caught")
 
+        self._report.doing("open the fingers")
+        self._report.doing("tell the planner the arm is empty")
         self._arm.set_gripper(GRIPPER_MAX_OPENING)
         time.sleep(0.3)
         self._scene.detach(name)
@@ -895,7 +1138,11 @@ class PickGlassesTask:
         self._arm.move_to_pose(
             ROBOT_BASE + np.array([0.5, 0.3, SURVEY_HEIGHT]), look_along(-UP)
         )
-        self._report.step("Finding the rack")
+        self._report.step(
+            "Before the steps — finding the rack",
+            doc="step6-turning-it-over.md",
+            code="_find_rack() in task.py, slots_from_marker() in rack/layout.py",
+        )
         self._report.say(
             "There is nowhere to put a glass until the rack is found, so this "
             "happens first. The arm looks down at where the rack usually "
@@ -913,13 +1160,26 @@ class PickGlassesTask:
                 else "**Not found.** Without it there is nowhere to put anything, so the run stops."
             ),
         )
+        self._report.doing(
+            "read the rack's ArUco marker",
+            f"found at ({marker.position[0]:.3f}, {marker.position[1]:.3f}), turned "
+            f"{math.degrees(marker.yaw):.0f}°"
+            if marker is not None
+            else "**not found** — the run stops here",
+        )
         if marker is None:
             raise MotionFailed("cannot see the rack, so there is nowhere to put anything")
         slots = slots_from_marker(marker.position, marker.yaw)
+        self._report.doing(
+            "place the six slots from it",
+            "slot 0 at ("
+            + f"{slots[0].centre[0]:.3f}, {slots[0].centre[1]:.3f}) through slot "
+            + f"{slots[-1].index} at ({slots[-1].centre[0]:.3f}, {slots[-1].centre[1]:.3f})",
+        )
         self._log.info(f"rack found, {len(slots)} slots")
         return slots
 
-    def _survey(self) -> list[Detection]:
+    def _survey(self, rounds: int = 1) -> list[Detection]:
         """Pictures from above: where the glasses are, and roughly how big.
 
         Deliberately not what kind each one is. From overhead a tall glass and
@@ -930,7 +1190,12 @@ class PickGlassesTask:
         cannot say how far away a glass is, only which direction it lies in;
         the pair measures the rest. See ``where_they_stand()``.
         """
-        self._report.step("Looking for the glasses")
+        self._report.step(
+            "Step 1 — finding the glasses"
+            + (f" ({_ordinal(rounds)} time round the table)" if rounds > 1 else ""),
+            doc="step1-finding-the-glasses.md",
+            code="_survey() in task.py, glasses/detect.py",
+        )
         self._report.say(
             "One picture from above cannot say how far away a glass is, only "
             "which direction it lies in: the camera has to lay the silhouette "
@@ -941,8 +1206,16 @@ class PickGlassesTask:
             "and is left for another station."
         )
 
+        stations = self._stations()
+        self._report.doing(
+            "work out where to stand the camera",
+            f"**{len(stations)} stations** — places to park the camera and take a pair of "
+            "pictures — spread over the part of the table the glasses are on, each picture "
+            "overlapping its neighbours so that no glass falls only on an edge",
+        )
+
         found: list[Detection] = []
-        for centre in self._stations():
+        for number, centre in enumerate(stations, start=1):
             sideways = np.array([0.0, SURVEY_BASELINE / 2.0, 0.0])
             middle = np.array([centre[0], centre[1], SURVEY_HEIGHT])
             try:
@@ -954,12 +1227,27 @@ class PickGlassesTask:
                 # The others still cover most of the table, and the next time
                 # round the arm is somewhere else and may well manage it.
                 self._log.warning(f"skipping a survey station: {why}")
+                self._report.doing(
+                    "for each station:",
+                    f"station {number} of {len(stations)}, at ({centre[0]:.3f}, "
+                    f"{centre[1]:.3f}) — **skipped**, the arm could not get there from where "
+                    f"it is standing: {why}",
+                )
                 continue
 
             # Both pictures are taken from the same commanded height, so one
             # measured height is as good as the other; the mean drops the
             # little the arm missed it by.
             above_table = (here[1][2] + there[1][2]) / 2.0 - TABLE_TOP_Z
+            self._report.doing(
+                "for each station:",
+                f"station {number} of {len(stations)}, at ({centre[0]:.3f}, {centre[1]:.3f}), "
+                f"{above_table * 1000:.0f} mm above the table",
+            )
+            self._report.doing(
+                "sightings = lay the patches on the table",
+                f"{len(here[0])} in the left picture, {len(there[0])} in the right",
+            )
             notes: list[str] = []
             placed = where_they_stand(
                 here[0], here[1], there[0], there[1], above_table, tallest=TALLEST_GLASS, notes=notes
@@ -970,8 +1258,8 @@ class PickGlassesTask:
             ):
                 self._report.picture(
                     picture,
-                    f"station ({centre[0]:.2f}, {centre[1]:.2f}), the {label} picture of the pair: "
-                    f"{len(dets)} glass-shaped patches",
+                    f"station ({centre[0]:.2f}, {centre[1]:.2f}), the {label} picture of the "
+                    f"pair: {_count(len(dets), 'glass-shaped patch', 'glass-shaped patches')}",
                     then=(
                         f"Camera at ({(here[1] if label == 'left' else there[1])[0]:.3f}, "
                         f"{(here[1] if label == 'left' else there[1])[1]:.3f}), "
@@ -985,14 +1273,14 @@ class PickGlassesTask:
                 )
             for note in notes:
                 self._report.say(f"- {note}")
-            self._report.say(
-                f"From that pair: **{len(placed)} placed** out of {len(here[0])} and "
-                f"{len(there[0])} seen."
+            self._report.doing(
+                "placed = pair the two and solve the height",
+                f"**{len(placed)} placed** out of {len(here[0])} and {len(there[0])} seen"
                 + (
                     ""
                     if placed
-                    else " Nothing could be paired, so this station contributes nothing."
-                )
+                    else ". Nothing could be paired, so this station contributes nothing"
+                ),
             )
             for glass in placed:
                 self._report.say(
@@ -1008,7 +1296,13 @@ class PickGlassesTask:
             )
             found += placed
 
-        return merge_sightings(found)
+        merged = merge_sightings(found)
+        self._report.doing(
+            "merge sightings across stations",
+            f"{_count(len(found), 'sighting')} from {_count(len(stations), 'station')} "
+            f"became **{_count(len(merged), 'glass', 'glasses')}**",
+        )
+        return merged
 
     def _look_down_from(
         self, position: np.ndarray
@@ -1159,6 +1453,23 @@ class PickGlassesTask:
     def _park(self) -> None:
         self._arm.set_gripper(GRIPPER_MAX_OPENING)
         self._arm.move_to_pose(ROBOT_BASE + np.array([0.5, 0.0, SURVEY_HEIGHT]), look_along(-UP))
+
+
+def _ordinal(which: int) -> str:
+    """"second", "third", and so on, for the headings of repeated passes."""
+    names = ("first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth")
+    return names[which - 1] if which <= len(names) else f"{which}th"
+
+
+def _count(how_many: int, thing: str, plural: str | None = None) -> str:
+    """"3 stations", or "1 station".
+
+    The report is meant to be read, and "1 glasses" in the middle of a sentence
+    is the kind of thing that makes a reader stop trusting the rest of it.
+    """
+    if how_many == 1:
+        return f"1 {thing}"
+    return f"{how_many} {plural or thing + 's'}"
 
 
 def _approach_directions(

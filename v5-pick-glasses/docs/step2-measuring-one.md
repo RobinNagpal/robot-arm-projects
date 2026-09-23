@@ -34,39 +34,32 @@ Each line says who does the work: **ours** means code in this repo, and a named
 library means the work is not ours.
 
 ```text
-work out how far back to stand                  ours: task.py
-    from the lens, the height the camera           _measuring_distance()
-      looks at, and the tallest glass the        ROS 2: /camera_info topic
-      cell handles
+work out how far back to stand                    ours: task.py
+                                                  _measuring_distance()
+    from the lens and the tallest glass           ROS 2: the /camera_info topic
 
-list the places to stand, best first            ours: task.py _standoffs()
-    prefer a line of sight with no other
-      glass behind the target
+list the places to stand, best first              ours: task.py _standoffs()
+    prefer a line of sight with nothing behind
     then prefer the least reach
 
-for each of those places until one works:
-    move the camera there, looking level        MoveIt 2: plan a path
-      at the glass                              ros2_control: drive the joints
-    take one RGB-D frame                        Gazebo -> ros_gz_bridge
-                                                cv_bridge: message -> array
-    mask = points above the table and           ours: glasses/detect.py
-      within a band around the standoff           standing_on_the_table()
-    mask = just the patch in the middle         ours: detect.py
+for each of those places until one works:         ours: task.py _view_from()
+    move the camera there, looking level          MoveIt 2: plan a path
+                                                  ros2_control: drive the joints
+    take one RGB-D frame                          Gazebo -> ros_gz_bridge -> cv_bridge
+    mask = what stands up, near the standoff      ours: glasses/detect.py
+                                                  standing_on_the_table()
+    mask = just the patch in the middle           ours: detect.py
                                                   the_one_in_the_middle()
-    profile = a width for every row of mask     ours: glasses/perception.py
-        measure each row edge to edge             row_widths()
-        median filter down the rows               smooth()
-        refuse an outline that is too ragged      raggedness()
-        scale pixels to millimetres by the        profile_from_mask()
-          standoff
-    check the answer is possible                ours: task.py _view_from()
+    profile = a width for every row of mask       ours: glasses/perception.py
+                                                  row_widths(), smooth(),
+                                                  raggedness(), profile_from_mask()
+    check the answer is possible                  ours: task.py _view_from()
         not taller than the cell's tallest glass
         foot near where the arm aimed
 
-if this kind of glass may have a handle:        ours: glasses/spec.py
-    take a second picture a quarter turn round    Kind.expects_handle
-    compare the two profiles                    ours: perception.py
-                                                  handle_direction()
+if this kind may have a handle, look again        ours: glasses/spec.py
+                                                  Kind.expects_handle, and
+                                                  perception.py handle_direction()
 ```
 
 ### What each library gives this step

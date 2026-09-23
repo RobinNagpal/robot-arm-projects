@@ -38,39 +38,44 @@ What follows, in order:
 
 ## The step in pseudocode
 
+One word first, because the pseudocode uses it. A **station** is one place the
+arm parks the camera to take pictures from. The camera cannot see the whole
+table at once — from survey height each picture covers about 520 by 390 mm of
+it — so the arm works its way across the part of the table the glasses are on,
+stopping at a handful of places and photographing the patch under each. Those
+stopping places are the stations. They are spaced so that each picture overlaps
+its neighbours, which is what stops a glass falling on an edge and being missed.
+Three stations covered the table on the last run.
+
 Each line says who does the work: **ours** means code in this repo, and a named
 library means the work is not ours.
 
 ```text
-work out where to stand the camera
-    ask the camera what lens it has             ROS 2: /camera_info topic
-    tile the glass zone with overlapping        ours: arm/dimensions.py
-      stations                                    survey_stations()
+work out where to stand the camera                ours: task.py _stations() and
+                                                  arm/dimensions.py survey_stations()
+    ask the camera what lens it has               ROS 2: the /camera_info topic
 
-for each station:
-    for each of the two camera positions:
-        move the wrist there                    MoveIt 2: plan a path round
-                                                  the table and the rack
-                                                ros2_control: drive the joints
-        wait for one RGB-D frame                Gazebo: simulates the sensor
-                                                ros_gz_bridge: Gazebo -> ROS 2
-                                                cv_bridge: ROS image -> array
-        read where the camera really was        tf2: the wrist pose, as a
-                                                  4x4 into the world frame
-        mask = points above the table top       ours: glasses/detect.py
+for each station:                                 ours: task.py _survey()
+    move the wrist to the first of two spots      MoveIt 2: plan a path round the
+                                                  table and the rack
+                                                  ros2_control: drive the joints
+    take one RGB-D frame                          Gazebo simulates the sensor,
+                                                  ros_gz_bridge carries it to ROS 2,
+                                                  cv_bridge turns it into an array
+    read where the camera really was              tf2: the wrist pose, as a 4x4
+    mask = points above the table top             ours: glasses/detect.py
                                                   standing_on_the_table()
-        patches = flood fill the mask           ours: detect.py _label()
-        sightings = lay each patch's rays       ours: detect.py find_glasses()
-          down on the table                       and View.to_world()
+    patches = flood fill the mask                 ours: detect.py _label()
+    sightings = lay the patches on the table      ours: detect.py find_glasses() and
+                                                  View.to_world()
+    again, from the second spot                   the two are SURVEY_BASELINE apart
+    placed = pair the two and solve the height    ours: detect.py where_they_stand()
 
-    placed = pair the two sets of sightings,    ours: detect.py
-      and solve for how high each glass is        where_they_stand()
-
-merge sightings of the same glass across        ours: detect.py
-  stations                                        merge_sightings()
-sort by distance from the arm's base            ours: task.py run()
-hand every glass but the target to the          MoveIt 2: planning scene
-  planner as a cylinder
+merge sightings across stations                   ours: detect.py merge_sightings()
+sort by distance from the arm's base              ours: task.py run()
+hand every glass to the planner as a cylinder     MoveIt 2: the planning scene
+                                                  the target included; it only comes
+                                                  out at the grasp, in step 5
 ```
 
 ### What each library gives this step
@@ -138,10 +143,10 @@ its own pictures. Three things keep both out of the answer.
 **The camera is only ever pointed where the glasses are.** The glasses are put
 out inside one rectangle of the table, `GLASS_ZONE` in `rack/layout.py`. The
 rack stands on the other side of the arm. The glasses sit at y between −440 and
-−80 mm, and the rack sits at about y = +350 mm. The survey tiles its stations
-across that rectangle and nowhere else. Each picture covers about 520 by 390 mm
-from survey height, and the station closest to the rack still stops around
-280 mm short of it. The rack is therefore not in a survey picture at all.
+−80 mm, and the rack sits at about y = +350 mm. The arm only ever
+stops at stations inside that rectangle. Each picture covers about 520 by
+390 mm from survey height, and the picture taken closest to the rack still
+stops around 280 mm short of it. The rack is therefore not in a survey picture at all.
 
 That is the real reason the rack is never taken for a glass in the survey: the
 arm does not look at it. It is a fact about how this cell is laid out, not
@@ -247,8 +252,8 @@ table appears to move by `d` divided by however much it was stretched. Each
 survey station therefore takes two pictures a known distance apart, and
 `where_they_stand()` works the rest out.
 
-Two things follow. Stations are tiled over the part of the table that *both*
-pictures of a pair cover, not over one picture. A glass caught in only one of
+Two things follow. The stations are spaced by how much table *both* pictures of
+a pair cover, not by how much one picture covers. A glass caught in only one of
 the pair cannot be placed at all, and is better left to the next station. And a
 glass so short that it barely leans reads as having moved exactly as far as the
 camera did. The arithmetic turns that into a glass below the table. That is not
@@ -310,7 +315,7 @@ the survey reports a single wide patch. Step 2 then measures whatever is in the
 middle of its picture, which is a coin toss between the two. Spacing the
 glasses is currently the only defence.
 
-**A glass outside the surveyed rectangle is never seen.** The stations tile
+**A glass outside the surveyed rectangle is never seen.** The stations cover
 `GLASS_ZONE` and nothing else. A glass pushed 100 mm past its edge is not
 missed by the detector. It is never photographed.
 
@@ -411,8 +416,15 @@ cell at all.
 
 The glasses are sorted by distance from the robot base, and the nearest one is
 taken first. That way the arm never reaches over one glass for another it could
-have taken first. Then every *other* glass is handed to MoveIt as a cylinder,
-and the target is left out — because the planner will not let the fingers enter
-a space it believes is solid.
+have taken first.
+
+Then every glass is handed to MoveIt as a cylinder, the target one included.
+That last part is easy to get backwards. The planner will not let the fingers
+enter a space it believes is solid, so the target does have to come out
+eventually — but not yet. Everything between here and the grasp is the arm
+carrying the camera *around* the target, and a planner that does not know the
+target is there routes an elbow straight through it. So the target stays in the
+scene until step 5, and comes out at the last moment, when the only move left
+is straight down the tool's own axis.
 
 → [Step 2 — measuring one](step2-measuring-one.md)
