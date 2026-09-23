@@ -56,6 +56,11 @@ TAPER_THRESHOLD_DEG = 6.0
 # squeeze from the measurement rather than trusting the kind for it.
 SHORT_STEM_FRACTION = 0.17
 
+# The part of the glass, as fractions of its own height, whose lean decides
+# straight against tapered. Low down, because that is where a grip would go,
+# and clear of the very bottom, where the foot rounds into the table.
+LEAN_BAND = (0.05, 0.45)
+
 
 @dataclass(frozen=True)
 class Detection:
@@ -519,12 +524,21 @@ def classify(profile: Profile) -> str | None:
         return "short_stemmed_glass" if fraction < SHORT_STEM_FRACTION else "stemmed_glass"
 
     # No stem. Now the question is whether the wall is upright enough for flat
-    # pads, which is asked over the lower part, since that is where a grip
-    # would go.
-    lower = (0.05 * profile.total_height, 0.45 * profile.total_height)
-    inside = (profile.height >= lower[0]) & (profile.height <= lower[1])
+    # pads.
+    lean_deg = wall_lean_deg(profile)
+    if lean_deg is None:
+        return None
+    return "tapered_glass" if lean_deg > TAPER_THRESHOLD_DEG else "straight_glass"
+
+
+def wall_lean_deg(profile: Profile) -> float | None:
+    """How far the lower wall leans off upright, in degrees, or None if too short to say.
+
+    Asked over LEAN_BAND of the glass's own height, since that is where a grip
+    would go. The median, so that one kink in the wall does not decide it.
+    """
+    low, high = (fraction * profile.total_height for fraction in LEAN_BAND)
+    inside = (profile.height >= low) & (profile.height <= high)
     if inside.sum() < 3:
         return None
-
-    lean_deg = float(np.degrees(np.median(profile.slope()[inside])))
-    return "tapered_glass" if lean_deg > TAPER_THRESHOLD_DEG else "straight_glass"
+    return float(np.degrees(np.median(profile.slope()[inside])))

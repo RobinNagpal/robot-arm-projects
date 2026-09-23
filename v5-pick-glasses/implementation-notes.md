@@ -163,7 +163,7 @@ height, an Irish coffee glass's at about 13. Putting the threshold at 17 leaves
 room on both sides.
 
 **If there is no waist, does the wall lean?** `TAPER_THRESHOLD_DEG` is 6,
-measured over the lower half. Below six degrees the wall is upright enough for
+measured from 5% to 45% of the glass's height. Below six degrees the wall is upright enough for
 flat pads to press on without sliding, which is the only difference that
 matters to the gripper — so the threshold is a statement about the gripper, not
 about glassware.

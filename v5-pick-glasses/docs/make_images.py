@@ -35,7 +35,13 @@ from work_cell.arm.dimensions import (  # noqa: E402
     TURNING_ROOM,
 )
 from work_cell.glasses import spec  # noqa: E402
-from work_cell.glasses.detect import classify  # noqa: E402
+from work_cell.glasses.detect import (  # noqa: E402
+    LEAN_BAND,
+    SHORT_STEM_FRACTION,
+    TAPER_THRESHOLD_DEG,
+    classify,
+    wall_lean_deg,
+)
 from work_cell.glasses.force import (  # noqa: E402
     estimate_mass,
     required_force,
@@ -404,7 +410,9 @@ def classification() -> None:
                 continue
             waist = profile.waist_at()
             fraction = 0.0 if waist is None else waist / profile.total_height
-            lean = float(np.degrees(np.median(profile.slope())))
+            lean = wall_lean_deg(profile)
+            if lean is None:
+                continue
             ax.scatter(
                 lean,
                 fraction,
@@ -414,30 +422,187 @@ def classification() -> None:
                 alpha=0.75,
             )
 
-    ax.axhline(0.17, color=INK, linestyle="--", linewidth=1.0)
+    ax.axhline(SHORT_STEM_FRACTION, color=INK, linestyle="--", linewidth=1.0)
     ax.text(
-        0.03,
+        0.35,
         0.97,
-        "a waist above this line is a long stem,\nbelow it a short one (0.17)",
+        f"a waist above this line is a long stem,\nbelow it a short one ({SHORT_STEM_FRACTION})",
         transform=ax.transAxes,
         va="top",
         fontsize=8,
         color=INK,
     )
-    ax.axvline(6.0, color=INK, linestyle=":", linewidth=1.0)
+    ax.axvline(TAPER_THRESHOLD_DEG, color=INK, linestyle=":", linewidth=1.0)
     ax.text(
         0.42,
         0.20,
-        "no waist at all, so the question is the lean:\nupright to the left, tapered to the right (6 deg)",
+        "no waist at all, so the question is the lean:\n"
+        f"upright to the left, tapered to the right ({TAPER_THRESHOLD_DEG:.0f} deg)",
         transform=ax.transAxes,
         fontsize=8,
         color=INK,
     )
 
     _style(ax, "Marker shape is how the glass was made; colour is what it was called")
-    ax.set_xlabel("median wall lean, degrees", fontsize=8)
+    ax.set_xlabel("median lean of the lower wall, degrees", fontsize=8)
     ax.set_ylabel("waist height / glass height (0 = no waist)", fontsize=8)
     _save(fig, "classify-from-profile.png")
+
+
+KIND_ORDER = ["straight_glass", "tapered_glass", "stemmed_glass", "short_stemmed_glass"]
+
+
+def _a_glass_called(name: str):
+    """The first generated glass of this kind that classify() also calls this kind.
+
+    The picture is about how a kind is read off a profile, so it shows glasses
+    the classifier reads correctly. The boundary cases are the scatter plot's
+    job.
+    """
+    for seed in range(4, 200):
+        outline, _ = draw(name, random.Random(seed))
+        profile = profile_from_outline(outline)
+        if classify(profile) == name:
+            return profile
+    raise RuntimeError(f"no generated {name} is called a {name}")
+
+
+def three_questions() -> None:
+    """The classifier as a flowchart, with the thresholds it really uses."""
+    fig, ax = plt.subplots(figsize=(9, 5.2))
+    ax.set_xlim(0, 10)
+    ax.set_ylim(0, 10)
+    ax.axis("off")
+
+    question = {"boxstyle": "round,pad=0.5", "facecolor": "#eef3f8", "edgecolor": GLASS}
+    answer = {"boxstyle": "round,pad=0.5", "facecolor": "#fbeee9", "edgecolor": GRIP}
+    start = {"boxstyle": "round,pad=0.5", "facecolor": "white", "edgecolor": FAINT}
+
+    boxes = {
+        "start": (5.0, 9.3, "The measured profile\n(a width at every height)", start),
+        "waist": (5.0, 7.3, "1. Is there a waist?\nA narrow part with wider glass\nabove it and below it", question),
+        "low": (2.3, 4.6, f"2. Is the waist lower than\n{SHORT_STEM_FRACTION:.0%} of the glass's height?", question),
+        "lean": (7.7, 4.6, f"3. Does the lower wall lean\nmore than {TAPER_THRESHOLD_DEG:.0f} degrees?", question),
+        "short": (1.1, 1.3, "short-stemmed\nglass", answer),
+        "stemmed": (3.5, 1.3, "stemmed glass\n(wine glass)", answer),
+        "tapered": (6.5, 1.3, "tapered\nglass", answer),
+        "straight": (8.9, 1.3, "straight glass\n(tumbler)", answer),
+    }
+    for x, y, text, style in boxes.values():
+        ax.text(x, y, text, ha="center", va="center", fontsize=9, color=INK, bbox=style)
+
+    arrows = [
+        ("start", "waist", ""),
+        ("waist", "low", "yes"),
+        ("waist", "lean", "no"),
+        ("low", "short", "yes"),
+        ("low", "stemmed", "no"),
+        ("lean", "tapered", "yes"),
+        ("lean", "straight", "no"),
+    ]
+    for source, target, label in arrows:
+        x0, y0 = boxes[source][:2]
+        x1, y1 = boxes[target][:2]
+        ax.annotate(
+            "",
+            xy=(x1, y1 + 0.75),
+            xytext=(x0, y0 - 0.8),
+            arrowprops={"arrowstyle": "->", "color": INK, "linewidth": 1.0},
+        )
+        if label:
+            ax.text((x0 + x1) / 2 + 0.15, (y0 + y1) / 2 + 0.1, label, fontsize=9, color=INK)
+
+    ax.text(
+        5.0,
+        -0.2,
+        "If there is too little glass to measure a lean, there is no answer, "
+        "and the glass is left standing.",
+        ha="center",
+        fontsize=8,
+        color=FAINT,
+    )
+    _save(fig, "three-questions.png")
+
+
+# Where the labels go in the outline panels: clear of the widest glass drawn.
+LABEL_X = 45
+
+
+def four_kinds_named() -> None:
+    """One glass of each kind, as an outline and as a profile, with the numbers that name it."""
+    fig, axes = plt.subplots(2, 4, figsize=(12, 7.4))
+
+    for column, name in enumerate(KIND_ORDER):
+        profile = _a_glass_called(name)
+        tall = profile.total_height * 1000.0
+        waist = profile.waist_at()
+        widest = profile.widest_at * 1000.0
+        shape, curve = axes[0, column], axes[1, column]
+
+        _silhouette(shape, profile)
+        curve.plot(profile.width * 1000.0, profile.height * 1000.0, color=GLASS, linewidth=1.6)
+        curve.plot(profile.width_at(profile.widest_at) * 1000.0, widest, "o", color=GLASS)
+        curve.annotate("widest", (profile.width_at(profile.widest_at) * 1000.0, widest),
+                       xytext=(-40, 6), textcoords="offset points", fontsize=8, color=GLASS)
+
+        if waist is not None:
+            up = waist * 1000.0
+            share = waist / profile.total_height
+            line = SHORT_STEM_FRACTION * tall
+            for ax in (shape, curve):
+                ax.axhline(up, color=GRIP, linewidth=1.2)
+                ax.axhline(line, color=INK, linestyle="--", linewidth=0.8)
+            # Labels to the right of the glass, the higher one above its line
+            # and the lower one below, so two close lines never share a label.
+            above, below = (up, line) if up > line else (line, up)
+            for value, offset in ((above, 3), (below, -11)):
+                is_waist = value == up
+                shape.text(
+                    LABEL_X,
+                    value + offset,
+                    f"waist, {share:.0%} up" if is_waist else f"the {SHORT_STEM_FRACTION:.0%} line",
+                    fontsize=8,
+                    color=GRIP if is_waist else INK,
+                )
+            curve.plot(profile.width_at(waist) * 1000.0, up, "o", color=GRIP)
+            side = "below" if share < SHORT_STEM_FRACTION else "above"
+            verdict = (
+                f"a waist, {share:.0%} up the glass:\n"
+                f"{side} the {SHORT_STEM_FRACTION:.0%} line"
+            )
+        else:
+            lean = wall_lean_deg(profile)
+            low, high = (fraction * tall for fraction in LEAN_BAND)
+            for ax in (shape, curve):
+                ax.axhspan(low, high, color=FAINT, alpha=0.25)
+            shape.text(LABEL_X, (low + high) / 2, f"lean measured\nhere: {lean:.1f}°", fontsize=8, color=INK, va="center")
+            side = "more" if lean > TAPER_THRESHOLD_DEG else "less"
+            verdict = (
+                f"no waist; the lower wall\nleans {lean:.1f} degrees, "
+                f"{side} than {TAPER_THRESHOLD_DEG:.0f}"
+            )
+
+        _style(shape, name.replace("_", " "))
+        shape.set_xlim(-60, 110)
+        shape.set_ylim(0, 200)
+        shape.set_aspect("equal")
+        shape.set_xlabel("mm across", fontsize=8)
+
+        _style(curve, "")
+        curve.set_xlim(0, 100)
+        curve.set_ylim(0, 200)
+        curve.set_xlabel(f"width, mm\n\n{verdict}", fontsize=8, color=INK)
+
+    axes[0, 0].set_ylabel("the glass\n\nmm up", fontsize=8)
+    axes[1, 0].set_ylabel("its profile: width at each height\n\nmm up", fontsize=8)
+    fig.suptitle(
+        "Top: the glass the camera saw. Bottom: the same glass as a width at every height. "
+        "The marks are the numbers classify() decides on.",
+        fontsize=9,
+        color=INK,
+    )
+    fig.tight_layout()
+    _save(fig, "four-kinds-named.png")
 
 
 # --- what went wrong, and what was done about it -------------------------
@@ -659,6 +824,8 @@ if __name__ == "__main__":
     the_estimate_is_not_enough()
     tilt_budget()
     classification()
+    three_questions()
+    four_kinds_named()
     laying_a_glass_on_the_table()
     the_gripper_has_a_body()
     the_rack_the_planner_saw()
