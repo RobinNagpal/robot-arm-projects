@@ -19,7 +19,7 @@ seen from any one side is the whole shape.
 Code: `glasses/perception.py`, and `_view_from()` in `task.py`.
 
 Background, in robotics-basics: this step is
-[silhouettes of a solid of revolution](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#26-silhouettes-of-a-solid-of-revolution),
+[silhouettes of a solid of revolution](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#27-silhouettes-of-a-solid-of-revolution),
 scaled by [the plane the object stands on](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#22-the-plane-the-object-stands-on),
 and the arithmetic in the middle is
 [the one calculation underneath everything](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/01_overview.md#6-the-one-calculation-underneath-everything).
@@ -93,7 +93,7 @@ vertical axis. Spin anything about an axis and the outline you see from the
 side is the same from every side, and that outline is the full description of
 the shape. The width on screen at some height *is* the diameter of the glass at
 that height. It is
-[a special case that is unreasonably powerful when it applies](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#26-silhouettes-of-a-solid-of-revolution),
+[a special case that is unreasonably powerful when it applies](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#27-silhouettes-of-a-solid-of-revolution),
 and it covers anything made on a lathe or a wheel: bottles, cans, jars, bushes,
 bearings.
 
@@ -154,7 +154,12 @@ the project actually uses.
 
 **The raggedness check runs on the raw widths, not the smoothed ones.** This
 was a bug for a while and is worth spelling out. Smoothing makes any mask look
-clean, so a quality check applied afterwards never fires. The question
+clean, so a quality check applied afterwards never fires. It is the second of
+the two corrections in
+[reading a mask honestly](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#18-reading-a-mask-honestly),
+which puts the general form of it well: the check and the measurement want
+different inputs, and a check that never fails is worse than no check because
+it is also reassuring. The question
 "was this mask worth trusting?" has to be asked of what came out of the mask;
 the smoothed version is what gets measured. The threshold is 2% of the glass's
 own width, averaged over neighbouring rows.
@@ -263,7 +268,7 @@ does not work.
 
 **Anything that is not a solid of revolution is measured wrongly.** This is the
 assumption the whole step rests on, and it is the first of the
-[five jobs a silhouette cannot do](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#26-silhouettes-of-a-solid-of-revolution). A jug, a square tumbler, a glass with a
+[five jobs a silhouette cannot do](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#27-silhouettes-of-a-solid-of-revolution). A jug, a square tumbler, a glass with a
 spout: each is measured as if it were round, and the number that comes back is
 the width of one particular side. A handle is the only exception the project
 handles, and only because `expects_handle` sends the arm round for a second

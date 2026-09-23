@@ -275,7 +275,7 @@ Yes, with a lit panel behind the glasses.
 ## 3. Feeling with the fingers
 
 Longer treatment: [measuring by touch](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/02_sensors.md#2-measuring-by-touch)
-and [measuring by touching it](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#27-measuring-by-touching-it).
+and [measuring by touching it](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#29-measuring-by-touching-it).
 Both make the same two points this section runs into — that touch is the most
 accurate instrument an arm has, and that it is useless as a survey instrument,
 because you have to know roughly where to reach before you can reach.

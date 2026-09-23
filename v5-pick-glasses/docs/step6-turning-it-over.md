@@ -22,10 +22,16 @@ at the end of this document, and under *Decisions still open* in the
 Code: `rotate_tool()` and `descend_until_contact()` in `arm/motion.py`,
 `rack/layout.py`, and `_invert_and_place()` in `task.py`.
 
-Background, in robotics-basics: the descent is
+Background, in robotics-basics: the whole of this step is
+[letting go](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/05_holding-on.md#8-letting-go), which gives a six-step release
+sequence this one follows most of. Turning the glass over is
+[regrasping](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/05_holding-on.md#6-regrasping) avoided — nothing about a
+two-finger grasp lets you invert an object in the hand, so this project inverts
+the *arm* instead, which is why the wrist limit decides so much here. The
+descent is
 [the guarded move](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/02_sensors.md#21-what-you-can-actually-do-with-it) —
 drive slowly until something fires and record where the arm was — and the rack
-is found with [a marker of known size](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#23-a-marker-of-known-size).
+is found with [a marker of known size](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#24-a-marker-of-known-size).
 When the arm ends up somewhere it should not, the order to check things in is
 [the diagnosis ladder](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/07_making-it-work.md#3-when-it-does-not-work-a-diagnosis-ladder).
 
@@ -179,7 +185,10 @@ awkward angle.
 
 A glass going into a slot has `(spacing - width) / 2` of clearance on each
 side. It pivots about its rim as it goes down, so the lean that uses up that
-clearance is
+clearance is worked out per glass rather than chosen in advance — the general
+form of that is
+[from a measurement to a decision](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#28-from-a-measurement-to-a-decision).
+The lean is
 
     atan(clearance / height)
 
@@ -241,14 +250,29 @@ if not self._arm.load_transferred(GRIPPER_WEIGHT_N):
 
 Contact is not the same as support. A glass whose rim has caught on the edge of
 a peg registers a contact while still hanging from the gripper, and opening the
-fingers on it drops it.
+fingers on it drops it. [Letting go](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/05_holding-on.md#8-letting-go) states
+it as a rule — *move down until the weight leaves the wrist, not until
+something touches* — and it is the same pattern as the fault above: watch the
+sensor that observes the event, not the one nearest to it.
 
 The wrist sensor settles this. If the rack has taken the weight, the sensor is
 back to reading the gripper alone. If it is not, the glass is still there in
 the reading, and the arm says so instead of letting go.
 
 Only then do the fingers open, MoveIt is told the arm is empty, and the arm
-lifts away for the next glass.
+lifts away for the next glass. The retreat is straight up, which is deliberate:
+moving sideways at the moment the fingers open is how placed objects get
+knocked over, and it is the usual cost of blending the release into the next
+move.
+
+Two steps of that release sequence are missing here, and both are cheap.
+**The fingers open to `GRIPPER_MAX_OPENING` rather than to a width worked out
+from the glass** — which happens to be past its widest point, so it works, but
+by luck rather than by construction. And **nothing looks afterwards** to
+confirm the glass is where it was put, which
+[step 6 of the sequence](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/05_holding-on.md#8-letting-go) calls the
+difference between a cell that reports a failed placement and one that carries
+on stacking against a glass that is no longer there.
 
 ## What the run reports
 
@@ -362,7 +386,7 @@ the fault section above.
 position comes from one printed square on the rack base. If the marker is
 misread, or read at the wrong angle, the arm lowers a glass over bare table and
 has no way to know. That has already happened once, for exactly that reason.
-[A marker of known size](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#23-a-marker-of-known-size)
+[A marker of known size](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#24-a-marker-of-known-size)
 names the same failure — a bent or partly obscured marker gives a pose that is
 wrong in a way that looks plausible — and notes that a single small square is
 famously unstable in *angle* near face-on, which is exactly the quantity every
@@ -390,7 +414,8 @@ place would avoid.
 
 **Nothing watches the glass after it is released.** The fingers open, the arm
 lifts away, and the run moves on. A glass that topples out of its slot a second
-later is recorded as racked.
+later is recorded as racked. The wrist camera is looking more or less at the
+slot at that moment, so the picture costs one frame.
 
 ## Other ways to move the arm and place the glass
 

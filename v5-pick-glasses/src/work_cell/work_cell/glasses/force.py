@@ -116,8 +116,15 @@ def mass_from_wrist(total_newtons: float, gripper_newtons: float) -> float:
 def is_slipping(width_at_grasp: float, width_now: float, *, tolerance: float = 0.0005) -> bool:
     """Whether the fingers have crept closed since the glass was gripped.
 
-    Creeping means the glass is sliding down through the pads. Checked during a
-    slow twenty-degree tilt, because slipping is recoverable at twenty degrees
-    and is not at a hundred and eighty.
+    Checked during a slow twenty-degree tilt, because a slip is recoverable at
+    twenty degrees and is not at a hundred and eighty.
+
+    Read the name with care: the finger gap does not see a glass sliding
+    straight down a parallel wall, because the pads stay on the same
+    cross-section the whole way. It sees the glass being squashed, and it sees
+    a slide on a *tapered* glass, where sliding moves the pads to a narrower
+    part of the profile. On a straight glass it cannot fire at all. What would
+    see a slide is the wrist torque, which this project reads already for the
+    weighing step and does not watch for this. See step 5 in the docs.
     """
     return (width_at_grasp - width_now) > tolerance

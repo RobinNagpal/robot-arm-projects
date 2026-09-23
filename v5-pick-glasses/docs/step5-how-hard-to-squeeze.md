@@ -19,11 +19,14 @@ wine glass becomes a lever against the pads.
 
 Code: `glasses/force.py`, and `_pick_up()` in `task.py`.
 
-Background, in robotics-basics:
-[measuring by touch](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/02_sensors.md#2-measuring-by-touch) is what this step
-is, and [what you can actually do with it](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/02_sensors.md#21-what-you-can-actually-do-with-it)
-lists the four things used here — the guarded move, weighing what is held,
-detecting slip, and the force cap that keeps a fragile object intact.
+Background, in robotics-basics: the three stages below are
+[the squeeze sequence](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/05_holding-on.md#1-the-squeeze-sequence) — estimate,
+grip gently, lift a little, weigh, correct — and the arithmetic in the middle is
+[how hard to squeeze, from first principles](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/03_choosing-a-grip.md#4-how-hard-to-squeeze-from-first-principles).
+[What force control a gripper actually gives you](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/05_holding-on.md#2-what-force-control-a-gripper-actually-gives-you)
+is the one to read before trusting any number on this page, and
+[measuring by touch](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/02_sensors.md#2-measuring-by-touch)
+is the sensing side of it.
 
 What follows, in order:
 
@@ -101,6 +104,14 @@ With silicone on glass, `GRIP_FACTOR` is 0.6, and there are two pads.
 `SAFETY_FACTOR` doubles the answer, because friction coefficients are
 optimistic and a glass that starts sliding does not stop.
 
+Doubling is on the generous side of what
+[the safety factor](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/03_choosing-a-grip.md#41-the-safety-factor-is-where-the-physics-stops-and-the-judgement-starts)
+recommends, and that section makes a point this project has not acted on: the
+safety factor is usually hiding the arm's acceleration. Put the acceleration in
+the formula — `F = m * (g + a) * S / (2 * mu)` — and the factor covers only the
+uncertainties. This project moves slowly enough that it has not mattered, and
+it has never been measured either.
+
 So a 300 g glass wants about 5 N. That is the whole calculation, and it is not
 the hard part.
 
@@ -116,7 +127,11 @@ from outside there is no way to tell which you are looking at.
 `estimate_mass()` does what can be done: the glass is a shell, so the volume
 that matters is the surface swept by the outline times a thickness, plus a
 solid disc for the base. The thickness comes from the kind — "thin", "normal",
-"thick" — which is a category, not a measurement.
+"thick" — which is a category, not a measurement. That is the whole method in
+[estimating a mass before you can weigh it](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/02_sensors.md#22-estimating-a-mass-before-you-can-weigh-it),
+including the part worth copying: keep the category attached to the *kind*, and
+write down that it is a guess about a class rather than a measurement of an
+instance.
 
 The estimate is wrong by roughly a third in either direction.
 
@@ -172,7 +187,11 @@ re-gripping and lifting again costs two seconds.
 Each kind has a `force_cap_n` — 6 N for thin-walled, 12 for normal, 20 for
 thick. If the weight that comes back demands more than the cap,
 `force_for_measured_mass()` raises `TooHeavyToHold` and the glass goes in the
-refused column.
+refused column. That cap is the *other* bound on the squeeze, and
+[for anything fragile it is the binding one](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/03_choosing-a-grip.md#42-the-other-bound-which-is-the-one-that-actually-bites):
+the lower bound comes from friction, the upper one from what the walls can
+take, and clamping to the cap and lifting anyway turns a clean refusal into a
+crack.
 
 This is the case a project without a weighing step cannot even detect. A heavy
 glass with thin walls looks, from outside, exactly like a light one. Without
@@ -183,6 +202,16 @@ the lift, the arm would simply squeeze harder until something gave.
 A position controller cannot express any of this. Told to close to 9 mm on a
 9 mm stem, it keeps driving towards 9 mm. What happens next then depends on the
 joint's effort limit, rather than on anything the task decided.
+
+There is a larger caveat here that this project quietly assumes away.
+[The command is a torque request, not a force](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/05_holding-on.md#21-the-command-is-a-torque-request-not-a-force):
+on real hardware you cannot command a force at all. You command a position the
+fingers will not reach and a current limit they will, and what arrives at the
+object depends on how much the object gives way. Robotiq publish 220 N against
+steel and 115 N against soft rubber for the same gripper at the same setting,
+and specify force repeatability of ±10 per cent; OnRobot specify ±25 per cent
+on the RG2. In Gazebo the commanded effort arrives exactly, so every number on
+this page is cleaner than it would be on a bench.
 
 So the gripper has two controllers on the same two joints —
 `gripper_controller` on position, `gripper_force_controller` on effort — and
@@ -196,16 +225,38 @@ with the glass still sitting in them.
 The squeeze can still be wrong, and the way to find out is to ask the glass.
 
 `is_slipping()` compares the finger gap now against the gap when the glass was
-gripped. Fingers that have crept closed mean the glass is sliding down through
-the pads — there is no other reason for the gap to shrink. This is the cheap
-one of [the two ways to detect slip](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/02_sensors.md#21-what-you-can-actually-do-with-it);
-the good one reads shear off a tactile pad and catches it before the object has
-visibly moved.
+gripped. If the fingers have crept closed, something is wrong.
 
 It is checked during a slow 20-degree lean, and the angle is the point. Twenty
 degrees puts some of the weight on the pads sideways, which is what makes a
 marginal grip fail, and a glass leaning 20 degrees can be brought back upright.
 A glass at 180 degrees cannot.
+
+**This check is weaker than it looks, and it is worth being exact about how.**
+[The finger-gap check, and what it cannot
+see](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/05_holding-on.md#41-the-finger-gap-check-and-what-it-cannot-see) lists
+three ways an object can move in the fingers, and the gap sees one of them.
+
+- **Sliding straight down** is what "slip" usually means, and on a parallel
+  wall it does not change the gap at all. The pads stay pressed on the same
+  cross-section the whole way down. The gap changes at the moment the glass has
+  gone entirely, when the fingers snap shut on nothing.
+- **Rotating between the pads** changes nothing about the gap on a glass, which
+  is round.
+- **The fingers creeping closed** is the case the gap does see: the glass being
+  squashed, or drawn into a narrower part of a tapered wall.
+
+So on a tapered or stemmed glass this check does fire on a real slide, because
+sliding moves the pads to a narrower part of the profile. On a straight glass
+it does not. That is not what the name `is_slipping()` suggests, and the run
+report has never disagreed with it, because a check that cannot fire never
+reports anything.
+
+The instruments that do see a slide are in
+[what does see slip](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/05_holding-on.md#42-what-does-see-slip): shear off a
+tactile pad, high-frequency vibration, a second look from the wrist camera, or
+the wrist *torque* rather than its force. The last of those needs no new
+hardware, and this project already reads that sensor for the weighing step.
 
 ## Which way is down
 
@@ -251,15 +302,28 @@ a force cap. Anything demanding more goes in the refused column. That is
 deliberate, and it means a heavy glass this gripper could in fact hold gets
 left standing.
 
+**The force that is commanded is taken to be the force that arrives.** True in
+Gazebo and not on hardware, for the reason under *Commanding a force at all*
+above. On a real gripper the first thing to fix on this page would be to stop
+treating the effort command as a force and start measuring what actually
+arrives —
+[knowing how much force was applied](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/06_two-finger-gripper.md#3-knowing-how-much-force-was-applied)
+lists the five routes, and points out that the commonest gripper's ROS 2 driver
+exports no effort interface at all, so a great deal of published example code
+reads a number nothing ever wrote.
+
 **Weighing assumes nothing else is touching the glass.** The wrist reads
 everything hanging below it. A glass still resting on the table, or caught on a
 neighbour, weighs less than it is. The 10 mm lift is what is supposed to
 guarantee it hangs free, and 10 mm is not much.
 
-**Slip is only checked during the lean.** `is_slipping()` compares the finger
-gap now against the gap at the grasp. Between those checks, a glass can slide
-without anything noticing. The check also cannot see a glass rotating in the
-pads, which does not change the gap at all.
+**Slip is only checked during the lean, and the check is the wrong instrument.**
+`is_slipping()` watches the finger gap, which sees a glass being squashed and
+not a glass sliding down a parallel wall — the section above is about why. On a
+straight glass it cannot fire at all. Between the checks, a glass can slide
+with nothing noticing. Fixing it properly means watching the wrist torque, or
+taking a second look, both of which are set out in
+[what does see slip](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/05_holding-on.md#42-what-does-see-slip).
 
 **Friction is a single number for silicone on glass.** `GRIP_FACTOR` is 0.6
 everywhere, doubled by a safety factor. A wet glass — which is the entire
@@ -300,7 +364,7 @@ more force than the wall is rated for. What it cannot do is notice a grip that
 is *about* to fail for a reason the sum does not model — a wet glass, a greasy
 pad, a wall thinner on one side.
 
-**[Tactile skin on the pads](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/02_sensors.md#22-the-sensors)** is what a
+**[Tactile skin on the pads](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/02_sensors.md#23-the-sensors)** is what a
 serious version of this would use.
 [GelSight](https://github.com/gelsightinc/gsrobotics) and [DIGIT](https://digit.ml/) style
 sensors put a camera behind a soft pad and watch the pad deform. That gives the
@@ -328,7 +392,7 @@ ever finding the failure point.
 whose fingers have springs and joints of their own spreads the load over a
 curved surface by itself, so the exact force matters much less. The software
 side of that is already standard —
-[`admittance_controller` in ros2_controllers](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/02_sensors.md#23-the-software)
+[`admittance_controller` in ros2_controllers](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/02_sensors.md#24-the-software)
 makes an ordinary arm comply with what its force sensor reads. Fruit picking
 and warehouse suction are full of this idea for good reason. It would make
 most of this page unnecessary, and it is a change to the robot rather than to

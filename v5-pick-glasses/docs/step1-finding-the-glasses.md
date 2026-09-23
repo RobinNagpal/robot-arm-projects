@@ -230,8 +230,11 @@ height covers half as many pixels and is still the same glass.
 
 One detail is worth half a millimetre. The edges are taken half a pixel outside
 the outermost glass pixels. A pixel's position is its centre, so the outside of
-the leftmost pixel is half a pixel further left. Without that, every width
-comes out one pixel short. That is a bias, not noise.
+the leftmost pixel is half a pixel further left. Without that, every width comes
+out one pixel short. That is a bias, not noise — it never averages out and it is
+always in the same direction. It is one of the two corrections in
+[reading a mask honestly](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#18-reading-a-mask-honestly);
+step 2 runs into the other one.
 
 ## What this step deliberately does not produce
 
@@ -278,6 +281,14 @@ shift measures the height. Step sideways by `d`, and a glass lying flat on the
 table appears to move by `d` divided by however much it was stretched. Each
 survey station therefore takes two pictures a known distance apart, and
 `where_they_stand()` works the rest out.
+
+The technique is [two photos from one moving
+camera](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#23-two-photos-from-one-moving-camera),
+which is worth reading for one point this document glosses over: it is *not*
+stereo matching. Stereo uses two cameras and matches every pixel; this uses one
+camera the arm moves and matches whole outlines. And the baseline comes from
+the arm's own encoders, so unlike a stereo rig's it is known exactly and needs
+no calibration to keep.
 
 Two things follow. The stations are spaced by how much table *both* pictures of
 a pair cover, not by how much one picture covers. A glass caught in only one of

@@ -131,9 +131,22 @@ sections it uses, and this is the map:
 | [Licences and platforms](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/06_licences-and-platforms.md) | which of those may actually be shipped, and what runs on a Mac |
 | [Making it work](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/07_making-it-work.md) | why mAP is not the metric for an arm, the diagnosis ladder, and what a simulator will not tell you |
 
+Steps 4, 5 and 6 are gripping rather than perception, and they have their own
+area: [gripping](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/01_overview.md).
+
+| Document | What this project takes from it |
+| --- | --- |
+| [Overview](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/01_overview.md) | the six ways to hold something, what a grip has to survive, and the three things every tutorial leaves out |
+| [Grippers and hardware](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/02_grippers-and-hardware.md) | how to read a datasheet, why the force you command is not the force you get, and the sensors that go on a gripper |
+| [Choosing a grip](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/03_choosing-a-grip.md) | the friction arithmetic behind step 5, rules from a measured profile, bounding the search by the gripper's own body, and how to test a grip rule |
+| [Models that grasp](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/04_models-that-grasp.md) | the grasp networks step 4 turns down, and which of them may be shipped |
+| [Holding on](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/05_holding-on.md) | the five-step squeeze sequence, what a finger-gap slip check cannot see, and the release sequence |
+| [The two-finger gripper](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/06_two-finger-gripper.md) | this cell's gripper, its ROS 2 interfaces, and the grasp written out as pseudocode |
+| [Licences and platforms](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/07_licences-and-platforms.md) | what may be shipped, and what runs without CUDA |
+
 There is also a design document for this exact task, written before any of the
 code: [standing an empty glass upside down on a drying
-rack](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/08_one-arm-training/07_case-study/01_place-glass.md).
+rack](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/10_one-arm-training/07_case-study/01_place-glass.md).
 It is worth reading against what was actually built, because the two have
 diverged — most of all on transparency, which that document assumes and this
 project now does not.

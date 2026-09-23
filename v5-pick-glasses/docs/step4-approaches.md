@@ -10,14 +10,16 @@ measurement, or learn it from examples. Everything below is one of those two,
 or a way of correcting the answer once it exists. Some of them overlap, and
 two of them are only useful together.
 
-The family this project does not use has its own section in robotics-basics —
-[models that choose where to grip](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/04_models-that-find.md#2-models-that-choose-where-to-grip) —
-and it states the argument for the rules better than this page does: *if your
-object has a sentence — hold the narrowest part below the widest — the sentence
-beats the network*, because a grasp model is trained to predict whether a grip
-will slip, and there is nowhere in it to say that a wine glass must be held by
-the stem, or that a grip above half the glass's height cannot be inverted
-afterwards.
+Every approach below has a longer treatment in the **gripping** area of
+robotics-basics, and each one links to it. The two that cover the most ground
+here are [choosing a grip](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/03_choosing-a-grip.md), for everything worked
+out from a measurement, and [models that grasp](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/04_models-that-grasp.md),
+for everything learned from examples. The argument for the rules is put better
+there than on this page: *if your object has a sentence — hold the narrowest
+part below the widest — the sentence beats the network*, because a grasp model
+is trained on one property, whether the object fell out, and there is nowhere
+in it to say that a wine glass must be held by the stem, or that a grip above
+half the glass's height cannot be inverted afterwards.
 
 | Approach | What it does | What it runs on | Suitability here |
 | --- | --- | --- | --- |
@@ -50,6 +52,13 @@ second plan.
 
 ### Ranked search
 
+Longer treatment: [grasp quality metrics you can
+compute](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/03_choosing-a-grip.md#8-grasp-quality-metrics-you-can-compute) for
+what to score candidates on, and
+[bounding the search by the gripper's own body](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/03_choosing-a-grip.md#7-bounding-the-search-by-the-grippers-own-body)
+for the ordering mistake to avoid — filter by what the gripper can physically
+do *before* scoring, not after.
+
 The same rules, but they stop picking a single winner. They hand back a list,
 best first.
 
@@ -68,8 +77,10 @@ They are "this glass cannot be held *the first way tried*".
 ### Feel for it
 
 Longer treatment: [what you can actually do with
-touch](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/02_sensors.md#21-what-you-can-actually-do-with-it) and
-[measuring by touching it](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#27-measuring-by-touching-it).
+touch](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/02_sensors.md#21-what-you-can-actually-do-with-it),
+[measuring by touching it](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#29-measuring-by-touching-it),
+and [the sensors that go on a gripper](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/02_grippers-and-hardware.md#8-the-sensors-that-go-on-a-gripper)
+for what each one would cost.
 
 The fingers are sensors too. If they close and find nothing, look around with
 them.
@@ -163,6 +174,10 @@ where nobody can read it. And when it fails it cannot say why.
 
 ### Reinforcement learning
 
+Longer treatment: [dexterous hands, and grasping language
+models](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/04_models-that-grasp.md#7-dexterous-hands-and-grasping-language-models)
+covers where the learned end of this field has actually got to.
+
 No teacher. The arm tries, gets scored, and finds its own way.
 
 The arm grabs. Glass ends up on the rack, points; glass dropped, no points.
@@ -176,11 +191,20 @@ would take a lifetime.
 
 ### Off-the-shelf grasp network
 
-Longer treatment: [models that choose where to
-grip](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/04_models-that-find.md#2-models-that-choose-where-to-grip), with the
-licence on each. Of the five that exist, one is permissive and stale, three are
-non-commercial or bespoke, and the strongest is licence-keyed to a machine you
-register.
+Longer treatment: [models that grasp](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/04_models-that-grasp.md), which is a
+whole document rather than a table — what a grasp model actually predicts, the
+[Contact-GraspNet](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/04_models-that-grasp.md#41-the-contact-graspnet-line)
+and [GraspNet-1Billion](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/04_models-that-grasp.md#42-the-graspnet-1billion-line)
+lines, and
+[GraspGen, the one genuinely permissive modern model](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/04_models-that-grasp.md#43-graspgen-and-the-one-genuinely-permissive-modern-model).
+Two sections matter before adopting any of them:
+[the licence picture](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/04_models-that-grasp.md#5-the-licence-picture), and
+[what runs without CUDA](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/04_models-that-grasp.md#8-what-runs-without-cuda),
+which matters on this machine.
+
+If one were used here it would be as a
+[candidate generator](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/04_models-that-grasp.md#9-using-a-model-as-a-candidate-generator)
+with the rules filtering it, rather than as the decider.
 
 Someone has already trained a large model on millions of grasps. Give it a 3D
 scan, and it gives grasps back.

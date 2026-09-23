@@ -5,7 +5,7 @@
 Drinking glasses stand on a table, the way they would after a meal. A robot
 arm takes each one, turns it upside down, and stands it on a drying rack. The
 design document this grew out of is [standing an empty glass upside down on a
-drying rack](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/08_one-arm-training/07_case-study/01_place-glass.md); what follows is the version that was actually built, and
+drying rack](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/10_one-arm-training/07_case-study/01_place-glass.md); what follows is the version that was actually built, and
 it differs from that one, most of all in assuming the glasses are opaque. It
 has to do that without being told anything about the glasses beforehand. Not
 how tall they are. Not how wide, not how heavy. Not even which of them is a
@@ -50,7 +50,11 @@ glass that place is the stem, a few millimetres across. On a tumbler it is a
 band near the base. Finding it means finding a *feature*, not a coordinate.
 
 **And dropping one costs more than trying again.** Broken glass leaves shards,
-and an arm that carries on working moves through them. This is the thing that shapes the whole
+and an arm that carries on working moves through them. In the language of
+[how hard to squeeze](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/03_choosing-a-grip.md#42-the-other-bound-which-is-the-one-that-actually-bites),
+the binding limit here is not the friction that stops a glass slipping. It is
+the force at which the glass breaks, and the right response to needing more
+than that is to refuse. This is the thing that shapes the whole
 design. Anywhere else, a robot may try and fail cheaply. Here it may not. So a
 doubt has to end the attempt rather than be pushed through.
 
@@ -61,7 +65,9 @@ doubt has to end the attempt rather than be pushed through.
   at the middle of one long edge and 400 mm in from it. Everything happens
   within about 780 mm of its base, which is what it can reach comfortably.
 - **A two-finger parallel gripper** with silicone pads, defined in this repo.
-  It opens to 95 mm and the pads are 14 mm tall. The pads are not a detail. A
+  It opens to 95 mm and the pads are 14 mm tall. It is the commonest kind of
+  gripper there is, and what its datasheet numbers mean is
+  [how to read a gripper datasheet](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/02_grippers-and-hardware.md#1-how-to-read-a-gripper-datasheet). The pads are not a detail. A
   rigid pad touches a curved glass at a single point. A soft one spreads over a
   patch. That is the difference between holding a glass and polishing it.
 - **Three sensors**, each one there because a particular thing cannot be seen.

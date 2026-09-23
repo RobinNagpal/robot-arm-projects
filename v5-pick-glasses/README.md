@@ -274,12 +274,14 @@ reasoning they come from.
 - [`implementation-notes.md`](implementation-notes.md) — why each choice was
   made, and what breaks it.
 
-None of the perception here is invented for this project. Each step is one
-named technique, and the place they are set out side by side — what each is
-for, what it costs, and the jobs it cannot do — is the **object perception**
-area of [robotics-basics](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/01_overview.md). Every step document links to the
-sections it uses, and [`docs/README.md`](docs/README.md#where-the-techniques-come-from)
-has the map. There is also a design document for this exact task, written
+None of the perception or the gripping here is invented for this project. Each
+step is one named technique, and the places they are set out side by side —
+what each is for, what it costs, and the jobs it cannot do — are the **object
+perception** and **gripping** areas of robotics-basics:
+[finding and measuring](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/01_overview.md) for steps 1 to 3, and
+[gripping](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/01_overview.md) for steps 4 to 6. Every step document links to
+the sections it uses, and
+[`docs/README.md`](docs/README.md#where-the-techniques-come-from) has the map. There is also a design document for this exact task, written
 before the code:
-[standing an empty glass upside down on a drying rack](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/08_one-arm-training/07_case-study/01_place-glass.md).
+[standing an empty glass upside down on a drying rack](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/10_one-arm-training/07_case-study/01_place-glass.md).
 
