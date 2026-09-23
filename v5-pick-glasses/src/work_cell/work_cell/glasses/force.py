@@ -108,6 +108,12 @@ def force_for_measured_mass(mass: float, kind: Kind) -> float:
     return needed
 
 
+# TEST SETTING: how much harder than the wall's rating to hold while turning.
+# 1.0 is the rating itself. Raised to 1.3 to try a firmer hold; above 1.0 it
+# is past what the wall is rated for, so set it back once the test is done.
+HOLD_BOOST = 1.3
+
+
 def holding_force(mass: float, kind: Kind) -> float:
     """What to hold a weighed glass with while it is turned over and carried.
 
@@ -124,7 +130,7 @@ def holding_force(mass: float, kind: Kind) -> float:
     will not carry the glass.
     """
     force_for_measured_mass(mass, kind)
-    return kind.force_cap_n
+    return kind.force_cap_n * HOLD_BOOST
 
 
 def mass_from_wrist(total_newtons: float, gripper_newtons: float) -> float:

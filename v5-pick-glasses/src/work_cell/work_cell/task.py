@@ -71,6 +71,7 @@ from .glasses.detect import (
 )
 from .glasses.force import (
     CONTACT_FORCE_N,
+    HOLD_BOOST,
     TooHeavyToHold,
     estimate_mass,
     force_for_measured_mass,
@@ -796,9 +797,10 @@ class PickGlassesTask:
         hold = holding_force(mass, kind)
         self._report.doing(
             "re-squeeze if the guess was low",
-            f"the weight alone needs {needed:.1f} N, but it is set down and re-gripped at the "
-            f"{hold:.1f} N the wall is rated for: the weight sum stops it sliding down, not "
-            "turning about the line between the pads once it is upside down",
+            f"the weight alone needs {needed:.1f} N, but it is set down and re-gripped at "
+            f"{hold:.1f} N, {HOLD_BOOST:.1f} times the {kind.force_cap_n:.1f} N the wall is "
+            "rated for: the weight sum stops it sliding down, not turning about the line "
+            "between the pads once it is upside down",
         )
         # Setting it down and re-gripping is safe; increasing the squeeze while
         # holding it arrives as a shock.

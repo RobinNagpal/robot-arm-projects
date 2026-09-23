@@ -2,6 +2,7 @@ import pytest
 from work_cell.glasses import spec
 from work_cell.glasses.force import (
     CONTACT_FORCE_N,
+    HOLD_BOOST,
     TooHeavyToHold,
     estimate_mass,
     force_for_measured_mass,
@@ -132,7 +133,7 @@ def test_a_weighed_glass_is_held_at_its_walls_rating():
     # The weight sum stops it sliding down, not turning in the fingers.
     for name in ("straight_glass", "stemmed_glass"):
         kind = spec.kind(name)
-        assert holding_force(0.150, kind) == pytest.approx(kind.force_cap_n)
+        assert holding_force(0.150, kind) == pytest.approx(kind.force_cap_n * HOLD_BOOST)
         assert holding_force(0.150, kind) >= force_for_measured_mass(0.150, kind)
 
 

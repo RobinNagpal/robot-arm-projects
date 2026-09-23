@@ -33,6 +33,17 @@ from ...transforms import transform_to_matrix
 # the camera hunting for a square the rack does not carry.
 
 
+# How long after a picture is asked for it has to have been taken, in the
+# simulator's time. Long enough for the arm to settle once a move reports
+# done; short against everything else a measurement waits for.
+SETTLE_S = 0.3
+
+
+def _taken_after(msg: Image, after: rclpy.time.Time) -> bool:
+    """Whether an image was taken no earlier than ``after``."""
+    return rclpy.time.Time.from_msg(msg.header.stamp) >= after
+
+
 @dataclass(frozen=True)
 class View:
     """One RGB-D frame and where the camera was when it was taken."""
@@ -144,21 +155,32 @@ class WristCamera:
         raise CaptureTimeout(f"no camera frames within {timeout:.0f}s (messages so far: {self._counts})")
 
     def capture(self, timeout: float = 10.0) -> View:
-        """Take a fresh frame.
+        """Take a fresh frame, taken after the arm has stopped and settled.
 
-        Frames already in hand are thrown away first. The arm is standing
-        still whenever this is called, so waiting for the next pair of images
-        is enough to be sure they show the pose the arm is in now.
+        The next image to arrive is not enough. Images take a while to get
+        here, so the next one can have been rendered while the arm was still
+        moving. Its pose, meanwhile, is read as of now. The two then disagree:
+        a picture taken mid-move, tilted and from higher up, measured with the
+        camera where it has since stopped. That measured a 167 mm glass as
+        136 mm. So only images stamped at least SETTLE_S after this call, in
+        the simulator's own time, are used.
         """
         with self._lock:
             self._rgb = None
             self._depth = None
+        after = self._node.get_clock().now() + Duration(seconds=SETTLE_S)
 
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
             with self._lock:
                 rgb, depth, info = self._rgb, self._depth, self._info
-            if rgb is not None and depth is not None and info is not None:
+            if (
+                rgb is not None
+                and depth is not None
+                and info is not None
+                and _taken_after(rgb, after)
+                and _taken_after(depth, after)
+            ):
                 return self._build_view(rgb, depth, info)
             time.sleep(0.02)
 
