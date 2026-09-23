@@ -35,13 +35,13 @@ import numpy as np
 from .arm.camera import WristCamera
 from .arm.dimensions import (
     CAMERA_OFFSET,
+    CARRY_SPEED,
     COMFORTABLE_REACH,
     FINGERTIP_OFFSET,
     GRASP_DEPTH,
     GRASP_NUDGE_LIMIT,
     GRASP_OFFSET,
     GRIPPER_MAX_OPENING,
-    CARRY_SPEED,
     GRIPPER_WEIGHT_N,
     LIFT_HEIGHT,
     LOWEST_GRIP,

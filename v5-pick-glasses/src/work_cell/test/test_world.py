@@ -7,12 +7,12 @@ import pytest
 from work_cell.arm.dimensions import COMFORTABLE_REACH
 from work_cell.glasses.spawn import random_glasses
 from work_cell.rack.build import rack_sdf, random_rack_pose, write_marker
-from work_cell.rack.layout import PEG_HEIGHT
 from work_cell.rack.layout import (
     GLASS_ZONE,
     MARKER_DICTIONARY,
     MARKER_ID,
     MARKER_SIZE,
+    PEG_HEIGHT,
     SLOT_COUNT,
     SLOT_SPACING,
     slots_from_marker,

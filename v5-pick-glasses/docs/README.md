@@ -124,6 +124,44 @@ two the same: it reads every line the report writes and fails if one of them is
 not in some step's pseudocode block. Reword one side and the test asks you to
 reword the other.
 
+## Where the techniques come from
+
+None of the perception here is invented for this project. Each step is one named
+technique, and the place they are all set out side by side — what each is for,
+what it costs, and the five jobs it cannot do — is the **object perception**
+area of [robotics-basics](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/01_overview.md). Every step document links to the
+sections it uses, and this is the map:
+
+| Document | What this project takes from it |
+| --- | --- |
+| [Overview](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/01_overview.md) | why one picture has no size, the pixels-to-millimetres calculation every measurement here reduces to, and the three ways to supply the distance it needs |
+| [The sensors](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/02_sensors.md) | why a depth camera fails on real glass, what a wrist force sensor can and cannot tell you, and why calibration is usually the largest error |
+| [Methods you write yourself](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md) | almost all of this project: the plane an object stands on, connected components, ArUco markers, silhouettes of a solid of revolution, and measuring by touch |
+| [Models that find](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/04_models-that-find.md) | the alternatives each step turned down — mask models, Segment Anything, open-vocabulary models, and grasp networks |
+| [Models that measure](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/05_models-that-measure.md) | learned depth, stereo matching, pose from a CAD model, and reconstruction |
+| [Licences and platforms](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/06_licences-and-platforms.md) | which of those may actually be shipped, and what runs on a Mac |
+| [Making it work](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/07_making-it-work.md) | why mAP is not the metric for an arm, the diagnosis ladder, and what a simulator will not tell you |
+
+Steps 4, 5 and 6 are gripping rather than perception, and they have their own
+area: [gripping](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/01_overview.md).
+
+| Document | What this project takes from it |
+| --- | --- |
+| [Overview](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/01_overview.md) | the six ways to hold something, what a grip has to survive, and the three things every tutorial leaves out |
+| [Grippers and hardware](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/02_grippers-and-hardware.md) | how to read a datasheet, why the force you command is not the force you get, and the sensors that go on a gripper |
+| [Choosing a grip](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/03_choosing-a-grip.md) | the friction arithmetic behind step 5, rules from a measured profile, bounding the search by the gripper's own body, and how to test a grip rule |
+| [Models that grasp](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/04_models-that-grasp.md) | the grasp networks step 4 turns down, and which of them may be shipped |
+| [Holding on](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/05_holding-on.md) | the five-step squeeze sequence, what a finger-gap slip check cannot see, and the release sequence |
+| [The two-finger gripper](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/06_two-finger-gripper.md) | this cell's gripper, its ROS 2 interfaces, and the grasp written out as pseudocode |
+| [Licences and platforms](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/07_licences-and-platforms.md) | what may be shipped, and what runs without CUDA |
+
+There is also a design document for this exact task, written before any of the
+code: [standing an empty glass upside down on a drying
+rack](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/10_one-arm-training/07_case-study/01_place-glass.md).
+It is worth reading against what was actually built, because the two have
+diverged — most of all on transparency, which that document assumes and this
+project now does not.
+
 ## The pictures
 
 Every picture in `../images/` is drawn by [`make_images.py`](make_images.py),

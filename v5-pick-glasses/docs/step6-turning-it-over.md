@@ -23,6 +23,19 @@ Code: `_invert_and_place()` in `task.py`; `turn_wrist()`,
 `descend_until_contact()` and `load_transferred()` in `arm/motion.py`; and
 `rack/layout.py`.
 
+Background, in robotics-basics: the whole of this step is
+[letting go](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/05_holding-on.md#8-letting-go), which gives a six-step release
+sequence this one follows most of. Turning the glass over is
+[regrasping](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/05_holding-on.md#6-regrasping) avoided — nothing about a
+two-finger grasp lets you invert an object in the hand, so this project inverts
+the *arm* instead, which is why the wrist limit decides so much here. The
+descent is
+[the guarded move](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/02_sensors.md#21-what-you-can-actually-do-with-it) —
+drive slowly until something fires and record where the arm was — and the rack
+is found with [a marker of known size](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#24-a-marker-of-known-size).
+When the arm ends up somewhere it should not, the order to check things in is
+[the diagnosis ladder](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/07_making-it-work.md#3-when-it-does-not-work-a-diagnosis-ladder).
+
 What follows, in order:
 
 - the whole step in six pictures
@@ -135,6 +148,10 @@ as it does, and a tall glass uses up that room with a much smaller lean than a
 short one. The biggest lean a glass can afford is
 
     atan(room on each side / glass height)
+
+which is worked out per glass rather than chosen in advance. The general form
+of that — let the measurement decide the tolerance — is
+[from a measurement to a decision](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#28-from-a-measurement-to-a-decision).
 
 ![How much a glass may lean going into a slot](../images/tilt-budget.png)
 
@@ -254,7 +271,10 @@ touch rather than a knock.
 **What counts as a touch.** The pads have contact sensors, but when a glass is
 set down the pads touch nothing: the rim does. So the arm also watches the
 wrist force sensor. As the rack starts to carry the glass, the weight the wrist
-feels drops. That drop is the touch.
+feels drops. That drop is the touch. This is
+[the guarded move](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/02_sensors.md#21-what-you-can-actually-do-with-it), and
+the general rule it breaks is worth keeping: watch the sensor that observes the
+event, not the one nearest to it.
 
 The reading has a direction as well as a size. One step past the moment of
 touching, the arm is pressing the glass down onto the rack, which pushes back
@@ -277,10 +297,25 @@ fingers would drop it.
 So `load_transferred()` asks the wrist sensor one more question. If the rack
 has taken the glass's weight, the wrist is back to feeling the gripper alone,
 about 9.5 N. If it still feels the glass, the rim is caught, and the fingers
-stay shut.
+stay shut. [Letting go](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/05_holding-on.md#8-letting-go) states it as a rule
+— *move down until the weight leaves the wrist, not until something touches* —
+and gives the rest of the release sequence, two steps of which this project
+does not do.
 
 Only then do the fingers open, MoveIt is told the arm is empty, and the arm
-lifts away for the next glass.
+lifts away for the next glass. The retreat is straight up, which is deliberate:
+moving sideways at the moment the fingers open is how placed objects get
+knocked over, and it is the usual cost of blending the release into the next
+move.
+
+Two steps of that release sequence are missing here, and both are cheap.
+**The fingers open to `GRIPPER_MAX_OPENING` rather than to a width worked out
+from the glass** — which happens to be past its widest point, so it works, but
+by luck rather than by construction. And **nothing looks afterwards** to
+confirm the glass is where it was put, which
+[step 6 of the sequence](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/05_holding-on.md#8-letting-go) calls the
+difference between a cell that reports a failed placement and one that carries
+on stacking against a glass that is no longer there.
 
 ## What went wrong
 
@@ -337,6 +372,11 @@ is about what to do then.
 **Every slot position comes from one marker.** If the marker is misread, or
 read at the wrong angle, the arm lowers the glass over bare table and cannot
 tell. That has already happened once.
+[A marker of known size](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#24-a-marker-of-known-size)
+names the same failure — a bent or partly obscured marker gives a pose that is
+wrong in a way that looks plausible — and adds that a single small square is
+unstable in *angle* near face-on, which is exactly the quantity every slot
+position here comes from.
 
 **The slot is chosen before the path to it is known.** The lean budget says
 whether a glass fits in a slot. It does not say whether the arm can get it
@@ -357,7 +397,11 @@ straight line to it is refused, and the glass is turned wherever the arm is.
 
 **Nothing watches the glass after it is let go.** The fingers open, the arm
 lifts away, and the run moves on. A glass that topples out of its slot a second
-later is counted as racked.
+later is counted as racked. The wrist camera is pointed more or less at the
+slot at that moment, so the picture costs one frame — it is the last step of
+the release sequence in [letting go](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/05_holding-on.md#8-letting-go), and
+the difference between a cell that reports a failed placement and one that
+carries on stacking against a glass that is not there.
 
 ## Other ways it could have been done
 

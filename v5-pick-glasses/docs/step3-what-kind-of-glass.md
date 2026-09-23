@@ -19,6 +19,12 @@ stem. A tumbler is held low on its wall.
 
 Code: `classify()` and `wall_lean_deg()` in `glasses/detect.py`.
 
+Background, in robotics-basics:
+[four answers, and which one you need](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/01_overview.md#1-four-answers-and-which-one-you-need)
+is about what a vision component can be asked for, and this step is the one
+that asks for a *class*. Why it needs no model is
+[when a model makes things worse](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/01_overview.md#21-when-a-model-makes-things-worse).
+
 What follows, in order:
 
 - the step in pseudocode, and the libraries it uses
@@ -239,7 +245,10 @@ description of the shape.
 
 **Classical machine learning** is the fairest comparison. It would take the
 same few numbers the rules take, such as the waist height and the lean, and
-learn the lines between kinds instead of having them written down. A decision
+learn the lines between kinds instead of having them written down. The data
+would be drawn in the simulator rather than photographed —
+[making the training data in a simulator](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/04_models-that-find.md#31-making-the-training-data-in-a-simulator)
+is how, and this project already generates the glasses to do it with. A decision
 tree would probably match the rules on these glasses, and it can be read
 afterwards. The costs are a labelled set of glasses, and lines that fit the
 sample rather than lines that are true of glassware. "The narrowest part below
@@ -255,7 +264,11 @@ file of trained weights that has to be kept up to date with the glassware.
 Neither can say why it decided anything.
 
 **[CLIP](https://github.com/openai/CLIP)** needs no training to recognise a
-wine glass in a picture, which makes it the cheapest way to get a name.
+wine glass in a picture, which makes it the cheapest way to get a name. It
+belongs to the [open-vocabulary](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/04_models-that-find.md#14-open-vocabulary-models)
+family, where the class is a phrase you type rather than one somebody trained,
+which also makes
+[the wording a variable in the system](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/01_overview.md#4-closed-set-open-vocabulary-and-promptable).
 But a name is not what this step is for. Step 4 does not need to know the glass
 is *called* a wine glass. It needs to know there is a narrow part below a wide
 part, so it can hold the narrow part. A model that gives the name confidently

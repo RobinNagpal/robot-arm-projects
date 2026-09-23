@@ -23,6 +23,14 @@ fail says what breaks when the assumption is dropped, and
 
 Code: `glasses/detect.py`, and `_survey()` in `task.py`.
 
+Background, in robotics-basics: this step is
+[point clouds, remove the plane then cluster](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#16-point-clouds-remove-the-plane-then-cluster)
+done in two dimensions, with the position coming from
+[the plane the object stands on](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#22-the-plane-the-object-stands-on).
+The reason one picture is not enough is
+[why one picture has no size](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/01_overview.md#5-why-one-picture-has-no-size)
+and [the three ways to supply the missing fact](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/01_overview.md#7-the-three-ways-to-supply-the-missing-fact).
+
 What follows, in order:
 
 - the step in pseudocode, and the libraries it uses
@@ -123,6 +131,13 @@ Once every pixel is a point in the room, finding a glass is almost too simple
 to write down. The table top is at a known height. A point above that height is
 something standing on the table. A point at that height is the table.
 
+This is the standard table-top recipe —
+[remove the plane, then cluster](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#16-point-clouds-remove-the-plane-then-cluster) —
+with one simplification. That recipe finds the plane with RANSAC, because it
+does not know where the table is. Here the table is bolted to the same frame as
+the arm and its height was measured once at startup, so the plane is a constant
+and the search is a comparison.
+
 ```python
 standing = np.isfinite(depth) & (depth > 0.0) & (height > table_z + clearance)
 ```
@@ -178,9 +193,12 @@ describing one particular glass is the one thing this project may not hold.
 
 ## From a patch of pixels to a place on the table
 
-`_label()` groups the mask into patches with a flood fill. There are a few
-glasses in a 320×240 frame, so the simple version is fast and brings in no new
-dependency. Anything under 150 pixels is thrown away as a speck.
+`_label()` groups the mask into patches with a flood fill. That step has a name
+— [connected components](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#13-edges-contours-and-connected-components) —
+and it is what turns "these pixels are glass" into "these are one glass and
+those are another". There are a few glasses in a 320×240 frame, so the simple
+version is fast and brings in no new dependency. Anything under 150 pixels is
+thrown away as a speck.
 
 Turning a patch into a position is the interesting part. The one thing the
 camera cannot give here is a distance to the glass. The glass has no depth
@@ -199,7 +217,11 @@ point = eye + ray * ((z - eye[2]) / ray[2])
 ```
 
 That is `View.to_world()`. The table plane does the job the distance would have
-done.
+done, and it is one of the
+[three ways to supply the missing fact](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/01_overview.md#7-the-three-ways-to-supply-the-missing-fact):
+measure the distance, know the plane, or put something of known size in the
+picture. This project uses two of the three — the plane here, and a printed
+marker for the rack.
 
 The footprint width is measured the same way. Both edges of the patch are laid
 down on the table, and the distance between them is taken there. It is *not* a
@@ -208,8 +230,11 @@ height covers half as many pixels and is still the same glass.
 
 One detail is worth half a millimetre. The edges are taken half a pixel outside
 the outermost glass pixels. A pixel's position is its centre, so the outside of
-the leftmost pixel is half a pixel further left. Without that, every width
-comes out one pixel short. That is a bias, not noise.
+the leftmost pixel is half a pixel further left. Without that, every width comes
+out one pixel short. That is a bias, not noise — it never averages out and it is
+always in the same direction. It is one of the two corrections in
+[reading a mask honestly](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#18-reading-a-mask-honestly);
+step 2 runs into the other one.
 
 ## What this step deliberately does not produce
 
@@ -237,7 +262,11 @@ decided after it has looked at the glass properly.
 
 Laying a ray down on the table is exact for anything lying flat *on* the table.
 That is why the marker on the rack is found perfectly every run: it is printed
-flat on the rack's base. A glass is not flat. From overhead the camera sees the
+flat on the rack's base. A glass is not flat. The
+[plane method](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#22-the-plane-the-object-stands-on)
+is described as costing only its assumption, and this is what the assumption
+costs when it is half true: the glass really is on the table, but the part of
+it the camera sees is not. From overhead the camera sees the
 widest part of the glass, standing some way above the table. Following that ray
 down to the table carries it past where the glass really is, out and away from
 the point directly under the camera. The further off to one side the glass is,
@@ -252,6 +281,14 @@ shift measures the height. Step sideways by `d`, and a glass lying flat on the
 table appears to move by `d` divided by however much it was stretched. Each
 survey station therefore takes two pictures a known distance apart, and
 `where_they_stand()` works the rest out.
+
+The technique is [two photos from one moving
+camera](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#23-two-photos-from-one-moving-camera),
+which is worth reading for one point this document glosses over: it is *not*
+stereo matching. Stereo uses two cameras and matches every pixel; this uses one
+camera the arm moves and matches whole outlines. And the baseline comes from
+the arm's own encoders, so unlike a stereo rig's it is known exactly and needs
+no calibration to keep.
 
 Two things follow. The stations are spaced by how much table *both* pictures of
 a pair cover, not by how much one picture covers. A glass caught in only one of
@@ -314,7 +351,11 @@ enough like a tumbler would be picked up and racked.
 **Two objects touching read as one.** The flood fill cannot separate them, so
 the survey reports a single wide patch. Step 2 then measures whatever is in the
 middle of its picture, which is a coin toss between the two. Spacing the
-glasses is currently the only defence.
+glasses is currently the only defence, and it is the usual one:
+[occlusion and clutter](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/07_making-it-work.md#4-occlusion-and-clutter) makes
+the point that the cheapest fix for touching objects is not a better model but
+a second viewpoint, or a step that spreads them out before the step that looks
+at them.
 
 **A glass outside the surveyed rectangle is never seen.** The stations cover
 `GLASS_ZONE` and nothing else. A glass pushed 100 mm past its edge is not
@@ -341,6 +382,10 @@ assumption and the depth picture has no glass in it to find.
 shiny surface can return no depth on real hardware even when it is opaque, and
 sunlight washes out the projected pattern most of these cameras rely on. In
 Gazebo the depth picture is perfect, so none of this shows up here.
+[How the four sensing principles fail](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/02_sensors.md#11-how-the-four-sensing-principles-fail)
+is the list of what a real sensor does instead, and
+[what simulation will not tell you](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/07_making-it-work.md#5-what-simulation-will-not-tell-you)
+is the shorter version of why none of it is visible from here.
 
 ## Other ways to find a glass
 

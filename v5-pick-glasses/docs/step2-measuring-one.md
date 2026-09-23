@@ -18,6 +18,12 @@ seen from any one side is the whole shape.
 
 Code: `glasses/perception.py`, and `_view_from()` in `task.py`.
 
+Background, in robotics-basics: this step is
+[silhouettes of a solid of revolution](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#27-silhouettes-of-a-solid-of-revolution),
+scaled by [the plane the object stands on](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#22-the-plane-the-object-stands-on),
+and the arithmetic in the middle is
+[the one calculation underneath everything](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/01_overview.md#6-the-one-calculation-underneath-everything).
+
 What follows, in order:
 
 - the step in pseudocode, and the libraries it uses
@@ -86,7 +92,10 @@ A drinking glass is a **solid of revolution**: it is a shape spun about a
 vertical axis. Spin anything about an axis and the outline you see from the
 side is the same from every side, and that outline is the full description of
 the shape. The width on screen at some height *is* the diameter of the glass at
-that height.
+that height. It is
+[a special case that is unreasonably powerful when it applies](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#27-silhouettes-of-a-solid-of-revolution),
+and it covers anything made on a lathe or a wheel: bottles, cans, jars, bushes,
+bearings.
 
 So there is nothing a second viewpoint could add. A circuit of the table — the
 obvious thing to do with an object you cannot see through — would return the
@@ -98,8 +107,11 @@ the only case that takes a second picture, a quarter turn round.
 
 ## Pixels to millimetres
 
-A camera measures angles, not lengths. A pixel covers `1/fx` radians; how many
-millimetres that is depends entirely on how far away the thing is.
+A camera measures angles, not lengths. A pixel covers `1/fx` radians, and how
+many millimetres that is depends entirely on how far away the thing is. Divide
+by the focal length to get an angle, multiply by the distance to get a length:
+[the one calculation underneath everything](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/01_overview.md#6-the-one-calculation-underneath-everything),
+which every measurement in this project reduces to.
 
 Here the camera is 320×240 with a 60° horizontal field of view, so `fx` is
 about 277 pixels. At the standoff this works out at:
@@ -142,7 +154,12 @@ the project actually uses.
 
 **The raggedness check runs on the raw widths, not the smoothed ones.** This
 was a bug for a while and is worth spelling out. Smoothing makes any mask look
-clean, so a quality check applied afterwards never fires. The question
+clean, so a quality check applied afterwards never fires. It is the second of
+the two corrections in
+[reading a mask honestly](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#18-reading-a-mask-honestly),
+which puts the general form of it well: the check and the measurement want
+different inputs, and a check that never fails is worse than no check because
+it is also reassuring. The question
 "was this mask worth trusting?" has to be asked of what came out of the mask;
 the smoothed version is what gets measured. The threshold is 2% of the glass's
 own width, averaged over neighbouring rows.
@@ -174,6 +191,14 @@ which is why none of it needs a robot to test.
 About a millimetre and a half. One pixel is 1.37 mm at the standoff this
 works out at, and smoothing along the height does nothing to improve
 resolution *across* it.
+
+That is only the pixel term.
+[Where the millimetres go](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/01_overview.md#8-where-the-millimetres-go) puts
+it next to the others, and the ordering is not what most people expect: a
+hand-eye calibration one degree out costs almost 6 mm at this sort of reach,
+more than twice what a one-pixel error at each edge costs. In simulation that
+term is zero, because the camera is exactly where the model says. On hardware
+it would be the largest number on this page.
 
 That figure is not a footnote; it sets a number further down. When the fingers
 close on the glass in step 5, the width at first contact is compared against
@@ -242,7 +267,8 @@ The measurement is good to about 1.5 mm when it works. These are the ways it
 does not work.
 
 **Anything that is not a solid of revolution is measured wrongly.** This is the
-assumption the whole step rests on. A jug, a square tumbler, a glass with a
+assumption the whole step rests on, and it is the first of the
+[five jobs a silhouette cannot do](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#27-silhouettes-of-a-solid-of-revolution). A jug, a square tumbler, a glass with a
 spout: each is measured as if it were round, and the number that comes back is
 the width of one particular side. A handle is the only exception the project
 handles, and only because `expects_handle` sends the arm round for a second
@@ -262,7 +288,13 @@ glasses, and wrong when the glass really is that tall.
 millimetre comes from the standoff, and the standoff is where the arm believes
 it put the camera. A systematic error in the arm's kinematics scales every
 width by the same wrong factor, and nothing in the picture would reveal it.
-This is the one error a second camera would catch and this design cannot.
+This is the one error a second camera would catch and this design cannot. On
+real hardware it is the
+[hand-eye calibration](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/02_sensors.md#4-calibration-which-decides-all-of-it),
+and the way to find it is rung three of the
+[diagnosis ladder](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/07_making-it-work.md#3-when-it-does-not-work-a-diagnosis-ladder):
+put a marker somewhere you can measure by hand and compare the arm's answer
+against a tape measure.
 
 **A glass not standing on the table is measured against the wrong plane.** The
 foot is found by laying the bottom of the mask down on the table top. A glass

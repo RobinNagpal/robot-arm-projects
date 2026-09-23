@@ -19,6 +19,18 @@ satisfying two of the three is worse than a rule that refuses.
 
 Code: `glasses/rules.py`, `glasses/profile.py`, `glasses/spec.py`.
 
+Background, in robotics-basics: this whole step is
+[rules from a measured profile](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/03_choosing-a-grip.md#6-rules-from-a-measured-profile),
+and the case against doing it with a model instead is
+[why a rule beats a network](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/03_choosing-a-grip.md#9-why-a-rule-beats-a-network) —
+a grasp model is trained on one property, *the object did not fall out*, and
+has nowhere to be told that a wine glass must be held by the stem. Two sections
+there are worth reading before changing anything here:
+[bounding the search by the gripper's own body](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/03_choosing-a-grip.md#7-bounding-the-search-by-the-grippers-own-body),
+which is the mistake this step made once and now does not, and
+[the centre of mass, and the torque nobody budgets for](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/03_choosing-a-grip.md#5-the-centre-of-mass-and-the-torque-nobody-budgets-for),
+which is a thing this step does not do at all.
+
 What follows, in order:
 
 - the step in pseudocode, and the libraries it uses
@@ -103,7 +115,10 @@ at once.
 
 **The wall must be upright enough.** Flat pads on a sloping wall slide. The
 steeper the slope, the more of the grip force turns into a push down the wall
-instead of into it. `VERTICAL_TOLERANCE` is 6 degrees, and the number comes
+instead of into it. The formal version of "will these two contacts hold" is
+[friction cones and the antipodal test](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/03_choosing-a-grip.md#3-friction-cones-and-the-antipodal-test),
+and this rule is that test applied to a solid of revolution, where the two
+contacts are opposite each other by construction. `VERTICAL_TOLERANCE` is 6 degrees, and the number comes
 from the pads: a 12 mm silicone pad conforms by about 1.2 mm across its height,
 and `atan(1.2/12)` is 5.7 degrees.
 
@@ -219,10 +234,21 @@ this problem.
 
 One rule covers all of them. Adding a ninth glass to the left panel needs no
 change at all, and *that* is the property the project is really built around.
+It is also how a rule like this has to be tested:
+[testing a grip rule](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/03_choosing-a-grip.md#10-testing-a-grip-rule) is the
+method — generate a family, assert properties the gripper cares about, and do
+*not* assert the classification, for the reason step 3 gives.
 
 ## The gripper has a body
 
 ![Held too low, the body is through the table](../images/the-gripper-has-a-body.png)
+
+This is a general mistake rather than a local one.
+[Bounding the search by the gripper's own body](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/03_choosing-a-grip.md#7-bounding-the-search-by-the-grippers-own-body)
+calls scoring candidates first and checking collisions afterwards the single
+most common structural mistake in a grasp pipeline, and it reaches the same
+conclusion this section reached the hard way: the constraint should bound the
+search, not the answer.
 
 `lowest_vertical_section` did its job on the first straight glass it was given.
 It came back with a grip 18 mm above the table. That is a perfectly good piece
@@ -294,6 +320,9 @@ drying rack.
 
 **Nudging the aim assumes the right glass is in the picture.** The look down
 the fingers shifts sideways onto whatever it sees, up to `GRASP_NUDGE_LIMIT`.
+It is a single correction rather than a loop, which keeps it out of the
+[visual servoing](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/07_making-it-work.md#2-how-fast-does-it-actually-have-to-be)
+regime and its 30 Hz requirement — and also means it gets one chance.
 If a neighbouring glass is closer to the middle of that view than the target,
 the arm nudges towards the wrong one. The limit caps the damage; it does not
 prevent it.
@@ -302,6 +331,24 @@ prevent it.
 does not try a different height on the same glass. It refuses the glass. A
 ranked search, described in [`step4-approaches.md`](step4-approaches.md), is
 what would change that.
+
+**Nothing here knows where the centre of mass is.** Every rule on this page
+reasons about the *outline*. A glass is near enough symmetric that the centre
+of the outline and the centre of the mass are the same place, so the omission
+costs nothing here — but it is an assumption nobody wrote down, and it is false
+the moment the object is a mug with a handle or a bottle with liquid in the
+bottom. [The centre of mass, and the torque nobody budgets
+for](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/03_choosing-a-grip.md#5-the-centre-of-mass-and-the-torque-nobody-budgets-for)
+works through what it costs: the object turns slowly in the pads while the
+finger-gap reading does not change at all. It also gives a fix this cell could
+afford, because the wrist sensor reads torque as well as force, and the offset
+is the torque divided by the weight.
+
+**Nothing scores the grips that pass.** The five checks are pass or fail, so
+the first grip a rule finds is the one used, even where another would have been
+better. [Grasp quality metrics you can compute](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/03_choosing-a-grip.md#8-grasp-quality-metrics-you-can-compute)
+lists the cheap ones, and notes that reporting the *margin* inside the friction
+cone rather than a yes or no turns a pass into a ranking for almost nothing.
 
 ## Other ways to choose a grip
 

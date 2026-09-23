@@ -16,6 +16,12 @@ it can only do that because a glass is a solid of revolution. Every other way
 of measuring an object is a way of *not* needing that assumption, and pays for
 it in time, in hardware, or in both.
 
+Most of these have a longer treatment in robotics-basics, and each one below
+links to it. The two documents that cover the most ground here are
+[methods you write yourself](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md), for everything
+measured rather than inferred, and
+[models that measure](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/05_models-that-measure.md), for the learned end.
+
 | Approach | What it does | What it runs on | Suitability here |
 | --- | --- | --- | --- |
 | **One side-on silhouette** | one picture, one scale factor, a width at every height | [OpenCV](https://github.com/opencv/opencv) and NumPy, in `glasses/perception.py` | good, and in use |
@@ -26,7 +32,10 @@ it in time, in hardware, or in both.
 | **Fit a parametric shape** | assumes a family of shapes and fits the best member | [scikit-learn](https://scikit-learn.org/) or SciPy least squares | a neat alternative to the rules in step 3 |
 | **Match against known models** | line the glass up against a library of CAD models | [Open3D](https://www.open3d.org/) ICP, [trimesh](https://trimesh.org/) | needs the library this project refuses to have |
 
-**One silhouette, which is what is used here.**
+**One silhouette, which is what is used here.** Longer treatment:
+[silhouettes of a solid of revolution](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#27-silhouettes-of-a-solid-of-revolution),
+which calls it a special case that is unreasonably powerful when it applies,
+and lists the five jobs it cannot do — the first being anything not round.
 [`step2-measuring-one.md`](step2-measuring-one.md) explains why one picture is
 enough. Against the others below, it is fast, it needs no model of any
 particular glass, and the only number it needs from outside is a distance the
@@ -46,7 +55,9 @@ had to pick up a jug.
 
 *Needs, and from [step 1](step1-approaches.md):* side-on pictures from several known angles — the wrist camera stopping at several points round the glass, or two or more fixed side cameras (approach 2).
 
-**Photogrammetry and the radiance-field methods** produce a genuine surface
+**Photogrammetry and the radiance-field methods** —
+[reconstruction, when you do not have a model](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/05_models-that-measure.md#4-reconstruction-when-you-do-not) —
+produce a genuine surface
 rather than an outline, and the newer ones handle transparency and specular
 highlights far better than anything classical. They are the state of the art
 for exactly this object. They are also seconds to minutes of computation per
@@ -57,7 +68,9 @@ rules need a profile and nothing else, it is not.
 
 *Needs, and from [step 1](step1-approaches.md):* dozens of overlapping colour pictures from all round the glass, with the camera's position for each — only the wrist camera circling the glass can give that; no fixed camera in step 1 does.
 
-**Structured light and laser scanning** are how industry actually measures
+**Structured light and laser scanning** —
+[how the four sensing principles fail](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/02_sensors.md#11-how-the-four-sensing-principles-fail)
+is what each one does and does not survive — are how industry actually measures
 shapes to a fraction of a millimetre, and they fail on this object for the
 same reason the depth camera does: the pattern goes through the glass instead
 of landing on it. Making them work means coating the glass in scanning spray,
@@ -78,7 +91,9 @@ difference — a bad fit against an honest refusal — is why it was not chosen.
 
 *Needs, and from [step 1](step1-approaches.md):* no new picture at all — it runs on the outline one of the silhouette methods above already gives, so the same side picture as today (approach 0) or from a fixed side camera (approach 2).
 
-**Matching against a library of CAD models** is common in warehouses, where
+**Matching against a library of CAD models** —
+[pose estimation, when you have a model](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/05_models-that-measure.md#3-pose-estimation-when-you-have-a-model) —
+is common in warehouses, where
 there are a few thousand known products and a new one arrives with a model
 attached. It is very accurate when the model exists and useless when it does
 not, and this project's opening premise is that the sizes are not known in

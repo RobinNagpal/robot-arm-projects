@@ -3,7 +3,10 @@
 ## The idea in one paragraph
 
 Drinking glasses stand on a table, the way they would after a meal. A robot
-arm takes each one, turns it upside down, and stands it on a drying rack. It
+arm takes each one, turns it upside down, and stands it on a drying rack. The
+design document this grew out of is [standing an empty glass upside down on a
+drying rack](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/10_one-arm-training/07_case-study/01_place-glass.md); what follows is the version that was actually built, and
+it differs from that one, most of all in assuming the glasses are opaque. It
 has to do that without being told anything about the glasses beforehand. Not
 how tall they are. Not how wide, not how heavy. Not even which of them is a
 wine glass and which is a tumbler. It works all of that out by looking, one
@@ -47,7 +50,11 @@ glass that place is the stem, a few millimetres across. On a tumbler it is a
 band near the base. Finding it means finding a *feature*, not a coordinate.
 
 **And dropping one costs more than trying again.** Broken glass leaves shards,
-and an arm that carries on working moves through them. This is the thing that shapes the whole
+and an arm that carries on working moves through them. In the language of
+[how hard to squeeze](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/03_choosing-a-grip.md#42-the-other-bound-which-is-the-one-that-actually-bites),
+the binding limit here is not the friction that stops a glass slipping. It is
+the force at which the glass breaks, and the right response to needing more
+than that is to refuse. This is the thing that shapes the whole
 design. Anywhere else, a robot may try and fail cheaply. Here it may not. So a
 doubt has to end the attempt rather than be pushed through.
 
@@ -58,7 +65,9 @@ doubt has to end the attempt rather than be pushed through.
   at the middle of one long edge and 400 mm in from it. Everything happens
   within about 780 mm of its base, which is what it can reach comfortably.
 - **A two-finger parallel gripper** with silicone pads, defined in this repo.
-  It opens to 95 mm and the pads are 14 mm tall. The pads are not a detail. A
+  It opens to 95 mm and the pads are 14 mm tall. It is the commonest kind of
+  gripper there is, and what its datasheet numbers mean is
+  [how to read a gripper datasheet](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/02_grippers-and-hardware.md#1-how-to-read-a-gripper-datasheet). The pads are not a detail. A
   rigid pad touches a curved glass at a single point. A soft one spreads over a
   patch. That is the difference between holding a glass and polishing it.
 - **Three sensors**, each one there because a particular thing cannot be seen.
@@ -95,8 +104,18 @@ back. Real glass sends almost none of it back: most of the light goes straight
 through, and the rest is bent away by the curved wall. So pointing a depth
 camera at a real glass gives no distance reading at all for the pixels the
 glass covers. The depth picture comes back with a glass-shaped gap in it, where
-every other object would have had a distance. Every method that starts
-with "take the point cloud" starts, on real glassware, by not working.
+every other object would have had a distance. Every method that starts with
+"take the point cloud" starts, on real glassware, by not working. This is not
+particular to one sensor: [all four sensing principles](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/02_sensors.md#11-how-the-four-sensing-principles-fail)
+fail on it, for four different reasons.
+
+That gap is also a signal, and it can be used as one. Treating the missing
+depth as the measurement rather than as the obstacle is a real technique with a
+name — [the depth hole](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#17-the-depth-hole-for-glass-and-chrome) —
+and it is what this project used to do; `docs/step1-finding-the-glasses.md`
+records why it went. What has replaced it in the field is learned [depth
+completion for transparent and shiny objects](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/04_models-that-find.md#17-transparent-and-shiny-objects),
+whose licensing is worse than its accuracy.
 
 Assuming the glasses are opaque means the camera simply sees them, the way it
 sees the table and the rack. The arm can then find a glass by noticing that its

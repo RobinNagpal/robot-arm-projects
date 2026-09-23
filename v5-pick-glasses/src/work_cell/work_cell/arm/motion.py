@@ -23,6 +23,7 @@ take the glass on a detour to get there.
 
 from __future__ import annotations
 
+import contextlib
 import math
 import threading
 import time
@@ -611,11 +612,10 @@ class Arm:
         """
         position, rotation = self.current_pose()
         # Which way the weight points while hanging, so that pressing down
-        # afterwards reads as less than carried and not more.
-        try:
+        # afterwards reads as less than carried and not more. Best effort: a
+        # sign that cannot be read leaves the last one in place.
+        with contextlib.suppress(MotionFailed):
             self._hanging_sign = math.copysign(1.0, self._vertical_force())
-        except MotionFailed:
-            pass
         carried = self._weight_now()
         gone = 0.0
         while gone < limit:

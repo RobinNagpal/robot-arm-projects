@@ -121,6 +121,12 @@ The rest change the grip instead: where the glass is held, or what holds it.
 
 ## What each one does
 
+Each approach below names the section of robotics-basics that treats it at
+length. The two that cover the most ground here are
+[grippers and hardware](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/02_grippers-and-hardware.md), for the ones that
+change the gripper, and [holding on](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/05_holding-on.md), for the ones that
+change what happens while the glass is held.
+
 ### Turn the last wrist joint
 
 This is what the arm does today. The arm stops, and only the last joint
@@ -192,6 +198,15 @@ descent onto the rack is written today.
 
 ### Hold it at its centre of mass
 
+Longer treatment: [the centre of mass, and the torque nobody budgets
+for](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/03_choosing-a-grip.md#5-the-centre-of-mass-and-the-torque-nobody-budgets-for).
+Two rules there decide this on their own: grasping *above* the centre of mass
+is stable and grasping below it is an inverted pendulum in the fingers, and the
+limit that matters is not the gripper's moment rating but the much smaller
+torque the friction patch can resist before the glass turns. It also gives the
+measurement — the wrist reads torque as well as force, so the offset is the
+torque divided by the weight.
+
 The hinge only swings if the glass's weight is to one side of it. If the pads
 hold the glass right at its centre of mass, there is nothing to swing it,
 whichever way up it is.
@@ -218,6 +233,12 @@ as the weight picture above shows.
 
 ### Better pads
 
+Longer treatment: [soft and compliant grippers](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/02_grippers-and-hardware.md#5-soft-and-compliant-grippers),
+and [the force you command is not the force you get](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/02_grippers-and-hardware.md#22-the-force-you-command-is-not-the-force-you-get),
+which is the part that bites: a softer pad gives way, so the same setting
+delivers materially less force. Robotiq publish 220 N against steel and 115 N
+against soft rubber for one gripper at one setting.
+
 The hinge is weak because each flat pad touches a round glass along one thin
 line. Change the pad shape and that line becomes something wider:
 
@@ -240,6 +261,12 @@ well as wide tumblers.
 
 ### More fingers
 
+Longer treatment: [multi-finger hands](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/02_grippers-and-hardware.md#6-multi-finger-hands),
+and [in-hand manipulation](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/05_holding-on.md#7-in-hand-manipulation) for
+what they are actually for. Worth knowing before costing one: finger gaiting,
+the thing that would turn a glass in the hand, is the hard research problem and
+the deployed systems are approximately none.
+
 A gripper with three fingers, or a hand whose fingers wrap part-way around,
 touches the glass in several places around its outline. There is no single
 line to hinge about, so the glass cannot swing. Examples are three-finger
@@ -252,6 +279,10 @@ simulator model. Too big a change to make just for this step.
 
 ### Suction on the base
 
+Longer treatment: [suction](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/02_grippers-and-hardware.md#3-suction), with
+the arithmetic that turns a cup diameter into a holding force, and
+[suction models](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/04_models-that-grasp.md#6-suction-models).
+
 A suction cup on a flat surface holds against turning in every direction. The
 base of a glass is flat. The side of a glass is curved, and suction holds
 poorly there.
@@ -263,6 +294,11 @@ reached. The glass would have to be picked up some other way first and handed
 over, which adds a whole step. Suction also needs air lines and a pump.
 
 ### Put it down and grip again
+
+Longer treatment: [regrasping](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/05_holding-on.md#6-regrasping), which names
+the hard part — not the mechanics but guaranteeing the pose the glass lands in.
+An object set down settles into whichever stable pose it was nearest to, and
+the industrial answer is a shaped nest that admits exactly one.
 
 Don't do the whole half turn in one go. Turn the glass a quarter of the way,
 so it is lying on its side, and lay it down on the table, or in a simple
@@ -280,6 +316,13 @@ knock the glass.
 
 ### Watch it and react
 
+Longer treatment: [feedback, and what to do with it](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/05_holding-on.md#5-feedback-and-what-to-do-with-it),
+which tabulates every signal a gripper can give, what each one settles, and
+what people wrongly believe it settles. Its two conclusions are worth having
+before building anything here: no single signal confirms a good grasp, and the
+finger-gap check
+[does not see a glass sliding](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/05_holding-on.md#41-the-finger-gap-check-and-what-it-cannot-see).
+
 The wrist force sensor already reads the glass's weight. It can also read
 twist. If the glass starts swinging on the hinge, the twist the sensor feels
 changes. The arm could watch for that during the turn and slow down, or stop
@@ -293,6 +336,9 @@ millimetres are felt, not driven. This would do the same for the turn.
 top of one of the approaches above, not used alone.
 
 ### Copy a person
+
+Longer treatment: [dexterous hands, and grasping language
+models](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/04_models-that-grasp.md#7-dexterous-hands-and-grasping-language-models).
 
 Someone drives the arm through the turn by hand, many times, in the
 simulator. A small neural network learns from those examples to do the same:

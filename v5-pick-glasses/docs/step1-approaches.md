@@ -13,6 +13,13 @@ The others come in two groups:
   pixels in it are a glass. This is the part that matters most for real,
   see-through glass.
 
+Most of these have a longer treatment in the **object perception** area of
+robotics-basics, and each one below links to it. The two documents that cover
+the most ground here are
+[the sensors](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/02_sensors.md), for the first group, and
+[methods you write yourself](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md) with
+[models that find](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/04_models-that-find.md), for the second.
+
 ## What "finding a glass" means
 
 Before the arm can pick up a glass, it needs two answers:
@@ -68,6 +75,13 @@ Every method below is looked at against the same five questions.
 ---
 
 ## 0. What we do now: the wrist camera looks down from above
+
+Longer treatment: the position comes from
+[the plane the object stands on](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#22-the-plane-the-object-stands-on),
+the separating of one glass from another is
+[connected components](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#13-edges-contours-and-connected-components),
+and the reason a single picture cannot do it alone is
+[why one picture has no size](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/01_overview.md#5-why-one-picture-has-no-size).
 
 ### The idea
 
@@ -129,6 +143,10 @@ not help step 2 see low down, which is a separate problem.
 
 ## 1. A fixed camera above the table
 
+Longer treatment: [where to put the
+camera](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/02_sensors.md#14-where-to-put-the-camera), which compares a camera
+on the wrist against one bolted to the room.
+
 ### The idea
 
 Bolt one depth camera high above the table, looking straight down, for
@@ -183,6 +201,11 @@ glass.
 ---
 
 ## 2. A fixed camera at the side, at table level
+
+Longer treatment: [where to put the
+camera](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/02_sensors.md#14-where-to-put-the-camera) again, and
+[how the four sensing principles fail](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/02_sensors.md#11-how-the-four-sensing-principles-fail)
+for what a depth sensor at this angle would and would not return.
 
 ### The idea
 
@@ -253,6 +276,12 @@ Yes, with a lit panel behind the glasses.
 
 ## 3. Feeling with the fingers
 
+Longer treatment: [measuring by touch](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/02_sensors.md#2-measuring-by-touch)
+and [measuring by touching it](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#29-measuring-by-touching-it).
+Both make the same two points this section runs into — that touch is the most
+accurate instrument an arm has, and that it is useless as a survey instrument,
+because you have to know roughly where to reach before you can reach.
+
 ### The idea
 
 Use the gripper as a measuring tool, like a person feeling the shape of an
@@ -312,6 +341,12 @@ camera's width, and refuses the glass if they differ by more than 4 mm.
 
 ## 4. A lidar scanning flat across the table
 
+Longer treatment: [LiDAR, and why it is almost never on the
+arm](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/02_sensors.md#12-lidar-and-why-it-is-almost-never-on-the-arm), which
+also makes the point that a time-of-flight depth camera already *is* a lidar —
+the formal term is scannerless lidar — so half of this option is in the cell
+already.
+
 ### The idea
 
 A **lidar** sends out a beam of light that sweeps round in a flat circle, and
@@ -359,6 +394,11 @@ No. The beam goes through the glass, or bounces off it in the wrong direction.
 ---
 
 ## 5. Infrared or capacitive sensors in the fingertips
+
+Longer treatment: [infrared, in four different
+roles](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/02_sensors.md#13-infrared-in-four-different-roles). The role wanted
+here is called **pre-touch**, and it is also listed among
+[what touch can actually do](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/02_sensors.md#21-what-you-can-actually-do-with-it).
 
 ### The idea
 
@@ -465,6 +505,11 @@ could replace that one function, and nothing downstream would change.
 
 ## 7. Colour
 
+Longer treatment: [a colour range](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#11-a-colour-range).
+It is worth reading for the HSV point alone: do the threshold in hue,
+saturation and value rather than in red, green and blue, so that a shadow
+changes the brightness and leaves the colour alone.
+
 ### The idea
 
 The glasses in this cell are painted, each a different solid colour. Look for
@@ -489,6 +534,14 @@ No. Real glass has no colour of its own to look for.
 ---
 
 ## 8. A trained segmentation model
+
+Longer treatment: [mask models](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/04_models-that-find.md#12-mask-models) and
+[promptable segmenters](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/04_models-that-find.md#13-promptable-segmenters-the-segment-anything-family),
+with the licence position on each in
+[licences and platforms](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/06_licences-and-platforms.md#21-for-finding-objects).
+What this step needs is *instance* masks — one outline per glass, not one
+outline for all the glass in the picture — and the difference is set out in
+[four answers, and which one you need](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/01_overview.md#1-four-answers-and-which-one-you-need).
 
 ### The idea
 
@@ -533,6 +586,15 @@ Yes. This is the main reason to use it.
 
 ## 9. The patch with no depth in it
 
+Longer treatment: [the depth hole, for glass and
+chrome](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#17-the-depth-hole-for-glass-and-chrome).
+Worth knowing that the reference work behind it —
+[Lysenkov, Eruhimov and Bradski, RSS 2012](https://roboticsproceedings.org/rss08/p35.html) —
+deliberately used the depth sensor's *failure* as the thing it measured, and
+that the last of the five jobs it cannot do is the one that would bite here:
+many cameras now fill in missing depth by default, which quietly destroys the
+signal.
+
 ### The idea
 
 This is what the project used to do, when the glasses were treated as really
@@ -561,6 +623,12 @@ Yes. It is the honest answer if the opacity assumption is dropped.
 ---
 
 ## 10. Depth completion
+
+Longer treatment: [transparent and shiny
+objects](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/04_models-that-find.md#17-transparent-and-shiny-objects), which
+tracks the four projects in this family and their licences. Two are abandoned,
+one is non-commercial, and one — ReMake, MIT, 2026 — is the usable recent
+option.
 
 ### The idea
 
@@ -593,6 +661,11 @@ Yes. It exists for real glass.
 
 ## 11. Polarised light
 
+Longer treatment: [thermal, polarisation and the
+rest](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/02_sensors.md#32-thermal-polarisation-and-the-rest), which is blunter
+than this section is: polarisation imaging is frequently suggested for glass,
+and there is essentially no open-source work behind the suggestion.
+
 ### The idea
 
 Light reflected off glass changes its **polarisation**, the direction the
@@ -617,6 +690,12 @@ Yes.
 ---
 
 ## 12. Ask the simulator
+
+Longer treatment: [use the simulator's ground truth — for scoring, never for
+acting](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/07_making-it-work.md#1-how-to-tell-whether-it-is-working), which
+draws the line this project draws. The ground truth may be read by the report
+and never by the robot, and the moment any code path the robot runs reads it,
+every number produced afterwards is meaningless.
 
 ### The idea
 

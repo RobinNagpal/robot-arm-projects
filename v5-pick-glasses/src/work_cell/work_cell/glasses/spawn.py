@@ -195,8 +195,9 @@ def hollow(outline: Outline, wall: float) -> tuple[np.ndarray, np.ndarray]:
     floor there is no inside at all, which is the solid base or stem.
     """
     above = outline.height > outline.floor
+    at_floor = np.interp(outline.floor, outline.height, outline.radius)
     height = np.concatenate(([outline.floor], outline.height[above]))
-    radius = np.concatenate(([np.interp(outline.floor, outline.height, outline.radius)], outline.radius[above]))
+    radius = np.concatenate(([at_floor], outline.radius[above]))
     return height, np.maximum(radius - wall, 0.0)
 
 
