@@ -19,6 +19,20 @@ satisfying two of the three is worse than a rule that refuses.
 
 Code: `glasses/rules.py`, `glasses/profile.py`, `glasses/spec.py`.
 
+Background, in robotics-basics:
+[models that choose where to grip](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/04_models-that-find.md#2-models-that-choose-where-to-grip)
+is the family this step does not use, and it states the rule this step is built
+on — *if your object has a sentence, the sentence beats the network*, because a
+grasp model is trained to predict whether a grip will slip and has nowhere to
+be told that a wine glass must be held by the stem.
+
+Background, in robotics-basics:
+[models that choose where to grip](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/04_models-that-find.md#2-models-that-choose-where-to-grip)
+is the family this step does not use, and it states the rule this step is built
+on — *if your object has a sentence, the sentence beats the network*, because a
+grasp model is trained to predict whether a grip will slip and has nowhere to
+be told that a wine glass must be held by the stem.
+
 What follows, in order:
 
 - the step in pseudocode, and the libraries it uses
@@ -294,6 +308,9 @@ drying rack.
 
 **Nudging the aim assumes the right glass is in the picture.** The look down
 the fingers shifts sideways onto whatever it sees, up to `GRASP_NUDGE_LIMIT`.
+It is a single correction rather than a loop, which keeps it out of the
+[visual servoing](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/07_making-it-work.md#2-how-fast-does-it-actually-have-to-be)
+regime and its 30 Hz requirement — and also means it gets one chance.
 If a neighbouring glass is closer to the middle of that view than the target,
 the arm nudges towards the wrong one. The limit caps the damage; it does not
 prevent it.

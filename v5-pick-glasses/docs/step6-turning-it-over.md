@@ -22,6 +22,13 @@ at the end of this document, and under *Decisions still open* in the
 Code: `rotate_tool()` and `descend_until_contact()` in `arm/motion.py`,
 `rack/layout.py`, and `_invert_and_place()` in `task.py`.
 
+Background, in robotics-basics: the descent is
+[the guarded move](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/02_sensors.md#21-what-you-can-actually-do-with-it) —
+drive slowly until something fires and record where the arm was — and the rack
+is found with [a marker of known size](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#23-a-marker-of-known-size).
+When the arm ends up somewhere it should not, the order to check things in is
+[the diagnosis ladder](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/07_making-it-work.md#3-when-it-does-not-work-a-diagnosis-ladder).
+
 What follows, in order:
 
 - the step in pseudocode, and the libraries it uses
@@ -208,8 +215,11 @@ and *both* of those glass numbers were measured, so both carry error, and the
 errors add. Driving to a calculated height is how a rim gets chipped.
 
 `descend_until_contact()` comes down in 2 mm steps until something reports a
-touch, up to a 60 mm limit. Two millimetres because a rim meeting a peg at
-that step size is a touch rather than a knock.
+touch, up to a 60 mm limit. Two millimetres because a rim meeting a peg at that
+step size is a touch rather than a knock. This is
+[the guarded move](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/02_sensors.md#21-what-you-can-actually-do-with-it), and
+the accuracy of what comes out of it is the arm's own joint encoders rather
+than anything about the sensor — the sensor's only job is to say *when*.
 
 What counts as a touch took a correction. It originally watched the contact
 sensors on the pads, which is the right signal when the pads are what arrives
@@ -352,6 +362,11 @@ the fault section above.
 position comes from one printed square on the rack base. If the marker is
 misread, or read at the wrong angle, the arm lowers a glass over bare table and
 has no way to know. That has already happened once, for exactly that reason.
+[A marker of known size](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#23-a-marker-of-known-size)
+names the same failure — a bent or partly obscured marker gives a pose that is
+wrong in a way that looks plausible — and notes that a single small square is
+famously unstable in *angle* near face-on, which is exactly the quantity every
+slot position here is derived from.
 
 **A slot is chosen before the glass is known to fit through the approach.** The
 tilt budget says whether a glass fits in a slot. It does not say whether the

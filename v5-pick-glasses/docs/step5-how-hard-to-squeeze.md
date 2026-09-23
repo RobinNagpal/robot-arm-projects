@@ -19,6 +19,12 @@ wine glass becomes a lever against the pads.
 
 Code: `glasses/force.py`, and `_pick_up()` in `task.py`.
 
+Background, in robotics-basics:
+[measuring by touch](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/02_sensors.md#2-measuring-by-touch) is what this step
+is, and [what you can actually do with it](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/02_sensors.md#21-what-you-can-actually-do-with-it)
+lists the four things used here — the guarded move, weighing what is held,
+detecting slip, and the force cap that keeps a fragile object intact.
+
 What follows, in order:
 
 - the step in pseudocode, and the libraries it uses
@@ -141,7 +147,9 @@ is worth stopping for.
 
 **Stage two: squeeze to the estimate, lift 10 mm, and weigh it.** The wrist
 force sensor reads everything hanging below it, so subtracting the known weight
-of the gripper leaves the glass.
+of the gripper leaves the glass. It is
+[the only way to learn the mass of an object whose wall thickness you cannot
+see](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/02_sensors.md#21-what-you-can-actually-do-with-it).
 
 The ten millimetres is deliberately small. This is the last moment a mistake is
 free: the glass is off the table, nothing has been turned over, and setting it
@@ -189,7 +197,10 @@ The squeeze can still be wrong, and the way to find out is to ask the glass.
 
 `is_slipping()` compares the finger gap now against the gap when the glass was
 gripped. Fingers that have crept closed mean the glass is sliding down through
-the pads — there is no other reason for the gap to shrink.
+the pads — there is no other reason for the gap to shrink. This is the cheap
+one of [the two ways to detect slip](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/02_sensors.md#21-what-you-can-actually-do-with-it);
+the good one reads shear off a tactile pad and catches it before the object has
+visibly moved.
 
 It is checked during a slow 20-degree lean, and the angle is the point. Twenty
 degrees puts some of the weight on the pads sideways, which is what makes a
@@ -258,7 +269,11 @@ measures it.
 **The force sensor is noisier than the thing being measured.** A spike of
 9577 g was recorded where a 267 g glass should have been. A median over 32
 samples handles it now. A sensor that drifts rather than spikes would not be
-caught this way.
+caught this way. Worth remembering that in simulation the sensor is
+well-behaved by construction —
+[what simulation will not tell you](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/07_making-it-work.md#5-what-simulation-will-not-tell-you)
+is blunt that nothing here tells you what force breaks a real glass, so every
+cap on this page is a guess waiting to be calibrated on hardware.
 
 ## Other ways to decide how hard to squeeze
 
@@ -285,7 +300,8 @@ more force than the wall is rated for. What it cannot do is notice a grip that
 is *about* to fail for a reason the sum does not model — a wet glass, a greasy
 pad, a wall thinner on one side.
 
-**Tactile skin on the pads** is what a serious version of this would use.
+**[Tactile skin on the pads](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/02_sensors.md#22-the-sensors)** is what a
+serious version of this would use.
 [GelSight](https://github.com/gelsightinc/gsrobotics) and [DIGIT](https://digit.ml/) style
 sensors put a camera behind a soft pad and watch the pad deform. That gives the
 contact patch, the shear, and the first millimetre of a slip directly.
@@ -310,7 +326,10 @@ ever finding the failure point.
 
 **A compliant or underactuated hand** is the honest structural answer: a hand
 whose fingers have springs and joints of their own spreads the load over a
-curved surface by itself, so the exact force matters much less. Fruit picking
+curved surface by itself, so the exact force matters much less. The software
+side of that is already standard —
+[`admittance_controller` in ros2_controllers](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/02_sensors.md#23-the-software)
+makes an ordinary arm comply with what its force sensor reads. Fruit picking
 and warehouse suction are full of this idea for good reason. It would make
 most of this page unnecessary, and it is a change to the robot rather than to
 the code, so it belongs in a conversation about the cell — alongside the note

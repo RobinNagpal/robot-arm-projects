@@ -19,6 +19,12 @@ been reduced to a curve.
 
 Code: `classify()` in `glasses/detect.py`.
 
+Background, in robotics-basics:
+[four answers, and which one you need](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/01_overview.md#1-four-answers-and-which-one-you-need)
+is about what a vision component can be asked for, and this step is the one
+that asks for a *class*. Why it needs no model is
+[when a model makes things worse](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/01_overview.md#21-when-a-model-makes-things-worse).
+
 What follows, in order:
 
 - the step in pseudocode, and the libraries it uses
@@ -72,7 +78,9 @@ trained classifier, no labelled dataset and no model to keep up to date.
 
 That is worth pausing on, because the reflex when a robot has to recognise
 something is to train a classifier. Here it would be both more work and less
-reliable than three comparisons.
+reliable than three comparisons. That reflex has a cost worth naming:
+[a model in the deciding layer](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/01_overview.md#21-when-a-model-makes-things-worse)
+is the part you cannot change quickly afterwards.
 
 ## The three tests, in an order that matters
 
@@ -218,9 +226,12 @@ standing. Its weakness is that every kind has to be written by hand. Its other
 weakness is the thresholds, `SHORT_STEM_FRACTION` at 0.17 above all, which were
 set by looking at two populations rather than derived from anything.
 
-**Classical machine learning** is the fairest comparison, because it would
-take the same handful of numbers the rules take and learn the boundaries
-between kinds instead of having them written down. A decision tree on
+**Classical machine learning** is the fairest comparison, because it would take
+the same handful of numbers the rules take and learn the boundaries between
+kinds instead of having them written down. If it came to it, the data would be
+drawn in the simulator rather than photographed —
+[making the training data in a simulator](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/04_models-that-find.md#31-making-the-training-data-in-a-simulator)
+is how, and this project already generates the glasses to do it with. A decision tree on
 [scikit-learn](https://scikit-learn.org/) would probably match the rules on
 this data and could be read afterwards, which keeps most of the explainability.
 What it costs is a labelled set of glasses. It would also find boundaries that fit the sample
@@ -240,7 +251,10 @@ Neither can say why it decided anything.
 **[CLIP](https://github.com/openai/CLIP)** deserves its own line because it is
 genuinely impressive here: it will tell you that a picture contains a wine
 glass with no training whatsoever, which is the single cheapest way to get a
-name. The trouble is that a name is not what this step is for. The next step does not
+name. It belongs to the
+[open-vocabulary](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/04_models-that-find.md#14-open-vocabulary-models) family,
+where the class is a phrase you type rather than one somebody trained — which
+also makes [the wording itself a variable in the system](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/01_overview.md#4-closed-set-open-vocabulary-and-promptable). The trouble is that a name is not what this step is for. The next step does not
 want to know the glass is *called* a wine glass. It wants to know there is a
 narrow part below a wide part, so it can hold the narrow part. A model that
 answers the first question confidently while the second is false is worse than

@@ -3,7 +3,10 @@
 ## The idea in one paragraph
 
 Drinking glasses stand on a table, the way they would after a meal. A robot
-arm takes each one, turns it upside down, and stands it on a drying rack. It
+arm takes each one, turns it upside down, and stands it on a drying rack. The
+design document this grew out of is [standing an empty glass upside down on a
+drying rack](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/08_one-arm-training/07_case-study/01_place-glass.md); what follows is the version that was actually built, and
+it differs from that one, most of all in assuming the glasses are opaque. It
 has to do that without being told anything about the glasses beforehand. Not
 how tall they are. Not how wide, not how heavy. Not even which of them is a
 wine glass and which is a tumbler. It works all of that out by looking, one
@@ -95,8 +98,18 @@ back. Real glass sends almost none of it back: most of the light goes straight
 through, and the rest is bent away by the curved wall. So pointing a depth
 camera at a real glass gives no distance reading at all for the pixels the
 glass covers. The depth picture comes back with a glass-shaped gap in it, where
-every other object would have had a distance. Every method that starts
-with "take the point cloud" starts, on real glassware, by not working.
+every other object would have had a distance. Every method that starts with
+"take the point cloud" starts, on real glassware, by not working. This is not
+particular to one sensor: [all four sensing principles](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/02_sensors.md#11-how-the-four-sensing-principles-fail)
+fail on it, for four different reasons.
+
+That gap is also a signal, and it can be used as one. Treating the missing
+depth as the measurement rather than as the obstacle is a real technique with a
+name — [the depth hole](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#17-the-depth-hole-for-glass-and-chrome) —
+and it is what this project used to do; `docs/step1-finding-the-glasses.md`
+records why it went. What has replaced it in the field is learned [depth
+completion for transparent and shiny objects](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/04_models-that-find.md#17-transparent-and-shiny-objects),
+whose licensing is worse than its accuracy.
 
 Assuming the glasses are opaque means the camera simply sees them, the way it
 sees the table and the rack. The arm can then find a glass by noticing that its
