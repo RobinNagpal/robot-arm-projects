@@ -98,8 +98,8 @@ it simply drops rather than arguing about what the colour picture shows there.
 
 The cost is real and should not be hidden. On real glassware this method does
 not work at all, and the one that does is the one that was removed. The
-comparison at the end of
-[`docs/step1-finding-the-glasses.md`](docs/step1-finding-the-glasses.md) sets
+comparison in
+[`docs/step1-approaches.md`](docs/step1-approaches.md) sets
 out what to use instead, and the interface is arranged so that it is one
 function.
 

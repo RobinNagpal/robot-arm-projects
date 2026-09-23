@@ -24,6 +24,7 @@ take the glass on a detour to get there.
 from __future__ import annotations
 
 import math
+import threading
 import time
 
 import numpy as np
@@ -43,9 +44,17 @@ from std_msgs.msg import Float64MultiArray
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 
 from ..table.layout import WORLD_FRAME
-from ..transforms import make_pose, spin
+from ..transforms import make_pose
 
 FINGER_JOINTS = ("left_finger_joint", "right_finger_joint")
+ARM_JOINTS = (
+    "shoulder_pan_joint",
+    "shoulder_lift_joint",
+    "elbow_joint",
+    "wrist_1_joint",
+    "wrist_2_joint",
+    "wrist_3_joint",
+)
 
 # The link the wrist force sensor is bolted to, used when the reading does not
 # say for itself. See arm/gripper.urdf.xacro.
@@ -62,11 +71,16 @@ WRIST_SAMPLES = 32
 POSITION_CONTROLLER = "gripper_controller"
 FORCE_CONTROLLER = "gripper_force_controller"
 
-# Which of the tool's own axes the glass turns about. The grasp puts tool z
-# along the approach, which is horizontal, and tool y across it, also
-# horizontal. Turning about y therefore swings the glass from upright to
-# upside down without dragging it sideways.
-TURN_AXIS = 1
+# The joint that turns a held glass over. Its axis is tool z, which the grasp
+# lays along the fingers, level, through the glass. Not tool y, the line
+# between the pads, though that turns the glass over too: the only thing
+# stopping a glass pivoting on it is the friction in two small patches, and
+# the gripper rolled over while the glass hung there upright. About z the
+# glass would have to slide across both pad faces to stay put.
+WRIST_JOINT = "wrist_3_joint"
+
+# How far that joint may go either way, a little inside the UR5e's 360 degrees.
+WRIST_RANGE = math.radians(355.0)
 
 # How far the arm feels its way down in one step when lowering a glass into a
 # slot, and how far down it is willing to go before giving up. Two millimetres
@@ -129,6 +143,8 @@ class Arm:
             Contacts, "/fingertip_contacts", self._on_contacts, 10, callback_group=sensors
         )
         self._finger_positions = (0.0, 0.0)
+        self._arm_positions: dict[str, float] = {}
+        self._joints_lock = threading.Lock()
         node.create_subscription(
             JointState, "/joint_states", self._on_joint_states, 10, callback_group=sensors
         )
@@ -306,6 +322,8 @@ class Arm:
 
     def _on_joint_states(self, msg: JointState) -> None:
         by_name = dict(zip(msg.name, msg.position, strict=False))
+        with self._joints_lock:
+            self._arm_positions.update({n: p for n, p in by_name.items() if n in ARM_JOINTS})
         if all(joint in by_name for joint in FINGER_JOINTS):
             self._finger_positions = tuple(by_name[joint] for joint in FINGER_JOINTS)
 
@@ -468,86 +486,81 @@ class Arm:
             matrix = np.asarray(scene.current_state.get_global_link_transform(self._tip_link))
         return matrix[:3, 3].copy(), matrix[:3, :3].copy()
 
-    def rotate_tool(
-        self, angle: float, *, axis: int = TURN_AXIS, about: np.ndarray | None = None
-    ) -> np.ndarray:
-        """Turn the tool about one of its own axes, in place.
+    def turn_wrist(self, angle: float, *, seconds_per_turn: float = 12.0) -> float:
+        """Turn the last wrist joint by ``angle``, and nothing else.
 
-        ``about`` is the point the rotation happens around, in world
-        coordinates, and defaults to the tool origin. For a held glass the
-        point that matters is where the pads are gripping it, because that is
-        the one place the glass is not moving relative to the fingers.
+        The last joint's axis is tool z, the line the fingers reach along, and
+        it runs through the glass. So turning it turns the glass over on the
+        spot: the tool does not move and neither does the grip point. Nothing
+        is planned, because there is nothing to choose. A planned path to the
+        same end pose is free to swing the whole arm round on the way, and
+        that threw the glass out of the fingers; a straight line gave up a few
+        degrees in.
 
-        Returns the orientation the tool ends up in.
+        Either direction ends in the same place, so it goes whichever way keeps
+        the joint inside its range. It turns slowly, a full turn taking
+        ``seconds_per_turn``, because the pads hold a glass still far better
+        than they hold one being flung. Returns the angle actually turned.
         """
-        position, rotation = self.current_pose()
-        about = position if about is None else np.asarray(about, dtype=float)
+        names, now = self._arm_joints()
+        wrist = names.index(WRIST_JOINT)
+        turned = angle
+        if abs(now[wrist] + angle) > WRIST_RANGE:
+            turned = angle - math.copysign(2.0 * math.pi, angle)
+        if abs(now[wrist] + turned) > WRIST_RANGE:
+            raise MotionFailed(
+                f"the last wrist joint cannot turn {math.degrees(angle):.0f} degrees from here"
+            )
 
-        turn = _rotation_about(rotation[:, axis], angle)
-        moved = turn @ rotation
-        landing = about + turn @ (position - about)
+        seconds = max(1.0, abs(turned) / (2.0 * math.pi) * seconds_per_turn)
+        steps = max(2, int(math.degrees(abs(turned)) // 10))
+        points = []
+        for step in range(1, steps + 1):
+            share = step / steps
+            # Eased at both ends, so the glass is not jerked into motion.
+            eased = 0.5 - 0.5 * math.cos(math.pi * share)
+            point = JointTrajectoryPoint()
+            point.positions = list(now)
+            point.positions[wrist] = now[wrist] + turned * eased
+            at = seconds * share
+            point.time_from_start = DurationMsg(sec=int(at), nanosec=int((at % 1) * 1e9))
+            points.append(point)
+        self._send(
+            self._arm_controller,
+            JointTrajectory(joint_names=names, points=points),
+            "the turn of the wrist",
+        )
+        return turned
 
-        # A parallel gripper is symmetric about the line it reaches along, and
-        # so is a glass, so the orientation half a turn round that line holds
-        # the same glass in the same place by the same part of it. To the arm
-        # they are not the same at all: one may need a wrist angle it does not
-        # have, or fold the elbow into the table. Both are offered, because
-        # the second costs nothing and is often the one that works.
-        #
-        # The grip point is on that line, so spinning about it leaves the
-        # glass exactly where it is.
-        trouble: MotionFailed | None = None
-        for attempt, candidate in enumerate((moved, spin(moved, math.pi))):
-            try:
-                # Straight first, so the glass sweeps as little as possible. A
-                # Cartesian path is all or nothing — half a turn solved is no
-                # turn — and interpolating a large rotation is where it gives
-                # up most often, so a planned path to the same pose is better
-                # than none. The glass is attached by now, so the planner
-                # carries it too.
-                try:
-                    self.move_linear([make_pose(landing, candidate)], avoid_collisions=True)
-                except MotionFailed as why:
-                    self._node.get_logger().info(f"no straight turn ({why}), planning it instead")
-                    self.move_to_pose(landing, candidate)
-                return candidate
-            except MotionFailed as why:
-                trouble = why
-                if attempt == 0:
-                    self._node.get_logger().info(
-                        "that way round will not plan; trying the other way round, which "
-                        "holds the glass the same"
-                    )
-
-        raise trouble if trouble else MotionFailed("the turn was not attempted")
-
-    def tilt(self, angle: float, *, about: np.ndarray | None = None) -> np.ndarray:
+    def tilt(self, angle: float) -> float:
         """Lean the held glass over by a small angle, to see whether it slips."""
-        return self.rotate_tool(angle, about=about)
+        return self.turn_wrist(angle)
 
-    def turn_over(self, *, about: np.ndarray | None = None) -> np.ndarray:
+    def turn_over(self) -> float:
         """Turn the held glass all the way upside down."""
-        return self.rotate_tool(np.pi, about=about)
+        return self.turn_wrist(math.pi)
 
-    def can_rotate_tool(self, angle: float, *, axis: int = TURN_AXIS) -> bool:
-        """Whether that turn could be made from where the arm is standing now.
+    def can_rotate_tool(self, angle: float) -> bool:
+        """Whether the last wrist joint has room to turn this far from here.
 
-        Asked before the fingers close, never after. The last wrist joint stops
-        short of a full turn, so some ways of holding a glass leave the arm
-        unable to invert it — and finding that out with the glass already in
-        the gripper is the most expensive mistake this task offers, because
-        there is then nothing to do but put it back.
+        Asked before the fingers close, never after, because finding out with
+        the glass in the gripper leaves nothing to do but put it back. The
+        joint can go either way round, so this only fails when neither way
+        fits.
         """
-        position, rotation = self.current_pose()
-        turn = _rotation_about(rotation[:, axis], angle)
+        names, now = self._arm_joints()
+        at = now[names.index(WRIST_JOINT)]
+        other_way = angle - math.copysign(2.0 * math.pi, angle)
+        return abs(at + angle) <= WRIST_RANGE or abs(at + other_way) <= WRIST_RANGE
 
-        goal = PoseStamped()
-        goal.header.frame_id = WORLD_FRAME
-        goal.pose = make_pose(position, turn @ rotation)
-
-        self._planner.set_start_state_to_current_state()
-        self._planner.set_goal_state(pose_stamped_msg=goal, pose_link=self._tip_link)
-        return bool(self._planner.plan())
+    def _arm_joints(self) -> tuple[list[str], list[float]]:
+        """The arm's joints and where each one is now, as last reported."""
+        with self._joints_lock:
+            known = dict(self._arm_positions)
+        missing = [name for name in ARM_JOINTS if name not in known]
+        if missing:
+            raise MotionFailed(f"no position reported yet for {', '.join(missing)}")
+        return list(ARM_JOINTS), [known[name] for name in ARM_JOINTS]
 
     # ------------------------------------------------------------- descending
 
@@ -589,13 +602,3 @@ class Arm:
             f"came down {limit * 1000:.0f} mm without touching anything, so the "
             "glass is not where it was thought to be"
         )
-
-
-def _rotation_about(axis: np.ndarray, angle: float) -> np.ndarray:
-    """A 3x3 rotation of ``angle`` about a world-frame axis, by Rodrigues."""
-    axis = np.asarray(axis, dtype=float)
-    axis = axis / np.linalg.norm(axis)
-    cross = np.array(
-        [[0.0, -axis[2], axis[1]], [axis[2], 0.0, -axis[0]], [-axis[1], axis[0], 0.0]]
-    )
-    return np.eye(3) + math.sin(angle) * cross + (1.0 - math.cos(angle)) * (cross @ cross)

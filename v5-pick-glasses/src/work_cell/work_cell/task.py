@@ -37,6 +37,7 @@ from .arm.dimensions import (
     CAMERA_OFFSET,
     COMFORTABLE_REACH,
     FINGERTIP_OFFSET,
+    GRASP_DEPTH,
     GRASP_NUDGE_LIMIT,
     GRASP_OFFSET,
     GRIPPER_MAX_OPENING,
@@ -57,6 +58,7 @@ from .arm.dimensions import (
 from .arm.motion import Arm, MotionFailed
 from .glasses import spec
 from .glasses.detect import (
+    STANDING_CLEARANCE,
     Detection,
     classify,
     find_glasses,
@@ -92,7 +94,7 @@ from .rack.layout import (
 )
 from .report import with_mask
 from .scene import PlanningSceneClient
-from .transforms import frame, grasp_options, look_along, make_pose
+from .transforms import facing_options, frame, grasp_options, look_along, make_pose
 
 UP = np.array([0.0, 0.0, 1.0])
 
@@ -547,7 +549,9 @@ class PickGlassesTask:
                     f"{TALLEST_GLASS * 1000:.0f} mm limit, so this is one glass and not two "
                     "standing one behind the other",
                 )
-                foot = foot_of(mask, view.to_world, TABLE_TOP_Z)
+                foot = foot_of(
+                    mask, view.to_world, TABLE_TOP_Z, edge_above=STANDING_CLEARANCE
+                )
                 if foot is not None:
                     strayed = float(np.linalg.norm((foot - target.position)[:2]))
                     self._report.doing(
@@ -670,18 +674,15 @@ class PickGlassesTask:
         approaches = _approach_directions(handle, target, others)
         grip_point = target.position + UP * grip.height
 
-        # Only now does the glass come out of the scene. Up to this point the
-        # arm has been carrying the camera around it, and a planner that does
-        # not know it is there routes an elbow straight through it. From here
-        # on the fingers have to end up straddling it, which no planner will
-        # agree to, so it has to go — and what is left is a hover directly
-        # above it and a descent down the tool's own axis.
-        self._scene.set_glasses(
-            {
-                other.name: (other.position, other.rough_width, TALLEST_GLASS)
-                for other in others
-            }
-        )
+        # The glass stays in the scene, at the height it was measured, while
+        # the arm finds a hover above it. A planner that does not know it is
+        # there routes an elbow or the camera straight through it. It comes out
+        # only for the straight descent in: see _hover_and_choose_grasp().
+        without_it = {
+            other.name: (other.position, other.rough_width, TALLEST_GLASS) for other in others
+        }
+        with_it = dict(without_it)
+        with_it[target.name] = (target.position, profile.max_width, profile.total_height)
 
         self._report.doing(
             "choose which way round to hold it",
@@ -690,13 +691,12 @@ class PickGlassesTask:
             "enough to put the glass upside down afterwards",
         )
         self._arm.set_gripper(min(grip.opening + 0.020, GRIPPER_MAX_OPENING))
-        rotation = self._hover_and_choose_grasp(grip_point, approaches)
+        rotation = self._hover_and_choose_grasp(grip_point, approaches, with_it, without_it)
         self._report.doing(
             "take the first the arm can reach and turn",
             f"coming in along ({rotation[0, 2]:.2f}, {rotation[1, 2]:.2f})",
         )
-        position = grip_point - rotation[:, 2] * FINGERTIP_OFFSET
-        self._straight_if_possible(position, rotation, "in to the glass")
+        position = grip_point - rotation[:, 2] * GRASP_DEPTH
 
         # Take up the slack gently. The width when contact arrives is the true
         # width of the glass, measured by touch rather than by camera.
@@ -962,34 +962,57 @@ class PickGlassesTask:
         )
 
     def _hover_and_choose_grasp(
-        self, grip_point: np.ndarray, approaches: list[np.ndarray]
+        self,
+        grip_point: np.ndarray,
+        approaches: list[np.ndarray],
+        with_it: dict,
+        without_it: dict,
     ) -> np.ndarray:
-        """Hover above the glass, holding it whichever way round can be turned.
+        """Hover above the glass, turnable, and come straight down around it.
 
         A parallel gripper is symmetric, so the two orientations half a turn
         apart are the same grip on the same glass. They are not the same to
         the arm: one of them may leave the wrist with no room to invert. Nor
         are the ways round the glass — so both are tried, direction by
-        direction, until one is found that the arm can both reach and turn.
+        direction, until one is found that the arm can reach, turn, and come
+        down from in a straight line.
 
         Asked here rather than after the fingers close, because finding out
         with the glass in the gripper leaves nothing to do but put it back.
+
+        The glass is in the scene for every move but the descent. The descent
+        has to leave it out, since the fingers end up straddling it, so it is
+        a straight line or nothing: a planned path with the glass left out is
+        free to sweep the fingers through it, and that is how glasses were
+        being knocked over. A way round that cannot come straight down is
+        dropped, and the next is tried from its own hover.
         """
         tried = 0
         for approach in approaches:
             for rotation in grasp_options(_grasp_rotation(approach)):
-                hover = grip_point + UP * LIFT_HEIGHT - rotation[:, 2] * FINGERTIP_OFFSET
+                grasp = grip_point - rotation[:, 2] * GRASP_DEPTH
+                hover = grasp + UP * LIFT_HEIGHT
                 tried += 1
+                self._scene.set_glasses(with_it)
                 try:
                     self._arm.move_to_pose(hover, rotation)
                 except MotionFailed:
                     continue
-                if self._arm.can_rotate_tool(math.pi):
-                    return rotation
+                if not self._arm.can_rotate_tool(math.pi):
+                    continue
+                self._scene.set_glasses(without_it)
+                try:
+                    self._arm.move_linear([make_pose(grasp, rotation)])
+                except MotionFailed as why:
+                    self._log.info(f"no straight line in to the glass ({why}), trying another way")
+                    self._say_why_stuck()
+                    continue
+                return rotation
 
+        self._scene.set_glasses(with_it)
         raise MotionFailed(
-            f"none of the {tried} ways of holding this glass leave the wrist able to "
-            "turn it over"
+            f"none of the {tried} ways of holding this glass can be reached, turned over "
+            "afterwards, and come down in a straight line"
         )
 
     # -------------------------------------------------------- turn and place
@@ -1001,7 +1024,7 @@ class PickGlassesTask:
         self._report.step(
             f"Step 6 — turning {name} over and standing it down",
             doc="step6-turning-it-over.md",
-            code="_invert_and_place() in task.py, rotate_tool() in arm/motion.py",
+            code="_invert_and_place() in task.py, turn_wrist() in arm/motion.py",
             level=3,
         )
 
@@ -1011,7 +1034,7 @@ class PickGlassesTask:
             "carry the glass to the middle of the table",
             f"the glass is parked {TURNING_ROOM[0] * 1000:.0f} mm out and "
             f"{TURNING_ROOM[2] * 1000:.0f} mm up, not the tool — a turn swings the tool a "
-            "fingertip's length either side of the glass, so parking the tool at a "
+            "grasp's depth either side of the glass, so parking the tool at a "
             "comfortable reach puts it past the end of the arm on the way round",
         )
         self._report.say(
@@ -1019,9 +1042,12 @@ class PickGlassesTask:
             "from wherever the pick happened to end makes it a different problem for every "
             "glass."
         )
+        # In a straight line, never by a planned path. A planner free to choose
+        # its own way swung a held glass up over the top of the arm and round
+        # the far side, and a grip sized for a glass held still threw it off.
         try:
-            self._arm.move_to_pose(
-                ROBOT_BASE + np.array(TURNING_ROOM) - rotation[:, 2] * FINGERTIP_OFFSET, rotation
+            self._arm.move_linear(
+                [make_pose(ROBOT_BASE + np.array(TURNING_ROOM) - rotation[:, 2] * GRASP_DEPTH, rotation)]
             )
         except MotionFailed as why:
             # Not worth losing a held glass over: the turn may still be
@@ -1033,7 +1059,7 @@ class PickGlassesTask:
         # the glass's weight on the pads sideways, which is what makes it slip
         # if it is going to, and it is a lean the glass can be brought back
         # from. A hundred and eighty degrees is not.
-        self._arm.tilt(math.radians(SLIP_TEST_DEG), about=self._grip_point())
+        self._arm.tilt(math.radians(SLIP_TEST_DEG))
         time.sleep(0.4)
         leaning = self._arm.gripper_gap
         self._report.doing(
@@ -1048,7 +1074,7 @@ class PickGlassesTask:
             "turn 180 degrees about the grip point",
             "about the grip point, not the tool origin, so the glass turns on the spot",
         )
-        self._arm.turn_over(about=self._grip_point())
+        self._arm.turn_over()
 
         # Upside down, the rim is as far below the pads as it was above them.
         # That distance comes from the measurement, and so does the height the
@@ -1072,7 +1098,12 @@ class PickGlassesTask:
                 "weight in the wrist": f"{self._arm.wrist_load:.1f} N",
             }
         )
-        self._arm.move_to_pose(above - rotation[:, 2] * FINGERTIP_OFFSET, rotation)
+        outward = (slot.centre - ROBOT_BASE)[:2]
+        facing = self._carry_over(above, facing_options(rotation, outward))
+        self._report.doing(
+            "point the gripper away from the base",
+            f"pointing along ({facing[0, 2]:.2f}, {facing[1, 2]:.2f})",
+        )
 
         self._report.doing(
             "come down in 2 mm steps until it touches",
@@ -1120,6 +1151,31 @@ class PickGlassesTask:
         position, rotation = self._arm.current_pose()
         self._arm.move_linear([make_pose(position + UP * LIFT_HEIGHT, rotation)])
 
+    def _carry_over(self, glass_at: np.ndarray, facings: list[np.ndarray]) -> np.ndarray:
+        """Take the held glass to ``glass_at``, facing the first way that works.
+
+        A straight line for each facing first, because a planned path is free
+        to swing a held glass round the far side of the arm, and that throws it
+        out of the fingers. Only if no straight line will do is a planned path
+        allowed, because by now the glass is upside down and there is nowhere
+        better to take it.
+        """
+        for facing in facings:
+            try:
+                self._arm.move_linear([make_pose(glass_at - facing[:, 2] * GRASP_DEPTH, facing)])
+                return facing
+            except MotionFailed:
+                continue
+        self._log.info("no straight line over the slot, planning one instead")
+        for index, facing in enumerate(facings):
+            try:
+                self._arm.move_to_pose(glass_at - facing[:, 2] * GRASP_DEPTH, facing)
+                return facing
+            except MotionFailed:
+                if index == len(facings) - 1:
+                    raise
+        raise MotionFailed("no way of facing was offered")
+
     def _grip_point(self) -> np.ndarray:
         """Where the pads are gripping, in world coordinates, right now.
 
@@ -1129,7 +1185,7 @@ class PickGlassesTask:
         glass through an arc as wide as the fingers are long.
         """
         position, rotation = self._arm.current_pose()
-        return position + rotation[:, 2] * FINGERTIP_OFFSET
+        return position + rotation[:, 2] * GRASP_DEPTH
 
     # ---------------------------------------------------------------- pieces
 
@@ -1414,7 +1470,7 @@ class PickGlassesTask:
         # side is a coin toss with a glass in hand. If none qualify the list
         # is left alone: a slot that might not work beats refusing a glass
         # that is already held.
-        within = slots_within_stretch(candidates, ROBOT_BASE, COMFORTABLE_REACH, FINGERTIP_OFFSET)
+        within = slots_within_stretch(candidates, ROBOT_BASE, COMFORTABLE_REACH, GRASP_DEPTH)
         if within:
             candidates = within
         else:
@@ -1497,7 +1553,7 @@ def _approach_directions(
             np.array([-math.cos(across), -math.sin(across), 0.0]),
         ]
 
-    # The tool ends up a fingertip's length back along the approach, so coming
+    # The tool ends up a grasp's depth back along the approach, so coming
     # in along the line out from the base puts it between the base and the
     # glass: the shortest reach of any direction on the ring.
     outward = math.atan2(target.position[1] - ROBOT_BASE[1], target.position[0] - ROBOT_BASE[0])
@@ -1509,11 +1565,11 @@ def _approach_directions(
         if not _fingers_clear(target, others, direction):
             continue
 
-        # The tool ends up a fingertip's length back along the approach, and
-        # that is the point the arm has to reach. Coming straight in from the
+        # The tool ends up GRASP_DEPTH back along the approach, and that is
+        # the point the arm has to reach. Coming straight in from the
         # base is the shortest reach of any direction, which for a glass
         # already close in can be shorter than the arm can fold itself to.
-        tool = (target.position - direction * FINGERTIP_OFFSET - ROBOT_BASE)[:2]
+        tool = (target.position - direction * GRASP_DEPTH - ROBOT_BASE)[:2]
         if not COMFORTABLE_REACH[0] <= float(np.linalg.norm(tool)) <= COMFORTABLE_REACH[1]:
             continue
         directions.append(direction)
@@ -1524,12 +1580,14 @@ def _fingers_clear(target: Detection, others: list[Detection], approach: np.ndar
     """Whether the fingers can come in this way without meeting another glass.
 
     The gripper comes in along ``approach``, so what has to be clear is the
-    length of it behind the glass, not the whole ring.
+    length of it behind the glass, and the fingertips that reach past it, not
+    the whole ring.
     """
+    past = FINGERTIP_OFFSET - GRASP_DEPTH
     for other in others:
         offset = (other.position - target.position)[:2]
         along = float(np.dot(offset, -approach[:2]))
-        if not 0.0 < along < FINGERTIP_OFFSET + GRASP_OFFSET:
+        if not -(past + other.rough_width / 2.0) < along < FINGERTIP_OFFSET + GRASP_OFFSET:
             continue
         across = float(np.linalg.norm(offset - along * -approach[:2]))
         if across < (other.rough_width + GRIPPER_MAX_OPENING) / 2.0:

@@ -74,8 +74,10 @@ ROS.
   one at random proportions, and `family()` draws forty spread across the
   plausible range, which is what the tests use.
 - `spawn.py` puts them on the table. `random_glasses()` picks the kinds,
-  proportions and positions for a run; `revolve()` and `write_mesh()` spin an
-  outline into a solid; `glass_sdf()` writes the model.
+  proportions and positions for a run; `hollow()` finds the inside, from the
+  solid base up to the open rim; `revolve()` and `write_mesh()` spin the cut
+  face into a closed solid with a real wall thickness; `glass_sdf()` writes
+  the model.
 - `detect.py` finds them and names them. `standing_on_the_table()` picks out
   whatever is standing higher than the table top,
   `find_glasses()` groups it into one detection per glass, and `classify()`

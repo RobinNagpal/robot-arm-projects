@@ -155,6 +155,10 @@ def test_every_line_the_report_writes_is_a_line_of_the_pseudocode():
     docs = Path(__file__).resolve().parents[3] / "docs"
     known = set()
     for doc in sorted(docs.glob("step*.md")):
+        # The approaches documents compare other methods; they are not a step
+        # of the run, so they hold no pseudocode for the report to follow.
+        if doc.stem.endswith("-approaches"):
+            continue
         known |= _pseudocode_lines(doc)
 
     task = Path(__file__).resolve().parents[1] / "work_cell" / "task.py"

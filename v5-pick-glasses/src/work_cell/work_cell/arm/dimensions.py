@@ -55,6 +55,16 @@ GRASP_NUDGE_LIMIT = 0.045
 FINGERTIP_OFFSET = 0.170
 GRASP_OFFSET = 0.110
 
+# How far the pads run along each finger, back from the tip.
+PAD_LENGTH = 0.040
+
+# Where the glass's axis sits between the fingers, from tool0: the middle of
+# the pads. At the fingertip instead, the pads meet the glass only with their
+# front edge, on the far side of its widest line, and squeezing a round glass
+# there pushes it out of the fingers. Here the whole pad length straddles the
+# widest line, so an aim a few millimetres out still has pad either side of it.
+GRASP_DEPTH = FINGERTIP_OFFSET - PAD_LENGTH / 2.0
+
 # Where the arm takes a glass to turn it over, measured from the base and the
 # table top. Turning in place asks more of the wrist than anything else in the
 # task, and where the pick happens to leave the arm is not chosen with that in
@@ -65,11 +75,11 @@ GRASP_OFFSET = 0.110
 # each glass.
 #
 # It says where the *glass* goes, not where the tool goes. The turn swings the
-# tool through a fingertip's length either side of the glass, so a tool parked
-# at a comfortable reach comes out of the turn 340 mm further out than it went
-# in — past the end of the arm. The glass is the thing that stays put, so the
-# glass is what this places: 500 mm out leaves the tool at 330 before the turn
-# and 670 after it, and both of those the arm can do.
+# tool through GRASP_DEPTH either side of the glass, so a tool parked at a
+# comfortable reach comes out of the turn 300 mm further out than it went in —
+# past the end of the arm. The glass is the thing that stays put, so the glass
+# is what this places: 500 mm out leaves the tool at 350 before the turn and
+# 650 after it, and both of those the arm can do.
 TURNING_ROOM = (0.50, 0.0, 0.35)
 
 # Heights the arm works at, measured from the table top.

@@ -103,8 +103,8 @@ sees the table and the rack. The arm can then find a glass by noticing that its
 points stand above the table top. That is a much easier problem, and it is the
 one this project solves. Dropping the assumption later means replacing one
 function: the one that decides which pixels are a glass. The ways of doing that
-are compared at the end of
-[`docs/step1-finding-the-glasses.md`](docs/step1-finding-the-glasses.md).
+are compared in
+[`docs/step1-approaches.md`](docs/step1-approaches.md).
 
 **The glasses stand apart, upright, and separate.** They are set out at least
 150 mm from each other, none is lying down, none is inside another, and none

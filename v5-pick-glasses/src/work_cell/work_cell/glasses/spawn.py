@@ -58,13 +58,21 @@ class SpawnedGlass:
     proportions: dict[str, float] = field(default_factory=dict)
 
     @property
+    def wall(self) -> float:
+        return LIBRARY[self.kind].wall_thickness_m
+
+    @property
     def mass(self) -> float:
-        """What this glass really weighs, which the arm has to find out."""
-        thickness = LIBRARY[self.kind].wall_thickness_m
-        radius = self.outline.radius
-        lateral = float(np.trapezoid(2.0 * np.pi * radius, self.outline.height))
-        base = float(np.pi * radius[0] ** 2)
-        return (lateral + base) * thickness * GLASS_DENSITY
+        """What this glass really weighs, which the arm has to find out.
+
+        The solid it is modelled as: everything inside the outline, less the
+        hollow the drink goes in.
+        """
+        outline = self.outline
+        solid = float(np.trapezoid(np.pi * outline.radius**2, outline.height))
+        height, radius = hollow(outline, self.wall)
+        empty = float(np.trapezoid(np.pi * radius**2, height))
+        return (solid - empty) * GLASS_DENSITY
 
 
 # How many times the whole arrangement is redrawn before giving up.
@@ -139,20 +147,51 @@ def _free_spot(rng, placed, x_min, x_max, y_min, y_max) -> tuple[float, float]:
 # ------------------------------------------------------------------- meshes
 
 
-def revolve(outline: Outline, segments: int = 48) -> tuple[np.ndarray, np.ndarray]:
-    """Spin an outline into a mesh: vertices and triangles.
+def hollow(outline: Outline, wall: float) -> tuple[np.ndarray, np.ndarray]:
+    """The inside of a glass: heights and radii from its floor up to the rim.
+
+    The inside wall is the outside moved in by the wall thickness. Below the
+    floor there is no inside at all, which is the solid base or stem.
+    """
+    above = outline.height > outline.floor
+    height = np.concatenate(([outline.floor], outline.height[above]))
+    radius = np.concatenate(([np.interp(outline.floor, outline.height, outline.radius)], outline.radius[above]))
+    return height, np.maximum(radius - wall, 0.0)
+
+
+def cross_section(outline: Outline, wall: float) -> tuple[np.ndarray, np.ndarray]:
+    """The cut face of a glass sliced down its axis, as (radius, height) points.
+
+    It runs from the middle of the base, out and up the outside, across the
+    rim, down the inside and in across the floor to the axis. Spinning this
+    gives a closed solid, so the glass has a wall you can see the thickness of
+    at the rim and a bottom that says which end is which.
+    """
+    inner_height, inner_radius = hollow(outline, wall)
+    radius = np.concatenate(([0.0], outline.radius, inner_radius[::-1], [0.0]))
+    height = np.concatenate(([0.0], outline.height, inner_height[::-1], [outline.floor]))
+    return radius, height
+
+
+def revolve(outline: Outline, wall: float, segments: int = 48) -> tuple[np.ndarray, np.ndarray]:
+    """Spin a glass's cross-section into a closed mesh: vertices and triangles.
 
     Written out rather than taken from trimesh so that the shape of a glass
     model is visible in this project rather than in a dependency, and so the
     tests can check it without one.
+
+    Closed rather than a single open skin. A renderer draws only the side of a
+    triangle that faces it, so a skin with no inside surface shows the far
+    wall of the glass as missing whenever you look into it.
     """
     angles = np.linspace(0.0, 2.0 * np.pi, segments, endpoint=False)
-    rings = len(outline.height)
+    radius, height = cross_section(outline, wall)
+    rings = len(radius)
 
     vertices = np.empty((rings * segments, 3), dtype=float)
-    for ring, (height, radius) in enumerate(zip(outline.height, outline.radius, strict=True)):
+    for ring, (z, r) in enumerate(zip(height, radius, strict=True)):
         vertices[ring * segments : (ring + 1) * segments] = np.column_stack(
-            (radius * np.cos(angles), radius * np.sin(angles), np.full(segments, height))
+            (r * np.cos(angles), r * np.sin(angles), np.full(segments, z))
         )
 
     faces: list[tuple[int, int, int]] = []
@@ -163,15 +202,21 @@ def revolve(outline: Outline, segments: int = 48) -> tuple[np.ndarray, np.ndarra
             b = ring * segments + nxt
             c = (ring + 1) * segments + segment
             d = (ring + 1) * segments + nxt
-            # Wound so the face points away from the axis. A renderer with no
-            # normals to go on works them out from this order, and one wound
-            # the other way is a glass seen from the inside.
+            # Wound so each face points out of the glass. The cross-section
+            # runs round with the glass on its left, so one winding does for
+            # the outside, the rim, the inside and the bottom alike.
             faces.append((a, d, c))
             faces.append((a, b, d))
-    return vertices, np.array(faces, dtype=int)
+
+    # Where a ring sits on the axis all its points are one point, and half the
+    # triangles beside it have no area.
+    faces_array = np.array(faces, dtype=int)
+    corners = vertices[faces_array]
+    area = np.linalg.norm(np.cross(corners[:, 1] - corners[:, 0], corners[:, 2] - corners[:, 0]), axis=1)
+    return vertices, faces_array[area > 1e-12]
 
 
-def write_mesh(outline: Outline, path: Path, segments: int = 48) -> Path:
+def write_mesh(outline: Outline, wall: float, path: Path, segments: int = 48) -> Path:
     """Write one glass as an STL the simulator can load.
 
     Each facet carries its own normal. Writing zeroes there is legal STL and
@@ -180,14 +225,12 @@ def write_mesh(outline: Outline, path: Path, segments: int = 48) -> Path:
     draw is a glass with no waist in it — which is a wine glass the arm will
     try to hold by the bowl.
     """
-    vertices, faces = revolve(outline, segments)
+    vertices, faces = revolve(outline, wall, segments)
     lines = ["solid glass"]
     for a, b, c in faces:
         corners = vertices[[a, b, c]]
         normal = np.cross(corners[1] - corners[0], corners[2] - corners[0])
-        length = float(np.linalg.norm(normal))
-        if length > 0.0:
-            normal = normal / length
+        normal = normal / np.linalg.norm(normal)
         lines.append(f"facet normal {normal[0]:.6f} {normal[1]:.6f} {normal[2]:.6f}")
         lines.append("  outer loop")
         for index in (a, b, c):

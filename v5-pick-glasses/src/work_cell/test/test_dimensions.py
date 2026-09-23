@@ -7,6 +7,8 @@ like a planning problem.
 """
 
 import math
+import re
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -147,11 +149,40 @@ def test_the_zone_still_holds_a_run_of_glasses():
 
 
 def test_the_turn_leaves_the_arm_inside_its_own_reach():
-    """Turning swings the tool a fingertip's length either side of the glass,
-    so where the glass is parked decides whether the arm can finish the turn."""
+    """Turning swings the tool a grasp's depth either side of the glass, so
+    where the glass is parked decides whether the arm can finish the turn."""
     glass_out = dimensions.TURNING_ROOM[0]
-    before = glass_out - dimensions.FINGERTIP_OFFSET
-    after = glass_out + dimensions.FINGERTIP_OFFSET
+    before = glass_out - dimensions.GRASP_DEPTH
+    after = glass_out + dimensions.GRASP_DEPTH
     lo, hi = dimensions.COMFORTABLE_REACH
     assert lo <= before <= hi, f"the arm starts the turn {before * 1000:.0f} mm out"
     assert lo <= after <= hi, f"the arm ends the turn {after * 1000:.0f} mm out"
+
+
+def _gripper_property(name: str) -> float:
+    xacro = Path(dimensions.__file__).with_name("gripper.urdf.xacro").read_text()
+    found = re.search(rf'<xacro:property name="{name}" value="([0-9.]+)"/>', xacro)
+    assert found, f"{name} is not in gripper.urdf.xacro"
+    return float(found.group(1))
+
+
+def test_the_pads_in_the_model_are_the_pads_the_code_aims_with():
+    body = _gripper_property("body_length")
+    finger = _gripper_property("finger_length")
+    assert body + finger == pytest.approx(dimensions.FINGERTIP_OFFSET)
+    assert _gripper_property("pad_length") == pytest.approx(dimensions.PAD_LENGTH)
+
+
+def test_the_glass_is_held_in_the_middle_of_the_pads_not_at_the_tip():
+    """At the tip only the front edge of each pad meets the glass, beyond its
+    widest line, and squeezing there pushes a round glass out of the fingers."""
+    pads_start = dimensions.FINGERTIP_OFFSET - dimensions.PAD_LENGTH
+    middle = (pads_start + dimensions.FINGERTIP_OFFSET) / 2.0
+    assert middle == pytest.approx(dimensions.GRASP_DEPTH)
+
+
+def test_every_glass_fits_between_the_fingers_short_of_the_palm():
+    """Held deeper, the widest glass must still stop short of the gripper body."""
+    palm = _gripper_property("body_length")
+    widest = max(kind.max_opening_m for kind in spec.LIBRARY.values())
+    assert dimensions.GRASP_DEPTH - widest / 2.0 > palm

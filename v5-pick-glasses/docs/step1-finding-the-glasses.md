@@ -17,8 +17,9 @@ Finding the glasses at all rests on one assumption, and it is the first thing
 to say. The glasses in this cell are **opaque**. Each one is painted a solid
 colour, and the camera sees it as plainly as it sees the table. That is written
 in the problem statement as an assumption, not as a fact about glassware. Real
-glass defeats a depth camera completely. The last two sections of this document
-say what changes when the assumption is dropped.
+glass defeats a depth camera completely. The section on where this method can
+fail says what breaks when the assumption is dropped, and
+[`step1-approaches.md`](step1-approaches.md) says what could replace it.
 
 Code: `glasses/detect.py`, and `_survey()` in `task.py`.
 
@@ -33,7 +34,7 @@ What follows, in order:
 - why one picture is not enough
 - what went wrong when this was first run
 - where the method can still fail
-- how else it could have been done
+- where the other ways of finding a glass are compared
 - what the arm does next
 
 ## The step in pseudocode
@@ -333,8 +334,8 @@ standing above the table, but its position and width mean nothing, and step 2
 measures an outline no rule can use.
 
 **Real glass defeats the whole step.** This is the big one. Drop the opacity
-assumption and the depth picture has no glass in it to find. The next section
-is about what to do then.
+assumption and the depth picture has no glass in it to find.
+[`step1-approaches.md`](step1-approaches.md) is about what to do then.
 
 **Real depth cameras have failures the simulator does not.** A very dark or
 shiny surface can return no depth on real hardware even when it is opaque, and
@@ -343,74 +344,10 @@ Gazebo the depth picture is perfect, so none of this shows up here.
 
 ## Other ways to find a glass
 
-The method above is chosen for opaque glasses, and it is the weakest part of
-the project to lean on. The assumption underneath it is the first one a real
-kitchen would take away. So this section comes in two halves: other ways to
-find an opaque object, and what to do when the glasses really are glass.
-
-| Approach | What it does | What it runs on | Suitability here |
-| --- | --- | --- | --- |
-| **Points above the table** | anything standing higher than the table top | NumPy, in `glasses/detect.py` | good, and in use |
-| **Colour** | finds the glass by the colour it is painted | [OpenCV](https://github.com/opencv/opencv) | works here, and only here |
-| **A trained segmentation model** | learns to outline glass in the colour picture | [Segment Anything](https://github.com/facebookresearch/segment-anything), [Detectron2](https://github.com/facebookresearch/detectron2), [Ultralytics YOLO](https://docs.ultralytics.com/) | what a real cell would use |
-| **The patch with no depth in it** | treats a real sensor's failure as the measurement | [OpenCV](https://github.com/opencv/opencv) | the answer if the assumption is dropped |
-| **Depth completion for glass** | fills in the depth the glass did not return | [ClearGrasp](https://sites.google.com/view/cleargrasp), [TransCG](https://github.com/Galaxies99/TransCG), [DREDS](https://github.com/PKU-EPIC/DREDS) | for real glass, and only worth it to feed a point cloud |
-| **Polarised light** | glass changes the polarisation of reflected light | a polarisation camera, then OpenCV | real, and needs hardware this cell has not got |
-| **Ask the simulator** | read the glass's true position out of Gazebo | [Gazebo](https://gazebosim.org/) directly | cheating, and it teaches nothing |
-
-**Points above the table** is what is used here. It needs no training and no
-model to ship. It holds nothing about any particular glass, so it works on a
-glass the project has never seen. It also fails honestly: a pixel it cannot
-place, it drops. Its weaknesses are the two named above — the opacity
-assumption, and its inability to tell two touching objects apart.
-
-**Colour** would work perfectly in this cell and nowhere else. The glasses are
-painted, so a colour threshold would find them, and it is tempting because it
-is three lines long. It is left alone for one reason. The paint exists so that
-a *person* can follow a run. A pipeline that depended on it would break the
-moment a glass was not painted, which is to say always, outside this simulator.
-
-**A trained segmentation model** is what a real cell would use, for opaque and
-see-through glasses alike. The project is arranged so it would drop straight
-in: one function decides which pixels are a glass, and everything downstream
-takes a plain boolean mask.
-[Segment Anything](https://github.com/facebookresearch/segment-anything) will
-outline a glass with no training at all, which makes it a good first try,
-though it is heavy and needs prompting. A smaller
-[YOLO segmentation model](https://docs.ultralytics.com/tasks/segment/) trained
-on a few hundred labelled pictures would be faster and steadier in one kitchen.
-The cost is needing those pictures, and going stale when the glassware changes.
-Either one handles reflections far better than anything geometric. Either one
-also brings a training set, a training pipeline, and a component that fails in
-ways nobody can read off a log line.
-
-**The patch with no depth in it** is the honest answer if the opacity
-assumption is dropped, and it is what this project used to do. The section
-above explains how it worked and why it went. On real hardware it has a real
-virtue: the hardest property of the object becomes the measurement rather than
-the obstacle, and nothing has to be trained. It has a real weakness the
-simulator never showed. The quality of the outline depends entirely on the
-scene. Reflections, highlights, and one glass seen through another all break
-it.
-
-**Depth completion** guesses the surface the sensor could not see.
-[ClearGrasp](https://sites.google.com/view/cleargrasp) and the work after it
-turn a real glass into an ordinary point cloud, so everything written for
-opaque objects starts working again. It is the right move if what you want is a
-point cloud, because it unlocks the off-the-shelf grasp planners discussed in
-step 4. It is the wrong move here even on real glass. This project never wanted
-a point cloud. It wants a silhouette, and a distance it already knows.
-
-**Polarisation** is the one physically different idea on the list. Glass
-changes how reflected light is polarised, so a polarisation camera sees a glass
-where an ordinary camera does not. Industrial inspection uses it for exactly
-this. It needs hardware this cell has not got, and Gazebo does not model it, so
-it could not be tried here even in principle.
-
-**Reading poses out of the simulator** is on the list to be dismissed. It is
-the one option that would certainly work, and it would make the project
-worthless. A pipeline that depends on ground truth cannot be moved to a real
-cell at all.
+The method here is chosen for opaque glasses, and it is the weakest part of the
+project to lean on. Other sensors, fixed cameras, touch, and the ways of
+finding a glass that really is glass are compared in
+[`step1-approaches.md`](step1-approaches.md).
 
 ## What the arm does next
 
