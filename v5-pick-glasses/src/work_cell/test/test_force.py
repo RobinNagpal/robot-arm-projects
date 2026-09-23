@@ -5,6 +5,7 @@ from work_cell.glasses.force import (
     TooHeavyToHold,
     estimate_mass,
     force_for_measured_mass,
+    holding_force,
     is_slipping,
     mass_from_wrist,
     required_force,
@@ -125,3 +126,16 @@ def test_fingers_that_have_not_moved_are_not_slipping():
     assert not is_slipping(0.0120, 0.0120)
     # A tenth of a millimetre is sensor noise, not a slipping glass.
     assert not is_slipping(0.0120, 0.0119)
+
+
+def test_a_weighed_glass_is_held_at_its_walls_rating():
+    # The weight sum stops it sliding down, not turning in the fingers.
+    for name in ("straight_glass", "stemmed_glass"):
+        kind = spec.kind(name)
+        assert holding_force(0.150, kind) == pytest.approx(kind.force_cap_n)
+        assert holding_force(0.150, kind) >= force_for_measured_mass(0.150, kind)
+
+
+def test_a_glass_too_heavy_for_its_rating_is_still_refused():
+    with pytest.raises(TooHeavyToHold):
+        holding_force(1.0, spec.kind("stemmed_glass"))

@@ -41,6 +41,7 @@ from .arm.dimensions import (
     GRASP_NUDGE_LIMIT,
     GRASP_OFFSET,
     GRIPPER_MAX_OPENING,
+    CARRY_SPEED,
     GRIPPER_WEIGHT_N,
     LIFT_HEIGHT,
     LOWEST_GRIP,
@@ -55,7 +56,7 @@ from .arm.dimensions import (
     WEIGH_LIFT,
     survey_stations,
 )
-from .arm.motion import Arm, MotionFailed
+from .arm.motion import DESCENT_LIMIT, Arm, MotionFailed
 from .glasses import spec
 from .glasses.detect import (
     STANDING_CLEARANCE,
@@ -73,6 +74,7 @@ from .glasses.force import (
     TooHeavyToHold,
     estimate_mass,
     force_for_measured_mass,
+    holding_force,
     is_slipping,
     mass_from_wrist,
     starting_force,
@@ -82,10 +84,12 @@ from .glasses.profile import Profile
 from .glasses.rules import Grip, NoGrip, find_grip
 from .rack.layout import (
     GLASS_ZONE,
+    PEG_HEIGHT,
     ROBOT_BASE,
     TABLE_TOP_Z,
     Slot,
     fill_order,
+    landing_point,
     needs_empty_neighbour,
     slots_consumed,
     slots_from_marker,
@@ -788,22 +792,19 @@ class PickGlassesTask:
             f"it wants {needed:.1f} N, and a {kind.wall}-walled {kind.name} is capped at "
             f"{kind.force_cap_n:.1f} N",
         )
+        hold = holding_force(mass, kind)
         self._report.doing(
             "re-squeeze if the guess was low",
-            f"the estimate gave {starting_force(profile, kind):.1f} N, so "
-            + (
-                "it is set down and re-gripped harder"
-                if needed > starting_force(profile, kind)
-                else "the first squeeze stands"
-            ),
+            f"the weight alone needs {needed:.1f} N, but it is set down and re-gripped at the "
+            f"{hold:.1f} N the wall is rated for: the weight sum stops it sliding down, not "
+            "turning about the line between the pads once it is upside down",
         )
-        if needed > starting_force(profile, kind):
-            # Setting it down and re-gripping is safe; increasing the squeeze
-            # while holding it arrives as a shock.
-            self._log.info(f"heavier than it looked, re-gripping at {needed:.1f} N")
-            self._straight_if_possible(position, rotation, "back down to re-grip")
-            self._arm.set_gripper_force(needed)
-            time.sleep(0.3)
+        # Setting it down and re-gripping is safe; increasing the squeeze while
+        # holding it arrives as a shock.
+        self._log.info(f"re-gripping at {hold:.1f} N")
+        self._straight_if_possible(position, rotation, "back down to re-grip")
+        self._arm.set_gripper_force(hold)
+        time.sleep(0.3)
 
         self._straight_if_possible(position + UP * LIFT_HEIGHT, rotation, "up off the table")
 
@@ -1072,9 +1073,10 @@ class PickGlassesTask:
 
         self._report.doing(
             "turn 180 degrees about the grip point",
-            "about the grip point, not the tool origin, so the glass turns on the spot",
+            f"about the grip point, not the tool origin, so the glass turns on the spot. "
+            f"{180 - SLIP_TEST_DEG:.0f} degrees of it are left after the lean",
         )
-        self._arm.turn_over()
+        self._arm.turn_over(already=math.radians(SLIP_TEST_DEG))
 
         # Upside down, the rim is as far below the pads as it was above them.
         # That distance comes from the measurement, and so does the height the
@@ -1082,19 +1084,24 @@ class PickGlassesTask:
         # rather than driven to.
         _, rotation = self._arm.current_pose()
         rim_to_grip = profile.total_height - grip.height
-        above = slot.centre + UP * (rim_to_grip + PLACE_CLEARANCE)
+        # Measured from the rack's top, not the slot's centre, which sits at the
+        # marker's height. And clear of the peg, because the move over the slot
+        # comes in sideways: a rim any lower meets the peg side on, which knocks
+        # the glass round in the fingers and leaves it sitting on the peg.
+        landing = landing_point(slot)
+        above = landing + UP * (rim_to_grip + PEG_HEIGHT + PLACE_CLEARANCE)
 
         self._report.doing(
             "move above the slot",
-            f"the rim starts {PLACE_CLEARANCE * 1000:.0f} mm above slot {slot.index}",
+            f"the rim starts {PLACE_CLEARANCE * 1000:.0f} mm above the peg in slot {slot.index}",
         )
         self._report.table(
             {
-                "the slot is at": f"({slot.centre[0]:.3f}, {slot.centre[1]:.3f}, "
-                f"{slot.centre[2]:.3f})",
+                "the rack top is at": f"({landing[0]:.3f}, {landing[1]:.3f}, {landing[2]:.3f})",
                 "rim to grip": f"{rim_to_grip * 1000:.0f} mm "
                 f"({profile.total_height * 1000:.0f} mm tall, held {grip.height * 1000:.0f} up)",
-                "so the rim starts": f"{PLACE_CLEARANCE * 1000:.0f} mm above the slot",
+                "so the rim starts": f"{(PEG_HEIGHT + PLACE_CLEARANCE) * 1000:.0f} mm above "
+                f"the rack top, {PLACE_CLEARANCE * 1000:.0f} mm over the peg",
                 "weight in the wrist": f"{self._arm.wrist_load:.1f} N",
             }
         )
@@ -1108,10 +1115,12 @@ class PickGlassesTask:
         self._report.doing(
             "come down in 2 mm steps until it touches",
             "watching the pad contact sensors and the weight leaving the wrist, for up to "
-            "60 mm",
+            f"{(PEG_HEIGHT + DESCENT_LIMIT) * 1000:.0f} mm",
         )
         try:
-            came_down = self._arm.descend_until_contact()
+            # The peg's height is known and passes inside the glass untouched,
+            # so it is added to the limit rather than eating into it.
+            came_down = self._arm.descend_until_contact(PEG_HEIGHT + DESCENT_LIMIT)
         except MotionFailed:
             self._report.trouble(
                 "It went the whole way down without feeling anything. Either the rim is not "
@@ -1156,13 +1165,17 @@ class PickGlassesTask:
 
         A straight line for each facing first, because a planned path is free
         to swing a held glass round the far side of the arm, and that throws it
-        out of the fingers. Only if no straight line will do is a planned path
+        out of the fingers. Slowly, because upside down the glass hangs from
+        the line between the pads and a quick move swings it about that line;
+        see CARRY_SPEED. Only if no straight line will do is a planned path
         allowed, because by now the glass is upside down and there is nowhere
         better to take it.
         """
         for facing in facings:
             try:
-                self._arm.move_linear([make_pose(glass_at - facing[:, 2] * GRASP_DEPTH, facing)])
+                self._arm.move_linear(
+                    [make_pose(glass_at - facing[:, 2] * GRASP_DEPTH, facing)], speed=CARRY_SPEED
+                )
                 return facing
             except MotionFailed:
                 continue

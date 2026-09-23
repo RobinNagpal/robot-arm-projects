@@ -108,6 +108,25 @@ def force_for_measured_mass(mass: float, kind: Kind) -> float:
     return needed
 
 
+def holding_force(mass: float, kind: Kind) -> float:
+    """What to hold a weighed glass with while it is turned over and carried.
+
+    The wall's rating, not the weight sum. The sum is enough to stop the glass
+    sliding down between the pads. It is not enough to stop it turning about
+    the line between them, which is the other way a held glass moves: the
+    pads meet a round glass along a short upright line, so they resist that
+    turn only a few millimetres either side of it. Turned over and carried, a
+    glass whose centre of mass is a centimetre off that line swung round in
+    the fingers at the weight sum, and did not at the rating.
+
+    The rating is the most the wall is safe at, so squeezing at it is safe by
+    definition. Raises TooHeavyToHold, as the weight sum does, if even that
+    will not carry the glass.
+    """
+    force_for_measured_mass(mass, kind)
+    return kind.force_cap_n
+
+
 def mass_from_wrist(total_newtons: float, gripper_newtons: float) -> float:
     """Turn a wrist force reading into the weight of what is being held."""
     return max(0.0, (total_newtons - gripper_newtons) / GRAVITY)

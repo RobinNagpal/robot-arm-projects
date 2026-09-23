@@ -266,7 +266,7 @@ reasoning they come from.
   Read this one first.
 - [`docs/`](docs/) — a walk through one run, one document per step. Each ends
   with what went wrong at that step and how else that step could have been
-  done. For steps 1 and 4 that last part has a document of its own.
+  done. For steps 1, 2 and 4 that last part has a document of its own.
 - [`pseudocode.md`](pseudocode.md) — what every file and function is for, and
   what calls what when you type `make run`.
 - [`architecture.md`](architecture.md) — the folder layout, and why the pieces

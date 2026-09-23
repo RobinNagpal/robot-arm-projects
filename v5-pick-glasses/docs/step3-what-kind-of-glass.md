@@ -247,7 +247,8 @@ answers the first question confidently while the second is false is worse than
 no model. Names and shapes agree most of the time, and the times they do not
 are exactly the times something gets broken.
 
-**Fitting a parametric family** — described at the end of step 2 — is the
+**Fitting a parametric family** — described in
+[`step2-approaches.md`](step2-approaches.md) — is the
 strongest alternative, because it would produce the kind and the dimensions
 together with a measure of how well the glass actually matched. That last part
 is the appeal: a bad fit is a natural way of saying "this is not any kind I

@@ -67,9 +67,10 @@ Every one of them has the same five parts, in the same order:
    would be good and bad at here, and why the code does what it does instead.
    These comparisons are the quickest way to see what the project trades away.
    It is usually the same trade: accuracy on a hard real-world case, against
-   being able to say why a glass was refused. For steps 1 and 4 this part
-   grew long enough to have its own document, `step1-approaches.md` and
-   `step4-approaches.md`, and the step document links to it.
+   being able to say why a glass was refused. For steps 1, 2 and 4 this part
+   grew long enough to have its own document, `step1-approaches.md`,
+   `step2-approaches.md` and `step4-approaches.md`, and the step document
+   links to it.
 
 ## The six
 
@@ -84,6 +85,9 @@ Every one of them has the same five parts, in the same order:
 - [**Step 2 — measuring one**](step2-measuring-one.md). One picture from the
   side, and why one is enough. Pixels to millimetres using a distance the arm
   knows for a reason that has nothing to do with the glass.
+  - [Other ways to measure a glass](step2-approaches.md): several
+    silhouettes, photogrammetry, radiance fields, laser scanning, and fitting
+    a shape.
 - [**Step 3 — what kind of glass is it**](step3-what-kind-of-glass.md). Reading
   the kind off the measured profile with three tests, and why this is both
   cheaper and more honest than classifying from above.
@@ -98,6 +102,11 @@ Every one of them has the same five parts, in the same order:
 - [**Step 6 — turning it over and standing it down**](step6-turning-it-over.md).
   Rotating about the grip rather than the wrist, the wrist limit that has to be
   checked before the fingers close, the tilt budget, and feeling for the rack.
+
+## What does not work yet
+
+[`known-gaps.md`](known-gaps.md) lists the failures that are known but not yet
+fixed, such as the glass sizes the grip rules cannot handle.
 
 ## Reading a run against these pages
 

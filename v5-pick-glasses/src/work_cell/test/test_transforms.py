@@ -44,3 +44,4 @@ def test_the_options_go_from_the_smallest_swing_to_the_largest():
     ]
     swings = [round(min(s, 2 * math.pi - s), 9) for s in swings]
     assert swings == sorted(swings)
+

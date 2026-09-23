@@ -138,6 +138,13 @@ WEIGH_LIFT = 0.010
 # in arm/motion.py, or a correctly placed glass would be reported as missing.
 PLACE_CLEARANCE = 0.030
 
+# How fast an upside-down glass is carried to the rack, as a share of the
+# arm's speed and acceleration limits. Held upside down, a glass hangs from the
+# line between the two pads and can swing about it like a hinge. The pads hold
+# its weight well and resist that swing poorly, and the carry also turns the
+# gripper round, so it is done at a quarter of the usual 0.2.
+CARRY_SPEED = 0.05
+
 # How far the glass is tilted, slowly, to find out whether it is slipping
 # before the full turn is attempted.
 SLIP_TEST_DEG = 20.0

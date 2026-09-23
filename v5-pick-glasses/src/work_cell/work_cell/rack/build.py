@@ -16,6 +16,8 @@ from .layout import (
     MARKER_DICTIONARY,
     MARKER_ID,
     MARKER_SIZE,
+    PEG_HEIGHT,
+    PEG_RADIUS,
     RACK_BASE_HEIGHT,
     SLOT_COUNT,
     SLOT_SPACING,
@@ -23,12 +25,6 @@ from .layout import (
 )
 
 TEMPLATE = Path(__file__).parent / "rack.sdf"
-
-# The pegs a glass is stood over. Short, because they only have to keep a glass
-# from sliding sideways, not hold it up.
-PEG_HEIGHT = 0.035
-PEG_RADIUS = 0.005
-
 
 def peg_sdf(index: int) -> str:
     """One peg, positioned along the rack from its middle."""

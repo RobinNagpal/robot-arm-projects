@@ -22,7 +22,9 @@ Before the arm can pick up a glass, it needs two answers:
    This is called the **profile**.
 
 Step 1 answers the first question. Step 2 answers the second. Some of the
-methods below answer both at once, so this document covers both.
+methods below answer both at once, so this document covers both. Ways of
+measuring a glass from pictures alone, such as photogrammetry or fitting a
+shape, are in [`step2-approaches.md`](step2-approaches.md).
 
 Two words matter when judging a method:
 
@@ -493,6 +495,11 @@ No. Real glass has no colour of its own to look for.
 A **segmentation model** is a neural network that has learned to outline
 objects in a colour picture. It is shown a picture and draws a mask around
 every glass in it.
+
+**Which pictures:** the same ones the arm takes now, with nothing extra: the
+two pictures from above at each station to find the glasses, and the one
+picture from the side to measure each glass. The model gives one mask per
+picture.
 
 ### The options
 

@@ -35,13 +35,17 @@ __all__ = [
     "MARKER_DICTIONARY",
     "MARKER_ID",
     "MARKER_SIZE",
+    "PEG_HEIGHT",
+    "PEG_RADIUS",
     "RACK_BASE_HEIGHT",
+    "RACK_TOP_Z",
     "ROBOT_BASE",
     "SLOT_COUNT",
     "SLOT_SPACING",
     "TABLE_TOP_Z",
     "Slot",
     "fill_order",
+    "landing_point",
     "needs_empty_neighbour",
     "slots_consumed",
     "slots_within_stretch",
@@ -55,6 +59,16 @@ __all__ = [
 SLOT_COUNT = 6
 SLOT_SPACING = 0.100
 RACK_BASE_HEIGHT = 0.020
+
+# The rack stands on the table, so its top is where a rim comes to rest.
+RACK_TOP_Z = TABLE_TOP_Z + RACK_BASE_HEIGHT
+
+# The pegs a glass is stood over, one in the middle of each slot. Short,
+# because they only have to keep a glass from sliding sideways, not hold it up.
+# A glass has to arrive with its rim above the tops of these, or it is carried
+# sideways into one.
+PEG_HEIGHT = 0.035
+PEG_RADIUS = 0.005
 
 # The marker printed on the middle of the base. It belongs to the rack rather
 # than to the camera: the rack carries it, and the camera reads whatever the
@@ -243,6 +257,16 @@ def slots_consumed(slot: Slot, *, needs_gap: bool) -> set[int]:
     if not needs_gap:
         return {slot.index}
     return {slot.index - 1, slot.index, slot.index + 1} & set(range(SLOT_COUNT))
+
+
+def landing_point(slot: Slot) -> np.ndarray:
+    """Where the rim of a glass comes to rest in ``slot``: on the rack's top.
+
+    A slot's centre is placed from the marker and carries the marker's height,
+    which is not the height of the rack top. The rack stands on the known
+    table, so its top is known and is used instead.
+    """
+    return np.array([slot.centre[0], slot.centre[1], RACK_TOP_Z])
 
 
 def fill_order(slots: list[Slot], reach_from: np.ndarray = ROBOT_BASE) -> list[Slot]:

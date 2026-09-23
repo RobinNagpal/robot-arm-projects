@@ -11,13 +11,14 @@ from work_cell.glasses.spawn import (
     MIN_SEPARATION,
     SpawnedGlass,
     collision_cylinders,
+    collision_staves,
     glass_sdf,
     hollow,
     random_glasses,
     revolve,
 )
 from work_cell.glasses.spec import LIBRARY
-from work_cell.rack.layout import GLASS_ZONE, TABLE_TOP_Z
+from work_cell.rack.layout import GLASS_ZONE, PEG_HEIGHT, PEG_RADIUS, TABLE_TOP_Z
 
 # ------------------------------------------------------------ the layout
 
@@ -132,19 +133,39 @@ def test_the_mesh_is_the_size_the_outline_said():
 # --------------------------------------------------------- the collisions
 
 
-def test_the_collision_stack_spans_the_whole_glass():
-    outline = stemmed(height=0.200, bowl_diameter=0.085, stem_diameter=0.009)
-    stack = collision_cylinders(outline)
-    assert stack[0][0] == pytest.approx(0.0)
-    assert stack[-1][1] == pytest.approx(0.200)
+def test_the_collision_shape_spans_the_whole_glass():
+    for kind in KIND_RANGES:
+        for outline, _ in family(kind, 10, seed=8):
+            stack = collision_cylinders(outline)
+            staves = collision_staves(outline, WALL)
+            assert stack[0][0] == pytest.approx(0.0)
+            assert stack[-1][1] == pytest.approx(outline.floor)
+            assert staves[0][0] == pytest.approx(outline.floor)
+            assert staves[-1][1] == pytest.approx(outline.total_height)
 
 
 def test_a_collision_slice_is_never_thinner_than_the_glass_inside_it():
     # If it were, the fingers would close through the wall.
-    outline = stemmed(height=0.200, bowl_diameter=0.085, stem_diameter=0.009)
-    for bottom, top, radius in collision_cylinders(outline):
-        inside = (outline.height >= bottom) & (outline.height <= top)
-        assert radius >= outline.radius[inside].max() - 1e-9
+    for kind in KIND_RANGES:
+        for outline, _ in family(kind, 10, seed=9):
+            slices = [(b, t, r) for b, t, r in collision_cylinders(outline)]
+            slices += [(b, t, r) for b, t, r, _, _ in collision_staves(outline, WALL)]
+            for bottom, top, radius in slices:
+                inside = (outline.height >= bottom) & (outline.height <= top)
+                assert radius >= outline.radius[inside].max(initial=0.0) - 1e-9
+
+
+def test_a_glass_stood_mouth_down_fits_over_a_peg():
+    # A solid collision shape sits on top of the peg instead, and topples off
+    # it when the fingers open.
+    for kind in KIND_RANGES:
+        for outline, _ in family(kind, 10, seed=10):
+            glass = SpawnedGlass("glass_0", kind, outline, (0.0, 0.0, 0.0), 0.0)
+            reached = outline.total_height - PEG_HEIGHT
+            staves = collision_staves(outline, glass.wall)
+            inner = min(r - t for _, top, r, t, _ in staves if top > reached)
+            assert outline.floor < reached
+            assert inner > PEG_RADIUS + 0.010
 
 
 def test_the_stack_keeps_the_stem_separate_from_the_bowl():
@@ -232,3 +253,27 @@ def test_asking_for_two_kinds_gives_only_those_two():
 def test_asking_for_nothing_in_particular_still_draws_any_kind():
     drawn = random_glasses(6, seed=7)
     assert {g.kind for g in drawn} <= set(KIND_RANGES)
+
+
+def test_the_model_carries_its_weight_where_the_glass_does():
+    # Checked against the closed mesh, which is the glass as drawn. Left at the
+    # origin, the weight sits at the very bottom, and a glass turned over in
+    # the fingers is top-heavy and tips back.
+    for kind in KIND_RANGES:
+        for outline, _ in family(kind, 10, seed=11):
+            glass = SpawnedGlass("glass_0", kind, outline, (0.0, 0.0, 0.0), 0.0)
+            mass, centre, across, about_axis = glass.mass_properties
+            vertices, faces = revolve(outline, glass.wall, segments=96)
+            corners = vertices[faces]
+            volumes = np.einsum("ij,ij->i", corners[:, 0], np.cross(corners[:, 1], corners[:, 2])) / 6.0
+            centroid = (volumes[:, None] * corners.sum(axis=1) / 4.0).sum(axis=0) / volumes.sum()
+            assert centre == pytest.approx(centroid[2], abs=0.001)
+            assert 0.15 * outline.total_height < centre < 0.75 * outline.total_height
+            assert across > 0.0 and about_axis > 0.0
+
+
+def test_the_model_file_puts_the_weight_at_the_centre_of_mass():
+    glass = random_glasses(1, seed=1)[0]
+    _, centre, _, _ = glass.mass_properties
+    sdf = glass_sdf(glass, mesh_uri="model://glasses/glass_0.stl")
+    assert f"<pose>0 0 {centre:.4f} 0 0 0</pose>" in sdf

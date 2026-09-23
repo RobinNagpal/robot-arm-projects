@@ -214,7 +214,7 @@ lean it over 20 degrees, about the grip point
 if the fingers have crept closed: it is slipping, give up
 
 turn it the rest of the way, about the grip point
-move above the slot, high enough that the rim clears the rack
+move above the slot, high enough that the rim clears the peg
 come down until something touches
 if the rack has not taken the weight: the glass is caught, give up
 

@@ -78,8 +78,9 @@ with the glass held:                              ours: task.py _invert_and_plac
                                                   descend_until_contact()
                                                   ros2_control: the pad contact
                                                   sensors and the wrist broadcaster
-                                                  60 mm with no touch means the glass
-                                                  is not where it was thought to be
+                                                  the peg's height plus 60 mm with no
+                                                  touch means the glass is not where
+                                                  it was thought to be
     is the rack really taking the weight?         ours: motion.py
                                                   load_transferred(). No means the
                                                   rim is caught: do not let go.
@@ -202,13 +203,20 @@ the rack is never between the arm and the next slot.
 
 The height at which the rim lands is
 
-    slot height + (glass height - grip height)
+    rack top + (glass height - grip height)
 
 and *both* of those glass numbers were measured, so both carry error, and the
 errors add. Driving to a calculated height is how a rim gets chipped.
 
+The descent starts with the rim 30 mm above the top of the peg, not 30 mm above
+the rack. The move over the slot comes in sideways, and a rim any lower meets
+the peg side on. That knocked the glass round in the fingers and left it
+sitting on top of the peg, where it toppled off between two slots when the
+fingers opened. The glass model is hollow for the same reason: a solid one
+cannot go over a peg at all.
+
 `descend_until_contact()` comes down in 2 mm steps until something reports a
-touch, up to a 60 mm limit. Two millimetres because a rim meeting a peg at
+touch, up to the peg's height plus 60 mm. Two millimetres because a rim meeting a peg at
 that step size is a touch rather than a knock.
 
 What counts as a touch took a correction. It originally watched the contact
