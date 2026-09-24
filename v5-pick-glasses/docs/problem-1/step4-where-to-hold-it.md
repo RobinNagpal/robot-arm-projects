@@ -22,7 +22,7 @@ Code: `glasses/rules.py`, `glasses/profile.py`, `glasses/spec.py`.
 Background, in robotics-basics: this whole step is
 [rules from a measured profile](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/03_choosing-a-grip.md#6-rules-from-a-measured-profile),
 and the case against doing it with a model instead is
-[why a rule beats a network](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/03_choosing-a-grip.md#9-why-a-rule-beats-a-network) —
+[why a rule beats a network](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/03_choosing-a-grip.md#10-why-a-rule-beats-a-network) —
 a grasp model is trained on one property, *the object did not fall out*, and
 has nowhere to be told that a wine glass must be held by the stem. Two sections
 there are worth reading before changing anything here:
@@ -247,7 +247,7 @@ this problem.
 One rule covers all of them. Adding a ninth glass to the left panel needs no
 change at all, and *that* is the property the project is really built around.
 It is also how a rule like this has to be tested:
-[testing a grip rule](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/03_choosing-a-grip.md#10-testing-a-grip-rule) is the
+[testing a grip rule](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/03_choosing-a-grip.md#11-testing-a-grip-rule) is the
 method — generate a family, assert properties the gripper cares about, and do
 *not* assert the classification, for the reason step 3 gives.
 
@@ -358,7 +358,7 @@ is the torque divided by the weight.
 
 **Nothing scores the grips that pass.** The five checks are pass or fail, so
 the first grip a rule finds is the one used, even where another would have been
-better. [Grasp quality metrics you can compute](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/03_choosing-a-grip.md#8-grasp-quality-metrics-you-can-compute)
+better. [Grasp quality metrics you can compute](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/03_choosing-a-grip.md#9-grasp-quality-metrics-you-can-compute)
 lists the cheap ones, and notes that reporting the *margin* inside the friction
 cone rather than a yes or no turns a pass into a ranking for almost nothing.
 

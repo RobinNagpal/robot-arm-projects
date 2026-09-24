@@ -53,7 +53,7 @@ second plan.
 ### Ranked search
 
 Longer treatment: [grasp quality metrics you can
-compute](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/03_choosing-a-grip.md#8-grasp-quality-metrics-you-can-compute) for
+compute](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/03_choosing-a-grip.md#9-grasp-quality-metrics-you-can-compute) for
 what to score candidates on, and
 [bounding the search by the gripper's own body](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/03_choosing-a-grip.md#7-bounding-the-search-by-the-grippers-own-body)
 for the ordering mistake to avoid — filter by what the gripper can physically

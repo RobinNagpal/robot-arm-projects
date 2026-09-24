@@ -823,6 +823,7 @@ scatter more than the deterministic theory predicts — this section's objection
 measured rather than argued. For tools, Drake models quasi-static planar pushing
 directly, and Gazebo, Bullet and MuJoCo will simulate the contact with whatever
 coefficients you supply.
+
 ---
 
 ## Solution 5 — a learned residual on the push model
@@ -838,75 +839,62 @@ between glass and table, and how the glass's weight sits on its base. This
 solution keeps the mathematics and adds a small model that learns **the error
 the physics makes**.
 
-Write it as a sum. For a proposed push, the analytical model predicts travel
-along the push line, sideways drift and rotation. Call that `f(x)`. What the
-camera measures afterwards is `y`. The difference `y − f(x)` is the
-**residual**, and a second model learns it from the same inputs:
+For a proposed push the analytical model predicts travel, sideways drift and
+rotation. Call that `f(x)`; call what the camera measures afterwards `y`. The
+difference `y − f(x)` is the **residual**, and a second model learns it:
 
     prediction  =  f(x)  +  learned_residual(x)
 
 The physics carries the structure. The learned part absorbs only what the
 physics could not know: this table, these glasses, these bases.
 
-One idea, several names — **residual learning**, a **learned error model**, a
-**hybrid** or **grey-box** model. Grey box is the clearest. A white box is
-derived from first principles and its workings are visible; a black box is
-fitted from data and explains nothing; a grey box is a white box with a small
-black box bolted to its output.
+The pattern is **residual learning**, also called a **learned error model** or
+a **grey-box** model: a white box, derived from first principles, with a small
+fitted black box on its output.
 
 ### Why anyone does it this way
 
 The two halves fail in opposite directions. An analytical model **generalises
-but is biased**: push a glass 30 mm or 90 mm, anywhere on the table, and the
-theory answers — wrongly by some consistent amount, because its inputs are
-guesses. A learned model **fits but does not generalise**, and solution 5 is
-what that costs when it carries the whole job: tens of thousands of episodes,
-eleven days of simulator time, on a machine with no NVIDIA GPU.
+but is biased**: it answers for any push, wrongly by some consistent amount,
+because its inputs are guesses. A learned model **fits but does not
+generalise**, and solution 5 shows what that costs alone — tens of thousands of
+episodes on a machine with no NVIDIA GPU.
 
-The residual gives the learned half a far smaller job. It need not discover
-that pushing moves things, that off-centre pushes rotate them, or that longer
-pushes travel further. All of that is in `f(x)`. It learns a correction, and
-corrections are small and smooth.
-
-The idea is standard in system identification and well represented in
-manipulation. Zeng and colleagues' *TossingBot* named it **residual physics**:
-a ballistic model gives the throw, a network learns the correction for drag and
-shape. Ajay and colleagues did the same for planar pushing, augmenting a
-simulator with a learned correction. I am confident of both pieces of work, not
-of their identifiers, so I give none rather than invent one.
+Zeng and colleagues' *TossingBot* named the arrangement **residual physics** —
+a ballistic model throws, a network corrects for drag and shape — and Ajay and
+colleagues did the same for planar pushing. I am confident of both pieces of
+work, not of their identifiers, so I give none rather than invent one.
 
 ### How it would work here
 
 **The inputs**, all already measured or chosen: `d`, the signed perpendicular
 distance from the push line to the footprint centre; `L`, the commanded push
 distance; `2a`, the measured base width, 45 to 105 mm; `h`, the contact height,
-fixed near 50 mm today and kept so the model survives a gripper change; and the
-push direction as `sin θ` and `cos θ`, because a damp patch sits somewhere in
-particular.
+near 50 mm today but kept so the model survives a gripper change; and the push
+direction, since a damp patch sits somewhere in particular.
 
-**The outputs** are three residuals: measured minus predicted travel along the
-line, sideways drift, and rotation. Rotation matters least, the glasses being
-round.
+**The outputs** are three residuals: measured minus predicted travel, sideways
+drift and rotation. Rotation matters least, the glasses being round.
 
 **The labels come free.** Solution 3 already photographs the table after every
 push and re-runs problem 2's separation over it, because that is how it decides
-whether to push again. The before-position, the commanded push and the
-after-position therefore exist for every push the arm has ever made. Nothing
-extra is executed or photographed, and no training run is scheduled. **Every
-push in normal operation is a labelled example, and the system trains itself as
-it runs.**
+whether to push again. So the before-position, the commanded push and the
+after-position exist for every push the arm has ever made, at no extra cost.
+**Every push in normal operation is a labelled example, and the system trains
+itself as it runs.**
 
-**How much data.** A smooth correction over five inputs is learnable from the
-low hundreds of examples, not the tens of thousands a policy needs. Five
-glasses give three to eight pushes a run, so fifty ordinary runs is two to four
-hundred labelled pushes: a week of use.
+**How much data.** The learned half never has to discover that pushing moves
+things; that is in `f(x)`. A smooth correction over five inputs is learnable
+from the low hundreds of examples, not the tens of thousands a policy needs.
+Five glasses give three to eight pushes a run, so fifty runs is two to four
+hundred labelled pushes.
 
 **The models** stay small. **Ridge regression** from scikit-learn
 ([scikit-learn.org](https://scikit-learn.org/), BSD-3-Clause) is a linear fit
 with ten printable coefficients. A **Gaussian process**, also scikit-learn
 ([the GP module](https://scikit-learn.org/stable/modules/gaussian_process.html),
 BSD-3-Clause), fits a smooth function *and* returns a standard deviation with
-every prediction, which is what the feedback half needs. A **small network** in
+every prediction — what the feedback half needs. A **small network** in
 PyTorch ([pytorch.org](https://pytorch.org/), BSD-3-Clause) is overkill until
 the dataset runs to thousands. Start with ridge; move to the GP for its error
 bars, not its accuracy.
@@ -914,77 +902,64 @@ bars, not its accuracy.
 ### The feedback loop
 
 A residual model is trustworthy only where it has seen data. Two hundred pushes
-on 70 mm glasses say nothing about a 105 mm one, and the model will not
-volunteer that.
+on 70 mm glasses say nothing about a 105 mm one, and the model will not say so
+unprompted.
 
-**Detecting extrapolation.** With a GP, the predictive standard deviation does
-it — `predict(X, return_std=True)`. With ridge, use distance to the training
-set: the Mahalanobis distance from its mean, or the distance to the
-fifth-nearest row in scaled inputs. Either gives one number per prediction.
+**Detecting extrapolation.** A GP gives it directly, as the standard deviation
+from `predict(X, return_std=True)`. With ridge, use the distance to the
+fifth-nearest training row in scaled inputs.
 
 **The response.** Set a threshold: a standard deviation above 4 mm, or a
-fifth-nearest-neighbour distance beyond the 95th percentile of the training
-set's own. Above it, **discard the residual** and use `f(x)` with solution 4's
-conservative assumption about the base; **pad the destination**, taking the
-140 mm line plus the full 20 mm margin rather than the trimmed margin a
-confident residual would allow; and **take the picture**. Below the threshold a
-push may occasionally be chained without a survey. Above it the look-again is
-mandatory, and it returns a labelled row in exactly the region the model was
-short of. Extrapolation triggers a measurement, and the measurement cures the
-extrapolation.
-
-Log every row — inputs, prediction, measurement, residual, uncertainty — one
-CSV per run, so that when something goes wrong the file says what the model
-believed beforehand.
+neighbour distance beyond the 95th percentile of the training set's own. Above
+it, **discard the residual** and use `f(x)` with solution 4's conservative
+assumption about the base; **pad the destination**, taking the 140 mm line plus
+the full 20 mm margin; and **take the picture**. Below the threshold a push may
+occasionally be chained without a survey. Above it the look-again is mandatory,
+and it returns a labelled row in exactly the region the model was short of, so
+extrapolation triggers the measurement that cures it.
 
 ### A worked example
 
-Solution 4's glass: footprint 70 mm, so `R` = 35 mm, 250 g, pushed 60 mm to
-take a crowded pair from 105 mm apart past the 140 mm line, the push line
-missing the centre by 5 mm.
+Solution 4's glass: footprint 70 mm, so `R` = 35 mm, 250 g, pushed 60 mm, the
+push line missing the centre by 5 mm.
 
-Uniform disc gives `c` = 23.3 mm, `r` = 23.3² / 5 = 109 mm, and 60² / (2 × 109)
-= **17 mm** of drift. An annulus gives `c` = 35 mm, `r` = 245 mm, and **7 mm**.
-Nothing in the cell sees which is true.
+Uniform disc gives `c` = 23.3 mm, `r` = 109 mm and 60² / (2 × 109) = **17 mm**
+of drift. An annulus gives `c` = 35 mm, `r` = 245 mm and **7 mm**. Nothing in
+the cell sees which is true.
 
 Push it and look. The glass lands 8 mm off the line, so the residual against
-the uniform-disc backbone is 8 − 17 = **−9 mm**.
-
-Thirty such rows across glasses 45 to 105 mm wide, fitted with ridge, might
-return roughly `−0.5 × predicted_drift` across the range — what a consistently
-rim-supported base looks like. The corrected prediction for the next 70 mm
-glass is **8 mm**, not 17.
+the uniform-disc backbone is 8 − 17 = **−9 mm**. Thirty such rows, fitted with
+ridge, might return roughly `−0.5 × predicted_drift` — what a rim-supported
+base looks like. The corrected prediction for the next 70 mm glass is **8 mm**,
+not 17.
 
 What was learned is not a friction coefficient. It is that these glasses, on
-this table, drift about half of what the uniform-disc model says: the number
-nobody could measure, obtained without measuring it.
+this table, drift about half of what the model says — the number nobody could
+measure, obtained without measuring it.
 
-Now a 105 mm glass arrives and only two of the thirty rows were wider than
-85 mm. The GP returns 6 mm of standard deviation against the 4 mm threshold.
-The residual is dropped, the push is planned on the raw analytical answer with
-the full margin, a picture is taken afterwards, and the dataset gains its third
-wide glass. The run is no worse than solution 3's.
+Now a 105 mm glass arrives, and only two of the thirty rows were wider than
+85 mm. The GP returns 6 mm of standard deviation against the 4 mm threshold, so
+the residual is dropped, the full margin is used, and a picture is taken after
+the push. No worse than solution 3 — and one more wide glass in the dataset.
 
 ### What it needs
 
-Solution 4's analytical model, callable. Solution 3's look-again, which exists
-and supplies every label. A CSV of past pushes. scikit-learn, a small
-pure-Python dependency with no CUDA in it. A retraining step of a few seconds,
-run between sessions rather than mid-run, so a run's behaviour does not change
-underneath it. No new hardware, no simulator time, no GPU.
+Solution 4's analytical model, callable. Solution 3's look-again, which
+supplies every label. A CSV of past pushes, holding inputs, prediction,
+measurement and uncertainty. scikit-learn, a small pure-Python dependency with
+no CUDA in it. Retraining between sessions, not mid-run. No new hardware, no
+simulator time, no GPU.
 
 ### What it is good at
 
 **It turns operation into improvement.** The arm gets better at pushing by
 pushing, with no training phase and no labelling work.
 
-**There is a floor under it.** With the fallback in place, the worst case is
-solution 3's behaviour.
+**There is a floor under it.** With the fallback, the worst case is solution
+3's behaviour.
 
 **It stays explainable.** A report can say "predicted 17 mm, corrected to 8 mm,
 because past pushes drifted about half what the model said".
-
-**It generalises where the physics does.** Only the small part is extrapolated.
 
 ### What it is bad at
 
@@ -992,52 +967,43 @@ because past pushes drifted about half what the model said".
 prediction is a second model in disguise. If a glass rocks rather than slides,
 `f(x)` is not wrong by a smooth amount — it is not describing the event.
 
-**It is silent about drift.** A table wiped with a different cloth changes `μ`
+**It is silent about drift.** A table wiped with a different cloth changes `μ`,
 and the old residuals go stale. Only rising prediction error shows it.
 
-**It cannot supply the missing measurement.** `μ` stays unknown. The residual
-learns its effect on displacement, entangled with the pressure distribution,
-and the two are not separable from this data.
-
-**It arrives late.** The first fifty runs have no model.
+**It cannot supply the missing measurement.** `μ` stays unknown; its effect on
+displacement is learned tangled with the pressure distribution.
 
 ### How it fails
 
 **By being trusted outside its data.** That is the whole risk, and the
-uncertainty threshold with its fallback is the whole mitigation. A residual
-model with no uncertainty output should not be wired into the planner at all.
+uncertainty threshold with its fallback is the whole mitigation. A model with
+no uncertainty output should not be wired into the planner.
 
 **By learning a bug.** If problem 2 mislocates a glass by 3 mm, the residual
-absorbs that as physics, and it persists after perception is fixed until the
-dataset is cleared.
+absorbs that as physics and keeps it until the dataset is cleared. A push that
+half-toppled a glass is the same trap; reject those rows.
 
-**By poisoning itself.** A push that half-toppled a glass or nudged a neighbour
-is a real measurement but not a push outcome. Those rows are rejected on
-evidence the run already has.
-
-**The failure that must be designed out.** The tipping check `h < a / μ` is the
-one piece of arithmetic standing between the arm and a broken glass. **The
-residual must never touch it** — not to raise the allowed height, not to relax
-the guessed `μ`, not to argue that this glass has been pushed safely twenty
-times. Enforce it structurally: the function that chooses push height takes the
-measured base width and a fixed conservative `μ`, and does not import the
-residual model at all. The residual may make a push *more* conservative —
-shorter, better aimed — and nothing else. A learned model is allowed to improve
-aim. It is not allowed to grant permission.
+**The failure that must be designed out.** The tipping check `h < a / μ` stands
+between the arm and a broken glass. **The residual must never touch it** — not
+to raise the allowed height, not to relax the guessed `μ`, not to argue that
+this glass has been pushed safely twenty times. Enforce that structurally: the
+function choosing push height takes the measured base width and a fixed
+conservative `μ`, and does not import the residual model at all. The residual
+may make a push *more* conservative, shorter or better aimed, and nothing else.
+It may improve aim. It may not grant permission.
 
 ### When it would be the right choice
 
 Once solutions 1 and 3 are built and the push log holds a few hundred rows. Not
-before: there is no backbone to correct and no data to correct it with.
+before: there is no backbone to correct, and no data to correct it with.
 
-It becomes valuable when surveys are the bottleneck. Solution 3's complaint is
-that every push costs one, and a residual good to a few millimetres is what
-lets two pushes be chained before looking.
+It earns its place when surveys are the bottleneck. Solution 3's complaint is
+that every push costs one, and a residual good to a few millimetres lets two
+pushes be chained before looking.
 
-It would be the wrong choice if pushing were rare, if the table and glasses
-changed so often that no dataset stayed valid, or if the analytical backbone
-were not already written. It is an addition to a working system, not a way to
-get one.
+It would be wrong if pushing were rare, or if the table and glasses changed so
+often that no dataset stayed valid.
+
 ---
 
 ## Solution 6 — geometry generates, a model ranks
@@ -1047,110 +1013,92 @@ vetoes the unsafe ones; the model only decides which of the survivors to try
 first. A bad ranking costs an extra push and can never cost a toppled object.*
 ### What it is
 
-Solution 3 builds one destination and pushes to it, choosing it by a rule
-written in advance: of the spots passing its four tests, take the shortest
-travel.
+Solution 3 chooses its destination by a rule fixed in advance: of the spots
+passing its four tests, take the shortest travel. This hybrid changes only that.
 
-This hybrid changes only that last sentence. The geometric planner is asked for
-**every** safe push rather than the best one — every direction, every distance,
-each already filtered for the tipping limit, for reachability, for the zone, for
-the rack and for a clear corridor. That gives a list of candidates, all safe.
-Then a **learned model puts the list in order**, and the top one is pushed.
+The geometric planner is asked for **every** safe push rather than the best one
+— every direction, every distance, each already filtered for the tipping limit,
+reachability, the zone, the rack and a clear corridor. Every survivor is safe. A
+**learned model then puts them in order**, and the top one is pushed.
 
-**Geometry proposes. Geometry vetoes. The learned model only orders.** It cannot
-add a candidate and cannot overrule a rejection. The worst a wrong answer can do
-is put a mediocre push first, costing a few seconds and a re-survey. It can
-never cost a toppled object, because every candidate was cleared by arithmetic
-before the model saw it.
+**Geometry proposes. Geometry vetoes. The model only orders.** It cannot add a
+candidate and cannot overrule a rejection. A bad ranking costs an extra push — a
+few seconds and a re-survey. It can never cost a toppled object, because every
+candidate was cleared by arithmetic first.
 
 ### Why anyone does it this way
 
 It is the safest shape available for a learned component in a physical system,
-and the contrast with solution 5 is exact. There, the policy's output *is* the
+and the contrast with solution 5 is exact. There the policy's output *is* the
 action. A policy has no field for "never topple", so safety has to come through
 the reward, and a fine is a price — a trade the policy may take. Bolt a
-geometric check on at run time and that check is doing the safety work anyway,
-which is an argument for building it that way deliberately.
+geometric check on at run time and that check is doing the safety work anyway.
+Here the output is a
+**permutation of a set that is already safe**, and no value it can emit is an
+unsafe push.
 
-Here the model's output is a **permutation of a set that is already safe**. No
-value it can emit corresponds to an unsafe push.
-
-The second reason is that ordering is what geometry is bad at. Enumerating safe
-pushes is easy. Saying which survivor helps most depends on how the object
-really slides and on what the arrangement looks like afterwards, and solution 4
-shows that deriving either needs friction and a pressure distribution nothing
-here measures. Ordering is the residue left after the calculable parts are
-calculated.
+Ordering is also the part geometry is bad at. Enumerating safe pushes is easy.
+Saying which survivor helps most needs the friction and the pressure
+distribution that solution 4 shows nothing here measures.
 
 ### How it would work here
 
-**The candidate set.** For one chosen object, sweep push directions at 15°
-(24 of them) and distances of 20, 40, 60 and 80 mm: 96 candidates. Run solution
-3's tests on each. A handful to a couple of dozen survive.
+**The candidate set.** For one chosen object, sweep directions at 15° (24 of
+them) and distances of 20, 40, 60 and 80 mm: 96 candidates. Run solution 3's
+tests on each. A handful to a couple of dozen survive.
 
-**The model's input.** Three groups of numbers per candidate.
+**The model's input,** per candidate: the push, as a unit direction, a distance
+and the moving object's footprint width; the arrangement now, as either the
+object list — five centres and five footprint widths — or an occupancy grid, the
+320 x 360 mm zone at 10 mm cells, 32 x 36, with 1 where a disc covers a cell;
+and the crowding that would remain, the clearances recomputed with the object at
+its destination.
 
-1. **The push** — direction as a unit vector, distance, which object moves, its
-   footprint width, its push height.
-2. **The arrangement now** — either the object list, five centres and five
-   footprint widths, or a small occupancy grid: the 320 x 360 mm zone at 10 mm
-   cells, so 32 x 36, with 1 where an object's disc covers a cell. The list is
-   smaller and exact; the grid stays one size whatever the object count.
-3. **The crowding that would remain** — move the object to the destination on
-   paper and recompute the clearances. How many pairs are still inside their
-   threshold, the smallest shortfall left, how much free table. The strongest
-   features, and the planner computes them anyway.
-
-**What "helps most" means.** One scalar the model predicts. The best target is
-**how many further pushes the run will need after this one**, because that is
-what the run is scored on, and it credits a push that opens nothing now but sets
-up the next. The cheaper target is **how many objects become grippable**, which
-needs no rollout. Either way it is a regressor, and only the ordering of its
-outputs is used.
+**What "helps most" means.** One scalar the model predicts. Best is **how many
+further pushes the run will need after this one**: that is what the run is
+scored on, and it credits a push which opens nothing now but sets up the next.
+Cheaper is **how many objects become grippable**, needing no rollout. Only the
+ordering of the outputs is used.
 
 **Training data.** Gazebo spawns a random legal arrangement of five objects,
 footprints 45–105 mm, masses 150–400 g. The planner enumerates the survivors,
-each is simulated from that same start, and the result labelled. It is cheap for
-one reason worth naming: this is **supervised learning, not trial and reward**.
-Every simulated push is one labelled row, nothing has to explore, and no real
-arm is involved. At roughly four seconds a simulated push, 300 arrangements at
-about 15 survivors each gives some 4,500 rows in about five hours on one
-instance. An estimate, not a measurement.
+each is simulated from that same start, and the result labelled. This is
+**supervised learning, not trial and reward**: every simulated push is one
+labelled row, nothing has to explore, and no real arm is involved. At four
+seconds a push, 300 arrangements at 15 survivors each gives some 4,500 rows in
+roughly five hours — an estimate, not a measurement.
 
-**Model families**, for a few dozen inputs and a few thousand rows.
+**Model families**, for a few dozen inputs and a few thousand rows:
 
-- **Gradient-boosted trees** — many shallow decision trees, each trained to
-  correct the running total of the ones before it. The strongest default at this
-  size, trains in seconds on CPU, and reports which features mattered.
-  scikit-learn (https://scikit-learn.org/, BSD 3-clause), XGBoost
-  (https://github.com/dmlc/xgboost, Apache 2.0), LightGBM
-  (https://github.com/microsoft/LightGBM, MIT).
-- **A small multilayer perceptron** — a few fully connected layers, perhaps 64
-  units each; needed if the input is the grid rather than the list. PyTorch
-  (https://github.com/pytorch/pytorch, BSD 3-clause) runs on Apple Silicon.
-- **A graph neural network.** Each object is a **node** holding its position and
-  footprint; every pair is joined by an **edge** holding their separation. The
-  network repeatedly lets each node update itself from a sum over its
-  neighbours, so the answer does not depend on the order the objects were listed
-  in, and the same weights work for four objects or eight. PyTorch Geometric
-  (https://github.com/pyg-team/pytorch_geometric, MIT). Whether that invariance
-  beats boosted trees on five objects is **uncertain**; I would not build it
-  first.
+- **gradient-boosted trees** — shallow decision trees, each correcting the
+  running total of the ones before it. The best default at this size, and it
+  reports which features mattered. scikit-learn (https://scikit-learn.org/,
+  BSD 3-clause), XGBoost (https://github.com/dmlc/xgboost, Apache 2.0), LightGBM
+  (https://github.com/microsoft/LightGBM, MIT);
+- **a small multilayer perceptron** — a few fully connected layers of perhaps 64
+  units, needed if the input is the grid. PyTorch
+  (https://github.com/pytorch/pytorch, BSD 3-clause) runs on Apple Silicon;
+- **a graph neural network** — each object a **node** holding its position and
+  footprint, each pair an **edge** holding their separation, every node
+  repeatedly updating itself from a sum over its neighbours. The answer then
+  ignores the order the objects were listed in, and one set of weights covers
+  four objects or eight. PyTorch Geometric
+  (https://github.com/pyg-team/pytorch_geometric, MIT). Whether that beats
+  boosted trees on five objects is **uncertain**.
 
 ### The feedback loop
 
-The push is made, and solution 3's re-survey happens regardless. That survey is
-the true outcome, so the chosen candidate and what it achieved form a new
-labelled row — free, because the measurement was being taken for safety anyway.
-**The ranker improves with use,** including on real friction rather than
-Gazebo's configured constant. Retraining is a batch job on a CPU.
+Solution 3's re-survey happens after every push regardless. It is the true
+outcome, so the chosen candidate and what it achieved form a new labelled row —
+free, because the measurement was being taken for safety anyway. **The ranker
+improves with use,** including on real friction rather than Gazebo's configured
+constant.
 
-**A flat ranking is itself an answer.** If the top several candidates score
-within the model's own error of each other, the model is saying it does not much
-matter which is picked. That is information, not a failure. The right response
-is to stop asking the model and let the **geometric tie-break** decide —
-shortest push, because every millimetre of travel is another millimetre in which
-something can be knocked.
+**A flat ranking is itself an answer.** If the top candidates score within the
+model's own error of each other, the model is saying it does not much matter
+which is picked. That is information, not a failure. Stop asking the model and
+let the **geometric tie-break** decide — shortest push, because every millimetre
+of travel is another millimetre in which something can be knocked.
 
 ### A worked example
 
@@ -1169,25 +1117,24 @@ By solution 1's asymmetric rule — `n` is in the way of `t` when
 `distance(t, n) < 70 + footprint(n)/2` — three pairs are crowded: A–B at
 131.5 mm, B–D at 130.4 mm, C–E at 125.3 mm. B is in two of them, so B moves.
 
-**Geometry proposes.** B's tipping check: `a` = 40 mm, so even at μ = 0.5 the
-limit is 80 mm, above the 50 mm the gripper is stuck at. B may be pushed. Of the
-96 candidates, seventeen survive; the other 79 are gone before the model runs.
+**Geometry proposes.** B's `a` is 40 mm, so even at μ = 0.5 it tips only above
+80 mm, well over the 50 mm the gripper is stuck at. Of the 96 candidates,
+seventeen survive. The other 79 are gone before the model runs.
 
 **The model orders,** predicting further pushes needed: 60 mm along (0.91, 0.41)
 scores 1.15, 40 mm along the same line 1.22, 60 mm along (0.97, 0.26) 1.28.
 
-**The tie-break decides.** Those are 0.13 apart. If the model's held-out error
-is around 0.4 — illustrative, not measured — the spread is noise, so geometry
-chooses among them and shortest wins: 40 mm.
+**The tie-break decides.** Those are 0.13 apart. If the held-out error is around
+0.4 — illustrative, not measured — that spread is noise, so geometry chooses
+among them and shortest wins: 40 mm.
 
 B lands at (506.4, −123.6): 166.4 mm from A, 165.2 mm from D, 137.3 mm from C,
-246 mm from E, all clearing their asymmetric thresholds, though 137.3 mm would
-have failed a blunt 140 mm rule. Reach 521 mm, inside the zone. Both of B's
-crowded pairs fixed in one 40 mm push.
+246 mm from E, all clearing their thresholds, at 521 mm reach and inside the
+zone. Both crowded pairs fixed in one push.
 
-**The loop closes.** The re-survey finds B moved 37 mm and 5 mm off the line.
-C–E is still crowded, so one further push is needed. True label 1, predicted
-1.22. The row is stored.
+**The loop closes.** The re-survey finds B moved 37 mm, 5 mm off the line. C–E
+still needs a push, so the true label is 1 against a predicted 1.22, and the row
+is stored.
 
 ### What it needs
 
@@ -1199,14 +1146,14 @@ this machine where solution 5 does not.
 ### What it is good at
 
 **The learned part cannot cause the unrecoverable failure.** Toppling, running
-out of reach, hitting the rack and leaving the zone are all settled before the
-model is consulted.
+out of reach, hitting the rack and leaving the zone are settled before the model
+is consulted.
 
 **It degrades to solution 3.** Delete the weights file, rank by shortest push,
 and the run still works, slightly worse.
 
-**It is checkable.** Every scored candidate can be printed with its score, and a
-refusal is still geometry's and still a sentence.
+**It is checkable.** Every candidate can be printed with its score, and
+refusals remain geometry's.
 
 ### What it is bad at
 
@@ -1226,27 +1173,23 @@ errors. Measure pushes-per-run against plain shortest-push on seeded
 arrangements, and keep the simpler one if it wins.
 
 **Confidently outside its training range.** Fed eight objects it still emits
-numbers, and they may not be flat. Outside the trained object count or footprint
-range, ignore the model.
+numbers, and they may not be flat. Outside the trained range, ignore the model.
 
-**Feedback that narrows it.** Only the chosen candidate is measured for real, so
-every real row is a top-ranked push and the model learns most about the region
-it already prefers.
+**Feedback that narrows it.** Only the chosen candidate is ever measured for
+real, so the model learns most about the region it already prefers.
 
 ### When it would be the right choice
 
-When solution 3 already runs, and the measured complaint against it is the
-number of pushes rather than the number of topples. That is the precondition: a
-working geometric planner with a survey loop, and a log showing it wandering.
-
-It is also right whenever a learned component is wanted in this cell at all.
-Constraining it to an ordering over a pre-vetted set is how to have one without
-putting an unexplainable function in charge of the only action that can break
-something.
+When solution 3 already runs and the measured complaint is the number of pushes
+rather than the number of topples. It is also right whenever a learned component
+is wanted in this cell at all: constraining it to an ordering over a pre-vetted
+set is how to have one without putting an unexplainable function in charge of
+the only action that can break something.
 
 It is the wrong choice before solution 3 exists, and the wrong choice if the
 arrangements are easy — one crowded pair on an open table, where every survivor
-is about as good as every other and the ranking comes out flat every time.
+is about as good as every other.
+
 ---
 
 ## Solution 7 — a learned change-verifier
@@ -1257,212 +1200,175 @@ badly — did it move as intended, did anything else move, and has anything
 fallen over.*
 ### What it is
 
-Solution 3 pushes, then looks again. This **hybrid** replaces only the looking.
-The destination search, the tipping check and the guarded move stay as written.
-The last step changes, from re-running the geometric survey to asking a small
-learned model one question: what happened?
+Solution 3 pushes, then looks again. This **hybrid** replaces only the
+looking. Everything before it stays as written; the last step becomes one
+question put to a small learned model: what happened?
 
 **Change detection** is the field: comparing two pictures of the same scene,
-taken at different times, and saying what differs. It grew up in satellite
-imagery, where the same patch of ground is photographed months apart and
-somebody has to mark the new buildings.
+taken at different times, to say what differs. It grew up in satellite
+imagery, on ground photographed months apart.
 
 The obvious method is **pixel differencing** — subtract one picture from the
-other and look at what is left. It works when the camera has not moved between
-the two, and collapses when it has. Here the camera is on the wrist. It moves
-with the arm, and the planner that drives it back to the photographing pose is
-repeatable rather than exact. Shift a 320x240 picture by two pixels and every
-edge in the scene lights up in the difference image — every rim, every table
-joint, every shadow — and the glass that actually moved is buried in it.
-
-So the method has to be told about the motion. That is the general case of
-change detection, and it is hard. **This cell is not the general case**, which
-is why this solution is worth building.
+other. It works only if the camera has not moved. Here it is on the wrist, and
+the planner that returns it to the photographing pose is repeatable rather
+than exact. Shift a 320x240 picture by two pixels and every edge lights up —
+rims, joints, shadows — and the glass that moved is buried in it. Telling the
+method about the motion is the general case of change detection, and it is
+hard. **This cell is not the general case.**
 
 ### Why anyone does it this way
 
-**The geometry answers the wrong questions.** Re-running problem 2's separation
-gives new footprint circles. Comparing them answers the first question — did the
-target move as intended — crudely but honestly. The second, did anything *else*
-move, is swamped by spurious differences across five circles. The third, has
-anything fallen over, it barely answers at all: to the separation stage a
-toppled glass is a group of points that is not a circle, and so is a glass half
-hidden behind its neighbour.
+**The geometry answers the wrong questions.** Re-running problem 2's
+separation gives new footprint circles. They answer the first — did the target
+move as intended — crudely but honestly. The second, did anything *else* move,
+is swamped by spurious differences across five circles. The third it barely
+answers: to the separation stage a toppled glass is a group of points that is
+not a circle, and so is a glass half hidden behind its neighbour.
 
-**The camera pose is known exactly.** The joint encoders and forward kinematics
-give it at both pictures, and `tf2`
+**The camera pose is known exactly.** The joint encoders and forward
+kinematics give it at both pictures, and `tf2`
 ([github.com/ros2/geometry2](https://github.com/ros2/geometry2), BSD-3-Clause)
-already publishes it. The camera is RGB-D, so the before picture carries depth.
-Together they let the before picture be **reprojected into the after camera's
-frame**: each pixel pushed out to its 3-D point and photographed again from
-where the camera now stands. What comes back is what the scene would have looked
-like had nothing changed.
-
-That is what the pose buys. It turns the general problem into the easy one,
-where the two images agree on geometry and every remaining difference is real.
-It also lets the arm be masked out: the robot model and the joint angles say
-which pixels are gripper, and those are the pixels guaranteed to differ for
-uninteresting reasons.
+publishes it. The camera is RGB-D, so the before picture carries depth and can
+be **reprojected into the after camera's frame**: each pixel pushed out to its
+3-D point and photographed again from where the camera stands now. What comes
+back is the scene as it would have looked had nothing changed, so the two
+pictures agree on geometry and every difference left is real. The arm masks
+out too: the joint angles say which pixels are gripper.
 
 ### How it would work here
 
 **Three outputs, not a score.** A three-way classifier, run per glass:
 
 1. **moved as intended** — carry on;
-2. **moved unexpectedly** — short, or sideways, or a neighbour shifted; push
+2. **moved unexpectedly** — short, sideways, or a neighbour shifted; push
    again from the newly measured position;
 3. **fallen** — stop and report.
 
-"Fallen" earns its own class rather than living inside an anomaly score, for two
-reasons. An anomaly score is one number meaning *unusual*, and unusual covers a
-glass 15 mm short, a lighting change, and a glass on its side — three things
-with three different correct actions. And anomaly detectors are trained on
-normal data only, because abnormal data is what you cannot get. Here it is free:
-Gazebo will topple a glass on request.
+"Fallen" earns its own class rather than an anomaly score. An anomaly score is
+one number meaning *unusual*, and unusual covers a glass 15 mm short, a
+lighting change, and a glass on its side — three cases with three different
+correct actions. Nor can an anomaly detector be taught what a topple looks
+like: it sees normal data only. Gazebo will make topples all day.
 
-**The model.** A **twin-branch**, or **siamese**, convolutional network: two
-copies of one small network sharing a single set of weights, one fed the before
-crop and one the after crop. Their output vectors are subtracted and
-concatenated, and a small head turns that into three numbers. Sharing the
-weights is the point — the branches cannot drift into different ideas of what a
-glass looks like, and there are half as many parameters.
+**The model.** A **twin-branch**, or **siamese**, network: two copies of one
+small convolutional network sharing a single set of weights, one fed the
+before crop and one the after crop. Their outputs are subtracted and a small
+head turns that into the three numbers. Shared weights stop the branches
+forming different ideas of what a glass looks like. Concretely: a 96x96 crop
+at the glass's known position, colour plus depth; a pretrained ResNet-18
+backbone from [torchvision](https://github.com/pytorch/vision) (BSD-3-Clause);
+trained in [PyTorch](https://pytorch.org/) (BSD-3-Clause) on the Metal
+backend, because **this is an Apple Silicon Mac with no NVIDIA GPU**.
 
-Concretely: a 96x96 crop around the glass's known position, cut from the 320x240
-picture, colour plus depth; a ResNet-18 backbone from
-[torchvision](https://github.com/pytorch/vision) (BSD-3-Clause) with pretrained
-weights and early layers frozen; trained in [PyTorch](https://pytorch.org/)
-(BSD-3-Clause) on the Metal backend, because **this is an Apple Silicon Mac with
-no NVIDIA GPU**. Generating the data, not the training, is the cost.
+**Classical alternatives, built first and beaten.** Aligned differencing with
+a threshold, in [OpenCV](https://opencv.org/) (Apache-2.0); structural
+similarity in [scikit-image](https://scikit-image.org/) (BSD-3-Clause); and
+three numbers per glass — change in footprint area, in the tallest point's
+height, and in width over height — in a logistic regression from
+[scikit-learn](https://scikit-learn.org/) (BSD-3-Clause). A toppled glass
+loses height and gains width, so that last is already decent.
 
-**Classical alternatives, built first and beaten.** Aligned differencing with a
-threshold, in [OpenCV](https://opencv.org/) (Apache-2.0). Structural similarity,
-`skimage.metrics.structural_similarity` in
-[scikit-image](https://scikit-image.org/) (BSD-3-Clause), which compares local
-patches and tolerates brightness shifts. Nearest-neighbour distances between the
-two point clouds, in [Open3D](https://www.open3d.org/) (MIT). And the honest
-baseline: three hand-made numbers per glass — change in footprint area, in the
-height of the tallest point, and in the ratio of width to height — fed to a
-logistic regression in [scikit-learn](https://scikit-learn.org/) (BSD-3-Clause).
-A toppled glass loses height and gains width, so that baseline is already
-decent, and the network has to beat it.
-
-**Training data.** Gazebo Harmonic ([gazebosim.org](https://gazebosim.org/),
-Apache-2.0) knows where it put every glass, so each before/after pair arrives
-labelled.
-
-The trap is **class imbalance**. In normal operation a topple is rare — one push
-in a few hundred, if the rest of the project works. A model trained on that
-mixture learns the cheapest rule available, "nothing ever falls over", and is
-right almost every time while being worthless. Two fixes, both needed. Generate
-topples **deliberately** — push above the tipping line, push narrow feet, push
-fast — until about one training pair in five is a topple. And score the model on
-how many topples it catches, never on overall accuracy, which the lazy rule
-already wins.
+**Training data** comes labelled from Gazebo Harmonic
+([gazebosim.org](https://gazebosim.org/), Apache-2.0), which knows where it
+put each glass. The trap is **class imbalance**: a topple is rare, one push in
+a few hundred, so a model trained on that mixture learns the cheapest rule
+going — "nothing ever falls over" — which is right almost every time and
+worthless. Generate topples **deliberately** until one training pair in five
+is one, and score on topples caught, never on accuracy, which the lazy rule
+wins.
 
 ### The feedback loop
 
-The softmax gives three probabilities. The verdict is **uncertain** when the
-largest is below a bar or the top two are close. That is not a failure. It is
-the model's most valuable output, because it is the only one that triggers an
-action: take another picture, from a pose chosen to settle this doubt.
+The verdict is **uncertain** when the largest of the three probabilities is
+below a bar, or the top two are close. It is the model's most valuable output,
+because it alone triggers an action: another picture, from a pose chosen to
+settle the doubt.
 
-**Why a chosen pose.** Overhead is the worst angle for telling a standing glass
-from a fallen one — both are a blob of roughly the right area. Side-on they are
-not alike at all: standing is a tall narrow silhouette, fallen is a long low one
-with the footprint circle now facing sideways. The missing information has a
-direction, and the camera can be moved into it.
+**Why a chosen pose.** Overhead is the worst angle for telling a standing
+glass from a fallen one: both are a blob of roughly the right area. Side-on
+they are nothing alike — standing is a tall narrow silhouette, fallen a long
+low one. The missing information has a direction, and the camera can move into
+it.
 
-**How it is chosen.** Three constraints, all arithmetic on numbers already held.
-**Height:** drop to about 80 mm above the table and look roughly horizontally,
-so the glass is seen against the background rather than the table top.
-**Azimuth:** stand on the circle of viewpoints at the camera's working range
-around the doubtful glass, score each by how many other glasses fall in the line
-of sight, and take the clearest that is within reach and does not have the arm
-blocking its own camera. **A second azimuth,** about 90 degrees round, if
-needed: it covers the case the first look cannot, a glass fallen directly
-towards or away from the camera, which foreshortens into something like a
-standing one.
+**How it is chosen.** **Height:** about 80 mm above the table, looking roughly
+horizontally, so the glass is seen against the background, not the table top.
+**Azimuth:** score the viewpoints at working range round the glass by how many
+others lie in the line of sight, and take the clearest one in reach. **A
+second azimuth,** 90 degrees round, if needed: it covers a glass fallen
+straight towards the camera, which foreshortens into a standing one.
 
-**How many looks.** Two, then stop. Each costs a few seconds of motion plus a
-frame, so two is under ten seconds. Still uncertain after the second, the arm
-does not take a third and does not guess. It stops and reports.
+**How many looks.** Two, then stop — a few seconds each, under ten in all.
+Still uncertain after the second, the arm does not guess. It reports.
 
 **The safety asymmetry.** A false "everything is fine" leaves the arm working
-beside fallen glass that nothing in this cell can stand back up. A false alarm
-costs a stopped run. So the threshold is biased deliberately, in two places: the
-training loss is weighted so that missing a topple is penalised several times
-more heavily than inventing one, and the run-time bars are asymmetric — accept
-"moved as intended" only above about 0.9, treat "fallen" as live from about 0.2
-upwards. Everything between buys a second look rather than a decision. Those
-numbers are a starting point to tune on held-out simulated runs, not a measured
-result. The principle is what carries: **make the model eager to ask for another
-picture and reluctant to say everything is fine.**
+beside fallen glass nothing here can stand back up; a false alarm costs a
+stopped run. So bias the threshold deliberately, twice. Weight the training
+loss so that missing a topple is penalised several times more heavily than
+inventing one. Make the run-time bars asymmetric: accept "moved as intended"
+only above about 0.9, treat "fallen" as live from about 0.2 upwards, and let
+everything between buy a look rather than a decision. The principle carries:
+**make the model eager to ask for another picture and reluctant to say
+everything is fine.**
 
 ### A worked example
 
 Solution 3's glass B, pushed 48 mm.
 
-*The routine look.* Forward kinematics says the camera is 3.1 mm and 0.4 degrees
-from where it stood before — small, and far too large for pixel differencing.
-The before picture is reprojected into the new pose using its own depth, the
-gripper is masked out, and a 96x96 crop is taken.
+*The routine look.* Forward kinematics says the camera is 3.1 mm and 0.4
+degrees from where it stood before — far too much for pixel differencing. So
+the before picture is reprojected and a crop taken.
 
 *The verdict.* Moved as intended 0.55, moved unexpectedly 0.31, fallen 0.14.
-Nothing clears 0.9: uncertain. The geometry would have said "fine" here, because
+Nothing clears 0.9: uncertain. The geometry would have said "fine", because
 B's circle still fits.
 
 *The chosen look.* B's only neighbour within 200 mm is A, 138 mm away, so the
-arc away from A is clear. The arm goes 380 mm out on that side, 80 mm up,
-looking horizontally. About 4 seconds.
+arc away from A is clear. The arm goes 380 mm out on that side, 80 mm up.
+About 4 seconds.
 
-*The second verdict.* Side-on, the crop is a tall silhouette with a rim on top.
-Moved as intended 0.94, fallen 0.01. Accept, and go on. Had it returned fallen
-0.88, the run stops — four seconds spent to learn what the overhead picture
-could not say.
+*The second verdict.* Side-on, the crop is a tall silhouette with a rim on
+top. Moved as intended 0.94, fallen 0.01. Accept, and go on. Had it come back
+fallen 0.88, the run stops — four seconds to learn what overhead could not.
 
 ### What it needs
 
-No new hardware: the wrist camera, the encoders and `tf2` are here. New code:
-the reprojection, the crop, a training script, a weights file, the viewpoint
-chooser, and the cap of two extra looks.
+No new hardware. New code: the reprojection, a training script, a weights
+file, the viewpoint chooser, and the two-look cap.
 
 ### What it is good at
 
-It answers the two questions geometry cannot, from one comparison rather than a
-full survey. It turns doubt into an action, which nothing else here does. Its
-errors fall on the side that costs seconds rather than a glass. And the labels
-come free from a simulator that was going to be run anyway.
+It answers the two questions geometry cannot, from one comparison rather than
+a full survey. It turns doubt into an action, which nothing else here does.
+Its errors fall on the side that costs seconds, not a glass.
 
 ### What it is bad at
 
-**Explaining itself.** The rules refuse with a sentence containing two numbers.
-This returns 0.14, and the number has no parts.
+**Explaining itself.** The rules refuse with a sentence containing two
+numbers. This returns 0.14, which has no parts.
 
-**Depending on the alignment.** A wrong camera pose means the model sees changes
-that are not there. Exact in simulation, not on a real arm.
+**Depending on the alignment.** A wrong camera pose means the model sees
+changes that are not there. Exact in simulation, less so on a real arm.
 
-**One known kind, one cell.** It knows the glasses it was shown.
+**Generalising.** It knows only the glasses it was shown.
 
 ### How it fails
 
-**On a case nobody generated.** A glass leaning against its neighbour is neither
-standing nor lying, and the model will pick one confidently.
+**On a case nobody generated.** A glass leaning against its neighbour is
+neither standing nor lying, and the model will pick one anyway.
 
 **By being right too often.** A verifier that says "fine" on 199 pushes in 200
-stops being read, and the 200th is the one that mattered.
+stops being read, and the 200th mattered.
 
-**Outside the crop.** The crop follows the glass that was pushed, so a neighbour
-knocked at the frame's edge is a change nobody asked about. Run the verifier on
-every glass in the picture; it is cheap.
+**Outside the crop.** It follows the pushed glass, so run it on all of them.
 
 ### When it would be the right choice
 
-When the routine check is cheap, the failure it must catch cannot be undone, and
-more information can be bought on demand. That is this cell exactly.
+When the routine check is cheap, the failure it must catch cannot be undone,
+and more information can be bought on demand. That is this cell exactly.
 
 It is the wrong choice with a fixed camera, where an uncertain verdict has
-nowhere to go and the model is an imperfect classifier with extra steps, and
-where a wrong answer is cheap, because there the crude comparison is enough.
+nowhere to go, or wherever a wrong answer is cheap.
+
 ---
 
 ## Solution 8 — learn to push
@@ -1630,6 +1536,7 @@ or a lab with NVIDIA hardware where the episode budget is hours, not weeks.
 
 Keep it on the list for the day the table stops holding five glasses of one
 known kind.
+
 ---
 
 ## Solution 9 — learn a forward model, then plan against it
@@ -1639,86 +1546,60 @@ will happen rather than what to do, then let an ordinary planner search over
 candidate pushes using it.*
 ### What it is
 
-Solution 5 learns *what to do*. This one learns *what will happen*, and does the
-deciding with ordinary arithmetic on top.
+Solution 5 learns *what to do*. This one learns *what will happen*, and leaves
+the deciding to arithmetic on top.
 
 A **forward model**, or **learned dynamics**, is a function fitted to recorded
 experience. Give it the arrangement now and a push you are considering; it
-returns the arrangement afterwards. It is not a controller and has no opinion
-about what the arm should want. It is a stand-in for the physics solution 4 could
-not fill in, fitted from examples rather than derived.
+returns the arrangement afterwards. It is the physics solution 4 could not fill
+in, fitted rather than derived.
 
 Deciding happens outside it. Propose many pushes, ask the model what each would
-do, execute the one whose predicted outcome scores best. Change the goal —
-separate the glasses, clear a sightline, tidy them into a line — and the same
-model is reused unchanged, because only the scoring changed. A policy has one
-goal baked into its weights: the one it was rewarded for. That is the whole
-distinction between model-based and model-free learning.
+do, execute the one that scores best. The same model serves any goal, because
+only the scoring changes. A policy serves the one goal it was rewarded for. That
+is the distinction between model-based and model-free learning.
 
-Two flavours, differing in what is predicted. **State prediction** takes five
-centres, five base widths and four numbers describing a push, and returns five
-new centres. **Image prediction**, usually called **video prediction** or
-**visual foresight**, takes the camera frame and the push and returns a predicted
-frame. The second exists for tasks with no state you can write down — cloth,
-grain, a pile of unknown objects. You cannot list the coordinates of a towel, so
-you predict pixels instead.
+Two flavours. **State prediction** maps the ten measured numbers plus a push to
+the new positions. **Image prediction** — **video prediction**, or **visual
+foresight** — returns a predicted camera frame instead, for tasks with no state
+you can write down. You cannot list a towel's coordinates.
 
-**State prediction is the only sane choice here.** Problem 2 already measured the
-state, and the state is ten numbers. The wrist camera is 320x240: 76,800 pixels,
-230,400 values in colour. Predicting a quarter of a million numbers to recover
-ten already in hand is work spent to lose accuracy. Video models are also large
-and want a big NVIDIA GPU for days, which this machine has not got.
+**State prediction is the only sane choice here.** The state is ten numbers and
+problem 2 has measured it; the camera is 320x240, or 230,400 values in colour.
+Predicting a quarter of a million numbers to recover ten already in hand loses
+accuracy, and video models want a big NVIDIA GPU for days.
 
 ### Why anyone does it this way
 
 **The data needs no reward.** A reinforcement learning episode needs a score, and
-a score needs someone to have decided what a topple is worth. A forward model
-needs none. Push at random and record what moved; every push is a usable example,
-including the useless ones. Solution 5's hardest problem — a reward that cannot
-be gamed — never arises, because nothing is scored during training.
-
-**One model, many goals.** A new task needs rescoring, not retraining.
-
-**The planner stays readable.** The search over candidates is code you wrote. It
-can print why a candidate was rejected and what the runner-up was. Only the
-physics is opaque; solution 5 puts the entire decision inside the network.
+a score needs someone to have decided what a topple is worth. Push at random,
+record what moved, and every push is a usable example. Solution 5's hardest
+problem, a reward that cannot be gamed, never arises — and the search over
+candidates stays code you wrote, which can say why one was rejected.
 
 ### How it would work here
 
-**The model.** A small network — a few hidden layers of a couple of hundred units
-— from (ten state numbers, four action numbers) to each glass's *change* in
-position. Predicting the change matters: glasses far from the push do not move,
-and a delta model gets that right by outputting zero. On ten-number states a
-gradient-boosted tree ensemble competes fairly and trains in seconds, so run it
-as the baseline first.
+**The model.** A small network from (ten state numbers, four action numbers) to
+each glass's *change* in position, so glasses far from the push get zero. On ten
+numbers a gradient-boosted tree ensemble competes fairly.
 
-**Collecting the data.** Gazebo Harmonic, headless. Spawn five glasses, then push
-repeatedly in the same world: the state after one push is a fine start state for
-the next, so the reset and settle are amortised over a dozen samples rather than
-paid per sample. Call it four seconds a push. **Twenty thousand pushes is about
-twenty-two hours**, or under six across four instances. Solution 5's fifty
-thousand episodes came to eleven days. The gap is not a faster simulator; it is
-that supervised learning uses every sample, where exploration throws most away.
+**The data.** Gazebo Harmonic, headless, pushing repeatedly in the same world:
+the state after one push starts the next, so reset and settle amortise over a
+dozen samples. At four seconds a push, **twenty thousand pushes is twenty-two
+hours** — under six across four instances, against solution 5's eleven days.
+Random pushes suffice, with the simulator's friction varied between runs.
 
-Random pushes suffice: start anywhere on the ring round a glass, direction
-anywhere in the circle, length 20 to 80 mm, height at the gripper's 50 mm floor.
-Vary the simulator's friction between runs so the model sees a range.
+**Planning against it** is **model predictive control**, or MPC: search for the
+next push using the model, execute only the first part of the answer, discard the
+rest, search again from a fresh measurement. The simplest search is **random
+shooting** — draw a few hundred candidates, roll each through the model, score
+the predicted arrangements, execute the best.
 
-**Planning against it.** This is **model predictive control**, or MPC: at each
-step, search for what to do next using the model, do only the first part of the
-answer, discard the rest, and search again from a fresh measurement. The search
-is sampling, two ways.
-
-**Random shooting**: draw a few hundred candidate pushes at random, run each
-through the model, score the predicted arrangements, execute the best. No
-gradients, no cleverness.
-
-**The cross-entropy method**, or CEM: random shooting three times over. Draw 200
-candidates from a broad Gaussian over start point, direction and length. Score
-them. Keep the best 20 — the **elite set**. Fit a narrower Gaussian to those 20
-and draw again. After three rounds the elites' mean is the push. It costs 600
-batched forward passes of a small network, which is milliseconds of CPU, and it
-concentrates sampling where the good pushes turned out to be.
+**The cross-entropy method**, or CEM, is random shooting three times over. Draw
+200 candidates from a broad Gaussian over start point, direction and length.
+Score them, keep the best 20 — the **elite set** — refit the Gaussian to those 20
+and draw again. After three rounds the elites' mean is the push: 600 batched
+passes, milliseconds of CPU.
 
 **Hard constraints stay outside the model.** The tipping check `h < a / μ`, the
 zone edges, the 300–780 mm reach ring and the rack filter candidates *before*
@@ -1730,19 +1611,15 @@ This is not an implementation detail. It is the method.
 
 The model is trusted **one push ahead and no further**. The plan is computed, the
 first push executed, everything downstream discarded. The arm takes fresh
-overhead pictures, re-runs problem 2's separation, and gets the real arrangement.
-The next plan starts from that. A prediction is never fed into another prediction
-on the real robot.
+pictures, re-runs problem 2's separation, and gets the real arrangement. The next
+plan starts from that. A prediction is never fed into another prediction on the
+real robot.
 
-So the model is not asked to be right. It is asked to be right enough to *rank* a
-few hundred candidates once, before the world is measured again. Ranking is much
-easier than predicting: a model 6 mm out on every push still knows that pushing
-away from a neighbour beats pushing into it. Each measurement resets the error to
-zero. **Replanning every step is what makes a mediocre model useful.**
-
-It also absorbs what solution 3 is bad at. A push that fell short becomes a fresh
-plan from where the glass actually is; a push that created a new crowded pair is
-planned against next round.
+So the model is not asked to be right, only right enough to *rank* a few hundred
+candidates once, before the world is measured again. A model 6 mm out on every
+push still knows that pushing away from a neighbour beats pushing into it, and
+each measurement resets the error to zero. **Replanning every step is what makes
+a mediocre model useful.**
 
 ### A worked example
 
@@ -1756,123 +1633,92 @@ Five glasses, millimetres from the arm's base, inside the 320 x 360 mm zone.
 | D | (600, −330) | 105 mm |
 | E | (500, −380) | 45 mm |
 
-Two pairs are under 140 mm: B–C at 98.5 mm and D–E at 111.8 mm. Every other pair
-is over 150 mm.
+Two pairs are under 140 mm: B–C at 98.5 mm, D–E at 111.8 mm.
 
 **The filter first.** E's base is 45 mm, so `a / μ` at μ = 0.5 is 45 mm, below
 the gripper's 50 mm floor. **E is refused by arithmetic**, before the model is
-consulted. D–E can therefore only be fixed by moving D, whose 52.5 mm half-base
-gives 105 mm of room.
+consulted, so D–E can only be fixed by moving D.
 
-**Planning B–C.** CEM draws 200 candidates around C, drops those landing outside
-the zone or inside another glass's clearance, and scores survivors by the
-smallest pairwise margin left, less a small charge per millimetre travelled. The
-winner pushes C 55 mm along (0.914, 0.406), the line from B through C. The model
-predicts C lands at **(568, −130)**: 52 mm of travel with 3 mm of drift, not the
-55 mm straight line the geometry asked for, because it has seen that pushes fall
-short.
+**Planning B–C.** CEM draws 200 candidates around C, drops those outside the zone
+or inside another glass's clearance, and scores the rest by the smallest pairwise
+margin left. The winner pushes C 55 mm along the line from B through C. The model
+predicts C lands at **(568, −130)**: 52 mm of travel and 3 mm of drift, not the
+straight 55 mm the geometry asked for.
 
 **Execute, then look.** C is actually at **(564, −134)**. The model was 5.7 mm
 out. B–C is now 145.2 mm. One push, done.
 
 **Replan from scratch.** D–E is planned from this survey, not from anything
-decided before the C push. The obvious push, D straight away from E, lands D at
-x = 640 on the zone edge, and the filter kills it. Sampling the full circle also
-proposes D pushed 60 mm along (0.6, 0.8), to **(636, −282)**: 167.6 mm from E,
-164.6 mm from C, 696 mm from the base, inside the zone. A fixed nudge would never
-propose that direction.
+decided before the C push. Pushing D straight away from E lands it on the zone
+edge at x = 640, and the filter kills that. Sampling the full circle instead
+proposes D pushed 60 mm along (0.6, 0.8), to **(636, −282)** — 167.6 mm from E,
+164.6 mm from C. No fixed nudge proposes that direction.
 
-**What rolling further would cost.** Predicting three pushes deep, push three
-starts from a state carrying roughly 15 to 20 mm of accumulated error — a quarter
-of the 70 mm clearance this problem is about, and enough to rank a bad push first.
+Rolled three deep, push three would start from a state carrying 15 to 20 mm of
+error — a quarter of the 70 mm clearance, and why the horizon is one.
 
 ### What it needs
 
-**Data.** Twenty thousand simulated pushes. Uncertain: a state this small may be
-fitted by two thousand, and the honest way to find out is a learning curve —
-train on 1k, 5k, 10k and 20k, and see where held-out error stops falling.
+**Data.** Twenty thousand simulated pushes, though two thousand may fit a state
+this small. Uncertain; a learning curve would settle it.
 
 **Tooling.** [PyTorch](https://pytorch.org/) (BSD-3-Clause) for the network; its
 MPS backend uses the Apple Silicon GPU, though a model this small trains on CPU
-in minutes and the GPU was never the constraint.
-[scikit-learn](https://scikit-learn.org/) (BSD-3-Clause) for the tree baseline.
-[Gazebo Harmonic](https://gazebosim.org/) (Apache-2.0) for the data.
-[MuJoCo](https://github.com/google-deepmind/mujoco) (Apache-2.0) runs natively on
-Apple Silicon and is an alternative source of pushes, but buys single-world speed
-only. CEM and random shooting are thirty lines of NumPy each.
+in minutes. [scikit-learn](https://scikit-learn.org/) (BSD-3-Clause) for the tree
+baseline. [Gazebo Harmonic](https://gazebosim.org/) (Apache-2.0) for the data, or
+[MuJoCo](https://github.com/google-deepmind/mujoco) (Apache-2.0), native on
+Apple Silicon. CEM is thirty lines of NumPy.
 
-**What this machine rules out.** The GPU-batched simulators that make model-based
-work fast: Isaac Sim and Isaac Lab are CUDA-only with no macOS build, and MJX
-wants JAX on an NVIDIA GPU or a TPU. Video prediction goes with them. Published
-visual-foresight systems are research code rather than maintained libraries,
-their licences have to be read rather than assumed, and none is a dependency
-worth taking on for five discs on a table.
+**What this machine rules out.** Isaac Sim and Isaac Lab are CUDA-only with no
+macOS build; MJX wants JAX on an NVIDIA GPU or a TPU. Video prediction goes with
+them, and the published visual-foresight systems are research code, not
+libraries, with licences to be read rather than assumed.
 
 ### What it is good at
 
 **No friction coefficient and no pressure distribution.** Solution 4's two
-missing numbers are absorbed into the fitted weights. Nobody has to decide
-between a uniform disc and a supporting rim.
+missing numbers are absorbed into the fitted weights.
 
 **It improves from real pushes for free.** Every real push yields a
-(state, action, next state) triple with no reward and no annotation, which is
-exactly the training data. A policy needs reward-driven retraining to improve;
-this needs only more rows.
-
-**Sampling searches the whole circle**, including directions no rule would write
-down — like D's above.
+(state, action, next state) triple with no reward and no annotation — exactly the
+training data. A policy needs reward-driven retraining; this needs only rows.
 
 ### What it is bad at
 
 **Compounding error.** Predictions degrade the further they are rolled, for two
-reasons that stack. Each step's error adds to the last. Worse, a predicted state
-sits slightly off the set of states the model was trained on, so step two is
-asked about a world it never saw, and its error is not merely larger but
-differently shaped. Hence: plan short, replan often.
+reasons that stack. Each step's error adds to the last, and a predicted state
+sits off the states the model was trained on, so step two is asked about a world
+it never saw. Hence: plan short, replan often.
 
-**No guarantee of any kind.** Solution 4's voting theorem holds for every μ. This
-holds for the pushes it was shown. No bound, no proof, and no way to ask how sure
-it is without training an ensemble to disagree.
-
-**It cannot explain a refusal.** The refusals come from the geometry filter,
-which can say "45 mm base, 50 mm floor". The model contributes nothing legible.
-
-**It learns the simulator's contact solver** — solution 5's sim-to-real
-objection, with the same partial answer and the same cost in samples.
+**No guarantee.** Solution 4's voting theorem holds for every μ. This holds only
+for the pushes it was shown — no bound, no proof, no way to ask how sure it is
+short of training an ensemble to disagree. It also learns the simulator's contact
+solver, which is solution 5's sim-to-real objection at the same cost.
 
 ### How it fails
 
-**Confidently wrong outside what it saw.** The characteristic failure of any
-fitted model, and it is silent. A sixth glass, a 120 mm footprint, a 150 mm push:
-the network returns a number with no warning attached. A rule refuses; a model
-extrapolates. The mitigation is a sanity envelope — reject a predicted
-displacement larger than the push itself, or predicted motion in a glass nothing
-touched — which catches the absurd cases and none of the plausible ones.
+**Confidently wrong outside what it saw**, and silently. A sixth glass, a 120 mm
+footprint, a 150 mm push: the network returns a number with no warning. A rule
+refuses; a model extrapolates. The mitigation is a sanity envelope — reject a
+predicted displacement larger than the push.
 
-**Plausible-but-wrong ranking.** A mediocre push goes first, one push is wasted,
-the survey catches it, and the next plan comes from the real arrangement. This is
-the ordinary failure, and it is cheap, which is the point of the loop.
-
-**Biased short predictions.** If training friction ran low, the model expects
-glasses to travel further than they do, every push falls short, and the run takes
-two pushes where one would serve. It converges slowly, and the push count is
-where it shows.
+**Plausible-but-wrong ranking.** A mediocre push goes first and is wasted; the
+survey catches it, and the next plan comes from the real table.
 
 ### When it would be the right choice
 
-When the physics is genuinely unknown *and* the state is still short enough to
-write down: mixed kinds with different base geometries, objects that rock, wet
-rings under glasses. There solution 4's algebra has no inputs, the arrangement is
-still a list of poses, and a fitted model knows something nothing else supplies.
+When the physics is genuinely unknown *and* the state is short enough to write
+down: mixed kinds, objects that rock, wet rings under glasses. There solution 4's
+algebra has no inputs, and a fitted model knows what nothing else supplies.
 
 Not here. On five discs of one known kind, what a push does is not the hard part.
-The hard part is that a push does not land where it was aimed, and the answer to
-that is to look afterwards — which solution 3 already does for the price of one
-picture.
+The hard part is that it does not land where it was aimed, and the answer to that
+is to look afterwards — which solution 3 already does, for one picture.
 
-It is, though, the right *learned* solution for this cell if a learned one is ever
-wanted. Ten times cheaper to train than solution 5, no reward function, safety
-left in arithmetic, and it can be switched off without switching off the planner.
+It is, though, the right *learned* solution for this cell if one is ever wanted:
+far cheaper to train than solution 5, no reward function, safety left in
+arithmetic.
+
 ---
 
 ## Solution 10 — copy a scripted expert
@@ -1883,257 +1729,176 @@ simulation overnight.*
 ### What it is
 
 **Imitation learning** trains a model to copy something that already does the
-job. Its simplest form, **behaviour cloning**, is ordinary supervised learning.
-Record a working demonstration. At every instant write down the **observation**
-— everything the arm could sense — and the **action**, what it did next. That
-pile of observation-action pairs is the dataset. Train a network to predict the
-action from the observation. No reward, no exploration, no score. Solution 5
-learns from a number that grades a push. This learns from an example of a good
-one, and never sees a grade.
+job. Its simplest form, **behaviour cloning**, is ordinary supervised learning:
+at every instant of a demonstration record the **observation** — everything the
+arm can sense — and the **action**, what it did next. A network learns to
+predict the second from the first. No reward, no exploration: solution 5 learns
+from a number grading a push, this from an example of a good one.
 
-The point that carries the section: **the demonstrations need not come from a
-person.** Solution 3 is an expert. It picks a destination with four comparisons,
-feels forward, pushes in a straight line. Every time it runs headless in Gazebo
-it produces a correct demonstration, and another twenty seconds later, with
-nobody holding a controller. Imitation here is therefore not a way of avoiding
+**The demonstrations need not come from a person.** Solution 3 is an expert, and
+every headless run of it in Gazebo is a correct demonstration — one every twenty
+seconds, nobody holding a controller. Imitation here is not a way of avoiding
 writing a planner. It is a way of **compressing a planner that already works
-into one fast reactive function**, from what the wrist sees and feels straight
-to the next stretch of movement.
+into one fast reactive function**.
 
-The classic failure has a name. The policy is trained on states the expert
-visits. It is slightly wrong, so it drifts off that path into states the
-demonstrations never covered, where it is more wrong, so it drifts further. This
-is **compounding error**, and the standard analysis gives a worst case growing
-with the *square* of the episode length.
-
-The standard mitigation is **DAgger**, dataset aggregation (Ross, Gordon and
-Bagnell, 2011). In plain words: run the half-trained learner, let it wander
-wherever it wanders, and ask the *expert* what it would have done at each state
-the learner reached. Add those labels, retrain, repeat. The dataset stops
-recording where the expert goes and starts recording what to do where the
-learner goes, which is the distribution that matters at run time.
+The classic failure: the policy is slightly wrong, so it drifts into states the
+demonstrations never covered, where it is more wrong, so it drifts further —
+**compounding error**, with a worst case growing as the *square* of the episode
+length. The mitigation is **DAgger**, dataset aggregation (Ross, Gordon and
+Bagnell, 2011): run the half-trained learner, let it wander, ask the *expert*
+what it would have done at each state it reached, and retrain on those labels.
+The dataset then records what to do where the learner goes.
 
 ### Why anyone does it this way
 
-DAgger normally costs a human. Its whole awkwardness in practice is that
-somebody must sit and label states a robot got itself into.
-
-Here the expert is a hundred lines of Python. Freeze the world at any step, run
-the overhead survey, hand the numbers to the planner, and it says what it would
-have done. That is a DAgger label, made in about a second, unattended, at three
-in the morning. Imitation's one famous weakness is nearly free to fix in this
-cell, for exactly the reason the method is worth writing up: **there is already
-a correct program to ask.**
+DAgger normally costs a human, labelling states a robot got itself into. Here
+the expert is a hundred lines of Python: freeze the world, survey it, ask the
+planner, and get a label in a second, unattended, at three in the morning.
+Imitation's famous weakness is nearly free to fix here, because **there is
+already a correct program to ask.**
 
 ### How it would work here
 
-**The expert** is solution 3 running headless, with the simulator's ground truth
-used only to discard any demonstration that toppled a glass or missed by more
-than 10 mm.
-
-**The observation at each control step**, which is where this solution differs
-from those above it:
-
-- the wrist RGB-D frame, 320x240;
-- the six joint angles;
-- the six wrist force and torque readings;
-- the two pad contact sensors;
-- the destination in the gripper's own frame, two numbers in millimetres, which
-  is what tells the policy where *this* push is meant to end.
-
-One image plus sixteen numbers. The **action** is a small delta on the wrist
-pose, at the same rate.
-
-**The policy class.** Two families are worth naming, both with readable code.
+**The expert** is solution 3 running headless, discarding any demonstration
+that toppled a glass. **The observation at each control step:** the wrist RGB-D
+frame at 320x240, six joint angles, six wrist force and torque readings, two
+pad contacts, and the destination in the gripper's frame. The **action** is a
+small delta on the wrist pose.
 
 **Action-chunking transformers (ACT)** —
 [github.com/tonyzhaozh/act](https://github.com/tonyzhaozh/act), MIT licence,
-from Zhao and colleagues' 2023 work on low-cost bimanual manipulation. A
-transformer predicts not one action but a **chunk** of the next *k* actions in
-one forward pass. What that buys: one step at a time makes a policy dither, and
-at 10 Hz dither is a knock. A chunk commits to a short smooth stretch of
-movement, which is what a push is. It also cuts decisions per episode, and
-compounding error compounds per decision.
+Zhao and colleagues, 2023. It predicts not one action but a **chunk** of the
+next *k* actions in one pass. One step at a time makes a policy dither, and at
+10 Hz dither is a knock; a chunk commits to a short smooth movement, which is
+what a push is, and it cuts decisions per episode — compounding error compounds
+per decision.
 
 **Diffusion policies** —
 [github.com/real-stanford/diffusion_policy](https://github.com/real-stanford/diffusion_policy),
-MIT licence, Chi and colleagues, 2023. A diffusion model generates by starting
-from random noise and removing a little at a time. A diffusion policy does that
-to an action chunk: begin with noise, run a small network about ten times, each
-pass nudging it towards a plausible stretch of movement, conditioned on the
-observation. The reason to bother is **multimodality**. A crowded glass can
-correctly go left or right; a network trained to emit one number averages the
-demonstrations and pushes straight into the neighbour. A diffusion policy keeps
-both and samples one.
+MIT licence, Chi and colleagues, 2023. A diffusion model starts from noise and
+removes a little at a time; a diffusion policy does that to an action chunk,
+running a small network about ten passes over noise, each nudging it towards a
+plausible movement, conditioned on the observation. The gain is
+**multimodality** — a crowded glass can correctly go left or right, and a
+network emitting one number averages the two and pushes into the neighbour.
 
 **Frameworks.** [LeRobot](https://github.com/huggingface/lerobot), Apache-2.0,
-carries both, plus a dataset format and a training loop, on
-[PyTorch](https://pytorch.org/), BSD-3-Clause.
-[robomimic](https://github.com/ARISE-Initiative/robomimic), MIT, is the older
-option, useful for its careful cloning baselines. Diffusion schedulers come from
-[diffusers](https://github.com/huggingface/diffusers), Apache-2.0.
-
-**On this machine.** No NVIDIA GPU. PyTorch's **MPS** backend trains on Apple
-Silicon and these networks are small — roughly a ResNet-18 plus a modest
-transformer. Set `PYTORCH_ENABLE_MPS_FALLBACK=1`, because some operators still
-drop to the CPU. How well LeRobot's training loop is tested on MPS is
-uncertain, so treat overnight-to-a-few-days per policy as an estimate. What
-definitely does not run here is
-[OpenVLA](https://github.com/openvla/openvla) — MIT code, seven billion
-parameters, a datacentre GPU. Unlike solution 5, though, **the bottleneck is
-collecting episodes in Gazebo, not gradient steps**, and Gazebo is CPU-bound and
-parallel-friendly. The missing GPU hurts this far less than it hurts
-reinforcement learning.
+carries both, on [PyTorch](https://pytorch.org/), BSD-3-Clause. No NVIDIA GPU
+here, but PyTorch's **MPS** backend trains on Apple Silicon and these networks
+are small. Set `PYTORCH_ENABLE_MPS_FALLBACK=1`; some operators still drop to the
+CPU, and MPS coverage in LeRobot is uncertain, so overnight-to-a-few-days per
+policy is an estimate. Unlike solution 5, though, **the bottleneck is Gazebo
+episodes, not gradient steps**.
 
 ### The feedback loop
 
-The question here is not what the arm does but **what the policy sees**.
+What decides this solution is **what the policy sees**, and a policy given the
+wrist image alone is **open-loop within a push**. At the 50 mm push height the
+closed jaw fills the frame, and the glass wall against it is a near-textureless
+curve 40 mm from the lens, inside the depth camera's minimum range. Vision goes
+blind as contact starts.
 
-A policy given the wrist image alone is **open-loop within a push**, for a
-physical reason. At the 50 mm push height the closed jaw fills most of the
-frame, and once it is against the glass the wall is a smooth, near-textureless
-curve about 40 mm from the lens — inside the depth camera's minimum range, with
-nothing in it to track. Vision goes blind at the moment contact starts. Problem
-1 found the same thing on the way down to a grasp.
+So add the wrist force and the pads, already in the cell. **The loop, at 10
+Hz:** every 100 ms read the frame, the joints, the wrist reading and the two
+pads; get back a chunk of 20 actions, two seconds' worth; execute the first 10
+and re-predict. Ten hertz comes from the physics — the push runs at 10 mm/s, so
+one step is one millimetre — and inference must fit inside that 100 ms on MPS.
 
-Add the wrist force and the pads, which already exist in the cell and are
-already read by problem 1's set-down. **The loop, at 10 Hz:** every 100 ms read
-the frame, the joints, the six-axis wrist reading and the two pads; get back a
-chunk of 20 actions, two seconds' worth; execute the first 10 and re-predict.
-Ten hertz comes from the physics — the push runs at about 10 mm/s, so one step
-is one millimetre of travel. Inference should sit inside 100 ms on MPS; the
-diffusion variant's ten denoising passes are the number to measure before
-committing.
-
-What the extra channels buy is a reaction the picture cannot give. A 250 g glass
-at μ = 0.3 needs 0.74 N to keep sliding; across 150-400 g and μ from 0.3 to 0.5
-an ordinary push stays under 2 N horizontal. Meet a second glass, the rack, or a
-glass that sticks, and the reading leaves that range within a step. A policy
-whose demonstrations include deliberately aborted pushes can then do the one
-right thing: stop and retreat. The pads give the other half — contact lost means
-the glass slid out from under the jaw, and a jaw driving across empty table is
-about to reach a neighbour.
+A 250 g glass at μ = 0.3 needs 0.74 N to keep sliding, and across 150-400 g and
+μ from 0.3 to 0.5 an ordinary push stays under 2 N horizontal. Meet a second
+glass, the rack, or a glass that sticks, and the reading leaves that range
+within one step — which demonstrations containing aborted pushes teach the
+policy to stop on.
 
 ### A worked example
 
-Solution 3's glass B: 75 mm across, 250 g, pushed 48 mm. At 10 Hz that is 48
-control steps and three chunk predictions. At step 0 the wrist reads 9.5 N
-straight down and nothing horizontal, both pads quiet, destination (+48, 0).
+Solution 3's glass B: 75 mm across, 250 g, pushed 48 mm — at 10 Hz, 48 control
+steps and three chunk predictions. At step 12 the pads fire at 1.1 N: contact,
+3 mm further out than the camera said.
 
-Step 12: the pads fire, 1.1 N horizontal. Contact, 3 mm further out than the
-camera said. Nobody tells the policy this is contact; it has seen the pattern in
-two thousand demonstrations and its next chunk is a push.
-
-Step 31: horizontal force goes 0.9 N to 4.2 N in two steps. B has caught a third
-glass the survey placed 6 mm wrong. **The picture-only policy has 1.7 s of chunk
-left and executes it**, at 10 mm/s, into a glass. The policy with force in its
-observation sees it at step 31 and the worst case is the rest of the current
-10-step commitment: one centimetre, not seventeen millimetres of pushing
-something it cannot see.
+At step 31 the horizontal force goes 0.9 N to 4.2 N in two steps. B has caught a
+third glass the survey placed 6 mm wrong. **The picture-only policy has 1.7 s of
+chunk left and executes it, at 10 mm/s, into a glass.** The policy with force in
+its observation sees it at once, and its worst case is the rest of the current
+ten-step commitment: one centimetre.
 
 ### What it needs
 
-Solution 3 built, because it is the expert. A collection harness: Gazebo
-Harmonic ([gazebosim.org](https://gazebosim.org/), Apache-2.0) resetting
-headless, spawning five glasses in the 320x360 mm zone with footprints from
-45-105 mm and masses from 150-400 g, recorded at 10 Hz through
-[ros2_control](https://control.ros.org/), Apache-2.0. LeRobot and PyTorch for
-training. Disk: a 5 s push is 50 RGB-D frames, so two thousand demonstrations is
-about a hundred thousand frames — tens of gigabytes raw, far less as video.
+Solution 3 built, because it is the expert, and a harness: Gazebo Harmonic
+([gazebosim.org](https://gazebosim.org/), Apache-2.0) resetting headless,
+spawning five glasses across the zone's 45-105 mm and 150-400 g ranges,
+recorded at 10 Hz through [ros2_control](https://control.ros.org/), Apache-2.0.
 
 **Data volumes.** Published ACT results learn real tasks from tens of
-demonstrations each; I am not confident of exact counts, so treat fifty as an
-order of magnitude, not a target. A push is simpler, so a few hundred may do and
-a few thousand is comfortable. At twenty seconds each, two thousand is eleven
-hours unattended, or under three across four Gazebo instances. A person on a
-joystick would spend those eleven hours awake, which is why teleoperated
-datasets are small.
+demonstrations each; exact counts are uncertain, so treat fifty as an order of
+magnitude. A push is simpler: a few hundred may do, a few thousand is
+comfortable. At twenty seconds each, two thousand is eleven unattended hours, or
+under three across four Gazebo instances — and eleven hours a person on a
+joystick would have to stay awake.
 
-**The asymmetry is narrowness, not volume.** A scripted expert only ever shows
-the policy states the expert visits: approaches that worked, contacts where the
-survey said, pushes through the footprint centre. The states that matter are the
-ones it never reaches — a glass that sticks, a jaw that meets a neighbour first,
-a glass that rocks. Those must be manufactured, by perturbing the spawn,
-injecting survey error, or starting the arm somewhere the planner would not,
-then letting DAgger label the recovery. Ten thousand clean pushes teach almost
-nothing the first thousand did not.
+**The asymmetry is narrowness, not volume.** A scripted expert only shows states
+it visits: approaches that worked, contacts where the survey said, pushes
+through the footprint centre. The states that matter are the ones it never
+reaches — a glass that sticks, a jaw that meets a neighbour first. Those must be
+manufactured, by perturbing the spawn or injecting survey error, and labelled by
+DAgger.
 
 ### What it is good at
 
-**No reward function.** Every objection in solution 5 about pricing a toppled
-glass disappears; "never topple" stays a constraint the expert enforces, not a
-fine the policy may choose to pay.
+**No reward function**, so solution 5's argument about pricing a toppled glass
+disappears: "never topple" stays a constraint the expert enforces.
 
 **Reactive at 10 Hz on sensors the planner reads once.** Solution 3 uses the
-wrist force as a trigger during the approach and then stops consulting it.
-
-**The data is nearly free and needs no human.**
-
-**Its failures are familiar.** More demonstrations, more DAgger rounds, a longer
-chunk — ordinary supervised debugging, with a loss curve to look at.
+wrist force as a trigger during the approach, then stops consulting it. And the
+data is free and needs no human.
 
 ### What it is bad at
 
-**Its ceiling is the expert**, quirks included.
+**Its ceiling is the expert**, quirks included, and it learns the simulator's
+contact solver, where friction is a number somebody typed.
 
 **It cannot explain a refusal.** Solution 3 says "its base is 45 mm and the
 gripper cannot get below 50 mm". A policy that stops has nothing to say, and
 this project treats refusals as results.
 
-**It puts glass proportions inside weights**, which breaks the repo's one rule
-quietly rather than loudly — problem 1's step 4 raises this and it is unchanged
-here.
-
-**It learns the simulator's contact solver.** Friction in Gazebo is a number
-somebody typed.
+**It puts glass proportions inside weights**, breaking the repo's one rule
+quietly.
 
 ### How it fails
 
-**Drift**, the compounding error above, showing as a push that starts well and
-curves. DAgger is the answer and it is cheap here.
+**Drift**, showing as a push that starts well and curves. DAgger is the answer,
+and it is cheap here.
 
-**Averaging two correct answers** into a push straight at the neighbour. Easy to
-mistake for undertraining.
+**A chunk executed through a surprise**, the picture-only case: a fault in the
+observation vector, not the training.
 
-**A chunk executed through a surprise** — the picture-only case. A design fault
-in the observation vector, not a training fault.
-
-**Silent narrowing.** A sixth glass, a different zone, a glass near the rack:
-the expert would refuse, the policy pushes.
+**Silent narrowing.** A sixth glass, or one near the rack: the expert refuses,
+the policy pushes.
 
 ### When it would be the right choice
 
-Not yet, and the reason is arithmetic. **If a planner good enough to be the
-expert already exists, the policy's only advantage is speed — and speed is not
-the bottleneck.** Solution 3's destination search is four comparisons on ten
-numbers: microseconds. A push costs arm motion — approach at 10 mm/s, contact,
-five seconds of pushing, retreat, survey — fifteen to twenty seconds. Trading
-microseconds of planning for microseconds of inference saves nothing measurable
-and is paid for with a training loop, a weights file, a harness, and a refusal
-that cannot speak.
+Not yet. **If a planner good enough to be the expert already exists, the
+policy's only advantage is speed — and speed is not the bottleneck.** Solution
+3's destination search is four comparisons on ten numbers: microseconds. A push
+costs arm motion, fifteen to twenty seconds of it. Trading microseconds for
+microseconds buys nothing, and costs a training loop, a weights file and a
+refusal that cannot speak.
 
 Three things change that.
 
-**The reactive half becomes the bottleneck.** When runs fail during contact
-rather than during planning — glasses sticking, jaws fouling neighbours — what
-is needed is a response within 100 ms on force and touch. That is a control
-problem, and the rules alternative is a growing thicket of thresholds.
+**The reactive half becomes the bottleneck**, when runs fail during contact
+rather than planning. What is needed then is a response within 100 ms on force
+and touch, and the rules alternative is a thicket of thresholds.
 
-**The surveys become the bottleneck.** Solution 3's own worst complaint is that
-every push costs a full survey. A policy working from the wrist image needs the
-survey only to choose a destination, so several pushes can run under one. That
-is seconds of arm motion saved, not microseconds of compute, and it is the first
-genuinely economic case.
+**The surveys become the bottleneck.** Solution 3's worst complaint is that every
+push costs a survey. A policy working from the wrist image needs one only to
+pick a destination, so several pushes run under one — seconds of arm motion
+saved, and the first genuinely economic case.
 
 **The expert stops existing.** Problems 4 and 5 bring several kinds, then kinds
-nobody measured. A tray of jumbled glassware has no four-comparison destination
-search, because there are no clean footprints to compare. A planner that cannot
-be written cannot be compressed, and the choice moves to solution 5's ground.
-
-Until then the right position is problem 1's: build the search and the touch
-first, keep the expert, and hold this method for the day the expert is fast
-enough to copy and too slow to run.
----
+nobody measured. A tray of jumbled glassware has no destination search, because
+there are no clean footprints. A planner that cannot be written cannot be
+compressed, and the choice moves to solution 5's ground.
 
 ## The decision
 
