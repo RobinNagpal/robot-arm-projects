@@ -139,13 +139,13 @@ the 300 to 780 mm reach, footprints from the 45–105 mm range.
 
 | Glass | Position | Footprint |
 | --- | --- | --- |
-| A | (430, −150) | 70 mm |
-| B | (600, −140) | 80 mm |
-| C | (690, 60) | 60 mm |
-| D | (500, 60) | 105 mm |
-| E | (500, 160) | 45 mm |
+| A | (330, −110) | 70 mm |
+| B | (630, −110) | 80 mm |
+| C | (330, −410) | 60 mm |
+| D | (630, −410) | 105 mm |
+| E | (530, −410) | 45 mm |
 
-Every pair except D–E is at least 170 mm apart, clearing even the 122.5 mm
+Every pair except D–E is at least 200 mm apart, clearing even the 122.5 mm
 threshold. A, B and C qualify at once. D and E are 100 mm apart: the crowded pair.
 
 **Racking A, B and C does nothing for D and E.** That is forced, not bad luck.
@@ -287,9 +287,9 @@ reach.
 
 | Glass | Position | Footprint |
 | --- | --- | --- |
-| P | (500, −40) | 90 mm |
-| Q | (580, 20) | 90 mm |
-| R | (680, 120) | 90 mm |
+| P | (380, −380) | 90 mm |
+| Q | (460, −320) | 90 mm |
+| R | (560, −220) | 90 mm |
 
 P to Q: dx = 80, dy = 60, so d = √(80² + 60²) = 100 mm. Under 140: crowded. The
 unit vector from P towards Q is (0.8, 0.6), and the nudge is
@@ -299,12 +299,12 @@ Can Q be pushed? `a / μ` = 45 / 0.5 = 90 mm even on a pessimistic μ of 0.5, we
 above the 50 mm the gripper is stuck at, so Q slides rather than tips. A 45 mm
 footprint would give 45 mm and be refused.
 
-Push Q 60 mm along (0.8, 0.6) — +48 in x, +36 in y — to (628, 56). New P–Q
+Push Q 60 mm along (0.8, 0.6) — +48 in x, +36 in y — to (508, −284). New P–Q
 distance: √(128² + 96²) = √25600 = 160 mm. Over 140. Fixed.
 
 Now R. Before the push, Q was √(100² + 100²) = 141.4 mm from R, just over the
 line; after it, √(52² + 64²) = 82.5 mm. The nudge fixed one pair and broke
-another, worse. Push P instead, 60 mm along (−0.8, −0.6), to (452, −76):
+another, worse. Push P instead, 60 mm along (−0.8, −0.6), to (332, −416):
 160 mm from Q, 301 mm from R.
 
 ### What it needs
