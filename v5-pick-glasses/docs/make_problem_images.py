@@ -930,7 +930,159 @@ def problem_3_friction_cone() -> None:
     _save(figure, "problem-3-friction-cone.png")
 
 
+# ------------------------------------ shared: how programmed and learned mix
+
+
+def where_the_learned_part_sits() -> None:
+    """Four places a learned component can sit in a pipeline.
+
+    The difference between them is not how clever the model is. It is what
+    happens when the model is wrong, and that is decided by the position.
+    """
+    figure, axes = plt.subplots(1, 4, figsize=(14.6, 4.2))
+    figure.patch.set_facecolor(PAPER)
+
+    titles = ["as the decider", "as a proposer", "as a ranker", "as a verifier"]
+    subtitles = [
+        "the model's answer\nis the answer",
+        "the model suggests,\nthe rules check",
+        "the rules generate and\nveto, the model orders",
+        "the rules act,\nthe model checks",
+    ]
+    costs = [
+        "a wrong answer\nis acted on",
+        "a wrong answer\nis rejected",
+        "a wrong order costs\none extra try",
+        "a wrong check costs\none extra look",
+    ]
+    safe = [False, True, True, True]
+
+    for index, axis in enumerate(axes):
+        _bare(axis)
+        axis.set_xlim(0, 1)
+        axis.set_ylim(0, 1)
+        axis.set_title(titles[index], fontsize=11, color=INK, pad=10)
+
+        def box(y, label, colour, height=0.13, _axis=axis):
+            _axis.add_patch(
+                Rectangle((0.16, y), 0.68, height, fill=False, ec=colour, lw=1.8)
+            )
+            _axis.text(0.5, y + height / 2, label, ha="center", va="center",
+                       fontsize=8.6, color=INK)
+
+        def arrow(y0, y1, _axis=axis):
+            _axis.add_patch(
+                FancyArrowPatch((0.5, y0), (0.5, y1), arrowstyle="-|>",
+                                mutation_scale=11, color=MUTED, lw=1.2)
+            )
+
+        if index == 0:
+            box(0.70, "picture", MUTED)
+            arrow(0.70, 0.60)
+            box(0.47, "learned model", WARN)
+            arrow(0.47, 0.37)
+            box(0.24, "the arm acts", MUTED)
+        if index == 1:
+            box(0.70, "rules find candidates", GOOD)
+            arrow(0.70, 0.60)
+            box(0.47, "learned model refines", WARN)
+            arrow(0.47, 0.37)
+            box(0.24, "rules check the result", GOOD)
+        if index == 2:
+            box(0.70, "rules generate, and veto", GOOD)
+            arrow(0.70, 0.60)
+            box(0.47, "learned model ranks", WARN)
+            arrow(0.47, 0.37)
+            box(0.24, "best survivor is used", GOOD)
+        if index == 3:
+            box(0.70, "rules act", GOOD)
+            arrow(0.70, 0.60)
+            box(0.47, "learned model checks", WARN)
+            arrow(0.47, 0.37)
+            box(0.24, "\u201cnot sure\u201d \u2192 look again", GOOD)
+
+        axis.text(0.5, 0.90, subtitles[index], ha="center", va="center",
+                  fontsize=8.2, color=MUTED)
+        axis.text(
+            0.5, 0.12, costs[index], ha="center", va="top", fontsize=8.4,
+            color=WARN if not safe[index] else GOOD,
+        )
+
+    figure.suptitle(
+        "Where the learned part sits decides what happens when it is wrong",
+        fontsize=12.5, color=INK, y=1.03,
+    )
+    figure.tight_layout()
+    _save(figure, "where-the-learned-part-sits.png")
+
+
+def open_and_closed_loop() -> None:
+    """One pass against a loop that chooses its own next measurement."""
+    figure, (openl, closedl) = plt.subplots(1, 2, figsize=(11.4, 4.2))
+    figure.patch.set_facecolor(PAPER)
+
+    for axis in (openl, closedl):
+        _bare(axis)
+        axis.set_xlim(0, 1)
+        axis.set_ylim(0, 1)
+
+    def box(axis, x, y, w, h, label, colour):
+        axis.add_patch(Rectangle((x, y), w, h, fill=False, ec=colour, lw=1.7))
+        axis.text(x + w / 2, y + h / 2, label, ha="center", va="center",
+                  fontsize=8.8, color=INK)
+
+    openl.set_title("open loop: look once, then act", fontsize=10.5, color=INK, pad=10)
+    for i, (label, colour) in enumerate(
+        [("take the pictures", MUTED), ("work it all out", MUTED), ("act", MUTED)]
+    ):
+        box(openl, 0.10 + i * 0.30, 0.46, 0.24, 0.16, label, colour)
+        if i:
+            openl.add_patch(
+                FancyArrowPatch((0.06 + i * 0.30, 0.54), (0.095 + i * 0.30, 0.54),
+                                arrowstyle="-|>", mutation_scale=11, color=MUTED, lw=1.3)
+            )
+    openl.text(
+        0.5, 0.30,
+        "the number of pictures is fixed before the run.\n"
+        "if one object is unclear, that is how it stays.",
+        ha="center", va="top", fontsize=8.4, color=MUTED,
+    )
+
+    closedl.set_title("closed loop: the next picture is chosen on the way",
+                      fontsize=10.5, color=INK, pad=10)
+    box(closedl, 0.34, 0.74, 0.32, 0.14, "take a picture", GLASS)
+    box(closedl, 0.34, 0.50, 0.32, 0.14, "work out what is clear", GLASS)
+    box(closedl, 0.06, 0.26, 0.34, 0.14, "unclear: where would\nhelp most?", WARN)
+    box(closedl, 0.60, 0.26, 0.34, 0.14, "clear: act", GOOD)
+    closedl.add_patch(FancyArrowPatch((0.5, 0.74), (0.5, 0.645), arrowstyle="-|>",
+                                      mutation_scale=11, color=MUTED, lw=1.3))
+    closedl.add_patch(FancyArrowPatch((0.42, 0.50), (0.26, 0.405), arrowstyle="-|>",
+                                      mutation_scale=11, color=WARN, lw=1.3))
+    closedl.add_patch(FancyArrowPatch((0.58, 0.50), (0.74, 0.405), arrowstyle="-|>",
+                                      mutation_scale=11, color=GOOD, lw=1.3))
+    closedl.add_patch(FancyArrowPatch((0.06, 0.33), (0.34, 0.80), arrowstyle="-|>",
+                                      mutation_scale=11, color=WARN, lw=1.3,
+                                      connectionstyle="arc3,rad=-0.45"))
+    closedl.text(0.045, 0.60, "go and look\nfrom there", fontsize=8.2, color=WARN,
+                 ha="left", va="center")
+    closedl.text(
+        0.5, 0.16,
+        "each extra look costs arm time, so the loop has a budget\n"
+        "and stops when nothing is unclear or the budget is spent",
+        ha="center", va="top", fontsize=8.4, color=MUTED,
+    )
+
+    figure.suptitle(
+        "Feedback: deciding what to measure next, rather than measuring once",
+        fontsize=12.5, color=INK, y=1.02,
+    )
+    figure.tight_layout()
+    _save(figure, "open-and-closed-loop.png")
+
+
 DRAWINGS = {
+    "where-the-learned-part-sits": where_the_learned_part_sits,
+    "open-and-closed-loop": open_and_closed_loop,
     "problem-3-choosing-a-destination": problem_3_choosing_a_destination,
     "problem-3-friction-cone": problem_3_friction_cone,
     "problem-2-three-answers": problem_2_three_answers,

@@ -8,13 +8,16 @@ up.
 
 - [**The problem**](problem.md) — what is on the table, what is asked for, the
   two difficulties, and what "done" means.
-- [**Solution overview**](solution-overview.md) — five solutions in full,
-  programmed and learned side by side, and which are chosen. It starts with the
-  vocabulary, because three of the words this subject uses mean different
-  things to different people. Each solution is written the same way: what it
-  is, why anyone does it like that, how it would work here, a worked example
-  with real numbers, what it needs, what it is good and bad at, how it fails,
-  and when it would be the right choice.
+- [**Solution overview**](solution-overview.md) — **nine solutions in full**:
+  three programmed, three hybrid, three learned. It starts with the vocabulary,
+  because three of the words this subject uses mean different things to
+  different people, and then with two ideas the rest depends on — where a
+  learned component can sit in a pipeline, and what it means for a system to
+  choose its own next measurement rather than taking a fixed number of
+  pictures. Each solution is written the same way: what it is, why anyone does
+  it like that, how it would work here, its feedback loop if it has one, a
+  worked example with real numbers, what it needs, what it is good and bad at,
+  how it fails, and when it would be the right choice.
 
 ## The short version
 
