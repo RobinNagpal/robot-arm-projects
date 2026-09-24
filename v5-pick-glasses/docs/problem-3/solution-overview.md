@@ -1735,10 +1735,10 @@ arm can sense — and the **action**, what it did next. A network learns to
 predict the second from the first. No reward, no exploration: solution 5 learns
 from a number grading a push, this from an example of a good one.
 
-**The demonstrations need not come from a person.** Solution 3 is an expert, and
-every headless run of it in Gazebo is a correct demonstration — one every twenty
-seconds, nobody holding a controller. Imitation here is not a way of avoiding
-writing a planner. It is a way of **compressing a planner that already works
+**The demonstrations need not come from a person.** Solution 3 is an expert,
+and every headless run of it in Gazebo is a correct demonstration — one every
+twenty seconds, nobody holding a controller. So imitation here is not a way of
+avoiding a planner, but a way of **compressing a planner that already works
 into one fast reactive function**.
 
 The classic failure: the policy is slightly wrong, so it drifts into states the
@@ -1747,15 +1747,15 @@ demonstrations never covered, where it is more wrong, so it drifts further —
 length. The mitigation is **DAgger**, dataset aggregation (Ross, Gordon and
 Bagnell, 2011): run the half-trained learner, let it wander, ask the *expert*
 what it would have done at each state it reached, and retrain on those labels.
-The dataset then records what to do where the learner goes.
+The dataset then covers where the learner goes, not where the expert goes.
 
 ### Why anyone does it this way
 
-DAgger normally costs a human, labelling states a robot got itself into. Here
+DAgger normally costs a human to label the states a robot got itself into. Here
 the expert is a hundred lines of Python: freeze the world, survey it, ask the
-planner, and get a label in a second, unattended, at three in the morning.
-Imitation's famous weakness is nearly free to fix here, because **there is
-already a correct program to ask.**
+planner, and get a label in a second, unattended, overnight. The famous
+weakness of imitation is nearly free to fix here, because **there is already a
+correct program to ask.**
 
 ### How it would work here
 
@@ -1770,25 +1770,23 @@ small delta on the wrist pose.
 Zhao and colleagues, 2023. It predicts not one action but a **chunk** of the
 next *k* actions in one pass. One step at a time makes a policy dither, and at
 10 Hz dither is a knock; a chunk commits to a short smooth movement, which is
-what a push is, and it cuts decisions per episode — compounding error compounds
+what a push is, and cuts decisions per episode — compounding error compounds
 per decision.
 
 **Diffusion policies** —
 [github.com/real-stanford/diffusion_policy](https://github.com/real-stanford/diffusion_policy),
 MIT licence, Chi and colleagues, 2023. A diffusion model starts from noise and
 removes a little at a time; a diffusion policy does that to an action chunk,
-running a small network about ten passes over noise, each nudging it towards a
-plausible movement, conditioned on the observation. The gain is
-**multimodality** — a crowded glass can correctly go left or right, and a
-network emitting one number averages the two and pushes into the neighbour.
+conditioned on the observation, in about ten passes of a small network. The
+gain is **multimodality** — a crowded glass can correctly go left or right, and
+a network emitting one number averages the two and pushes into the neighbour.
 
 **Frameworks.** [LeRobot](https://github.com/huggingface/lerobot), Apache-2.0,
 carries both, on [PyTorch](https://pytorch.org/), BSD-3-Clause. No NVIDIA GPU
 here, but PyTorch's **MPS** backend trains on Apple Silicon and these networks
-are small. Set `PYTORCH_ENABLE_MPS_FALLBACK=1`; some operators still drop to the
-CPU, and MPS coverage in LeRobot is uncertain, so overnight-to-a-few-days per
-policy is an estimate. Unlike solution 5, though, **the bottleneck is Gazebo
-episodes, not gradient steps**.
+are small. Set `PYTORCH_ENABLE_MPS_FALLBACK=1`; some operators still drop to
+the CPU, and how well LeRobot's loop is tested on MPS is uncertain. Unlike
+solution 5, though, **the bottleneck is Gazebo episodes, not gradient steps**.
 
 ### The feedback loop
 
@@ -1798,11 +1796,11 @@ closed jaw fills the frame, and the glass wall against it is a near-textureless
 curve 40 mm from the lens, inside the depth camera's minimum range. Vision goes
 blind as contact starts.
 
-So add the wrist force and the pads, already in the cell. **The loop, at 10
-Hz:** every 100 ms read the frame, the joints, the wrist reading and the two
-pads; get back a chunk of 20 actions, two seconds' worth; execute the first 10
-and re-predict. Ten hertz comes from the physics — the push runs at 10 mm/s, so
-one step is one millimetre — and inference must fit inside that 100 ms on MPS.
+So add the wrist force and the pads. **The loop, at 10 Hz:** every 100 ms read
+the frame, the joints, the wrist reading and the two pads; get back a chunk of
+20 actions, two seconds' worth; execute the first 10 and re-predict. Ten hertz
+comes from the physics — the push runs at 10 mm/s, so one step is one
+millimetre — and inference must fit in that 100 ms on MPS.
 
 A 250 g glass at μ = 0.3 needs 0.74 N to keep sliding, and across 150-400 g and
 μ from 0.3 to 0.5 an ordinary push stays under 2 N horizontal. Meet a second
@@ -1812,62 +1810,57 @@ policy to stop on.
 
 ### A worked example
 
-Solution 3's glass B: 75 mm across, 250 g, pushed 48 mm — at 10 Hz, 48 control
-steps and three chunk predictions. At step 12 the pads fire at 1.1 N: contact,
-3 mm further out than the camera said.
+Solution 3's glass B: 75 mm across, 250 g, pushed 48 mm — 48 control steps at
+10 Hz, three chunks. At step 12 the pads fire, contact.
 
-At step 31 the horizontal force goes 0.9 N to 4.2 N in two steps. B has caught a
-third glass the survey placed 6 mm wrong. **The picture-only policy has 1.7 s of
-chunk left and executes it, at 10 mm/s, into a glass.** The policy with force in
-its observation sees it at once, and its worst case is the rest of the current
-ten-step commitment: one centimetre.
+At step 31 the horizontal force goes 0.9 N to 4.2 N in two steps: B has caught
+a third glass the survey placed 6 mm wrong. **The picture-only policy has 1.7 s
+of chunk left and executes it, at 10 mm/s, into a glass.** The policy with
+force in its observation sees it at once; its worst case is the rest of the
+ten-step commitment, one centimetre.
 
 ### What it needs
 
 Solution 3 built, because it is the expert, and a harness: Gazebo Harmonic
 ([gazebosim.org](https://gazebosim.org/), Apache-2.0) resetting headless,
 spawning five glasses across the zone's 45-105 mm and 150-400 g ranges,
-recorded at 10 Hz through [ros2_control](https://control.ros.org/), Apache-2.0.
+recorded at 10 Hz through [ros2_control](https://control.ros.org/).
 
 **Data volumes.** Published ACT results learn real tasks from tens of
 demonstrations each; exact counts are uncertain, so treat fifty as an order of
 magnitude. A push is simpler: a few hundred may do, a few thousand is
-comfortable. At twenty seconds each, two thousand is eleven unattended hours, or
-under three across four Gazebo instances — and eleven hours a person on a
-joystick would have to stay awake.
+comfortable. At twenty seconds each, two thousand is eleven unattended hours,
+or under three across four Gazebo instances — eleven hours a person on a
+joystick would stay awake for.
 
-**The asymmetry is narrowness, not volume.** A scripted expert only shows states
-it visits: approaches that worked, contacts where the survey said, pushes
-through the footprint centre. The states that matter are the ones it never
-reaches — a glass that sticks, a jaw that meets a neighbour first. Those must be
-manufactured, by perturbing the spawn or injecting survey error, and labelled by
-DAgger.
+**The asymmetry is narrowness, not volume.** A scripted expert only shows
+states it visits: approaches that worked, contacts where the survey said. The
+states that matter are the ones it never reaches — a glass that sticks, a jaw
+that meets a neighbour first. Those must be manufactured, by perturbing the
+spawn or injecting survey error, and labelled by DAgger.
 
 ### What it is good at
 
 **No reward function**, so solution 5's argument about pricing a toppled glass
 disappears: "never topple" stays a constraint the expert enforces.
 
-**Reactive at 10 Hz on sensors the planner reads once.** Solution 3 uses the
-wrist force as a trigger during the approach, then stops consulting it. And the
-data is free and needs no human.
+**Reactive at 10 Hz on sensors the planner reads once**, where solution 3 reads
+the wrist force as a trigger and then stops.
 
 ### What it is bad at
 
-**Its ceiling is the expert**, quirks included, and it learns the simulator's
-contact solver, where friction is a number somebody typed.
+**Its ceiling is the expert**; what it learns about contact is the simulator's
+friction constant; and it puts glass proportions inside weights, breaking the
+repo's one rule quietly.
 
 **It cannot explain a refusal.** Solution 3 says "its base is 45 mm and the
 gripper cannot get below 50 mm". A policy that stops has nothing to say, and
 this project treats refusals as results.
 
-**It puts glass proportions inside weights**, breaking the repo's one rule
-quietly.
-
 ### How it fails
 
-**Drift**, showing as a push that starts well and curves. DAgger is the answer,
-and it is cheap here.
+**Drift**, showing as a push that starts well and curves. DAgger answers it
+cheaply here.
 
 **A chunk executed through a surprise**, the picture-only case: a fault in the
 observation vector, not the training.
@@ -1880,25 +1873,24 @@ the policy pushes.
 Not yet. **If a planner good enough to be the expert already exists, the
 policy's only advantage is speed — and speed is not the bottleneck.** Solution
 3's destination search is four comparisons on ten numbers: microseconds. A push
-costs arm motion, fifteen to twenty seconds of it. Trading microseconds for
-microseconds buys nothing, and costs a training loop, a weights file and a
-refusal that cannot speak.
-
-Three things change that.
+costs arm motion, fifteen to twenty seconds. Trading microseconds for
+microseconds buys nothing, and costs a training loop, a weights file and an
+unreadable refusal. Three things change that.
 
 **The reactive half becomes the bottleneck**, when runs fail during contact
 rather than planning. What is needed then is a response within 100 ms on force
 and touch, and the rules alternative is a thicket of thresholds.
 
-**The surveys become the bottleneck.** Solution 3's worst complaint is that every
-push costs a survey. A policy working from the wrist image needs one only to
-pick a destination, so several pushes run under one — seconds of arm motion
-saved, and the first genuinely economic case.
+**The surveys become the bottleneck.** Solution 3's worst complaint is that
+every push costs a survey. A policy working from the wrist image needs one only
+to pick a destination, so several pushes run under one — seconds of arm motion
+saved, and the first economic case.
 
 **The expert stops existing.** Problems 4 and 5 bring several kinds, then kinds
 nobody measured. A tray of jumbled glassware has no destination search, because
 there are no clean footprints. A planner that cannot be written cannot be
 compressed, and the choice moves to solution 5's ground.
+
 
 ## The decision
 
