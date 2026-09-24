@@ -1,6 +1,17 @@
 import numpy as np
 import pytest
-from work_cell.glasses.shapes import KIND_RANGES, build, family, stemmed, straight, tapered
+from work_cell.arm.dimensions import LOWEST_GRIP
+from work_cell.glasses import spec
+from work_cell.glasses.shapes import (
+    KIND_RANGES,
+    build,
+    centre_height,
+    family,
+    reachable,
+    stemmed,
+    straight,
+    tapered,
+)
 
 
 def test_an_outline_starts_at_the_table_and_ends_at_the_rim():
@@ -70,3 +81,23 @@ def test_a_stemmed_foot_is_never_wider_than_its_bowl():
         for outline, _ in family(kind, 40, seed=5):
             widest_at = float(outline.height[int(np.argmax(outline.radius))])
             assert widest_at > 0.5 * outline.total_height
+
+
+def test_every_straight_glass_drawn_can_be_held_at_its_centre_of_mass():
+    # The fingers cannot go below LOWEST_GRIP, so a tumbler whose centre of
+    # mass is lower than that would be held off-centre. None is drawn.
+    kind = spec.kind("straight_glass")
+    for outline, _ in family("straight_glass", 40, seed=6):
+        centre = centre_height(outline, kind.wall_thickness_m)
+        assert centre >= LOWEST_GRIP + kind.min_band_height_m / 2.0
+        assert centre <= 0.5 * outline.total_height - kind.min_band_height_m / 2.0
+
+
+def test_a_short_tumbler_is_not_reachable_and_a_tall_one_is():
+    assert not reachable("straight_glass", straight(height=0.090, rim_diameter=0.070))
+    assert reachable("straight_glass", straight(height=0.165, rim_diameter=0.070))
+
+
+def test_only_a_kind_held_at_its_centre_of_mass_is_ever_turned_away():
+    # A short wine glass is held by its stem, wherever its weight is.
+    assert reachable("stemmed_glass", stemmed(height=0.165, bowl_diameter=0.060, stem_diameter=0.008))

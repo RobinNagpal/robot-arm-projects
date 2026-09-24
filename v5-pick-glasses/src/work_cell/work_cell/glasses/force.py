@@ -72,6 +72,33 @@ def estimate_mass(profile: Profile, kind: Kind) -> float:
     return (lateral + base) * thickness * GLASS_DENSITY
 
 
+def estimate_centre_height(profile: Profile, kind: Kind, mass: float | None = None) -> float:
+    """Guess how high up a measured glass its centre of mass is, in metres.
+
+    The same shell as estimate_mass(): the wall, and the base as a disc. That
+    alone comes out high, by up to 13 mm on a tall tumbler, because the base of
+    a real glass is solid and far heavier than a disc one wall thick, and the
+    camera cannot see how thick it is.
+
+    Weighing settles it. Once ``mass`` is known, whatever the glass weighs
+    beyond the shell is taken to be in the base and put at the bottom. That
+    brings the estimate to within a few millimetres, and it asks nothing of
+    the glass but its outline and its weight.
+    """
+    thickness = kind.wall_thickness_m
+    radius = profile.width / 2.0
+
+    lateral = float(np.trapezoid(2.0 * np.pi * radius, profile.height))
+    lateral_moment = float(np.trapezoid(2.0 * np.pi * radius * profile.height, profile.height))
+    base = float(np.pi * radius[0] ** 2)
+
+    shell = (lateral + base) * thickness * GLASS_DENSITY
+    moment = (lateral_moment + base * thickness / 2.0) * thickness * GLASS_DENSITY
+    # A glass that weighs less than its shell has thinner walls than the kind
+    # says, which moves the centre very little; only extra weight is placed.
+    return moment / max(shell, mass or 0.0)
+
+
 def required_force(mass: float, *, grip_factor: float = GRIP_FACTOR) -> float:
     """The force each pad must press with to hold a glass of this weight.
 
@@ -108,12 +135,6 @@ def force_for_measured_mass(mass: float, kind: Kind) -> float:
     return needed
 
 
-# TEST SETTING: how much harder than the wall's rating to hold while turning.
-# 1.0 is the rating itself. Raised to 1.3 to try a firmer hold; above 1.0 it
-# is past what the wall is rated for, so set it back once the test is done.
-HOLD_BOOST = 1.3
-
-
 def holding_force(mass: float, kind: Kind) -> float:
     """What to hold a weighed glass with while it is turned over and carried.
 
@@ -130,7 +151,7 @@ def holding_force(mass: float, kind: Kind) -> float:
     will not carry the glass.
     """
     force_for_measured_mass(mass, kind)
-    return kind.force_cap_n * HOLD_BOOST
+    return kind.force_cap_n
 
 
 def mass_from_wrist(total_newtons: float, gripper_newtons: float) -> float:

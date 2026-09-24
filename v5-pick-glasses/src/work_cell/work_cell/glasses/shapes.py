@@ -22,6 +22,9 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from ..arm.dimensions import LOWEST_GRIP
+from . import spec
+
 # How many points the outline is sampled at. Enough that a stem two millimetres
 # tall still gets several samples on a 200 mm glass.
 SAMPLES = 240
@@ -30,6 +33,11 @@ SAMPLES = 240
 # ones run from about a twentieth to a tenth; a heavy base is what keeps a tall
 # glass from tipping.
 TUMBLER_BASE_FRACTION = 0.06
+
+# How many times a glass is redrawn before its range is called wrong. Only a
+# kind held at its centre of mass is ever redrawn, and about one in four
+# straight glasses is kept, so this is never reached by bad luck alone.
+DRAW_ATTEMPTS = 200
 
 # How far above the top of the stem the inside of the bowl starts, as a
 # fraction of the height. The bottom of a bowl is solid where it meets the stem.
@@ -151,7 +159,8 @@ def short_stemmed(height: float, bowl_diameter: float, stem_diameter: float) -> 
 KIND_RANGES: dict[str, dict[str, tuple[float, float]]] = {
     "straight_glass": {
         # A tall shot glass up to a tall highball. Nothing shorter, because it
-        # has to fit over a rack peg upside down; see PEG_HEIGHT.
+        # has to fit over a rack peg upside down; see PEG_HEIGHT. In practice
+        # the short end is redrawn: see reachable().
         "height": (0.065, 0.170),
         "rim_diameter": (0.045, 0.090),
         "taper": (0.02, 0.10),
@@ -197,12 +206,63 @@ def build(kind: str, **proportions: float) -> Outline:
 def draw(kind: str, rng: random.Random) -> tuple[Outline, dict[str, float]]:
     """Draw one glass of ``kind`` at a random size from its range.
 
+    A glass the gripper could not hold where its rule says is drawn again;
+    see reachable().
+
     Returns the outline and the proportions it was drawn with, because a
     failure is only worth reporting if the glass that caused it can be made
     again.
     """
-    chosen = {name: rng.uniform(low, high) for name, (low, high) in KIND_RANGES[kind].items()}
-    return build(kind, **chosen), chosen
+    for _ in range(DRAW_ATTEMPTS):
+        chosen = {name: rng.uniform(low, high) for name, (low, high) in KIND_RANGES[kind].items()}
+        outline = build(kind, **chosen)
+        if reachable(kind, outline):
+            return outline, chosen
+    raise RuntimeError(
+        f"no {kind} in {DRAW_ATTEMPTS} draws had its centre of mass where the fingers "
+        f"can reach; its range in KIND_RANGES wants raising"
+    )
+
+
+def reachable(kind: str, outline: Outline) -> bool:
+    """Whether the fingers can be put level with this glass's centre of mass.
+
+    Only asked of a kind whose rule holds it there. Below LOWEST_GRIP the
+    gripper body is through the table, and above the kind's search band the
+    fingers finish among the rack pegs. A short tumbler has its centre below
+    that floor, so the rule would fall back to holding it off-centre, which
+    is the very grip it exists to avoid. Such a glass is not put on the table.
+    """
+    rules = spec.kind(kind)
+    if rules.grip_rule != spec.NEAREST_CENTRE_OF_MASS:
+        return True
+    centre = centre_height(outline, rules.wall_thickness_m)
+    half = rules.min_band_height_m / 2.0
+    lowest = max(LOWEST_GRIP, rules.band_for(outline.total_height)[0])
+    return lowest + half <= centre <= rules.band_for(outline.total_height)[1] - half
+
+
+def centre_height(outline: Outline, wall: float) -> float:
+    """How high the centre of mass of a glass is: the solid, less the hollow."""
+    moments = []
+    for height, radius in ((outline.height, outline.radius), hollow(outline, wall)):
+        area = np.pi * radius**2
+        moments.append((np.trapezoid(area, height), np.trapezoid(area * height, height)))
+    (volume, first), (empty, empty_first) = moments
+    return float((first - empty_first) / (volume - empty))
+
+
+def hollow(outline: Outline, wall: float) -> tuple[np.ndarray, np.ndarray]:
+    """The inside of a glass: heights and radii from its floor up to the rim.
+
+    The inside wall is the outside moved in by the wall thickness. Below the
+    floor there is no inside at all, which is the solid base or stem.
+    """
+    above = outline.height > outline.floor
+    at_floor = np.interp(outline.floor, outline.height, outline.radius)
+    height = np.concatenate(([outline.floor], outline.height[above]))
+    radius = np.concatenate(([at_floor], outline.radius[above]))
+    return height, np.maximum(radius - wall, 0.0)
 
 
 def family(kind: str, count: int, seed: int = 0) -> list[tuple[Outline, dict[str, float]]]:

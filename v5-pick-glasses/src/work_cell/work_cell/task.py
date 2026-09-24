@@ -49,6 +49,7 @@ from .arm.dimensions import (
     MEASURE_STANDOFF,
     MEASURE_VIEW_HEIGHT,
     PLACE_CLEARANCE,
+    REGRIP_SHIFT,
     SLIP_TEST_DEG,
     SURVEY_BASELINE,
     SURVEY_HEIGHT,
@@ -71,7 +72,6 @@ from .glasses.detect import (
 )
 from .glasses.force import (
     CONTACT_FORCE_N,
-    HOLD_BOOST,
     TooHeavyToHold,
     estimate_mass,
     force_for_measured_mass,
@@ -446,7 +446,7 @@ class PickGlassesTask:
             self._log.info("wide and tall, so the slot beside it stays empty")
 
         # 5. Pick it up and find out what it weighs.
-        mass = self._pick_up(target, others, profile, grip, kind, handle)
+        mass, grip = self._pick_up(target, others, profile, grip, kind, handle)
         self._log.info(f"it weighs {mass * 1000:.0f} g")
 
         # 6. Turn it over and stand it in the rack.
@@ -667,8 +667,11 @@ class PickGlassesTask:
 
     def _pick_up(
         self, target, others: list[Detection], profile: Profile, grip: Grip, kind, handle
-    ) -> float:
-        """Close on the glass, lift it a little, and weigh it.
+    ) -> tuple[float, Grip]:
+        """Close on the glass, lift it a little, weigh it, and hold it properly.
+
+        Returns the weight, and the grip it is finally held by, which weighing
+        can move.
 
         The order matters. Which way round the gripper holds the glass is
         settled *before* the fingers close, by checking that the arm could turn
@@ -734,33 +737,7 @@ class PickGlassesTask:
             f"**{starting_force(profile, kind):.1f} N** to start with",
         )
         self._report.doing("stage one: close the fingers at 1 N")
-        self._arm.set_gripper_force(CONTACT_FORCE_N)
-        time.sleep(0.4)
-        touched = self._arm.gripper_gap
-        self._report.doing(
-            "read the gap they stopped at",
-            f"the fingers found **{touched * 1000:.1f} mm**, by touch rather than by camera",
-        )
-        self._report.doing(
-            "compare with the width the camera said",
-            f"the camera said {grip.opening * 1000:.1f} mm, so they are "
-            f"{abs(touched - grip.opening) * 1000:.1f} mm apart and 4 mm is allowed",
-        )
-        if abs(touched - grip.opening) > 0.004:
-            self._report.trouble(
-                f"The fingers closed to {touched * 1000:.1f} mm where the glass should have "
-                f"stopped them at {grip.opening * 1000:.1f} mm."
-                + (
-                    " Closing to nothing means they met no glass at all, so they went to the "
-                    "wrong place rather than squeezed the wrong amount."
-                    if touched < 0.002
-                    else " They met something, but not something the right width."
-                )
-            )
-            raise MotionFailed(
-                f"the fingers met the glass at {touched * 1000:.0f} mm and the camera "
-                f"said {grip.opening * 1000:.0f} mm, so the grasp is not where it should be"
-            )
+        self._close_until_touching(grip.opening)
 
         self._report.doing(
             "stage two: squeeze to the estimated force",
@@ -798,14 +775,14 @@ class PickGlassesTask:
         self._report.doing(
             "re-squeeze if the guess was low",
             f"the weight alone needs {needed:.1f} N, but it is set down and re-gripped at "
-            f"{hold:.1f} N, {HOLD_BOOST:.1f} times the {kind.force_cap_n:.1f} N the wall is "
-            "rated for: the weight sum stops it sliding down, not turning about the line "
-            "between the pads once it is upside down",
+            f"the {hold:.1f} N the wall is rated for: the weight sum stops it sliding down, "
+            "not turning about the line between the pads once it is upside down",
         )
         # Setting it down and re-gripping is safe; increasing the squeeze while
         # holding it arrives as a shock.
         self._log.info(f"re-gripping at {hold:.1f} N")
         self._straight_if_possible(position, rotation, "back down to re-grip")
+        grip, position = self._move_to_centre_of_mass(profile, kind, grip, mass, position, rotation)
         self._arm.set_gripper_force(hold)
         time.sleep(0.3)
 
@@ -830,7 +807,82 @@ class PickGlassesTask:
             height=profile.total_height,
             tool_pose=frame(lifted, rotation),
         )
-        return mass
+        return mass, grip
+
+    def _close_until_touching(self, opening: float) -> None:
+        """Close at the gentlest force, and check the glass is as wide as measured.
+
+        The width when contact arrives is the true width of the glass, measured
+        by touch rather than by camera. Raises MotionFailed if it disagrees.
+        """
+        self._arm.set_gripper_force(CONTACT_FORCE_N)
+        time.sleep(0.4)
+        touched = self._arm.gripper_gap
+        self._report.doing(
+            "read the gap they stopped at",
+            f"the fingers found **{touched * 1000:.1f} mm**, by touch rather than by camera",
+        )
+        self._report.doing(
+            "compare with the width the camera said",
+            f"the camera said {opening * 1000:.1f} mm, so they are "
+            f"{abs(touched - opening) * 1000:.1f} mm apart and 4 mm is allowed",
+        )
+        if abs(touched - opening) > 0.004:
+            self._report.trouble(
+                f"The fingers closed to {touched * 1000:.1f} mm where the glass should have "
+                f"stopped them at {opening * 1000:.1f} mm."
+                + (
+                    " Closing to nothing means they met no glass at all, so they went to the "
+                    "wrong place rather than squeezed the wrong amount."
+                    if touched < 0.002
+                    else " They met something, but not something the right width."
+                )
+            )
+            raise MotionFailed(
+                f"the fingers met the glass at {touched * 1000:.0f} mm and the camera "
+                f"said {opening * 1000:.0f} mm, so the grasp is not where it should be"
+            )
+
+    def _move_to_centre_of_mass(
+        self, profile: Profile, kind, grip: Grip, mass: float, position, rotation
+    ) -> tuple[Grip, np.ndarray]:
+        """Move the fingers to where the weighed glass says its centre of mass is.
+
+        The first grip came from the outline alone, which cannot show how
+        thick the solid base is, and puts the centre too high. The weight can:
+        what the glass weighs beyond its walls is in the base. Only a rule that
+        follows the centre of mass moves; for the others the grip is the same.
+
+        The glass is standing on the table when this is called, so opening the
+        fingers and sliding them up or down it costs nothing.
+        """
+        try:
+            weighed = find_grip(
+                profile,
+                kind,
+                gripper_max_opening=GRIPPER_MAX_OPENING,
+                lowest_grip=LOWEST_GRIP,
+                mass=mass,
+            )
+        except NoGrip as why:
+            # The first grip passed every check and still stands.
+            self._report.doing("move the grip to the weighed centre of mass", f"not moved: {why}")
+            return grip, position
+
+        shift = weighed.height - grip.height
+        if abs(shift) < REGRIP_SHIFT:
+            return grip, position
+        self._report.doing(
+            "move the grip to the weighed centre of mass",
+            f"the weight puts it {abs(shift) * 1000:.0f} mm {'higher' if shift > 0 else 'lower'}, "
+            f"so the fingers open and re-close **{weighed.height * 1000:.0f} mm up**",
+        )
+        self._log.info(f"moving the grip {shift * 1000:+.0f} mm, to its centre of mass")
+        self._arm.set_gripper(min(weighed.opening + 0.020, GRIPPER_MAX_OPENING))
+        position = position + UP * shift
+        self._straight_if_possible(position, rotation, "level with its centre of mass")
+        self._close_until_touching(weighed.opening)
+        return weighed, position
 
     def _centre_on_what_is_there(
         self, position: np.ndarray, rotation: np.ndarray, grip_point: np.ndarray

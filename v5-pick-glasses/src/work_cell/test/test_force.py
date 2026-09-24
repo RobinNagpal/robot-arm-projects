@@ -2,8 +2,8 @@ import pytest
 from work_cell.glasses import spec
 from work_cell.glasses.force import (
     CONTACT_FORCE_N,
-    HOLD_BOOST,
     TooHeavyToHold,
+    estimate_centre_height,
     estimate_mass,
     force_for_measured_mass,
     holding_force,
@@ -13,7 +13,8 @@ from work_cell.glasses.force import (
     starting_force,
 )
 from work_cell.glasses.profile import profile_from_outline
-from work_cell.glasses.shapes import family, stemmed, straight
+from work_cell.glasses.shapes import centre_height, family, stemmed, straight
+from work_cell.glasses.spawn import SpawnedGlass
 
 
 def profile_of(outline):
@@ -133,10 +134,30 @@ def test_a_weighed_glass_is_held_at_its_walls_rating():
     # The weight sum stops it sliding down, not turning in the fingers.
     for name in ("straight_glass", "stemmed_glass"):
         kind = spec.kind(name)
-        assert holding_force(0.150, kind) == pytest.approx(kind.force_cap_n * HOLD_BOOST)
+        assert holding_force(0.150, kind) == pytest.approx(kind.force_cap_n)
         assert holding_force(0.150, kind) >= force_for_measured_mass(0.150, kind)
 
 
 def test_a_glass_too_heavy_for_its_rating_is_still_refused():
     with pytest.raises(TooHeavyToHold):
         holding_force(1.0, spec.kind("stemmed_glass"))
+
+
+def _weighed(outline):
+    return SpawnedGlass("g", "straight_glass", outline, (0.0, 0.0, 0.0), 0.0).mass
+
+
+def test_the_centre_of_mass_from_the_outline_alone_reads_high():
+    # The camera cannot see the solid base, so the shell guess puts the weight
+    # too far up. Never lower than the truth, which is what weighing corrects.
+    kind = spec.kind("straight_glass")
+    for outline, _ in family("straight_glass", 40, seed=7):
+        guess = estimate_centre_height(profile_from_outline(outline), kind)
+        assert guess >= centre_height(outline, kind.wall_thickness_m)
+
+
+def test_weighing_puts_the_centre_of_mass_within_a_few_millimetres():
+    kind = spec.kind("straight_glass")
+    for outline, _ in family("straight_glass", 40, seed=7):
+        weighed = estimate_centre_height(profile_from_outline(outline), kind, _weighed(outline))
+        assert weighed == pytest.approx(centre_height(outline, kind.wall_thickness_m), abs=0.005)

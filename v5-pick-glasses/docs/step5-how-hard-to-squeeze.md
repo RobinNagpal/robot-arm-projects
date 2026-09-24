@@ -73,6 +73,11 @@ stage three: refuse if it needs too much          ours: force.py
 re-squeeze if the guess was low                   ours: task.py _pick_up(): set it
                                                   down first, because raising the
                                                   squeeze in the air is a shock
+move the grip to the weighed centre of mass       ours: task.py
+                                                  _move_to_centre_of_mass(). The
+                                                  weight beyond the walls is the
+                                                  solid base, which moves the centre
+                                                  down; straight glasses only
 
 (the slip check is the lean at the start of step 6)
 ```

@@ -132,6 +132,10 @@ MEASURE_VIEW_HEIGHT = 0.12
 # enough that setting it back down is nothing.
 WEIGH_LIFT = 0.010
 
+# How far weighing has to move the grip before the fingers are moved to match.
+# Under this, opening and re-closing costs more than the lever it takes away.
+REGRIP_SHIFT = 0.002
+
 # How high above the rack the inverted glass is brought before it starts
 # feeling its way down. Big enough to clear an error in the measured height,
 # small enough that the descent is quick. It must stay under the descent limit

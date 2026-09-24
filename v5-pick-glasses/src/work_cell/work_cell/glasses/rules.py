@@ -8,10 +8,12 @@ The finger opening is never looked up. It is the width the camera measured at
 the height the rule chose, which is why a 7 mm stem and a 14 mm stem both work
 without anybody writing either number down.
 
-Three rules cover the four kinds:
+Four rules cover the four kinds:
 
+- ``nearest_centre_of_mass`` — upright wall as close as it can be to the
+  height of the glass's centre of mass. A straight glass.
 - ``lowest_vertical_section`` — the lowest run of wall that is upright enough
-  for two flat pads. A straight glass.
+  for two flat pads. No kind uses it at the moment.
 - ``narrowest_below_widest`` — the stem. A stemmed glass.
 - ``flattest_in_band`` — for a cone, which has no upright section anywhere and
   still has a best place to grip.
@@ -27,8 +29,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from .force import estimate_centre_height
 from .profile import Profile
-from .spec import FLATTEST_IN_BAND, LOWEST_VERTICAL_SECTION, NARROWEST_BELOW_WIDEST, Kind
+from .spec import (
+    FLATTEST_IN_BAND,
+    LOWEST_VERTICAL_SECTION,
+    NARROWEST_BELOW_WIDEST,
+    NEAREST_CENTRE_OF_MASS,
+    Kind,
+)
 
 
 @dataclass(frozen=True)
@@ -59,13 +68,21 @@ class NoGrip(Exception):
 
 
 def find_grip(
-    profile: Profile, kind: Kind, *, gripper_max_opening: float, lowest_grip: float = 0.0
+    profile: Profile,
+    kind: Kind,
+    *,
+    gripper_max_opening: float,
+    lowest_grip: float = 0.0,
+    mass: float | None = None,
 ) -> Grip:
     """Work out where to hold a glass, and check the answer before returning it.
 
+    ``mass`` is the weighed mass, once there is one. Only a rule that follows
+    the centre of mass uses it, and for that rule it can move the grip.
+
     Raises NoGrip with a reason if the rule cannot find somewhere safe.
     """
-    band = _apply_rule(profile, kind, lowest_grip)
+    band = _apply_rule(profile, kind, lowest_grip, mass)
     height = (band[0] + band[1]) / 2.0
     opening = profile.width_at(height)
     grip = Grip(height=height, opening=opening, band=band)
@@ -76,7 +93,9 @@ def find_grip(
 # ----------------------------------------------------------------- the rules
 
 
-def _apply_rule(profile: Profile, kind: Kind, lowest_grip: float) -> tuple[float, float]:
+def _apply_rule(
+    profile: Profile, kind: Kind, lowest_grip: float, mass: float | None
+) -> tuple[float, float]:
     """Run the kind's rule, and return the run of wall to grip.
 
     The band the rule searches starts no lower than ``lowest_grip``. The floor
@@ -94,6 +113,8 @@ def _apply_rule(profile: Profile, kind: Kind, lowest_grip: float) -> tuple[float
             f"{within[1] * 1000:.0f} mm"
         )
 
+    if kind.grip_rule == NEAREST_CENTRE_OF_MASS:
+        return _nearest_centre_of_mass(profile, kind, within, mass)
     if kind.grip_rule == LOWEST_VERTICAL_SECTION:
         return _lowest_vertical_section(profile, kind, within)
     if kind.grip_rule == NARROWEST_BELOW_WIDEST:
@@ -121,6 +142,30 @@ def _lowest_vertical_section(
     # Only the bottom of the run is used, so that a tall straight glass is
     # still gripped low rather than in the middle of a very long band.
     return lowest.bottom, min(lowest.bottom + kind.min_band_height_m, lowest.top)
+
+
+def _nearest_centre_of_mass(
+    profile: Profile, kind: Kind, within: tuple[float, float], mass: float | None
+) -> tuple[float, float]:
+    """Upright wall as close as it can be to the height of the centre of mass.
+
+    Turning a glass over swings its weight round the pads, and the weight
+    pulls with a lever as long as the gap between the grip and the centre of
+    mass. Closing that gap takes the lever away, where squeezing harder only
+    fights it. Rule one still holds: the band keeps the grip in the lower half.
+    """
+    bands = [b for b in profile.vertical_bands(within=within) if b.height >= kind.min_band_height_m]
+    if not bands:
+        raise NoGrip(
+            f"no upright wall at least {kind.min_band_height_m * 1000:.0f} mm tall "
+            f"in the lower part of this {kind.name}"
+        )
+    centre = estimate_centre_height(profile, kind, mass)
+    half = kind.min_band_height_m / 2.0
+    # The pads go as near the centre as each run allows, and the nearest wins.
+    middles = [min(max(centre, b.bottom + half), b.top - half) for b in bands]
+    middle = min(middles, key=lambda m: abs(m - centre))
+    return middle - half, middle + half
 
 
 def _narrowest_below_widest(

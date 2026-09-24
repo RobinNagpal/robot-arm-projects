@@ -72,10 +72,11 @@ ROS.
 - `shapes.py` invents outlines. `straight()`, `tapered()`, `stemmed()` and
   `short_stemmed()` each draw one kind at proportions you give. `build()` draws
   one at random proportions, and `family()` draws forty spread across the
-  plausible range, which is what the tests use.
+  plausible range, which is what the tests use. `reachable()` turns away a
+  glass whose centre of mass the fingers cannot be put level with, and
+  `centre_height()` and `hollow()` are the solid it is judged on.
 - `spawn.py` puts them on the table. `random_glasses()` picks the kinds,
-  proportions and positions for a run; `hollow()` finds the inside, from the
-  solid base up to the open rim; `revolve()` and `write_mesh()` spin the cut
+  proportions and positions for a run; `revolve()` and `write_mesh()` spin the cut
   face into a closed solid with a real wall thickness; `glass_sdf()` writes
   the model.
 - `detect.py` finds them and names them. `standing_on_the_table()` picks out
@@ -94,7 +95,9 @@ ROS.
   and what the gripper may do. It holds no glass measurement.
 - `rules.py` applies a kind's rule. `find_grip()` returns where to hold the
   glass and how far to open the fingers, or raises `NoGrip` with a reason.
-- `force.py` is the squeeze. `estimate_mass()` guesses from the outline,
+- `force.py` is the squeeze. `estimate_mass()` guesses from the outline, and
+  `estimate_centre_height()` guesses where its centre of mass is, better once
+  the glass has been weighed;
   `starting_force()` turns that into the first squeeze,
   `force_for_measured_mass()` corrects it once the glass has been weighed and
   refuses one that is too heavy for its walls, `mass_from_wrist()` reads the
@@ -180,7 +183,7 @@ grip = find_grip(profile, kind, gripper_max_opening)
 needs_gap = needs_empty_neighbour(profile.max_width, profile.total_height)
 slot = the furthest free slot this glass can use
 
-mass = pick it up and weigh it
+mass, grip = pick it up, weigh it, and move the grip if the weight says so
 turn it over and stand it in the slot
 ```
 
@@ -203,6 +206,10 @@ if it is heavier than the estimate:
     set it down, squeeze harder, pick it up again
 if it is heavier than its walls can take:
     refuse it
+set it down and work out the grip again, now knowing the weight
+if that moves a straight glass's centre of mass by 2 mm or more:
+    open, move the fingers level with it, and squeeze gently until they touch
+squeeze at the wall's rating
 
 lift clear, and tell MoveIt the arm is now holding it
 ```

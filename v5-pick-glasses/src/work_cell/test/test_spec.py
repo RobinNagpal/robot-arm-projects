@@ -10,7 +10,12 @@ def test_every_kind_the_shapes_module_can_draw_has_a_rule():
 
 
 def test_every_rule_names_a_procedure_that_exists():
-    known = {spec.LOWEST_VERTICAL_SECTION, spec.NARROWEST_BELOW_WIDEST, spec.FLATTEST_IN_BAND}
+    known = {
+        spec.LOWEST_VERTICAL_SECTION,
+        spec.NEAREST_CENTRE_OF_MASS,
+        spec.NARROWEST_BELOW_WIDEST,
+        spec.FLATTEST_IN_BAND,
+    }
     for kind in spec.LIBRARY.values():
         assert kind.grip_rule in known
 

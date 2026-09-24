@@ -60,7 +60,8 @@ raise the bottom of that band to LOWEST_GRIP      ours: glasses/rules.py
                                                   not after it.
 
 run the rule on the measured profile              ours: rules.py
-    straight glass: lowest upright band           _lowest_vertical_section()
+    straight glass: upright wall nearest the      _nearest_centre_of_mass(), with
+      centre of mass                              force.py estimate_centre_height()
     stemmed glass: narrowest below widest         _narrowest_below_widest()
     tapered glass: least sloping band             _flattest_in_band()
                                                   each asks profile.py:
@@ -137,15 +138,26 @@ with the rack pegs. Every search band in `spec.py` stops at or below half the
 glass's height, and `_check()` enforces it as well, because a rule that finds
 something high up has found the wrong thing.
 
-## Three rules
+## The rules
 
 ![One rule per kind](../images/grip-per-kind.png)
 
 | Rule | Used by | What it looks for |
 | --- | --- | --- |
-| `lowest_vertical_section` | straight glass | the lowest band of wall within 6° of upright, at least a pad tall |
+| `nearest_centre_of_mass` | straight glass | the band of wall within 6° of upright, at least a pad tall, closest to the height of the centre of mass |
+| `lowest_vertical_section` | nothing now | the lowest band of wall within 6° of upright, at least a pad tall |
 | `flattest_in_band` | tapered glass | the least-sloping band in the search window |
 | `narrowest_below_widest` | stemmed, short-stemmed | the waist below the widest point |
+
+`nearest_centre_of_mass` replaced `lowest_vertical_section` for straight
+glasses. Held low, a tall tumbler has its centre of mass a centimetre or more
+above the pads. Turning it over swings that weight round the pads with a lever
+that long, and it turned in the fingers even at the wall's force rating. Held
+level with the centre of mass, the lever is close to nothing. The centre comes
+first from the outline, which reads high because the camera cannot see the
+solid base. It is corrected in step 5 once the glass is weighed, and the fingers
+move to match. A straight glass whose centre is below `LOWEST_GRIP` is never
+drawn: see `reachable()` in `glasses/shapes.py`.
 
 `flattest_in_band` exists because a cone has no upright wall anywhere. Asking
 for one returns nothing, so the tapered rule asks a different question: of all

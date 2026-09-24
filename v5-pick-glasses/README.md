@@ -93,7 +93,7 @@ sentence about the profile:
 
 | Kind | Rule | In words |
 | --- | --- | --- |
-| Straight glass | `lowest_vertical_section` | the lowest stretch of wall that is upright enough for a flat pad |
+| Straight glass | `nearest_centre_of_mass` | the upright stretch of wall closest to the height of its centre of mass |
 | Tapered glass | `flattest_in_band` | a cone has no upright wall anywhere, so take the flattest band low down |
 | Wine glass | `narrowest_below_widest` | the narrowest point below the widest point, which is the stem |
 | Short-stemmed glass | `narrowest_below_widest` | the same rule, looking lower, because the stem ends sooner |

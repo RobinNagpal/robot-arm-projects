@@ -197,7 +197,8 @@ work.
 
 | Rule | Used by | What it finds |
 | --- | --- | --- |
-| `lowest_vertical_section` | straight glass | the lowest band of wall within `VERTICAL_TOLERANCE` of upright, at least `min_band_height_m` tall |
+| `nearest_centre_of_mass` | straight glass | the band of wall within `VERTICAL_TOLERANCE` of upright, at least `min_band_height_m` tall, closest to the estimated centre of mass |
+| `lowest_vertical_section` | nothing now | the lowest band of wall within `VERTICAL_TOLERANCE` of upright, at least `min_band_height_m` tall |
 | `narrowest_below_widest` | stemmed, short-stemmed | the waist below the widest point |
 | `flattest_in_band` | tapered glass | a cone has no upright wall anywhere, so take the least-sloping band in the search window |
 

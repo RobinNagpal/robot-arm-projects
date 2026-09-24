@@ -29,7 +29,7 @@ import numpy as np
 
 from ..rack.layout import GLASS_ZONE, TABLE_TOP_Z
 from .force import GLASS_DENSITY
-from .shapes import KIND_RANGES, Outline, draw
+from .shapes import KIND_RANGES, Outline, draw, hollow
 from .spec import LIBRARY
 
 TEMPLATE = Path(__file__).parent / "glass.sdf"
@@ -186,19 +186,6 @@ def _free_spot(rng, placed, x_min, x_max, y_min, y_max) -> tuple[float, float]:
 
 
 # ------------------------------------------------------------------- meshes
-
-
-def hollow(outline: Outline, wall: float) -> tuple[np.ndarray, np.ndarray]:
-    """The inside of a glass: heights and radii from its floor up to the rim.
-
-    The inside wall is the outside moved in by the wall thickness. Below the
-    floor there is no inside at all, which is the solid base or stem.
-    """
-    above = outline.height > outline.floor
-    at_floor = np.interp(outline.floor, outline.height, outline.radius)
-    height = np.concatenate(([outline.floor], outline.height[above]))
-    radius = np.concatenate(([at_floor], outline.radius[above]))
-    return height, np.maximum(radius - wall, 0.0)
 
 
 def cross_section(outline: Outline, wall: float) -> tuple[np.ndarray, np.ndarray]:
