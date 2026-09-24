@@ -161,22 +161,58 @@ That third point reverses an instinct most developers bring with them. The
 thing to economise on is not computation. It is the number of times the arm has
 to move.
 
+## Everything here runs in simulation
+
+One rule has been applied to every solution below, and it is worth stating
+before the list because it removed some obvious candidates.
+
+**A solution is in this document only if everything it needs can be produced by
+Gazebo on the machine this project runs on** — an Apple Silicon Mac with no
+NVIDIA graphics card, no robot on a bench, and no real-world data. Four
+conditions:
+
+1. **No artefact from outside.** Any model has to be trainable from what the
+   simulator renders. A downloaded file of weights fitted to photographs of the
+   real world is not reproducible here, however good it is.
+2. **No sensor the simulator does not have.** This cell has a depth camera, pad
+   contact sensors and a wrist force-torque sensor. Anything else is a purchase
+   order.
+3. **No graphics card it has not got.** Anything needing compiled CUDA kernels
+   is out.
+4. **Hours, not days.** A method needing a week of continuous simulation to
+   train cannot be iterated on, and a method you cannot iterate on will not get
+   debugged.
+
+That rule is not a view about learned methods. Several good answers fail it,
+and they are written up in full in
+[`learned-with-hardware.md`](learned-with-hardware.md) beside the condition
+each one fails — a promptable foundation model, a fine-tuned instance
+segmenter, and the rest. None of them needs a different *algorithm* to become
+usable. They need a different *setup*.
+
+The rule does have one consequence worth seeing coming. It pushes the learned
+solutions towards **small models trained from scratch on synthetic data**, and
+away from the fine-tune-a-big-model recipe that is the default advice
+everywhere else. For a cell that handles one kind of object, under one lighting
+setup, through one camera, that turns out to be less of a sacrifice than it
+sounds — and the sections below say where it does cost something.
+
 ## The nine solutions, at a glance
 
-Three programmed, three hybrid, three learned. They are grouped by family and,
-within each family, ordered by how much machinery they need.
+Three programmed, three hybrid, three learned — and every one of them buildable
+inside the simulator.
 
 | | Solution | Family | Where the learned part sits | Closed loop? | Verdict |
 | --- | --- | --- | --- | --- | --- |
 | 1 | [Split the blob in the picture](#solution-1--split-the-blob-in-the-picture) | programmed | — | no | cheap, and treats the symptom |
 | 2 | [Cluster on the table](#solution-2--cluster-on-the-table) | programmed | — | no | **chosen — the core** |
 | 3 | [Move the camera](#solution-3--move-the-camera) | programmed | — | **yes** | **chosen — the loop** |
-| 4 | [Geometry proposes, a model refines](#solution-4--geometry-proposes-a-promptable-model-refines) | hybrid | proposer | partly | a good fallback |
-| 5 | [Learned doubt steers the next picture](#solution-5--learned-doubt-steers-the-next-picture) | hybrid | ranker | **yes** | the richest version of solution 3 |
-| 6 | [A learned verifier over the clusters](#solution-6--a-learned-verifier-over-the-clusters) | hybrid | verifier | **yes** | **the first learned thing worth adding** |
-| 7 | [Train an instance model](#solution-7--train-an-instance-model) | learned | decider | no | the answer for real glassware |
-| 8 | [Amodal masks and learned association](#solution-8--amodal-masks-and-learned-association) | learned | decider | partly | for heavy occlusion, which this is not |
-| 9 | [An active-vision policy](#solution-9--an-active-vision-policy) | learned | decider | **yes** | elegant, and unauditable |
+| 4 | [Learned doubt steers the next picture](#solution-4--learned-doubt-steers-the-next-picture) | hybrid | ranker | **yes** | the richest version of solution 3 |
+| 5 | [A learned verifier over the clusters](#solution-5--a-learned-verifier-over-the-clusters) | hybrid | verifier | **yes** | **the first learned thing worth adding** |
+| 6 | [Learn which viewpoints pay off](#solution-6--learn-which-viewpoints-pay-off) | hybrid | ranker | **yes** | supervised, where solution 3 is a rule |
+| 7 | [A segmenter trained from scratch](#solution-7--a-segmenter-trained-from-scratch) | learned | decider | partly | one class, one camera, one afternoon |
+| 8 | [Per-pixel votes for the centre](#solution-8--per-pixel-votes-for-the-centre) | learned | decider | partly | the learned answer that actually separates |
+| 9 | [Self-supervised from the arm's own movement](#solution-9--self-supervised-from-the-arms-own-movement) | learned | decider | **yes** | needs no labels at all, not even the simulator's |
 
 Each is written the same way: what it is, why anyone does it like that, how it
 would work in this cell, **the feedback loop** if it has one, a worked example
@@ -663,189 +699,12 @@ unknown kinds mean the doubt stops being a short list.
 
 ---
 
-## Solution 4 — geometry proposes, a promptable model refines
-
-*Hybrid, with the model as a proposer. Send the model only the clusters the
-geometry is unsure about, prompted with the point the geometry already
-computed, then check its answer with the same arithmetic that flagged the
-cluster.*
-### What it is
-
-A **hybrid**: geometry proposes, a learned model refines, geometry decides.
-The model is never the last word.
-
-Two words first. A **closed-set** model answers only with a name from the
-fixed list it was trained on, and returns nothing for anything else — which a
-robot reads as "nothing there". A **promptable** model takes a picture *and a
-hint*, and returns the pixels at that hint. The hint is a **prompt**: a place,
-not words — a point, a box, or a rough mask. Its answer is a boundary, never a
-name, so there is no list to fall off.
-
-The promptable models are the **Segment Anything** family. Licences read from
-the projects:
-
-| Model | Licence | Without CUDA? |
-| --- | --- | --- |
-| [SAM](https://github.com/facebookresearch/segment-anything) | Apache-2.0, code and weights | yes, slowly |
-| [SAM 2](https://github.com/facebookresearch/sam2) | Apache-2.0, code and weights | yes; smallest size comfortably |
-| [MobileSAM](https://github.com/ChaoningZhang/MobileSAM) | Apache-2.0 | yes |
-| [FastSAM](https://github.com/CASIA-LMC-Lab/FastSAM) | **AGPL-3.0**, inherited from Ultralytics | yes, but the licence bites |
-| [EfficientSAM](https://github.com/yformer/EfficientSAM) | uncertain; I have not read its licence file | yes |
-
-FastSAM's README claims Apache-2.0 while its `LICENSE` file says AGPL-3.0; the
-licence file counts. SAM 2 is the safe default.
-
-**There is no NVIDIA GPU here** — this is an Apple Silicon Mac. None of these
-need CUDA, but all were tuned for it, so running one means
-[PyTorch](https://pytorch.org/) (BSD-3) on Metal, or a conversion with
-[coremltools](https://github.com/apple/coremltools) (BSD-3).
-
-### Why anyone does it this way
-
-The two halves fail in opposite directions.
-
-Geometry fails **loudly**. A merged pair comes back as a footprint 262 mm
-across when the kind is 60 to 90, so the failure is a sentence with two
-numbers in it. What geometry cannot do is draw a boundary through a clump,
-because the projection threw that information away.
-
-A model fails **quietly**. It draws a good boundary on an object it has never
-seen, and an equally confident boundary round the wrong thing.
-
-In this order, the loud failure catches the quiet one. That is the pattern
-worth taking generally: **a learned component used as a proposer inside a
-checkable envelope.** Its output is not trusted but tested, against a
-measurement that exists independently of it. A wrong mask never becomes a
-wrong glass; it becomes a diameter outside a range.
-
-### How it would work here
-
-**1. Geometry proposes, with a confidence.** The geometric detector already
-gives, per cluster, a position on the table and a fitted footprint circle. Add
-one label: a cluster whose circle is inside the kind's diameter range is
-**settled**; one that is not, and that two circles do not explain either, is
-**doubtful**. That word is the gate.
-
-**2. The model refines — doubtful clusters only.** The prompt costs nothing,
-because the geometry already computed it: the cluster's centre, projected back
-into the picture, is a **point prompt**, its pixel bounding box is a **box
-prompt**, and a clump believed to be two glasses gives two point prompts.
-
-**3. Geometry decides.** Each mask goes back through stage 1's arithmetic:
-pixels to points in the room, dropped onto the table, circle fitted. Accept
-only if **both** diameters are in the kind's range and the centres far enough
-apart to be two glasses. Otherwise both are discarded. The model proposed a
-boundary; it did not get a vote.
-
-**Why not every frame.** A mask cannot improve a number that is already right,
-and it can make it wrong. One or two doubtful clusters per run is the right
-load.
-
-**What a call costs.** Encoder once per picture, decoder once per prompt, so
-two prompts is one encode and two cheap passes. The encode is the bill. The
-only measured Apple Silicon figures I have are Ultralytics' own: FastSAM-s
-**58.0 ms**, MobileSAM **23,802 ms**, on a 2025 M4 Air, CPU — much of that gap
-being the runtime, not the model. What SAM 2 would cost here is uncertain.
-
-### The feedback loop
-
-Suppose stage 3 rejects the masks. The tempting answers are a larger model, a
-second prompt, or a looser threshold. All three are wrong for one reason:
-**the picture does not contain the answer.** Two glasses in line with the
-camera occlude each other, and no boundary drawn on those pixels recovers what
-was never recorded.
-
-The right next action is **another picture from somewhere else**. The
-rejection carries what the viewpoint solutions want: which cluster is
-doubtful, where it is, and how wide it wrongly appears. Solution 3 scores
-directions round it for line of sight, arm path and reach, and the new picture
-re-enters at stage 1. Cap it at two extra looks. If no viewpoint separates the
-pair, they are unseparable where they stand — problem 3's business, moving
-them apart rather than photographing them harder.
-
-### A worked example
-
-Five glasses of one known kind, footprint range 60 to 90 mm. The station sits
-450 mm above the table, so one picture covers about 520 by 390 mm across 320
-by 240 pixels, and one pixel is 1.6 mm.
-
-*Stage 1.* Four clusters. Three fit circles of 77, 81 and 74 mm — settled, and
-the model is never loaded for them. The fourth fits 262 mm; two circles give
-131 and 129 mm, both out of range. Doubtful.
-
-*Stage 2.* That cluster spans 262 / 1.6 ≈ **164 pixels** of the 320 across,
-and its two likeliest centres project to pixels **80 apart**, 128 mm on the
-table. Those are the prompts: one encode, two decoder passes.
-
-*Stage 3.* Re-projected and fitted, the masks give **76 mm** and **73 mm**,
-centres **158 mm** apart — both inside 60 to 90, and above the 150 mm the cell
-guarantees between glasses. Accepted.
-
-The other branch: the second mask fits at **118 mm**. Both are discarded, the
-cluster stays doubtful, and it goes to solution 3 for a viewpoint
-perpendicular to the line joining the pair.
-
-### What it needs
-
-PyTorch on Metal, or a Core ML conversion, and a version-pinned weights file
-of tens to hundreds of megabytes. No labelled pictures and no training. A
-projection from a table position back to image pixels, which exists; a rule
-turning a cluster into a prompt; and stage 3, the circle fit called a second
-time.
-
-### What it is good at
-
-Boundaries through a clump the geometry cannot cut — the one job geometry
-genuinely cannot do. It enlarges nothing that is trusted, since every number
-leaving it came from arithmetic checked against a range the project holds. It
-costs nothing when nothing is wrong, and needs no data.
-
-### What it is bad at
-
-**It cannot start anything.** Nothing in it decides where to point.
-
-**It cannot name what it outlined.** Point it at the rack or the arm's own
-wrist and it outlines those just as willingly.
-
-**Small pictures.** These models resize internally to around 1024 across, so
-blowing 320 by 240 up returns a boundary smoother than the picture justifies.
-
-**Transparent objects**, which the family handles worst.
-
-### How it fails
-
-**It outlines the wrong thing, confidently** — the table behind a rim, or a
-highlight as its own object. Stage 3 catches that unless the wrong thing
-happens to be glass-sized.
-
-**It splits one glass.** Prompted at a bowl, it returns the bowl.
-
-**Both masks pass and both are wrong.** The residual risk. Agreement across
-stations is the remaining defence.
-
-**It thrashes** without the cap, and a pinned weights file behind a gate that
-rarely opens is never exercised by the tests.
-
-### When it would be the right choice
-
-When the cheap method has failed on a named cluster, and not before: a model
-adds nothing to a cluster that passes the circle fit.
-
-Three cases earn it. Here, for a doubtful cluster two circles cannot explain
-and no viewpoint resolves. In problem 4, where the kind is unknown and the
-allowed diameter becomes the union of several ranges, loosening the envelope.
-And on real glassware, where there is no depth to cluster, so the geometric
-route stops existing and takes the envelope with it.
-
-Until then, the gate should stay shut.
-
----
-
-## Solution 5 — learned doubt steers the next picture
+## Solution 4 — learned doubt steers the next picture
 
 *Hybrid, with the model as a ranker. The fixed sweep happens first. Then a
 learned estimate of how unsure each object is decides which extra picture is
 worth taking, from candidate poses the geometry has already filtered.*
+
 ### What it is
 
 Solution 3 moves the camera by a rule somebody wrote. This one moves it by a
@@ -1023,11 +882,12 @@ rule chooses wrongly.
 
 ---
 
-## Solution 6 — a learned verifier over the clusters
+## Solution 5 — a learned verifier over the clusters
 
 *Hybrid, with the model as a verifier. Do not learn the perception. Learn the
 one question the rules are worst at — is this one object or two — on the crop
 the rules have already isolated.*
+
 ### What it is
 
 Solution 2 groups points on the table and fits a circle to each footprint. The
@@ -1185,579 +1045,736 @@ depth, no cluster and no circle to verify. That is solution 5's day.
 
 ---
 
-## Solution 7 — train an instance model
+## Solution 6 — learn which viewpoints pay off
 
-*Learned, as the decider. Show a network a few thousand labelled pictures and
-let it learn to outline each object separately.*
+*Hybrid, with the model as a ranker. Solution 3 scores a viewpoint with a rule
+somebody wrote. This predicts, from an experiment the simulator can run
+exhaustively, whether taking that picture will actually change the answer.*
+
 ### What it is
 
-A **neural network** is a program whose behaviour comes from numbers learned
-from examples rather than from rules somebody wrote. The numbers are called
-**weights**, and they live in a file. Three things such a network can do with a
-picture of five glasses are easy to confuse.
+Solutions 3 and 5 also pick where to look next, so the difference is what gets
+scored. Solution 3 scores a candidate viewpoint with a rule somebody wrote:
+prefer a clear line of sight, then least reach. Solution 5 scores it by how far
+the perception step's **uncertainty** — the number it returns beside its answer
+— should fall. This one scores neither. It predicts, directly, **whether the
+picture would change the answer**: the probability that a picture from this pose
+splits this ambiguous cluster into two circles the kind's range accepts.
 
-- **Detection** returns a rectangle round each glass. Rectangles of overlapping
-  glasses overlap too.
-- **Semantic segmentation** labels every pixel with a class. Every glass pixel
-  comes back labelled "glass". Nothing says *which* glass, so two overlapping
-  glasses come back as one region — the merge this problem exists to prevent.
-- **Instance segmentation** labels every pixel with a class *and* with the
-  object it belongs to. Five glasses give five **masks**, a mask being a
-  picture where every pixel is yes or no.
-
-Problem 2 asks which pixels belong to which glass. That is instance
-segmentation, exactly.
+A simulator can look that up. Spawn an arrangement, note the ambiguous clusters,
+render from pose P, re-cluster, record whether the ambiguity went. That is the
+label: free, exact, generated overnight.
 
 ### Why anyone does it this way
 
-Every other method here reasons about geometry, and all of it depends on the
-glasses being opaque, so that the depth camera returns a real distance for
-every glass pixel.
-
-A real depth camera gets almost none back from real glass: nothing to cluster,
-no points above the table, no circle to fit. What is left is the colour
-picture, where a glass shows itself through refraction, highlights and the way
-the background bends behind it. Nobody has written a rule that captures those.
-A model learns them from examples.
-
-### How it would work here
-
-The pictures are 320 x 240, small by the standards of these models, which
-usually expect 640 pixels or more. Training and inference are therefore cheap,
-and the mask boundary stays coarse however good the model is.
-
-The families worth considering, with licences read from the projects:
-
-- **Mask R-CNN.** In `torchvision` it is BSD-3 throughout, the clean option.
-  **Detectron2** has better recipes but its **weights are CC BY-SA 3.0** under
-  Apache-2.0 code, and it is CUDA-shaped with no release since 2021.
-- **YOLO-seg, from Ultralytics.** The easiest path by a distance, and
-  **AGPL-3.0**: you must publish the source of anything you combine it with,
-  including software you only run as a service and never distribute, and the
-  weights carry the same terms however you got them. A commercial licence
-  exists, priced by negotiation. For anything that might ship, that is a
-  decision rather than a detail, and the same inheritance catches FastSAM.
-- **Something smaller.** `segmentation_models_pytorch` (MIT) is semantic only,
-  so it needs a separating step bolted on. Hugging Face `transformers`
-  (Apache-2.0) fine-tunes Mask2Former and OneFormer, both MIT. At this size a
-  Mask R-CNN on a small ResNet backbone is already small.
-
-**Making the data.** The simulator knows every glass's outline, so it renders
-labelled pictures for nothing, and the labels are perfect. Gazebo is Apache-2.0
-and already running; Kubric (Apache-2.0) and BlenderProc (GPL-3.0 — the data is
-yours, the tool is copyleft) render better.
-
-**Domain randomisation** is what makes rendered data transfer. Rather than try
-to make the render look real, vary everything you are *not* teaching —
-lighting, textures, background, camera pose, exposure, noise, glass colour,
-how many glasses and where — so widely that reality looks like one more
-variation. The model then cannot latch onto anything that differs between
-simulation and reality, because none of it was ever constant.
-
-**Does it break the project's rule?** The model outputs a mask, in pixels, and
-a mask holds no millimetres. Size still comes from the depth reading and the
-camera geometry, measured during the run. So no: nothing is written down, and
-the arm still measures every glass itself. It does put a *size-shaped prior* in
-a file nobody can inspect, having been trained on one range of proportions.
-That is knowledge about glass sizes held inside the project, and the report
-should say so.
-
-### A worked example
-
-Five glasses stand on the table. Two are 300 mm apart but line up with the
-camera, so their outlines touch in the picture.
-
-Today `standing_on_the_table()` in `glasses/detect.py` returns one boolean mask
-of everything above the table top, and `find_glasses()` groups it into blobs.
-The lined-up pair become one blob 260 mm wide, and everything downstream
-believes it is one large glass.
-
-A trained model returns five masks, and the lined-up pair are two of them
-sharing a boundary. Each mask runs through the existing code unchanged: points
-in the room, circle fitted at the table, position and rough width reported.
-
-### What it needs
-
-**Pictures.** You fine-tune rather than train from scratch: take a model that
-already knows what objects look like and teach it this one class. A few hundred
-labelled pictures is enough to see it work, a few thousand to be steady, and
-the simulator renders them overnight. How many are enough here has not been
-measured, and I will not guess.
-
-**A machine to train on.** This is the awkward part. The cell runs on an Apple
-Silicon Mac and **there is no NVIDIA GPU**. PyTorch trains on Apple's **MPS**
-backend, the Mac's own graphics processor, but some operations fall back to the
-CPU, and a fine-tune of an hour on a rented NVIDIA card can take most of a day
-here. It is possible; it is not something you do between two experiments.
-Anything needing compiled CUDA kernels is out entirely: Detectron2's, mmcv's,
-the deformable-convolution variants, TensorRT, Isaac ROS.
-
-**Somewhere to run it.** `torchvision` Mask R-CNN runs on MPS, and Ultralytics
-with `device="mps"`. At 320 x 240 that should sit inside the time an arm move
-takes, but I have not measured it and will not quote a figure. One comparison
-shows why guessing is unwise: MobileSAM, designed to be small, takes about 24
-seconds per image on an M4 Air's CPU, while Depth Anything V2 Small runs in
-24.6 ms on an M3 Max through CoreML and the Neural Engine. What matters is
-whether anyone has done the CoreML work, not how small the model is.
-
-### What it is good at
-
-It separates glasses that overlap in the picture without needing depth. It
-copes with reflections and highlights far better than any threshold. It works
-on real transparent glassware, which nothing else here does without new
-hardware. And it enters at one function.
-
-### What it is bad at
-
-It says nothing in millimetres and it cannot say why. It knows only the glasses
-it was trained on; a kind outside that range is one it outlines badly, with no
-warning. And here it is more machinery than the job needs, because comparing
-depths separates two glasses 300 mm apart exactly, with a reason you can print.
-
-### How it fails
-
-**Confidently.** A merged pair comes back as one mask with a high score. A
-geometric method that merges leaves evidence — a footprint 260 mm across when
-the kind is 60 to 90 — and the circle fit catches it. A model that merges
-leaves a number, and the number says it is sure.
-
-**Out of date.** Add a kind, change the proportion ranges, change the lighting
-in the world file, and the weights describe something that no longer exists.
-Nothing in the repository says so, and the tests still pass.
-
-**In the way.** Every other method here can be changed and re-run in a minute.
-This one puts a training loop between the change and the answer, paid on every
-experiment.
-
-### When it would be the right choice
-
-The day the glasses stop being opaque, when every geometric method here loses
-its input at once. Also if the glassware becomes open-ended, because the circle
-fit leans hard on knowing the kind's diameter range. Until then it is a
-fallback worth knowing how to build and worth not building.
-
----
-
-## Solution 8 — amodal masks and learned association
-
-*Learned, as the decider. Predict the whole extent of a partly hidden object,
-not just its visible pixels, and learn to recognise the same object across
-several viewpoints.*
-### What it is
-
-Every segmenter named so far marks only the pixels you can see. The habit has a
-name. **Modal segmentation** labels an object's visible pixels and stops where
-something else gets in front. **Amodal segmentation** labels the object's *whole*
-extent, hidden part included. Put one glass half behind another: a modal model
-returns the visible half of the back one, an amodal model the whole footprint,
-inferring the hidden part from what it can see. From psychology: *amodal
-completion* is reporting one cat behind a railing, not five slices.
-
-Why it matters here is arithmetic. Everything downstream turns a mask into points
-on the table and fits a circle. **A mask cut short by an occluder gives a circle
-too small and in the wrong place**, because the centre of the visible part is not
-the centre of the glass. Both errors are silent: a wrong footprint comes back not
-as an error but as a plausible number.
-
-The second half is **association**: deciding that a detection in one picture is
-the same physical glass as one in another. Three stations, two pictures each,
-five glasses — thirty detections, five objects. That is the **data association
-problem**, a separate job from finding the glasses.
-
-### Why anyone does it this way
-
-`problem.md` says the failure to watch hardest is *merged*, because it does not
-announce itself. A truncated footprint is the same failure in different clothes:
-the range for one kind is 60–90 mm, so a glass 30 per cent hidden reports about
-60 mm, and solution 2's circle fit passes it in silence.
-
-For association the classical answer is geometric, and solutions 2 and 3 use it:
-two detections are one glass if their positions are close and their heights
-agree. It fails when a position is wrong *because* the mask was truncated —
-geometry arbitrating with broken numbers.
-
-The learned answer ignores position. The model turns each detection into an
-**embedding**: a short list of numbers, typically 128 or 256 of them, produced by
-a network from that detection's pixels. Nobody chooses what the numbers mean. The
-network is trained so two views of one object land close together in that space
-and views of different objects land far apart, by ordinary Euclidean or cosine
-distance. The usual signal is a **triplet loss** — an anchor, another view of it,
-and a different object; pull the first pair together, push the second apart.
-"Same glass?" becomes "is this distance small?"
-
-The neighbouring field is **multi-object tracking**. A **track** is an identity
-over time; a **cost matrix** prices matching each detection to each track; the
-**Hungarian algorithm** (`scipy.optimize.linear_sum_assignment`, SciPy, BSD-3)
-picks the cheapest one-to-one assignment; **re-identification** is the embedding
-half. DeepSORT (https://github.com/nwojke/deep_sort), the classic
-appearance tracker, is **GPL-3.0**; ByteTrack
-(https://github.com/ifzhang/ByteTrack) is MIT.
+It makes choosing a viewpoint **supervised learning** — fitting a function from
+inputs to known answers — which is the cheapest learning there is. Compare
+[an active-vision policy](learned-with-hardware.md#an-active-vision-policy). A policy trained by reinforcement learning must work out which look
+was the good one from a single reward at the end of an episode, and an episode
+means the arm moving several times before anything is learned: days of machine
+time, and a reward somebody must design and can get wrong. Here there is no
+episode and no reward, because the label for one look does not depend on what
+follows it — and Gazebo renders from any pose without the arm going there.
 
 ### How it would work here
 
-**The models.** Amodal segmentation is a small field, and most of it is research
-code. **UOAIS** (https://github.com/gist-ailab/uoais, ICRA 2022) fits closest —
-RGB-D, tabletop, class-free, predicting a visible mask, an amodal mask and an
-occlusion flag per object; licence uncertain. **BCNet**
-(https://github.com/lkeab/BCNet, MIT) models occluder and occluded as two layers.
+**The target.** Binary: did the cluster become two in-range circles, yes or no.
+A scalar version — the drop in the one-circle fit's RMS residual — trains the
+same way, but an ordering needs only a ranking.
 
-Both sit on **Detectron2**, which solution 5 flags as CUDA-shaped and unreleased
-since 2021. With no NVIDIA card that is the real obstacle, not model size. A
-`torchvision` Mask R-CNN (BSD-3) with a second head for the amodal mask runs on
-MPS, and is the route I would take.
+**The features are geometry, not pixels.** About twenty numbers per candidate,
+all computable before the picture exists: the angle between the line of sight
+and the line joining the two centres the two-circle fit proposed, ninety degrees
+being the separating angle, and their separation in fitted radii; predicted
+occlusion — how close the ray passes to each other cluster's centre, in that
+cluster's radii; the standoff, and the reach, the camera's distance from the
+base against the 300 to 780 mm limits; the angle from the nearest view
+already taken, since a picture ten degrees from one in hand adds nothing; and
+the cluster's own diameter.
 
-**The datasets** are mostly unusable here: COCO-Amodal
-(https://github.com/Wakeupbuddy/amodalAPI, licence uncertain) and KINS
-(https://github.com/qqlu/Amodal-Instance-Segmentation-through-KINS-Dataset),
-annotated on KITTI and so **CC BY-NC-SA, non-commercial**. Neither holds glasses.
+Why not raw pixels? Decisively, **the picture does not exist yet**: there is
+nothing to feed but predicted geometry. Twenty numbers also need far fewer rows
+than a 320 by 240 input, and millimetres transfer where appearance will not.
 
-**The simulator supplies the data free, which is what makes this practical.**
-Render each glass alone against the empty table: that silhouette is the amodal
-mask, exact. Render the whole scene: that is the modal mask. The difference is
-the occlusion mask. No annotator, so no annotator error, and the same renders
-label association free.
+**The model and the data.** A gradient-boosted tree,
+[`HistGradientBoostingClassifier`](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.HistGradientBoostingClassifier.html)
+from scikit-learn (BSD-3-Clause,
+[licence](https://github.com/scikit-learn/scikit-learn/blob/main/COPYING)),
+trains on the CPU in seconds; a small network in
+[PyTorch](https://pytorch.org/) (BSD-3-style,
+[licence](https://github.com/pytorch/pytorch/blob/main/LICENSE)) handles the
+scalar target in minutes on the Mac's MPS backend.
 
-**The pipeline.** Run the model on each picture and fit the circle to its amodal
-mask — existing code, fed an untruncated footprint. Then embed every detection
-and solve the cost matrix across pictures.
+[Gazebo](https://gazebosim.org/) (Apache-2.0) knows what it spawned, so the
+label is read, not judged. Two thousand arrangements, each sweeping its
+ambiguous cluster against the ten or so poses that survive the veto, is tens of
+thousands of rows: a few hours unattended, nothing wanting CUDA.
+
+**The ordering, which is the safety argument.** The geometry runs first and
+holds the veto: 24 directions at 15-degree spacing, 380 mm back and 120 mm above
+the table; reach rejects poses outside 300 to 780 mm; the line-of-sight test
+rejects rays through another cluster's footprint; `setFromIK` from
+[MoveIt 2](https://moveit.ai/) (BSD-3-Clause) rejects what the arm cannot hold.
+**The model sees only the survivors, and only orders them**, so a bad
+prediction costs one wasted look, never an unsafe move.
 
 ### The feedback loop
 
-The margin on that assignment is the useful output. If a detection sits 0.11
-from candidate A and 0.13 from B, while two views of one glass typically sit
-0.05 apart, the match is a coin toss wearing a number.
+Predict, look, and then — the part worth being concrete about — **write down
+what happened.**
 
-**An uncertain association is a reason to take one more picture, from a viewpoint
-where the two candidates would look different.** That is solution 3's
-next-best-view machinery with the score swapped: instead of unknown volume, score
-the **predicted margin** — for each reachable viewpoint, predict how A and B
-would look and prefer the one putting their embeddings furthest apart. Two
-glasses drawn 230 mm and 205 mm tall look identical from above and differ by
-25 mm from level, so the loop picks a level view. Cap it: two extra looks, then
-report the pair unseparated.
+1. **Fit.** A cluster failing the kind's range is ambiguous.
+2. **Generate and veto.** 24 candidates, filtered for reach, occlusion and IK.
+3. **Predict and order.** Score each survivor; take the highest.
+4. **Move and photograph.** Seconds for the move, then five pictures along the
+   120 mm parallax slide, since a picture costs milliseconds.
+5. **Observe.** Re-fit. Two in-range circles, or not?
+6. **Record.** One row: step 3's features, step 5's outcome.
+
+Step 6 separates this from a model trained once. **The run-time label needs no
+ground truth.** It is not *was the answer right* but *did the answer change*,
+observable in normal running. So every look the arm takes is another labelled
+example, and the predictor improves with use.
+
+Two guards. Retrain offline, never mid-run, against a held-out set and a
+calibration check
+([scikit-learn's guide](https://scikit-learn.org/stable/modules/calibration.html)):
+of the looks predicted at 0.9, do nine in ten resolve? And take the second-ranked
+candidate one look in twenty, since a log of only the poses the model liked
+teaches it nothing about the rest.
 
 ### A worked example
 
-At survey height, 450 mm up, one pixel covers 1.6 mm. Glass A stands 180 mm in
-front of glass B, in line with the camera. B's footprint is 78 mm, or 49 pixels,
-and A hides 22 per cent of its disc.
+An ambiguous cluster stands 470 mm from the base. One circle fits at 158 mm,
+outside the kind's 60 to 90 mm range; two fit at 76 and 71 mm, centres only
+54 mm apart.
 
-*Modal.* B's visible part is 38 pixels, **61 mm** — inside the 60–90 mm range, so
-it passes. The circle fitted to that crescent has its centre **8.5 mm** from B's
-true one. One glass, 61 mm across, in a place it is not.
+The camera lands 380 mm out, so its distance from the base is
+sqrt(470² + 380² + 2·470·380·cos θ). The 780 mm ceiling needs θ ≥ 47 degrees and
+the 300 mm floor θ ≤ 140: **twelve of the 24 survive**. Three look through a
+neighbour, whose 105 mm footprint at 520 mm spans 105 × 277.1 / 520 ≈ **56
+pixels** of the 320 across; `setFromIK` fails on one. **Eight are scored.**
 
-*Amodal.* The model returns the whole disc: 77 mm against a true 78, centre
-within 2 mm, flagged as 22 per cent inferred.
+The best scores **0.88**: near perpendicular to the 54 mm line, clear of every
+footprint, 71 degrees from any view already taken. The runner-up scores **0.31**,
+being 18 degrees from a station already visited — the feature a hand-written
+rule has not got.
 
-*Association.* Station 2 sees B unoccluded; its embedding sits 0.04 from station
-1's truncated B against 0.19 for the nearest other glass. The awkward pair, of
-nearly identical proportions, come back at 0.11 and 0.13; one level look
-separates them to 0.06 and 0.21.
+One move, three seconds. At 380 mm one pixel covers 1.37 mm, and the cluster
+resolves into circles of 74 and 70 mm, 96 mm apart. A row is appended,
+outcome 1.
 
 ### What it needs
 
-Rendered data with amodal masks, free from the simulator, and a second mask head
-to predict them. An embedding network and a triplet loss on the same renders,
-SciPy for the assignment, and solution 5's training cost, doubled.
+NumPy and scikit-learn, both BSD-3-Clause. A weights file of a few hundred
+kilobytes, holding a hash of the feature list so a changed feature makes the
+loader refuse rather than misread. The geometric filter, needed anyway. A log
+file. And a sweep harness over Gazebo, which is the real work.
 
 ### What it is good at
 
-It attacks the truncated-footprint failure, which nothing else here detects, and
-turns association into evidence rather than assumption. It gives numbers to be
-uncertain about: the margin drives the extra look, and the occlusion fraction
-marks a mostly-guessed footprint doubtful.
+It optimises the thing actually wanted — a look that changes the answer —
+rather than a proxy for it, and gets most of what such a policy offers
+with no episodes, no rewards and no days of machine time. Strip it out and the
+order falls back to solution 3's rule.
 
 ### What it is bad at
 
-**Every glass is the same kind.** An appearance embedding on four to six nearly
-identical objects has very little to work with. What signal exists comes from the
-proportions drawn at random inside the kind's range, plus incidental marks and
-lighting — and in a clean render of untextured glasses there may be almost none.
-That is a real reason to doubt the embedding half earns its keep here.
+It buys an ordering where the cheap rule already picks an acceptable viewpoint,
+which with one known kind is often. It is useless when no candidate survives the
+veto, which is what problem 3 exists for. And it needs the two-circle fit to
+state the ambiguity, so a degenerate cluster arrives half described.
 
 ### How it fails
 
-**The completion is invented and looks measured.** An amodal mask for a glass 90
-per cent hidden is almost all guess, yet comes back as a clean outline with a
-high score. Without the occlusion fraction, nothing says so.
+**It predicts a payoff that never arrives.** One look wasted, the pair reported
+unseparated. Bounded and cheap.
 
-**A systematic completion bias.** If the renders over-represent one occlusion
-geometry, every footprint is wrong the same way, which is harder to spot.
+**It predicts no payoff anywhere**, no look is taken, and a merged pair is
+reported as one large glass — the failure `problem.md` watches hardest. The
+guard is not the model: any cluster failing the circle fit gets one look whatever
+the score.
 
-**An identity swap.** Two glasses matched the wrong way round give two confident
-positions, each belonging to the other. It is likeliest when the margin is
-miscalibrated: measure within-object distance on clean renders and every match
-looks confident, so the loop never fires.
+**The log is a biased sample**, holding outcomes only for poses the model
+already favoured, so retraining on it can entrench an early mistake.
+
+**It goes stale silently** when the standoff list or the spawner's ranges
+change. And real glassware removes its input altogether.
 
 ### When it would be the right choice
 
-When objects genuinely hide each other and there are many viewpoints to
-reconcile: a bin, a crowded shelf, a tray of glassware pushed together. Where
-occlusion is the normal case and not the accident, a model that predicts
-the hidden part is not extra machinery — it is the measurement. It is also
-solution 5's partner on real glassware, where no depth is left to cluster.
-
-For this cell it is far more than the problem needs. Four to six glasses stand
-150 mm apart on a bare table, and most pictures show every glass whole. Where one
-does not, solution 3 moves the camera 200 mm and the occlusion goes away, seconds
-of arm time against two trained models. It earns its place when the arm cannot
-reach a clear viewpoint, and here it usually can.
+When the candidate list is long enough that the order matters, a wasted look is
+the worst outcome, and the label is exact and free. All three hold here. Even
+so, build solution 3 first and score a run: if its first choice usually resolves
+the cluster, this earns nothing — and if it does not, the data for fixing that
+is in the log already.
 
 ---
 
-## Solution 9 — an active-vision policy
+## Solution 7 — a segmenter trained from scratch
 
-*Learned, as the decider, and a closed loop by construction. A policy takes the
-current belief about the table and outputs where to point the camera next.*
+*Learned, as the decider, and trained from random initialisation on renders
+alone. One class, one kind of object, one camera — a network that only has to
+work in this cell can be small enough to train in an afternoon.*
+
 ### What it is
 
-A **policy** is a function from what the robot knows to what it does next.
-Here: belief about the table in, next camera pose out. Nobody wrote the rule
-inside it. The rule is a pile of numbers — the **weights** — fitted from
-experience. There are two ways to fit them.
+A **neural network** is a program whose behaviour comes from numbers fitted to
+examples rather than rules anybody wrote. The numbers are **weights**: they
+start as random noise, and **training** nudges each towards the answer wanted.
 
-**Reinforcement learning.** Let the robot try. It looks somewhere, and
-eventually is handed a number — the **reward** — saying how well the whole
-attempt went. Thousands of attempts later, actions that tended to precede high
-reward have become more likely. Nobody says which individual look was good;
-that is inferred from the totals, which is why it takes so many attempts.
-
-**Imitation learning.** Show it the answer instead. Run an expert — a person
-with a joystick, or a slow method already known to be right — record what the
-expert saw and did, and fit the policy to reproduce the choice. This is
-**behaviour cloning**, ordinary supervised learning. It needs no reward, and it
-can never beat the expert it copied.
+This one is trained from that random start on simulator renders and nothing
+else, because **this cell does not need a general-purpose model**: one kind of
+object, one camera, one lighting setup, 320 by 240 pixels. A network that only
+has to work here can be small, and a small one with free labels trains in an
+afternoon.
 
 ### Why anyone does it this way
 
-Scoring a viewpoint properly is expensive; choosing one is cheap. Solution 3's
-score casts a ray per pixel into an occupancy map, for every candidate. A
-policy does one forward pass, and you pay the cost once, offline. And a
-geometric score exists only where somebody can write one down. Here they could.
-Where the cue is subtler, nobody can.
+**Fine-tuning** means taking a network somebody else trained on a large
+collection of photographs and continuing its training on your own small set. It
+is the default advice because **labelled real pictures are scarce**: somebody
+must draw round every object by hand. That does not hold here: Gazebo renders
+unlimited pictures with an exact mask per object, and with no annotator there
+is no annotator error.
+
+The borrowed weights are ruled out anyway. **Every backbone worth borrowing was
+trained on real photographs** — ImageNet and COCO classifiers, Segment
+Anything, any downloadable foundation model — and this cell has none, nor any
+real-world data. Most want CUDA too, and this is an Apple Silicon Mac with no
+NVIDIA card.
 
 ### How it would work here
 
-**The observation.** Not the raw picture — appearance is what will not transfer
-out of Gazebo. Feed it what the geometry produced: the 320 x 360 mm glass zone
-as a grid of 20 mm cells, 16 x 18 = 288 of them, each empty, occupied or
-never-seen; one row per cluster, holding position, fitted diameter, how many of
-the three stations saw it and whether that diameter is in range; and how many
-looks remain. About nine hundred numbers, small enough to train on a CPU.
+**The architecture.** A **U-Net** (Ronneberger et al.,
+[arXiv:1505.04597](https://arxiv.org/abs/1505.04597)) is an encoder-decoder:
+the **encoder** halves the picture repeatedly while widening it — 320×240,
+160×120, 80×60, 40×30 — so later layers see much of the scene, and the
+**decoder** doubles it back. Its crossbars are **skip connections**: each
+encoder level is copied to the decoder, so detail lost on the way down is there
+on the way back.
 
-**The action.** In principle a camera pose: six numbers. In practice, don't.
-Take a fixed list of **candidate poses** — problem 1's `_standoffs()` gives
-nine directions at 380 mm, and three heights make 27 — and let the action be a
-choice among them, plus one meaning **stop**. Discrete is the sane engineering
-choice: every candidate is checked once against the 300–780 mm reach and
-against inverse kinematics, so the policy cannot name a pose the arm will not
-hold, and failures are masked out. A continuous six-dimensional space would
-spend most of its exploration in mid-air.
+Four channels in (red, green, blue, depth), two 3×3 convolutions per level at
+widths 16, 32, 64 and 128, a mirrored decoder, a 1×1 convolution on top:
+**about 480,000 weights**. That is arithmetic on those widths, not a
+measurement, and whether they are *enough* is uncertain.
 
-**The reward, which is the hard part.** Use problem 2's own score sheet: +1 per
-glass correctly separated, −1 per merged pair, −0.05 per look. That needs to
-know which glasses were really there. Gazebo writes down everything it spawned,
-so in simulation the reward is exact. **Reality has no such file.** You could
-pay for a proxy, such as the circle fit passing — but a policy optimises
-exactly what you pay for, and one paid for a passing fit learns viewpoints from
-which it passes, not viewpoints from which the answer is right.
+**Why that is enough.** Capacity is needed for variety, and there is almost
+none here: one class, one camera, one lighting rig, and objects 65 to 230 mm
+tall with footprints 45 to 105 mm, always upright and opaque. A borrowed
+backbone spends most of its weights on the thousand things this cell never
+contains.
 
-| Tool | Link | Licence | Needs CUDA? |
-| --- | --- | --- | --- |
-| Gymnasium | https://github.com/Farama-Foundation/Gymnasium | MIT | no |
-| Stable-Baselines3 | https://github.com/DLR-RM/stable-baselines3 | MIT | no; PyTorch on Apple's MPS backend or CPU |
-| Ray RLlib | https://github.com/ray-project/ray | Apache-2.0 | no |
-| Gazebo Harmonic | https://gazebosim.org/ | Apache-2.0 | no; headless here already |
-| MuJoCo | https://github.com/google-deepmind/mujoco | Apache-2.0 | no for the CPU engine; its MJX fast path wants a GPU, and Apple Silicon support is uncertain |
-| Isaac Lab | https://github.com/isaac-sim/IsaacLab | BSD-3-Clause | **yes** — Isaac Sim needs an NVIDIA RTX card |
+**What it gives, and what it does not.** A per-pixel class map is **semantic**
+segmentation: every glass pixel labelled "glass", and nothing saying which
+glass. Problem 2 wants **instance** segmentation, so the separating has to come
+from somewhere. The two cheap places to put it are a second channel predicting
+the object **boundary**, or a per-pixel **offset towards its own object's
+centre** — and offsets fail more gently, because one bad pixel in a seam
+rejoins two objects. [Solution 8](#solution-8--per-pixel-votes-for-the-centre)
+is that idea in full.
 
-Gymnasium defines the interface — `reset()`, `step(action)`, a reward.
-Stable-Baselines3 supplies the algorithms and is the right first choice here;
-RLlib is for scaling across machines. **Isaac Lab is out**: this is an Apple
-Silicon Mac with no NVIDIA GPU, and everything CUDA-shaped goes with it.
+**The data and the recipe.** Gazebo spawns a random scene and writes the render
+with the per-object masks it already holds. A few thousand scenes is the order
+to aim for; how many is enough is uncertain. Loss is binary cross-entropy plus
+Dice ([arXiv:1606.04797](https://arxiv.org/abs/1606.04797)), which scores
+overlap, not pixel counts. Adam, batches of 16, epochs until the held-out loss
+stops falling. [PyTorch](https://pytorch.org/) (BSD-3-style
+[licence](https://github.com/pytorch/pytorch/blob/main/LICENSE)) with
+[NumPy](https://numpy.org/) and [SciPy](https://scipy.org/) (both BSD-3) is all
+it takes. Any ready-made U-Net defaults to an ImageNet encoder; that switch has
+to be off. Time on **MPS**, PyTorch's route to Apple's GPU, is **uncertain**:
+time one epoch and multiply, and expect CPU fallbacks.
 
-**How long.** An episode is at most six looks, each an arm move of a few
-seconds, plus a reset — call it ten seconds of wall clock headless, a figure to
-measure rather than guess. At 50,000 episodes that is five days on one process,
-under a day with eight in parallel. A gradient step is milliseconds, so **the
-simulator is the bottleneck, by three orders of magnitude.**
+**Domain randomisation.** [Gazebo](https://gazebosim.org/) (Apache-2.0) will
+render the same table under the same light for ever, and a network given a
+constant will use it. Randomising (Tobin et al.,
+[arXiv:1703.06907](https://arxiv.org/abs/1703.06907)) varies everything you are
+not teaching — light, textures, glass tint, camera pose, exposure, noise, how
+many glasses and where — so shape is all that is left to learn. It matters
+**inside one simulator**, because this cell's own lighting and table will
+change during the project's life.
 
 ### The feedback loop
 
-This is not a solution with feedback bolted on. It **is** the loop.
+A per-pixel model returns a **confidence map** rather than a mask: a
+probability at every pixel, near 1 where it is sure the pixel is glass, near 0
+where it is sure it is not, and near 0.5 where it cannot tell.
 
-1. **Observe.** Run the three-station survey, cluster, fit circles, build the
-   observation.
-2. **Choose.** The policy returns one of the 27 candidates, or `stop`. Those
-   failing reach or IK were masked before it chose.
-3. **Move.** Plan and execute, a few seconds. If the plan fails, mask that
-   candidate and return to step 2.
-4. **Re-observe.** Take the pictures, fold the new points into the same
-   clusters, refit, rebuild the observation.
-5. **Stop** on `stop`, or when the six-look budget runs out. Clusters still
-   failing their fit are reported unseparated — the handover to problem 3.
+Two things read off it: **how much** doubt surrounds an object — the fraction
+of its pixels between 0.3 and 0.7 — and **where** it sits. A clean glass is
+confident but for its rim; doubt in a band across a region's middle is the
+signature of a second glass behind it.
 
-The belief is **cumulative** — each look adds points to the same clustering
-rather than starting again — and the **budget is external, not learned**, so a
-policy that never says `stop` wastes six looks rather than running forever.
+So a region far more doubtful than its neighbours is one to photograph again,
+and
+the band gives the direction: look along it, not across. Cap it at two extra
+looks, then report the object doubtful rather than guess.
 
 ### A worked example
 
-Glass A at x = 0.40, y = −0.30, 500 mm from the base. Glass B at x = 0.52,
-y = −0.39, 650 mm out and 150 mm from A. B sat behind A from two of the three
-stations, and the merged cluster fits a circle 165 mm across against the kind's
-60–90 mm range. Two of the nine directions lie along the A–B line, and at all
-three heights they fail on reach alone: 380 mm back from A lands either 120 mm
-from the base or 880 mm out, against limits of 300 and 780.
+At survey height, 450 mm up, fx = 277.1, so one pixel covers 450 / 277.1 =
+**1.62 mm**. Two glasses of a kind whose footprint runs 60 to 90 mm stand
+180 mm apart, in line with the camera. Each is 78 mm across, or **48 pixels**,
+and their centres land **30 pixels** apart, so the silhouettes overlap and the
+class map returns one region **79 pixels** wide.
 
-The policy picks candidate 14, the perpendicular, camera at (0.628, 0.004). One
-move, about three seconds. The cluster resolves into discs of 76 mm and 73 mm,
-both in range, so the policy says `stop` and the episode returns
-2 − 0.05 = **1.95**.
+The confidence map says more. Across the three unoccluded glasses 2 per cent of
+pixels fall between 0.3 and 0.7, all on the rim; in this region it is 11 per
+cent, running in a band 4 pixels wide down the middle, where the near glass's
+edge crosses the far one.
 
-Solution 3's arithmetic chose that same viewpoint before the planner was asked
-anything, and can say why: from the blocked direction B spans
-105 x 277.1 / 530 ≈ 55 of the 320 pixels directly behind A. The policy chose
-candidate 14 with a value of 0.83, and can say nothing.
+So the arm looks again along that band, from 380 mm back, where one pixel
+covers 380 / 277.1 = **1.37 mm**. The second picture returns two regions, each
+confident to its rim.
 
 ### What it needs
 
-A Gymnasium environment round the existing cell: reset spawns four to six
-glasses, step moves the arm and re-runs perception, reward reads the spawn
-record. That wrapper is the real work, because it must reset Gazebo thousands
-of times without leaking processes. Then Stable-Baselines3, PyTorch on MPS or
-CPU, and days of machine time. No labelled pictures, and no NVIDIA card.
+PyTorch on MPS, NumPy and SciPy, all present. Gazebo, plus a randomising
+spawner and a script that dumps each render with its masks. A version-pinned
+weights file under a megabyte. No CUDA, no downloaded weights, no annotator.
 
 ### What it is good at
 
-Run-time speed: choosing is a forward pass, microseconds against the seconds a
-move costs. Cues nobody wrote down, where a viewpoint pays off for reasons the
-circle fit misses. And it optimises the thing itself, merges and splits, where
-information gain is only a proxy for them.
+**It needs no depth.** The map is learned from colour, so it survives the day
+the glasses become real glass and clustering loses its input.
+
+**It is small enough to retrain on a whim**: change the lighting or the kind,
+regenerate and retrain in an afternoon, where a fine-tune costs most of a day.
 
 ### What it is bad at
 
-It cannot explain itself, and here that is practical rather than philosophical.
-Problem 2 says the failure to watch hardest is the merged pair, because it
-looks plausible downstream. A policy that stops one look early produces exactly
-that failure, and reports confidence while doing it.
+**It does not separate instances on its own.** A class map is one region per
+clump; the separating has to be bolted on — solution 8.
 
-It is also more machinery than this problem has earned. What it would learn is
-computable: the kind is known, the diameter range is known, occlusion is a
-line-of-sight test. Where a geometric score exists and is auditable, a network
-trades the explanation for a speed-up.
+**It says nothing in millimetres.** Every number the arm acts on comes from
+measured depth.
+
+**It carries a size-shaped prior nobody can read.** Trained on one kind's
+range, it has learned that range — glass sizes in a file, which the report
+should admit.
 
 ### How it fails
 
-**Reward hacking.** Charge too much per look and it stops at once and eats the
-merge penalty; too little and it burns six looks every run. That balance is not
-derivable, and each attempt costs another training run.
+**It learns Gazebo.** A network trained only on renders has fitted one
+renderer's shading, so pointed at a real camera it will not work, and domain
+randomisation narrows that gap without closing it. **That is an accepted trade
+here**, because this cell only ever runs in Gazebo, and stops being acceptable
+the moment a real arm is involved.
 
-**Sim-to-real drift.** Milder than for contact tasks — no friction, no
-deformation, no impact, and what matters is straight lines from camera to
-object, which Gazebo gets right. Feeding clusters rather than pixels removes
-most of the appearance gap too. But the policy learned this simulator's depth
-noise and its dropout at glancing angles, and a real camera that loses the far
-rim at 60 degrees shifts every observation.
-
-**Silent staleness.** Change the kind, the lighting or the standoff list and
-the weights describe a cell that no longer exists. The tests still pass.
-
-**Real glassware removes the input**, which is built from clusters, and
-clusters from depth that real glass does not return.
+**It is confident and wrong.** A merged pair can come back as one region with a
+clean edge and no doubt in it. Nothing fires the loop, and one large glass is
+reported. The guard is not the model but the circle fit against the kind's
+range.
 
 ### When it would be the right choice
 
-When the doubt stops being a short list. Here, one known kind and a diameter
-range make "one glass or two?" arithmetic, and auditable. Problem 4 has several
-kinds, some never measured, and the union of their ranges is wide enough that
-the circle fit stops deciding much. A policy that learned which looks resolve
-ambiguity has something to offer there.
+When the labels are free and the problem is narrow — one class, one camera, one
+cell, and a simulator that labels pictures while you sleep. Those two are the
+condition under which training from scratch beats fine-tuning, and it is wrong
+the moment either goes.
 
-One shape is worth keeping even so. Solution 3's score is a working expert and
-runs in simulation for free, so behaviour cloning against it gives a fast
-policy with no reward design at all — and one that can only approach what it
-copied, having lost the explanation that made the original worth having.
+---
+
+## Solution 8 — per-pixel votes for the centre
+
+*Learned, as the decider. Predict, at every object pixel, a short vector
+pointing to the middle of the object that pixel belongs to — and separation
+becomes counting clusters of votes.*
+
+### What it is
+
+A network that labels every pixel "glass" or "not glass" is doing **semantic
+segmentation**. Every glass pixel comes back labelled "glass", and nothing says
+*which* glass, so two glasses whose outlines touch come back as one region —
+and one region means one glass downstream. Training does not fix it: a class
+label has no field in it for which object.
+
+So ask the network for something else. At every glass pixel, predict **a small
+vector pointing to the middle of the glass that pixel belongs to**. Pixels on
+the left glass point right, those on the right glass point left, and following
+every arrow to its end lands all of one glass's arrows on one spot. Separation
+becomes **counting clusters of votes**, which is easy.
+
+### Why anyone does it this way
+
+The idea predates neural networks. The **generalised Hough transform**
+(Ballard, *Pattern Recognition*, 1981) lets every edge point vote for where the
+object's centre would be, then looks for peaks — solution 1's Hough circle
+detection, generalised. The learned version replaces the hand-built vote table
+with a network trained on examples: first, I believe, **Hough Forests** (Gall
+and Lempitsky, CVPR 2009), though the neural descendants go under several names
+and I am not confident which is canonical.
+
+A vote is **local evidence for a global claim**. One pixel cannot count the
+glasses on the table, but it can know which way the middle of its own glass
+lies, and hundreds of votes per centre mean a few wrong ones do not move it.
+
+### How it would work here
+
+**Vote in millimetres on the table, not in pixels in the picture.** That is
+what makes it work on a small budget.
+
+The table height is known and the glasses are opaque, so depth comes back for
+every glass pixel, and solution 2 already drops each one onto the table. So
+**every glass pixel already has a position on the table in millimetres** before
+the network is asked anything, and its job shrinks to one question: how far and
+which way to my glass's footprint centre?
+
+**The target is then bounded and scale-free.** Footprints are 45 to 105 mm
+across, so the offset never exceeds about 53 mm, at any range or angle. A
+network predicting *pixel* offsets would have to learn that the same glass at
+300 mm needs twice the offset it needs at 600 mm — that is, learn the camera.
+In table millimetres there is none left to learn.
+
+**The votes land where the answer is obvious.** On the table a glass is a disc
+45 to 105 mm across, and its votes collapse to a point at its centre, where
+solution 2's circle fit and diameter check run on them unchanged.
+
+**The mask is free.** Nothing need be learned to decide *whether* a pixel is a
+glass pixel: the existing test, 5 to 260 mm above the table top, says so. So
+the network needs **two output channels**, dx and dy.
+
+*The network.* A small U-Net: in, 320x240 and four channels, three colour plus
+height above the table; out, two channels the same size. Loss, smooth L1 on dx
+and dy in millimetres, over glass pixels only. **Trained from scratch**, since
+a torchvision ResNet backbone would be downloaded weights, so the substitute is
+a smaller network, of uncertain parameter count. PyTorch (BSD-3,
+https://github.com/pytorch/pytorch/blob/main/LICENSE) on Apple's MPS backend,
+there being no NVIDIA GPU; a few hours is the target, uncertain, to be timed.
+
+*The data.* Gazebo Harmonic (Apache-2.0, https://gazebosim.org/) renders
+unlimited pictures with exact per-object masks and positions, free, and the
+label is arithmetic: for a pixel in glass *k*'s mask, target = *k*'s footprint
+centre minus that pixel's own table position. Spawn pairs 60 to 120 mm apart,
+where the ambiguity is.
+
+*Votes to objects.* Put every vote down as a dot on the table. Slide a circular
+window of radius 30 mm to the average of the dots inside it until it
+stops moving; every start ending in the same place is one peak. That is **mean
+shift**, in scikit-learn as `sklearn.cluster.MeanShift` (BSD-3,
+https://scikit-learn.org/stable/modules/generated/sklearn.cluster.MeanShift.html).
+One peak is one glass; its voters are its mask.
+
+### The feedback loop
+
+**The spread of the votes is a confidence, and it comes free.** Measure the RMS
+distance of votes from their peak on held-out renders: that is the spread when
+the answer is right.
+
+**Bimodal.** Two tight knots inside one cluster means two glasses, and the
+peaks say where both are. Accept the split only if both circle fits land in the
+kind's range.
+
+**Smeared.** One broad cloud, no peak sharper than the rest, is the network
+unsure, and re-clustering will not manufacture an answer. **An unsure cluster
+is a reason to take another picture from a different angle**, and the cloud
+says which: if the smear has an axis, look perpendicular to it, 380 mm back — a
+next-best-view with no search in it. Cap at two extra looks, then report the
+pair unseparated for problem 3.
+
+### A worked example
+
+At 450 mm up one pixel covers 1.6 mm, so a glass 75 mm across is 47 pixels
+wide and holds roughly 1,700 votes.
+
+*Where solution 2 fails.* Two such glasses stand 90 mm apart, footprints 15 mm
+from touching, so at a 25 mm grouping distance they are one group. The votes do
+not care: peaks at (0.42, −0.31) and (0.51, −0.30), RMS 6 and 8 mm, both inside
+the held-out spread. Circle fits 76 and 73 mm, inside the kind's 60 to 90 mm
+range.
+
+*Unsure.* A glass 80 per cent hidden leaves about 340 votes, all from one
+crescent. Its peak sits 9 mm from the truth — the votes agree with each other
+and are wrong the same way — and its RMS is 19 mm, three times the held-out
+figure. One look perpendicular to the line joining it and its occluder brings
+its votes back to 6 mm.
+
+### What it needs
+
+The depth camera, the known table height and the camera pose, which the cell
+has. PyTorch on MPS, scikit-learn and Gazebo — licences above, none needing
+CUDA or downloaded weights. On top of solution 2: a label generator, a training
+script, a version-pinned weights file, and forty lines of peak-finding.
+
+### What it is good at
+
+**It separates glasses that touch**, which solution 2 cannot, because votes
+need no gap — only enough pixels on each glass. And **its output is in
+millimetres**, so the arithmetic still decides: every peak still goes through
+the circle fit and the kind's diameter range.
+
+### What it is bad at
+
+**It learns the renderer.** Trained only on Gazebo output, it has learned this
+simulator's depth noise, dropout and lighting. Domain randomisation mitigates
+that, and with no real-world data nothing checks whether it worked.
+
+**It inherits the table assumption.** A table height 5 mm out moves every
+vote, quietly.
+
+**It holds a size-shaped prior**, the offsets being millimetres of one kind's
+radius, which is glass sizes in a file nobody can read.
+
+### How it fails
+
+**Too few votes.** A heavily occluded glass votes from a crescent, biased
+towards its visible side, and below a few hundred votes it is doubtful on count
+alone.
+
+**Two peaks on one glass**, splitting it. Loud: both fits come out too small
+for the kind.
+
+**One peak on two glasses**, merging them — quiet, and the failure to watch
+hardest. The circle fit is the guard: pixels fitting a 165 mm circle are not
+one glass, whatever the votes say.
+
+### When it would be the right choice
+
+When glasses genuinely touch. Solution 2 stops there, and this is the cheapest
+learned thing past that line: the mask free from the table height, the labels
+free from the simulator.
+
+It is wrong while the glasses stand 150 mm apart, which 25 lines of clustering
+answer with no training. And it stops existing on real glassware, where there
+is no depth and so nothing to vote with.
+
+---
+
+## Solution 9 — self-supervised from the arm's own movement
+
+*Learned, as the decider, with no labels at all. The arm knows exactly how it
+moved the camera, so the geometry between two pictures of a still scene is a
+free training signal — one that needs neither a human nor the simulator's
+ground truth.*
+
+### What it is
+
+**Supervised learning** needs a right answer written beside each example. Those
+answers are the **labels**, and they are the expensive part. Here a label is a
+picture with every pixel marked "glass 3" or "glass 4", drawn by hand thousands
+of times. **Self-supervised learning** removes the human. The labels are
+computed from the data itself, by something already known to be true, and here
+that is geometry.
+
+The camera is on the wrist, so its pose comes from the joint encoders, exact to
+a fraction of a millimetre. Two pictures of a still scene from two known poses
+are not two unrelated pictures. Every surface point in the first has one
+correct place in the second, and where it lands depends only on how far away it
+is. Near points shift a long way across the image, far points less. That is
+**parallax**: a constraint, not a guess.
+
+The constraint is the training signal. It needs no human and — the part worth
+noticing — **no simulator ground truth either**: only the encoders and the
+pictures, which a real arm also has. So the same loop trains on hardware.
+
+What it learns is which pixels belong together. Points on one glass shift by
+one amount, points on the glass behind by a different amount, and pixels that
+move together are one thing. The Gestalt psychologists called that **common
+fate**.
+
+### Why anyone does it this way
+
+Because labelling is the bottleneck, and here it is hopeless: with identical
+glasses overlapping, the boundary between two of them is a human's guess too.
+
+Two named neighbours. **Motion segmentation** groups pixels by common motion,
+and is the classical form of this idea; layered models go back to Wang and
+Adelson's *Representing Moving Images with Layers* (1994 — confident of the
+paper, less so of its details). It assumes the *objects* move. Here they do
+not.
+
+**Self-supervised depth and ego-motion learning** is closer. SfMLearner ([Zhou
+et al., CVPR 2017](https://github.com/tinghuiz/SfMLearner), MIT) trains depth
+and pose networks together, unlabelled; Monodepth2 ([Godard et al., ICCV
+2019](https://github.com/nianticlabs/monodepth2)) refines it under **Niantic's
+own non-commercial licence**. Both must *estimate* the camera motion, and that
+estimate is where most of their error lives. Here it is not estimated but
+**commanded**.
+
+### How it would work here
+
+**The data already exists.** Each station takes two pictures 120 mm apart; a
+picture costs milliseconds and an arm move seconds, so take five along that
+slide. A few hundred scenes give tens of thousands of pairs.
+
+**An embedding** is a short list of numbers attached to something, arranged so
+that distance between lists means similarity. The network returns, per pixel of
+the 320×240 picture, a vector of perhaps 16 numbers. Two pixels on one glass
+point nearly the same way; two on different glasses do not. Nothing names a
+glass — the vectors carry only *same* or *different*.
+
+**Contrastive learning** fits them. The loss has two halves: pull together, so
+a pixel and another the geometry says belongs with it move closer; push apart,
+so pixels on different surfaces move further. It is low only when the true
+partner is nearer than the distractors. SimCLR ([Chen et
+al.](https://arxiv.org/abs/2002.05709)) and MoCo ([He et
+al.](https://arxiv.org/abs/1911.05722)) are the whole-image references.
+
+**Where the pairs come from.** Warp the first picture into the second using a
+predicted depth and the known pose. Where the warp lands on the right
+brightness, the depth was right — trained by pictures and encoders alone.
+Pixels whose shifts then agree are positives; those differing by more than the
+noise are negatives.
+
+**Licences.** [PyTorch](https://pytorch.org/) (BSD-3-style,
+[licence](https://github.com/pytorch/pytorch/blob/main/LICENSE)) on MPS;
+[Gazebo Harmonic](https://gazebosim.org/) (Apache-2.0) for renders;
+[NumPy](https://numpy.org/) (BSD-3) for geometry. **No pretrained weights are
+downloaded** — it trains from scratch on this cell's pictures. No CUDA.
+
+### The feedback loop
+
+When the embedding cannot separate two pixels, the arm buys a clearer answer by
+moving further.
+
+A surface at distance *z* shifts by *b*·fx/*z* pixels when the camera slides
+sideways by *b*, so two surfaces at *z₁* and *z₂* differ by *b*·fx·(1/*z₁* −
+1/*z₂*). That difference is the separation the embedding needs. With fx = 277.1
+and the survey's b = 120 mm, *b*·fx = 33,252.
+
+- Glasses at 500 and 650 mm: 66.5 − 51.2 = **15.3 pixels** apart, which at 1.6
+  mm per pixel is 24 mm of image motion between them. Settled.
+- Glasses at 500 and 520 mm: 66.5 − 63.9 = **2.6 pixels**, near whatever the
+  matcher's precision turns out to be. The embedding may fairly be unsure.
+
+Separation is **linear in the slide**, which makes it a dial. In that second
+case each extra millimetre buys 0.0213 pixels: three pixels needs **141 mm**,
+eight pixels **375 mm**. So the answer to an ambiguous pair is not a bigger
+network. It is: slide 375 mm instead of 120 and ask again — a measurement
+chosen to resolve one named doubt. Past a few hundred millimetres the glasses
+leave the frame, and it becomes solution 3's new station.
+
+### A worked example
+
+A station 450 mm above the table returns one blob 164 pixels across — 262 mm on
+the table, against the kind's 60–90 mm range. Two glasses, in line.
+
+Between that station's two pictures the near glass's pixels shift about 66
+pixels and the far glass's about 51. The network was fitted so that pixels
+whose shift agrees share a vector, so the two populations land in different
+directions in the embedding space. Clustering returns two regions, and the
+boundary runs where the shift changes — an occlusion edge, not a brightness
+edge, so the identical colour costs nothing.
+
+Both regions go through solution 2's arithmetic, accepted only if both fitted
+diameters land in range. The embedding proposes; the circle fit decides.
+
+### What it needs
+
+PyTorch on MPS, and Gazebo renders of a few hundred scenes with the joint
+encoders logged beside every picture. No labels, no pretrained weights, no
+NVIDIA card. The spawn record scores the result; it never trains it.
+
+### What it is good at
+
+It learns a boundary nobody can write down, from free data, and is indifferent
+to colour. Because the signal is the encoders rather than the simulator, the
+same code retrains itself on a real cell.
+
+### What it is bad at
+
+**Nothing moves in this scene except the camera.** The only differential signal
+is parallax, so what the network learns is a depth-discontinuity detector
+wearing an embedding's clothes.
+
+**It returns affinity, not a count.** It says two pixels are alike or unalike;
+it never says "four glasses". Something must still cluster the vectors and
+decide how many groups there are — the merged pair again.
+
+### How it fails
+
+**Identical objects at equal range.** Two glasses 20 mm apart in depth separate
+by 2.6 pixels, and by nothing if they are equidistant. Appearance cannot break
+the tie, because the kind is one kind.
+
+**Textureless surfaces.** The photometric loss needs brightness variation to
+match on; flat lighting gives the warp nothing to grip.
+
+**Staleness.** Change the lighting or the kind and the embedding describes a
+cell that no longer exists, while the tests still pass.
+
+**Confidence where it is wrong.** A merged pair returns one tidy region with no
+complaint — the failure `problem.md` watches hardest.
+
+### When it would be the right choice
+
+When labels are impossible and the objects are not one known kind — problem 4
+rather than this one. Here the depth camera measures the parallax directly and
+solution 2 clusters it in millimetres.
+
+It earns its place the day the depth fails. On real glassware there is nothing
+to cluster, and this is one of the few methods here that could still be
+trained, because its supervision is the arm's own motion — though whether a
+photometric loss survives a transparent surface is uncertain.
 
 ## The decision
 
-**Solutions 2 and 3 are the core. Solution 6 is the first learned thing worth
-adding. Solution 4 is the fallback behind it. Solutions 7, 8 and 9 are answers
-to a different cell, and it is worth being exact about which.**
+**Solutions 2 and 3 are the core. Solution 5 is the first learned thing worth
+adding, and solution 6 is the second. Solutions 7, 8 and 9 are the sim-only
+learned answers, and it is worth being exact about when each would earn its
+place.**
 
 ### Why the core is programmed
 
 Problem 2 gives away two things for free, and together they make the separation
-arithmetic rather than inference.
-
-**Every object is one known kind**, so its footprint is a circle whose diameter
-sits inside a range the project already holds. **And they are opaque**, so the
-depth camera can see them. Group the points on the table, fit a circle, check
-it against the range: a footprint too wide for one object is a merged pair, said
-in two numbers, and fitting two circles says where the two of them are.
+arithmetic rather than inference. **Every object is one known kind**, so its
+footprint is a circle whose diameter sits inside a range the project already
+holds. **And they are opaque**, so the depth camera can see them. Group the
+points on the table, fit a circle, check it against the range.
 
 Nothing learned improves on that, because there is nothing left to infer.
 
 ### Why one loop is chosen with it
 
-Separation cannot fix a viewpoint. No amount of cleverness applied to a picture
-of an object standing behind another object produces the side-on measurement
-the next step needs. Solution 3 is chosen alongside solution 2 because it
-answers the *other* difficulty, and the two barely overlap.
+Separation cannot fix a viewpoint. No cleverness applied to a picture of an
+object standing behind another object produces the side-on measurement the next
+step needs. Solution 3 answers the *other* difficulty, and the two barely
+overlap.
 
-Solution 3 is the geometric version of the loop: candidate viewpoints filtered
-for reach and occlusion, scored by a rule. Solution 5 is the same loop with a
-learned score, and solution 9 is the same loop with the whole thing learned.
-Start with the rule. It is auditable, it needs no data, and it is a fair
-baseline for deciding whether either of the others is worth its cost.
+Solutions 3, 4 and 6 are the same loop with three different scores: a rule, an
+uncertainty estimate, and a prediction of whether the picture will change the
+answer. Start with the rule. It is auditable, needs no data, and is the
+baseline that decides whether either of the others is worth its cost.
 
-### Why the verifier is the learned part to add first
+### Why the verifier comes first, and the viewpoint predictor second
 
-Of the six solutions with a learned component, solution 6 is the one to build,
-and the reasons generalise beyond this problem.
+**Solution 5** learns the one thing the rules are worst at — the ambiguous
+cluster — on an input small enough that a gradient-boosted tree trains in
+minutes. Its mistakes cost one extra picture. It degrades to the pure-geometry
+answer if the weights go missing. And its most useful output is "I cannot
+tell", which is what makes the thing a loop.
 
-**It learns the one thing the rules are worst at**, rather than replacing
-something the rules already do well. The geometry separates almost everything;
-what it handles badly is the ambiguous cluster.
+**Solution 6** is the cheapest real upgrade to solution 3, and the reason is
+the shape of its training problem rather than its cleverness. Predicting
+whether a viewpoint will resolve an ambiguity is *supervised learning on a
+label the simulator can produce exhaustively*. Spawn an arrangement, note what
+is ambiguous, take the picture, record whether it helped. No episodes, no
+reward design, no policy — and it gets most of what an active-vision policy
+offers at a fraction of the cost. That comparison is the single clearest case
+in this document for asking what shape a learning problem really has before
+reaching for the heaviest tool that fits it.
 
-**Its input is small and structured**, so the model is small. A handful of
-features and a gradient-boosted tree trains in minutes on a laptop, which
-matters on hardware with no NVIDIA GPU.
+### What the three learned solutions are for
 
-**It is a verifier, so its mistakes are cheap.** A wrong verdict costs one more
-picture. Compare that with solution 7, where a wrong mask is acted on.
+All three are sim-buildable, and none is currently needed — because the
+geometry works. They become the answer when it stops working.
 
-**It degrades to the pure-geometry answer.** Delete the weights file and the
-system still runs, a little worse. Very few learned components have that
-property, and it is worth a great deal.
+**Solution 7**, a segmenter trained from scratch, is what to reach for if the
+depth reading degrades — a noisier sensor, a shinier object, a surface the
+camera reads badly. It needs only colour.
 
-**And its most useful output is "I cannot tell"**, which is what turns the whole
-thing into a loop. A verifier that only ever says yes or no has thrown away the
-information that would have told the arm to go and look again.
+**Solution 8**, per-pixel centre votes, is the learned answer that actually
+*separates*, rather than labelling pixels and leaving the separation to
+something else. If a learned perception step is ever going to replace solution
+2, this is its shape, and the detail that makes it fit here is predicting the
+offset in table millimetres rather than in pixels.
 
-Solution 4 sits behind it as the fallback: when the verifier is unsure *and*
-another viewpoint has not settled it, a promptable segmenter is a cheap second
-opinion that needs no training at all.
-
-### What the three learned solutions are actually for
-
-They are not turned down because they are learned. Each answers a question this
-cell does not ask.
-
-**Solution 7** is the answer the day the objects are transparent. Then there is
-no depth to cluster and solutions 1 to 6 do not run at all. Its cost here —
-weights to keep in step, a training loop in front of every experiment, no
-explanation — buys nothing, because a distance comparison already does the job.
-
-**Solution 8** is the answer when objects genuinely hide each other. Here they
-stand 150 mm apart and the arm can usually find a clear line of sight, so
-predicting the hidden half of an object is machinery aimed at a difficulty that
-mostly is not present.
-
-**Solution 9** is the most intellectually satisfying entry on the list and the
-hardest to justify. A geometric viewpoint score can be printed, argued with and
-corrected. A policy's choice cannot. When a score is computable, prefer the
-score.
+**Solution 9**, self-supervision from the arm's own movement, is the one with a
+property the others lack: it needs no labels at all, **not even the
+simulator's**. That means it is the only learned solution here that would
+transfer to a real table unchanged. On a project whose simulator is a stand-in
+for a real cell, that is worth more than its accuracy.
 
 ### What would be built, in order
 
@@ -1766,33 +1783,31 @@ score.
 2. **The viewpoint filter** — the safety half of solution 3. Reject occluded
    and unreachable poses before asking the planner, and report objects with no
    viewpoint left.
-3. **The extra look** — the loop half of solution 3, with a rule for a score
+3. **The extra look** — the loop half of solution 3, with a rule for the score
    and a budget of one or two extra looks.
-4. **The verifier** — solution 6, once a run has been scored and the numbers
+4. **The verifier** — solution 5, once a run has been scored and the numbers
    say the ambiguous cluster is a real share of the failures. Not before.
-5. Nothing else, unless the objects change.
+5. **The viewpoint predictor** — solution 6, once step 3 has produced enough
+   looks to learn from, which it does in the course of ordinary running.
 
-Steps 1 to 3 are programmed. Step 4 is where a model earns its place, and the
-order is the point: **measure which failure you actually have before choosing a
-component to fix it.**
+Steps 1 to 3 are programmed. Steps 4 and 5 are where a model earns its place,
+and the ordering is the argument: **measure which failure you actually have
+before choosing a component to fix it.**
 
 ### How it would be known to work
 
 The simulator writes down every object it spawned — a file the report may read
-and the arm may not. So the numbers are all available:
+and the arm may not:
 
 - **merged**: two real objects reported as one. Watch this hardest; it is the
   failure that looks plausible downstream.
 - **split**: one real object reported as two. It looks wrong immediately, so it
   is the safe direction to be wrong in.
 - **position error** per object, against the truth.
-- **extra looks spent**, and how many of them changed the answer. A loop whose
-  extra looks never change anything is a loop worth deleting.
+- **extra looks spent**, and how many changed the answer. A loop whose extra
+  looks never change anything is a loop worth deleting.
 - **no viewpoint**: objects handed on to problem 3, which is a result rather
   than a failure.
-
----
-
 ## Where the chosen solution can fail
 
 **Glasses that genuinely touch still cluster into one.** Distance separates them
@@ -1813,4 +1828,4 @@ height check catches the impossible pairings and not the plausible ones.
 
 **None of it runs on real glassware**, for the reason the decision gives.
 
-← [The problem](problem.md) · [Problem 3 — moving them apart](../problem-3/) →
+← [The problem](problem.md) · [The ones that need more than a simulator](learned-with-hardware.md) · [Problem 3 — moving them apart](../problem-3/) →

@@ -8,8 +8,9 @@ table**, not by lifting them.
 - [**The problem**](problem.md) — why dragging rather than lifting, the three
   distances that matter, how low a push has to be and why that is a property of
   the glass, and what "done" means.
-- [**Solution overview**](solution-overview.md) — **ten solutions in full**:
-  four programmed, three hybrid, three learned. It starts with the vocabulary
+- [**Solution overview**](solution-overview.md) — **eleven solutions in full**:
+  four programmed, four hybrid, three learned, and every one of them buildable
+  inside the simulator. It starts with the vocabulary
   and the contact mechanics, because a push is less simple than it looks, and
   then with two ideas the rest depends on — where a learned component can sit
   in a pipeline, and what it means for a system to choose its own next
@@ -17,6 +18,11 @@ table**, not by lifting them.
   does it like that, how it would work here, its feedback loop if it has one, a
   worked example with real numbers, what it needs, what it is good and bad at,
   how it fails, and when it would be the right choice.
+- [**The ones that need more than a simulator**](learned-with-hardware.md) —
+  two good answers that were moved out: model-free reinforcement learning,
+  which wants about eleven days of continuous simulation, and imitation from a
+  scripted expert, which wants a transformer or a diffusion policy trained on a
+  machine with a graphics card.
 
 ## The short version
 

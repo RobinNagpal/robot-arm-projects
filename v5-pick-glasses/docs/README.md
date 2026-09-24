@@ -63,10 +63,14 @@ means. After that they differ, because the problems do:
 - **Problems 2 and 3** are not the whole pipeline and do not have all the
   steps. Problem 2 stops at a set of pixels per glass; problem 3 stops at
   glasses far enough apart to be gripped. Each has a `solution-overview.md`
-  instead — nine and ten solutions respectively, grouped as programmed, hybrid
-  and learned, with which one is chosen and why. Both open with the two ideas
-  the comparisons turn on: where a learned component can sit in a pipeline, and
-  what it takes for a system to choose its own next measurement.
+  instead — nine and eleven solutions respectively, grouped as programmed,
+  hybrid and learned, with which one is chosen and why. Both open with the
+  three ideas the comparisons turn on: where a learned component can sit in a
+  pipeline, what it takes for a system to choose its own next measurement, and
+  the rule that every solution in them can be built inside the simulator. Each
+  folder also has a `learned-with-hardware.md` holding the answers that cannot
+  — a foundation model, a fine-tune, a reinforcement-learning policy — beside
+  the condition each one fails.
 
 ## What does not work yet
 

@@ -154,10 +154,46 @@ That third point reverses an instinct most developers bring with them. The
 thing to economise on is not computation. It is the number of times the arm has
 to move.
 
-## The ten solutions, at a glance
+## Everything here runs in simulation
 
-Four programmed, three hybrid, three learned. They are grouped by family and,
-within each family, ordered by how much machinery they need.
+One rule has been applied to every solution below, and it is worth stating
+before the list because it removed some obvious candidates.
+
+**A solution is in this document only if everything it needs can be produced by
+Gazebo on the machine this project runs on** — an Apple Silicon Mac with no
+NVIDIA graphics card, no robot on a bench, and no real-world data. Four
+conditions:
+
+1. **No artefact from outside.** Any model has to be trainable from what the
+   simulator renders. A downloaded file of weights fitted to photographs of the
+   real world is not reproducible here, however good it is.
+2. **No sensor the simulator does not have.** This cell has a depth camera, pad
+   contact sensors and a wrist force-torque sensor. Anything else is a purchase
+   order.
+3. **No graphics card it has not got.** Anything needing compiled CUDA kernels
+   is out.
+4. **Hours, not days.** A method needing a week of continuous simulation to
+   train cannot be iterated on, and a method you cannot iterate on will not get
+   debugged.
+
+That rule is not a view about learned methods. Several good answers fail it,
+and they are written up in full in
+[`learned-with-hardware.md`](learned-with-hardware.md) beside the condition
+each one fails — a promptable foundation model, a fine-tuned instance
+segmenter, and the rest. None of them needs a different *algorithm* to become
+usable. They need a different *setup*.
+
+The rule does have one consequence worth seeing coming. It pushes the learned
+solutions towards **small models trained from scratch on synthetic data**, and
+away from the fine-tune-a-big-model recipe that is the default advice
+everywhere else. For a cell that handles one kind of object, under one lighting
+setup, through one camera, that turns out to be less of a sacrifice than it
+sounds — and the sections below say where it does cost something.
+
+## The eleven solutions, at a glance
+
+Four programmed, four hybrid, three learned — and every one of them buildable
+inside the simulator.
 
 | | Solution | Family | Where the learned part sits | Closed loop? | Verdict |
 | --- | --- | --- | --- | --- | --- |
@@ -168,9 +204,10 @@ within each family, ordered by how much machinery they need.
 | 5 | [A learned residual on the push model](#solution-5--a-learned-residual-on-the-push-model) | hybrid | proposer | **yes** | trains itself as it runs |
 | 6 | [Geometry generates, a model ranks](#solution-6--geometry-generates-a-model-ranks) | hybrid | ranker | partly | safe, and worth little here |
 | 7 | [A learned change-verifier](#solution-7--a-learned-change-verifier) | hybrid | verifier | **yes** | **the first learned thing worth adding** |
-| 8 | [Learn to push](#solution-8--learn-to-push) | learned | decider | **yes** | for a jumble, not for five discs |
-| 9 | [Learn a forward model, then plan](#solution-9--learn-a-forward-model-then-plan-against-it) | learned | decider | **yes** | the best of the three learned ones |
-| 10 | [Copy a scripted expert](#solution-10--copy-a-scripted-expert) | learned | decider | partly | compresses a planner it needs first |
+| 8 | [A learned early-abort](#solution-8--a-learned-early-abort) | hybrid | verifier, during the act | **yes** | the only one that can *prevent* a topple |
+| 9 | [Identify the contact parameters](#solution-9--identify-the-contact-parameters) | learned | proposer | **yes** | gives the physics its missing number |
+| 10 | [Learn a forward model, then plan](#solution-10--learn-a-forward-model-then-plan-against-it) | learned | decider | **yes** | the best of the three learned ones |
+| 11 | [Search a push strategy](#solution-11--search-a-push-strategy) | learned | decider | partly | hours, where reinforcement learning wants days |
 
 Each is written the same way: what it is, why anyone does it like that, how it
 would work in this cell, **the feedback loop** if it has one, a worked example
@@ -1029,7 +1066,7 @@ candidate was cleared by arithmetic first.
 ### Why anyone does it this way
 
 It is the safest shape available for a learned component in a physical system,
-and the contrast with solution 5 is exact. There the policy's output *is* the
+and the contrast with [reinforcement learning](learned-with-hardware.md#learn-to-push) is exact. There the policy's output *is* the
 action. A policy has no field for "never topple", so safety has to come through
 the reward, and a fine is a price — a trade the policy may take. Bolt a
 geometric check on at run time and that check is doing the safety work anyway.
@@ -1141,7 +1178,7 @@ is stored.
 Everything solution 3 needs, plus an enumerator where solution 3 has a chooser,
 a feature function, a Gazebo data-generation script, a weights file, and
 somewhere to append real outcomes. No NVIDIA GPU: small tabular regression fits
-this machine where solution 5 does not.
+this machine where a policy network does not.
 
 ### What it is good at
 
@@ -1371,182 +1408,354 @@ nowhere to go, or wherever a wrong answer is cheap.
 
 ---
 
-## Solution 8 — learn to push
+## Solution 8 — a learned early-abort
 
-*Learned, as the decider. Let the arm discover which pushes separate objects,
-by trying them in simulation and being rewarded when it works.*
+*Hybrid, with the model as a verifier acting during the push rather than after
+it. The force trace tells a clean slide from an object about to tip, and
+stopping is the only thing that can prevent a topple rather than report one.*
+
 ### What it is
 
-Three methods get called "learning to push".
+[Solution 7](#solution-7--a-learned-change-verifier) looks once the push is
+over and says what happened. This one watches the wrist *during* the push and
+stops it. Every other solution decides beforehand or measures afterwards; the
+push is the only place a topple can be prevented rather than detected.
 
-**Reinforcement learning** is trial and reward. The arm is shown the table,
-picks a push, and a single number — the **reward** — says how good it was. What
-is trained is a **policy**: a function, usually a small neural network, from
-what is seen to what to do. One attempt, fresh table to finish, is an
-**episode**. Training runs episodes over and over, nudging the weights towards
-whatever scored higher. There is no teacher; the only signal is the score.
-
-**Imitation learning**, or behaviour cloning, has a teacher. Something does the
-job many times — a person with a joystick, or another program — and each instant
-is recorded as a pair: what was seen, what was done. Training is then ordinary
-supervised learning. No reward, no exploration, and the ceiling is the teacher.
-
-**Learning a forward model** learns what *happens* rather than what to do. Give
-it the arrangement and a proposed push; it predicts the arrangement afterwards.
-Deciding comes after, by trying candidate pushes against the model and keeping
-the best. It is a learned stand-in for physics you do not have.
+The evidence is the **force trace**: the horizontal force at the wrist during
+contact. A clean slide is a ramp to a steady level, then flat. An object about to tip climbs, keeps climbing, then drops away as it
+goes over. A jam against a neighbour climbs and never stops.
 
 ### Why anyone does it this way
 
-Pushing is contact, contact is friction, and friction is the number nobody
-measures. The classical alternative needs the friction under the object and how
-its weight is spread over its base, and the second of those is statically
-indeterminate — no unique answer exists even in principle. Learning samples
-outcomes instead of deriving them.
+No reading separates them.
 
-The research line aimed at this exact task is called **singulation**: pushing
-objects apart until one stands alone enough to be gripped. It goes back well
-over a decade, first as hand-written push heuristics, later as learned push
-proposals, and it is nearly always motivated by a pile where the segmenter
-cannot say how many objects there are.
+Objects here weigh 150 g to 400 g. Keeping one sliding takes `μ m g`: 0.44 N
+for the lightest at μ = 0.3, 1.96 N for the heaviest at μ = 0.5. Starting a
+tip about the front edge of the base, pushed at height `h`, takes `m g a / h`
+— for a 150 g object on a 60 mm base pushed at 50 mm, **0.88 N**. The force
+that tips the lightest object is below the force that ordinarily slides the
+heaviest, so no threshold sits between them. Weight would separate them, and
+nothing here has weighed anything.
 
-The best known work joining pushing and grasping is Zeng and colleagues'
-*Learning Synergies between Pushing and Grasping with Self-supervised Deep
-Reinforcement Learning* (2018), shortened to **VPG**. Both behaviours are
-learned from one overhead picture: each pixel gets a score for "push here" and
-one for "grasp here", and only grasp success is rewarded. Useful pushes appeared
-anyway — it learned to shove a tight cluster apart so a grasp became possible,
-without being told pushing had a purpose. I am confident of that paper, not of
-its trial counts, so I quote none, and I name no singulation papers because I am
-not confident of particular titles.
+Behaviour over time does. 0.9 N means nothing; 0.9 N that has risen for 60 ms
+while the arm kept moving means the object is not sliding.
+
+A **time series classifier** takes a window of signal — here the last 20
+samples — rather than one reading, and returns a label: sliding, tipping or
+jamming.
 
 ### How it would work here
 
-**Observation:** the overhead picture, or — since problem 2 has measured it —
-ten numbers: five glass centres plus each base width.
+**Try thresholds first, and mean it.** Two rules on the horizontal force:
+abort above a level, abort above a rate of rise. If they catch every
+deliberate topple on seeded Gazebo runs at a tolerable false-abort rate, **use
+them and stop reading.** I invent no figure for how well they do. Their
+failure is the arithmetic above: the bar that is safe for a 400 g object is
+not the bar that is safe for a 150 g one.
 
-**Action:** a straight push, with a start point, a direction, a length and a
-height.
+**The learned version.** A sliding window over the six wrist channels and the
+pad flags, one decision per sample. Twenty samples is 200 ms, or 6 mm of
+travel at 30 mm/s. From it, ten features: means, spreads and fitted slopes of
+force and torque, over the window and over its last five samples.
 
-**Reward:** a point when a pair crosses 140 mm apart, a large fine for a topple,
-a small fine per push.
+Feed those to **gradient-boosted trees** — scikit-learn
+(https://scikit-learn.org/, BSD-3-Clause), LightGBM
+(https://github.com/microsoft/LightGBM, MIT), XGBoost
+(https://github.com/dmlc/xgboost, Apache-2.0). The alternatives read the raw
+trace: a **tiny 1-D convolutional network**, or a **small recurrent model**
+carrying a summary forward sample by sample, both in PyTorch
+(https://pytorch.org/, BSD-3-Clause) on the Metal backend. Take the trees:
+seconds to train on a laptop CPU, microseconds to predict.
 
-The reward is the hard part, not the training. A reward is a **score**, and what
-this problem has are **constraints**. "Never topple a glass" is not a quantity;
-written as a fine it becomes a price, and a price is a trade the policy may
-make. The project also counts a refusal as a success, and nothing rewards an arm
-for declining. And a shaped reward gets gamed: pay for increases in the minimum
-pairwise distance, and shoving one glass to the far corner scores best every
-time.
+**The labels are free, and they are the good part.** Gazebo knows the pose of
+everything it spawned, so read the final roll and pitch — past 30 degrees is a
+topple — then replay the trace and label each window by **what happened
+next**: positive if a topple starts within 300 ms. The label is not what the
+window shows but what it precedes, which makes this a warning rather than a
+report.
 
-Nor can a policy be *told* not to topple a glass. It is a function from
-observation to action; there is no field in it for a rule, so the reward is the
-only channel. A run-time check can veto an unsafe push — but that check is the
-geometry this project already has, and it, not the policy, is doing the safety
-work.
+**Imbalance.** A topple is one push in a few hundred, so a classifier scored
+on accuracy learns "nothing ever tips" — right 99.7% of the time and worth
+nothing. Make topples on purpose: push at 120 mm rather than 50, or a tall
+object on a narrow base. Free in simulation, unthinkable on a real table.
+Generate until one push in four topples, and score on topples caught, never on
+accuracy.
+
+**Latency decides the design.** A model too slow to act is worthless however
+accurate. The project's usual wrist reading, the median of 32 samples at
+100 Hz, is 320 ms of lag and 9.6 mm of travel — longer than the tipping event
+itself. A 5-sample median costs 50 ms and 1.5 mm; features
+plus a tree stay under 1 ms; the monitor sits beside the controller and zeroes
+a velocity command rather than cancelling a plan. Budget 50 ms from evidence
+to brake. How much time there is before an object is past recovery is
+**uncertain**.
+
+### The feedback loop
+
+An abort is a measurement, not a failure.
+
+**Stop and retreat** 20 mm along the push line. Never lift: that finishes the
+topple just prevented.
+
+**Take a picture.** Force says something went wrong and cannot say what. Here
+solution 7 is the other half of a pair, not a rival.
+
+**Write the row back.** The window that fired, plus the camera's verdict, is
+a labelled example from the real table, and a false alarm is the most valuable
+row of all, because simulation makes so few.
+
+**Feed the tipping check.** An abort confirmed as a real tip, at h = 50 mm on
+an object with a = 31 mm, is evidence that μ exceeds 31 / 50 = **0.62**, not
+the 0.3 assumed. Raise the μ the refusal rule uses. One rule guards this:
+**the evidence may only make the check stricter, never looser.**
 
 ### A worked example
 
-Set the topple fine at ten points and a separation at one. Ten separations now
-buy one broken glass, so a policy that topples one glass in twenty runs still
-scores well and gets selected for. Raise the fine to a thousand: doing nothing
-scores zero, which beats any push carrying risk, and the policy learns to stand
-still. Between them lies a number that behaves, found by training again, and it
-still means "a topple is worth this many separations", never "do not".
+A 150 g object, 60 mm footprint so `a` = 30 mm, pushed at the gripper's floor
+of 50 mm at 30 mm/s. At the assumed μ = 0.3 the limit `a / μ` is 100 mm, so
+the plan says yes. A damp ring makes μ ≈ 0.7 locally and the real limit 43 mm:
+sliding would need 1.03 N, tipping 0.88 N. It tips.
+
+*The trace.* Contact at t = 0, steady at 0.35 N for 200 ms, where the detector
+arms. Then 0.44 N, 0.60, 0.72, heading for 0.88 — about **8 N/s**, against a
+slide's zero plus noise. A bar at 2.5 N, the only level that leaves a heavy
+object's ordinary 1.96 N slide alone, never fires.
+
+*The model.* At t = 240 ms: slope 5.1 N/s, 8.0 N/s over the last five samples,
+torque rising. Tipping at 0.34 against a bar of 0.15. Abort. The chain is
+10 ms of sample, 50 ms of median lag, 1 ms of model and 35 ms of ramp — 45 ms
+and 1.4 mm more travel, and it settles back.
+
+*The loop.* Retreat, photograph, confirm. μ for this kind is raised to 0.62,
+making `a / μ` = 48 mm, below the gripper's 50 mm floor. **This object is now
+refused, correctly, for every future run.**
 
 ### What it needs
 
-Gazebo Harmonic runs headless and resets, so episodes are possible in principle.
-The cost is throughput. One episode — reset, spawn five glasses, let them
-settle, push slowly, look — will not come in under about twenty seconds, or 180
-an hour. Contact-rich policies are trained on tens of thousands of attempts at
-the very least, so 50,000 episodes is about **eleven days of continuous
-running**, or three days across four parallel instances. That is one reward
-function, and the reward needs several attempts.
-
-The usual escape is a GPU-batched simulator running thousands of worlds at once.
-**This machine is an Apple Silicon Mac with no NVIDIA GPU**, which rules that
-out specifically: Isaac Sim and Isaac Lab are CUDA-only with no macOS build at
-all, and MuJoCo's batched version, MJX, wants JAX on an NVIDIA GPU or a TPU.
-Plain MuJoCo runs natively, so rebuilding the cell there is possible, but it
-buys single-world speed, not thousands of worlds. PyTorch's MPS backend trains a
-small policy network happily; the network was never the bottleneck.
-
-Licences need the same look the grasp models get in
-[the licence picture](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/04_models-that-grasp.md#5-the-licence-picture):
-research pushing code ships without a licence file just as often, which grants
-nothing.
+The wrist and pad sensors, already simulated by Gazebo Harmonic
+(https://gazebosim.org/, Apache-2.0). A monitor node beside the controller
+that can zero a velocity command. A script spawning objects across the
+45–105 mm and 150–400 g ranges and pushing them at deliberately unsafe
+heights. No GPU, no pretrained weights, no real data.
 
 ### What it is good at
 
-It never needs μ. It learns what pushes tend to produce, whatever the friction
-happens to be.
-
-It handles clutter with no geometry in it. When objects are a jumble of unknown
-shapes, overlapping, and the segmenter cannot say how many there are, "which
-push opens something up" has no closed form. That is the case singulation exists
-for, and it is real.
-
-It finds behaviours nobody would write down — pinning an object against a wall,
-or moving one object with another.
+**It acts inside the failure**, alone here. **It measures μ** — every
+confirmed abort is one real observation of the number the tipping check rests
+on. **It degrades to nothing**: delete the weights and the thresholds
+remain.
 
 ### What it is bad at
 
-The sample cost and the reward design, above.
+**It cannot see.** Without a camera afterwards, an abort is a shrug.
 
-Explaining itself. The rules refuse with "this glass tips before it slides,
-because its base is 45 mm and the gripper cannot get below that". A policy that
-does not push has nothing to say, and this project needs its refusals legible.
+**It is trained on a contact solver.** The shapes should transfer; the levels
+and rates will not.
 
-And the decisive one. This table holds five discs, one known kind, on a flat
-surface, with centres and base widths already measured. The state is ten
-numbers, and choosing which glass to move and where is a circle-packing check
-against a rectangle — exact, instant, readable. A policy would spend a month of
-wall-clock time rediscovering, approximately, what that check gives exactly.
-Singulation policies earn their keep on a jumble of unknown shapes. This is not
-a jumble, and the shapes are known.
+**It has no parts.** A threshold refuses with a number, this with 0.34.
 
 ### How it fails
 
-**The sim-to-real gap, worse for pushing than for most tasks.** Most sim-to-real
-trouble is appearance or timing. Pushing turns on friction, which in a simulator
-is a configured constant in a contact solver, not a measurement, so a policy
-trained in Gazebo learns that solver. And μ does not merely shift the outcome.
-The line between sliding and tipping is `h < a / μ`, so μ moves the boundary
-between a safe push and a broken glass: a height safe at μ = 0.3 topples the
-same glass at μ = 0.5. Training across a range of μ is the standard answer; it
-multiplies the episode count and yields a timid policy.
+**Too late.** The model is right and the arm cannot stop in time.
 
-**A silent topple.** The method learns from failures it has experienced. Every
-topple in simulation is free; every topple on a real table is unrecoverable,
-because nothing in this project can stand a glass back up.
-
-**A sixth glass.** The policy is trained on arrangements it saw. Change the
-count, the zone or the kind, and there is no guarantee and no error message.
+**On a case nobody generated.** An object rocking on a convex base gives a
+rising force that is not a tip, and will be called one.
 
 ### When it would be the right choice
 
-It is the right answer to the harder version of this problem, and that version
-is real. Put a tote of mixed unknown objects on the table — different shapes,
-some lying down, some on top of each other, the segmenter unsure how many there
-are — and arithmetic has nothing to compute against. Then pushing to singulate
-is a genuine answer and VPG's result is the relevant one. It is also right where
-failures are cheap and plentiful: wooden blocks on a robot that runs all night,
-or a lab with NVIDIA hardware where the episode budget is hours, not weeks.
+When the failure cannot be undone, the action is slow enough to interrupt,
+and a sensor already watches the contact. That is this cell.
 
-Keep it on the list for the day the table stops holding five glasses of one
-known kind.
+The asymmetry settles how far to bias it. A false abort costs five or six
+seconds. A missed topple costs the object and ends the run. So weight a missed
+topple twenty times a false abort in the training loss, and set the run-time
+bar near **0.15**, not 0.5. The limit is usability: if clean
+runs abort more than about one push in five, the bar is too low to ship, and
+the fix is a better model, not a higher bar.
+
+It is wrong on a fast push, or where a topple is a nuisance, not a loss.
 
 ---
 
-## Solution 9 — learn a forward model, then plan against it
+## Solution 9 — identify the contact parameters
+
+*Learned, as a proposer to the physics. Solution 4 guesses the friction it
+needs. This estimates it, and the spread of the base's weight, from what the
+arm's own pushes actually did — and hands back a number with physical meaning
+that the tipping check can use.*
+
+### What it is
+
+Solution 4 has the right mathematics and two inputs nobody has: `μ`, the
+friction between object and table, and how the object's weight sits on its base.
+It guesses both. Solution 5 keeps the mathematics and learns **the size of the
+error** those guesses cause. This solution does neither. It learns **the missing
+inputs themselves**, from what the arm's own pushes did. A residual is a
+correction, useful only to the model that made the prediction. This produces a
+**number with physical meaning** that the rest of the system can use, starting
+with the tipping check `h < a / μ`.
+
+The technique is **system identification**: fitting the parameters of a model
+you already believe, rather than fitting an arbitrary function to data. Only the
+constants are in question.
+
+### Why anyone does it this way
+
+It sits between the two families this document compares. **Analytical
+modelling** takes its constants from a handbook, and is wrong by whatever the
+handbook is wrong by. **Machine learning** supplies no equation, so it needs a
+great many examples: it must find the shape of the answer as well as its size.
+
+System identification keeps the equation and fits only the constants — a handful
+of unknowns instead of thousands of weights. So it needs data counted in tens.
+Its weakness is the equation's: a wrong model gives confident wrong constants.
+It is the standard method in control engineering.
+
+### How it would work here
+
+Every push already produces a before picture, a commanded displacement and an
+after picture, so each gives a displacement and a rotation. The wrist sensor
+adds the force that kept it sliding. **Three things could be identified from
+that, and they are not equally identifiable.**
+
+*The weight's spread, cleanly.* Solution 4 reduces the pressure distribution to
+one length `c`, between `(2/3)R` for a uniform disc and `R` for one resting on
+its rim. A push missing the centre by `d` turns the object about a point
+`r = c² / d` away, so a measured turn gives `r`, and `c = √(r d)`. `μ` cancels
+out.
+
+*`μ` at the table, only as far as the mass allows.* In steady sliding the wrist
+reads `F = μ m g`. Nothing here weighs anything, so the force gives the
+**product** `μ m`, which the 150 to 400 g range turns into an interval. An
+object pushed at `h` that did **not** tip adds a free bound, `μ < a / h`.
+
+*`μ` at the finger, barely.* Silicone on glass is not glass on table, and a push
+reveals finger friction only when the pad **slips**. Sticking proves it was at
+least enough, not how much more. Treat this one as bounded.
+
+**The estimator.** Stack one row per push and solve a least-squares fit.
+Better, make it **recursive**: carry the estimate with a measure of how sure it
+is, and nudge both when a push arrives, instead of redoing the whole solve over
+every push ever made. A surprise moves it a lot, a confirmation a little. The
+standard family is **recursive least squares** and the **Kalman filter**, with a
+*forgetting factor* so a wiped table is tracked, not averaged away.
+
+**The interval is what makes the tipping check honest.** Today it uses a guessed
+`μ`. Use the **pessimistic end** instead — the largest `μ` the data still
+allows. That is not a more accurate system. It is a **safer** one.
+
+### The feedback loop
+
+A wide interval points at its own cure. When it is too wide to decide something
+— the pessimistic `μ` refusing an object the optimistic `μ` would allow — the
+answer is a **deliberately informative push**: 10 mm, at the gripper's lowest
+reach, into clear table. Its purpose is not to separate anything, but to
+measure.
+
+This is an **experiment the robot designs for itself**, and the design is not
+obvious. The most informative push for `c` is deliberately **off-centre**, since
+a push through the centre makes `d` zero and produces no rotation to learn from.
+The pushes made while doing the job teach least. In control this is **persistent
+excitation**: the inputs must vary enough for the parameters to separate.
+
+**When to spend one.** Only when it can change a decision, because a probe
+costs fifteen to twenty seconds of arm motion: at the start of a run on a stale
+table, and when the interval straddles the refusal line for an object that has
+to move.
+
+### A worked example
+
+A 70 mm footprint, so `a` = 35 mm, pushed at the gripper's floor of 50 mm.
+
+*The force.* The wrist reads 0.74 N. From `F = μ m g`: at 400 g,
+`μ` = 0.74 / 3.92 = **0.19**; at 150 g, `μ` = 0.74 / 1.47 = **0.50**. So `μ`
+lies in **[0.19, 0.50]**, and the no-tip bound adds `μ < 35 / 50 = 0.70`.
+
+*The check, run pessimistically.* `a / μ` = 35 / 0.50 = **70 mm**, against the
+50 mm the gripper is stuck at. Push, with 20 mm of earned margin.
+
+*The same arithmetic on a narrow object.* A 45 mm footprint gives `a` = 22.5 mm.
+At the guessed `μ` = 0.3 the limit is 75 mm and the push is authorised. At the
+identified pessimistic `μ` = 0.50 it is **45 mm**, below 50, and the object is
+**refused**. The guess would have pushed it. The measurement will not.
+
+*The spread.* The same push turned 0.30 rad about a 5 mm offset, giving
+`c` = **31.6 mm**: a rim-supported base.
+
+### Per object, or per table
+
+`μ` at the table belongs to **a pair of surfaces**, so with one kind of object
+on one table it is one number, and every push is evidence about it. Pool them:
+three pushes per object is noise, thirty across ten objects identifies one
+shared `μ` well. `c` is per object, because it depends on that base.
+
+A mix wants **partial pooling** — a shared estimate plus a per-object offset
+held near zero until that object's own pushes argue otherwise. A damp ring under
+one glass then shows as disagreement with the pool.
+
+### What it needs
+
+**NumPy** ([numpy.org](https://numpy.org/), BSD-3-Clause) for the solve;
+**SciPy** ([scipy.org](https://scipy.org/), BSD-3-Clause) if the fit goes
+nonlinear; **scikit-learn** ([scikit-learn.org](https://scikit-learn.org/),
+BSD-3-Clause) for a Bayesian linear fit that returns an interval directly.
+
+**There is no training run** — no data campaign, no weights file, no GPU, just
+a few numbers and a covariance in a CSV. **Gazebo Harmonic**
+([gazebosim.org](https://gazebosim.org/), Apache-2.0) is *told* its friction
+coefficients, so the estimator can be scored against a true value it never saw.
+
+### What it is good at
+
+**It produces a number other things can use**, starting with the tipping check.
+**It is small**: tens of pushes, because only the size of the answer is fitted,
+not its shape. **It carries its own doubt**, which drives the pessimistic check
+and the decision to probe.
+
+### What it is bad at
+
+**Separating quantities that arrive multiplied.** `μ m` is one measurement and
+two unknowns. Without weighing, `μ` stays an interval as wide as the mass
+range, a factor of 2.7 here — a limit of the cell, not of the method.
+
+**Surviving a wrong model.** An object rocking on three high spots is not
+sliding on a flat base, so the fitted `c` describes nothing — and still returns
+a number.
+
+### How it fails
+
+**By being believed.** A guessed `μ` is treated with suspicion; an identified
+one carries a decimal point and an implied authority. Bias it — by a survey
+mislocating objects by 3 mm, by rows from half-toppled pushes — and the check is
+confidently wrong where it was cautiously guessed.
+
+The mitigation is structural. **The identified `μ` may be used at its
+pessimistic end only, and never below a fixed floor** until the interval is
+narrow. Loosening the check needs more evidence than tightening it: too tight
+wastes a refusal, too loose breaks an object.
+
+**It also drifts quietly.** A wiped table changes `μ` and announces nothing.
+
+### When it would be the right choice
+
+When one unmeasured constant is used by several decisions and a safety check
+depends on it. Both hold here, and no friction meter is coming to this cell. It
+is wrong when the parameter can simply be measured on a tilting plate.
+
+It composes rather than competes: it hands solutions 3 and 5 the inputs they
+were guessing.
+
+---
+
+## Solution 10 — learn a forward model, then plan against it
 
 *Learned, as the decider, and model-based rather than model-free. Learn what
 will happen rather than what to do, then let an ordinary planner search over
 candidate pushes using it.*
+
 ### What it is
 
-Solution 5 learns *what to do*. This one learns *what will happen*, and leaves
+[reinforcement learning](learned-with-hardware.md#learn-to-push) learns *what to do*. This one learns *what will happen*, and leaves
 the deciding to arithmetic on top.
 
 A **forward model**, or **learned dynamics**, is a function fitted to recorded
@@ -1573,7 +1782,7 @@ accuracy, and video models want a big NVIDIA GPU for days.
 
 **The data needs no reward.** A reinforcement learning episode needs a score, and
 a score needs someone to have decided what a topple is worth. Push at random,
-record what moved, and every push is a usable example. Solution 5's hardest
+record what moved, and every push is a usable example. Reinforcement learning's hardest
 problem, a reward that cannot be gamed, never arises — and the search over
 candidates stays code you wrote, which can say why one was rejected.
 
@@ -1586,7 +1795,7 @@ numbers a gradient-boosted tree ensemble competes fairly.
 **The data.** Gazebo Harmonic, headless, pushing repeatedly in the same world:
 the state after one push starts the next, so reset and settle amortise over a
 dozen samples. At four seconds a push, **twenty thousand pushes is twenty-two
-hours** — under six across four instances, against solution 5's eleven days.
+hours** — under six across four instances, against reinforcement learning's eleven days.
 Random pushes suffice, with the simulator's friction varied between runs.
 
 **Planning against it** is **model predictive control**, or MPC: search for the
@@ -1693,7 +1902,7 @@ it never saw. Hence: plan short, replan often.
 **No guarantee.** Solution 4's voting theorem holds for every μ. This holds only
 for the pushes it was shown — no bound, no proof, no way to ask how sure it is
 short of training an ensemble to disagree. It also learns the simulator's contact
-solver, which is solution 5's sim-to-real objection at the same cost.
+solver, which is reinforcement learning's sim-to-real objection at the same cost.
 
 ### How it fails
 
@@ -1716,188 +1925,180 @@ The hard part is that it does not land where it was aimed, and the answer to tha
 is to look afterwards — which solution 3 already does, for one picture.
 
 It is, though, the right *learned* solution for this cell if one is ever wanted:
-far cheaper to train than solution 5, no reward function, safety left in
+far cheaper to train than [reinforcement learning](learned-with-hardware.md#learn-to-push), no reward function, safety left in
 arithmetic.
 
 ---
 
-## Solution 10 — copy a scripted expert
+## Solution 11 — search a push strategy
 
-*Learned, as the decider. The demonstrations do not need a human: the geometric
-planner is itself an expert, and it can generate thousands of correct pushes in
-simulation overnight.*
+*Learned, as the decider, without gradients or a neural network. Write the
+strategy down with a dozen numbers in it, then search over those numbers in
+simulation until it works.*
+
 ### What it is
 
-**Imitation learning** trains a model to copy something that already does the
-job. Its simplest form, **behaviour cloning**, is ordinary supervised learning:
-at every instant of a demonstration record the **observation** — everything the
-arm can sense — and the **action**, what it did next. A network learns to
-predict the second from the first. No reward, no exploration: solution 5 learns
-from a number grading a push, this from an example of a good one.
+Write the push strategy down as a rule with a handful of numbers in it, then let
+the computer choose the numbers. Solution 3 is already such a rule, and its
+eight numbers were guessed, not measured.
 
-**The demonstrations need not come from a person.** Solution 3 is an expert,
-and every headless run of it in Gazebo is a correct demonstration — one every
-twenty seconds, nobody holding a controller. So imitation here is not a way of
-avoiding a planner, but a way of **compressing a planner that already works
-into one fast reactive function**.
-
-The classic failure: the policy is slightly wrong, so it drifts into states the
-demonstrations never covered, where it is more wrong, so it drifts further —
-**compounding error**, with a worst case growing as the *square* of the episode
-length. The mitigation is **DAgger**, dataset aggregation (Ross, Gordon and
-Bagnell, 2011): run the half-trained learner, let it wander, ask the *expert*
-what it would have done at each state it reached, and retrain on those labels.
-The dataset then covers where the learner goes, not where the expert goes.
+**Black-box optimisation**, also called **derivative-free optimisation**, is the
+tool for that. *Black box* means you can put numbers in and get a score out, and
+that is your whole access: you cannot differentiate the function, because
+between the numbers and the score sit a motion planner, a contact solver and
+five sliding glasses. So you do the only thing left. Try candidates, keep what
+works, try more like them. No weights, no gradients, no reward attached to
+states — the output is eight numbers you can read.
 
 ### Why anyone does it this way
 
-DAgger normally costs a human to label the states a robot got itself into. Here
-the expert is a hundred lines of Python: freeze the world, survey it, ask the
-planner, and get a label in a second, unattended, overnight. The famous
-weakness of imitation is nearly free to fix here, because **there is already a
-correct program to ask.**
+The cost of a search is set by how many free numbers it has, not by how hard the
+task is. [reinforcement learning](learned-with-hardware.md#learn-to-push) searches over the weights of a
+policy network — hundreds of thousands of them, from noise, with the strategy
+itself among the things to be discovered. Hence tens of thousands of episodes.
+This starts with the strategy written and leaves eight numbers free. A dozen
+parameters rather than a million weights means hundreds of evaluations rather
+than tens of thousands, which is hours rather than days. It lets the simulator
+pick numbers nobody can guess, because they turn on friction nothing here
+measures.
 
 ### How it would work here
 
-**The expert** is solution 3 running headless, discarding any demonstration
-that toppled a glass. **The observation at each control step:** the wrist RGB-D
-frame at 320x240, six joint angles, six wrist force and torque readings, two
-pad contacts, and the destination in the gripper's frame. The **action** is a
-small delta on the wrist pose.
+**The parameters.** Eight, each bounded: which pair first, tightest against
+nearest to free space (0–1); which glass of it moves (0–1); overshoot past
+140 mm (0–30 mm); clearance above 70 mm (0–25 mm); mm travelled against mm
+gained (0–2); standoff (30–90 mm); longest push before it splits (20–80 mm); mm
+short of 140 that still counts as done (0–8 mm).
 
-**Action-chunking transformers (ACT)** —
-[github.com/tonyzhaozh/act](https://github.com/tonyzhaozh/act), MIT licence,
-Zhao and colleagues, 2023. It predicts not one action but a **chunk** of the
-next *k* actions in one pass. One step at a time makes a policy dither, and at
-10 Hz dither is a knock; a chunk commits to a short smooth movement, which is
-what a push is, and cuts decisions per episode — compounding error compounds
-per decision.
+**What is deliberately not a parameter.** The destination tests, the tipping
+refusal, the 50 mm floor and the guarded move all stay, and every range above is
+one-sided, so a setting can only ask for more margin. The search tunes
+preferences *inside* a planner that keeps its vetoes, so **no candidate can
+produce an unsafe push, however badly it scores**. A neural policy emits a push
+directly and can propose anything, so the geometry is bolted on afterwards — and
+that solution grants that the veto, not the policy, then does the safety work.
 
-**Diffusion policies** —
-[github.com/real-stanford/diffusion_policy](https://github.com/real-stanford/diffusion_policy),
-MIT licence, Chi and colleagues, 2023. A diffusion model starts from noise and
-removes a little at a time; a diffusion policy does that to an action chunk,
-conditioned on the observation, in about ten passes of a small network. The
-gain is **multimodality** — a crowded glass can correctly go left or right, and
-a network emitting one number averages the two and pushes into the neighbour.
+**The methods**, all CPU-only Python, which matters on a machine with no NVIDIA
+GPU.
 
-**Frameworks.** [LeRobot](https://github.com/huggingface/lerobot), Apache-2.0,
-carries both, on [PyTorch](https://pytorch.org/), BSD-3-Clause. No NVIDIA GPU
-here, but PyTorch's **MPS** backend trains on Apple Silicon and these networks
-are small. Set `PYTORCH_ENABLE_MPS_FALLBACK=1`; some operators still drop to
-the CPU, and how well LeRobot's loop is tested on MPS is uncertain. Unlike
-solution 5, though, **the bottleneck is Gazebo episodes, not gradient steps**.
+- **Random search.** Draw settings uniformly, keep the best. Run it first,
+  always: it sets the number to beat, and shows whether the score moves with the
+  parameters at all.
+- **Nelder-Mead.** Nine points crawl downhill by reflecting the worst through
+  the middle of the rest. SciPy — https://github.com/scipy/scipy, BSD 3-Clause.
+  It sticks on a noisy score.
+- **CMA-ES** (covariance matrix adaptation evolution strategy). Hold a cloud of
+  probability over the parameters, sample a batch, keep the better half, move
+  the cloud towards what helped. The standard answer for five to fifty noisy
+  parameters, so the default here. `pycma` — https://github.com/CMA-ES/pycma,
+  BSD 3-Clause.
+- **Bayesian optimisation with a Gaussian process.** Fit a model of score
+  against parameters, with error bars, and evaluate next where it predicts a
+  high score or great uncertainty. Fewest evaluations of any of them.
+  scikit-optimize — https://github.com/scikit-optimize/scikit-optimize,
+  BSD 3-Clause, though maintenance has been intermittent: **uncertain**.
+- **Optuna** — https://github.com/optuna/optuna, MIT. Several of these behind
+  one interface, with parallel workers and resume.
+
+**The objective.** Reinforcement learning's reward, used as a score: a point per pair
+crossing 140 mm, a large fine for a topple, a small fine per push, plus the
+shortfall in mm to keep it continuous. A reward is paid per step and must carry
+credit back to the action that earned it. This is summed over a whole run, so
+nothing needs shaping and nothing can be gamed by it.
+
+**Fixed seeds, and this is the mistake to avoid.** Score every candidate on the
+*same* arrangements, drawn once and frozen. Redraw them and a candidate given
+easy tables beats a better one given hard tables, so the search follows luck.
+Fixed, the gap between two scores is the gap between two strategies. Check the
+winner on thirty unseen arrangements too: twelve tables flatter the strategy
+tuned on them.
 
 ### The feedback loop
 
-What decides this solution is **what the policy sees**, and a policy given the
-wrist image alone is **open-loop within a push**. At the 50 mm push height the
-closed jaw fills the frame, and the glass wall against it is a near-textureless
-curve 40 mm from the lens, inside the depth camera's minimum range. Vision goes
-blind as contact starts.
+The search need not stop when the run starts. Keep the tuned numbers as the
+**champion** and a variant as the **challenger**, assign one at random to each
+real run, and switch if the challenger is ahead. That is A/B testing, not
+training: two fixed strategies on the arrangements that actually occur.
 
-So add the wrist force and the pads. **The loop, at 10 Hz:** every 100 ms read
-the frame, the joints, the wrist reading and the two pads; get back a chunk of
-20 actions, two seconds' worth; execute the first 10 and re-predict. Ten hertz
-comes from the physics — the push runs at 10 mm/s, so one step is one
-millimetre — and inference must fit in that 100 ms on MPS.
-
-A 250 g glass at μ = 0.3 needs 0.74 N to keep sliding, and across 150-400 g and
-μ from 0.3 to 0.5 an ordinary push stays under 2 N horizontal. Meet a second
-glass, the rack, or a glass that sticks, and the reading leaves that range
-within one step — which demonstrations containing aborted pushes teach the
-policy to stop on.
+Be concrete, because this is the weak half. Separating a difference of `d`
+standard deviations takes about `16 / d²` runs per side: half a standard
+deviation is 64 each way, a third is 145 each way — nearly 300 runs. At a
+handful of runs a day that is months, and a rare event cannot be tested this way
+at all, since telling a 1% topple rate from a 2% one takes thousands. Hence the
+continuous score. The loop catches slow drift — a new surface, a worn pad —
+eventually, not this week.
 
 ### A worked example
 
-Solution 3's glass B: 75 mm across, 250 g, pushed 48 mm — 48 control steps at
-10 Hz, three chunks. At step 12 the pads fire, contact.
+Five glasses in the 320x360 mm zone, footprints 45 to 105 mm, 150 to 400 g.
 
-At step 31 the horizontal force goes 0.9 N to 4.2 N in two steps: B has caught
-a third glass the survey placed 6 mm wrong. **The picture-only policy has 1.7 s
-of chunk left and executes it, at 10 mm/s, into a glass.** The policy with
-force in its observation sees it at once; its worst case is the rest of the
-ten-step commitment, one centimetre.
+*The budget.* One episode is about twenty seconds, so twelve seeded arrangements
+is 240 s: four minutes per candidate on one simulator, **60 s per candidate**
+across four headless Gazebo instances. CMA-ES on eight parameters uses a
+population of ten, so forty generations is 400 candidates — 24,000 s, **six
+hours forty minutes**, 4,800 episodes. Random search first, 100 candidates, is
+**under two hours**.
+
+*Against reinforcement learning.* 50,000 episodes at twenty seconds is 1,000,000 s, about
+**eleven and a half days**, or 2.9 days across the same four instances. 4,800
+episodes against 50,000 is **ten times fewer** — one night against three days —
+and that section called 50,000 a floor, so the real gap is probably wider.
+
+*What comes out.* Overshoot 18 mm rather than 20, clearance 6 mm, longest push
+35 mm — so two 24 mm pushes with a look between beat one 48 mm push, a claim
+nobody at the keyboard could have made.
 
 ### What it needs
 
-Solution 3 built, because it is the expert, and a harness: Gazebo Harmonic
-([gazebosim.org](https://gazebosim.org/), Apache-2.0) resetting headless,
-spawning five glasses across the zone's 45-105 mm and 150-400 g ranges,
-recorded at 10 Hz through [ros2_control](https://control.ros.org/).
-
-**Data volumes.** Published ACT results learn real tasks from tens of
-demonstrations each; exact counts are uncertain, so treat fifty as an order of
-magnitude. A push is simpler: a few hundred may do, a few thousand is
-comfortable. At twenty seconds each, two thousand is eleven unattended hours,
-or under three across four Gazebo instances — eleven hours a person on a
-joystick would stay awake for.
-
-**The asymmetry is narrowness, not volume.** A scripted expert only shows
-states it visits: approaches that worked, contacts where the survey said. The
-states that matter are the ones it never reaches — a glass that sticks, a jaw
-that meets a neighbour first. Those must be manufactured, by perturbing the
-spawn or injecting survey error, and labelled by DAgger.
+Solution 3 working, with its constants in one settings object. A headless Gazebo
+scenario that resets, spawns from a seed and reports the score, which a policy
+would need too. One pip install, no CUDA, one overnight window.
 
 ### What it is good at
 
-**No reward function**, so solution 5's argument about pricing a toppled glass
-disappears: "never topple" stays a constraint the expert enforces.
-
-**Reactive at 10 Hz on sensors the planner reads once**, where solution 3 reads
-the wrist force as a trigger and then stops.
+It is cheap, its cost is known in advance, and it keeps every safety property
+the programmed solution has, because it changes no veto. Its output is eight
+numbers in a file: readable, diffable, revertible. It tunes against friction it
+never measures — what the learned solutions are really selling — and it cannot
+be reward-gamed, the score being a whole-run summary.
 
 ### What it is bad at
 
-**Its ceiling is the expert**; what it learns about contact is the simulator's
-friction constant; and it puts glass proportions inside weights, breaking the
-repo's one rule quietly.
+**It cannot invent anything.** A tuned strategy is only as good as the strategy
+somebody wrote down. If the right behaviour is to pin a glass against the zone
+edge and pivot it, no setting of eight numbers expresses that, and the search
+contentedly reports the best of a set that did not contain it. A policy could
+in principle find it.
 
-**It cannot explain a refusal.** Solution 3 says "its base is 45 mm and the
-gripper cannot get below 50 mm". A policy that stops has nothing to say, and
-this project treats refusals as results.
+**It is tuned to the simulator's friction constant**, as a policy is, though
+milder here, because the vetoes survive a wrong number.
 
 ### How it fails
 
-**Drift**, showing as a push that starts well and curves. DAgger answers it
-cheaply here.
+**Overfitting to the batch.** Twelve arrangements are few, and the held-out
+thirty are what catch a strategy that has learnt their quirks. The symptom is
+twenty good generations that do not reproduce.
 
-**A chunk executed through a surprise**, the picture-only case: a fault in the
-observation vector, not the training.
-
-**Silent narrowing.** A sixth glass, or one near the rack: the expert refuses,
-the policy pushes.
+**A parameter that sneaks past a veto.** Let the search tune the assumed μ, or
+the 70 mm clearance downwards, and the safety argument evaporates.
 
 ### When it would be the right choice
 
-Not yet. **If a planner good enough to be the expert already exists, the
-policy's only advantage is speed — and speed is not the bottleneck.** Solution
-3's destination search is four comparisons on ten numbers: microseconds. A push
-costs arm motion, fifteen to twenty seconds. Trading microseconds for
-microseconds buys nothing, and costs a training loop, a weights file and an
-unreadable refusal. Three things change that.
+Whenever a programmed solution already works and its constants were guessed —
+this project's position the day solution 3 runs end to end. It is the cheapest
+thing here that gets real benefit out of simulation, and it can be thrown away
+if it beats nothing.
 
-**The reactive half becomes the bottleneck**, when runs fail during contact
-rather than planning. What is needed then is a response within 100 ms on force
-and touch, and the rules alternative is a thicket of thresholds.
-
-**The surveys become the bottleneck.** Solution 3's worst complaint is that
-every push costs a survey. A policy working from the wrist image needs one only
-to pick a destination, so several pushes run under one — seconds of arm motion
-saved, and the first economic case.
-
-**The expert stops existing.** Problems 4 and 5 bring several kinds, then kinds
-nobody measured. A tray of jumbled glassware has no destination search, because
-there are no clean footprints. A planner that cannot be written cannot be
-compressed, and the choice moves to solution 5's ground.
-
+It is wrong when the strategy itself is in doubt. If nobody can write a rule
+that is even approximately right, there is nothing to tune, and the argument
+moves to [reinforcement learning](learned-with-hardware.md#learn-to-push)'s jumble.
 
 ## The decision
 
 **Solution 1 first, then solution 3. Solution 7 is the first learned thing
-worth adding. Solution 5 is the second. Solutions 2 and 4 are the baseline and
-the theory behind the chosen ones. Solutions 6, 8, 9 and 10 answer a different
-problem, and it is worth being exact about which.**
+worth adding and solution 8 the second. Solution 9 is what would make the
+tipping check honest. Solutions 10 and 11 are the sim-only learned answers, and
+neither is needed yet.**
 
 ### Do the free thing before the risky thing
 
@@ -1905,123 +2106,98 @@ Solution 1 is chosen first because it costs nothing and removes work. Every
 object racked is an object off the table, so a crowd of five with one bad pair
 may solve itself after three ordinary picks. **Touching an object is the only
 step in this problem that can topple one**, so doing it fewer times is worth
-more than doing it better.
-
-It is a prefix rather than an alternative. When no object qualifies and the
-table is not clear, what remains is crowded and only a push will help.
+more than doing it better. It is a prefix, not an alternative.
 
 ### Then plan, feel, and look
 
 Solution 3 is chosen over solution 2 for one reason that matters: **a fixed
 nudge can push an object into a third object.** Checking the landing spot
 against every other object, the zone, the reach and the rack costs four
-comparisons of numbers already in hand.
+comparisons of numbers already in hand. It is not more *accurate* — neither
+predicts anything, both push and then look.
 
-It is not more *accurate* than solution 2. Neither predicts anything. Both push
-and then look. Solution 3 simply looks at more of the table before pushing.
+### Why the verifier first, and the early-abort second
 
-### Why the verifier is the learned part to add first
+These two are the same idea a second apart, and the second apart is the whole
+difference.
 
-After a push, three questions have to be answered: did the object move as
-intended, did anything else move, and has anything fallen over. The geometry
-answers the first crudely and the other two badly — to it, a toppled object is
-"a group of points that is not a circle", which is also what a partly occluded
-one looks like.
+**Solution 7** watches what happened after the push. It answers the three
+questions the geometry answers badly — moved as intended, moved unexpectedly,
+fallen over — and its "I cannot tell" is what sends the arm to a low, side-on
+viewpoint that settles it.
 
-That is the gap, and solution 7 fills exactly it. The case for putting it first
-generalises well beyond this problem:
+**Solution 8** watches the force *during* the push. That makes it the only
+thing in this document that can **prevent** a topple rather than report one,
+and for a failure that cannot be undone that distinction is worth a great deal.
+It is second rather than first only because it is harder: it has a latency
+budget, and a model too slow to stop the arm is worthless however accurate.
 
-**It learns the one thing the rules are worst at.** Everything else in the
-chosen solution is arithmetic on numbers the cell already has. Change detection
-between two pictures is not.
+Both have free labels in simulation, and both need topples produced on purpose,
+because they are rare in normal running and the model has to have seen some.
 
-**Its mistakes are cheap and its silence is useful.** A wrong verdict costs one
-more picture. And its most valuable output is "I cannot tell", which sends the
-arm to a viewpoint that would settle it — a low, side-on look distinguishes a
-standing object from a fallen one far better than another overhead picture.
+### Why the parameter estimate is the quiet one to want
 
-**The failure it catches is the one that cannot be undone.** A toppled object
-is unrecoverable by anything else in this cell, and detecting it late is worse
-than detecting it never, because the run keeps acting on a false picture.
+The tipping check — slide while `h < a / μ` — decides which objects may be
+pushed at all, and it currently runs on a **guessed** μ. **Solution 9 replaces
+the guess with an estimate and an interval**, and then the check can use the
+pessimistic end of the interval.
 
-**Its threshold can be deliberately biased.** A false alarm costs a look. A
-false "everything is fine" costs the run. Those are not symmetric and the
-threshold should not be either — which is a decision you can only make
-deliberately if the component is small enough to reason about.
+That is not a more accurate system. It is a *safer* one, and it is the only
+entry here that improves a safety decision rather than a performance one.
+Solution 5 is its close relative and the difference is worth keeping straight:
+solution 5 learns the model's error, solution 9 learns the model's missing
+input. The second hands back a number every other part of the system can use.
 
-### And the residual second
+### What solutions 10 and 11 are for
 
-Solution 5 earns its place for a different reason: **it trains itself while the
-system runs.** Every push already produces a before picture, a commanded
-displacement and an after picture. That is a labelled example, free, from
-normal operation. No data collection campaign, no separate training phase.
+**Solution 10**, a learned forward model, is the best of the three learned
+entries, because a forward model serves any goal while a policy serves the one
+it was rewarded for, and because replanning every step makes a mediocre model
+useful. If a learned approach were taken here, this would be it.
 
-It is also the honest answer to solution 4's problem. The analytical push model
-is correct and needs two numbers this cell does not measure. Learning the
-correction keeps the structure that generalises and absorbs what the physics
-could not know — provided, and this is the condition that matters, the residual
-is never allowed to make the tipping check *less* conservative.
-
-### What the other four are actually for
-
-**Solution 6** is safe and buys little. A ranker over candidates the geometry
-already generated and vetoed cannot do harm, and with five objects on a small
-table there are rarely enough candidates for the ordering to matter. It becomes
-worth having when the arrangement is large enough that the number of possible
-pushes is genuinely hard to search.
-
-**Solution 8** is aimed at a jumble of unknown shapes where there is no
-geometry to reason about. Here there are five discs of one known kind with
-their positions already measured, and very little for a policy to discover that
-arithmetic does not already give. It also carries a risk the others do not: a
-policy cannot be *told* not to topple something, only rewarded for not doing
-it, which means toppling things while it learns.
-
-**Solution 9** is the best of the three learned entries, because a forward model
-serves any goal while a policy serves the one it was rewarded for, and because
-replanning every step makes a mediocre model useful. If a learned approach were
-going to be taken here, this would be it.
-
-**Solution 10** compresses a working planner into a fast policy. Its problem in
-this cell is circular: it needs the planner to exist first, to act as the
-expert, and once the planner exists the policy's only advantage is speed — and
-speed is not the bottleneck when the bottleneck is arm motion.
+**Solution 11**, searching a parametric strategy, is the pragmatic one. A dozen
+numbers rather than a million weights means hundreds of evaluations rather than
+tens of thousands — hours rather than the eleven days that put reinforcement
+learning in [`learned-with-hardware.md`](learned-with-hardware.md). And because
+the parameters live inside the geometric planner, which keeps its vetoes, no
+candidate the search proposes can be unsafe. It is the cheapest way to find out
+whether the hand-chosen constants are anywhere near right.
 
 ### What would be built, in order
 
 1. **The reachability test** — solution 1. A handful of comparisons, and on
    most runs it may remove the need for everything below it.
-2. **The tipping check.** `a / μ` from the measured base width, against the
-   lowest the gripper can reach. This decides which objects may be pushed at
-   all, and it must exist before anything touches one.
+2. **The tipping check** from the measured base width. It must exist before
+   anything touches an object.
 3. **The push**, as a sideways guarded move with the fingers closed.
 4. **The destination search** — solution 3's four tests.
 5. **The look-again comparison**, geometric to begin with.
 6. **The change-verifier** — solution 7 — once runs have been scored and the
-   numbers say the geometric comparison is missing topples or false-alarming.
-7. **The residual** — solution 5 — after enough pushes have been logged to
-   train on, which is the point: it cannot be built first even if you wanted to.
+   numbers say the geometric comparison misses topples or false-alarms.
+7. **The parameter estimate** — solution 9 — after enough pushes have been
+   logged, which is the point: it cannot be built first even if you wanted to.
+8. **The early-abort** — solution 8 — last, because it is the one with a
+   real-time constraint and the most ways to be subtly wrong.
 
-Steps 1 to 5 are programmed. Steps 6 and 7 are where a model earns its place,
-and the ordering is the argument: **measure which failure you actually have
-before choosing a component to fix it.**
+Steps 1 to 5 are programmed. The ordering of 6 to 8 is the argument:
+**measure which failure you actually have before choosing a component to fix
+it**, and take the cheap observer before the thing that has to act in
+milliseconds.
 
 ### How it would be known to work
 
 Against the simulator's own record of what it spawned:
 
 - how many objects ended up with the room they need and a usable viewpoint;
-- how many pushes it took, and how many of those were repeats because the first
-  fell short;
-- how far each object ended up from where the push aimed it — which is also the
-  residual model's training signal;
-- how many were refused, and for which of the two reasons: it tips before it
-  slides, or there is nowhere clear to push it to;
-- **how many were toppled, which should be none**, and separately, how many
-  topples the verifier *caught*. Those are different numbers and both matter.
-
----
-
+- how many pushes it took, and how many were repeats because the first fell
+  short;
+- how far each object ended up from where the push aimed it — which is also
+  solution 5's training signal;
+- how many were refused, and for which reason: it tips before it slides, or
+  there is nowhere clear to push it to;
+- **how many were toppled, which should be none** — and separately, how many
+  topples were *caught* by solution 7 and how many were *prevented* by solution
+  8. Those are three different numbers and all three matter.
 ## Where the chosen solution can fail
 
 **μ is guessed, so the tipping check is guessed.** The arithmetic is sound and
@@ -2048,3 +2224,5 @@ a heavy glass resists and a light one skates, and the difference is the same
 factor of three that problem 1's step 5 has to weigh for.
 
 ← [The problem](problem.md) · [Problem 4 — several kinds at once](../problem-4/) →
+
+← [The problem](problem.md) · [The ones that need more than a simulator](learned-with-hardware.md) · [Problem 4 — several kinds at once](../problem-4/) →
