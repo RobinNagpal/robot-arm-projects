@@ -502,7 +502,67 @@ def problem_3_push_low_or_it_topples() -> None:
     _save(figure, "problem-3-push-low-or-it-topples.png")
 
 
+# ------------------------------------------------------------- problem 4
+
+
+def problem_4_one_wrong_name() -> None:
+    """What a misnamed kind costs, drawn as the chain it breaks.
+
+    In problem 1 a wrong name shows up at once as a refused grip. With several
+    kinds it can be a name that is wrong and plausible, and then every step
+    after it is confidently wrong.
+    """
+    figure, axes = _new(10.6, 3.4)
+    _bare(axes)
+    axes.set_xlim(0, 1)
+    axes.set_ylim(0, 1)
+
+    boxes = [
+        ("measure\nthe profile", GOOD, "right"),
+        ("name\nthe kind", WARN, "WRONG"),
+        ("choose\nthe grip", WARN, "wrong, and\nplausible"),
+        ("squeeze", WARN, "wrong cap"),
+        ("turn it\nover", WARN, "held too high"),
+    ]
+    width, gap = 0.155, 0.045
+    for index, (label, colour, note) in enumerate(boxes):
+        x = 0.035 + index * (width + gap)
+        axes.add_patch(
+            Rectangle((x, 0.42), width, 0.30, fc="none", ec=colour, lw=1.8)
+        )
+        axes.text(x + width / 2, 0.57, label, ha="center", va="center", fontsize=9.5, color=INK)
+        axes.text(
+            x + width / 2, 0.35, note, ha="center", va="top", fontsize=8.2, color=colour,
+        )
+        if index:
+            axes.add_patch(
+                FancyArrowPatch(
+                    (x - gap, 0.57), (x - 0.006, 0.57), arrowstyle="-|>",
+                    mutation_scale=12, color=MUTED, lw=1.3,
+                )
+            )
+
+    axes.text(
+        0.5, 0.88,
+        "nothing downstream re-checks the name, because nothing downstream can",
+        ha="center", fontsize=10, color=INK,
+    )
+    axes.text(
+        0.5, 0.15,
+        "a tumbler called stemmed is gripped at a stem that does not exist;\n"
+        "the fingers close on air, or on the bowl, and the first thing that notices\n"
+        "is the width check at first contact",
+        ha="center", va="top", fontsize=8.4, color=MUTED,
+    )
+    figure.suptitle(
+        "Problem 4: with several kinds, naming becomes load-bearing",
+        fontsize=12, color=INK, y=1.02,
+    )
+    _save(figure, "problem-4-one-wrong-name.png")
+
+
 DRAWINGS = {
+    "problem-4-one-wrong-name": problem_4_one_wrong_name,
     "the-five-problems": five_problems,
     "problem-1-what-is-asked": problem_1,
     "problem-2-merged-in-the-picture": problem_2_merged_in_the_picture,
