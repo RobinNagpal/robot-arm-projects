@@ -28,16 +28,16 @@ def test_a_drinking_glass_estimates_to_something_a_kitchen_scale_would_agree_wit
     # A rocks glass really does weigh somewhere around 200 to 300 g. The
     # estimate is allowed to be poor, but it may not be absurd, because it sets
     # the first squeeze.
-    mass = estimate_mass(profile_of(straight(height=0.090, rim_diameter=0.080)),
-                         spec.kind("straight_glass"))
+    mass = estimate_mass(profile_of(straight(height=0.090, rim_diameter=0.080)), spec.kind("straight_glass"))
     assert 0.10 < mass < 0.40
 
 
 def test_a_wine_glass_estimates_lighter_than_a_rocks_glass():
-    wine = estimate_mass(profile_of(stemmed(height=0.200, bowl_diameter=0.085, stem_diameter=0.009)),
-                         spec.kind("stemmed_glass"))
-    rocks = estimate_mass(profile_of(straight(height=0.090, rim_diameter=0.080)),
-                          spec.kind("straight_glass"))
+    wine = estimate_mass(
+        profile_of(stemmed(height=0.200, bowl_diameter=0.085, stem_diameter=0.009)),
+        spec.kind("stemmed_glass"),
+    )
+    rocks = estimate_mass(profile_of(straight(height=0.090, rim_diameter=0.080)), spec.kind("straight_glass"))
     assert wine < rocks
 
 

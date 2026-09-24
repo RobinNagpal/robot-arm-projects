@@ -782,7 +782,7 @@ class PickGlassesTask:
         # holding it arrives as a shock.
         self._log.info(f"re-gripping at {hold:.1f} N")
         self._straight_if_possible(position, rotation, "back down to re-grip")
-        grip, position = self._move_to_centre_of_mass(profile, kind, grip, mass, position, rotation)
+        grip, position = self._move_below_centre_of_mass(profile, kind, grip, mass, position, rotation)
         self._arm.set_gripper_force(hold)
         time.sleep(0.3)
 
@@ -843,10 +843,10 @@ class PickGlassesTask:
                 f"said {opening * 1000:.0f} mm, so the grasp is not where it should be"
             )
 
-    def _move_to_centre_of_mass(
+    def _move_below_centre_of_mass(
         self, profile: Profile, kind, grip: Grip, mass: float, position, rotation
     ) -> tuple[Grip, np.ndarray]:
-        """Move the fingers to where the weighed glass says its centre of mass is.
+        """Move the fingers to just below the centre of mass the weight points to.
 
         The first grip came from the outline alone, which cannot show how
         thick the solid base is, and puts the centre too high. The weight can:
@@ -854,7 +854,9 @@ class PickGlassesTask:
         follows the centre of mass moves; for the others the grip is the same.
 
         The glass is standing on the table when this is called, so opening the
-        fingers and sliding them up or down it costs nothing.
+        fingers and sliding them up or down it costs nothing, and so does
+        letting go of it. Raises NoGrip, with the arm clear, if the weighed
+        glass cannot be held below its centre of mass.
         """
         try:
             weighed = find_grip(
@@ -865,22 +867,26 @@ class PickGlassesTask:
                 mass=mass,
             )
         except NoGrip as why:
-            # The first grip passed every check and still stands.
-            self._report.doing("move the grip to the weighed centre of mass", f"not moved: {why}")
-            return grip, position
+            # The weight has shown the glass can only be held above its centre
+            # of mass, where upside down it would fall. It is standing on the
+            # table, so let go and leave it there; the first grip is not kept.
+            self._report.doing("move the grip below the weighed centre of mass", f"refused: {why}")
+            self._arm.set_gripper(GRIPPER_MAX_OPENING)
+            self._stand_clear()
+            raise
 
         shift = weighed.height - grip.height
         if abs(shift) < REGRIP_SHIFT:
             return grip, position
         self._report.doing(
-            "move the grip to the weighed centre of mass",
+            "move the grip below the weighed centre of mass",
             f"the weight puts it {abs(shift) * 1000:.0f} mm {'higher' if shift > 0 else 'lower'}, "
             f"so the fingers open and re-close **{weighed.height * 1000:.0f} mm up**",
         )
-        self._log.info(f"moving the grip {shift * 1000:+.0f} mm, to its centre of mass")
+        self._log.info(f"moving the grip {shift * 1000:+.0f} mm, to just below its centre of mass")
         self._arm.set_gripper(min(weighed.opening + 0.020, GRIPPER_MAX_OPENING))
         position = position + UP * shift
-        self._straight_if_possible(position, rotation, "level with its centre of mass")
+        self._straight_if_possible(position, rotation, "just below its centre of mass")
         self._close_until_touching(weighed.opening)
         return weighed, position
 

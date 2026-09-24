@@ -23,7 +23,7 @@ from dataclasses import dataclass
 # The procedures a rule can name. Each one turns a measured profile into a
 # height to grip at; they are implemented in rules.py.
 LOWEST_VERTICAL_SECTION = "lowest_vertical_section"
-NEAREST_CENTRE_OF_MASS = "nearest_centre_of_mass"
+JUST_BELOW_CENTRE_OF_MASS = "just_below_centre_of_mass"
 NARROWEST_BELOW_WIDEST = "narrowest_below_widest"
 FLATTEST_IN_BAND = "flattest_in_band"
 
@@ -86,10 +86,12 @@ class Kind:
 LIBRARY: dict[str, Kind] = {
     "straight_glass": Kind(
         name="straight_glass",
-        # Held level with its centre of mass, so its weight has no lever to
-        # turn it in the fingers while it goes over. Held low instead, a tall
-        # one swung round between the pads at the force the wall is rated for.
-        grip_rule=NEAREST_CENTRE_OF_MASS,
+        # Held a little below its centre of mass: below, so that upside down
+        # it hangs from the pads instead of balancing on them, and only a
+        # little, so its weight has a short lever to swing it with. Held at
+        # the bottom instead, a tall one swung round between the pads at the
+        # force the wall is rated for.
+        grip_rule=JUST_BELOW_CENTRE_OF_MASS,
         # The lower half. Rule one of the three: hold the end that becomes the
         # top after the turn, so the fingers end up above the rack rather than
         # among the pegs. The centre of mass of a tumbler is always in it.
