@@ -752,6 +752,6 @@ above half its own height. A glass shorter than about 120 mm has no room left
 between the two. No way of finding or measuring changes that. It needs a
 different way of gripping, a slimmer gripper, or no glasses that short. That is
 listed under *Decisions still open* in the
-[problem statement](../problem-statement.md).
+[problem statement](../../problem-statement.md).
 
 ← [Step 1 — finding the glasses](step1-finding-the-glasses.md)

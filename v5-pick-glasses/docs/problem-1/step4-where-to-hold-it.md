@@ -7,7 +7,7 @@ grip at, and a distance to open the fingers to.
 
 Both numbers come out of the measurement taken seconds earlier. Neither is
 looked up anywhere. That is the claim of the
-[problem statement](../problem-statement.md) made concrete. "Hold the narrowest
+[problem statement](../../problem-statement.md) made concrete. "Hold the narrowest
 part below the bowl" is a sentence about wine glasses in general. The 9 mm it
 turns into is about this wine glass only.
 
@@ -140,7 +140,7 @@ something high up has found the wrong thing.
 
 ## The rules
 
-![One rule per kind](../images/grip-per-kind.png)
+![One rule per kind](../../images/grip-per-kind.png)
 
 | Rule | Used by | What it looks for |
 | --- | --- | --- |
@@ -231,7 +231,7 @@ about the glass at all.
 
 ## Why this beats a table of measurements
 
-![Eight wine glasses, and where the rule holds each one](../images/why-rules-not-sizes.png)
+![Eight wine glasses, and where the rule holds each one](../../images/why-rules-not-sizes.png)
 
 The left panel is eight wine glasses the project generated. They are all called
 the same thing and no two are alike: heights from 131 to 230 mm, bowls of
@@ -253,7 +253,7 @@ method — generate a family, assert properties the gripper cares about, and do
 
 ## The gripper has a body
 
-![Held too low, the body is through the table](../images/the-gripper-has-a-body.png)
+![Held too low, the body is through the table](../../images/the-gripper-has-a-body.png)
 
 This is a general mistake rather than a local one.
 [Bounding the search by the gripper's own body](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/03_choosing-a-grip.md#7-bounding-the-search-by-the-grippers-own-body)

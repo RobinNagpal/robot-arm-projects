@@ -165,7 +165,7 @@ it.
 **Needs:** [PyTorch](https://pytorch.org/), with [LeRobot](https://github.com/huggingface/lerobot) or the original [ACT](https://tonyzhaozh.github.io/aloha/) code, a GPU, and the
 collection runs.
 
-**Proof:** [`v5-learn-pick-place`](../../v5-learn-pick-place) does exactly this
+**Proof:** [`v5-learn-pick-place`](../../../v5-learn-pick-place) does exactly this
 with blocks and reaches 74% on blocks it never saw.
 
 **The catch:** the model has only ever seen these glasses, so their proportions
@@ -278,7 +278,7 @@ come first.
 ### Learning it, after that
 
 Copying an expert is proven next door.
-[`v5-learn-pick-place`](../../v5-learn-pick-place) reaches 74% on blocks it
+[`v5-learn-pick-place`](../../../v5-learn-pick-place) reaches 74% on blocks it
 never saw. Note what that project did *not* learn: the block is still found
 with plain geometry from a depth camera, and only the movement is learned. That
 split would carry over here — the profile and the kind stay measured, the last

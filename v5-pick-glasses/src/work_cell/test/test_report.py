@@ -152,7 +152,10 @@ def test_every_line_the_report_writes_is_a_line_of_the_pseudocode():
     the same on both sides, and nothing but this test keeps it that way: reword
     one and the other looks like a different program.
     """
-    docs = Path(__file__).resolve().parents[3] / "docs"
+    # The walkthrough the report follows is problem 1's, because problem 1 is
+    # the one the code solves. The other problem folders have no step
+    # documents to check against yet.
+    docs = Path(__file__).resolve().parents[3] / "docs" / "problem-1"
     known = set()
     for doc in sorted(docs.glob("step*.md")):
         # The approaches documents compare other methods; they are not a step

@@ -2,7 +2,7 @@
 
 After step 2, the arm has a **profile** of the glass: its width at every height,
 from the table up to the rim. Now it has to name the glass. There are four
-names, the four kinds the [problem statement](../problem-statement.md) sets
+names, the four kinds the [problem statement](../../problem-statement.md) sets
 out:
 
 - **straight glass**, like a tumbler
@@ -75,7 +75,7 @@ why all of its tests run in a fraction of a second, with no robot anywhere.
 
 ## What a profile looks like
 
-![One glass of each kind, as an outline and as a profile](../images/four-kinds-named.png)
+![One glass of each kind, as an outline and as a profile](../../images/four-kinds-named.png)
 
 The top row is each glass as the camera saw it from the side. The bottom row
 is the same glass as the profile: go up the side of the chart to a height, and
@@ -96,7 +96,7 @@ Naming it is a matter of asking the right questions of the curve.
 
 ## The three questions
 
-![The three questions, as a flowchart](../images/three-questions.png)
+![The three questions, as a flowchart](../../images/three-questions.png)
 
 **1. Is there a waist?** A waist is a narrow part with wider glass both above
 it and below it. On a drinking glass, that is a stem, and nothing else looks
@@ -148,7 +148,7 @@ right name.
 
 ## A hundred and twenty glasses at once
 
-![Every generated glass, placed by what the classifier measured](../images/classify-from-profile.png)
+![Every generated glass, placed by what the classifier measured](../../images/classify-from-profile.png)
 
 Every dot is one glass the project generated at random proportions, thirty
 of each kind. Its

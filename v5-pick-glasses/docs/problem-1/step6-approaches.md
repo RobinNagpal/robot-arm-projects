@@ -28,7 +28,7 @@ contact a few millimetres tall, which is very little.
 So picture the glass hanging on a hinge between the fingertips. Anything that
 pushes it round that hinge makes it swing.
 
-![The hinge between the pads, and the strong and weak ways to turn](../images/the-hinge.png)
+![The hinge between the pads, and the strong and weak ways to turn](../../images/the-hinge.png)
 
 The left picture is the grip seen from above: each flat pad touches the round
 glass at one spot, and the dashed line through those two spots is the hinge.
@@ -46,7 +46,7 @@ next sections come back to.
 - **Knocks.** Anything the glass touches on the way — a peg, the table — is a
   push.
 
-![Where the weight sits against the grip, upright and upside down](../images/weight-and-the-hinge.png)
+![Where the weight sits against the grip, upright and upside down](../../images/weight-and-the-hinge.png)
 
 Each glass is held where the grip rules choose, and its centre of mass is
 estimated from its outline. On the straight glass the weight is 26 mm above
@@ -101,7 +101,7 @@ work at least as well on a real arm. The reverse is not guaranteed.
 Three of the approaches are different ways of moving the glass. This is what
 they look like, side on:
 
-![Three ways to move a glass through a half turn](../images/ways-to-turn.png)
+![Three ways to move a glass through a half turn](../../images/ways-to-turn.png)
 
 The rest change the grip instead: where the glass is held, or what holds it.
 
@@ -250,7 +250,7 @@ line. Change the pad shape and that line becomes something wider:
 - **Softer pads** squash around the glass and touch over an area. Silicone does
   this naturally.
 
-![Flat against V-shaped pads, and short against tall](../images/pad-shapes.png)
+![Flat against V-shaped pads, and short against tall](../../images/pad-shapes.png)
 
 **Good:** the biggest improvement for the least change. In the simulator it is
 a change to the pad shapes in `arm/gripper.urdf.xacro`, and nothing else.
@@ -346,7 +346,7 @@ what the camera sees and what the sensors feel go in, and joint moves come out.
 [ACT](https://tonyzhaozh.github.io/aloha/) and
 [Diffusion Policy](https://diffusion-policy.cs.columbia.edu/) are the usual
 choices, and [LeRobot](https://github.com/huggingface/lerobot) packages both.
-The sibling project [`v5-learn-pick-place`](../../v5-learn-pick-place) trained
+The sibling project [`v5-learn-pick-place`](../../../v5-learn-pick-place) trained
 this kind of model for picking blocks.
 
 **Good:** a person naturally does the turn that works — slowly, across the

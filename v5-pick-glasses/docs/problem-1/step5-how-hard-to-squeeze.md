@@ -4,7 +4,7 @@ The arm knows where to hold the glass and how far apart to put the fingers.
 How hard they press is a separate question, and it is the one question in this
 project that no amount of looking can answer.
 
-The reason is in the [problem statement](../problem-statement.md). Wall
+The reason is in the [problem statement](../../problem-statement.md). Wall
 thickness is invisible from outside, so two glasses with identical outlines can
 differ in weight by a factor of three. And the force needed to hold a glass
 depends on what it weighs. A camera can measure everything about a glass except
@@ -140,7 +140,7 @@ instance.
 
 The estimate is wrong by roughly a third in either direction.
 
-![Why the glass is weighed rather than trusted](../images/force-from-mass.png)
+![Why the glass is weighed rather than trusted](../../images/force-from-mass.png)
 
 The line is the squeeze the arm starts with. The band is where the right answer
 actually is. A third is fine for a first squeeze and useless as a final one.
@@ -265,7 +265,7 @@ hardware, and this project already reads that sensor for the weighing step.
 
 ## Which way is down
 
-![The gripper's own axis is level, so it carries none of the weight](../images/which-way-is-down.png)
+![The gripper's own axis is level, so it carries none of the weight](../../images/which-way-is-down.png)
 
 For a long time every glass weighed nothing. The reason is a good example of a
 reading that is not wrong so much as pointing the wrong way. The wrist sensor

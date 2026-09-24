@@ -112,7 +112,7 @@ fail on it, for four different reasons.
 That gap is also a signal, and it can be used as one. Treating the missing
 depth as the measurement rather than as the obstacle is a real technique with a
 name — [the depth hole](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#17-the-depth-hole-for-glass-and-chrome) —
-and it is what this project used to do; `docs/step1-finding-the-glasses.md`
+and it is what this project used to do; `docs/problem-1/step1-finding-the-glasses.md`
 records why it went. What has replaced it in the field is learned [depth
 completion for transparent and shiny objects](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/04_models-that-find.md#17-transparent-and-shiny-objects),
 whose licensing is worse than its accuracy.
@@ -123,7 +123,7 @@ points stand above the table top. That is a much easier problem, and it is the
 one this project solves. Dropping the assumption later means replacing one
 function: the one that decides which pixels are a glass. The ways of doing that
 are compared in
-[`docs/step1-approaches.md`](docs/step1-approaches.md).
+[`docs/problem-1/step1-approaches.md`](docs/problem-1/step1-approaches.md).
 
 **The glasses stand apart, upright, and separate.** None is lying down, none
 is inside another, and none is being held. A tray of glasses jumbled together

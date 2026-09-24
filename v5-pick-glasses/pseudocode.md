@@ -5,7 +5,7 @@ each thing is for and who calls it, and stops short of what happens inside a
 function.
 
 This is the map. [`problem-statement.md`](problem-statement.md) says what the
-journey is for, [`docs/`](docs/) is the walk itself, and
+journey is for, [`docs/problem-1/`](docs/problem-1/) is the walk itself, and
 [`implementation-notes.md`](implementation-notes.md) has the reasoning behind
 the choices.
 

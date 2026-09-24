@@ -136,7 +136,79 @@ def five_problems() -> None:
     _save(figure, "the-five-problems.png")
 
 
-DRAWINGS = {"the-five-problems": five_problems}
+# ------------------------------------------------------------- problem 1
+
+
+def problem_1() -> None:
+    """One glass, and the four things about it nobody has told the arm.
+
+    The point of the picture is that the start state is not "a glass at
+    (x, y)". It is a table the arm has never looked at.
+    """
+    figure, axes = _new(9.6, 3.9)
+    _bare(axes)
+    axes.set_xlim(0, 1)
+    axes.set_ylim(0, 1)
+
+    # left: what is on the table
+    axes.add_patch(Rectangle((0.03, 0.18), 0.40, 0.66, fill=False, ec=MUTED, lw=1.0))
+    axes.text(0.23, 0.88, "what is there", ha="center", fontsize=10.5, color=INK)
+
+    # a glass, side on, with every dimension marked unknown
+    body = [(0.19, 0.28), (0.19, 0.62), (0.27, 0.70), (0.27, 0.28)]
+    axes.add_patch(plt.Polygon(body, closed=False, fill=False, ec=GLASS, lw=2.0))
+    axes.plot([0.19, 0.27], [0.28, 0.28], color=GLASS, lw=2.0)
+
+    axes.annotate(
+        "", xy=(0.155, 0.28), xytext=(0.155, 0.70),
+        arrowprops=dict(arrowstyle="<->", color=WARN, lw=1.2),
+    )
+    axes.text(0.145, 0.49, "how tall?", ha="right", va="center", fontsize=8.6, color=WARN)
+    axes.annotate(
+        "", xy=(0.19, 0.745), xytext=(0.27, 0.745),
+        arrowprops=dict(arrowstyle="<->", color=WARN, lw=1.2),
+    )
+    axes.text(0.23, 0.775, "how wide?", ha="center", fontsize=8.6, color=WARN)
+    axes.text(0.30, 0.60, "what shape?", ha="left", va="center", fontsize=8.6, color=WARN)
+    axes.text(0.30, 0.40, "how heavy?", ha="left", va="center", fontsize=8.6, color=WARN)
+    axes.plot([0.08, 0.40], [0.28, 0.28], color=INK, lw=1.4)
+    axes.text(0.23, 0.225, "the table, at a known height", ha="center", fontsize=8, color=MUTED)
+
+    # middle: the arrow
+    axes.add_patch(
+        FancyArrowPatch(
+            (0.455, 0.51), (0.565, 0.51), arrowstyle="-|>", mutation_scale=18,
+            color=INK, lw=1.6,
+        )
+    )
+    axes.text(0.51, 0.565, "measure,\nthen act", ha="center", fontsize=8.6, color=INK)
+
+    # right: the end state
+    axes.add_patch(Rectangle((0.59, 0.18), 0.38, 0.66, fill=False, ec=MUTED, lw=1.0))
+    axes.text(0.78, 0.88, "what has to happen", ha="center", fontsize=10.5, color=INK)
+
+    axes.plot([0.63, 0.94], [0.30, 0.30], color=INK, lw=1.4)
+    axes.add_patch(Rectangle((0.69, 0.30), 0.20, 0.035, fc=MUTED, alpha=0.5, ec=MUTED))
+    for peg in (0.735, 0.795, 0.855):
+        axes.plot([peg, peg], [0.335, 0.40], color=MUTED, lw=1.6)
+    # the glass, upside down over the middle peg
+    upside = [(0.755, 0.66), (0.755, 0.335), (0.835, 0.335), (0.835, 0.66)]
+    axes.add_patch(plt.Polygon(upside, closed=False, fill=False, ec=GOOD, lw=2.0))
+    axes.plot([0.755, 0.835], [0.66, 0.66], color=GOOD, lw=2.0)
+    axes.text(0.795, 0.70, "mouth down, over a peg", ha="center", fontsize=8.6, color=GOOD)
+    axes.text(0.78, 0.245, "the rack, found by its marker", ha="center", fontsize=8, color=MUTED)
+
+    figure.suptitle(
+        "Problem 1: one glass, and nothing known about it in advance",
+        fontsize=12, color=INK, y=0.99,
+    )
+    _save(figure, "problem-1-what-is-asked.png")
+
+
+DRAWINGS = {
+    "the-five-problems": five_problems,
+    "problem-1-what-is-asked": problem_1,
+}
 
 
 def main() -> None:

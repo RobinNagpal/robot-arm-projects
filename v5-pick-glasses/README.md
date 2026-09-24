@@ -264,9 +264,10 @@ reasoning they come from.
 - [`problem-statement.md`](problem-statement.md) — what the task is, why it is
   worth doing, what the arm is allowed to know, and what is still undecided.
   Read this one first.
-- [`docs/`](docs/) — a walk through one run, one document per step. Each ends
-  with what went wrong at that step and how else that step could have been
-  done. For steps 1, 2 and 4 that last part has a document of its own.
+- [`docs/`](docs/) — one folder per problem. Problem 1 is built, and its
+  folder is a walk through one run, one document per step, each ending with
+  what went wrong at that step and how else it could have been done. Problems 2
+  to 5 are stated, and 2 and 3 have their solutions worked out. For steps 1, 2 and 4 that last part has a document of its own.
 - [`pseudocode.md`](pseudocode.md) — what every file and function is for, and
   what calls what when you type `make run`.
 - [`architecture.md`](architecture.md) — the folder layout, and why the pieces

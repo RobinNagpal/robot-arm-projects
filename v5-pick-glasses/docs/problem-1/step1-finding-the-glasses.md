@@ -2,7 +2,7 @@
 
 The run starts with the arm knowing nothing about the table in front of it. It
 does not know how many glasses are on it. It does not know where they are, or
-how big any of them is. The [problem statement](../problem-statement.md) does
+how big any of them is. The [problem statement](../../problem-statement.md) does
 not let anyone tell it. Everything the arm uses from here on, it has to have
 measured itself. This step is where that begins.
 
@@ -258,7 +258,7 @@ decided after it has looked at the glass properly.
 
 ## One picture cannot say how far away a glass is
 
-![One look against two](../images/one-look-two-looks.png)
+![One look against two](../../images/one-look-two-looks.png)
 
 Laying a ray down on the table is exact for anything lying flat *on* the table.
 That is why the marker on the rack is found perfectly every run: it is printed

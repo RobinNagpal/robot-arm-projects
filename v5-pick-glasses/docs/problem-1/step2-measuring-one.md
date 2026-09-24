@@ -179,7 +179,7 @@ proportions the arm knows nothing about:
 | Waist | 30.8 mm up |
 | Width at the waist | 9.2 mm |
 
-![A profile and the grip read off it](../images/profile-to-grip.png)
+![A profile and the grip read off it](../../images/profile-to-grip.png)
 
 The left panel is the glass. The right panel is the same information as the
 project actually holds it: two arrays, a height and a width, one pair per row

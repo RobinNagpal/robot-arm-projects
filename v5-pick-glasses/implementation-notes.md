@@ -4,7 +4,7 @@ Why the project is built the way it is, and what each number was derived from.
 
 It sits behind the other documents rather than beside them.
 [`problem-statement.md`](problem-statement.md) says what the task is and why
-it is worth doing; [`docs/`](docs/) walks through how a run does it, stage by
+it is worth doing; [`docs/problem-1/`](docs/problem-1/) walks through how a run does it, stage by
 stage; [`pseudocode.md`](pseudocode.md) says which file and function each
 stage lives in. This one is for the questions those raise and do not answer —
 why six degrees rather than two, why the force has two stages, why a rule and
@@ -99,7 +99,7 @@ it simply drops rather than arguing about what the colour picture shows there.
 The cost is real and should not be hidden. On real glassware this method does
 not work at all, and the one that does is the one that was removed. The
 comparison in
-[`docs/step1-approaches.md`](docs/step1-approaches.md) sets
+[`docs/problem-1/step1-approaches.md`](docs/problem-1/step1-approaches.md) sets
 out what to use instead, and the interface is arranged so that it is one
 function.
 
@@ -119,7 +119,7 @@ the tallest glass the cell handles at the top — is as much a question about th
 lens as about the glass. `MEASURE_STANDOFF` is only the floor on it. It came to
 380 mm here, and it used to be a flat 300, which put the foot of the glass in
 the last few pixels of the picture and cost more than it saved: see
-[`docs/step2-measuring-one.md`](docs/step2-measuring-one.md).
+[`docs/problem-1/step2-measuring-one.md`](docs/problem-1/step2-measuring-one.md).
 
 Three details in `perception.py` matter more than they look:
 
@@ -370,7 +370,7 @@ licences that will not surprise you.
 ## Where the faults were, and where they appeared
 
 Getting this to run at all turned up a long run of faults, and they are
-written up at the step each one belongs to in [`docs/`](docs/). What is worth
+written up at the step each one belongs to in [`docs/problem-1/`](docs/problem-1/). What is worth
 saying here is the pattern they share, because it shaped how the project is
 debugged now.
 

@@ -53,7 +53,7 @@ What follows, in order:
 
 ## The whole step in six pictures
 
-![Step 6 in six pictures](../images/step6-in-pictures.png)
+![Step 6 in six pictures](../../images/step6-in-pictures.png)
 
 Each picture is looking straight down the fingers, so the two red pads are the
 two fingers, one on each side of the glass. The rest of this document goes
@@ -153,7 +153,7 @@ which is worked out per glass rather than chosen in advance. The general form
 of that — let the measurement decide the tolerance — is
 [from a measurement to a decision](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#28-from-a-measurement-to-a-decision).
 
-![How much a glass may lean going into a slot](../images/tilt-budget.png)
+![How much a glass may lean going into a slot](../../images/tilt-budget.png)
 
 Slots are 100 mm apart:
 
@@ -350,7 +350,7 @@ through the table.
 
 **The rack the planner saw was turned a quarter circle from the real rack.**
 
-![The box the planner was given, against the rack](../images/the-rack-the-planner-saw.png)
+![The box the planner was given, against the rack](../../images/the-rack-the-planner-saw.png)
 
 The box standing in for the rack was never turned to match it. It lay across
 open table, right where the arm works, and the real rack was covered by nothing.
@@ -457,7 +457,7 @@ step 4, and the feel-for-the-rack descent on this page.
 planner near the object, turning what the arm sees and feels straight into
 joint moves. Many of the failures here are a planner refusing a move the arm
 could physically make, and a policy never asks a planner. The sibling project
-[`v5-learn-pick-place`](../../v5-learn-pick-place) does this and reaches 74% on
+[`v5-learn-pick-place`](../../../v5-learn-pick-place) does this and reaches 74% on
 blocks it never saw. What it gives up is the thing this project is built on: a
 policy cannot say why it refused a glass.
 
@@ -475,4 +475,4 @@ straight rather than leaning. Nothing does that now, and it is a real gap.
 far more directly than watching it leave the wrist, at the cost of adding a
 sensor to the furniture.
 
-← [Back to the walkthrough](README.md)
+← [Back to the walkthrough](../README.md)
