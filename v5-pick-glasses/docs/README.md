@@ -55,13 +55,16 @@ Each problem folder has a `problem.md` that states the problem in full — what
 is on the table, what the arm is not told, what makes it hard, and what "done"
 means. After that they differ, because the problems do:
 
-- **Problems 1, 4 and 5** are the whole pipeline, so they are written as
-  *steps*: find it, measure it, name it, choose the grip, squeeze, turn it
-  over.
-- **Problems 2 and 3** are not. Problem 2 stops at a set of pixels per glass
-  and problem 3 stops at glasses far enough apart to be gripped, so each has a
-  `solution-overview.md` instead — the approaches worth considering, programmed
-  and learned side by side, and which one is chosen and why.
+- **Problems 1, 4 and 5** are the whole pipeline, so they are written as the
+  same six *steps*: find it, measure it, name it, choose the grip, squeeze,
+  turn it over. Problem 1 gives each step a document of its own, because it is
+  built. Problems 4 and 5 take the six as a section of `problem.md`, saying
+  what changes at each and nothing else.
+- **Problems 2 and 3** are not the whole pipeline and do not have all the
+  steps. Problem 2 stops at a set of pixels per glass; problem 3 stops at
+  glasses far enough apart to be gripped. Each has a `solution-overview.md`
+  instead — the approaches worth considering, programmed and learned side by
+  side, and which one is chosen and why.
 
 ## What does not work yet
 
