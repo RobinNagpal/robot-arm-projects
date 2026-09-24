@@ -8,8 +8,13 @@ table**, not by lifting them.
 - [**The problem**](problem.md) — why dragging rather than lifting, the three
   distances that matter, how low a push has to be and why that is a property of
   the glass, and what "done" means.
-- [**Solution overview**](solution-overview.md) — the approaches considered,
-  programmed and learned side by side, and which are chosen.
+- [**Solution overview**](solution-overview.md) — five solutions in full,
+  programmed and learned side by side, and which are chosen. It starts with the
+  vocabulary and the contact mechanics, because a push is less simple than it
+  looks. Each solution is written the same way: what it is, why anyone does it
+  like that, how it would work here, a worked example with real numbers, what
+  it needs, what it is good and bad at, how it fails, and when it would be the
+  right choice.
 
 ## The short version
 

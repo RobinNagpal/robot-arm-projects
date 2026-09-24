@@ -561,7 +561,381 @@ def problem_4_one_wrong_name() -> None:
     _save(figure, "problem-4-one-wrong-name.png")
 
 
+# ----------------------------------------- problem 2, the solution overview
+
+
+def _two_glasses(axis, near=(0.38, 0.30), far=(0.58, 0.45), r=0.10):
+    """The same two overlapping silhouettes, for the three-answers panel."""
+    for centre, alpha in ((far, 0.30), (near, 0.55)):
+        axis.add_patch(
+            plt.Polygon(
+                [
+                    (centre[0] - r * 0.42, centre[1] - 0.20),
+                    (centre[0] - r * 0.50, centre[1] + 0.22),
+                    (centre[0] + r * 0.50, centre[1] + 0.22),
+                    (centre[0] + r * 0.42, centre[1] - 0.20),
+                ],
+                closed=True, fc=GLASS, alpha=alpha, ec=GLASS, lw=1.2,
+            )
+        )
+    return near, far, r
+
+
+def problem_2_three_answers() -> None:
+    """Detection, semantic segmentation, instance segmentation.
+
+    Three words that get used as if they meant the same thing. Only the third
+    answers problem 2, and the difference is easier seen than said.
+    """
+    figure, axes = plt.subplots(1, 3, figsize=(11.6, 3.8))
+    figure.patch.set_facecolor(PAPER)
+    titles = ["detection", "semantic segmentation", "instance segmentation"]
+    notes = [
+        "two boxes, and they\noverlap: which pixels\nbelong to which?",
+        "one region. two glasses,\nand nothing says so",
+        "two regions, split along\nthe boundary. this is\nwhat problem 2 needs",
+    ]
+    for index, (axis, title, note) in enumerate(zip(axes, titles, notes, strict=True)):
+        _bare(axis)
+        axis.set_xlim(0, 1)
+        axis.set_ylim(0, 1)
+        axis.add_patch(Rectangle((0.06, 0.20), 0.88, 0.62, fill=False, ec=MUTED, lw=1.0))
+        near, far, r = _two_glasses(axis)
+
+        if index == 0:
+            for centre, colour in ((near, WARN), (far, GOOD)):
+                axis.add_patch(
+                    Rectangle(
+                        (centre[0] - r * 0.55, centre[1] - 0.23), r * 1.10, 0.47,
+                        fill=False, ec=colour, lw=1.8,
+                    )
+                )
+        if index == 1:
+            for centre in (near, far):
+                axis.add_patch(
+                    plt.Polygon(
+                        [
+                            (centre[0] - r * 0.42, centre[1] - 0.20),
+                            (centre[0] - r * 0.50, centre[1] + 0.22),
+                            (centre[0] + r * 0.50, centre[1] + 0.22),
+                            (centre[0] + r * 0.42, centre[1] - 0.20),
+                        ],
+                        closed=True, fc=WARN, alpha=0.55, ec="none",
+                    )
+                )
+        if index == 2:
+            for centre, colour in ((far, GOOD), (near, WARN)):
+                axis.add_patch(
+                    plt.Polygon(
+                        [
+                            (centre[0] - r * 0.42, centre[1] - 0.20),
+                            (centre[0] - r * 0.50, centre[1] + 0.22),
+                            (centre[0] + r * 0.50, centre[1] + 0.22),
+                            (centre[0] + r * 0.42, centre[1] - 0.20),
+                        ],
+                        closed=True, fc=colour, alpha=0.6, ec=INK, lw=1.4,
+                    )
+                )
+
+        axis.set_title(title, fontsize=11, color=INK, pad=8)
+        axis.text(0.5, 0.12, note, ha="center", va="top", fontsize=8.4, color=MUTED)
+
+    figure.suptitle(
+        "Three things the word \u201csegmentation\u201d is used for, on the same two glasses",
+        fontsize=12, color=INK, y=1.03,
+    )
+    figure.tight_layout()
+    _save(figure, "problem-2-three-answers.png")
+
+
+def problem_2_cluster_and_fit() -> None:
+    """The chosen method, in three steps.
+
+    Points in the room, flattened onto the table, grouped by distance, and each
+    group checked against the one diameter the kind is allowed to be.
+    """
+    figure, axes = plt.subplots(1, 3, figsize=(12.0, 4.0))
+    figure.patch.set_facecolor(PAPER)
+
+    import numpy as _np
+
+    rng = _np.random.default_rng(7)
+    a, b = (0.40, 0.42), (0.62, 0.60)
+    rad = 0.038
+
+    def dots(centre, count=260):
+        angle = rng.uniform(0, 2 * 3.14159, count)
+        spread = rad * _np.sqrt(rng.uniform(0.0, 1.0, count))
+        return centre[0] + spread * _np.cos(angle), centre[1] + spread * _np.sin(angle)
+
+    ax, ay = dots(a)
+    bx, by = dots(b)
+
+    for axis in axes:
+        _bare(axis)
+        axis.set_xlim(0.28, 0.76)
+        axis.set_ylim(0.26, 0.74)
+        axis.set_aspect("equal")
+
+    axes[0].set_title("1. every pixel, put in the room", fontsize=10.5, color=INK, pad=8)
+    axes[0].scatter(_np.r_[ax, bx], _np.r_[ay, by], s=5, color=MUTED, alpha=0.8)
+    axes[0].text(
+        0.52, 0.295, "one blob in the picture;\ntwo clumps on the table",
+        ha="center", fontsize=8.4, color=MUTED,
+    )
+
+    axes[1].set_title("2. group them by distance", fontsize=10.5, color=INK, pad=8)
+    axes[1].scatter(ax, ay, s=5, color=GLASS)
+    axes[1].scatter(bx, by, s=5, color=GOOD)
+    axes[1].annotate(
+        "", xy=(a[0] + rad * 0.9, a[1] + rad * 0.7), xytext=(b[0] - rad * 0.9, b[1] - rad * 0.7),
+        arrowprops=dict(arrowstyle="<->", color=INK, lw=1.1),
+    )
+    axes[1].text(
+        0.585, 0.44, "105 mm apart,\nedge to edge",
+        ha="left", va="center", fontsize=8.4, color=INK,
+    )
+    axes[1].text(
+        0.52, 0.295, "grouping distance 25 mm:\nsafely two groups",
+        ha="center", fontsize=8.4, color=MUTED,
+    )
+
+    axes[2].set_title("3. fit a circle, and check it", fontsize=10.5, color=INK, pad=8)
+    for centre, colour, width in ((a, GLASS, 76), (b, GOOD, 73)):
+        axes[2].scatter(*dots(centre), s=4, color=MUTED, alpha=0.35)
+        axes[2].add_patch(Circle(centre, rad, fill=False, ec=colour, lw=2.0))
+        axes[2].text(
+            centre[0], centre[1] - rad - 0.035, f"{width} mm",
+            ha="center", fontsize=9, color=colour,
+        )
+    axes[2].text(
+        0.52, 0.295, "the kind is 60 to 90 mm across:\nboth pass, so two glasses",
+        ha="center", fontsize=8.4, color=MUTED,
+    )
+
+    figure.suptitle(
+        "The chosen method: stop grouping in the picture, group on the table",
+        fontsize=12, color=INK, y=1.02,
+    )
+    figure.tight_layout()
+    _save(figure, "problem-2-cluster-and-fit.png")
+
+
+def problem_2_the_waist() -> None:
+    """Why splitting the blob in the picture works, and when it stops.
+
+    Two overlapping discs have a waist. How deep it is decides whether a
+    marker-based split finds two regions or one.
+    """
+    figure, (shape, curve) = plt.subplots(1, 2, figsize=(11.0, 4.0))
+    figure.patch.set_facecolor(PAPER)
+
+    import numpy as _np
+
+    _bare(shape)
+    shape.set_xlim(0, 130)
+    shape.set_ylim(0, 80)
+    shape.set_aspect("equal")
+    shape.set_title("two discs overlapping, in the mask", fontsize=10.5, color=INK, pad=8)
+    for cx in (40, 90):
+        shape.add_patch(Circle((cx, 40), 32, fc=MUTED, alpha=0.55, ec="none"))
+    shape.plot([65, 65], [40 - 20, 40 + 20], color=WARN, lw=2.2)
+    shape.text(67, 40, "the waist,\n40 px = 65 mm", fontsize=8.4, color=WARN, va="center")
+    shape.annotate(
+        "", xy=(8, 8), xytext=(122, 8),
+        arrowprops=dict(arrowstyle="<->", color=INK, lw=1.1),
+    )
+    shape.text(65, 12, "114 px = 185 mm  (no glass is over 105 mm)", ha="center", fontsize=8.2, color=INK)
+
+    radius = 32.0
+    gap = _np.linspace(1, 64, 200)
+    ratio = _np.sqrt(_np.clip(1 - (gap / (2 * radius)) ** 2, 0, 1))
+    curve.plot(gap, ratio, color=GLASS, lw=2.0)
+    curve.axhline(0.7, color=MUTED, lw=1.2, ls=(0, (5, 4)))
+    curve.text(2, 0.72, "the marker threshold", fontsize=8.4, color=MUTED)
+    cross = 2 * radius * _np.sqrt(1 - 0.7**2)
+    curve.axvspan(0, cross, color=WARN, alpha=0.12)
+    curve.axvspan(cross, 64, color=GOOD, alpha=0.10)
+    curve.text(cross / 2, 0.16, "one region:\nthey stay merged", ha="center", fontsize=8.4, color=WARN)
+    curve.text((cross + 64) / 2, 0.16, "splits cleanly", ha="center", fontsize=8.4, color=GOOD)
+    curve.plot([50], [_np.sqrt(1 - (50 / 64) ** 2)], marker="o", ms=6, color=INK)
+    curve.text(
+        50, _np.sqrt(1 - (50 / 64) ** 2) + 0.05, "the worked example",
+        ha="center", fontsize=8.2, color=INK,
+    )
+    curve.set_xlabel("how far apart the two middles are, in pixels", fontsize=9, color=INK)
+    curve.set_ylabel("how deep the waist is", fontsize=9, color=INK)
+    curve.set_xlim(0, 64)
+    curve.set_ylim(0, 1.05)
+    curve.set_title("and when the split stops working", fontsize=10.5, color=INK, pad=8)
+    for side in ("top", "right"):
+        curve.spines[side].set_visible(False)
+
+    figure.suptitle(
+        "Splitting the blob in the picture: it works while the waist is deep enough",
+        fontsize=12, color=INK, y=1.02,
+    )
+    figure.tight_layout()
+    _save(figure, "problem-2-the-waist.png")
+
+
+# ----------------------------------------- problem 3, the solution overview
+
+
+def problem_3_choosing_a_destination() -> None:
+    """The four tests a landing spot has to pass, drawn on the real zone.
+
+    The numbers are the worked example in problem-3/solution-overview.md.
+    """
+    figure, axes = _new(7.6, 6.4)
+    _bare(axes)
+    axes.set_xlim(0.24, 0.74)
+    axes.set_ylim(-0.50, -0.02)
+    axes.set_aspect("equal")
+
+    # the glass zone
+    axes.add_patch(
+        Rectangle((0.32, -0.44), 0.32, 0.36, fill=False, ec=MUTED, lw=1.2, ls=(0, (5, 4)))
+    )
+    axes.text(0.48, -0.072, "the glass zone, 320 x 360 mm", ha="center", fontsize=8.4, color=MUTED)
+
+    a, b, landing = (0.40, -0.30), (0.49, -0.28), (0.535, -0.269)
+    other = (0.35, -0.41)
+    rad = 0.0375           # a 75 mm glass
+    room = 0.070           # the room the jaw needs, from the middle
+
+    for centre, label, colour in ((a, "A", GLASS), (b, "B", WARN), (other, "C", MUTED)):
+        axes.add_patch(Circle(centre, room, fill=False, ec=colour, lw=1.0, ls=(0, (3, 3))))
+        axes.add_patch(Circle(centre, rad, fc=colour, alpha=0.55, ec=colour, lw=1.4))
+        axes.text(centre[0], centre[1], label, ha="center", va="center", fontsize=10, color=INK)
+
+    # the overlap that is the problem
+    axes.annotate(
+        "", xy=(a[0], a[1] - 0.052), xytext=(b[0], b[1] - 0.052),
+        arrowprops=dict(arrowstyle="<->", color=WARN, lw=1.3),
+    )
+    axes.text(
+        0.445, -0.357, "92 mm apart, 140 needed",
+        ha="center", va="top", fontsize=8.4, color=WARN,
+    )
+
+    # the push
+    axes.add_patch(
+        FancyArrowPatch(b, landing, arrowstyle="-|>", mutation_scale=14, color=GOOD, lw=2.0)
+    )
+    axes.add_patch(Circle(landing, rad, fill=False, ec=GOOD, lw=1.6, ls=(0, (4, 3))))
+    axes.add_patch(Circle(landing, room, fill=False, ec=GOOD, lw=0.9, ls=(0, (3, 3))))
+    axes.text(
+        landing[0], landing[1] + 0.052, "B, after a 48 mm push",
+        ha="center", fontsize=8.4, color=GOOD,
+    )
+
+    axes.annotate(
+        "", xy=(a[0], a[1] + 0.055), xytext=(landing[0], landing[1] + 0.055),
+        arrowprops=dict(arrowstyle="<->", color=GOOD, lw=1.0),
+    )
+    axes.text(0.468, -0.238, "140 mm", ha="center", va="bottom", fontsize=8.4, color=GOOD)
+
+    axes.text(
+        0.49, -0.475,
+        "the landing spot passes all four tests:\n"
+        "210 mm from C  \u00b7  inside the zone  \u00b7  601 mm from the base  \u00b7  clear of the rack",
+        ha="center", fontsize=8.4, color=INK,
+    )
+    axes.text(
+        0.252, -0.44, "dashed ring round each glass =\nthe 70 mm of room the jaw needs",
+        fontsize=8, color=MUTED, va="top",
+    )
+
+    axes.set_title(
+        "Problem 3: choosing where to push a glass to",
+        fontsize=12, color=INK, pad=12,
+    )
+    _save(figure, "problem-3-choosing-a-destination.png")
+
+
+def problem_3_friction_cone() -> None:
+    """The friction cone, and what it decides about a push.
+
+    Background for the pushing-mechanics option. A push inside the cone sticks
+    and drives the object; outside it, the finger slides across the surface.
+    """
+    figure, (cone, spin) = plt.subplots(1, 2, figsize=(10.8, 4.4))
+    figure.patch.set_facecolor(PAPER)
+
+    import math as _math
+
+    _bare(cone)
+    cone.set_xlim(-0.5, 1.0)
+    cone.set_ylim(-0.75, 0.75)
+    cone.set_aspect("equal")
+    cone.set_title("the friction cone at the contact", fontsize=10.5, color=INK, pad=8)
+
+    # the surface, and the normal
+    cone.plot([0, 0], [-0.6, 0.6], color=INK, lw=2.5)
+    cone.text(-0.06, 0.62, "the glass's wall", ha="center", fontsize=8.4, color=INK)
+    half = _math.degrees(_math.atan(0.35))
+    cone.add_patch(
+        plt.matplotlib.patches.Wedge((0, 0), 0.85, -half, half, fc=GOOD, alpha=0.18, ec="none")
+    )
+    cone.annotate("", xy=(0.85, 0), xytext=(0, 0),
+                  arrowprops=dict(arrowstyle="-|>", color=MUTED, lw=1.2, ls=(0, (4, 3))))
+    cone.text(0.87, 0, "straight in", fontsize=8.4, color=MUTED, va="center")
+    cone.text(
+        0.30, 0.20, "inside the cone:\nthe finger sticks,\nand the glass goes",
+        fontsize=8.2, color=GOOD,
+    )
+
+    for sign in (1, -1):
+        cone.annotate(
+            "", xy=(0.62 * _math.cos(_math.radians(52)), sign * 0.62 * _math.sin(_math.radians(52))),
+            xytext=(0, 0), arrowprops=dict(arrowstyle="-|>", color=WARN, lw=1.6),
+        )
+    cone.text(0.10, -0.55, "outside it: the finger\nslides across the glass", fontsize=8.2, color=WARN)
+    cone.text(-0.45, 0.0, "half-angle\n= arctan \u03bc", fontsize=8.4, color=GOOD, va="center")
+
+    # right: which way it turns
+    _bare(spin)
+    spin.set_xlim(-0.2, 1.2)
+    spin.set_ylim(-0.6, 0.6)
+    spin.set_aspect("equal")
+    spin.set_title("and which way the glass turns", fontsize=10.5, color=INK, pad=8)
+    spin.add_patch(Circle((0.55, 0.0), 0.28, fc=GLASS, alpha=0.45, ec=GLASS, lw=1.5))
+    spin.plot([0.55], [0.0], marker="+", ms=10, color=INK)
+    spin.text(0.55, -0.055, "middle", ha="center", va="top", fontsize=8, color=INK)
+
+    spin.add_patch(
+        FancyArrowPatch((0.06, 0.16), (0.27, 0.16), arrowstyle="-|>", mutation_scale=13,
+                        color=WARN, lw=1.8)
+    )
+    spin.text(0.02, 0.26, "a push that misses\nthe middle", fontsize=8.2, color=WARN)
+    spin.add_patch(
+        FancyArrowPatch((0.72, 0.20), (0.80, -0.05), arrowstyle="-|>", mutation_scale=11,
+                        color=WARN, lw=1.4, connectionstyle="arc3,rad=0.5")
+    )
+    spin.text(0.86, 0.08, "it spins", fontsize=8.4, color=WARN, va="center")
+
+    spin.add_patch(
+        FancyArrowPatch((0.06, -0.0), (0.27, -0.0), arrowstyle="-|>", mutation_scale=13,
+                        color=GOOD, lw=1.8)
+    )
+    spin.text(0.02, -0.14, "a push through it", fontsize=8.2, color=GOOD)
+    spin.text(0.55, -0.42, "slides roughly straight", ha="center", fontsize=8.4, color=GOOD)
+
+    figure.suptitle(
+        "Background: the two things contact mechanics decides about a push",
+        fontsize=12, color=INK, y=1.02,
+    )
+    figure.tight_layout()
+    _save(figure, "problem-3-friction-cone.png")
+
+
 DRAWINGS = {
+    "problem-3-choosing-a-destination": problem_3_choosing_a_destination,
+    "problem-3-friction-cone": problem_3_friction_cone,
+    "problem-2-three-answers": problem_2_three_answers,
+    "problem-2-cluster-and-fit": problem_2_cluster_and_fit,
+    "problem-2-the-waist": problem_2_the_waist,
     "problem-4-one-wrong-name": problem_4_one_wrong_name,
     "the-five-problems": five_problems,
     "problem-1-what-is-asked": problem_1,
