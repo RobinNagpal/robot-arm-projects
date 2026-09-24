@@ -347,11 +347,168 @@ def problem_2_where_can_the_camera_stand() -> None:
     _save(figure, "problem-2-where-can-the-camera-stand.png")
 
 
+# ------------------------------------------------------------- problem 3
+
+# The room a two-finger gripper needs round a glass, as a radius from the
+# glass's middle: half the open jaw, plus the finger, plus a little. Kept here
+# beside the picture it is drawn in, and stated in problem-3/problem.md.
+CLEARANCE_MM = 70.0
+GLASS_MM = 75.0
+
+
+def problem_3_the_room_a_gripper_needs() -> None:
+    """Why two glasses that are not touching can still be un-grippable.
+
+    The gap that matters is not between the glasses. It is between one glass
+    and everything the gripper has to put somewhere.
+    """
+    figure, (before, after) = plt.subplots(1, 2, figsize=(10.6, 4.6))
+    figure.patch.set_facecolor(PAPER)
+
+    scale = 1.0 / 400.0  # millimetres to axis units
+
+    def draw(axis, centres, title, ok):
+        _bare(axis)
+        axis.set_xlim(0, 1)
+        axis.set_ylim(0, 1)
+        axis.set_aspect("equal")
+        axis.set_title(title, fontsize=10.5, color=INK, pad=8)
+        for cx, cy in centres:
+            axis.add_patch(
+                Circle(
+                    (cx, cy), (CLEARANCE_MM * scale), fill=False,
+                    ec=GOOD if ok else WARN, lw=1.3, ls=(0, (4, 3)),
+                )
+            )
+            axis.add_patch(
+                Circle((cx, cy), (GLASS_MM / 2) * scale, fc=GLASS, alpha=0.6, ec=GLASS, lw=1.4)
+            )
+        # the jaw, drawn round the left glass
+        cx, cy = centres[0]
+        jaw, pad = 14 * scale, (GLASS_MM / 2 + 4) * scale
+        for left_edge in (cx - pad - jaw, cx + pad):
+            axis.add_patch(
+                Rectangle(
+                    (left_edge, cy - 22 * scale), jaw, 44 * scale,
+                    fc=INK, alpha=0.75, ec="none",
+                )
+            )
+        axis.text(
+            centres[0][0], centres[0][1] + (CLEARANCE_MM + 16) * scale,
+            f"{CLEARANCE_MM:.0f} mm of room needed",
+            ha="center", fontsize=8.4, color=GOOD if ok else WARN,
+        )
+        gap = (centres[1][0] - centres[0][0]) / scale
+        axis.annotate(
+            "", xy=(centres[0][0], 0.18), xytext=(centres[1][0], 0.18),
+            arrowprops=dict(arrowstyle="<->", color=INK, lw=1.2),
+        )
+        axis.text(
+            (centres[0][0] + centres[1][0]) / 2, 0.135,
+            f"{gap:.0f} mm apart", ha="center", fontsize=8.6, color=INK,
+        )
+
+    draw(
+        before, [(0.36, 0.55), (0.36 + 105 * scale, 0.55)],
+        "before: the jaw has nowhere to go", False,
+    )
+    draw(
+        after, [(0.30, 0.55), (0.30 + 160 * scale, 0.55)],
+        "after: a 55 mm drag is enough", True,
+    )
+
+    after.add_patch(
+        FancyArrowPatch(
+            (0.30 + 105 * scale, 0.42), (0.30 + 160 * scale, 0.42),
+            arrowstyle="-|>", mutation_scale=12, color=WARN, lw=1.6,
+        )
+    )
+    after.text(0.30 + 132 * scale, 0.345, "drag", ha="center", fontsize=8.4, color=WARN)
+
+    figure.suptitle(
+        "Problem 3: the gap that matters is the one the gripper has to fit in",
+        fontsize=12, color=INK, y=1.0,
+    )
+    figure.tight_layout()
+    _save(figure, "problem-3-the-room-a-gripper-needs.png")
+
+
+def problem_3_push_low_or_it_topples() -> None:
+    """Where on a glass it may be pushed, and what decides it.
+
+    A pushed object slides if the contact is below a/mu and tips above it,
+    where a is half the base width and mu is the friction with the table. The
+    number depends on the glass, so it is worked out per glass.
+    """
+    figure, axes = _new(9.8, 4.4)
+    _bare(axes)
+    axes.set_xlim(0, 1)
+    axes.set_ylim(0, 1)
+
+    def glass(x0, topples):
+        colour = WARN if topples else GOOD
+        # a tapered glass, side on
+        body = [(x0, 0.22), (x0 - 0.005, 0.74), (x0 + 0.105, 0.74), (x0 + 0.10, 0.22)]
+        axes.add_patch(plt.Polygon(body, closed=False, fill=False, ec=GLASS, lw=2.0))
+        axes.plot([x0, x0 + 0.10], [0.22, 0.22], color=GLASS, lw=2.0)
+        return colour
+
+    axes.plot([0.04, 0.96], [0.22, 0.22], color=INK, lw=1.6)
+    axes.text(0.50, 0.16, "the table", ha="center", fontsize=8.4, color=MUTED)
+
+    # left: pushed low, it slides
+    glass(0.14, topples=False)
+    axes.add_patch(
+        FancyArrowPatch((0.075, 0.30), (0.135, 0.30), arrowstyle="-|>",
+                        mutation_scale=14, color=GOOD, lw=2.0)
+    )
+    axes.text(0.19, 0.30, "pushed low: it slides", fontsize=9, color=GOOD, va="center")
+    axes.annotate("", xy=(0.125, 0.22), xytext=(0.125, 0.30),
+                  arrowprops=dict(arrowstyle="<->", color=GOOD, lw=1.0))
+    axes.text(0.115, 0.26, "h", ha="right", va="center", fontsize=9, color=GOOD)
+
+    # right: pushed high, it tips
+    glass(0.60, topples=True)
+    axes.add_patch(
+        FancyArrowPatch((0.535, 0.64), (0.595, 0.64), arrowstyle="-|>",
+                        mutation_scale=14, color=WARN, lw=2.0)
+    )
+    axes.text(0.72, 0.64, "pushed high: it tips", fontsize=9, color=WARN, va="center")
+    axes.add_patch(
+        FancyArrowPatch((0.70, 0.30), (0.745, 0.365), arrowstyle="-|>",
+                        mutation_scale=11, color=WARN, lw=1.4,
+                        connectionstyle="arc3,rad=0.4")
+    )
+    axes.plot([0.70], [0.22], marker="o", ms=5, color=WARN)
+    axes.text(0.705, 0.185, "tips about this edge", fontsize=8, color=WARN)
+
+    axes.text(
+        0.50, 0.90,
+        "it slides while   h  <  a / \u03bc"
+        "      (a = half the base width,  \u03bc = friction with the table)",
+        ha="center", fontsize=10, color=INK,
+    )
+    axes.text(
+        0.50, 0.83,
+        "a 60 mm base at \u03bc = 0.3 gives 100 mm;  a 45 mm base at \u03bc = 0.5 gives 45 mm,\n"
+        "which is below where the gripper can reach — so that glass is refused rather than pushed",
+        ha="center", fontsize=8.4, color=MUTED,
+    )
+
+    figure.suptitle(
+        "Problem 3: how low the push has to be is a property of the glass",
+        fontsize=12, color=INK, y=1.04,
+    )
+    _save(figure, "problem-3-push-low-or-it-topples.png")
+
+
 DRAWINGS = {
     "the-five-problems": five_problems,
     "problem-1-what-is-asked": problem_1,
     "problem-2-merged-in-the-picture": problem_2_merged_in_the_picture,
     "problem-2-where-can-the-camera-stand": problem_2_where_can_the_camera_stand,
+    "problem-3-the-room-a-gripper-needs": problem_3_the_room_a_gripper_needs,
+    "problem-3-push-low-or-it-topples": problem_3_push_low_or_it_topples,
 }
 
 
