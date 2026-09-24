@@ -73,8 +73,8 @@ doubt has to end the attempt rather than be pushed through.
 - **Three sensors**, each one there because a particular thing cannot be seen.
   An RGB-D camera on the wrist. A contact sensor in each pad. And a force
   sensor between the flange and the gripper.
-- **The glasses**, standing on the arm's right, at least 150 mm apart so that
-  the arm can get to any of them. They are opaque and each is a different
+- **The glasses**, standing on the arm's right. How many, of how many kinds,
+  and how close together is what the five problems below vary. They are opaque and each is a different
   solid colour, which is an assumption rather than an accident — see below. Each run draws them fresh from four kinds —
   straight, tapered, stemmed and short-stemmed — with the proportions of each
   one drawn at random inside a plausible range. A seed picks the set, so a run
@@ -125,32 +125,116 @@ function: the one that decides which pixels are a glass. The ways of doing that
 are compared in
 [`docs/step1-approaches.md`](docs/step1-approaches.md).
 
-**The glasses stand apart, upright, and separate.** They are set out at least
-150 mm from each other, none is lying down, none is inside another, and none
-is being held. A tray of glasses jumbled together is a different task.
+**The glasses stand apart, upright, and separate.** None is lying down, none
+is inside another, and none is being held. A tray of glasses jumbled together
+is a different task.
 
-## The task, written out precisely
+The *apart* half of that is the one the problems below take away by degrees.
+Problem 1 has one glass, so it does not arise. Problems 2 and 4 set them out at
+least 150 mm from each other, which is far enough for the arm to reach any of
+them. Problem 3 is the one that removes it: the glasses may be standing close
+enough to foul each other, and moving them apart is the whole of that problem.
 
-For each glass on the table, in turn:
+Upright, however, is assumed throughout. A fallen glass is out of scope in all
+five.
 
-1. **Find it.** Work out where it stands and roughly how wide it is, from
-   above.
-2. **Measure it.** Go round to the side and measure a width at every height up
-   the glass.
-3. **Name its shape.** Decide from that measurement which of the four kinds it
-   is. Deciding "none of them" is allowed and is a real answer.
-4. **Choose where to hold it**, from the rule for that kind, and how far apart
-   the fingers have to be, from the width measured at that height.
-5. **Pick it up and weigh it.** Lift it ten millimetres — far enough to know
-   what it weighs, near enough that nothing has happened yet — and correct the
-   squeeze if the estimate was wrong.
-6. **Turn it over and stand it in a free slot**, lowering it until the rim
-   touches rather than driving it to a calculated height.
+## Five problems, in order of difficulty
+
+The task above is not one problem. It is five, and they get harder in a
+particular way: each one takes away something the one before it was allowed to
+assume. Taking them in order is deliberate, because each answer is a thing the
+next problem can stand on, and because it keeps clear which difficulty is being
+solved at any moment.
+
+![The five problems, and what each one adds](images/the-five-problems.png)
+
+| | The problem | What is new in it | Where it is worked out |
+| --- | --- | --- | --- |
+| **1** | One glass on the table | everything, from an empty start | [`docs/problem-1/`](docs/problem-1/) — **built** |
+| **2** | Many glasses of one kind | telling them apart, from few viewpoints | [`docs/problem-2/`](docs/problem-2/) — designed |
+| **3** | Glasses standing too close | moving one without lifting it | [`docs/problem-3/`](docs/problem-3/) — designed |
+| **4** | Several kinds at once | a different rule per glass, in one run | [`docs/problem-4/`](docs/problem-4/) — stated |
+| **5** | Kinds whose proportions are unknown | a rule that has never seen this glass | [`docs/problem-5/`](docs/problem-5/) — stated |
+
+Each has its own folder under [`docs/`](docs/), with the problem written out
+in full and the solution worked through. What follows is the short version of
+each.
+
+### Problem 1 — one glass, start to finish
+
+One glass stands on the table. The arm has to find it, work out its
+dimensions, pick it up, turn it over and stand it on the rack. Nothing about
+the glass is known in advance.
+
+This is the whole pipeline at its simplest, and it is the one that is built.
+Every hard thing in the project is already present — the shape has to be
+measured, the grip has to be chosen from that measurement, the weight cannot be
+seen, and the set-down has to be felt rather than driven. What is *absent* is
+everything to do with there being more than one glass. Nothing can occlude
+anything. Nothing has to be told apart from anything. The arm can walk all the
+way round the glass and photograph it from any side it likes.
+
+**Done** means the glass is standing mouth-down over a slot peg, with the
+fingers open and the arm clear of it.
+
+### Problem 2 — many glasses of one kind, seen from few viewpoints
+
+Several glasses of the *same* kind stand on the table. The arm photographs
+them and has to work out which pixels belong to which glass.
+
+The new difficulty is not the naming; they are all the same kind and the kind
+is known. It is that with several glasses on a table, **the arm can no longer
+photograph each one from whichever side it likes.** Walking round a glass means
+putting the camera where another glass may already be, or where the arm cannot
+reach without crossing over a third. The side-on view that problem 1 depends on
+is not always available.
+
+So this problem is about perception, and only perception. It stops at a set of
+pixels per glass. It does not pick anything up.
+
+### Problem 3 — glasses too close together, moved apart by dragging
+
+Given the pixels from problem 2, some of the glasses are standing close enough
+together that the arm cannot get the gripper round one without fouling its
+neighbour.
+
+The arm has to **separate them by dragging them across the table**, not by
+lifting them. Dragging is the point: a lift is a grasp, and a grasp is the
+thing that is not possible yet. Pushing a glass along the table needs only a
+contact and a direction.
+
+This problem is about separation, and only separation. It starts from pixels
+and ends with glasses far enough apart to be picked up. It does not pick
+anything up either.
+
+### Problem 4 — several kinds at once
+
+A few kinds of glass stand on the table together. The arm has to measure each
+one, decide which kind it is, pick it up, invert it and rack it — one at a
+time, until the table is clear.
+
+This is problems 1, 2 and 3 joined up, plus the part neither of them has:
+**the rule changes per glass.** A wine glass is held by the stem and a tumbler
+low on its wall, so naming the kind is now load-bearing, and naming it wrongly
+means holding a glass in a place that was never checked.
+
+### Problem 5 — kinds whose proportions are not known
+
+The same as problem 4, except that the glasses are not drawn from proportions
+anybody wrote down. A wine glass may have a stem that is a third of its height
+or a tenth of it. The arm still has to pick each one up and invert it.
+
+This is the problem the whole project exists for, and the reason every earlier
+problem refuses to write a measurement down. A rule that says *hold the
+narrowest part below the widest* survives this. A table of grip heights does
+not.
+
+## What "done" means, for all five
 
 A glass is **done** when it is standing mouth-down over a slot peg with the
 fingers open and the arm clear of it. A glass is **left standing** when any
-step above cannot be completed safely, and every one of those ends with a
-sentence saying which step and why.
+step cannot be completed safely, and every one of those ends with a sentence
+saying which step and why.
 
 **Leaving a glass standing is a success, not a failure.** This is the rule
 that most shapes the code. A run that racks four glasses and refuses one with a
@@ -215,8 +299,9 @@ pushing through doubt. The things worth reading are:
   [`implementation-notes.md`](implementation-notes.md) list what simulation
   will not tell us.
 - **Dirty, wet or greasy glasses.** Friction is assumed constant and clean.
-- **Glasses that are stacked, lying down, or touching each other.** They are
-  set out standing and apart.
+- **Glasses that are stacked or lying down.** They are set out standing.
+  Glasses standing *close* to each other are not out of scope — that is
+  problem 3.
 - **Putting them anywhere but the rack**, and taking them out again.
 - **More than one arm**, which is v6.
 
