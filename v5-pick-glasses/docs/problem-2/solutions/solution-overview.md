@@ -1727,12 +1727,13 @@ pointing to the middle of the object that pixel belongs to — and separation
 becomes counting clusters of votes.*
 
 A network that labels each pixel "glass" or "not glass" cannot separate two
-glasses that touch: a class label has nowhere to record *which* glass. So ask
-for a different output: at each glass pixel, a short vector pointing to the
-middle of its own glass. Add it to the pixel's position and you have a vote.
-One glass makes one pile of votes, two make two. Predict the vector **in table
-millimetres** rather than image pixels, and the camera drops out. The spread of
-a pile is a confidence, and a loose pile is a reason to look again.
+glasses that touch. A class label has nowhere to record *which* glass. So ask for
+a different output: at each glass pixel, a short arrow pointing to the middle of
+its own glass. Add that arrow to the pixel's own position and you have a vote.
+One glass makes one pile of votes; two glasses make two. Predict the arrow **in
+table millimetres** rather than image pixels, and the camera drops out of the
+problem. The spread of a pile is a confidence, and a loose pile is a reason to
+look again.
 
 **The long version:** [08-per-pixel-votes-for-the-centre.md](08-per-pixel-votes-for-the-centre.md) — this solution explained
 from the beginning, with diagrams.
