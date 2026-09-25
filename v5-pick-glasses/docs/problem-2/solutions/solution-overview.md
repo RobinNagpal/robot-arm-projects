@@ -951,12 +951,13 @@ learned estimate of how unsure each object is decides which extra picture is
 worth taking, from candidate poses the geometry has already filtered.*
 
 The arm cannot look everywhere, so it has to choose. This solution leaves the
-geometry in charge of where the camera may stand — reachable, unoccluded,
-plannable — and gives a learned number the smaller job of saying which survivor
-is worth the seconds. The number estimates how much doubt a look would remove.
-It never admits a pose the arithmetic rejected, and never decides that a cluster
-is settled. That ordering is what makes this a hybrid, and what caps the damage
-when the estimate is wrong — which is the failure the design is arranged around.
+geometry in charge of where the camera is allowed to stand — it must be
+reachable, not blocked, and the planner must accept it. A learned number then
+does the smaller job of saying which of the survivors is worth the seconds. That
+number estimates how much doubt a look would remove. It can never let in a pose
+the arithmetic rejected, and it can never declare an object settled. That
+ordering is what makes this a hybrid, and it is what limits the damage when the
+estimate is wrong — which is the failure the whole design is arranged around.
 
 **The long version:** [04-learned-doubt-steers-the-next-picture.md](04-learned-doubt-steers-the-next-picture.md) — this solution explained
 from the beginning, with diagrams.

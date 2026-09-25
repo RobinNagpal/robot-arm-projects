@@ -169,9 +169,9 @@ def three_cases_of_doubt() -> None:
             "title": "confident — and wrong",
             "colour": WARN,
             "centres": [4.3, 5.9],
-            "extents": [(3.2, 7.0, "232 mm\nno glass of this kind is", 0)],
+            "extents": [(3.2, 7.0, "95 deg of arc\n115 points, not 340", 0)],
             "doubt": 0.06,
-            "verdict": "One mask, two glasses.",
+            "verdict": "One mask, a third of a glass.",
             "cost": "Nothing is flagged, so no look is taken,\nand everything downstream believes it.",
         },
     ]
@@ -503,10 +503,13 @@ def the_loop() -> None:
 # ---------------------------------------------------------------------------
 # 6. The rule's order and the model's order, over the same seven viewpoints.
 #
-# The cluster is 530 mm from the base and 232 mm across: two glasses of 78 and
-# 74 mm footprint, centres 155 mm apart, reported as one. The angle theta is
-# measured from the line out from the arm's base. The reach test leaves ten of
-# the 24 candidates, occlusion takes two and inverse kinematics one.
+# The doubtful object is 530 mm from the base. It is 74 mm across, but a
+# neighbour 155 mm away hides most of it from every survey station, so it comes
+# back through a 95 degree arc with 115 points instead of 340. The two cannot
+# merge into one cluster - 155 mm apart leaves 79 mm of clear table, against a
+# 25 mm grouping distance - so the doubt is under-observation, not a merge.
+# Theta is measured from the line out from the arm's base. The reach test leaves
+# ten of the 24 candidates, occlusion takes two and inverse kinematics one.
 
 STANDOFF_MM = 380.0
 FX = 277.1
@@ -550,8 +553,8 @@ def rule_and_model_orders() -> None:
 
     left.add_patch(Circle((0, 0), 116, facecolor=_tint(WARN, 0.10), edgecolor=WARN,
                           linewidth=1.3, linestyle="--"))
-    left.text(0, 195, "one fitted circle, 232 mm across", ha="center", fontsize=NOTE_SIZE,
-              color=WARN)
+    left.text(0, 195, "the target, and the neighbour hiding it", ha="center",
+              fontsize=NOTE_SIZE, color=WARN)
 
     sx, sy = _unit(SEPARATION_THETA)
     for sign, radius in ((1, 39.0), (-1, 37.0)):
@@ -770,8 +773,9 @@ def budget_and_cap() -> None:
         right.text(x, 6.55, f"look {slot + 1}", ha="center", fontsize=7.6, color=MUTED)
 
     lanes = [
-        (5.6, "the 232 mm cluster", GOOD, 1,
-         "resolved on the first look: circles of\n78 and 74 mm, 155 mm apart, both in\nrange"),
+        (5.6, "the half-hidden object", GOOD, 1,
+         "resolved on the first look: seen through\n250 degrees instead of 95, and its\n"
+         "circle fits at 74 mm"),
         (3.2, "a pair in line with every pose\nthe geometry left", WARN, 2,
          "no view separates them. The cap stops\nit at two and reports it unresolved \u2014\n"
          "which is a result, not a failure."),
