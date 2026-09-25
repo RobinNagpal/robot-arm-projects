@@ -19,6 +19,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
+from matplotlib.colors import to_rgba  # noqa: E402
 from matplotlib.patches import Circle, FancyArrowPatch, Rectangle, Wedge  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -65,6 +66,11 @@ def save(figure, name: str) -> None:
     figure.savefig(IMAGES / name, dpi=150, bbox_inches="tight", facecolor=PAPER)
     plt.close(figure)
     print(f"wrote images/{name}")
+
+
+def _tint(colour: str, alpha: float) -> tuple[float, float, float, float]:
+    """The colour at a given transparency, as matplotlib wants it."""
+    return to_rgba(colour, alpha)
 
 
 def bare(axis) -> None:
@@ -345,9 +351,167 @@ def the_glasses() -> None:
     save(figure, "the-four-kinds.png")
 
 
+# ---------------------------------------------------------------------------
+# Splay: why an overhead camera reports a glass further out than it stands.
+# ---------------------------------------------------------------------------
+# The glass drawn here is one the spawner really produces: the eighth
+# straight_glass of family("straight_glass", 8, 1), 160.7 mm tall with its
+# widest point at the rim. Its stretch factor, 450 / (450 - 160.7) = 1.555, is
+# what turns problem 1's measured 157 mm into the reported 244 mm.
+SPLAY_GLASS, _ = family("straight_glass", 8, 1)[7]
+TRUE_MM = 157.0
+
+
+def _splay_numbers():
+    z = np.asarray(SPLAY_GLASS.height) * MM
+    r = np.asarray(SPLAY_GLASS.radius) * MM
+    widest_h = float(z[r.argmax()])
+    return widest_h, float(r.max()), SURVEY_HEIGHT * MM / (SURVEY_HEIGHT * MM - widest_h)
+
+
+def splay_why_it_happens() -> None:
+    widest_h, widest_r, k = _splay_numbers()
+    cam = SURVEY_HEIGHT * MM
+    reported = TRUE_MM * k
+
+    figure, axis = plt.subplots(figsize=(10.6, 5.6))
+    figure.patch.set_facecolor(PAPER)
+    axis.set_facecolor(PAPER)
+    bare(axis)
+    axis.set_aspect("equal")
+
+    axis.plot([-60, 330], [0, 0], color=MUTED, lw=1.4)
+    axis.text(328, 8, "the table", fontsize=NOTE, color=MUTED, ha="right", va="bottom")
+
+    # the camera, straight above the nadir
+    axis.plot([0], [cam], "o", color=INK, ms=8)
+    axis.text(0, cam + 16, "the camera, 450 mm up", fontsize=NOTE, color=INK, ha="center")
+    axis.plot([0, 0], [0, cam], color=MUTED, lw=0.9, ls=(0, (5, 4)))
+    axis.plot([0], [0], "o", color=MUTED, ms=5)
+    axis.text(-8, -16, "the nadir", fontsize=NOTE, color=MUTED, ha="right")
+
+    # the glass, standing where it really stands
+    z = np.asarray(SPLAY_GLASS.height) * MM
+    r = np.asarray(SPLAY_GLASS.radius) * MM
+    axis.fill_betweenx(z, TRUE_MM - r, TRUE_MM + r, color=_tint(GLASS, 0.32), lw=0)
+    axis.plot(TRUE_MM + r, z, color=GLASS, lw=1.3)
+    axis.plot(TRUE_MM - r, z, color=GLASS, lw=1.3)
+
+    # the ray through the widest point, carried on to the table
+    axis.plot([0, reported], [cam, 0], color=WARN, lw=1.4, ls=(0, (5, 3)))
+    axis.plot([TRUE_MM], [widest_h], "o", color=WARN, ms=6)
+    axis.plot([reported], [0], "o", color=WARN, ms=7)
+    axis.text(TRUE_MM + 10, widest_h + 10, f"the widest part,\n{widest_h:.1f} mm up",
+              fontsize=NOTE, color=WARN, ha="left")
+
+    # where the two positions are
+    axis.plot([TRUE_MM, TRUE_MM], [0, widest_h], color=GLASS, lw=0.9, ls=(0, (4, 3)))
+    span(axis, 0, -34, TRUE_MM, -34, "", INK)
+    axis.text(TRUE_MM / 2, -50, f"where it stands\n{TRUE_MM:.0f} mm", fontsize=NOTE,
+              color=INK, ha="center", va="top")
+    span(axis, TRUE_MM, -90, reported, -90, "", WARN)
+    axis.text((TRUE_MM + reported) / 2, -106, f"the error\n{reported - TRUE_MM:.0f} mm",
+              fontsize=NOTE, color=WARN, ha="center", va="top")
+    axis.text(reported + 10, -10, f"where it is\nreported\n{reported:.0f} mm",
+              fontsize=NOTE, color=WARN, ha="left", va="top")
+
+    # the arithmetic, as similar triangles
+    axis.text(178, cam - 96,
+              "the two triangles are the same shape:\n"
+              f"    {reported:.0f} / {TRUE_MM:.0f}  =  450 / (450 − {widest_h:.1f})  =  {k:.3f}",
+              fontsize=NOTE, color=INK, ha="left", va="top")
+
+    axis.set_xlim(-70, 345)
+    axis.set_ylim(-150, cam + 60)
+    axis.set_title("Splay — the ray through the widest part lands past the glass",
+                   fontsize=TITLE, color=INK, pad=10)
+    figure.text(0.5, 0.02,
+                f"The camera cannot see the base. It sees the widest part, which stands "
+                f"{widest_h:.0f} mm above the table, and lays that down on the table plane.",
+                fontsize=NOTE, color=INK, ha="center")
+    save(figure, "splay-why-it-happens.png")
+
+
+def splay_what_it_costs() -> None:
+    widest_h, widest_r, k = _splay_numbers()
+    figure, axes = plt.subplots(1, 2, figsize=(12.6, 5.0))
+    figure.patch.set_facecolor(PAPER)
+    plan, plot = axes
+    for a in axes:
+        a.set_facecolor(PAPER)
+
+    # --- left: the plan view, three glasses at increasing distance
+    bare(plan)
+    plan.set_aspect("equal")
+    z = np.asarray(SPLAY_GLASS.height) * MM
+    r = np.asarray(SPLAY_GLASS.radius) * MM
+    base_r = float(r[z < z.min() + 4].max())
+
+    plan.plot([0], [0], "o", color=INK, ms=7)
+    plan.text(0, -30, "the nadir", fontsize=NOTE, color=INK, ha="center", va="top")
+    for d in (60.0, TRUE_MM, 250.0):
+        plan.add_patch(Circle((d, 0), base_r, facecolor=_tint(GLASS, 0.30),
+                              edgecolor=GLASS, lw=1.4))
+        plan.add_patch(Circle((d * k, 0), widest_r * k, facecolor="none",
+                              edgecolor=WARN, lw=1.4, ls=(0, (4, 3))))
+        plan.annotate("", xy=(d * k, 62), xytext=(d, 62),
+                      arrowprops={"arrowstyle": "->", "color": WARN, "lw": 1.1})
+        plan.text((d + d * k) / 2, 72, f"{d * k - d:.0f}", fontsize=NOTE, color=WARN,
+                  ha="center")
+    plan.text(0, 118, "blue: where the glass is    dashed: where it is reported",
+              fontsize=NOTE, color=MUTED, ha="left")
+    plan.text(0, -66, "The further from the nadir, the bigger the error —\n"
+                      "and the outline grows with it.",
+              fontsize=NOTE, color=MUTED, ha="left", va="top")
+    plan.set_xlim(-60, 430)
+    plan.set_ylim(-110, 135)
+    plan.set_title("From above, at three distances", fontsize=LABEL, color=INK, pad=8)
+
+    # --- right: reported against true, for three heights of widest part
+    plot.set_title("Reported distance against true distance", fontsize=LABEL, color=INK, pad=8)
+    true = np.linspace(0, 260, 200)
+    plot.plot(true, true, color=MUTED, lw=1.2, ls=(0, (5, 4)))
+    plot.text(252, 222, "no error", fontsize=NOTE, color=MUTED, ha="right", va="top")
+    top = 430.0
+    for h, colour in ((80.0, "#9dc3e6"), (widest_h, WARN), (230.0, "#8c4a33")):
+        factor = SURVEY_HEIGHT * MM / (SURVEY_HEIGHT * MM - h)
+        # stop each line where it leaves the axes, and put its label at that end
+        end = min(260.0, (top - 14) / factor)
+        ts = np.linspace(0, end, 200)
+        plot.plot(ts, ts * factor, color=colour, lw=2.0)
+        if end < 259.0:
+            plot.text(end + 6, end * factor - 4, f"{h:.0f} mm up\n(x{factor:.2f})",
+                      fontsize=NOTE, color=colour, ha="left", va="top")
+        else:
+            plot.text(end + 6, end * factor, f"{h:.0f} mm up\n(x{factor:.2f})", fontsize=NOTE,
+                      color=colour, ha="left", va="center")
+    plot.plot([TRUE_MM], [TRUE_MM * k], "o", color=INK, ms=7, zorder=5)
+    plot.annotate(f"the measured case:\n{TRUE_MM:.0f} mm reported at {TRUE_MM * k:.0f}",
+                  xy=(TRUE_MM, TRUE_MM * k), xytext=(40, 330), fontsize=NOTE, color=INK,
+                  arrowprops={"arrowstyle": "-", "color": MUTED, "lw": 0.9})
+    plot.set_xlabel("where the glass really is, mm from the nadir", fontsize=NOTE, color=INK)
+    plot.set_ylabel("where the survey reports it, mm", fontsize=NOTE, color=INK)
+    plot.tick_params(labelsize=NOTE - 0.6, colors=MUTED)
+    for side in ("top", "right"):
+        plot.spines[side].set_visible(False)
+    for side in ("left", "bottom"):
+        plot.spines[side].set_color(MUTED)
+    plot.set_xlim(0, 300)
+    plot.set_ylim(0, top)
+
+    figure.text(0.5, 0.02,
+                "The error is proportional, not fixed: it is zero under the camera and grows with "
+                "distance, and a taller glass is stretched harder.",
+                fontsize=NOTE, color=INK, ha="center")
+    figure.tight_layout(rect=(0, 0.06, 0.92, 1))
+    save(figure, "splay-what-it-costs.png")
+
+
 def main() -> None:
     cell_from_above()
     cell_from_the_side()
+    splay_why_it_happens()
+    splay_what_it_costs()
     the_sensors()
     the_glasses()
     print(f"\nread from the code: table top {TABLE_TOP_Z * MM:.0f} mm, "

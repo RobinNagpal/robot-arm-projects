@@ -117,11 +117,55 @@ always of the side-on pose.
 in the survey pose. Things directly under the camera are seen honestly; things
 off to the side are seen at an angle, which matters more than it sounds.
 
-**Splay.** The consequence of that angle. A glass is tall, so the ray from an
-overhead camera through its rim carries on past its base and lands further out.
-The silhouette leans away from the nadir, and a glass's outline therefore does
-*not* sit where the glass does. Problem 1 measured what this costs: a glass
-157 mm from the camera was reported at 244 mm.
+**Splay.** The consequence of that angle. It is worth doing slowly, because
+almost every distance the survey reports is wrong by it.
+
+Start with what the camera can see. A glass off to the side is seen from above
+and a little from the side. The base is hidden — the bowl of the glass sits over
+it. What the camera actually sees is the widest part of the glass, usually the
+rim.
+
+Now, one picture from above cannot tell how tall anything is. So the survey
+assumes that everything it sees is lying flat on the table. It draws a straight
+line from the lens through the widest part of the glass, and takes the point
+where that line meets the table as the place the glass is standing. The widest
+part is well above the table, so the line carries on past the glass and lands
+further out.
+
+Similar triangles give the size of the mistake. Call the camera's height *H* and
+the height of the widest part *h*. That sloping line makes two right-angled
+triangles, one inside the other: a big one that runs all the way down to the
+table, and a small one that stops at the height of the widest part. Both have
+the same angle at the lens, so their sides are in the same ratio:
+
+> reported distance = true distance × *H* / (*H* − *h*)
+
+Put the cell's numbers in. *H* is 450 mm. Take a real glass from the spawner
+whose widest part is 160.7 mm up. The factor is 450 / 289.3 = 1.555. Problem 1
+measured exactly this: a glass standing 157 mm from the nadir was reported at
+244 mm, which is 87 mm out.
+
+![Why splay happens](../images/splay-why-it-happens.png)
+
+Three things follow from that formula, and all three matter later:
+
+- **The error is proportional, not fixed.** It is zero directly under the
+  camera and grows with distance. You cannot correct it by subtracting a
+  constant.
+- **A taller glass is pushed further.** The factor depends on *h*, so two
+  glasses standing side by side are moved by different amounts. One correction
+  applied to the whole picture cannot fix both.
+- **The outline grows as well as moving.** Every point of the glass is scaled by
+  the same factor, so the reported outline is bigger than the real one. This is
+  why a glass seen from above is a teardrop leaning away from the nadir and not
+  a circle.
+
+![What splay costs](../images/splay-what-it-costs.png)
+
+None of this is a fault in the camera or the code. It is what a single picture
+from one point can tell you, and no more. It is also the reason the survey's job
+is stated as *roughly where*, and the reason the arm carries the camera round to
+the side before it measures anything.
 
 **Mask, patch, blob.** A **mask** marks every pixel as glass or not glass. A
 **patch** or **blob** is one group of touching marked pixels — what connected
