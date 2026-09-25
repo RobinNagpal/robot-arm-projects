@@ -83,10 +83,11 @@ need CUDA, but all were tuned for it, so running one means
 
 The two halves fail in opposite directions.
 
-Geometry fails **loudly**. A merged pair comes back as a footprint 262 mm
-across when the kind is 60 to 90, so the failure is a sentence with two
-numbers in it. What geometry cannot do is draw a boundary through a clump,
-because the projection threw that information away.
+Geometry fails **loudly**. A merged pair comes back as a footprint several times
+wider than any glass of that kind can be, so the failure states itself: here is
+the measured width, here is the limit it broke. What geometry cannot do is draw
+a boundary *through* a clump, because the projection threw that information
+away.
 
 A model fails **quietly**. It draws a good boundary on an object it has never
 seen, and an equally confident boundary round the wrong thing.
@@ -144,25 +145,31 @@ them apart rather than photographing them harder.
 
 ### A worked example
 
-Five glasses of one known kind, footprint range 60 to 90 mm. The station sits
-450 mm above the table, so one picture covers about 520 by 390 mm across 320
-by 240 pixels, and one pixel is 1.6 mm.
+Five glasses of one known kind stand on the table. The camera works from the
+top, at the survey height, so the whole zone is in one frame.
 
-*Stage 1.* Four clusters. Three fit circles of 77, 81 and 74 mm — settled, and
-the model is never loaded for them. The fourth fits 262 mm; two circles give
-131 and 129 mm, both out of range. Doubtful.
+*Stage 1.* The clustering returns one group fewer than there are glasses. Most
+of the groups fit circles comfortably inside the range this kind allows — those
+are settled, and **the model is never loaded for them at all**, which is the
+whole point of putting it last. The remaining group fits a circle several times
+too wide; splitting it in two gives two circles that are both still too wide. So
+the group is doubtful.
 
-*Stage 2.* That cluster spans 262 / 1.6 ≈ **164 pixels** of the 320 across,
-and its two likeliest centres project to pixels **80 apart**, 128 mm on the
-table. Those are the prompts: one encode, two decoder passes.
+*Stage 2.* That group spans a large fraction of the width of the picture, and
+its two likeliest centres project to two well-separated pixels. Those two pixels
+are the prompts handed to the model: one encode of the picture, then one cheap
+decoder pass per prompt.
 
-*Stage 3.* Re-projected and fitted, the masks give **76 mm** and **73 mm**,
-centres **158 mm** apart — both inside 60 to 90, and above the 150 mm the cell
-guarantees between glasses. Accepted.
+*Stage 3.* The two masks the model returns are re-projected onto the table and
+fitted. Both come back inside the kind's range, and their centres come back
+further apart than the smallest gap the cell guarantees between two glasses.
+Everything agrees, so the pair is accepted.
 
-The other branch: the second mask fits at **118 mm**. Both are discarded, the
-cluster stays doubtful, and it goes to solution 3 for a viewpoint
-perpendicular to the line joining the pair.
+The other branch is the one worth remembering. Suppose the second mask fits a
+circle outside the kind's range. Then **both** masks are discarded, not just the
+bad one — because a model that got one of a pair wrong has told you nothing
+trustworthy about the other. The group stays doubtful and goes to solution 3 for
+a viewpoint square across the line joining the pair.
 
 ### What it needs
 
@@ -186,8 +193,10 @@ costs nothing when nothing is wrong, and needs no data.
 **It cannot name what it outlined.** Point it at the rack or the arm's own
 wrist and it outlines those just as willingly.
 
-**Small pictures.** These models resize internally to around 1024 across, so
-blowing 320 by 240 up returns a boundary smoother than the picture justifies.
+**Small pictures.** These models resize internally to something several times
+larger than this camera's frame, so blowing the picture up returns a boundary
+far smoother than the picture itself justifies. The extra smoothness is
+invented.
 
 **Transparent objects**, which the family handles worst.
 
@@ -267,9 +276,10 @@ A model learns them from examples.
 
 ### How it would work here
 
-The pictures are 320 x 240, small by the standards of these models, which
-usually expect 640 pixels or more. Training and inference are therefore cheap,
-and the mask boundary stays coarse however good the model is.
+The pictures from this camera are small by the standards of these models, which
+usually expect several times more pixels across. Training and inference are
+therefore cheap — but the mask boundary stays coarse however good the model is,
+because the detail was never in the picture.
 
 The families worth considering, with licences read from the projects:
 
@@ -309,13 +319,14 @@ should say so.
 
 ### A worked example
 
-Five glasses stand on the table. Two are 300 mm apart but line up with the
-camera, so their outlines touch in the picture.
+Five glasses stand on the table. Two of them are a long way apart — twice the
+distance the cell guarantees — but they happen to line up with the camera, so
+their outlines touch in the picture.
 
 Today `standing_on_the_table()` in `glasses/detect.py` returns one boolean mask
 of everything above the table top, and `find_glasses()` groups it into blobs.
-The lined-up pair become one blob 260 mm wide, and everything downstream
-believes it is one large glass.
+The lined-up pair become one blob, far wider than any glass of that kind can be,
+and everything downstream believes it is one large glass.
 
 A trained model returns five masks, and the lined-up pair are two of them
 sharing a boundary. Each mask runs through the existing code unchanged: points
@@ -338,12 +349,14 @@ Anything needing compiled CUDA kernels is out entirely: Detectron2's, mmcv's,
 the deformable-convolution variants, TensorRT, Isaac ROS.
 
 **Somewhere to run it.** `torchvision` Mask R-CNN runs on MPS, and Ultralytics
-with `device="mps"`. At 320 x 240 that should sit inside the time an arm move
-takes, but I have not measured it and will not quote a figure. One comparison
-shows why guessing is unwise: MobileSAM, designed to be small, takes about 24
-seconds per image on an M4 Air's CPU, while Depth Anything V2 Small runs in
-24.6 ms on an M3 Max through CoreML and the Neural Engine. What matters is
-whether anyone has done the CoreML work, not how small the model is.
+with `device="mps"`. On pictures this small that should sit comfortably inside
+the time an arm move takes, but **it has not been measured here and no figure is
+quoted**. One published comparison shows why guessing is unwise: a model
+expressly designed to be small can take *seconds* per picture on a Mac's CPU,
+while a larger model that somebody has taken the trouble to convert to CoreML
+runs in milliseconds on the same class of machine through the Neural Engine.
+**What matters is whether anyone has done the CoreML work, not how small the
+model is.**
 
 ### What it is good at
 
@@ -357,14 +370,15 @@ hardware. And it enters at one function.
 It says nothing in millimetres and it cannot say why. It knows only the glasses
 it was trained on; a kind outside that range is one it outlines badly, with no
 warning. And here it is more machinery than the job needs, because comparing
-depths separates two glasses 300 mm apart exactly, with a reason you can print.
+depths separates two glasses standing a legal distance apart exactly, with a
+reason you can print.
 
 ### How it fails
 
-**Confidently.** A merged pair comes back as one mask with a high score. A
-geometric method that merges leaves evidence — a footprint 260 mm across when
-the kind is 60 to 90 — and the circle fit catches it. A model that merges
-leaves a number, and the number says it is sure.
+**Confidently.** A merged pair comes back as one mask with a high score. When a
+geometric method merges, it leaves evidence behind — a footprint far wider than
+any glass of that kind can be — and the circle fit catches it. When a model
+merges, all it leaves is a number, and the number says it is sure.
 
 **Out of date.** Add a kind, change the proportion ranges, change the lighting
 in the world file, and the weights describe something that no longer exists.
@@ -401,17 +415,17 @@ several viewpoints.*
 
 Every segmenter named so far marks only the pixels you can see. The habit has a
 name. **Modal segmentation** labels an object's visible pixels and stops where
-something else gets in front. **Amodal segmentation** labels the object's *whole*
-extent, hidden part included. Put one glass half behind another: a modal model
-returns the visible half of the back one, an amodal model the whole footprint,
-inferring the hidden part from what it can see. From psychology: *amodal
-completion* is reporting one cat behind a railing, not five slices.
+something else gets in front. **Amodal segmentation** labels the object's
+*whole* extent, hidden part included. Put one glass half behind another: a modal
+model returns the visible half of the back one, an amodal model the whole
+footprint, inferring the hidden part from what it can see. From psychology:
+*amodal completion* is reporting one cat behind a railing, not five slices.
 
-Why it matters here is arithmetic. Everything downstream turns a mask into points
-on the table and fits a circle. **A mask cut short by an occluder gives a circle
-too small and in the wrong place**, because the centre of the visible part is not
-the centre of the glass. Both errors are silent: a wrong footprint comes back not
-as an error but as a plausible number.
+Why it matters here is arithmetic. Everything downstream turns a mask into
+points on the table and fits a circle. **A mask cut short by an occluder gives a
+circle too small and in the wrong place**, because the centre of the visible
+part is not the centre of the glass. Both errors are silent: a wrong footprint
+comes back not as an error but as a plausible number.
 
 The second half is **association**: deciding that a detection in one picture is
 the same physical glass as one in another. Three stations, two pictures each,
@@ -421,9 +435,12 @@ problem**, a separate job from finding the glasses.
 ### Why anyone does it this way
 
 `problem.md` says the failure to watch hardest is *merged*, because it does not
-announce itself. A truncated footprint is the same failure in different clothes:
-the range for one kind is 60–90 mm, so a glass 30 per cent hidden reports about
-60 mm, and solution 2's circle fit passes it in silence.
+announce itself. A truncated footprint is the same failure in different clothes.
+Hide part of a glass and the circle fitted to what remains comes back
+**narrower** than the glass really is — and if enough is hidden, it comes back
+narrow enough to land at the bottom of the kind's allowed range instead of
+outside it. So solution 2's circle fit passes it in silence. The wrongness has
+been hidden by the very check that was supposed to catch it.
 
 For association the classical answer is geometric, and solutions 2 and 3 use it:
 two detections are one glass if their positions are close and their heights
@@ -431,13 +448,13 @@ agree. It fails when a position is wrong *because* the mask was truncated —
 geometry arbitrating with broken numbers.
 
 The learned answer ignores position. The model turns each detection into an
-**embedding**: a short list of numbers, typically 128 or 256 of them, produced by
-a network from that detection's pixels. Nobody chooses what the numbers mean. The
-network is trained so two views of one object land close together in that space
-and views of different objects land far apart, by ordinary Euclidean or cosine
-distance. The usual signal is a **triplet loss** — an anchor, another view of it,
-and a different object; pull the first pair together, push the second apart.
-"Same glass?" becomes "is this distance small?"
+**embedding**: a short list of numbers produced by a network from that
+detection's pixels. Nobody chooses what the numbers mean. The network is trained
+so two views of one object land close together in that space and views of
+different objects land far apart, by ordinary Euclidean or cosine distance. The
+usual signal is a **triplet loss** — an anchor, another view of it, and a
+different object; pull the first pair together, push the second apart. "Same
+glass?" becomes "is this distance small?"
 
 The neighbouring field is **multi-object tracking**. A **track** is an identity
 over time; a **cost matrix** prices matching each detection to each track; the
@@ -453,7 +470,8 @@ appearance tracker, is **GPL-3.0**; ByteTrack
 code. **UOAIS** (https://github.com/gist-ailab/uoais, ICRA 2022) fits closest —
 RGB-D, tabletop, class-free, predicting a visible mask, an amodal mask and an
 occlusion flag per object; licence uncertain. **BCNet**
-(https://github.com/lkeab/BCNet, MIT) models occluder and occluded as two layers.
+(https://github.com/lkeab/BCNet, MIT) models occluder and occluded as two
+layers.
 
 Both sit on **Detectron2**, which solution 5 flags as CUDA-shaped and unreleased
 since 2021. With no NVIDIA card that is the real obstacle, not model size. A
@@ -463,7 +481,8 @@ MPS, and is the route I would take.
 **The datasets** are mostly unusable here: COCO-Amodal
 (https://github.com/Wakeupbuddy/amodalAPI, licence uncertain) and KINS
 (https://github.com/qqlu/Amodal-Instance-Segmentation-through-KINS-Dataset),
-annotated on KITTI and so **CC BY-NC-SA, non-commercial**. Neither holds glasses.
+annotated on KITTI and so **CC BY-NC-SA, non-commercial**. Neither holds
+glasses.
 
 **The simulator supplies the data free, which is what makes this practical.**
 Render each glass alone against the empty table: that silhouette is the amodal
@@ -477,36 +496,46 @@ and solve the cost matrix across pictures.
 
 ### The feedback loop
 
-The margin on that assignment is the useful output. If a detection sits 0.11
-from candidate A and 0.13 from B, while two views of one glass typically sit
-0.05 apart, the match is a coin toss wearing a number.
+The **margin** on that assignment is the useful output. Suppose a detection sits
+almost exactly as far from candidate A as from candidate B, while two views of
+the *same* glass normally sit far closer together than either. Then the match is
+a coin toss wearing a number, and the right response is to say so.
 
-**An uncertain association is a reason to take one more picture, from a viewpoint
-where the two candidates would look different.** That is solution 3's
-next-best-view machinery with the score swapped: instead of unknown volume, score
-the **predicted margin** — for each reachable viewpoint, predict how A and B
-would look and prefer the one putting their embeddings furthest apart. Two
-glasses drawn 230 mm and 205 mm tall look identical from above and differ by
-25 mm from level, so the loop picks a level view. Cap it: two extra looks, then
-report the pair unseparated.
+**An uncertain association is a reason to take one more picture, from a
+viewpoint where the two candidates would look different.** That is solution 3's
+next-best-view machinery with the score swapped: instead of unknown volume,
+score the **predicted margin** — for each reachable viewpoint, predict how A and
+B would look and prefer the one putting their embeddings furthest apart. Here is
+the intuition: two glasses of noticeably different heights look **identical**
+from the top, because from up there you see only their footprints — but from the
+side their difference in height is the most obvious thing about them. So the
+loop picks a view from the side. Cap it at a couple of extra looks, then report
+the pair unseparated.
 
 ### A worked example
 
-At survey height, 450 mm up, one pixel covers 1.6 mm. Glass A stands 180 mm in
-front of glass B, in line with the camera. B's footprint is 78 mm, or 49 pixels,
-and A hides 22 per cent of its disc.
+The camera works from the top. Glass A stands well in front of glass B and in
+line with the camera, so A hides roughly a fifth of B's footprint.
 
-*Modal.* B's visible part is 38 pixels, **61 mm** — inside the 60–90 mm range, so
-it passes. The circle fitted to that crescent has its centre **8.5 mm** from B's
-true one. One glass, 61 mm across, in a place it is not.
+*Modal — the visible mask only.* What is left of B is a crescent rather than a
+disc. Fit a circle to the crescent and it comes back **narrower than B really
+is**, and — this is the part that bites — narrow enough to still be **inside**
+the kind's allowed range. So the check passes. Worse, the centre of a crescent
+is not the centre of the disc it was cut from, so the position comes back wrong
+too. The result is one glass, of a plausible width, in a place it is not.
 
-*Amodal.* The model returns the whole disc: 77 mm against a true 78, centre
-within 2 mm, flagged as 22 per cent inferred.
+*Amodal — the whole outline, inferred.* The model returns the complete disc,
+hidden part included. Its width comes back within a millimetre or two of the
+truth and its centre likewise, **and it is flagged with how much of it was
+inferred rather than seen** — which is the honest part, and the part the modal
+mask cannot offer.
 
-*Association.* Station 2 sees B unoccluded; its embedding sits 0.04 from station
-1's truncated B against 0.19 for the nearest other glass. The awkward pair, of
-nearly identical proportions, come back at 0.11 and 0.13; one level look
-separates them to 0.06 and 0.21.
+*Association.* Another station sees B with nothing in front of it. Its embedding
+sits far closer to the first station's truncated B than to any other glass, so
+that match is clear. The awkward pair — two glasses of nearly identical
+proportions — come back almost equidistant, which is the coin toss above. **One
+look from the side, where their difference in height shows, separates them
+decisively.**
 
 ### What it needs
 
@@ -524,16 +553,17 @@ marks a mostly-guessed footprint doubtful.
 ### What it is bad at
 
 **Every glass is the same kind.** An appearance embedding on four to six nearly
-identical objects has very little to work with. What signal exists comes from the
-proportions drawn at random inside the kind's range, plus incidental marks and
-lighting — and in a clean render of untextured glasses there may be almost none.
-That is a real reason to doubt the embedding half earns its keep here.
+identical objects has very little to work with. What signal exists comes from
+the proportions drawn at random inside the kind's range, plus incidental marks
+and lighting — and in a clean render of untextured glasses there may be almost
+none. That is a real reason to doubt the embedding half earns its keep here.
 
 ### How it fails
 
-**The completion is invented and looks measured.** An amodal mask for a glass 90
-per cent hidden is almost all guess, yet comes back as a clean outline with a
-high score. Without the occlusion fraction, nothing says so.
+**The completion is invented and looks measured.** An amodal mask for a glass
+that is almost entirely hidden is almost entirely guesswork — yet it comes back
+as a clean, confident outline. Without the occlusion fraction reported alongside
+it, nothing whatever says so.
 
 **A systematic completion bias.** If the renders over-represent one occlusion
 geometry, every footprint is wrong the same way, which is harder to spot.
@@ -551,11 +581,12 @@ occlusion is the normal case and not the accident, a model that predicts
 the hidden part is not extra machinery — it is the measurement. It is also
 solution 5's partner on real glassware, where no depth is left to cluster.
 
-For this cell it is far more than the problem needs. Four to six glasses stand
-150 mm apart on a bare table, and most pictures show every glass whole. Where one
-does not, solution 3 moves the camera 200 mm and the occlusion goes away, seconds
-of arm time against two trained models. It earns its place when the arm cannot
-reach a clear viewpoint, and here it usually can.
+For this cell it is far more than the problem needs. Four to six glasses stand a
+comfortable distance apart on a bare table, and most pictures show every glass
+whole. Where one does not, solution 3 moves the camera a short way and the
+occlusion goes away — seconds of arm time, against two trained models. It earns
+its place when the arm *cannot* reach a clear viewpoint, and here it usually
+can.
 
 ---
 
@@ -603,29 +634,32 @@ Where the cue is subtler, nobody can.
 
 ### How it would work here
 
-**The observation.** Not the raw picture — appearance is what will not transfer
-out of Gazebo. Feed it what the geometry produced: the 320 x 360 mm glass zone
-as a grid of 20 mm cells, 16 x 18 = 288 of them, each empty, occupied or
-never-seen; one row per cluster, holding position, fitted diameter, how many of
-the three stations saw it and whether that diameter is in range; and how many
-looks remain. About nine hundred numbers, small enough to train on a CPU.
+**The observation.** Not the raw picture — appearance is exactly what will not
+transfer out of Gazebo. Feed it what the geometry already produced: the glass
+zone as a coarse grid of cells, each marked empty, occupied or never-seen; one
+row per cluster, holding its position, its fitted width, how many stations saw
+it and whether that width is inside the kind's range; and how many looks remain
+in the budget. That is a few hundred numbers in total — small enough to train on
+a CPU.
 
-**The action.** In principle a camera pose: six numbers. In practice, don't.
-Take a fixed list of **candidate poses** — problem 1's `_standoffs()` gives
-nine directions at 380 mm, and three heights make 27 — and let the action be a
-choice among them, plus one meaning **stop**. Discrete is the sane engineering
-choice: every candidate is checked once against the 300–780 mm reach and
-against inverse kinematics, so the policy cannot name a pose the arm will not
-hold, and failures are masked out. A continuous six-dimensional space would
-spend most of its exploration in mid-air.
+**The action.** In principle a camera pose, which is six numbers. In practice,
+don't. Take a **fixed list of candidate poses** — problem 1's `_standoffs()`
+gives a ring of directions, and a few heights multiply it up — and let the
+action be a choice among them, plus one extra action meaning **stop**. Discrete
+is the sane engineering choice here, for a specific reason: every candidate can
+be checked once against the arm's reach and against inverse kinematics, so the
+policy **cannot name a pose the arm will not hold**, and the impossible ones are
+masked out before it chooses. A continuous six-dimensional space would spend
+most of its exploration pointing the camera at mid-air.
 
-**The reward, which is the hard part.** Use problem 2's own score sheet: +1 per
-glass correctly separated, −1 per merged pair, −0.05 per look. That needs to
-know which glasses were really there. Gazebo writes down everything it spawned,
-so in simulation the reward is exact. **Reality has no such file.** You could
-pay for a proxy, such as the circle fit passing — but a policy optimises
-exactly what you pay for, and one paid for a passing fit learns viewpoints from
-which it passes, not viewpoints from which the answer is right.
+**The reward, which is the hard part.** Use problem 2's own score sheet: a point
+per glass correctly separated, a point off per merged pair, and a small penalty
+per look so that dithering costs something. That needs to know which glasses
+were really there. Gazebo writes down everything it spawned, so in simulation
+the reward is exact. **Reality has no such file.** You could pay for a proxy,
+such as the circle fit passing — but a policy optimises exactly what you pay
+for, and one paid for a passing fit learns viewpoints from which it passes, not
+viewpoints from which the answer is right.
 
 | Tool | Link | Licence | Needs CUDA? |
 | --- | --- | --- | --- |
@@ -641,20 +675,23 @@ Stable-Baselines3 supplies the algorithms and is the right first choice here;
 RLlib is for scaling across machines. **Isaac Lab is out**: this is an Apple
 Silicon Mac with no NVIDIA GPU, and everything CUDA-shaped goes with it.
 
-**How long.** An episode is at most six looks, each an arm move of a few
-seconds, plus a reset — call it ten seconds of wall clock headless, a figure to
-measure rather than guess. At 50,000 episodes that is five days on one process,
-under a day with eight in parallel. A gradient step is milliseconds, so **the
-simulator is the bottleneck, by three orders of magnitude.**
+**How long.** An episode is a handful of looks, each an arm move of a few
+seconds, plus a reset — call it some tens of seconds of wall clock running
+headless, which is a figure to measure rather than guess. Multiply that by the
+tens of thousands of episodes these methods want and it is **days** on one
+process, or a fraction of that with several in parallel. Meanwhile a gradient
+step takes milliseconds. So **the simulator is the bottleneck, by orders of
+magnitude**, and every optimisation effort belongs there rather than in the
+learning code.
 
 ### The feedback loop
 
 This is not a solution with feedback bolted on. It **is** the loop.
 
-1. **Observe.** Run the three-station survey, cluster, fit circles, build the
+1. **Observe.** Run the survey from the top, cluster, fit circles, build the
    observation.
-2. **Choose.** The policy returns one of the 27 candidates, or `stop`. Those
-   failing reach or IK were masked before it chose.
+2. **Choose.** The policy returns one of the candidate poses, or `stop`. The
+   ones failing reach or inverse kinematics were masked out before it chose.
 3. **Move.** Plan and execute, a few seconds. If the plan fails, mask that
    candidate and return to step 2.
 4. **Re-observe.** Take the pictures, fold the new points into the same
@@ -668,22 +705,27 @@ policy that never says `stop` wastes six looks rather than running forever.
 
 ### A worked example
 
-Glass A at x = 0.40, y = −0.30, 500 mm from the base. Glass B at x = 0.52,
-y = −0.39, 650 mm out and 150 mm from A. B sat behind A from two of the three
-stations, and the merged cluster fits a circle 165 mm across against the kind's
-60–90 mm range. Two of the nine directions lie along the A–B line, and at all
-three heights they fail on reach alone: 380 mm back from A lands either 120 mm
-from the base or 880 mm out, against limits of 300 and 780.
+Glass A stands about halfway out across the arm's reach. Glass B stands further
+out, at the smallest gap from A the cell allows. B sat behind A from most of the
+survey stations, so the merged cluster fits a circle about twice as wide as any
+glass of this kind can be.
 
-The policy picks candidate 14, the perpendicular, camera at (0.628, 0.004). One
-move, about three seconds. The cluster resolves into discs of 76 mm and 73 mm,
-both in range, so the policy says `stop` and the episode returns
-2 − 0.05 = **1.95**.
+Two of the candidate directions lie along the line joining A and B — the worst
+possible directions — and at every height they fail on **reach** alone, because
+standing back from A along that line puts the camera either folded in against
+the base or stretched out past the far limit. So they never even reach the
+policy.
 
-Solution 3's arithmetic chose that same viewpoint before the planner was asked
-anything, and can say why: from the blocked direction B spans
-105 x 277.1 / 530 ≈ 55 of the 320 pixels directly behind A. The policy chose
-candidate 14 with a value of 0.83, and can say nothing.
+The policy picks the candidate square across the A–B line. One move, a few
+seconds. The cluster resolves into two discs, both widths inside the kind's
+range, so the policy says `stop` and the episode collects its reward.
+
+**Now the comparison that matters.** Solution 3's arithmetic chose that *same*
+viewpoint, before the planner was asked anything at all — and it can say
+**why**: from the blocked direction, B would cover a large part of the width of
+the frame directly behind A. The policy chose the same pose and can say nothing
+at all about its reasons beyond a number. Same answer, and only one of the two
+can be audited.
 
 ### What it needs
 
@@ -721,9 +763,10 @@ derivable, and each attempt costs another training run.
 **Sim-to-real drift.** Milder than for contact tasks — no friction, no
 deformation, no impact, and what matters is straight lines from camera to
 object, which Gazebo gets right. Feeding clusters rather than pixels removes
-most of the appearance gap too. But the policy learned this simulator's depth
-noise and its dropout at glancing angles, and a real camera that loses the far
-rim at 60 degrees shifts every observation.
+most of the appearance gap too. But the policy also learned this simulator's
+depth noise and the way its readings drop out at glancing angles — and a real
+camera that loses the far rim of a glass at a steep angle shifts **every**
+observation the policy ever sees.
 
 **Silent staleness.** Change the kind, the lighting or the standoff list and
 the weights describe a cell that no longer exists. The tests still pass.
