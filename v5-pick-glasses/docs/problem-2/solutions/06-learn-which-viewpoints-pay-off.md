@@ -28,314 +28,404 @@ hardest, because it does not announce itself.
 
 The fix is to take a different picture. The camera is on the wrist, so a
 viewpoint is an arm pose: it costs seconds of motion, while the picture itself
-costs milliseconds. So the question is not *can we look again* but *where,
-given that we can only afford one or two more looks*.
+costs milliseconds. The question is not *can we look again* but *where, given
+that we can only afford one or two more looks*.
 
 [Solution 3](solution-overview.md#solution-3--move-the-camera) answers it with a
 rule: throw away the poses the arm cannot reach, throw away the ones looking
 through another glass, and of what is left take the one needing least reach.
-That rule is cheap, printable, and right most of the time. It also has a blind
-spot that is not a bug in the rule but a fact about the geometry.
+That rule is cheap, printable, and right most of the time. Its blind spot is
+not an oversight. It is a symmetry.
 
 ![Two candidate looks a least-reach rule cannot tell apart](../../../images/problem-2/06-the-rule-cannot-tell-them-apart.png)
 
-Look at the two coloured cameras. Both stand 380 mm back from the same cluster,
-both are 336 mm from the arm's base, and neither has anything in the way. The
-least-reach rule scores them identically, because **how far the camera is from
-the base depends only on the angle between the standoff direction and the line
-out from the base** — and that angle is the same whichever side you swing to.
-Every good viewpoint has a mirror image with exactly the same reach.
+**How far the camera ends up from the base depends only on the angle between
+the standoff direction and the line out from the base.** Swing the same angle
+to the other side of that line and the reach is identical. So every viewpoint
+has a mirror image that scores the same, and least reach cannot separate two
+candidates either side of the radial line however different what they would
+see. Both coloured cameras above stand 380 mm back from the same cluster, both
+are 336 mm from the base, and neither has anything in the way.
 
-The two are not equally useful. One looks across the line joining the hidden
-pair and returns two silhouettes with 65 pixels of table between them. The
-other looks almost along that line, the near glass covers most of the far one,
-and the picture comes back as a single 89-pixel blob — no better than the one
+They are not equally useful. One looks across the line joining the hidden pair
+and returns two silhouettes with 65 pixels of table between them. The other
+looks almost along that line, the near glass covers most of the far one, and
+the picture comes back as a single 89-pixel blob — no better than the one
 before it, and one look poorer.
 
-To tell them apart the score would have to know about the line joining the
-proposed pair, and about which views have already been taken, and about how
-those interact with the fitted radii. Somebody could write that rule. Somebody
-would then have to write the next one, and the one after that. The alternative
-is to stop writing rules and measure the thing directly.
-
-## The idea, in plain words
-
-Ask the question you actually care about.
-
-You are standing in front of a cluster that the circle fit has rejected — it
-came back as one circle 158 mm across, and no glass of this kind is. You have
-eight camera poses to choose between. What you want to know about each one is
-one single thing: **if I go there and take the picture, will this cluster come
-apart into two glasses, or not?**
-
-That is a yes-or-no question about a specific pose in a specific arrangement.
-It has an exact answer. And crucially, you can find out the answer *without the
-arm*, because the simulator will render the view from any pose it is asked for
-and then tell you what it spawned.
-
-So: generate thousands of arrangements, find the ambiguous clusters, render
-each candidate pose, record whether the ambiguity was resolved, and fit a
-function from the pose's geometry to that yes or no. Then, at run time, use the
-fitted function to order the candidates.
+To tell those two apart, a rule would have to know about the line joining the
+proposed pair, about which views have already been taken, and about how both
+interact with the fitted radii. Somebody could write that rule, and then the
+next one, and the one after. The alternative is to stop writing rules and
+measure the thing directly: **if I go there and take the picture, will this
+cluster come apart into two glasses?** That is a yes-or-no question about one
+pose in one arrangement, it has an exact answer, and the simulator can look it
+up — it renders the view from any pose it is asked for, and it knows what it
+spawned.
 
 ![Three ways to score the same eight viewpoints](../../../images/problem-2/06-three-scorers.png)
 
-The three panels are the same arrangement and the same eight candidates, scored
-three ways. The rows at the bottom are the orderings each scorer produces;
-green means the pair really does come apart from there, red means it does not.
+The three panels are one arrangement and eight candidates scored three ways.
+Green in the rows at the bottom means the pair really does come apart from
+there.
 
 - **Solution 3** scores by least reach. Its top two are tied to the millimetre
   and one of them is useless.
 - **Solution 4** scores by how far the segmenter's own per-pixel doubt should
-  fall. That is a better question than reach, but it is still a proxy, and it
-  has a specific bad case: from the pose that lines the two glasses up, the
-  blob looks like one clean, well-bounded glass, so the model is *confident* —
-  and a large predicted drop in doubt is exactly the wrong answer.
-- **Solution 6** scores the chance the picture splits the cluster. It is the
-  only one of the three that puts both useless looks at the end, because it is
-  the only one being asked about the outcome rather than about a stand-in for
-  it.
+  fall. That is a better question than reach and still a proxy, and it has a
+  specific bad case: from the pose that lines the two glasses up, the blob
+  looks like one clean, well-bounded glass, so the model is *confident*, and a
+  large predicted drop in doubt is exactly the wrong answer.
+- **Solution 6** scores the chance the picture splits the cluster, and is the
+  only one of the three that puts both useless looks at the end.
 
-The useful generalisation is not "learning beats rules". It is that **the
-shape of a learning problem is worth working out before reaching for the
-heaviest tool that fits it.** This one turned out to be a table of features and
-a column of zeros and ones.
+The useful generalisation is not "learning beats rules". It is that **the shape
+of a learning problem is worth working out before reaching for the heaviest
+tool that fits it.** This one turns out to be a table of features and a column
+of zeros and ones.
 
-## Where it comes from
+## How it works, end to end
 
-Three separate lines of work meet here.
+### The setup
 
-**Active perception.** The observation that a camera which can move is not the
-same instrument as one that cannot. Ruzena Bajcsy's *Active Perception*
-(Proceedings of the IEEE, 1988) is the paper that named it, and Connolly's
-*The Determination of Next Best Views* (ICRA, 1985) is the loop that follows
-from it: given what you have seen and where you could go, where next? Scott,
-Roth and Rivest's survey *View planning for automated three-dimensional object
-reconstruction and inspection* (ACM Computing Surveys, 2003) collects the
-classical answers, nearly all of which score a viewpoint by how much unknown
-volume it would resolve. Solution 3 is a small, hand-cut version of that
-tradition.
+The table top is at 750 mm and the arm is bolted to its near edge, reaching out
+along +x. The glasses stand in a 320 × 360 mm zone on the arm's right: four to
+six of them, one known kind, upright, opaque, at least 150 mm apart. The camera
+is bolted to the wrist, so choosing a viewpoint means choosing an arm pose, and
+the arm works comfortably between 300 and 780 mm from its base.
 
-**Predicting whether an action will work, from data.** In grasping, the same
-step was taken about ten years ago and for the same reason. Nobody could write
-down a rule that said whether a particular gripper pose would hold a particular
-object, so instead people collected attempts and fitted a function from the
-pose to whether it worked. Pinto and Gupta's
-[*Supersizing Self-supervision*](https://arxiv.org/abs/1509.06825) (ICRA 2016)
-had a robot try tens of thousands of grasps and label them by whether the
-object came up. Levine et al.'s
-[*Learning Hand-Eye Coordination for Robotic Grasping*](https://arxiv.org/abs/1603.02199)
-(2016) is the larger version. Neither is reinforcement learning: there is no
-episode and no reward, just an input, an attempt, and a recorded outcome. The
-label is free because the world produces it.
-
-**Next best view as supervised learning.** Putting those together — scoring a
-viewpoint by a fitted function rather than a formula — is also published.
-Vasquez-Gomez et al.'s
-[*Supervised learning of the next-best-view for 3D object reconstruction*](https://arxiv.org/abs/1905.05833)
-trains a network to pick the best of a fixed set of poses, with the labels
-generated by simulating each pose and measuring what it gained. That is the
-same move made here, for a different payoff.
-
-The reason this matters is cost, and the comparison worth having in mind is
-against the obvious heavier alternative: a policy trained by reinforcement
-learning, which is written up as
-[an active-vision policy](learned-with-hardware.md#an-active-vision-policy) in
-the companion document.
-
-![The same question asked two ways](../../../images/problem-2/06-supervised-against-reinforcement.png)
-
-Read the "working out which look helped" row first, because it is the one that
-decides everything else. A reinforcement-learning agent takes several looks and
-then gets one number saying how the episode went; working out which of the
-looks earned it is the central difficulty of the method, and it is why episodes
-have to be played out in their thousands. Here the label for one look does not
-depend on what the arm does next, so there is nothing to attribute. Remove the
-credit assignment and the episode goes with it, and with the episode goes the
-reward function, the exploration schedule, the discount factor, and most of the
-machine time.
-
-A policy does buy one thing this does not: it can also learn *when to stop*.
-Here that decision stays a written rule — stop when nothing is ambiguous, or
-the budget is spent.
-
-## How it works, step by step
-
-### Step 1 — say exactly what the label means
-
-A **label** is the known answer attached to one training example. Getting it
-right is most of the work, and here the choice is between two candidates that
-sound alike:
-
-- *Was the final answer correct?* — needs ground truth, which the arm does not
-  have at run time.
-- *Did this picture change the answer?* — needs only the two fits, before and
-  after.
-
-Take the second. The label is 1 if the cluster that failed the circle fit came
-back as two circles inside the kind's diameter range, and 0 otherwise. It is
-observable during a normal run, which turns out to matter a great deal later.
-
-A scalar version — how much the one-circle fit's residual dropped — trains the
-same way and carries more information per row. An ordering needs only the
-ranking, so the binary version is enough to start with.
-
-### Step 2 — make the rows
+Known before the run starts: the table plane, the lens (fx = fy = 277.1 pixels
+over a 320 × 240 frame), the kind and the range of footprint diameters it
+allows, and one thing solutions 1 to 3 do not carry — **a weights file, fitted
+offline, that scores a candidate viewpoint**. Not known: how many glasses,
+where they stand, or their proportions. No glass's size is written down
+anywhere in this project.
 
 ![One row of training data, start to finish](../../../images/problem-2/06-one-training-example.png)
 
-Five steps, none of which needs a person or an arm:
+The weights come from a sweep that needs neither a person nor an arm. Five
+steps, run in Gazebo, appending one row each pass:
 
-1. **Spawn.** The simulator puts four to six glasses of one kind in the zone at
-   random, at least 150 mm apart, with proportions drawn from the kind's
-   plausible range.
-2. **Fit and find the ambiguity.** Run the normal survey and the normal
-   clustering. A cluster whose fitted circle falls outside the kind's range is
-   ambiguous — in the picture above, one fits at 220 mm.
+1. **Spawn.** Four to six glasses of one kind in the zone at random, at least
+   150 mm apart, proportions drawn from the kind's plausible range.
+2. **Fit.** Run the normal survey and the normal clustering. A cluster whose
+   fitted circle falls outside the kind's range is ambiguous — one fits at
+   220 mm in the picture above.
 3. **Pick a candidate.** Generate the standoff directions round that cluster
    and drop the ones the geometry rejects.
-4. **Render.** Gazebo draws the view from that pose. The arm does not move;
+4. **Render.** Gazebo draws the view from that pose. The arm does not move and
    nothing is planned; this is a camera placed in a scene graph.
-5. **Write the row.** The features from step 3, and the outcome from re-running
-   the fit on step 4's picture.
+5. **Write the row.** The candidate's features from step 3, and the outcome of
+   re-running the fit on step 4's picture.
 
-The label in step 5 is *read*, not judged. The simulator holds the true poses
+The outcome in step 5 is *read*, not judged: the simulator holds the true poses
 of everything it spawned, so "did the cluster come apart into the right two
-glasses" is a lookup.
+glasses" is a lookup. About ten candidates survive per cluster and an
+arrangement usually yields one or two ambiguous clusters, so two thousand
+arrangements give of the order of twenty thousand rows. Hold out a fifth of the
+**arrangements**, not a fifth of the rows: two candidates from the same
+arrangement are not independent, and splitting by row lets the model look up
+the answer.
 
-Repeat for every surviving candidate of every ambiguous cluster of every
-arrangement. About ten candidates survive per cluster, and an arrangement
-usually yields one or two ambiguous clusters, so two thousand arrangements give
-of the order of twenty thousand rows.
+One choice in step 5 decides more than it looks. The label is *did this picture
+change the answer* — 1 if the failed cluster came back as two circles inside
+the kind's range, 0 otherwise — and not *was the final answer correct*. The
+second needs ground truth the arm will never have; the first needs only the two
+fits, before and after, so it is also observable during a normal run. That is
+what makes [the feedback loop](#the-feedback-loop) below possible.
 
-### Step 3 — decide what the model gets to see
+### The pictures
 
-This is the design decision with the most consequences, and there is one
-argument that settles it before any of the others.
+Two kinds of picture, taken at different times for different reasons.
 
-**At the moment the score is wanted, the picture does not exist.** You are
-deciding whether to spend three seconds of arm time going somewhere. The only
-thing available is a prediction of what would be seen, computed from the
-current belief. There are no pixels to feed to anything.
+**The survey**, which happens first and assumes nothing. Three stations,
+450 mm above the table top, camera looking straight down, two pictures 120 mm
+apart at each station so parallax gives depth. Neighbouring stations overlap by
+35 per cent, so a glass cut off at the edge of one picture is well inside
+another.
 
-So the input is geometry: about twenty numbers describing the candidate against
-the pair, against everything else on the table, against the arm's limits, and
-against the views already taken.
+**The extra look**, which is the picture this solution chooses. Level rather
+than overhead, 120 mm above the table top, and 380 mm back from the doubtful
+cluster — the standoff problem 1 measures from, comfortably clear of the 300 mm
+floor below which a glass fills the frame before it is all in it. It is a
+sideways move that matters, because what projection threw away was which pixels
+were near and which were far, and a camera 200 mm to one side simply has that
+fact.
 
-Three further reasons to prefer hand-made numbers to raw pixels even where
-pixels are available:
+The candidates lie on a ring at that 380 mm standoff, **24 directions at
+15-degree spacing**. Problem 1's `_standoffs()` offers nine, 40 degrees apart,
+and that spacing is expensive: over 600 drawn arrangements, 45 per cent of
+glasses have no usable viewpoint on the nine-direction grid and only 14 per cent
+on a 5-degree one. Most of what this cell calls "no viewpoint" is the grid
+running out rather than the geometry. Generating more candidates costs
+arithmetic and nothing else.
 
-- **Rows needed.** Twenty numbers can be fitted from thousands of rows. A
-  320 × 240 input needs orders of magnitude more, and every one of those rows
-  costs a render.
-- **Transfer.** Millimetres and degrees mean the same thing under a different
-  light, a different glass colour and a different camera gain. Appearance does
-  not, and the whole point of the simulator-only rule is that nothing may
-  depend on a look that Gazebo happens to produce.
-- **Debugging.** When a tree-based model chooses wrongly you can print the
-  twenty numbers and see which one was unusual. A wrong answer from a
-  convolutional network over a rendered image is a much longer afternoon.
+At the chosen pose the arm takes five pictures along a 120 mm parallax slide
+rather than two, because the move is what costs and a picture is milliseconds.
 
-### Step 4 — fit something small
+### What each picture captures
 
-The target is binary and the inputs are a short table of heterogeneous numbers
-— angles, millimetres, ratios, counts. That is the case
-**gradient-boosted decision trees** were made for. A decision tree asks a
-series of threshold questions ("is the angle to the join line above 47
-degrees?") and lands in a leaf holding a prediction. Boosting fits a first,
-deliberately weak tree, looks at what it got wrong, fits a second tree to
-that error, and adds it in; a few hundred small trees in sequence add up to a
-good predictor. The method is Friedman's (*Greedy Function Approximation: A
-Gradient Boosting Machine*, Annals of Statistics, 2001).
+Every frame is 320 × 240, colour and depth together, through one lens with
+fx = fy = 277.1 pixels. Four things come back and are kept together:
 
-The practical choices, all CPU-only:
+- **Colour.** Not used by this solution's chain. It is kept for the report and
+  for the solutions that do read it.
+- **Depth.** One distance per pixel. At the survey height of 450 mm a pixel
+  covers 450 / 277.1 ≈ **1.62 mm** of table; at the 380 mm standoff,
+  380 / 277.1 ≈ **1.37 mm**.
+- **The mask.** Which pixels stand above the table plane, from
+  `detect.standing_on_the_table`.
+- **The pose the arm recorded** when the shutter opened, in the cell's world
+  frame. Without it a depth reading is a distance and nothing more; with it,
+  every masked pixel becomes a point in table millimetres.
 
-- [`HistGradientBoostingClassifier`](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.HistGradientBoostingClassifier.html)
-  from scikit-learn — already a dependency-free wheel, BSD-3-Clause
-  ([licence](https://github.com/scikit-learn/scikit-learn/blob/main/COPYING)),
-  and it trains twenty thousand rows of twenty columns in seconds on this
-  machine. This is the one to start with.
-- [LightGBM](https://github.com/microsoft/LightGBM) (MIT) and
-  [XGBoost](https://github.com/dmlc/xgboost) (Apache-2.0) are the same family
-  with more knobs. Neither is needed at this size.
-- A small multi-layer network in
-  [PyTorch](https://pytorch.org/) (BSD-3-style,
-  [licence](https://github.com/pytorch/pytorch/blob/main/LICENSE)) is worth
-  having only for the scalar target, where it fits a smooth function more
-  naturally than a staircase of thresholds does. On an Apple Silicon Mac it
-  runs on the MPS backend in minutes. It is not the first thing to build.
+### What is interpreted, and how
 
-Whatever is fitted, it must be checked against rows it has never seen. Hold out
-a fifth of the *arrangements* — not a fifth of the rows — because two
-candidates from the same arrangement are not independent, and splitting by row
-lets the model look up the answer.
+The chain from those pixels to the answer, in order. Steps 1 to 5 are
+[solution 2](02-cluster-on-the-table.md) unchanged; everything after them is
+this solution.
 
-## How it works here
-
-### The candidate list, and who is allowed to veto
+1. **Mask.** Keep the pixels standing above the table plane.
+2. **Backproject.** Turn each masked pixel into a point in table millimetres,
+   from its depth, the lens and the recorded pose.
+3. **Cluster.** Group those points by distance *on the table*, not in the
+   picture. Grouping in the picture is what merges two glasses in line with the
+   camera.
+4. **Fit a circle** to each cluster's footprint: centre, diameter, residual.
+5. **Judge.** A diameter inside the kind's range is a glass. Outside it the
+   cluster is **ambiguous**, and a two-circle fit proposes the pair it might be.
 
 ![24 directions in, 8 scored: the geometry vetoes, the model only orders](../../../images/problem-2/06-veto-then-ordering.png)
 
-This ordering is the safety argument, and it is worth stating as a rule rather
-than as an implementation detail: **everything that can reject a pose is
-arithmetic, and the model comes after all of it.**
-
-1. **Generate.** Problem 1's `_standoffs()` already makes nine directions round
-   a target at 380 mm from it, level, 120 mm above the table. Make it 24 at
-   15-degree spacing; generating more candidates costs nothing.
-2. **Reach.** The camera lands at the cluster plus 380 mm along the direction,
-   and that point must be 300 to 780 mm from the arm's base.
-3. **Line of sight.** Reject any ray that passes through another cluster's
+6. **Generate.** 24 standoff directions round the ambiguous cluster, 380 mm out,
+   level, 120 mm above the table.
+7. **Veto on reach.** The camera point must land 300 to 780 mm from the base.
+8. **Veto on line of sight.** Reject any ray passing through another cluster's
    fitted footprint circle.
-4. **Plannability.** Run inverse kinematics on what is left —
-   [MoveIt 2](https://moveit.ai/)'s `setFromIK` (BSD-3-Clause), milliseconds
-   each — and drop the poses the arm cannot hold.
-5. **Score.** The model sees the survivors and returns a number for each. It
-   cannot add a pose, and it cannot remove one.
+9. **Veto on plannability.** Inverse kinematics on what is left — [MoveIt
+   2](https://moveit.ai/)'s `setFromIK`, milliseconds each — drops the poses the
+   arm cannot hold.
+10. **Score.** The model reads about twenty numbers per survivor and returns a
+    probability. It cannot add a pose and it cannot remove one.
 
-Because of that ordering, the worst thing a wrong prediction can do is put a
-reachable, unblocked, plannable pose first when a different reachable,
-unblocked, plannable pose would have been better. The cost is one look. It is
-not possible for the model to cause an unsafe move, because it is never asked
-about safety.
-
-### What the model is shown
+That ordering is the safety argument, and it is a rule rather than an
+implementation detail: **everything that can reject a pose is arithmetic, and
+the model comes after all of it.** The worst a wrong prediction can do is put
+one reachable, unblocked, plannable pose ahead of another. The cost is one look.
+The model is never asked about safety, so it cannot cause an unsafe move.
 
 ![Everything the model is given, drawn where it lives](../../../images/problem-2/06-the-features.png)
 
-The features are grouped by what they are about, and every one of them is a
-millimetre, a degree or a count.
+Every feature is a millimetre, a degree or a count — never a pixel value. At
+the moment the score is wanted **the picture does not exist**: the arm is
+deciding whether to spend three seconds going somewhere, so the only input
+available is a prediction computed from the current belief. Hand-made numbers
+also transfer, because a millimetre means the same thing under a different
+light, a different glass colour and a different camera gain; they fit from
+thousands of rows where a 320 × 240 input needs orders of magnitude more, and
+every one of those rows costs a render; and when the model chooses wrongly you
+can print twenty numbers and see which one was unusual. Five groups:
 
-**About the pair the fit proposed.** The diameter of the one-circle fit; the
-two diameters the two-circle fit proposes; their separation expressed in fitted
-radii rather than millimetres, so the number means the same thing for a large
-glass and a small one; and how much worse the one circle fits than the two,
-which is how strongly the geometry believes there are two things there at all.
+- **The proposed pair.** The one-circle diameter; the two diameters the
+  two-circle fit proposes; their separation in fitted radii rather than
+  millimetres, so the number means the same for a large glass and a small one;
+  and how much worse the one circle fits than the two, which is how strongly the
+  geometry believes there are two things there at all.
+- **The candidate against that pair.** The angle between the line of sight and
+  the line joining the two proposed centres — 90 degrees separates, 0 degrees is
+  useless — its sine, and the predicted separation and overlap in pixels. The
+  last two are the same geometry in the units the camera works in: a 168 mm
+  separation at 380 mm depth projects 168 × 277.1 / 380 ≈ 123 pixels of the 320
+  across.
+- **The candidate against everything else.** How close the ray passes to each of
+  the three nearest other clusters, in that cluster's own radii, and how many
+  clusters fall inside the camera's wedge. A neighbour can sit close to the line
+  of sight and block nothing, because it is on the far side of the target, so
+  the sign of the projection is part of the feature.
+- **The arm.** Reach against the 300 and 780 mm limits, the standoff, and the
+  height above the table. The veto has already computed these, so they are free.
+- **What has already been looked at.** The angle from the nearest view already
+  taken, how many views this cluster has had, and how many looks the budget has
+  left. This is the group a hand-written rule forgets, and it decides the worked
+  example below: a picture taken fifteen degrees from one you already have is
+  nearly the same picture.
 
-**About the candidate against that pair.** The angle between the line of sight
-and the line joining the two proposed centres — ninety degrees is the
-separating angle and zero degrees is the useless one — its sine, the predicted
-separation in pixels, and the predicted overlap in pixels. Those last two are
-the same geometry expressed in the units the camera actually works in, which is
-where the constants live: `fx = fy = 277.1` pixels, so a 168 mm separation at
-380 mm depth is 168 × 277.1 / 380 ≈ 123 pixels of the 320 across.
+A binary target over a short table of heterogeneous numbers — angles,
+millimetres, ratios, counts — is the case **gradient-boosted decision trees**
+were made for (Friedman, *Greedy Function Approximation: A Gradient Boosting
+Machine*, Annals of Statistics, 2001). A tree asks threshold questions ("is the
+angle to the join line above 47 degrees?") and lands in a leaf holding a
+prediction; boosting fits a weak tree, fits the next to what the first got
+wrong, and adds them up.
+[`HistGradientBoostingClassifier`](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.HistGradientBoostingClassifier.html)
+trains twenty thousand rows of twenty columns in seconds on this machine, on
+the CPU. [LightGBM](https://github.com/microsoft/LightGBM) and
+[XGBoost](https://github.com/dmlc/xgboost) are the same family with more knobs
+and are not needed at this size. A small network in
+[PyTorch](https://pytorch.org/) is worth having only for a scalar target — how
+far the one-circle residual dropped — where it fits a smooth function more
+naturally than a staircase of thresholds does. An ordering needs only the
+ranking, so binary is enough to start with.
 
-**About the candidate against everything else.** How close the ray passes to
-each of the three nearest other clusters, in that cluster's own radii, and how
-many clusters fall inside the camera's wedge. Note the subtlety the picture
-shows: a neighbour can be close to the line of sight and still block nothing,
-because it sits on the far side of the cluster. The sign of the projection is
-part of the feature, not an afterthought.
+### What comes out
 
-**About the arm.** The reach — camera to base, against the 300 and 780 mm
-limits — the standoff, and the height above the table. These are already known
-from step 2 of the filter, so they are free.
+Per glass, exactly what [`problem.md`](../problem.md) asks for: a **mask**
+saying which pixels in which picture are that glass, a **position** in
+millimetres from the arm's base, and a **rough footprint width** in
+millimetres. Beside it, the list of pairs that could not be separated and why —
+no candidate survived the veto, or the budget ran out.
 
-**About what has already been looked at.** The angle from the nearest view
-already taken, how many views this cluster has, and how many looks the budget
-has left. This group is the one a hand-written rule usually forgets, and it is
-what makes the difference in the worked example below: a picture taken fifteen
-degrees from one you already have is nearly the same picture.
+The report receives all of it. The unseparated pairs are the handover to
+[problem 3](../../problem-3/problem.md), which is allowed to move the glasses.
+One more thing leaves the run: for every look taken, a row of twenty features
+and its outcome, appended to a log.
+
+## The sequence
+
+The normal path: survey, one cluster that fails the circle fit, one extra look,
+resolved.
+
+```mermaid
+sequenceDiagram
+    participant T as task.py
+    participant A as Arm / MoveIt
+    participant C as Wrist camera
+    participant P as Perception
+    participant M as Model
+    participant R as Report
+    T->>A: survey, 3 stations 450 mm above the table
+    A->>C: two frames 120 mm apart at each station
+    C-->>P: colour and depth, 320x240, fx 277.1
+    P->>P: mask, backproject, cluster, fit circles
+    P-->>T: four glasses 71-78 mm, one cluster at 158 mm
+    Note over T: 158 mm is outside the kind's 60-90 mm range
+    T->>P: two-circle fit on the doubtful cluster
+    P-->>T: 76 mm and 71 mm, centres 54 mm apart
+    T->>T: 24 directions on the 380 mm ring
+    T->>T: reach 300-780 mm leaves 12
+    T->>T: line of sight leaves 9
+    T->>A: setFromIK on those 9
+    A-->>T: 8 poses the arm can hold
+    T->>M: about 20 features for each of the 8
+    M-->>T: best is +120 degrees at 0.88
+    T->>A: move there, about 3 s
+    A->>C: five frames along a 120 mm slide
+    C-->>P: colour and depth
+    P-->>T: two circles, 74 mm and 70 mm, 168 mm apart
+    T->>R: masks, positions, footprint widths
+    T->>R: append one row, outcome 1
+```
+
+The interesting path: the loop that runs when a look does not pay off, what
+stops it, and the second loop that only closes between runs.
+
+```mermaid
+sequenceDiagram
+    participant T as task.py
+    participant A as Arm / MoveIt
+    participant C as Wrist camera
+    participant P as Perception
+    participant M as Model
+    participant R as Report
+    Note over T: budget is 2 extra looks per cluster and 4 per run
+    loop while a cluster is ambiguous and budget is left
+        T->>T: generate 24, veto on reach, sight and IK
+        alt nothing survives the veto
+            T->>R: no usable viewpoint, hand it to problem 3
+        else survivors remain
+            T->>M: features for each survivor
+            M-->>T: one probability per survivor
+            Note over T: take the second-ranked one look in 20
+            T->>A: move to the chosen pose
+            A->>C: five frames along a 120 mm slide
+            C-->>P: colour and depth
+            P-->>T: re-fit, two circles in range or not
+            T->>R: append the row with its outcome
+        end
+    end
+    T->>R: whatever is still ambiguous is reported as ambiguous
+    Note over M: between runs, refit offline on the log
+```
+
+The floor is not drawn and matters as much as the cap: every cluster that fails
+the circle fit gets one look whatever the model predicts.
+
+## In pseudocode
+
+```mermaid
+flowchart TD
+    E1["survey, 3 stations 450 mm up"] --> E2["mask above the table, backproject"]
+    E2 --> N1["cluster on the table, fit a circle"]
+    N1 --> N2["outside the kind's range? two-circle fit"]
+    N2 --> E3["24 standoff directions on the 380 mm ring"]
+    E3 --> N3["veto on reach and line of sight"]
+    N3 --> L1["setFromIK, MoveIt 2"]
+    L1 --> N4["about 20 features per survivor"]
+    N4 --> L2["predict the chance of a split, scikit-learn"]
+    L2 --> E4["move and photograph"]
+    E4 --> N5["re-fit, append the row"]
+    N5 --> E5["masks, positions, widths, unresolved pairs"]
+    N5 -.-> N1
+    style E1 fill:#e4eef9,stroke:#4c8fd6,color:#22272e
+    style E2 fill:#e4eef9,stroke:#4c8fd6,color:#22272e
+    style E3 fill:#e4eef9,stroke:#4c8fd6,color:#22272e
+    style E4 fill:#e4eef9,stroke:#4c8fd6,color:#22272e
+    style E5 fill:#e4eef9,stroke:#4c8fd6,color:#22272e
+    style N1 fill:#e8f3ec,stroke:#5aa469,color:#22272e
+    style N2 fill:#e8f3ec,stroke:#5aa469,color:#22272e
+    style N3 fill:#e8f3ec,stroke:#5aa469,color:#22272e
+    style N4 fill:#e8f3ec,stroke:#5aa469,color:#22272e
+    style N5 fill:#e8f3ec,stroke:#5aa469,color:#22272e
+    style L1 fill:#eef0f2,stroke:#8b949e,color:#22272e
+    style L2 fill:#eef0f2,stroke:#8b949e,color:#22272e
+```
+
+Legend, because colour alone is not accessible: **green** is new code written
+for this solution, **blue** is code the project already has, **grey** is a
+third-party library. The dotted arrow is the loop back for a second look.
+
+```text
+stations = survey_stations(GLASS_ZONE, footprint)       # have · work_cell.arm.dimensions
+for station in stations:                                # have · work_cell.task
+    depth, pose = arm.look_down_from(station)           # have · work_cell.task
+    mask = detect.standing_on_the_table(depth, pose)    # have · work_cell.glasses.detect
+    points += backproject(depth, mask, pose, K)         # have · work_cell.glasses.perception
+clusters = cluster_by_distance(points[:, :2], 25.0)     # NEW  · numpy
+for c in clusters:                                      # NEW  · ~25 lines, numpy only
+    centre, diameter, rms = fit_circle(c)               # NEW  · numpy.linalg.lstsq
+    if kind.accepts(diameter):                          # have · work_cell.glasses.spec
+        continue                                        #
+    pair = fit_two_circles(c)                           # NEW  · numpy.linalg.lstsq
+    ring = standoffs(centre, 380.0, count=24)           # have · work_cell.task
+    poses = [p for p in ring if 300 <= reach(p) <= 780] # have · work_cell.arm.dimensions
+    poses = [p for p in poses if clear(p, clusters)]    # have · work_cell.task
+    poses = [p for p in poses if arm.set_from_ik(p)]    # have · moveit
+    if not poses:                                       #
+        report.no_viewpoint(c)                          # have · work_cell.report
+        continue                                        #
+    rows = [features(p, pair, clusters, seen, budget)   # NEW  · ~80 lines, numpy only
+            for p in poses]                             #
+    best = argmax(model.predict_proba(rows))            # NEW  · scikit-learn
+    depth, pose = arm.look_level_from(poses[best])      # have · work_cell.task
+    after = fit_two_circles(recluster(depth, pose))     # NEW  · numpy
+    log.append(rows[best], kind.accepts_both(after))    # NEW  · csv, stdlib
+report.glasses(clusters)                                # have · work_cell.report
+report.doubtful(still_ambiguous)                        # have · work_cell.report
+```
+
+What it needs from outside the project, and whether the environment already has
+it:
+
+| Library | What it does here | Licence | In the pixi environment? |
+|---|---|---|---|
+| [NumPy](https://numpy.org/) | backprojection, clustering, both circle fits, the feature rows | BSD-3-Clause ([licence](https://github.com/numpy/numpy/blob/main/LICENSE.txt)) | **yes** |
+| [MoveIt 2](https://moveit.ai/) | `setFromIK` for the plannability veto, then the move | BSD-3-Clause | **yes** — the cell already runs on it |
+| [Gazebo](https://gazebosim.org/) | renders the offline sweep that makes the rows | Apache-2.0 | **yes** — already running |
+| [scikit-learn](https://scikit-learn.org/) | `HistGradientBoostingClassifier`: fits the ranker, and checks its [calibration](https://scikit-learn.org/stable/modules/calibration.html) | BSD-3-Clause ([licence](https://github.com/scikit-learn/scikit-learn/blob/main/COPYING)) | **no** — the one dependency this solution adds |
+| [PyTorch](https://pytorch.org/) | only for the scalar target, later | BSD-3-style ([licence](https://github.com/pytorch/pytorch/blob/main/LICENSE)) | **no**, and not needed |
+
+OpenCV and Matplotlib are installed and this solution uses neither. SciPy is
+not installed and is not needed either.
 
 ## A worked example
 
@@ -390,8 +480,7 @@ rule gets them wrong:
   has seen it.
 
 **The look.** Plan, move, settle: about three seconds. Then five pictures along
-the 120 mm parallax slide rather than two, because the move is what costs and a
-picture is milliseconds.
+the 120 mm parallax slide.
 
 At 380 mm one pixel covers 380 / 277.1 = **1.37 mm**. The two glasses are
 really 168 mm apart, which from the chosen pose projects
@@ -408,32 +497,72 @@ kind's range, so the cluster stays ambiguous and the run is one look poorer.
 Finally, a row is appended to the log: the twenty features of the pose that was
 taken, and the outcome 1.
 
+## Where it comes from
+
+Three separate lines of work meet here.
+
+**Active perception.** The observation that a camera which can move is not the
+same instrument as one that cannot. Ruzena Bajcsy's *Active Perception*
+(Proceedings of the IEEE, 1988) named it, and Connolly's *The Determination of
+Next Best Views* (ICRA, 1985) is the loop that follows: given what you have
+seen and where you could go, where next? Scott, Roth and Rivest's survey *View
+planning for automated three-dimensional object reconstruction and inspection*
+(ACM Computing Surveys, 2003) collects the classical answers, nearly all of
+which score a viewpoint by how much unknown volume it would resolve. Solution 3
+is a small, hand-cut version of that tradition.
+
+**Predicting whether an action will work, from data.** Grasping took the same
+step about ten years ago, for the same reason: nobody could write down a rule
+saying whether a gripper pose would hold an object, so people collected
+attempts and fitted a function from the pose to whether it worked. Pinto and
+Gupta's [*Supersizing Self-supervision*](https://arxiv.org/abs/1509.06825)
+(ICRA 2016) had a robot try tens of thousands of grasps and label them by
+whether the object came up; Levine et al.'s
+[*Learning Hand-Eye Coordination for Robotic Grasping*](https://arxiv.org/abs/1603.02199)
+(2016) is the larger version. Neither is reinforcement learning: there is no
+episode and no reward, just an input, an attempt and a recorded outcome. The
+label is free because the world produces it.
+
+**Next best view as supervised learning.** Vasquez-Gomez et al.'s
+[*Supervised learning of the next-best-view for 3D object reconstruction*](https://arxiv.org/abs/1905.05833)
+trains a network to pick the best of a fixed set of poses, with labels
+generated by simulating each pose and measuring what it gained. Same move, made
+for a different payoff.
+
+![The same question asked two ways](../../../images/problem-2/06-supervised-against-reinforcement.png)
+
+The comparison worth having in mind is against the heavier alternative: a
+policy trained by reinforcement learning, written up as
+[an active-vision policy](learned-with-hardware.md#an-active-vision-policy) in
+the companion document. Read the "working out which look helped" row first,
+because it decides everything else. A reinforcement-learning agent takes
+several looks and gets one number saying how the episode went; working out
+which look earned it is the central difficulty of the method, and it is why
+episodes have to be played out in their thousands. Here the label for one look
+does not depend on what the arm does next, so there is nothing to attribute.
+Remove the credit assignment and the episode goes with it, and with the episode
+go the reward function, the exploration schedule, the discount factor and most
+of the machine time.
+
+A policy does buy one thing this does not: it can also learn *when to stop*.
+Here that stays a written rule — stop when nothing is ambiguous, or the budget
+is spent.
+
 ## The feedback loop
 
-This solution is a closed loop twice over. The obvious loop is the one inside a
-run: look, see what happened, look again if you must. The second loop is the
-one that matters more, and it is the reason to build this at all.
+The loop inside a run is the ordinary one: look, see what happened, look again
+if you must. The second loop is the reason to build this at all.
 
 ![Every look taken is another labelled row](../../../images/problem-2/06-improves-with-use.png)
 
-### Inside a run
+**Inside a run.** Fit; find the clusters outside the kind's range; generate 24
+candidates and veto them; score the survivors and take the highest; move and
+photograph; re-fit; append one row holding the features scored and the outcome
+observed. It stops when nothing is ambiguous, when the budget is spent, or when
+a cluster has no surviving candidate. Whatever is still ambiguous is reported
+as ambiguous, which is what `problem.md` asks for.
 
-1. **Fit.** A cluster whose circle falls outside the kind's diameter range is
-   ambiguous.
-2. **Generate and veto.** 24 candidates, filtered for reach, line of sight and
-   inverse kinematics. If nothing survives, stop and hand the cluster to
-   [problem 3](../../problem-3/problem.md).
-3. **Predict and order.** Score each survivor and take the highest.
-4. **Move and photograph.** Seconds for the move, then five pictures along the
-   120 mm parallax slide.
-5. **Observe.** Re-fit. Two circles inside the range, or not?
-6. **Record.** Append one row: step 3's features, step 5's outcome.
-
-It stops when nothing is ambiguous, when the budget is spent, or when a cluster
-has no surviving candidate. Whatever is still ambiguous is reported as
-ambiguous, which is what `problem.md` asks for.
-
-Two rules keep the loop from running away, and neither of them is the model:
+Two rules keep it from running away, and neither of them is the model.
 
 - **A floor that ignores the score.** Any cluster failing the circle fit gets
   one look whatever the prediction says. Otherwise a model that predicts no
@@ -442,188 +571,89 @@ Two rules keep the loop from running away, and neither of them is the model:
   stations are the run's cost today and the whole run should take tens of
   seconds, so four extra looks roughly doubles it. Six does not fit.
 
-### Between runs
+**Between runs.** The run-time label needs no ground truth — it is *did the
+answer change*, which is two circle fits and a comparison — so it is available
+on a real table, with no simulator and nobody watching. Every look the arm
+takes is another labelled row. The right-hand panel above is the shape of that
+claim and is drawn rather than measured: nothing here has been run. Its point
+is the flat line. A hand-written rule performs exactly as well on its
+thousandth run as on its first. A fitted one does not have to.
 
-Step 6 is what separates this from a model trained once and frozen, and the
-reason it works is the choice made back in step 1 of the method.
-
-**The run-time label needs no ground truth.** It is not *was the answer right*
-— the arm cannot know that — but *did the answer change*, which is two circle
-fits and a comparison. So the label is available in normal running, on the real
-table, with no simulator and nobody watching. Every look the arm takes is
-another labelled row.
-
-The right-hand panel above is the shape of the claim, and it is drawn rather
-than measured: nothing here has been run. The point of it is the flat line. A
-hand-written rule performs exactly as well on its thousandth run as on its
-first. A fitted one does not have to.
-
-Three guards on the retraining, all of them boring and all of them necessary:
+Three guards on the retraining, all boring and all necessary.
 
 - **Retrain offline, between runs, never mid-run.** A model that changes during
   a run makes the run unreproducible, and an unreproducible run cannot be
   debugged.
-- **Check calibration, do not assume it.** Of the looks the model scored at
-  0.9, did nine in ten actually resolve? scikit-learn's
+- **Check calibration, do not assume it.** Of the looks scored at 0.9, did nine
+  in ten actually resolve? scikit-learn's
   [calibration guide](https://scikit-learn.org/stable/modules/calibration.html)
   has the method and the reliability plot. If the answer is no, this is a
-  heuristic wearing a weights file, and it should be said so out loud.
+  heuristic wearing a weights file, and it should be said out loud.
 - **Log something other than the model's favourite.** A log holding outcomes
   only for poses the model already liked teaches it nothing about the rest, and
-  retraining on it can entrench an early mistake. Take the second-ranked
-  candidate about one look in twenty. This is the cheapest possible version of
+  retraining on it entrenches an early mistake. Take the second-ranked
+  candidate about one look in twenty. That is the cheapest possible version of
   what the active-learning literature calls exploration; Settles'
   [*Active Learning Literature Survey*](https://burrsettles.com/pub/settles.activelearning.pdf)
-  (University of Wisconsin–Madison, 2009) is the standard tour of the better
-  versions, and none of them is needed at this scale.
+  (University of Wisconsin–Madison, 2009) tours the better versions, none of
+  which is needed at this scale.
 
 ## What it needs
 
-**Libraries.** [NumPy](https://numpy.org/) (BSD-3-Clause,
-[licence](https://github.com/numpy/numpy/blob/main/LICENSE.txt)) and
-[scikit-learn](https://scikit-learn.org/) (BSD-3-Clause,
-[licence](https://github.com/scikit-learn/scikit-learn/blob/main/COPYING)) are
-all that is required. [PyTorch](https://pytorch.org/) (BSD-3-style,
-[licence](https://github.com/pytorch/pytorch/blob/main/LICENSE)) only if the
-scalar target is wanted later. The geometric filter, the circle fit and
-[MoveIt 2](https://moveit.ai/)'s `setFromIK` (BSD-3-Clause) are needed for
-solution 3 anyway, so this solution adds no dependency the cell does not
-already carry — scikit-learn excepted.
-
-**Data.** Produced by [Gazebo](https://gazebosim.org/) (Apache-2.0), which is
-already running. Of the order of two thousand arrangements, each sweeping its
-ambiguous clusters against the surviving poses: tens of thousands of rows.
-Nothing from outside the simulator, no photographs, no downloaded weights.
+**Data.** Produced by Gazebo, which is already running. Of the order of two
+thousand arrangements, each sweeping its ambiguous clusters against the
+surviving poses: tens of thousands of rows. Nothing from outside the simulator,
+no photographs, no downloaded weights.
 
 **Hardware.** A CPU. The trees train in seconds and predict in microseconds.
 Nothing here wants CUDA, which is the condition that removed several otherwise
 good answers from this document.
 
-**Time.** The sweep is the real work and its cost is dominated by Gazebo, not
-by the fitting. The overview's estimate is a few hours unattended; that number
-should be *timed on the first hundred arrangements and extrapolated*, not
-believed. The harness that drives the sweep — spawn, survey, enumerate, render,
-re-fit, append — is a few hundred lines and is the part that will take a day to
-get right.
+**Time.** The sweep is the real work and Gazebo dominates its cost, not the
+fitting. The overview's estimate is a few hours unattended; that number should
+be *timed on the first hundred arrangements and extrapolated*, not believed.
+The harness that drives the sweep — spawn, survey, enumerate, render, re-fit,
+append — is a few hundred lines and is the part that will take a day to get
+right.
 
 **Artefacts to keep in step.** A weights file of a few hundred kilobytes, and
-beside it a hash of the feature list, so that a changed or reordered feature
-makes the loader refuse rather than quietly misread column seven. A log file
-that grows.
+beside it a hash of the feature list, so a changed or reordered feature makes
+the loader refuse rather than quietly misread column seven. A log file that
+grows.
 
-## What it is good at
-
-**It optimises the thing actually wanted.** Every other scorer here optimises a
-stand-in: unknown volume, expected entropy, least reach. Those are stand-ins
-because the real target was thought to be unmeasurable. Here it is measurable,
-so there is no reason to accept the stand-in.
-
-**It gets most of what a learned looking policy offers for a fraction of the
-cost.** No episodes, no reward function, no exploration schedule, no days of
-machine time, and no GPU.
-
-**It degrades to something sensible.** Delete the weights file and the filter
-still returns reachable, unblocked, plannable poses; order them by reach and
-you have solution 3. There is no state in which removing the model leaves the
-cell unable to run.
-
-**It gets better with use**, and the improvement costs nothing but a log file,
-because the run-time label is free.
-
-**It is inspectable.** Twenty named numbers and a tree ensemble: when it
-chooses wrongly you can print the row, and gradient-boosted trees will tell you
-which features they lean on.
-
-## What it is bad at
-
-**It buys an ordering, not a capability.** Where the cheap rule already picks an
-acceptable viewpoint most of the time — and with one known kind and five
-glasses it often does — the gain is small and the machinery is not.
-
-**It needs the two-circle fit to state the ambiguity.** The features describe a
-candidate *relative to a proposed pair*. A cluster too degenerate for the
-two-circle fit to say anything arrives half described, and the model is
-scoring against a line it does not really have.
-
-**It has nothing to say when the list is empty.** If every one of the 24
-directions is out of reach, blocked or unplannable, there is nothing to order.
-That is not a defect of the ranker; it is the case that exists to be handed to
-problem 3.
-
-**Its labels are only as honest as the simulator.** Everything it learns about
-depth noise, glass edges and occlusion comes from Gazebo's renderer. The
-transfer question is real, and the answer here is that the features are
-millimetres and degrees rather than appearance, which is the best defence
-available without a robot on a bench.
-
-## How it fails
+## Where it is strong and where it breaks
 
 ![Two limits, and only one of them is the model's fault](../../../images/problem-2/06-where-it-stops-working.png)
 
-**It predicts a payoff that never arrives.** The top-scored look is taken, the
-cluster does not come apart, one look of four is gone, and the pair is reported
-unseparated. This is the ordinary failure and it is bounded by the cap.
+**Strong**
 
-**It predicts no payoff anywhere.** No look is taken, and a merged pair is
-reported as one large glass — the failure `problem.md` watches hardest. The
-guard is not the model: any cluster failing the circle fit gets one look
-whatever the score.
+- It scores the outcome, not a stand-in like unknown volume or least reach.
+- Most of a learned policy's benefit with no episodes, reward, machine days or
+  GPU.
+- Delete the weights and the veto still returns reachable, unblocked, plannable
+  poses; ordered by reach that is solution 3, which this extends.
+- It improves with use for the price of a log file; a wrong choice prints as
+  twenty numbers.
 
-**It is asked about a table it was never trained on.** A predictor fitted on
-arrangements of five glasses may not transfer to eight. With eight there are
-more clusters near every candidate and the separations are smaller, so features
-like "how many clusters fall inside the wedge" take values the training set
-never held. A tree asked about a value off the end of its range does not say
-so — it answers from whichever leaf it falls into, with the same confidence as
-always. The defences are to spawn the training set across the *whole* declared
-range of four to six glasses rather than a convenient middle, to record the
-feature ranges seen in training beside the weights, and to fall back to
-solution 3's ordering when a live row falls outside them.
+**Breaks**
 
-**It cannot rank a candidate the geometry never generated.** The model's world
-is the 24 standoff directions at one standoff distance and one height. If the
-right answer is a pose at 300 mm, or tilted down, or from a different height,
-no score will find it, because no score is asked. Widening the candidate set is
-free and is the first thing to try when the ordering is good but the outcome is
-not.
-
-**The log is a biased sample.** Outcomes are recorded only for poses that were
-taken, and poses are taken because the model liked them. Retraining on that log
-without the one-in-twenty exploration rule can lock in an early mistake.
-
-**It goes stale silently.** Change the standoff list, the standoff distance, or
-the spawner's proportion ranges, and the weights now describe a cell that no
-longer exists. Nothing crashes. The feature hash catches a changed *feature*;
-it does not catch a changed *world*, and only re-running the sweep does.
-
-**Real glassware removes its input.** The whole chain starts with depth
-readings that transparent glass does not give, which is the standing caveat on
-every depth-based solution in this document.
-
-## When it would be the right choice
-
-Three conditions, and all three hold here:
-
-1. **The candidate list is long enough that the order matters.** Eight
-   survivors, a budget of four looks for the whole run.
-2. **A wasted look is the expensive outcome.** Arm time is by far the scarcest
-   resource; computation is not scarce at all.
-3. **The label is exact and free.** The simulator knows what it spawned, so the
-   experiment can be run exhaustively without anyone labelling anything.
-
-Where it would not be the right choice: when the rule already picks well.
-So the order of work is **solution 3 first, scored** — run it, record for every
-ambiguous cluster whether its first choice resolved the cluster, and look at
-the number. If the rule's first pick usually works, this solution earns nothing
-and should not be built. If it does not, the log from that scored run is
-already the beginning of the training set.
-
-There is also a version of this that is worth more later. At
-[problem 4](../../problem-4/problem.md) the kind stops being known, the allowed
-diameter becomes the union of several ranges, and the ambiguity stops being a
-short list of near-identical questions. That is where a hand-written rule runs
-out of things it can be told, and where a fitted score that has seen thousands
-of arrangements starts to be worth its weight.
+- An ordering, not a capability: score solution 3's rule first; if its top pick
+  usually resolves the cluster, this earns nothing.
+- No two-circle fit, no features; an empty candidate list leaves nothing to
+  order — the handover to [problem 3](../../problem-3/problem.md).
+- It can predict a payoff that never arrives, or none anywhere; cap and floor
+  bound both.
+- A tree asked past its training range answers with its usual confidence; train
+  across the whole four-to-six range and fall back outside it.
+- It cannot rank a pose nobody generated — 24 directions, one standoff, one
+  height.
+- The log holds only poses the model liked, so retraining without the
+  one-in-twenty rule entrenches mistakes. Change the standoff list or the
+  spawner and the weights quietly describe a cell that no longer exists: the
+  hash catches a changed feature, not a changed world.
+- Labels are only as honest as Gazebo, and real glassware returns no depth. It
+  earns most at [problem 4](../../problem-4/problem.md), where the kind is
+  unknown.
 
 ## The general methods behind this
 
@@ -709,17 +739,3 @@ look rather than a wrong answer: geometry generates the candidates and holds an
 absolute veto, and the model is only allowed to reorder what survives. Position
 in the pipeline is what bounds the damage — see
 [where the learned part sits](solution-overview.md#three-families-and-what-hybrid-means).
-
-## Where it sits
-
-It is the same loop as *move the camera*, with the scoring rule replaced by a
-fitted function, and it falls back to exactly that rule when the model is
-removed — so it should be built on top of that solution rather than instead of
-it. It competes with *learned doubt steers the next picture*, which asks the
-same question through the perception model's uncertainty instead of through the
-outcome; that version is richer and is the one to reach for once the doubt
-stops being binary, but it inherits the confidently-wrong failure that this one
-sidesteps by never asking the model how sure it is. It leans on *cluster on the
-table* for the circle fit that declares a cluster ambiguous and then judges
-whether the look worked, and it hands anything it cannot resolve to
-[problem 3](../../problem-3/problem.md), which is allowed to move the glasses.
