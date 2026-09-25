@@ -1,0 +1,30 @@
+{
+  "scenes": 50,
+  "glasses": 251,
+  "crowded_at_start": 190,
+  "outcome": {
+    "done": 35,
+    "incomplete": 15,
+    "wrong": 0
+  },
+  "glasses_end": {
+    "racked": 199,
+    "refused": 52,
+    "toppled": 0,
+    "pushed_out_of_the_zone": 0,
+    "picked_without_room": 0,
+    "left_with_no_reason": 0
+  },
+  "refused_because": {
+    "nowhere clear to push it to": 52
+  },
+  "pushes": {
+    "total": 212,
+    "repeats": 90,
+    "blocked_on_the_way_down": 0,
+    "never_touched": 0,
+    "jammed": 0,
+    "aim_mm_median": 1.0,
+    "aim_mm_worst": 3.9
+  }
+}

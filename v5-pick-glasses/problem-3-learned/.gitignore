@@ -1,0 +1,8 @@
+# Pushes: redrawn with `make collect` and `make collect-planned`.
+data/
+# Retrained in about five minutes with `make train`.
+weights/
+# Runs that are not the 50 held-out tables, and films of a few: `make film`.
+tuning.json
+partial.json
+videos/

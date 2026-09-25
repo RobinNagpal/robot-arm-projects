@@ -1,0 +1,4 @@
+# Films of a few tables: `make film`.
+videos/
+# A run shorter than the 50 held-out tables.
+partial.json

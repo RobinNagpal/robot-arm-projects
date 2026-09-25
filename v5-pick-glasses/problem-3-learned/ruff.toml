@@ -1,0 +1,6 @@
+extend = "../ruff.toml"
+
+[lint.isort]
+# The modules in this folder import each other by bare name.
+known-first-party = ["models", "pipeline", "render", "scoring", "train", "viewpoints"]
+known-third-party = ["work_cell"]

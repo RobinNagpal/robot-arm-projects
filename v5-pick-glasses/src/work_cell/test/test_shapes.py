@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 from work_cell.arm.dimensions import LOWEST_GRIP
 from work_cell.glasses import spec
+from work_cell.glasses.rules import MIN_HANG
 from work_cell.glasses.shapes import (
     KIND_RANGES,
     build,
@@ -83,14 +84,13 @@ def test_a_stemmed_foot_is_never_wider_than_its_bowl():
             assert widest_at > 0.5 * outline.total_height
 
 
-def test_every_straight_glass_drawn_can_be_held_at_its_centre_of_mass():
+def test_every_straight_glass_drawn_can_be_held_below_its_centre_of_mass():
     # The fingers cannot go below LOWEST_GRIP, so a tumbler whose centre of
-    # mass is lower than that would be held off-centre. None is drawn.
+    # mass is lower than that could only be held above it. None is drawn.
     kind = spec.kind("straight_glass")
     for outline, _ in family("straight_glass", 40, seed=6):
         centre = centre_height(outline, kind.wall_thickness_m)
-        assert centre >= LOWEST_GRIP + kind.min_band_height_m / 2.0
-        assert centre <= 0.5 * outline.total_height - kind.min_band_height_m / 2.0
+        assert centre >= LOWEST_GRIP + kind.min_band_height_m / 2.0 + MIN_HANG
 
 
 def test_a_short_tumbler_is_not_reachable_and_a_tall_one_is():

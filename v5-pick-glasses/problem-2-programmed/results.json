@@ -1,0 +1,27 @@
+{
+  "scenes": 50,
+  "glasses": 250,
+  "find": {
+    "found": 250,
+    "missed": 0,
+    "merged": 0,
+    "split": 0,
+    "false": 0,
+    "position_mm_median": 0.2,
+    "position_mm_worst": 1.2
+  },
+  "view": {
+    "chosen_unspoiled": 246,
+    "random_unspoiled": 223,
+    "judged": 250,
+    "handed_over": {
+      "no clean picture": 2
+    }
+  },
+  "measure": {
+    "measured": 248,
+    "height_mm_median": 0.8,
+    "height_mm_worst": 2.3,
+    "width_mm_median": 1.7
+  }
+}

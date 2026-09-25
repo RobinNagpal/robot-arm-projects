@@ -10,8 +10,9 @@ without anybody writing either number down.
 
 Four rules cover the four kinds:
 
-- ``nearest_centre_of_mass`` — upright wall as close as it can be to the
-  height of the glass's centre of mass. A straight glass.
+- ``just_below_centre_of_mass`` — upright wall a little below the glass's
+  centre of mass, so it hangs from the pads once upside down. A straight
+  glass.
 - ``lowest_vertical_section`` — the lowest run of wall that is upright enough
   for two flat pads. No kind uses it at the moment.
 - ``narrowest_below_widest`` — the stem. A stemmed glass.
@@ -33,11 +34,29 @@ from .force import estimate_centre_height
 from .profile import Profile
 from .spec import (
     FLATTEST_IN_BAND,
+    JUST_BELOW_CENTRE_OF_MASS,
     LOWEST_VERTICAL_SECTION,
     NARROWEST_BELOW_WIDEST,
-    NEAREST_CENTRE_OF_MASS,
     Kind,
 )
+
+# How far below the estimated centre of mass the grip is aimed.
+#
+# Upside down, a glass held below its centre of mass hangs from the pads like
+# a pendulum and settles back if it swings. Held above, it balances on them
+# like a pencil on its point and falls over. So the grip must stay below the
+# true centre, and every error in the estimate so far has put it too high: the
+# camera reads a glass 6 to 10 mm too tall, because it sees the far edge of
+# the rim, and weighing only partly accounts for the solid base. Across the
+# simulator runs the weighed estimate was up to 14 mm high. This covers that.
+#
+# An allowance for measuring error, not the size of any glass.
+BELOW_CENTRE = 0.015
+
+# The least the centre of mass must be above the grip for a glass to hang.
+# Where the fingers cannot get even this far below it, the glass is balanced
+# on the pads rather than hanging from them, and it is refused.
+MIN_HANG = 0.005
 
 
 @dataclass(frozen=True)
@@ -93,9 +112,7 @@ def find_grip(
 # ----------------------------------------------------------------- the rules
 
 
-def _apply_rule(
-    profile: Profile, kind: Kind, lowest_grip: float, mass: float | None
-) -> tuple[float, float]:
+def _apply_rule(profile: Profile, kind: Kind, lowest_grip: float, mass: float | None) -> tuple[float, float]:
     """Run the kind's rule, and return the run of wall to grip.
 
     The band the rule searches starts no lower than ``lowest_grip``. The floor
@@ -113,8 +130,8 @@ def _apply_rule(
             f"{within[1] * 1000:.0f} mm"
         )
 
-    if kind.grip_rule == NEAREST_CENTRE_OF_MASS:
-        return _nearest_centre_of_mass(profile, kind, within, mass)
+    if kind.grip_rule == JUST_BELOW_CENTRE_OF_MASS:
+        return _just_below_centre_of_mass(profile, kind, within, mass)
     if kind.grip_rule == LOWEST_VERTICAL_SECTION:
         return _lowest_vertical_section(profile, kind, within)
     if kind.grip_rule == NARROWEST_BELOW_WIDEST:
@@ -144,15 +161,15 @@ def _lowest_vertical_section(
     return lowest.bottom, min(lowest.bottom + kind.min_band_height_m, lowest.top)
 
 
-def _nearest_centre_of_mass(
+def _just_below_centre_of_mass(
     profile: Profile, kind: Kind, within: tuple[float, float], mass: float | None
 ) -> tuple[float, float]:
-    """Upright wall as close as it can be to the height of the centre of mass.
+    """Upright wall BELOW_CENTRE under the estimated centre of mass.
 
-    Turning a glass over swings its weight round the pads, and the weight
-    pulls with a lever as long as the gap between the grip and the centre of
-    mass. Closing that gap takes the lever away, where squeezing harder only
-    fights it. Rule one still holds: the band keeps the grip in the lower half.
+    Below, so that upside down the glass hangs from the pads rather than
+    balancing on them. Only just below, because the gap is the lever its
+    weight swings on while it is turned and carried. Rule one still holds: the
+    band keeps the grip in the lower half.
     """
     bands = [b for b in profile.vertical_bands(within=within) if b.height >= kind.min_band_height_m]
     if not bands:
@@ -161,16 +178,23 @@ def _nearest_centre_of_mass(
             f"in the lower part of this {kind.name}"
         )
     centre = estimate_centre_height(profile, kind, mass)
+    aim = centre - BELOW_CENTRE
     half = kind.min_band_height_m / 2.0
-    # The pads go as near the centre as each run allows, and the nearest wins.
-    middles = [min(max(centre, b.bottom + half), b.top - half) for b in bands]
-    middle = min(middles, key=lambda m: abs(m - centre))
+    # The pads go as near the aim as each run allows, and the nearest wins.
+    middles = [min(max(aim, b.bottom + half), b.top - half) for b in bands]
+    middle = min(middles, key=lambda m: abs(m - aim))
+    # A short glass can have its centre below where the fingers can reach.
+    # Held there it would balance on the pads once upside down, and fall.
+    if middle > centre - MIN_HANG:
+        raise NoGrip(
+            f"the fingers cannot get below this {kind.name}'s centre of mass, about "
+            f"{centre * 1000:.0f} mm up, so upside down it would balance on the pads "
+            f"and fall over"
+        )
     return middle - half, middle + half
 
 
-def _narrowest_below_widest(
-    profile: Profile, kind: Kind, within: tuple[float, float]
-) -> tuple[float, float]:
+def _narrowest_below_widest(profile: Profile, kind: Kind, within: tuple[float, float]) -> tuple[float, float]:
     """The stem: the narrowest part below the widest part."""
     waist = profile.waist_at()
     if waist is None:
@@ -187,9 +211,7 @@ def _narrowest_below_widest(
     return waist - half, waist + half
 
 
-def _flattest_in_band(
-    profile: Profile, kind: Kind, within: tuple[float, float]
-) -> tuple[float, float]:
+def _flattest_in_band(profile: Profile, kind: Kind, within: tuple[float, float]) -> tuple[float, float]:
     """The least sloping run of wall, for a glass with no upright part at all."""
     band = profile.flattest_band(within=within, height=kind.min_band_height_m)
     if band is None:
@@ -203,9 +225,7 @@ def _flattest_in_band(
 # ---------------------------------------------------------------- the checks
 
 
-def _check(
-    grip: Grip, profile: Profile, kind: Kind, gripper_max_opening: float, lowest_grip: float
-) -> None:
+def _check(grip: Grip, profile: Profile, kind: Kind, gripper_max_opening: float, lowest_grip: float) -> None:
     """Reject an answer that is real arithmetic but a bad idea.
 
     A rule can return something silly on an odd glass — a waist found in a

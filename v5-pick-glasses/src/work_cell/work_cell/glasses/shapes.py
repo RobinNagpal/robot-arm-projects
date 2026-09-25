@@ -24,6 +24,7 @@ import numpy as np
 
 from ..arm.dimensions import LOWEST_GRIP
 from . import spec
+from .rules import MIN_HANG
 
 # How many points the outline is sampled at. Enough that a stem two millimetres
 # tall still gets several samples on a 200 mm glass.
@@ -219,27 +220,26 @@ def draw(kind: str, rng: random.Random) -> tuple[Outline, dict[str, float]]:
         if reachable(kind, outline):
             return outline, chosen
     raise RuntimeError(
-        f"no {kind} in {DRAW_ATTEMPTS} draws had its centre of mass where the fingers "
-        f"can reach; its range in KIND_RANGES wants raising"
+        f"no {kind} in {DRAW_ATTEMPTS} draws had its centre of mass above where the "
+        f"fingers can reach; its range in KIND_RANGES wants raising"
     )
 
 
 def reachable(kind: str, outline: Outline) -> bool:
-    """Whether the fingers can be put level with this glass's centre of mass.
+    """Whether the fingers can be put below this glass's centre of mass.
 
     Only asked of a kind whose rule holds it there. Below LOWEST_GRIP the
-    gripper body is through the table, and above the kind's search band the
-    fingers finish among the rack pegs. A short tumbler has its centre below
-    that floor, so the rule would fall back to holding it off-centre, which
-    is the very grip it exists to avoid. Such a glass is not put on the table.
+    gripper body is through the table. A short tumbler has its centre lower
+    than the fingers can go, so it could only be held above it, and upside
+    down it would balance on the pads and fall. Such a glass is not put on
+    the table.
     """
     rules = spec.kind(kind)
-    if rules.grip_rule != spec.NEAREST_CENTRE_OF_MASS:
+    if rules.grip_rule != spec.JUST_BELOW_CENTRE_OF_MASS:
         return True
     centre = centre_height(outline, rules.wall_thickness_m)
-    half = rules.min_band_height_m / 2.0
     lowest = max(LOWEST_GRIP, rules.band_for(outline.total_height)[0])
-    return lowest + half <= centre <= rules.band_for(outline.total_height)[1] - half
+    return lowest + rules.min_band_height_m / 2.0 + MIN_HANG <= centre
 
 
 def centre_height(outline: Outline, wall: float) -> float:

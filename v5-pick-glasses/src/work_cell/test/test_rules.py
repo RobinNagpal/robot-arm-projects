@@ -1,8 +1,8 @@
 import pytest
 from work_cell.arm.dimensions import LOWEST_GRIP
 from work_cell.glasses import spec
-from work_cell.glasses.profile import profile_from_outline
-from work_cell.glasses.rules import NoGrip, find_grip
+from work_cell.glasses.profile import Profile, profile_from_outline
+from work_cell.glasses.rules import BELOW_CENTRE, NoGrip, find_grip
 from work_cell.glasses.shapes import (
     centre_height,
     family,
@@ -19,9 +19,7 @@ MAX_OPENING = 0.095
 
 
 def grip_for(outline, kind_name, max_opening=MAX_OPENING):
-    return find_grip(
-        profile_from_outline(outline), spec.kind(kind_name), gripper_max_opening=max_opening
-    )
+    return find_grip(profile_from_outline(outline), spec.kind(kind_name), gripper_max_opening=max_opening)
 
 
 # ------------------------------------------------- the opening is measured
@@ -89,37 +87,63 @@ def test_the_rule_works_on_forty_glasses_of_its_kind(kind_name):
     assert not failures, f"{len(failures)} of 40 failed, first: {failures[:1]}"
 
 
-def test_a_weighed_straight_glass_is_held_level_with_its_centre_of_mass():
-    """The lever that turns a glass in the fingers is the gap between the two.
+def _weighed(outline):
+    return SpawnedGlass("g", "straight_glass", outline, (0.0, 0.0, 0.0), 0.0).mass
 
-    Across the family, with the fingers kept off the table, and against the
-    true centre of the solid glass rather than the estimate the rule used.
+
+def _straight_grip(profile, mass=None):
+    return find_grip(
+        profile,
+        spec.kind("straight_glass"),
+        gripper_max_opening=MAX_OPENING,
+        lowest_grip=LOWEST_GRIP,
+        mass=mass,
+    )
+
+
+def test_a_weighed_straight_glass_is_held_just_below_its_centre_of_mass():
+    """Below, so upside down it hangs from the pads rather than balancing on them.
+
+    Across the family, and against the true centre of the solid glass rather
+    than the estimate the rule used.
     """
     kind = spec.kind("straight_glass")
     for outline, _ in family("straight_glass", 40, seed=8):
-        mass = SpawnedGlass("g", "straight_glass", outline, (0.0, 0.0, 0.0), 0.0).mass
-        grip = find_grip(
-            profile_from_outline(outline),
-            kind,
-            gripper_max_opening=MAX_OPENING,
-            lowest_grip=LOWEST_GRIP,
-            mass=mass,
-        )
+        grip = _straight_grip(profile_from_outline(outline), _weighed(outline))
         centre = centre_height(outline, kind.wall_thickness_m)
-        assert grip.height == pytest.approx(centre, abs=0.005)
+        assert grip.height < centre
+        # Only just: the gap is the lever the weight swings on.
+        assert grip.height > centre - BELOW_CENTRE - 0.005
         assert grip.band[0] >= LOWEST_GRIP
+
+
+def test_the_grip_stays_below_the_centre_with_the_errors_the_camera_makes():
+    # Seen from a little above, the far edge of the rim makes a glass read up
+    # to 10 mm too tall, and the wrist sensor has read 5% light. Both push the
+    # estimate up, which is the dangerous way.
+    kind = spec.kind("straight_glass")
+    for outline, _ in family("straight_glass", 40, seed=9):
+        exact = profile_from_outline(outline)
+        stretch = (exact.total_height + 0.010) / exact.total_height
+        seen = Profile(exact.height * stretch, exact.width)
+        grip = _straight_grip(seen, 0.95 * _weighed(outline))
+        assert grip.height < centre_height(outline, kind.wall_thickness_m)
+
+
+def test_a_glass_that_can_only_be_held_above_its_centre_is_refused():
+    # 130 mm tall: the fingers cannot go below 50 mm, and its centre of mass
+    # is lower than that. Upside down it would balance on the pads.
+    outline = straight(height=0.130, rim_diameter=0.070)
+    with pytest.raises(NoGrip, match="balance on the pads"):
+        _straight_grip(profile_from_outline(outline), _weighed(outline))
 
 
 def test_weighing_moves_the_grip_down_and_never_up():
     # The outline alone cannot see the solid base, so its guess is high.
-    kind = spec.kind("straight_glass")
     for outline, _ in family("straight_glass", 40, seed=8):
         profile = profile_from_outline(outline)
-        mass = SpawnedGlass("g", "straight_glass", outline, (0.0, 0.0, 0.0), 0.0).mass
-        before = find_grip(profile, kind, gripper_max_opening=MAX_OPENING, lowest_grip=LOWEST_GRIP)
-        after = find_grip(
-            profile, kind, gripper_max_opening=MAX_OPENING, lowest_grip=LOWEST_GRIP, mass=mass
-        )
+        before = _straight_grip(profile)
+        after = _straight_grip(profile, _weighed(outline))
         assert after.height <= before.height
 
 

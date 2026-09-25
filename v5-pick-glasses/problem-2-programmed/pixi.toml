@@ -1,0 +1,18 @@
+[workspace]
+name = "pick-glasses-programmed"
+version = "0.1.0"
+description = "Problem 2 by geometry alone: find glasses from above, choose side viewpoints by a written rule, measure by silhouette"
+channels = ["conda-forge"]
+platforms = ["osx-arm64", "linux-64"]
+
+# No models, so no PyTorch. OpenCV because rack/layout.py imports it.
+[dependencies]
+python = "3.12.*"
+numpy = ">=1.26,<3"
+py-opencv = ">=4.9"
+pytest = ">=7"
+
+[activation.env]
+# The project's own modules, and the scenes and scoring shared with
+# problem-2-learned.
+PYTHONPATH = "$PIXI_PROJECT_ROOT/../src/work_cell:$PIXI_PROJECT_ROOT/../problem-2-sim"
