@@ -1340,13 +1340,13 @@ depth, no cluster and no circle to verify. That is solution 5's day.
 somebody wrote. This predicts, from an experiment the simulator can run
 exhaustively, whether taking that picture will actually change the answer.*
 
-Three solutions here choose where to look next; they differ in what they
-score. This one scores the thing actually wanted: the chance that a
-picture from a given pose splits an ambiguous cluster into two glasses. That
-question has an exact answer the simulator can look up — spawn an arrangement,
-render from the pose, see whether the ambiguity went — so choosing a viewpoint
-becomes ordinary supervised learning on free, exact labels. The geometry still
-generates the candidates and still holds the veto; the model only orders what
+Three solutions here choose where to look next. They differ in what they score.
+This one scores the thing actually wanted: the chance that a picture from a given
+pose splits an ambiguous group into two glasses. That question has an exact
+answer the simulator can look up — spawn an arrangement, render from the pose,
+see whether the ambiguity went away. So choosing a viewpoint becomes ordinary
+supervised learning, on labels that are free and exact. The geometry still
+generates the candidates and still holds the veto. The model only orders what
 survives, so a bad prediction costs one wasted look.
 
 **The long version:** [06-learn-which-viewpoints-pay-off.md](06-learn-which-viewpoints-pay-off.md) — this solution explained
