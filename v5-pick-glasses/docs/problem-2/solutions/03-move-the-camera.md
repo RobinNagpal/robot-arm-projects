@@ -654,6 +654,78 @@ pieces, because the first is worth more than the second:
    and four per run. Only once the first piece is running and the report says
    how often a doubtful cluster actually appears.
 
+## The general methods behind this
+
+This solution is an instance of a named research programme, not a trick. The
+idea that a camera should be *moved on purpose* rather than read passively has
+forty years of literature behind it, and the pieces below are the standard
+vocabulary.
+
+### Active perception — treating the sensor's pose as something to choose
+
+Classical vision takes a picture as given and asks what can be recovered from
+it. **Active perception** (Bajcsy, *Proceedings of the IEEE*, 1988) and **active
+vision** (Aloimonos, Weiss and Bandyopadhyay, *IJCV*, 1988) reframe it: the
+observer controls the sensor, so the question becomes *where should I look
+next?* Problems that are ill-posed from one viewpoint frequently become
+well-posed from two.
+
+- **Mostly used for** robots with the sensor on a movable body — arms, mobile
+  bases, drones, pan-tilt heads — and for inspection, where an object must be
+  checked from several sides anyway.
+- **Rarely right for** fixed installations where moving is impossible or slow
+  relative to the value of the answer: a conveyor line at speed, a static
+  security camera, or any case where an extra viewpoint costs more than being
+  wrong occasionally.
+- **More:** [active perception](https://en.wikipedia.org/wiki/Active_perception).
+
+### Next-best-view planning — scoring candidate viewpoints before visiting them
+
+Generate candidate poses, predict what each would reveal, take the best, repeat
+until the gain stops being worth the move. The first formulation is Connolly's
+*The Determination of Next Best Views* (ICRA, 1985), and the field has run on
+variations of it since.
+
+- **Mostly used for** 3D reconstruction and inspection, where coverage is the
+  goal and the object is unknown — scanning a part, mapping a room, exploring
+  with a drone.
+- **Rarely right for** scenes small and known enough that a fixed sweep covers
+  everything anyway. Planning a viewpoint costs thought; visiting three fixed
+  ones may cost less. *This cell sits on that line*, which is why the score here
+  is a printed rule rather than an information-theoretic objective.
+- **More:** [nbvplanner](https://github.com/ethz-asl/nbvplanner), a
+  receding-horizon implementation for aerial exploration.
+
+### Occupancy mapping and ray casting — reasoning about what is hidden
+
+Divide space into cells, mark each as free, occupied or unknown, and trace rays
+from a candidate camera to see which unknown cells it would resolve. **OctoMap**
+(Hornung et al., *Autonomous Robots*, 2013) is the standard implementation, a
+probabilistic octree that keeps the memory tolerable.
+
+- **Mostly used for** mobile robots and drones, where "what have I not seen yet"
+  is the whole task, and as the substrate under most next-best-view scoring.
+- **Rarely right for** a small scene of a few known objects, where a handful of
+  geometric tests answer the same question exactly and far more cheaply. A
+  5 mm grid over this cell's zone is about three million cells to decide what
+  five circle-versus-wedge tests already settle.
+- **More:** [occupancy grid mapping](https://en.wikipedia.org/wiki/Occupancy_grid_mapping);
+  [OctoMap](https://octomap.github.io/).
+
+### Bounding a search by feasibility before scoring it
+
+Not a vision method but a structural pattern, and the one most often got wrong:
+put the hard constraints *inside* the search rather than filtering afterwards.
+Generating viewpoints, ranking them by how much they would reveal, and only then
+discovering the arm cannot reach them is how a cell becomes slow and unreliable
+with nothing ever erroring.
+
+- **Mostly used for** any pipeline where candidates are cheap to generate and
+  expensive to execute: grasp planning, motion planning, view planning.
+- **Rarely wrong**, which is why it is worth stating. The only cost is that the
+  feasibility test must itself be cheap — here inverse kinematics at
+  milliseconds, before the motion planner at tens of milliseconds.
+
 ## Where it sits
 
 This solution answers a different difficulty from **cluster on the table**, and

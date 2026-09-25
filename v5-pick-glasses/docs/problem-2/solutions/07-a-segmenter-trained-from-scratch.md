@@ -723,6 +723,97 @@ to be drawn. Either change flips the recommendation back to the standard advice.
 There is also a condition that does *not* have to hold: nobody needs a graphics
 card. That is the point of keeping it this small.
 
+## The general methods behind this
+
+This is mainstream deep segmentation, shrunk. Every component is standard and
+most of them are ten years old; what is unusual is only the decision to train
+from random initialisation on synthetic data rather than fine-tune something
+large.
+
+### Semantic segmentation — a class label at every pixel
+
+Rather than a box round an object, produce a label for each pixel. The idea
+became practical with **fully convolutional networks** (Long, Shelhamer and
+Darrell, [arXiv:1411.4038](https://arxiv.org/abs/1411.4038)), which replaced a
+classifier's final dense layers with convolutions so that any-sized images map
+to any-sized label maps.
+
+- **Mostly used for** medical imaging, satellite and aerial imagery, driving
+  scenes, and industrial inspection — anywhere the *extent* of a thing matters
+  more than its bounding box.
+- **Rarely right for** counting or separating individuals, because a class label
+  has nowhere to record *which* object a pixel belongs to. Two touching things
+  of the same class come back as one region, which is the limitation this
+  solution runs into and [solution 8](08-per-pixel-votes-for-the-centre.md)
+  removes.
+- **More:** [image segmentation](https://en.wikipedia.org/wiki/Image_segmentation).
+
+### The encoder–decoder with skip connections — U-Net
+
+Halve the resolution repeatedly while widening the channels, then double it back
+up, and copy each encoder level across to the matching decoder level so that
+detail lost on the way down is available on the way back. That is **U-Net**
+(Ronneberger, Fischer and Brox,
+[arXiv:1505.04597](https://arxiv.org/abs/1505.04597)), designed for biomedical
+images with very few training examples, which is exactly why it suits a small
+synthetic dataset.
+
+- **Mostly used for** dense prediction with limited data: cell and organ
+  segmentation, defect detection, depth and normal estimation. It is still the
+  default architecture for a small segmentation problem.
+- **Rarely right for** problems needing broad semantic context or many classes,
+  where a pretrained transformer or a large backbone earns its size. A small
+  U-Net knows only what its receptive field and its training set contained.
+
+### Overlap losses — scoring the shape, not the pixel count
+
+Cross-entropy averages over pixels, so on an image that is 90 per cent
+background a model can score well by predicting background everywhere.
+**Dice** and **IoU** losses score the overlap between predicted and true
+regions instead, and are usually added to rather than substituted for
+cross-entropy (Milletari et al.,
+[arXiv:1606.04797](https://arxiv.org/abs/1606.04797)).
+
+- **Mostly used for** class-imbalanced dense prediction, which is nearly all of
+  medical imaging and most industrial inspection.
+- **Rarely right alone** — Dice is unstable for very small or empty targets, so
+  the standard practice is a sum of the two losses rather than either by itself.
+
+### Domain randomisation — training on variation instead of realism
+
+A simulator will render the same table under the same light for ever, and a
+network handed a constant will use it. Randomise everything you are *not*
+teaching — lighting, textures, colours, camera pose, exposure, noise, the number
+and placement of objects — so that the only stable signal left is the one you
+want learned (Tobin et al.,
+[arXiv:1703.06907](https://arxiv.org/abs/1703.06907)).
+
+- **Mostly used for** sim-to-real transfer in robotics, where synthetic data is
+  free and real labelled data is not. It is the cheapest reality-gap fix and
+  often enough on its own.
+- **Rarely sufficient for** anything depending on fine appearance that the
+  renderer does not model — transparency, subsurface scattering, specular
+  highlights, exactly the properties real glassware has. It also costs capacity:
+  a model robust to everything is worse at any one thing.
+- **More:** [domain adaptation](https://en.wikipedia.org/wiki/Domain_adaptation)
+  for the alternatives.
+
+### Training from scratch against fine-tuning a foundation model
+
+The default advice everywhere is to start from pretrained weights. It is right
+when data is scarce and the domain is broad — and wrong when the domain is one
+class, one camera and one lighting rig, and labels are free. A borrowed backbone
+spends most of its capacity on the thousand things this cell never contains, and
+weights fitted to real photographs are an artefact from outside the simulator.
+
+- **Mostly used:** fine-tuning wins almost always in general computer vision,
+  and [SAM](https://arxiv.org/abs/2304.02643) and
+  [Mask R-CNN](https://arxiv.org/abs/1703.06870) are what a normal project
+  reaches for first.
+- **Rarely right to skip it** unless the problem really is narrow and the labels
+  really are free. Both conditions hold here; when either goes, so does the
+  argument.
+
 ## Where it sits
 
 It competes directly with **cluster on the table**, which answers the same

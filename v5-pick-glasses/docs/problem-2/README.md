@@ -24,7 +24,9 @@ This folder holds the problem; [`solutions/`](solutions/) holds the answers.
 - **The nine solutions in full**, one document each in
   [`solutions/`](solutions/), written from the beginning and with six to eight
   diagrams apiece. The overview has a paragraph on each and the comparison;
-  these have the explanation.
+  these have the explanation. Each one ends with **the general methods behind
+  it** — the named, published techniques it is built from, with links, and an
+  honest note on where each is normally the right tool and where it is not.
 
   | | Solution | Family |
   |---|---|---|

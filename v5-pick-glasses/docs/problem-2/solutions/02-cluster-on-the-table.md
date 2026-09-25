@@ -685,6 +685,86 @@ be trusted rather than checked.
 It stops being the right choice when the objects touch, when there is no depth
 to work with, or when the difficulty is the viewpoint rather than the grouping.
 
+## The general methods behind this
+
+This is the standard table-top perception recipe, and every part of it is
+generic. It is worth seeing the pieces separately, because three of the four
+appear in almost every robot that looks at objects on a surface.
+
+### The pinhole camera model — turning a pixel and a depth into a point
+
+A pixel plus a depth reading plus the camera's pose is a point in the room: the
+pixel gives a direction, the depth says how far along it to travel, the pose
+says where the ray starts. Reversing the projection this way is
+*back-projection*, and it is the bridge between everything measured in pixels
+and everything the arm does in millimetres.
+
+- **Mostly used for** anything with a depth camera: building point clouds,
+  turning a detection into a grasp pose, registering scans.
+- **Rarely right for** surfaces the depth sensor reads badly — glass, polished
+  metal, black plastic, anything specular or transparent — where the depth is
+  missing or wrong and back-projection produces confident nonsense.
+- **More:** [pinhole camera model](https://en.wikipedia.org/wiki/Pinhole_camera_model);
+  Hartley and Zisserman, [Multiple View Geometry](https://www.robots.ox.ac.uk/~vgg/hzbook/).
+
+### Plane segmentation with RANSAC — finding and deleting the table
+
+Pick three points at random, make the plane through them, count how many other
+points lie on it, keep the best after a few hundred tries. **RANSAC** fits a
+model to data full of outliers by repeatedly guessing from small samples
+(Fischler and Bolles, *CACM*, 1981). Removing the dominant plane is how a
+table-top scene becomes "just the objects".
+
+- **Mostly used for** fitting a model when most of the data does not belong to
+  it: ground-plane extraction, line and circle fitting, image stitching,
+  point-cloud registration.
+- **Rarely right for** scenes with no dominant structure, or where the thing you
+  want *is* the minority and several competing models fit equally well. It is
+  also non-deterministic, which matters if you need the same answer twice.
+- **More:** [RANSAC](https://en.wikipedia.org/wiki/Random_sample_consensus);
+  [PCL's planar segmentation tutorial](https://pcl.readthedocs.io/projects/tutorials/en/latest/planar_segmentation.html).
+  *This cell skips it:* the table is bolted to the arm's frame and measured at
+  startup, so the plane is a constant and finding it is a comparison rather than
+  a search.
+
+### Euclidean cluster extraction — grouping points by how close they are
+
+Start from a point, take everything within a chosen distance, take everything
+within that distance of those, repeat until nothing new joins. One parameter,
+and no assumption about what the objects are. Its density-aware cousin is
+**DBSCAN**, which adds a minimum-neighbours rule so that sparse noise does not
+form clusters of its own (Ester et al., KDD 1996).
+
+- **Mostly used for** table-top and bin picking, where objects are separated in
+  space and nobody wants to say in advance what they look like. It is the
+  default first thing to try on any depth image of a scene.
+- **Rarely right for** objects that genuinely touch — distance separates only
+  where there is distance — and for scenes where the right grouping distance
+  differs across the image, since a single threshold has to serve everywhere.
+- **More:** [PCL's cluster extraction tutorial](https://pcl.readthedocs.io/projects/tutorials/en/latest/cluster_extraction.html);
+  [DBSCAN](https://en.wikipedia.org/wiki/DBSCAN) and
+  [`sklearn.cluster.DBSCAN`](https://scikit-learn.org/stable/modules/generated/sklearn.cluster.DBSCAN.html);
+  [cluster analysis](https://en.wikipedia.org/wiki/Cluster_analysis) for the
+  wider family.
+
+### Least-squares shape fitting — turning a cloud of dots into a number
+
+Fit a circle to a set of points by minimising an algebraic error, which has a
+closed-form solution and costs no iteration. A fit uses every point rather than
+the two extreme ones, so it is far less sensitive to a single stray dot than a
+bounding box, and its **residual** is a free measure of how well the shape
+actually explains the data.
+
+- **Mostly used for** measuring manufactured parts, which are mostly made of
+  circles, lines and planes — metrology, inspection, and any case where the
+  object's geometry is known in advance.
+- **Rarely right for** shapes the model does not describe, where it returns a
+  confident number with a large residual nobody checks. The residual is the
+  guard, and ignoring it is the classic mistake.
+- **More:** [circular segment](https://en.wikipedia.org/wiki/Circular_segment)
+  for the geometry; Kåsa's algebraic fit and the Pratt and Taubin refinements
+  are the standard three.
+
 ## Where it sits
 
 It stands on problem 1's work: the pixel-to-point arithmetic and the measured

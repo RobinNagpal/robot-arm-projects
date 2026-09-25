@@ -625,6 +625,91 @@ short list of near-identical questions. That is where a hand-written rule runs
 out of things it can be told, and where a fitted score that has seen thousands
 of arrangements starts to be worth its weight.
 
+## The general methods behind this
+
+This solution predicts the *value of an action* rather than a property of the
+world, which puts it in a different family from everything before it — and one
+where the simulator, not a human, supplies the labels.
+
+### Learning a utility, rather than learning to perceive
+
+The model here does not say what is on the table. It says how much a given
+action would help. That is **utility** or **value** estimation, and the trick
+that makes it tractable is that the answer is cheaply checkable: take the
+action in simulation and see. A viewpoint either resolved the ambiguity or it
+did not, so a hard question about the future becomes ordinary supervised
+learning on an exactly-labelled past.
+
+- **Mostly used for** choosing among actions when the outcome can be simulated
+  or replayed — view planning, grasp ranking, move ordering in games, any
+  situation with a cheap oracle for "did that work?"
+- **Rarely right for** actions whose outcome cannot be evaluated without doing
+  them for real. Then there is no free label set, and the problem becomes
+  reinforcement learning, with all of its sample cost.
+- **More:** contrast with the grasping literature, which learned the same shape
+  of function from real attempts rather than simulated ones — Pinto and Gupta,
+  [Supersizing Self-supervision](https://arxiv.org/abs/1509.06825), and
+  Levine et al.,
+  [Learning Hand-Eye Coordination for Robotic Grasping](https://arxiv.org/abs/1603.02199).
+
+### Learning to rank — order matters, absolute scores do not
+
+Nothing downstream uses the predicted number; only the order of the candidates
+matters. That is **learning to rank**, and it is easier than regression: a model
+that is uniformly wrong by a constant still ranks perfectly, and one only ever
+needs to be right about the top of the list.
+
+- **Mostly used for** search, recommendation, ad placement — and, structurally
+  identically, for ordering candidate grasps, viewpoints or motions in robotics.
+- **Rarely right for** cases where the *magnitude* is used, not just the order —
+  for instance deciding whether to act at all, or comparing against a fixed
+  budget. Ranking tells you which is best, never whether the best is any good.
+
+### Supervised learning on simulator-generated labels
+
+The simulator knows exactly what it spawned, so every training row comes
+labelled for nothing. That removes the expensive part of supervised learning
+and replaces it with a different problem: the labels are perfect but the world
+is not real.
+
+- **Mostly used for** robotics and autonomous systems, where real labelled data
+  is slow and dangerous to collect, and where the quantity that matters — a
+  pose, a contact, an outcome — is exactly what a simulator holds and a human
+  annotator cannot see.
+- **Rarely right without** a plan for the reality gap. A model trained only on
+  synthetic scenes has fitted one renderer's shading and one spawner's
+  distribution of layouts, and it will be confidently wrong on anything outside
+  both.
+- **More:** [domain adaptation](https://en.wikipedia.org/wiki/Domain_adaptation)
+  for the family of fixes; domain randomisation, covered in
+  [solution 7](07-a-segmenter-trained-from-scratch.md), for the one that suits
+  simulators.
+
+### Active learning — the same idea pointed at a labelling budget
+
+Choosing the most informative next viewpoint is the robotic form of choosing the
+most informative next example to label. The mathematics is shared, and so is the
+central caution: an acquisition rule that always picks the most uncertain case
+tends to pick the *unlabelable* ones — the corrupted, the ambiguous, the
+genuinely undecidable — which is why a floor and a cap matter more than the
+score.
+
+- **Mostly used for** expensive labels: medical annotation, expert review,
+  scientific experiments.
+- **Rarely right for** cheap measurements, where taking several and skipping the
+  reasoning is faster than deciding which one to take.
+- **More:** Settles,
+  [Active Learning Literature Survey](https://burrsettles.com/pub/settles.activelearning.pdf);
+  [active learning](https://en.wikipedia.org/wiki/Active_learning_%28machine_learning%29).
+
+### Generate, veto, then rank
+
+The structural pattern, and the reason a wrong prediction here costs one wasted
+look rather than a wrong answer: geometry generates the candidates and holds an
+absolute veto, and the model is only allowed to reorder what survives. Position
+in the pipeline is what bounds the damage — see
+[where the learned part sits](solution-overview.md#three-families-and-what-hybrid-means).
+
 ## Where it sits
 
 It is the same loop as *move the camera*, with the scoring rule replaced by a

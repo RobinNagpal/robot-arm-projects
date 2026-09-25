@@ -425,7 +425,7 @@ In plain words, that is a **confidence threshold with a reject option**: the
 model is allowed to hand the question back instead of guessing. The idea is old
 and the oldest reference is Chow, *On optimum recognition error and reject
 tradeoff*, IEEE Transactions on Information Theory, 1970
-([IEEE Xplore](https://ieeexplore.ieee.org/document/1054406)). The modern
+([IEEE Xplore](https://doi.org/10.1109/TIT.1970.1054406)). The modern
 literature calls the same thing selective prediction, or classification with a
 reject option.
 
@@ -600,6 +600,78 @@ needed a person. And it is worth being honest about the ordering: the verifier
 should not be built until a scored run shows that ambiguous clusters are a real
 share of the failures. Measure which failure you have before choosing a
 component to fix it.
+
+## The general methods behind this
+
+The pattern here — cheap exact method first, small learned model only on the
+cases it cannot settle — is old, well named, and used far outside vision.
+
+### Cascades — a cheap test first, an expensive one only where it is needed
+
+Arrange classifiers in order of cost. The cheap one handles the easy majority
+and passes only the doubtful remainder to the expensive one. The canonical
+example is the **Viola–Jones** face detector (CVPR 2001), which made real-time
+face detection possible in 2001 by rejecting almost every image window in a few
+arithmetic operations.
+
+- **Mostly used for** anything with a large, easy majority and a small, hard
+  minority: detection over a whole image, spam filtering, fraud screening, and
+  any pipeline where the accurate method is too slow to run everywhere.
+- **Rarely right for** problems where the cheap stage cannot be made both fast
+  *and* safe. A cascade is only as good as the first stage's recall: whatever it
+  wrongly rejects, no later stage ever sees.
+- **More:** [Viola–Jones](https://en.wikipedia.org/wiki/Viola%E2%80%93Jones_object_detection_framework).
+
+### Classification with a reject option — a model allowed to say "I cannot tell"
+
+Instead of forcing every input into a class, allow a third answer: abstain, and
+hand the case to something else — another sensor, another viewpoint, a human.
+The optimal rule is old and simple (C. K. Chow,
+[*On optimum recognition error and reject tradeoff*](https://doi.org/10.1109/TIT.1970.1054406),
+IEEE Trans. Information Theory, 1970): reject when the best class probability
+falls below a threshold set by the relative cost of an error and an abstention.
+
+- **Mostly used for** high-cost-of-error settings with a fallback available:
+  medical triage, document processing with a human in the loop, industrial
+  inspection, and any robot that can take another measurement.
+- **Rarely right for** systems with no fallback. If abstaining just means
+  failing, a reject option converts errors into refusals without helping — and
+  it needs calibrated probabilities to set the threshold sensibly at all.
+- **More:** [calibration](https://scikit-learn.org/stable/modules/calibration.html),
+  which is what makes the threshold meaningful.
+
+### Gradient-boosted trees and random forests — the right size of model for a dozen features
+
+Two ensemble families for tabular data. **Random forests** (Breiman, 2001)
+average many decorrelated deep trees; **gradient boosting** (Friedman, 2001)
+fits many shallow trees in sequence, each correcting the last. On a handful of
+engineered numeric features, both beat a neural network for accuracy, training
+time and interpretability, and neither needs a GPU.
+
+- **Mostly used for** tabular problems — the great majority of applied machine
+  learning outside images, text and audio. They remain the default first thing
+  to try, and frequently the last.
+- **Rarely right for** raw high-dimensional signals where the useful features
+  are unknown and compositional: pixels, waveforms, language. There the network
+  wins precisely because nobody has to name the features.
+- **More:** [random forest](https://en.wikipedia.org/wiki/Random_forest);
+  [gradient boosting](https://en.wikipedia.org/wiki/Gradient_boosting);
+  [`HistGradientBoostingClassifier`](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.HistGradientBoostingClassifier.html).
+
+### Feature engineering against end-to-end learning
+
+Handing a model thirteen numbers in millimetres rather than a 76,800-pixel crop
+is a deliberate choice with a known trade. Engineered features need hundreds of
+examples where raw pixels need tens of thousands; they are invariant to things
+you have already normalised away; each one prints beside the answer. The cost is
+that the model can only see what the features encode.
+
+- **Mostly used for** small-data problems, regulated domains where decisions
+  must be explainable, and pipelines where a reliable geometric stage already
+  produces meaningful quantities.
+- **Rarely right for** problems where the discriminating detail is not something
+  anyone can name in advance — which is most of perception, and why the other
+  learned solutions here take pixels.
 
 ## Where it sits
 

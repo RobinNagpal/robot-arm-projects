@@ -890,6 +890,93 @@ score and the outcome of every look from the first run onwards. Fit the model
 only once those logs show the cheap rule choosing wrongly often enough to be
 worth the weights file.
 
+## The general methods behind this
+
+This solution joins two literatures: one about making a model say how sure it
+is, and one about deciding what to measure next. Both are general, and the
+second is much older than the first.
+
+### Uncertainty quantification in deep learning — a model that reports its own doubt
+
+A network trained the usual way outputs a number between 0 and 1 and will emit
+0.99 on an input unlike anything it has seen. Making that number mean something
+is a field in itself. The three practical families:
+
+**Monte Carlo dropout** — leave dropout switched on at inference, run the same
+input several times, and read the spread (Gal and Ghahramani,
+[arXiv:1506.02142](https://arxiv.org/abs/1506.02142)). Cheapest to adopt,
+weakest guarantees.
+
+**Deep ensembles** — train several models from different initialisations and
+read their disagreement (Lakshminarayanan et al.,
+[arXiv:1612.01474](https://arxiv.org/abs/1612.01474)). Consistently the
+strongest of the three, and the most expensive, since it multiplies training
+cost.
+
+**Evidential and Bayesian methods** — have the network output the parameters of
+a distribution rather than a point (Sensoy et al.,
+[arXiv:1806.01768](https://arxiv.org/abs/1806.01768)). One forward pass, at the
+cost of a less familiar loss.
+
+- **Mostly used for** anything where being wrong is expensive and abstaining is
+  cheap: medical imaging, autonomous driving, industrial inspection, and active
+  learning, where the doubt is what selects the next thing to label.
+- **Rarely right for** settings where the model is wrong in ways it cannot
+  represent. Every method here measures *disagreement among plausible models*,
+  so a systematic error shared by all of them is invisible. None of it detects
+  "my training data did not contain this situation at all" reliably.
+- **More:** [uncertainty quantification](https://en.wikipedia.org/wiki/Uncertainty_quantification);
+  [ensemble learning](https://en.wikipedia.org/wiki/Ensemble_learning).
+
+### Aleatoric and epistemic uncertainty — two different kinds of not knowing
+
+**Aleatoric** uncertainty is in the data and does not shrink with more of it:
+a blurred edge is genuinely ambiguous. **Epistemic** uncertainty is in the
+model and does shrink: a shape it has not seen enough of. Only the second is a
+reason to go and look again — and the distinction is what makes this solution's
+loop sensible rather than superstitious (Kendall and Gal,
+[arXiv:1703.04977](https://arxiv.org/abs/1703.04977)).
+
+- **Mostly used for** deciding *what to do* about doubt: epistemic doubt says
+  gather more, aleatoric doubt says the measurement will not improve and you
+  should abstain or change the sensor.
+- **Rarely separable cleanly** in practice. The decomposition is model-relative
+  and the two are easy to confuse, which is why the guard below never lets the
+  model decide anything on its own.
+
+### Calibration — making a probability mean what it says
+
+A model is **calibrated** when things it calls 90 per cent likely happen 90 per
+cent of the time. Modern networks are badly overconfident by default, and the
+standard fix is **temperature scaling**: one parameter fitted on held-out data
+(Guo et al., [arXiv:1706.04599](https://arxiv.org/abs/1706.04599)). Without it,
+a threshold on a confidence is a threshold on an arbitrary number.
+
+- **Mostly used for** any system that acts on a probability rather than an
+  argmax — triage, abstention, risk-weighted decisions, and exactly the
+  budget-spending this solution does.
+- **Rarely optional.** If nothing downstream reads the number as a probability,
+  calibration does not matter; the moment a threshold appears, it does.
+- **More:** [Platt scaling](https://en.wikipedia.org/wiki/Platt_scaling);
+  scikit-learn's [calibration guide](https://scikit-learn.org/stable/modules/calibration.html).
+
+### Active learning and information gain — choosing the most informative next measurement
+
+The general principle is older than the vision problem: given a budget, spend it
+on the measurement that most reduces what you do not know. In machine learning
+this is **active learning**, where the model picks which example to have
+labelled; in robotics it is view planning, where it picks where to stand. Both
+score candidates by expected reduction in uncertainty.
+
+- **Mostly used for** settings where measurements are expensive and plentiful in
+  choice: labelling budgets, scientific experiment design, robot exploration.
+- **Rarely right for** cheap measurements. If another picture costs
+  milliseconds, take several and skip the reasoning — which is precisely why
+  this cell's *pictures* are taken freely and only its *moves* are planned.
+- **More:** Settles,
+  [Active Learning Literature Survey](https://burrsettles.com/pub/settles.activelearning.pdf);
+  [active learning](https://en.wikipedia.org/wiki/Active_learning_%28machine_learning%29).
+
 ## Where it sits
 
 It leans on **cluster on the table**, which supplies the belief the whole loop

@@ -481,6 +481,83 @@ photometric loss survives a transparent surface — where the brightness seen
 through the glass belongs to whatever is behind it — is uncertain, and would
 have to be tried.
 
+## The general methods behind this
+
+This solution's distinguishing feature is where the supervision comes from: not
+a human, not the simulator's spawn record, but geometry the arm already knows.
+That places it in a well-developed literature.
+
+### Self-supervised learning — labels from the structure of the data
+
+Rather than annotate, construct a task whose answer is already implied by the
+data: predict a held-out part from the rest, or require two views of the same
+thing to agree. The supervision is free and unlimited, and the model learns
+representations useful for the task you actually cared about.
+
+- **Mostly used for** domains where unlabelled data is abundant and labels are
+  expensive — language, audio, video, and robotics, where the robot's own
+  proprioception is a label generator that never tires.
+- **Rarely right for** problems where the pretext task can be solved by a
+  shortcut that does not require the understanding you wanted. Designing a task
+  with no shortcut is the hard part of the field.
+- **More:** [self-supervised learning](https://en.wikipedia.org/wiki/Self-supervised_learning).
+
+### Structure from motion and the epipolar constraint — geometry as supervision
+
+If a camera's movement between two pictures is known, the position of a surface
+point in the first picture determines where it must appear in the second, given
+its depth. That is the **epipolar constraint**, and it converts a depth guess
+into a checkable prediction: warp one image into the other using the guess and
+see how well they match.
+
+- **Mostly used for** 3D reconstruction, visual odometry and SLAM — anywhere a
+  moving camera has to recover the scene, which is most of mobile robotics and
+  all of photogrammetry.
+- **Rarely right for** textureless, transparent or specular surfaces, where
+  matching has nothing to lock onto, and for scenes where the objects move
+  between the two pictures, which breaks the static-scene assumption entirely.
+- **More:** [structure from motion](https://en.wikipedia.org/wiki/Structure_from_motion);
+  [epipolar geometry](https://en.wikipedia.org/wiki/Epipolar_geometry);
+  Hartley and Zisserman, [Multiple View Geometry](https://www.robots.ox.ac.uk/~vgg/hzbook/).
+
+### Self-supervised monocular depth — the photometric reprojection loss
+
+Train a network to predict depth with no depth labels at all: use the predicted
+depth and the known camera motion to warp one frame into another, and make the
+difference between the warped frame and the real one the loss. **SfMLearner**
+(Zhou et al., [arXiv:1704.07813](https://arxiv.org/abs/1704.07813)) introduced
+the form, and **Monodepth2** (Godard et al.,
+[arXiv:1806.01260](https://arxiv.org/abs/1806.01260)) fixed most of its
+practical failures — occlusion handling, moving objects, scale.
+
+- **Mostly used for** driving and drone footage, where hours of video with known
+  or estimable motion exist and depth sensors are absent or expensive. *This
+  cell has the easy version of it:* the camera motion is not estimated from the
+  images but read from the joint encoders, exactly.
+- **Rarely right for** scenes without texture or with independently moving
+  objects, and for cases needing absolute scale from a single camera — the
+  classic monocular version recovers depth only up to a scale factor, which an
+  arm's known baseline removes.
+
+### Optical flow and motion segmentation — common fate
+
+Points on one rigid object move together in the image; points on a different
+object at a different distance do not. That is the Gestalt principle of **common
+fate**, and it is one of the few segmentation cues that needs no appearance
+model at all — it works on two identical objects, which is the whole reason it
+is here. Measuring the per-pixel motion is **optical flow**, from Lucas–Kanade
+(1981) to **RAFT** ([arXiv:2003.12039](https://arxiv.org/abs/2003.12039)).
+
+- **Mostly used for** video segmentation, tracking, and any case where objects
+  are distinguishable by how they move rather than how they look — which
+  includes camouflage, and identical parts in a bin.
+- **Rarely right for** static scenes with a static camera, where there is no
+  motion to segment by, and for objects at the same distance moving identically,
+  which is precisely this solution's stated failure case.
+- **More:** [optical flow](https://en.wikipedia.org/wiki/Optical_flow);
+  [principles of grouping](https://en.wikipedia.org/wiki/Principles_of_grouping)
+  for common fate.
+
 ## Where it sits
 
 It competes with *a segmenter trained from scratch* and *per-pixel votes for

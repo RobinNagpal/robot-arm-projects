@@ -596,6 +596,81 @@ a network there buys nothing and adds a thing that can rot.
 And it stops existing on real glassware. No depth, no height channel, no table
 positions, no votes.
 
+## The general methods behind this
+
+Voting for a centre is one of the oldest ideas in computer vision, and the
+learned version changes only where the votes come from. The other half of the
+solution — turning a cloud of votes into objects — is a standard clustering
+method with a useful property.
+
+### The Hough transform — local evidence for a global claim
+
+A single edge pixel cannot say where a shape is, but it can vote for every shape
+that would explain it; accumulate the votes and the peaks are the shapes really
+present. Hough's 1962 patent did it for straight lines in bubble-chamber
+photographs, and the **generalised Hough transform** (D. H. Ballard, *Pattern
+Recognition*, 1981) extended it to arbitrary shapes by replacing the equation
+with a lookup table of offsets.
+
+- **Mostly used for** finding parametric shapes in noisy, cluttered images where
+  much of the outline is missing: lines, circles and ellipses in inspection,
+  document analysis, and lane finding. Voting is naturally robust to occlusion,
+  because the visible part still votes correctly.
+- **Rarely right for** shapes with many parameters, since the accumulator grows
+  exponentially with them, and for scenes where a learned detector is available
+  and the shape is not cleanly parametric.
+- **More:** [Hough transform](https://en.wikipedia.org/wiki/Hough_transform);
+  [generalised Hough transform](https://en.wikipedia.org/wiki/Generalised_Hough_transform).
+
+### Learned voting — replacing the lookup table with a model
+
+**Hough forests** (Gall and Lempitsky, CVPR 2009) first replaced the hand-built
+offset table with a learned one: patches vote for an object centre, and a random
+forest decides how. The neural descendants apply the same structure to points
+and pixels — **VoteNet** ([arXiv:1904.09664](https://arxiv.org/abs/1904.09664))
+has point-cloud points vote for object centres, and **PVNet**
+([arXiv:1812.11788](https://arxiv.org/abs/1812.11788)) has pixels vote for
+keypoints in pose estimation, specifically because voting survives occlusion.
+
+- **Mostly used for** detection and pose estimation under heavy occlusion and
+  clutter — bin picking, 6D pose, crowded scenes — where a method needing the
+  whole object visible fails and a method needing only a fraction does not.
+- **Rarely right for** objects with no well-defined centre, or where the
+  offsets are large relative to the image, since the regression target grows and
+  the votes scatter.
+
+### Per-pixel offsets as instance segmentation
+
+The general problem this solves: a class map has nowhere to record *which*
+object a pixel belongs to. Predicting a vector per pixel — towards its own
+object's centre — is one of two standard answers, the other being to learn an
+embedding per pixel and cluster those instead (**associative embedding**, Newell
+et al., [arXiv:1611.05424](https://arxiv.org/abs/1611.05424)). Offsets fail more
+gently than boundary prediction, because one bad pixel in a seam rejoins two
+objects whereas one bad vote is outvoted.
+
+- **Mostly used for** bottom-up instance segmentation and pose estimation, and
+  favoured where objects are numerous and overlapping, since nothing depends on
+  a box.
+- **Rarely right for** scenes with few, well-separated objects, where a
+  detect-then-segment approach like Mask R-CNN is simpler and stronger.
+
+### Mean shift — finding peaks without being told how many
+
+Slide a window to the mean of the points inside it, repeat until it stops
+moving; every starting point that ends in the same place belongs to one mode
+(Comaniciu and Meer, *PAMI*, 2002). Unlike k-means it does not need the number
+of clusters in advance, which is the whole point here — the number of clusters
+*is* the answer.
+
+- **Mostly used for** mode finding where the count is unknown: tracking, colour
+  segmentation, and exactly this job of turning a vote cloud into objects.
+- **Rarely right for** high-dimensional data, where it is slow and the bandwidth
+  becomes impossible to choose, and for clusters of very different densities,
+  where one bandwidth cannot serve both.
+- **More:** [mean shift](https://en.wikipedia.org/wiki/Mean_shift);
+  [`sklearn.cluster.MeanShift`](https://scikit-learn.org/stable/modules/generated/sklearn.cluster.MeanShift.html).
+
 ## Where it sits
 
 It stands on *cluster on the table*, reusing that solution's height-above-table

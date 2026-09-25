@@ -145,8 +145,8 @@ the plane this way is **inverse perspective mapping** (Mallot et al.,
 *Biological Cybernetics*, 1991). The canonical statement of why it is worth so
 much is Hoiem, Efros and Hebert's
 [Putting Objects in Perspective](https://doi.org/10.1007/s11263-008-0137-5)
-(CVPR 2006): a ground plane plus a camera height turns a picture into a
-measurement.
+(CVPR 2006, extended in *IJCV* 2008): a ground plane plus a camera height turns
+a picture into a measurement.
 
 What is slightly unusual here is the *use*. That constraint is normally spent
 on estimating distance or pruning detections by scale. Using it to **separate**
@@ -398,6 +398,82 @@ agreeing is worth more than either alone.
 **It is not the thing to lead with in the survey**, because in the survey the
 case it solves does not arise. That is not a weakness of the method. It is the
 reason problem 2 is a viewpoint problem before it is a segmentation problem.
+
+## The general methods behind this
+
+Nothing in this solution was invented for glassware. It is four standard ideas,
+three of which are in every image-processing textbook and one of which is the
+oldest trick in monocular vision. Each is worth knowing on its own account.
+
+### Connected-component labelling — grouping pixels that touch
+
+Sweep a binary image, give every set of mutually touching marked pixels one
+label. It answers *are these pixels joined?* and nothing else: it has no notion
+of size, shape or how many objects a blob ought to contain. It is the step this
+solution exists to repair.
+
+- **Mostly used for** counting and isolating well-separated blobs — cells on a
+  slide, characters on a scanned page, blobs after background subtraction in a
+  fixed camera.
+- **Rarely right for** anything where objects touch or overlap in the image.
+  There, it silently merges, and merging is the one error it cannot report.
+- **More:** [connected-component labelling](https://en.wikipedia.org/wiki/Connected-component_labeling);
+  `cv2.connectedComponentsWithStats` in OpenCV.
+
+### The ground-plane constraint — where an object meets the floor is how far away it is
+
+If the camera's height above a flat surface is known, the image row at which an
+object touches that surface gives its distance: a camera at height *h* looking
+level puts an object at distance *Z* exactly `f·h / Z` pixels below the horizon.
+One row, one division, and a metric depth. The contact point is called the
+*foot point*; mapping a whole image onto the plane this way is *inverse
+perspective mapping*.
+
+- **Mostly used for** driving and surveillance, where everything of interest
+  stands on a road or a floor: estimating how far away a pedestrian or car is
+  from a single camera, rejecting detections whose size and contact row
+  disagree, and building bird's-eye-view images for lane following.
+- **Rarely right for** objects that are not resting on the plane — anything
+  held, stacked, flying, or on a shelf — and for scenes where the plane's pose
+  is unknown or not flat. It also degrades badly if the contact point is
+  occluded, which is exactly this solution's failure case.
+- **More:** Hoiem, Efros and Hebert,
+  [Putting Objects in Perspective](https://doi.org/10.1007/s11263-008-0137-5)
+  (CVPR 2006, extended in *IJCV* 2008);
+  [3D projection](https://en.wikipedia.org/wiki/3D_projection) for the
+  underlying arithmetic.
+
+### Watershed on the distance transform — the method this one replaces
+
+Treat a blob as a landscape whose height is each pixel's distance from the
+outside, flood from the deepest points, and build a wall where two floods meet.
+The [distance transform](https://en.wikipedia.org/wiki/Distance_transform)
+supplies the landscape; the
+[watershed](https://en.wikipedia.org/wiki/Watershed_%28image_processing%29)
+(Vincent and Soille, *PAMI*, 1991) does the flooding.
+
+- **Mostly used for** separating touching *round, squat* things of similar
+  size: cells, coins, grains, pills, nuclei in microscopy. On those it is close
+  to unbeatable for the price.
+- **Rarely right for** long, thin or highly elongated objects, because their
+  distance transform has a ridge rather than a peak and the markers merge. That
+  is why it splits three per cent of this cell's pairs, and why no threshold
+  rescues it.
+- **More:** `cv2.distanceTransform` and `cv2.watershed` in OpenCV;
+  `skimage.segmentation.watershed` in scikit-image.
+
+### GrabCut — tightening an outline you already roughly have
+
+Given a rough box around one object, model the colours inside against those
+outside and cut the boundary where the two disagree, smoothing the result
+([GrabCut](https://en.wikipedia.org/wiki/GrabCut), Rother, Kolmogorov and Blake,
+SIGGRAPH 2004).
+
+- **Mostly used for** interactive photo editing and for cleaning up the last
+  pixel or two of a mask whose threshold was approximately right.
+- **Rarely right for** deciding *how many* objects are present. It refines one
+  boundary; given two merged objects it returns a tidier merged pair.
+- **More:** `cv2.grabCut` in OpenCV.
 
 ## Where it sits
 
