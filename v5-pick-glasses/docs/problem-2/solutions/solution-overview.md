@@ -1967,36 +1967,44 @@ saying it is unsure. Re-grouping will not manufacture an answer that is not
 there.
 
 **An unsure group is a reason to take another picture from a different angle**,
-and the cloud says which angle. If the smear has a long axis, look perpendicular
-to it, 380 mm back. That is a next-best-view with no search in it. Cap it at two
-extra looks, then report the pair unseparated for problem 3.
+and the cloud says which angle. If the smear has a long axis, look **square
+across** it, from the side at the measuring standoff. That is a next-best-view
+with no search in it at all — the cloud names the direction, and existing
+geometry turns a direction into a reachable pose. Cap it at a couple of extra
+looks, then report the pair unseparated for problem 3.
 
 ### A worked example
 
-At 450 mm up one pixel covers 1.6 mm, so a glass 75 mm across is 47 pixels
-wide and holds roughly 1,700 votes.
+Seen from the top, a glass's footprint is a few tens of pixels across, so it
+casts well over a thousand votes. Keep that number in mind: it is why a handful
+of wrong votes change nothing.
 
-*Where solution 2 fails.* Two such glasses stand 90 mm apart, with their
-footprints 15 mm from touching. At a 25 mm grouping distance they are one group.
-One circle fitted to that group comes back at 90 + 38 + 36.5 = **164.5 mm**, or
-101 pixels, which no glass of this kind can be.
+*Where solution 2 fails.* Put two glasses much closer together than the cell
+allows, so that the strip of bare table between their rims is narrower than the
+grouping distance. The chain crosses it, and they come back as one group. One
+circle fitted to that group comes back about twice as wide as any glass of this
+kind can be.
 
-The votes do not care. Their piles land at (0.42, −0.31) and (0.51, −0.30), with
-spreads of 6 and 8 mm, both inside the held-out figure. Circle fits give 76 and
-73 mm, inside the kind's 60 to 90 mm range.
+The votes do not care in the slightest. Each glass's pixels point inwards at
+their own glass's centre, so the votes land in two piles the full
+centre-to-centre distance apart. Both piles are tight, with spreads inside the
+held-out figure, and circle fits on the two sets of voters come back inside the
+kind's range.
 
-Note what this example is. Problem 2 guarantees 150 mm between centres, so a
-90 mm pair is not something problem 2 will hand this solution — it is
-[problem 3](../../problem-3/problem.md)'s input. That is the honest case for
-building this: it is the one method here that keeps working after problem 2's
-spacing guarantee is withdrawn, and the only one that separates glasses which
-genuinely touch.
+Note carefully what this example is. Problem 2 guarantees a gap between centres,
+so a pair standing this close is **not** something problem 2 will ever hand this
+solution — it is [problem 3](../../problem-3/problem.md)'s input. And that is
+the honest case for building this at all: it is the one method here that keeps
+working after problem 2's spacing guarantee is withdrawn, and the only one that
+separates glasses which genuinely touch.
 
-*Unsure.* A glass 80 per cent hidden leaves about 340 votes, all from one
-crescent. Its peak sits 9 mm from the truth — the votes agree with each other
-and are wrong the same way — and its RMS is 19 mm, three times the held-out
-figure. One look perpendicular to the line joining it and its occluder brings
-its votes back to 6 mm.
+*Unsure.* Now hide most of a glass behind another, so that only a crescent down
+one side of it is visible. It casts a small fraction of the votes it should, and
+every one of them comes from that crescent — so the votes **agree with each
+other and are wrong in the same direction**, which is what a one-sided view
+always does. The pile lands noticeably off the true centre, and its spread comes
+out several times the held-out figure. One look square across the line joining
+it and whatever is hiding it brings the spread back to normal.
 
 ### What it needs
 
@@ -2018,8 +2026,9 @@ the circle fit and the kind's diameter range.
 simulator's depth noise, dropout and lighting. Domain randomisation mitigates
 that, and with no real-world data nothing checks whether it worked.
 
-**It inherits the table assumption.** A table height 5 mm out moves every
-vote, quietly.
+**It inherits the table assumption.** A table height a few millimetres out moves
+every single vote, quietly and in the same direction, so nothing disagrees with
+anything.
 
 **It holds a size-shaped prior**, the offsets being millimetres of one kind's
 radius, which is glass sizes in a file nobody can read.
@@ -2034,8 +2043,8 @@ alone.
 for the kind.
 
 **One peak on two glasses**, merging them — quiet, and the failure to watch
-hardest. The circle fit is the guard: pixels fitting a 165 mm circle are not
-one glass, whatever the votes say.
+hardest. The circle fit is the guard: pixels that fit a circle twice as wide as
+the kind allows are not one glass, whatever the votes may say.
 
 ### When it would be the right choice
 
@@ -2043,9 +2052,10 @@ When glasses genuinely touch. Solution 2 stops there, and this is the cheapest
 learned thing past that line: the mask free from the table height, the labels
 free from the simulator.
 
-It is wrong while the glasses stand 150 mm apart, which 25 lines of clustering
-answer with no training. And it stops existing on real glassware, where there
-is no depth and so nothing to vote with.
+It is the wrong choice while the glasses stand a legal distance apart, which a
+page of clustering code answers with no training at all. And it stops existing
+entirely on real glassware, where there is no depth and therefore nothing to
+vote with.
 
 ---
 
@@ -2115,9 +2125,9 @@ estimate is where most of their error lives. Here it is not estimated but
 
 ### How it would work here
 
-**The data already exists.** Each station takes two pictures 120 mm apart; a
-picture costs milliseconds and an arm move seconds, so take five along that
-slide. A few hundred scenes give tens of thousands of pairs.
+**The data already exists.** Each station takes two pictures a short slide
+apart; a picture costs milliseconds and an arm move seconds, so take five along
+that slide. A few hundred scenes give tens of thousands of pairs.
 
 **An embedding** is a short list of numbers attached to something, arranged so
 that distance between lists means similarity. The network returns, per pixel of

@@ -57,7 +57,7 @@ daylight between those two limits and the choice barely matters. As the glasses
 close up, the window narrows. When two glasses touch, it shuts completely:
 **no** grouping distance keeps them apart and keeps each of them whole.
 
-![Two glasses 15 mm apart come back as one region](../../../images/problem-2/08-one-region-not-two.png)
+![Two glasses standing close come back as one region](../../../images/problem-2/08-one-region-not-two.png)
 
 The middle panel has no seam between the two outlines for anything to find. The
 right panel shows what the next step is handed: **a single object far wider than

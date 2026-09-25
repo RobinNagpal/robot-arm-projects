@@ -226,9 +226,9 @@ Steps 1 to 8 are solution 2. Everything below is new.
    gives; or only one station saw it at all.
 
    *Drawing that band is a design decision, not a detail.* Too narrow and the
-   model never sees the cases that actually matter, so it earns nothing. Too wide
-   and you are paying a model to answer questions the arithmetic already answered
-   perfectly well. Of the three conditions, the residual one really earns its
+   model never sees the cases that actually matter, so it earns nothing. Too
+   wide and you are paying a model to answer questions the arithmetic already
+   answered perfectly well. Of the three conditions, the residual one really earns its
    place: a merged pair can fit a circle whose width is perfectly in range, but
    it cannot fit that circle *well*, because two humps are not a circle.
 10. **The feature row.** Thirteen numbers, listed below.
@@ -238,9 +238,9 @@ Steps 1 to 8 are solution 2. Everything below is new.
     Below the **low** threshold the model is confident it is one object, and the
     pipeline acts on that. Above the **high** threshold it is confident it is
     two, and the pipeline acts on that. Between the two it says **"I cannot
-    tell"**, and the pipeline goes and takes another picture instead of guessing.
-    The gap between the thresholds is called a *reject band*, and widening it
-    trades answers for honesty.
+    tell"**, and the pipeline goes and takes another picture instead of
+    guessing. The gap between the thresholds is called a *reject band*, and
+    widening it trades answers for honesty.
 
 ![What the model is shown](../../../images/problem-2/05-the-features.png)
 
