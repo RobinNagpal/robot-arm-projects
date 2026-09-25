@@ -1153,13 +1153,13 @@ rule chooses wrongly.
 one question the rules are worst at — is this one object or two — on the crop
 the rules have already isolated.*
 
-The geometry already separates almost every glass on the table, in millimetres
-you can print. What it cannot settle is the
-handful of groups on the boundary — one object, or two? So learn that one
-decision, from the thirteen numbers the circle fit has already produced. The
-input is small, so the model trains in minutes on a laptop. Its most useful
-answer is "I cannot tell", which asks the arm for one more picture. Delete the
-weights file and the geometry answers as before.
+Do not learn the perception. The geometry already separates almost every glass
+on the table, in millimetres you can print. What it cannot settle is the handful
+of groups on the boundary: one object, or two? So learn that one decision, from
+the thirteen numbers the circle fit has already produced. The input is small, so
+the model trains in minutes on a laptop. Its most useful answer is "I cannot
+tell", which asks the arm for one more picture. Delete the weights file and the
+geometry answers exactly as it did before.
 
 **The long version:** [05-a-learned-verifier-over-the-clusters.md](05-a-learned-verifier-over-the-clusters.md) — this solution explained
 from the beginning, with diagrams.
