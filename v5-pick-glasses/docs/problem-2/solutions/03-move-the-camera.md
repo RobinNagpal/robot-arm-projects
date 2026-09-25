@@ -28,239 +28,263 @@ that they are **two**, not one wearing two hats.
 
 ![The two difficulties](../../../images/problem-2/03-two-difficulties.png)
 
-Read the three panels left to right. Panel 1 is the merge: a camera at survey
-height sees two objects whose silhouettes overlap, and the flood fill returns
-one patch. Panel 2 is the answer to that, which is
-[solution 2](solution-overview.md#solution-2--cluster-on-the-table): throw the
-pixels back onto the table as points, group them there, and the two objects come
-apart cleanly, 150 mm from each other. Panel 3 is the difficulty panel 2 does
-not touch. The camera has moved down to the side-on pose the profile
-measurement needs — 380 mm back, level, 120 mm above the table — and from
-there the second object is 11.0 degrees off the line of sight when two
-silhouettes at that range meet at 13.8. The outline that comes back is one
-shape belonging to two objects.
+The first difficulty is the merge. A camera in line with two objects sees their
+silhouettes overlap, and the flood fill returns one patch.
+[Solution 2](solution-overview.md#solution-2--cluster-on-the-table) answers it:
+throw the pixels back onto the table as points, group them there, and two
+objects 150 mm apart come apart cleanly.
 
-**Nothing you do to panel 3's picture fixes panel 3.** This is worth being
-exact about, because it is the reason this solution exists as a separate thing
-from solution 2.
+Where the merge happens is not where people expect, and it was measured rather
+than assumed. Looking straight down from the 450 mm survey height it does not
+happen at all: across 4320 legal arrangements — four kinds, six sizes each,
+separations from 150 to 300 mm, every angle — with both objects wholly inside
+one 320 × 240 frame, **none merged**. A survey frame holds 520 mm of table but
+only about 358 mm at the height of a rim, so a legal pair is either clearly
+separate or has one of the two falling off the frame edge. The merge belongs to
+the **level view** — 380 mm back, level, 120 mm above the table, which is the
+pose the profile measurement needs — where 132 of 168 in-line pairs come back
+as one patch.
+
+The second difficulty is the one this solution exists for, and it is the bigger
+of the two: **an object can have no unblocked viewpoint at all.** On the nine
+directions 40 degrees apart that the cell tries today, **45 per cent of objects
+have no usable viewpoint**, against 14 per cent at 5 degrees, counted over 600
+drawn arrangements at the widest footprint the cell handles. Most of that 45
+per cent is the grid running out rather than the geometry, and the rest is
+objects that are genuinely boxed in by their neighbours.
+
+**Nothing you do to the picture fixes that**, and that is why this solution is
+a separate thing from solution 2.
 
 Separating objects in a picture is a question about *labelling* — which pixel
-belongs to which thing — and the information needed to answer it is sometimes
-still in the picture, in the depth channel, in the shading, in the width of the
-patch. Clustering on the table recovers it because the depth reading survives
-the projection.
+belongs to which thing — and the information needed is sometimes still in the
+picture, in the depth channel, in the shading, in the width of the patch.
+Clustering on the table recovers it because the depth reading survives the
+projection.
 
-Finding a viewpoint is a question about *what was measured at all*. The
-profile step reads an object's outline against the background, row by row, and
-turns rows into heights. If a second object stands in the same part of the
-frame, the outline it reads is the union of two objects, and no amount of
-cleverness recovers where one stopped and the other started, because the
-measurement was never taken. The only fix is to take a different measurement.
+Finding a viewpoint is a question about *what was measured at all*. The profile
+step reads an object's outline against the background, row by row, and turns
+rows into heights. If a second object stands in the same part of the frame, the
+outline is the union of two objects, and no cleverness recovers where one
+stopped and the other started, because the measurement was never taken. The
+only fix is to take a different measurement.
 
-That is the whole argument. Separation is about interpreting a measurement;
-viewpoint is about making a good one. The two barely overlap, and a cell that
-answers only the first has answered half the problem.
+Separation is about interpreting a measurement; viewpoint is about making a
+good one. The two barely overlap, and a cell that answers only the first has
+answered half the problem.
 
-## The idea, in plain words
+## How it works, end to end
 
-If you cannot see something from where you are standing, walk round.
+If you cannot see something from where you are standing, walk round. That is
+the whole intuition. The work is in choosing where to walk to, and the useful
+surprise is that most of the choosing is arithmetic rather than perception.
 
-That is the entire intuition. The arm holds the camera on its wrist, so the
-camera can be put almost anywhere within reach, pointing almost any way. A
-viewpoint that hides one object behind another is an accident of where the arm
-happened to be — and an accident of geometry is exactly the kind of thing an
-arm can undo.
+### The setup
 
-The work is in choosing *where* to walk to, and the useful surprise is that
-most of the choosing is arithmetic rather than perception. The cell already
-knows where every object stands and roughly how wide it is: the survey produced
-that. Given a footprint circle for each object and a candidate camera position,
-whether one object would land on top of another in the picture is a few lines
-of trigonometry. No picture has to be taken to find out. No planner has to be
-consulted. The question is settled before anything moves.
+The table top is at 750 mm, and it is the plane every height in the cell is
+measured from. The arm is bolted to the near edge and reaches out along +x. The
+objects stand in a zone 320 mm by 360 mm, at x from 320 to 640 mm and y from
+−440 to −80 mm; the drying rack is on the other side of the table, far enough
+away that it is never in the back of a survey picture.
 
-## Where it comes from
+Four to six objects stand in that zone, all of one known kind, upright, opaque,
+at least 150 mm apart. Their footprints run up to 105 mm across and they are
+65 to 230 mm tall, but the cell is not told any of that: sizes are measured
+during the run, and the only size written down is the 260 mm tallest the frames
+are sized against.
 
-Two named ideas sit behind this, and they arrived within a few years of one
-another in the 1980s.
+The camera is an RGB-D camera bolted to the wrist, 85 mm to one side of `tool0`
+and 15 mm up, looking the way the fingers point. Because it rides on the wrist,
+putting the camera somewhere means putting the whole arm somewhere.
 
-**Active perception.** The idea that a sensor which can be moved and adjusted
-is not the same instrument as a fixed one, and that the *choosing* is part of
-the measurement rather than a preliminary to it. The name is R. Bajcsy's, from
-*Active Perception* (Proceedings of the IEEE, 1988). The argument there is
-that many vision problems which are ill-posed from one fixed viewpoint — you
-cannot recover the answer, however good the maths — become well-posed once the
-observer may move, because a second viewpoint supplies exactly the constraint
-the first one was missing. Y. Aloimonos, I. Weiss and A. Bandyopadhyay made a
-closely related argument in *Active Vision* (International Journal of Computer
-Vision, 1988). Bajcsy returned to it with Aloimonos and J. Tsotsos in
-*Revisiting Active Perception* (Autonomous Robots, 2018), which is the easiest
-modern entry point.
+Known in advance: the table height, the lens, the arm's comfortable working
+reach of 300 to 780 mm measured flat on the table, and the kind of object.
+Not known: how many objects, where they stand, how wide they are, how tall.
+Every object the survey finds also goes into the MoveIt 2 planning scene as a
+cylinder, so a path that would sweep an elbow through one is refused.
 
-The word "active" is doing a specific job here and it is often misread. It does
-not mean an active sensor in the physics sense — a laser or a sonar that emits
-something. It means the *observer* is active: it decides what to measure next.
+### The pictures
 
-**Next best view.** If the camera can move, the next question is where. The
-term is C. I. Connolly's, from *The Determination of Next Best Views* (ICRA,
-1985), which was about building a model of an unknown object by repeatedly
-asking which viewpoint would reveal the most of what is still unknown. W. R.
-Scott, G. Roth and J.-F. Rivest surveyed the field in *View Planning for
-Automated Three-Dimensional Object Reconstruction and Inspection* (ACM
-Computing Surveys, 2003), which is still the clearest map of the territory.
+Two kinds of picture are taken, and this solution only adds the second kind.
 
-The two names describe a general capability and a specific loop. This solution
-is the specific loop, cut down until it fits a cell where the doubt is a short
-list of questions rather than a whole unknown world.
+![The fixed sweep](../../../images/problem-2/03-the-fixed-sweep.png)
 
-One point of history is worth carrying forward. Almost all of the classical
-next-best-view work is about *reconstruction*: you do not know the shape, and
-you want to reduce how much of it is unknown. That is a much harder question
-than the one here. This cell knows the kind of object, knows roughly where each
-one stands, and has one specific thing it wants — a clear side-on look at a
-named object. Scoring "how much unknown volume would this resolve" is the right
-tool when you know nothing. It is the wrong tool when your doubt has a name.
+**The survey**, which runs first and is not this solution's. The camera works
+out from its own lens how much table one picture covers at the 450 mm survey
+height — 520 by 390 mm, which is 1.62 mm per pixel — and `survey_stations()` in
+`arm/dimensions.py` spreads as few stations as will cover the object zone with
+overlap to spare. For this cell that is three, in a line at x = 480 mm, 93 mm
+apart in y. The useful part of a station is not the whole picture but the strip
+both of its pictures share, 425 by 175 mm, and 93 mm between stations leaves
+47 per cent of that strip in common with the next, so nothing lands only on an
+edge.
 
-## How it works, step by step
+Each station takes **two** pictures, 120 mm apart, not one. One picture from
+above cannot say how far away anything is; it can only lay each silhouette down
+on the table, and an object stands *above* the table, so the laid-down point is
+pushed outwards. Move the camera 120 mm sideways and the top of a 260 mm object
+lays down 164 mm away from where it did in the first picture. The ratio between
+those two numbers is the height, and the height is what fixes the position. So
+six pictures, from three places, before any of this solution runs.
 
-### What a viewpoint has to satisfy
+**The extra look**, which is this solution's. For one doubtful object, the
+camera goes 380 mm from it, level, 120 mm above the table, facing it from a
+direction the three tests below have cleared.
 
-Three tests, and it is worth insisting that they are **independent**. They ask
-different questions of different things, they can fail in any combination, and
-they cost wildly different amounts to evaluate.
+The 380 mm is not a constant. The camera looks level from 120 mm up, so the
+frame has to reach 120 mm down to catch the foot and 140 mm up to catch the rim
+of the 260 mm tallest object the cell allows for. Both are angles, so how far
+back that puts the camera is a fact about the lens: half a frame is
+120 / 277.1 = 0.4331 of a radian, 85 per cent of that is the margin left for
+the arm not arriving exactly where it was sent, and 140 / (0.4331 × 0.85) comes
+to **380 mm**. One pixel there covers 380 / 277.1 = 1.37 mm of the object.
 
-1. **The line of sight must be clear.** No other object may land in the same
-   part of the frame as the target. Decided from the footprint circles and the
-   candidate camera position. Cost: a handful of arithmetic operations per
-   pair.
-2. **The standoff point must be inside the arm's working reach**, which in this
-   cell is 300 to 780 mm from the base, measured flat on the table. Closer than
-   300 mm and the arm is folded over itself; further than 780 mm and it is
-   stretched straight out with nothing left for the wrist. Cost: one square
-   root. This test has a second, sharper level: an inverse-kinematics query
-   asks whether the arm can hold that exact pose at all, which MoveIt 2 answers
-   in milliseconds. Both levels are still far cheaper than the third test, so
-   both run before it.
-3. **The arm must be able to get there without crossing over something.** The
-   camera rides on the wrist, so putting the camera somewhere means putting the
-   whole arm somewhere, and the path may sweep an elbow across an object that
-   is standing in the way. Cost: a motion planning query — orders of magnitude
-   more than the other two, and the only one that can fail for reasons no
-   formula predicts.
+Two details of this cell bite, and both are easy to get wrong. **The camera is
+not the tool**: sending `tool0` to the standoff point puts the camera 85 mm away
+from it, and the offset turns with the tool, so `_measure_from()` commands
+`eye - rotation @ CAMERA_OFFSET` rather than `eye`. **The roll has to be
+pinned**: the profile is measured row by row, with a row meaning a height, and
+looking level along the table the default "up" hint gives a different roll
+depending on which side of the object the arm stands, which is exactly the
+thing that varies here.
 
-A viewpoint has to pass all three. Passing two is worth nothing.
+### What each picture captures
 
-### Occlusion is geometry, not image processing
+The sensor returns a 320 by 240 colour frame and a 320 by 240 depth frame at
+15 Hz, through the same lens: a 60-degree horizontal field of view, so
+fx = fy = 277.1 pixels, with the depth clipped at 50 mm near and 3 m far. The
+cell keeps three things from each capture.
 
-The first test is the one people expect to be hard, and it is not, because of
-one fact this problem hands over for free: **every object's footprint is a
-circle of known size, standing on a known plane.**
+- **The depth frame**, which is what everything else is built from. Colour is
+  only used for the pictures in the report.
+- **The mask.** `standing_on_the_table()` marks a pixel yes where the point
+  there is above the table top and no taller than 260 mm, which is what keeps
+  the arm's own fingers out of its own pictures. For a side-on look the mask is
+  banded as well, to within 120 mm either side of the standoff, which drops the
+  rack and anything standing behind the target.
+- **The pose** — the 4 × 4 transform putting a pixel in the room, taken from
+  where the camera really was rather than where `tool0` was sent, because the
+  85 mm offset would otherwise go straight into every reported position.
+
+### What is interpreted, and how
+
+The chain runs in this order.
+
+1. **Mask, then connected components.** `find_glasses()` groups the yes pixels
+   that touch, one patch per candidate object, and lays each patch's widest
+   part down on the table.
+2. **Parallax, per station.** `where_they_stand()` compares the pair of
+   pictures. A laid-down point moves by `d / k` when the camera moves by `d`,
+   where `k = (H − h) / H`, so the apparent movement measures the height `h`,
+   and the height gives back the true position and the true width. An object
+   caught in only one of the two pictures cannot be placed and is left for
+   another station.
+3. **Doubt.** An object whose fitted footprint is wider than any single object
+   of this kind can be, or that only one station ever saw, is doubtful.
+   Anything inside the allowed range is settled and gets no extra look.
+4. **Candidates.** `_standoffs()` in `task.py` lists directions round the
+   doubtful object, each one putting the camera 380 mm from it, level, 120 mm
+   up. Today that is nine directions 40 degrees apart, centred on the line back
+   to the arm's base.
+5. **Test 1 — reach.** Drop the candidates whose standoff point falls outside
+   300 to 780 mm from the base, measured flat on the table. Closer and the arm
+   is folded over itself; further and it is stretched straight out with nothing
+   left for the wrist. Cost: one square root.
+6. **Test 2 — line of sight.** Drop the candidates where another object would
+   share the frame. Cost: a handful of arithmetic operations per pair.
+7. **Test 3 — the path.** Ask MoveIt 2, best first, and take the first that
+   plans. Cost: orders of magnitude more than the other two, and the only one
+   that can fail for reasons no formula predicts.
+8. **Move, capture, re-measure**, and merge the new sighting into what the
+   survey already had. If nothing survives tests 1 and 2, report the object
+   with its reason and stop.
+
+A viewpoint has to pass all three tests. Passing two is worth nothing.
+
+#### Why the line-of-sight test is arithmetic
 
 ![Occlusion as geometry](../../../images/problem-2/03-occlusion-as-geometry.png)
 
-The left panel is the test itself. From a camera at a given point, each object
-fills a certain angle of the frame. Half of that angle is `atan(r / d)`, where
-`r` is the object's radius and `d` is how far away it is. Two objects share the
-frame — their silhouettes touch or overlap — when the angle between their
-centres, measured at the camera, is smaller than the sum of their two half
-angles. That is one cross product, one dot product, and three arctangents. No
-picture is involved.
+The first test is the one people expect to be hard, and it is not, because of
+one fact this problem hands over free: **every object's footprint is a circle
+of known size, standing on a known plane.**
+
+From a camera at a given point, each object fills a certain angle of the frame.
+Half of that angle is `atan(r / d)`, where `r` is the radius and `d` is how far
+away it is. Two objects share the frame when the angle between their centres,
+measured at the camera, is smaller than the sum of their two half angles. That
+is one cross product, one dot product and three arctangents, and no picture is
+involved. This is what `_blocked()` in `task.py` already computes.
 
 Judging it as an angle at the camera, rather than as a distance from the line
-of sight, matters more than it looks. An object well off to one side but twice
+of sight, matters more than it looks: an object well off to one side but twice
 as far away subtends the same part of the frame as one just beside the target.
-A sideways-distance test would wave it through; the angular test does not. This
-is what `_blocked()` in `task.py` already computes.
+A sideways-distance test would wave it through. Note also what the test
+deliberately does *not* check — whether the other object is **nearer** than the
+target. The profile measurement reads a silhouette against the background, so
+an object behind the target ruins the outline exactly as thoroughly as one in
+front of it.
 
-Note also what the test deliberately does *not* check: whether the other object
-is **nearer** than the target. It does not matter. The profile measurement
-reads a silhouette against the background, so an object standing behind the
-target ruins the outline exactly as thoroughly as one standing in front of it.
-"Shares the frame" is the right question; "occludes" is too narrow.
-
-The middle panel takes the same test and asks it of every direction at once.
-Sit a long way `D` from a pair of objects `d` apart, at an angle `θ` off the
-line joining them, and sweep round. The angle between them at your eye shrinks
-like `d·sin(θ)/D`, while their combined angular width shrinks like
-`(rA + rB)/D`. The distance `D` cancels. What is left is a statement about
-direction alone:
+Ask the same test of every direction at once and the distance drops out. Sit a
+long way `D` from a pair of objects `d` apart, at an angle `θ` off the line
+joining them. The angle between them at your eye shrinks like `d·sin(θ)/D`,
+while their combined angular width shrinks like `(rA + rB)/D`. `D` cancels, and
+what is left is a statement about direction alone:
 
     the pair overlap when   sin(θ) < (rA + rB) / d
 
-so each neighbour casts a **wedge** of blocked directions, of half-angle
+So each neighbour casts a **wedge** of blocked directions of half-angle
 `asin((rA + rB) / d)`, along the line joining the two objects and along its
-opposite. With the equal footprints of one known kind that is `asin(2r/d)`.
-This is the shape people mean when they draw an occlusion shadow, and here it
-has a closed form.
+opposite. With the equal footprints of one known kind that is `asin(2r/d)`. Two
+objects at the closest spacing the problem allows, 150 mm, with the widest
+footprint the cell handles, 105 mm, give a half-angle of 44.4 degrees — 89
+degrees of blocked directions, a quarter of the circle, **from one neighbour**.
+With four neighbours and a reach limit as well, running out of viewpoints is
+something to plan for rather than a freak event.
 
-The right panel is why that formula is worth having. Two objects at the
-closest spacing the problem allows, 150 mm, with the widest footprint the cell
-handles, 105 mm, give a half-angle of 44.4 degrees. That is 89 degrees of
-blocked directions — a quarter of the circle — **from one neighbour**. With
-four neighbours and a reach limit as well, running out of viewpoints stops
-being a freak event and becomes something to plan for.
-
-### Bound the search before you score it
-
-This is the structural point, and it is the part that survives even if every
-other detail here is replaced.
+#### Why the tests run in that order
 
 ![Bound, then score](../../../images/problem-2/03-bound-then-score.png)
 
 Two orderings of the same work, with the counts from the five-object
-arrangement used throughout this document. On the left: enumerate every
-candidate, drop the ones outside the reach, drop the ones with a blocked line
-of sight, score what is left, and only then call the motion planner, best
-first. Forty-five candidates become twenty-five become five, and the planner is
-asked at most five questions, every one of them about a pose worth flying to.
+arrangement used later in this document. On the left: enumerate every
+candidate, drop the unreachable, drop the blocked, sort what is left, and only
+then call the motion planner. Forty-five candidates become twenty-five become
+five, and the planner is asked at most five questions, every one about a pose
+worth flying to.
 
-On the right: score all forty-five and let the planner sort it out. Two things
-go wrong, and only one of them is obvious.
+On the right: sort all forty-five and let the planner sort it out. The obvious
+cost is speed — the expensive call is now made up to forty-five times instead
+of five. The cost that matters is the other one. **The planner has no opinion
+about lines of sight.** It refuses a path that would sweep an elbow through a
+cylinder, but a camera pose that looks straight through object B at object A is
+a perfectly good pose as far as it is concerned. It plans to it, reports
+success, and the arm takes a picture with two objects in it, measures them as
+one, and hands a confident wrong answer downstream. Twenty of the forty-five
+candidates are like that.
 
-The obvious one is speed. The planner is the expensive call, and it is now
-being made up to forty-five times instead of five, most of them about poses
-that arithmetic could have rejected in microseconds.
+So the failure mode of score-then-reject is **slow, and quietly wrong, with
+nothing erroring**, which is the worst combination available. The general rule
+behind the fix: **order the tests by what they cost, cheapest first, and let
+each one shrink the set the next has to look at.** Arithmetic is free; inverse
+kinematics is nearly free; the planner is not free; the arm is the most
+expensive thing in the building.
 
-The one that matters is the other one. **The planner has no opinion about lines
-of sight.** It knows where the objects are — this cell puts every object into
-the planning scene as a cylinder, so a path that would sweep an elbow through
-one is refused — but a camera pose that looks straight through object B at
-object A is a perfectly good pose as far as it is concerned. It plans to it and
-reports success. The arm flies there, takes a picture with two objects in it,
-measures them as one, and hands a confident wrong answer downstream. Twenty of
-the forty-five candidates are like that.
+There is a second benefit that is not obvious until you have the numbers.
+Because the filter is nearly free, a much finer candidate set is affordable
+than you would otherwise dare enumerate — and that is where most of the 45 per
+cent goes.
 
-So the failure mode of score-then-reject is: **slow, and quietly wrong, with
-nothing erroring.** That is the worst combination available. A cell that is
-slow gets noticed. A cell that is wrong gets noticed. A cell that is slow *and*
-believes itself does not, until something downstream tries to grasp an object
-that is two objects.
+#### What is left to score
 
-The general rule behind it: **order the tests by what they cost, cheapest
-first, and let each one shrink the set the next one has to look at.** Arithmetic
-is free; inverse kinematics is nearly free; the planner is not free; the arm is
-the most expensive thing in the building.
-
-There is a second benefit, and it is not obvious until you have the numbers.
-Because the filter is nearly free, you can afford a much finer set of
-candidates than you would otherwise dare to enumerate. That turns out to matter
-a great deal, and the last section of this document is about it.
-
-### What is left to score
-
-Once the filter has run, whatever survives is safe to visit, and scoring only
+Once the filter has run, whatever survives is safe to visit and scoring only
 decides the order. That bounds what a bad score can cost: one wasted move, not
-a wrong measurement.
-
-For this cell the score is a rule, not a model:
-
-1. Prefer the viewpoint whose frame holds the doubtful object and nothing else.
-   After the filter every survivor already satisfies this, so in practice the
-   rule breaks ties among clear viewpoints.
-2. After that, prefer the least turn away from the line back to the arm's own
-   base — because standing between the object and the base is the direction
-   with the least reach in it, and reach is the other thing that kills
-   candidates.
+a wrong measurement. For this cell the score is a rule, not a model. Prefer the
+viewpoint whose frame holds the doubtful object and nothing else — after the
+filter every survivor already satisfies this, so in practice it breaks ties —
+then prefer the least turn away from the line back to the arm's base, because
+standing between the object and the base is the direction with the least reach
+in it.
 
 The textbook alternative is **information gain**: carve the room into small
 cubes marked free, occupied or unknown, cast a ray per pixel from each
@@ -268,86 +292,167 @@ candidate pose, and count how much unknown volume the picture would resolve.
 [OctoMap](https://octomap.github.io/) (Hornung et al., *Autonomous Robots*,
 2013) is the standard implementation of the map, and MoveIt 2 already keeps one
 through its occupancy map monitor. Isler et al. (ICRA 2016) and Delmerico et
-al. (*Autonomous Robots*, 2018) work through the variants. It is all CPU ray
-casting, so it needs no graphics card.
+al. (*Autonomous Robots*, 2018) work through the variants; it is all CPU ray
+casting, so it needs no graphics card. It is more than this cell needs, and the
+reason is the shape of the doubt. Information gain is the right score when you
+do not know what you are looking for. Here the doubt is a short list of named
+questions — *is that 260 mm patch one object or two?* — and a score that
+answers a named question beats one that measures unknown volume in general.
 
-It is also more than this cell needs, and the reason is the shape of the doubt.
-Information gain is the right score when you do not know what you are looking
-for. Here the doubt is a short list of named questions — *is that 260 mm patch
-one object or two?* — and a score that answers a named question beats a score
-that measures unknown volume in general.
+### What comes out
 
-## How it works here
+For every object the run placed: a **mask** saying which pixels in which
+picture are that object, a **position** in millimetres from the arm's base, and
+a **rough footprint width** in millimetres. For every object it could not
+place: the object, and which of the three tests each candidate failed, with the
+numbers.
 
-### What already exists
+Three consumers take it. Problem 1's step 2 takes the cleared viewpoint and
+measures the profile from it, unchanged.
+[Problem 3](../../problem-3/problem.md) takes the objects with no viewpoint,
+because moving something is the only remaining fix. `report.py` writes both
+lists into the run folder, with the pictures they came from.
 
-The cell is not starting from nothing. It already runs a fixed sweep, and this
-solution is the tail of that sweep rather than a replacement for it.
+## The sequence
 
-![The fixed sweep](../../../images/problem-2/03-the-fixed-sweep.png)
+The normal path: the fixed sweep, one doubtful object, one extra look that
+settles it.
 
-The left panel is the sweep as it stands. The camera works out from its own
-lens how much table one picture covers at the 450 mm survey height — 520 by
-390 mm, which is 1.62 mm per pixel — and `survey_stations()` in
-`arm/dimensions.py` spreads as few stations as will cover the 320 by 360 mm
-object zone with overlap to spare. For this cell that comes to three, in a line
-at x = 480 mm, 93 mm apart in y. The useful part of each station is not the
-whole picture but the strip both of its pictures share, 425 by 175 mm, and
-93 mm between stations leaves 47 per cent of that strip in common with the
-next, so nothing lands only on an edge.
+```mermaid
+sequenceDiagram
+    participant T as task.py
+    participant A as Arm / MoveIt
+    participant C as Wrist camera
+    participant P as Perception
+    participant R as Report
+    T->>A: survey 3 stations, 450 mm above the table
+    loop each station
+        A->>C: two frames, 120 mm apart
+        C-->>P: 320x240 colour and depth, plus the pose
+        P-->>T: positions and rough widths
+    end
+    T->>P: which of these are doubtful?
+    P-->>T: object A, fitted footprint too wide
+    Note over T: 9 directions, 380 mm out, level, 120 mm up
+    T->>T: test 1, drop 3 outside the 300-780 mm reach
+    T->>T: test 2, drop 4 whose frame holds a neighbour
+    T->>A: test 3, plan to 63.1 degrees at 573 mm
+    A-->>T: planned
+    A->>C: one frame from the new viewpoint
+    C-->>P: colour and depth, plus the pose
+    P-->>T: one object, footprint inside the allowed range
+    T->>R: mask, position, rough width
+```
 
-The right panel is why each station is a pair rather than a single picture. One
-picture from above cannot say how far away anything is; it can only lay each
-silhouette down on the table, and an object stands *above* the table, so the
-laid-down point is wrong. Move the camera 120 mm sideways and take a second
-picture, and the top of a 260 mm object lays down 164 mm away from where it did
-in the first. The ratio between those two numbers is the height, and the height
-is what fixes the position.
+The interesting path: an object with nothing left to try. The budget caps the
+loop at two looks per object and four per run, and an object with no viewpoint
+is reported rather than guessed at.
 
-So six pictures, from three places, before any of this solution runs. What
-comes out is a position and a rough width for every object it managed to pair
-up — and a list of the ones it is not sure about.
+```mermaid
+sequenceDiagram
+    participant T as task.py
+    participant A as Arm / MoveIt
+    participant P as Perception
+    participant R as Report
+    T->>P: is object E settled?
+    P-->>T: doubtful
+    Note over T: 9 candidates, 4 out of reach, 5 blocked
+    alt something survives tests 1 and 2
+        T->>A: plan to the best survivor
+        A-->>T: refused, elbow over B
+        T->>R: no viewpoint, the planner refused every survivor
+    else nothing survives
+        T->>R: no viewpoint, 4 out of reach and 5 blocked
+    end
+    Note over T,R: budget spent, 2 looks per object and 4 per run
+    R-->>T: object E handed to problem 3
+```
 
-### What this solution adds
+## In pseudocode
 
-The doubtful list is the input. For each object on it:
+The pipeline, coloured by who owns the code.
 
-1. Enumerate candidate standoff poses. `_standoffs()` in `task.py` already does
-   this: nine directions, 40 degrees apart, centred on the line back to the
-   arm's base, each one putting the camera 380 mm from the object, level,
-   120 mm above the table.
-2. Drop the ones whose standoff point falls outside 300 to 780 mm.
-3. Drop the ones where another object would share the frame.
-4. Sort the survivors, least turn first.
-5. Hand them to the motion planner in that order and take the first that plans.
-6. If nothing survives step 3, report the object with its reason and stop. Do
-   not guess.
+```mermaid
+flowchart TD
+    E1["survey: 3 stations, 6 frames"] --> E2["mask: points above the table top"]
+    E2 --> E3["parallax pair: position and rough width"]
+    E3 --> N1["is this object doubtful?"]
+    N1 -->|settled| E7["report: mask, position, width"]
+    N1 -->|doubtful| E4["candidate directions, 380 mm out"]
+    E4 --> N2["test 1 reach, then test 2 line of sight"]
+    N2 --> L1["numpy: dot, cross, atan2"]
+    L1 --> N3["sort by least turn off the base line"]
+    N3 --> L2["MoveIt 2: IK, then the planner"]
+    L2 -->|planned| E5["move, capture, re-measure"]
+    E5 --> N1
+    N2 -->|nothing survives| E6["report: no viewpoint, with reasons"]
+    L2 -->|refused| E6
+    %% new code we write for this solution
+    style N1 fill:#e8f3ec,stroke:#5aa469,color:#22272e
+    style N2 fill:#e8f3ec,stroke:#5aa469,color:#22272e
+    style N3 fill:#e8f3ec,stroke:#5aa469,color:#22272e
+    %% code the project already has
+    style E1 fill:#e4eef9,stroke:#4c8fd6,color:#22272e
+    style E2 fill:#e4eef9,stroke:#4c8fd6,color:#22272e
+    style E3 fill:#e4eef9,stroke:#4c8fd6,color:#22272e
+    style E4 fill:#e4eef9,stroke:#4c8fd6,color:#22272e
+    style E5 fill:#e4eef9,stroke:#4c8fd6,color:#22272e
+    style E6 fill:#e4eef9,stroke:#4c8fd6,color:#22272e
+    style E7 fill:#e4eef9,stroke:#4c8fd6,color:#22272e
+    %% third-party library
+    style L1 fill:#eef0f2,stroke:#8b949e,color:#22272e
+    style L2 fill:#eef0f2,stroke:#8b949e,color:#22272e
+```
 
-Where does 380 mm come from? Not from a constant. The camera looks level from
-120 mm above the table, so the frame has to reach 120 mm down to catch the foot
-and 140 mm up to catch the rim of the tallest object the cell allows for, which
-is 260 mm. (Objects themselves run 65 to 230 mm tall; 260 is the limit the
-frame is sized against, so that a tall one still fits with margin to spare.)
+Legend: **green** is new code written for this solution, **blue** is code the
+project already has, **grey** is a third-party library.
 
-Both are angles, so how far back that puts the camera is a fact about the lens.
-Half a frame is 120 / 277.1 = 0.4331 of a radian; 85 per cent of that is the
-margin left for the arm not arriving exactly where it was sent; and
-140 / (0.4331 × 0.85) comes to **380 mm**. One pixel there covers
-380 / 277.1 = 1.37 mm of the object.
+The method, as code that does not compile:
 
-Two details of this cell bite, and both are easy to get wrong:
+```text
+found = task.survey(GLASS_ZONE)                      # have  · work_cell.task._survey
+doubtful = [d for d in found if not settled(d)]      # NEW   · ~10 lines, numpy
 
-**The camera is not the tool.** It is bolted 85 mm to one side of `tool0` and
-15 mm up, so that the fingers stay out of shot. Sending `tool0` to the standoff
-point puts the *camera* 85 mm away from it, and the offset turns with the tool,
-so it has to be subtracted in the tool's own frame. This is why
-`_measure_from()` commands `eye - rotation @ CAMERA_OFFSET` rather than `eye`.
+for target in doubtful[:FOUR_PER_RUN]:               # NEW   · the run-wide budget
+    others = [d for d in found if d is not target]   # NEW   · plain python
+    eyes = standoffs(target, others, step_deg=5.0)   # have  · work_cell.task._standoffs
+    eyes = [e for e in eyes if in_reach(e)]          # have  · work_cell.arm.dimensions
+    eyes = [e for e in eyes if unblocked(e)]         # have  · work_cell.task._blocked
+    eyes = sorted(eyes, key=turn_off_the_base_line)  # NEW   · numpy
 
-**The roll has to be pinned.** The profile is measured row by row, with a row
-meaning a height. A picture that comes out rolled measures the object across
-instead of up. Looking level along the table, the default "up" hint gives a
-different roll depending on which side of the object the arm is standing, which
-is exactly the thing that varies here.
+    if not eyes:                                     # NEW   · nothing left to try
+        report.no_viewpoint(target, why=reasons)     # have  · work_cell.report
+        continue                                     #       · handed to problem 3
+
+    for eye, turn in eyes[:TWO_PER_TARGET]:          # NEW   · the per-object budget
+        if not arm.move_to(eye - turn @ CAM_OFFSET): # have  · work_cell.arm.motion
+            continue                                 #       · the planner refused it
+        view = camera.capture()                      # have  · work_cell.arm.camera
+        mask = standing_up(view, near=0.38)          # have  · work_cell.glasses.detect
+        seen = find_glasses(mask, view.to_world)     # have  · work_cell.glasses.detect
+        found = merge_sightings(found + seen)        # have  · work_cell.glasses.detect
+        break                                        #       · one look is enough
+
+report.write(found, still_doubtful(found))           # have  · work_cell.report
+```
+
+Everything new is arithmetic. `_standoffs()` already does the reach test and
+the ordering; the only change to it is `step_deg`, from 40 down to 5. The
+budgets, the doubt test and the abstention are a few dozen lines of NumPy on
+top of what `task.py` already has.
+
+| Library | What it does here | Already in the pixi environment? | Licence |
+| --- | --- | --- | --- |
+| [NumPy](https://numpy.org/) | the three tests, the sort, the circle fit | **yes** | BSD 3-Clause |
+| [OpenCV](https://opencv.org/) | drawing the mask and the marks onto the report's pictures — not the labelling, which `detect.py` does in NumPy on purpose | **yes** | Apache 2.0 |
+| [MoveIt 2](https://moveit.ai/) ([source](https://github.com/moveit/moveit2)) | inverse kinematics in milliseconds, then the motion planner; holds the planning scene the objects go into as cylinders | **yes** | BSD 3-Clause |
+| [ROS 2 Jazzy](https://docs.ros.org/en/jazzy/) | the plumbing between the camera, the arm and `task.py` | **yes** | Apache 2.0 |
+| [Gazebo](https://gazebosim.org/) (Harmonic) | the simulator | **yes** | Apache 2.0 |
+| [OctoMap](https://octomap.github.io/) ([source](https://github.com/OctoMap/octomap)) | only if the score were ever upgraded to information gain | **no** | BSD for the library; the `octovis` viewer beside it is GPL |
+| [nbvplanner](https://github.com/ethz-asl/nbvplanner) | reference receding-horizon next-best-view planner, Bircher et al., ICRA 2016 | **no** | uncertain — read the repository before depending on it |
+
+No PyTorch, no SciPy, no scikit-learn. Nothing in the built version of this
+solution is outside what the cell already installs.
 
 ## A worked example
 
@@ -366,7 +471,7 @@ A and B are 150 mm apart; B and E are 150 mm apart; nothing else is closer than
 160 mm. All five footprints are taken at 105 mm, the widest the cell handles,
 which is the hardest case.
 
-Take A as the target.
+### Object A, which has a viewpoint
 
 ![The three tests on one plan view](../../../images/problem-2/03-three-tests.png)
 
@@ -381,30 +486,65 @@ degrees, puts the camera at (0.096, −0.072), which is **120 mm** from the base
 well inside the 300 mm minimum, so the arm would be folded over itself. The two
 directions nearest the A-to-B line, at 303.1 and 343.1 degrees, both put it
 **867 mm** out, past the 780 mm limit. Those three never reach the occlusion
-test at all, which is the ordering working as intended: the cheapest test spends
-the least and removes a third of the candidates.
+test at all: the cheapest test spends the least and removes a third of the
+candidates.
 
 Four of the six that remain are blocked. Facing 103.1 degrees, at 321 mm, both
 B and C land in the frame. Facing 183.1 degrees, also 321 mm, B and E do.
 Facing 223.1, D does; facing 263.1, C does.
 
 Two survive: **63.1 degrees at 573 mm** and **23.1 degrees at 764 mm**. Sorted
-by least turn, the planner is asked about 63.1 first. If it plans, the arm
-flies there and takes the picture. If it does not — an elbow over B, say — the
-planner is asked about 23.1. If that fails too, A has no viewpoint, and A is
-reported rather than guessed at.
+by least turn, the planner is asked about 63.1 first. If it plans, the arm flies
+there and takes the picture. If it does not — an elbow over B, say — the planner
+is asked about 23.1. If that fails too, A has no viewpoint, and A is reported
+rather than guessed at.
 
-Nine candidates, six inside the annulus, two clear, one planner call in the
-good case. Across all five objects the same arithmetic gives **45 candidates,
-25 inside the annulus, 5 clear**: 20 die on reach, 20 die on occlusion, 5
-survive. That 5 out of 45 is the number in the bound-then-score picture above,
-and it is the whole argument for the ordering.
+Nine candidates, six inside the annulus, two clear, one planner call in the good
+case. Across all five objects the same arithmetic gives **45 candidates, 25
+inside the annulus, 5 clear**: 20 die on reach, 20 die on occlusion, 5 survive.
+That 5 out of 45 is the number in the bound-then-score picture above.
 
-One footnote on the geometry. The exactly perpendicular direction to the A-to-B
-line — the one you would reach for by hand — is at 53.1 degrees. It is not one
-of the nine, because the nine sit on a 40-degree grid. The nearest candidate,
-63.1 degrees, is 10 degrees off it and works fine. But this is the first hint
-that the grid, and not the geometry, is what decides some of these cases.
+The exactly perpendicular direction to the A-to-B line — the one you would reach
+for by hand — is at 53.1 degrees. It is not one of the nine, because the nine
+sit on a 40-degree grid. The nearest candidate, 63.1 degrees, is 10 degrees off
+it and works fine. But this is the first hint that the grid, and not the
+geometry, is what decides some of these cases.
+
+### Object E, which has none
+
+![No usable viewpoint](../../../images/problem-2/03-no-viewpoint.png)
+
+The left panel is object E. Four of its nine directions fall outside the
+annulus, five are blocked, and none survives — so on the grid the cell uses, E
+is handed to problem 3. But look at the ring: there is a 10 degree stretch of
+green on it, and the nine directions, sitting 40 degrees apart, step straight
+over it. **E is stranded by the grid, not by the geometry.**
+
+That is not an isolated accident. The clear arcs for the five objects here come
+to A 34 degrees, B 16, C 110, D 7 and E 10. With nine directions 40 degrees
+apart, the only arc *guaranteed* to be hit is C's. The others are hit or missed
+depending on where the grid happens to fall.
+
+The fix is free, and it is the second benefit of bounding before scoring: the
+filter is arithmetic, so the candidate set can be made as fine as you like —
+seventeen directions, thirty-three, sixty-five. The right panel counts what that
+buys, over 600 arrangements of four to six objects drawn in the zone at the
+problem's own spacing rule. With 105 mm footprints, going from 9 directions to
+65 takes the share of objects with no usable viewpoint from 45 per cent to 14.
+With 75 mm footprints it goes from 18 per cent to 1. With 45 mm footprints the
+problem has essentially vanished by 17 directions.
+
+Two things follow. **Most of the 45 per cent is the grid, and refining the grid
+costs nothing but arithmetic** — the single cheapest improvement available here,
+and the first thing to do. And it never reaches zero: in the middle panel object
+S stands 556 mm out with four neighbours round it, and its ring has **no clear
+direction at all**, at any resolution. No grid helps. Something has to move.
+
+That is the handover to [problem 3](../../problem-3/problem.md), and it is a
+result rather than an error. The right output is the object, the reason, and a
+stop — never an attempt made anyway. This is the rule the whole project runs on:
+a refused object is a result, and a fallback that has the arm try regardless is
+how neighbours get knocked over.
 
 ## The feedback loop
 
@@ -414,17 +554,10 @@ and [solution 2](solution-overview.md#solution-2--cluster-on-the-table). It
 takes a measurement, works out what is still unclear, decides where it would
 have to look for that to become clear, goes and looks, and repeats.
 
-A loop needs three things, and a solution with only two of them is not a loop:
-
-**Something to be unsure about.** The circle fit from solution 2 provides it. A
-cluster whose fitted footprint is wider than any single object of this kind can
-be, or an object seen from only one station, is doubtful. An object whose
-circle fits inside the allowed range is settled and gets no extra look.
-
-**Somewhere to go that would help.** The candidate poses, filtered by the three
-tests. If the filter returns nothing, there is no action that would help, and
-that fact is itself the answer.
-
+A loop needs three things, and a solution with only two of them is not a loop.
+**Something to be unsure about**: the circle fit from solution 2 provides it.
+**Somewhere to go that would help**: the candidate poses, filtered by the three
+tests — and if the filter returns nothing, that fact is itself the answer.
 **A budget**, because the loop has to stop.
 
 ![The budget](../../../images/problem-2/03-the-budget.png)
@@ -432,16 +565,14 @@ that fact is itself the answer.
 The unit on the left panel's axis is a **station-equivalent**: one plan, one
 move, one settle, and the two pictures 120 mm apart that the parallax needs.
 That is about what one more survey station costs, which makes it the natural
-unit here and saves inventing a number for the move itself. The sweep is three
-of them. An extra look is one more.
+unit and saves inventing a number for the move itself. The sweep is three of
+them. An extra look is one more.
 
-What a unit actually costs in seconds is the one number that has to be measured
-rather than argued about, and it should be timed from `_survey()` rather than
-guessed in a document. The right panel says why it does not much matter which
-of the plausible values it turns out to be. The ceiling is "tens of seconds" —
-call it 60 for the sake of drawing a line. If a unit costs 4 seconds, 60
-seconds buys 15 units. At 6 seconds it buys 10. At 8 seconds, 7.5.
-
+What a unit costs in seconds is the one number that has to be measured rather
+than argued about, and it should be timed from `_survey()`. The right panel says
+why it does not much matter which of the plausible values it turns out to be.
+The ceiling is "tens of seconds" — call it 60 for the sake of drawing a line. At
+4 seconds a unit, 60 seconds buys 15 units; at 6 seconds, 10; at 8 seconds, 7.5.
 Against that:
 
 - the sweep alone is **3 units**, and fits under every one of those;
@@ -452,23 +583,21 @@ Against that:
 - two looks for each of five objects is **13 units**, which breaks it at
   every value.
 
-So the cap is four. Not because four is a nice number, but because four is the
-largest budget that fits whatever a unit turns out to cost. Six would be a bet
-on the measurement coming out at the cheap end, and there is a reason not to
-place it: the objects that most want a second look tend to be the crowded ones,
-and crowding is exactly what removes their viewpoints — so the extra budget is
-the part most likely to be spent on looks that get refused.
+So the cap is four: the largest budget that fits whatever a unit turns out to
+cost. Six would be a bet on the measurement coming out at the cheap end, and
+there is a reason not to place it — the objects that most want a second look are
+the crowded ones, and crowding is exactly what removes their viewpoints, so the
+extra budget is the part most likely to be spent on looks that get refused.
 
-Alongside the run-wide cap of four goes a per-object cap of **two**. One object
-must not be able to eat the whole budget. Without that, a single stubborn
-cluster pulls look after look and the run never ends — and the reason a cluster
-is stubborn is usually that its neighbours are where they are, which no number
-of looks will change.
+Alongside the run-wide cap of four goes a per-object cap of **two**, so that one
+object cannot eat the whole budget. Without it, a single stubborn cluster pulls
+look after look and the run never ends — and a cluster is usually stubborn
+because of where its neighbours are, which no number of looks will change.
 
 The loop stops when nothing is doubtful, or when the budget is spent. Whatever
-is still doubtful at that point is **reported as doubtful**, not guessed at. A
-report that says "these two could not be separated, here is why" is a result.
-A report that guesses is a failure that looks like a result.
+is still doubtful then is **reported as doubtful**, not guessed at. A report
+that says "these two could not be separated, here is why" is a result; a report
+that guesses is a failure that looks like a result.
 
 One number is worth logging from the start: **how many extra looks were spent,
 and how many changed the answer.** A loop whose extra looks never change
@@ -477,32 +606,8 @@ you count.
 
 ## What it needs
 
-**Libraries.** Nothing that is not already in the cell.
-
-- [ROS 2 Jazzy](https://docs.ros.org/en/jazzy/) — Apache License 2.0. The
-  plumbing.
-- [MoveIt 2](https://moveit.ai/) ([source](https://github.com/moveit/moveit2))
-  — BSD 3-Clause. Two parts are used: an inverse-kinematics query, to ask
-  whether a pose can be held at all, which is milliseconds; and the motion
-  planner, which is the expensive call. It also keeps the planning scene the
-  objects go into as cylinders.
-- [Gazebo](https://gazebosim.org/) (Harmonic) — Apache License 2.0. The
-  simulator.
-- [NumPy](https://numpy.org/) — BSD 3-Clause. The three tests are a few dozen
-  lines of it.
-
-If the score were ever upgraded to information gain, that would add
-[OctoMap](https://octomap.github.io/)
-([source](https://github.com/OctoMap/octomap)) — the mapping library is under a
-BSD licence; the `octovis` viewer that ships beside it is GPL, so check which
-you are linking. Bircher et al.'s receding-horizon next-best-view planner
-([source](https://github.com/ethz-asl/nbvplanner), ICRA 2016) is the
-open-source exploration planner people usually start from; its licence is
-uncertain — read the repository before depending on it.
-
 **Data.** None. There is nothing to train and no weights to keep in step with
-the world. Every number in this document comes out of the cell's own
-dimensions.
+the world. Every number in this document comes out of the cell's own dimensions.
 
 **Hardware.** The depth camera and the arm. No graphics card. Everything here
 runs on an Apple Silicon Mac with no NVIDIA card, which is the rule the whole
@@ -511,148 +616,49 @@ overview is written under.
 **A belief to start from**, which is the one real prerequisite and the one
 chicken-and-egg problem. You cannot predict what a viewpoint would show without
 knowing roughly what is on the table, and knowing what is on the table is the
-job. The way out here is that the fixed sweep already supplies it. The sweep
-assumes nothing, covers the zone, and hands back a coarse map; this solution
-runs on the doubtful entries in that map only. It is the tail of the survey, not
-a replacement for it.
-
-(The other way out is to score unknown volume rather than named objects, which
-works from nothing because at the start everything is unknown. That is what
-exploration planners do. It is the right answer when there is no opening sweep
-to build on. Here there is one, so it is not needed.)
+job. The fixed sweep supplies it: it assumes nothing, covers the zone, and hands
+back a coarse map, and this solution runs on the doubtful entries in that map
+only. It is the tail of the survey, not a replacement for it. (The other way out
+is to score unknown volume rather than named objects, which works from nothing
+because at the start everything is unknown. That is what exploration planners
+do, and it is the right answer where there is no opening sweep to build on.)
 
 **Time.** Seconds of arm motion per extra look, capped at four per run.
 Microseconds of arithmetic per candidate. The arithmetic is free and the arm is
 not, which is the whole reason the ordering is what it is.
 
-## What it is good at
+## Where it is strong and where it breaks
 
-**Merges caused by where the camera happened to be** — which is most of them.
-A merge of this kind is an accident of geometry, and geometry is the one thing
-an arm can change. Changing it costs seconds and no risk.
+**Strong**
 
-**Being auditable.** When the cell says an object had no viewpoint, it can say
-exactly which of three tests each of nine candidates failed, with the numbers.
-Nothing in this solution is unexplainable, and nothing about it changes between
-runs. That makes it the baseline against which any learned viewpoint chooser
-has to justify itself.
+- Fixes merges caused by where the camera stood, and changing where it stands
+  costs seconds and no risk.
+- Auditable: a refusal names which of three tests each of nine candidates
+  failed.
+- Costs nothing when it is not needed, and never invents an answer.
 
-**Degrading honestly.** Every path out of this solution is either a measurement
-or a named reason for not taking one. There is no branch in which it invents an
-answer.
+**Breaks**
 
-**Costing nothing when it is not needed.** On a table where every object has a
-clear line of sight, the filter passes everything, the loop fires zero times,
-and the run is exactly the fixed sweep.
+- Spends arm time, the cell's dearest resource: two looks each for six objects
+  is twelve extra stations, four times the survey.
+- Heavier than needed. The filter alone gets most of the benefit, and the loop
+  wants a better measure of doubt —
+  [solution 5](solution-overview.md#solution-5--a-learned-verifier-over-the-clusters).
+- Occlusion is predicted from the survey's footprint circles, so a mis-measured
+  silhouette sends the arm to a viewpoint that is not clear.
+- Without the per-object cap it thrashes.
+- The planner can refuse every survivor.
+- Some objects have no clear direction at any grid resolution — problem 3's
+  business, not an error.
+- Assumes depth works; real glassware reads badly on a depth camera and leaves
+  no belief to reason about.
 
-## What it is bad at
-
-**It spends the most expensive resource in the cell.** Every extra look is
-seconds of arm time to buy certainty, and the budget section exists because
-that runs out fast. Six objects each wanting two confirming looks is twelve
-extra stations, which is four times the survey and well over the ceiling this
-cell has to stay under.
-
-**It is heavier than the problem strictly needs.** A bounded search with a
-fixed scoring rule — steps 1 to 4 above, with no loop at all — gets most of the
-benefit. The loop earns its place only when there is a measure of doubt good
-enough to fire it selectively, which is why
-[solution 5](solution-overview.md#solution-5--a-learned-verifier-over-the-clusters)
-is the natural thing to add next.
-
-**Its belief can be wrong in a way its score cannot see.** Occlusion is
-predicted from footprint circles that the survey produced. If the survey merged
-two objects into one wide circle, the prediction is made from a fiction: the
-loop picks a viewpoint it believes is clear and finds it is not. The check is
-cheap — take the picture and see whether more than one object is standing up in
-it — but the first attempt is wasted.
-
-**It assumes the depth reading works.** Everything here starts from positions
-and widths that came out of a depth camera. On real glassware, which a depth
-camera reads badly or not at all, there is no belief to reason about. That is a
-statement about this whole family of solutions, not about this one.
-
-## How it fails
-
-**No candidate survives the filter.** The interesting failure, and not really a
-failure.
-
-![No usable viewpoint](../../../images/problem-2/03-no-viewpoint.png)
-
-The left panel is object E from the worked example. Four of its nine directions
-fall outside the annulus, five are blocked, and none survives — so on the grid
-the cell uses, E is handed to problem 3. But look at the ring: there is a 10
-degree stretch of green on it, and the nine directions, sitting 40 degrees
-apart, step straight over it. **E is stranded by the grid, not by the
-geometry.**
-
-That is not an isolated accident. The clear arcs for the five objects in this
-arrangement come to A 34 degrees, B 16, C 110, D 7 and E 10. With nine
-directions 40 degrees apart, the only arc *guaranteed* to be hit is C's. The
-others are hit or missed depending on where the grid happens to fall.
-
-The fix is free, and it is the second benefit of bounding before scoring. The
-filter is arithmetic, so the candidate set can be made as fine as you like:
-seventeen directions, thirty-three, sixty-five. The right panel counts how much
-that buys, over 600 arrangements of four to six objects drawn in the zone at the
-problem's own spacing rule. With 105 mm footprints, going from 9 directions to
-65 takes the share of objects with no usable viewpoint from 45 per cent to 14.
-With 75 mm footprints it goes from 18 per cent to 1. With 45 mm footprints the
-problem has essentially vanished by 17 directions.
-
-Two things follow. First, **most of the 45 per cent is the grid, and refining
-the grid costs nothing but arithmetic** — this is the single cheapest
-improvement available in this solution, and it should be the first thing done.
-Second, it never reaches zero, and the middle panel is why. There, object S
-stands 556 mm out with four neighbours round it, and its ring has **no clear
-direction at all**, at any resolution. No grid helps. Something has to move.
-
-That is the handover to [problem 3](../../problem-3/problem.md), and it is a
-result rather than an error. The right output is the object, the reason, and a
-stop — never an attempt made anyway. This is the same rule the project
-runs on: a refused object is a result, and a fallback that has the arm try
-regardless is how neighbours get knocked over.
-
-**The planner refuses everything that survived.** Rarer, because a pose that is
-in reach and clear is usually plannable, but it happens when the arm is boxed in
-by its own current configuration. Same outcome: report it, hand it on.
-
-**It thrashes.** Without the per-object cap, one doubtful cluster pulls look
-after look and the run never ends. The cap is not an optimisation; it is what
-makes the loop terminate.
-
-**The belief is wrong where the score cannot see it.** Covered above: a merged
-pair modelled as one wide circle predicts its own occlusions wrongly.
-
-**Real glassware removes the belief.** A depth camera reads clear glass badly.
-Everything here starts from depth, so on real glassware there is nothing to
-start from. This is the condition the whole overview is honest about.
-
-## When it would be the right choice
-
-When scoring a viewpoint is cheap next to moving to it, and the doubt has a
-name.
-
-Both halves matter. If scoring were expensive — a learned model over a big
-candidate set, say — the case for enumerating finely would weaken, and the
-arithmetic filter would stop being free. If the doubt had no name — an unknown
-scene, unknown object kinds — a rule that says "prefer the frame holding the
-doubtful object and nothing else" would have nothing to work with, and a
-volumetric information-gain score would earn its weight instead. That is
-exactly what happens at [problem 4](../../problem-4/problem.md), where several
-unknown kinds mean the doubt stops being a short list.
-
-Here, both halves hold. The concrete recommendation is to build it in two
-pieces, because the first is worth more than the second:
-
-1. **The filter, with a fine candidate set.** Reject unreachable and blocked
-   poses before asking the planner anything, and report objects with no
-   viewpoint left. No loop. This is pure safety and pure speed, it is about
-   twenty lines on top of what already exists, and the rate curve above says
-   the fine grid alone takes a large bite out of the handovers to problem 3.
-2. **The extra look**, with a rule for the score and a budget of two per object
-   and four per run. Only once the first piece is running and the report says
-   how often a doubtful cluster actually appears.
+**Right when** a viewpoint is cheap to score and dear to visit, and the doubt
+has a name — both fail at [problem 4](../../problem-4/problem.md), where a
+volumetric score earns its weight. Build the filter with a fine candidate set
+first, about twenty lines; add the loop later. It answers a different
+difficulty from **cluster on the table**, and is the baseline under the three
+solutions that replace only its score.
 
 ## The general methods behind this
 
@@ -725,25 +731,6 @@ with nothing ever erroring.
 - **Rarely wrong**, which is why it is worth stating. The only cost is that the
   feasibility test must itself be cheap — here inverse kinematics at
   milliseconds, before the motion planner at tens of milliseconds.
-
-## Where it sits
-
-This solution answers a different difficulty from **cluster on the table**, and
-the two are chosen together for exactly that reason: clustering separates
-objects that a picture merged, and moving the camera gets a picture worth
-measuring in the first place. Neither substitutes for the other, and **split
-the blob in the picture** substitutes for neither.
-
-It is also the baseline for three solutions that replace only its score.
-**Learned doubt steers the next picture** puts a learned estimate of
-uncertainty where the "which cluster is doubtful" rule sits. **Learn which
-viewpoints pay off** puts a learned prediction where the "which viewpoint is
-best" rule sits. **A learned verifier over the clusters** supplies a better
-measure of doubt to fire the loop with, and is the first of the three worth
-adding. All three inherit the filter unchanged, because the filter is what
-keeps a wrong score cheap — the worst a bad ordering can do is waste one move,
-and that is true only because every candidate it ranks has already passed all
-three tests.
 
 ---
 
