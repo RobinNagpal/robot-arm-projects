@@ -763,13 +763,13 @@ rule you can print.*
 
 A camera that can move is a different instrument from one that cannot, and this
 solution treats it that way. Separating objects and finding a viewpoint are two
-different difficulties: no processing of a picture in which one object stands
-behind another produces the side-on outline the next step needs. So the arm
-goes and stands somewhere better. Three independent tests decide where — a
-clear line of sight, a standoff point inside the 300 to 780 mm reach, and a path
-the arm can fly — and the first two are arithmetic, so they run before the
-motion planner is asked anything. An object with no viewpoint left is not an
-error. It is the handover to problem 3.
+different problems. If one object stands behind another, no amount of processing
+will produce the side-on outline the next step needs. The information was never
+captured. So the arm goes and stands somewhere better. Three separate tests
+decide where: a clear line of sight, a standoff point inside the arm's 300 to
+780 mm working reach, and a path the arm can actually fly. The first two are
+arithmetic, so they run before the motion planner is asked anything. An object
+with no viewpoint left is not an error. It is the handover to problem 3.
 
 **The long version:** [03-move-the-camera.md](03-move-the-camera.md) — this solution explained
 from the beginning, with diagrams.
