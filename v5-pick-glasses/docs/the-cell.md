@@ -37,7 +37,7 @@ height, the camera's height, the rack's pegs: all from the table top.
 The camera is only ever put in two poses, and almost every misunderstanding in
 these documents comes from mixing them up.
 
-| | the survey pose | the side-on pose |
+| | the survey view | the level view |
 |---|---|---|
 | where | 450 mm above the table | 120 mm above the table |
 | looking | straight down | level |
@@ -45,6 +45,12 @@ these documents comes from mixing them up.
 | one pixel covers | 1.62 mm | 1.37 mm |
 | the frame covers | 519 by 390 mm of table | 439 by 329 mm |
 | what it is for | finding everything, roughly | measuring one glass, precisely |
+
+These two have three more beside them — over the rack, down the fingers, and
+the spot the arm waits at. All five are named and drawn in
+[Where the camera stands](#where-the-camera-stands-and-what-each-place-is-called).
+Older documents call these two the *survey pose* and the *side-on pose*; they
+are the same two places.
 
 The 380 mm is **not a constant**. `MEASURE_STANDOFF` fixes only a floor of
 300 mm — nearer than that and a glass fills the frame before it is all in it.
@@ -95,6 +101,89 @@ viewpoints. It means moving the camera costs seconds of arm time. And it means
 the camera's pose is known exactly, from the joint encoders — which is what makes
 [solution 9](problem-2/solutions/09-self-supervised-from-the-arms-own-movement.md)
 possible at all.
+
+## Where the camera stands, and what each place is called
+
+The arm has one camera and it is on the wrist, so a camera position here always
+means a place the arm carries that one camera to. Five places cover the whole
+run. These are their names, and the rest of the documents use them.
+
+![Where the camera is put](../images/the-camera-positions.png)
+
+| name | where it stands | which way it looks | what it is for |
+|---|---|---|---|
+| **the survey view** | over a station in the glass zone, 450 mm up | straight down | what is on the table, and roughly where |
+| **the rack view** | straight over the middle of the rack, 450 mm up | straight down | reading the marker, once, before anything else |
+| **the level view** | 380 mm out from one glass, 120 mm up | level, at the glass | measuring that one glass |
+| **the finger view** | 135 mm back from the glass and 85 mm to one side, at the height of the grip | along the fingers | is the glass between the pads, or beside them |
+| **the parking spot** | 500 mm out from the base, 450 mm up | straight down | where the arm waits with nothing to do |
+
+**The survey view.** The camera is taken up to 450 mm and pointed straight down.
+One picture from there covers 519 by 390 mm of table, but a station takes two
+pictures 120 mm apart and only the part in *both* is worth anything, which
+leaves 424 by 175 mm. The glass zone is 320 by 360 mm, so it takes **three
+stations** in a line to cover it, and the stations overlap.
+
+One honest detail. The 450 mm is where the *tool* is sent. The camera sits
+85 mm to one side of the tool and 15 mm along the way it points, so it is
+actually about 435 mm up and a hand's breadth off to the side. The code does
+not guess this. It reads where the camera really was from the joint angles, and
+that reading is what the pair of pictures is measured against.
+
+**The rack view.** The same height and the same straight-down aim, over the
+middle of the rack instead of over the glasses. It happens once, at the start of
+a run, and all it does is read the ArUco marker. Here the code *does* take the
+85 mm out of the tool's position first, so the camera itself ends up over the
+middle of the rack.
+
+**The level view.** The camera comes down to 120 mm above the table, points
+level, and stands 380 mm back from the glass. This is the view that measures a
+glass, and the view [solution 3](problem-2/solutions/03-move-the-camera.md)
+sends the camera to.
+
+The 380 mm is worked out, not stored. The frame has to reach from the table at
+the bottom to the rim of the tallest glass the cell handles at the top. Both of
+those are angles, so how far back that puts the camera depends on the lens.
+
+The arm can stand anywhere on a circle round the glass, and it is offered
+**nine places on that circle, 40° apart**. The first one it tries is straight in
+from its own base, because that is the shortest reach. It moves on to the next
+if something is standing behind the glass — a glass behind the target joins it
+in the mask and the two measure as one wide glass — or if the pose is too far
+out for the arm to reach.
+
+**The finger view.** This one is not chosen at all. It is wherever the camera
+ends up once the fingers are round the glass: 135 mm back from the glass's axis,
+85 mm off to one side, at whatever height the grip was fixed at. Everything
+before it aimed the fingers from pictures taken half a metre away. This is the
+one look taken from where the fingers actually are, and at this range a
+millimetre on the table is worth many pixels. It is used for one thing only —
+shifting sideways onto the glass before the fingers close.
+
+**The parking spot.** 500 mm out from the base, 450 mm up, looking down. The
+arm goes here when it has finished, and when it has given up on something, so
+that it is out of the way and the next move starts from a known place.
+
+### Naming a place that is not one of these
+
+Some documents talk about cameras this cell does not have: one bolted above the
+table, one standing at the edge looking across. Describe any of them with three
+things, in this order — **the spot, the height, the aim**.
+
+- **The spot** is where on the table it stands over, or beside: *over the middle
+  of the glass zone*, *over the rack*, *at the near edge of the table*, *beside
+  the glass*.
+- **The height** is in millimetres above the table top, because every height in
+  this project is. The landmarks are 0 (table level), 120 (the level view) and
+  450 (the survey view). A fraction is fine when the exact number does not
+  matter: *half the survey height* is 225 mm.
+- **The aim** is *looking down*, *looking level*, *looking at a slant of 30°*,
+  or *looking along the fingers*.
+
+So "a camera at the near edge of the table, at table level, looking level" is
+the fixed side camera some of the solutions weigh up, and "over the middle of
+the glass zone, 450 mm up, looking down" is the survey view written out the
+long way.
 
 ## The words
 

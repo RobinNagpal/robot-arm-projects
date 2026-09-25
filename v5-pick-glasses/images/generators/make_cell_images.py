@@ -11,6 +11,7 @@ and the drawings move with it.
 from __future__ import annotations
 
 import math
+import re
 import sys
 from pathlib import Path
 
@@ -28,14 +29,17 @@ sys.path.insert(0, str(ROOT / "src" / "work_cell"))
 from work_cell.arm.dimensions import (  # noqa: E402
     CAMERA_OFFSET,
     COMFORTABLE_REACH,
+    GRASP_DEPTH,
     GRIPPER_MAX_OPENING,
     LOWEST_GRIP,
+    MEASURE_FRAME_MARGIN,
     MEASURE_STANDOFF,
     MEASURE_VIEW_HEIGHT,
     PAD_HEIGHT,
     PAD_LENGTH,
     SURVEY_BASELINE,
     SURVEY_HEIGHT,
+    survey_stations,
 )
 from work_cell.glasses.shapes import KIND_RANGES, family  # noqa: E402
 from work_cell.rack.layout import (  # noqa: E402
@@ -46,6 +50,7 @@ from work_cell.rack.layout import (  # noqa: E402
     RACK_TOP_Z,
 )
 from work_cell.table.layout import ROBOT_BASE, TABLE_CENTRE_XY, TABLE_SIZE, TABLE_TOP_Z  # noqa: E402
+from work_cell.task import TALLEST_GLASS  # noqa: E402
 
 IMAGES = ROOT / "images"
 INK = "#22272e"
@@ -59,6 +64,48 @@ LABEL = 9
 NOTE = 8.2
 
 MM = 1000.0  # the drawings are in millimetres; the constants are in metres
+
+# The lens, read out of the model the simulator loads rather than typed here.
+_XACRO = (ROOT / "src" / "work_cell" / "work_cell" / "arm" / "camera"
+          / "wrist_camera.urdf.xacro").read_text()
+
+
+def _from_xacro(tag: str) -> float:
+    found = re.search(rf"<{tag}>([0-9.]+)</{tag}>", _XACRO)
+    if found is None:
+        raise SystemExit(f"<{tag}> is no longer in wrist_camera.urdf.xacro")
+    return float(found.group(1))
+
+
+FOV = _from_xacro("horizontal_fov")
+COLUMNS, ROWS = int(_from_xacro("width")), int(_from_xacro("height"))
+
+# One focal length does for both axes: the pixels are square, which is how the
+# simulator builds a camera given a field of view across.
+FX = (COLUMNS / 2.0) / math.tan(FOV / 2.0)
+
+# How far back the arm stands to measure a glass, worked out the way task.py
+# works it out: the frame has to reach from the table up to the rim of the
+# tallest glass the cell handles, and how far back that puts the camera is a
+# question about the lens.
+_HALF_FRAME = (ROWS / 2.0) / FX
+STANDOFF = max(
+    MEASURE_STANDOFF,
+    max(MEASURE_VIEW_HEIGHT, TALLEST_GLASS - MEASURE_VIEW_HEIGHT)
+    / (_HALF_FRAME * MEASURE_FRAME_MARGIN),
+)
+
+# What one survey picture covers, and how much of it both pictures of a
+# station share — the second is what the stations are spread on.
+FOOTPRINT = (SURVEY_HEIGHT * COLUMNS / FX, SURVEY_HEIGHT * ROWS / FX)
+SHARED = (FOOTPRINT[0] - GRIPPER_MAX_OPENING,
+          FOOTPRINT[1] - SURVEY_BASELINE - GRIPPER_MAX_OPENING)
+
+# Where the camera ends up when the fingers are round a glass: the tool stops
+# GRASP_DEPTH short of the glass's axis and the camera sits CAMERA_OFFSET from
+# the tool, a little further along the approach and well off to one side.
+FINGER_BACK = GRASP_DEPTH - CAMERA_OFFSET[2]
+FINGER_ASIDE = CAMERA_OFFSET[0]
 
 
 def save(figure, name: str) -> None:
@@ -202,7 +249,7 @@ def cell_from_the_side() -> None:
     for dx in (-SURVEY_BASELINE * MM / 2, SURVEY_BASELINE * MM / 2):
         axis.plot([300 + dx], [sy], "o", color=MUTED, ms=5)
     axis.plot([300], [sy], "o", color=INK, ms=8)
-    axis.text(300, sy + 34, "the survey pose — straight down", fontsize=NOTE,
+    axis.text(300, sy + 34, "the survey view — straight down", fontsize=NOTE,
               color=INK, ha="center")
     span(axis, 300 - SURVEY_BASELINE * MM / 2, sy - 30,
          300 + SURVEY_BASELINE * MM / 2, sy - 30, "", MUTED)
@@ -211,24 +258,24 @@ def cell_from_the_side() -> None:
 
     # The side-on pose, level.
     my = MEASURE_VIEW_HEIGHT * MM
-    cam_x = 470 - 380
+    cam_x = 470 - STANDOFF * MM
     axis.plot([cam_x, 470 + 46], [my, my], color=WARN, lw=0.8, ls=(0, (4, 3)))
     axis.plot([cam_x], [my], "o", color=WARN, ms=8)
-    axis.text(cam_x - 34, my, "the side-on pose,\nlevel", fontsize=NOTE,
+    axis.text(cam_x - 34, my, "the level view,\nlevel", fontsize=NOTE,
               color=WARN, ha="right", va="center")
 
     span(axis, 830, 0, 830, sy, f"{SURVEY_HEIGHT * MM:.0f} mm", INK, (62, 0))
     span(axis, cam_x + 46, 0, cam_x + 46, my, f"{MEASURE_VIEW_HEIGHT * MM:.0f} mm", WARN, (52, 0))
-    span(axis, cam_x, -thick - 44, 470, -thick - 44, "380 mm", WARN, (0, -22))
+    span(axis, cam_x, -thick - 44, 470, -thick - 44, f"{STANDOFF * MM:.0f} mm", WARN, (0, -22))
 
     axis.set_xlim(x0 - 190, x1 + 120)
     axis.set_ylim(-thick - 110, sy + 90)
-    axis.set_title("The cell from the side — the two poses the camera is ever put in",
+    axis.set_title("The cell from the side — the two places the camera works from",
                    fontsize=TITLE, color=INK, pad=12)
     figure.text(0.5, 0.015,
                 f"The table top is {TABLE_TOP_Z * MM:.0f} mm above the floor, and the arm is bolted to "
                 "it, so every height here is measured from the table rather than the ground. "
-                "The side-on distance is worked out from the lens, not fixed.",
+                "The level view's distance is worked out from the lens, not fixed.",
                 fontsize=NOTE, color=INK, ha="center")
     save(figure, "cell-from-the-side.png")
 
@@ -507,9 +554,125 @@ def splay_what_it_costs() -> None:
     save(figure, "splay-what-it-costs.png")
 
 
+def _eye(axis, x, y, dx, dy, colour, size=7.5):
+    """A camera, drawn as a dot with an arrow for the way it looks."""
+    axis.plot([x], [y], "o", color=colour, ms=size, zorder=4)
+    axis.annotate("", xy=(x + dx, y + dy), xytext=(x, y),
+                  arrowprops={"arrowstyle": "-|>", "color": colour, "lw": 1.3},
+                  zorder=4)
+
+
+def camera_positions() -> None:
+    """The five places the camera is ever put, named, in plan and elevation."""
+    figure, (plan, side) = plt.subplots(1, 2, figsize=(13.8, 6.6))
+    figure.patch.set_facecolor(PAPER)
+    for a in (plan, side):
+        a.set_facecolor(PAPER)
+        bare(a)
+        a.set_aspect("equal")
+
+    # ------------------------------------------------ left: where on the table
+    gx0, gx1, gy0, gy1 = (v * MM for v in GLASS_ZONE)
+    plan.add_patch(Rectangle((gx0, gy0), gx1 - gx0, gy1 - gy0,
+                             facecolor=GLASS, alpha=0.10, edgecolor=GLASS, lw=1.0))
+    plan.text(gx1 + 8, gy0 + 8, "the glass zone", fontsize=NOTE, color=GLASS,
+              ha="left", va="bottom")
+
+    rx0, rx1, ry0, ry1 = (v * MM for v in RACK_AREA)
+    plan.add_patch(Rectangle((rx0, ry0), rx1 - rx0, ry1 - ry0,
+                             facecolor=WARN, alpha=0.25, edgecolor=WARN, lw=1.0))
+    plan.text(rx1 + 14, (ry0 + ry1) / 2, "the rack view\nis straight over here",
+              fontsize=NOTE, color=WARN, ha="left", va="center")
+
+    plan.add_patch(Circle((0, 0), 28, facecolor=INK, edgecolor="none"))
+    plan.text(-40, 0, "the arm's\nbase", fontsize=NOTE, color=INK, ha="right", va="center")
+
+    stations = survey_stations(GLASS_ZONE, SHARED)
+    for station in stations:
+        plan.plot([station[0] * MM], [station[1] * MM], "s", color=INK, ms=6, zorder=5)
+    plan.text(stations[-1][0] * MM, stations[-1][1] * MM + 18,
+              f"{len(stations)} stations — the survey\nview is taken over each",
+              fontsize=NOTE, color=INK, ha="center", va="bottom")
+
+    park = np.array([0.5 * MM, 0.0])
+    plan.plot([park[0]], [park[1]], "o", markerfacecolor=PAPER, markeredgecolor=INK,
+              markeredgewidth=1.4, ms=9, zorder=5)
+    plan.text(park[0] + 18, park[1], "the parking spot", fontsize=NOTE,
+              color=INK, ha="left", va="center")
+
+    # The ring: every place the camera may stand to take a level view of one
+    # glass, 40 degrees apart, the way task.py offers them.
+    glass = np.array([(gx0 + gx1) / 2.0 + 70.0, (gy0 + gy1) / 2.0 + 80.0])
+    plan.add_patch(Circle(glass, 34, facecolor=_tint(GLASS, 0.5), edgecolor=GLASS, lw=1.3))
+    toward_base = math.atan2(-glass[1], -glass[0])
+    near, far = (v * MM for v in COMFORTABLE_REACH)
+    for step in range(-4, 5):
+        angle = toward_base + step * math.radians(40.0)
+        eye = glass + STANDOFF * MM * np.array([math.cos(angle), math.sin(angle)])
+        reachable = near <= float(np.linalg.norm(eye)) <= far
+        colour = WARN if step == 0 else (MUTED if reachable else "#dde1e4")
+        plan.plot([eye[0], glass[0]], [eye[1], glass[1]], color=colour, lw=0.8,
+                  ls=(0, (4, 4)), alpha=0.55 if step else 0.9)
+        _eye(plan, eye[0], eye[1], (glass[0] - eye[0]) * 0.13, (glass[1] - eye[1]) * 0.13,
+             colour, size=9 if step == 0 else 5.5)
+    plan.set_xlim(-150, 950)
+    plan.set_ylim(-700, 430)
+    plan.text(glass[0], glass[1] - STANDOFF * MM - 40,
+              "the level view is taken from one of nine places round the glass,\n"
+              "40° apart — orange is the one tried first, straight in from the base.\n"
+              "The pale ones are too far out for the arm to reach.",
+              fontsize=NOTE, color=INK, ha="center", va="top")
+    plan.set_title("Where over the table", fontsize=LABEL, color=INK, pad=8)
+
+    # ------------------------------------- right: how high, and which way it looks
+    gx = 430.0
+    side.plot([-80, 600], [0, 0], color=MUTED, lw=1.4)
+    side.text(598, 8, "the table", fontsize=NOTE, color=MUTED, ha="right", va="bottom")
+    z = np.asarray(SPLAY_GLASS.height) * MM
+    r = np.asarray(SPLAY_GLASS.radius) * MM
+    side.fill_betweenx(z, gx - r, gx + r, color=_tint(GLASS, 0.30), lw=0)
+    side.plot(gx + r, z, color=GLASS, lw=1.2)
+    side.plot(gx - r, z, color=GLASS, lw=1.2)
+
+    survey_y = SURVEY_HEIGHT * MM
+    side.plot([gx, gx], [0, survey_y], color=MUTED, lw=0.8, ls=(0, (5, 5)))
+    _eye(side, gx, survey_y, 0, -96, INK)
+    side.text(gx + 16, survey_y, "the survey view\n450 mm up, looking straight down",
+              fontsize=NOTE, color=INK, ha="left", va="center")
+
+    level_y = MEASURE_VIEW_HEIGHT * MM
+    level_x = gx - STANDOFF * MM
+    _eye(side, level_x, level_y, 96, 0, WARN)
+    side.text(level_x, level_y + 26, "the level view\n120 mm up, looking level",
+              fontsize=NOTE, color=WARN, ha="left", va="bottom")
+    span(side, level_x, -40, gx, -40, f"{STANDOFF * MM:.0f} mm", WARN, (0, -20))
+
+    finger_x = gx - FINGER_BACK * MM
+    finger_y = LOWEST_GRIP * MM
+    _eye(side, finger_x, finger_y, 54, 0, GOOD)
+    side.text(finger_x - 10, finger_y + 12,
+              f"the finger view\n{FINGER_BACK * MM:.0f} mm back, "
+              f"{FINGER_ASIDE * MM:.0f} mm to one side,\nat whatever height the grip is",
+              fontsize=NOTE, color=GOOD, ha="right", va="bottom")
+
+    span(side, gx - 54, 0, gx - 54, survey_y, f"{survey_y:.0f} mm", INK, (-46, 0))
+    span(side, level_x - 46, 0, level_x - 46, level_y, f"{level_y:.0f} mm", WARN, (-40, 0))
+    side.set_xlim(-130, 640)
+    side.set_ylim(-110, survey_y + 80)
+    side.set_title("How high, and which way it looks", fontsize=LABEL, color=INK, pad=8)
+
+    figure.text(0.5, 0.018,
+                "Every one of these is the wrist camera. The arm has only the one, and these are "
+                "the places it takes it to.",
+                fontsize=NOTE, color=INK, ha="center")
+    figure.tight_layout(rect=(0, 0.075, 1, 1))
+    save(figure, "the-camera-positions.png")
+
+
 def main() -> None:
     cell_from_above()
     cell_from_the_side()
+    camera_positions()
     splay_why_it_happens()
     splay_what_it_costs()
     the_sensors()
