@@ -499,13 +499,15 @@ Not in the survey, because there the case does not arise.
 *Programmed. Stop deciding which pixels go together by looking at the
 picture. Decide it by looking at where they are in the room.*
 
-Every pixel in a depth picture can be turned into a point in the room: the
-pixel gives a direction, the depth gives how far along it, and the camera's
-pose says where it starts. Once the pixels are points, "which object is this?"
-becomes a question about distance on the table rather than about the picture.
-Flatten the points onto the table, group them by distance, fit a circle to each
-group, and check that circle against what the kind can be. Two objects that
-overlap in a photograph are still 150 mm apart in the room.
+A depth camera gives a distance for every pixel. That is enough to turn each
+pixel into a point in the room: the pixel tells you the direction, the depth
+tells you how far along that direction to go, and the camera's pose tells you
+where the direction starts. Once the pixels are points, the question "which
+glass is this?" stops being about the picture and becomes about distance on the
+table. So we flatten the points down onto the table, group the ones that are
+close together, fit a circle to each group, and check that circle against the
+sizes this kind of glass can be. Two glasses that touch in a photograph are
+still 150 mm apart in the room.
 
 **The long version:** [02-cluster-on-the-table.md](02-cluster-on-the-table.md) — this solution explained
 from the beginning, with diagrams.
