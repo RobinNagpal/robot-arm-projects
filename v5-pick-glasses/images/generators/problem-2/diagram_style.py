@@ -21,7 +21,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
-IMAGES = Path(__file__).resolve().parents[2] / "images" / "problem-2"
+IMAGES = Path(__file__).resolve().parents[3] / "images" / "problem-2"
 
 # The palette the rest of the project's diagrams use.
 INK = "#22272e"      # text, and anything structural

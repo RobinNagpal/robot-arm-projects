@@ -22,7 +22,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 from matplotlib.patches import Circle, FancyArrowPatch, Rectangle  # noqa: E402
 
-IMAGES = Path(__file__).resolve().parent.parent / "images"
+IMAGES = Path(__file__).resolve().parents[2] / "images"
 
 INK = "#22272e"
 MUTED = "#8b949e"
