@@ -1,712 +1,787 @@
 """Diagrams for solution 1 — split the blob in the picture.
 
-Every mask, distance transform, marker set, watershed and GrabCut result drawn
-here is computed by OpenCV on a real 320x240 mask, at the survey scale of
-1.6 mm per pixel. Nothing is hand-drawn to look convincing, so the numbers
-printed on the pictures are the numbers the method actually produces.
+Every silhouette drawn here is a real projection of one of the project's own
+glass outlines, taken from ``work_cell.glasses.shapes``, through the cell's own
+camera. Nothing is a circle drawn to look convincing: a standing glass is a
+circle only in its footprint, which no camera in this cell ever sees straight
+on, and drawing it as one is what the first version of these pictures got
+wrong.
 
     pixi run python images/generators/problem-2/make_01_images.py
 """
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
 import cv2
 import numpy as np
 from diagram_style import GLASS, GOOD, INK, LABEL_SIZE, MUTED, NOTE_SIZE, WARN, bare, new, save
 from matplotlib.colors import to_rgba
-from matplotlib.patches import Arc, Circle, Rectangle
+from matplotlib.patches import Circle, Rectangle
 
-# The cell, in the numbers problem 2 uses.
-MM_PER_PX = 1.6        # survey height 450 mm: 520 mm of table across 320 pixels
-FX = 277.1             # pixels, the camera's focal length
-WIDEST_MM = 105.0      # the widest footprint the known kind can have
-R_PX = 33              # 105 mm across is 66 pixels, so 33 pixels of radius
-FRAME = (240, 320)
-CENTRE = (160, 120)    # column, row
-MARKER_FRACTION = 0.7  # markers are the pixels deeper than this much of the peak
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src" / "work_cell"))
 
-# Where the two silhouettes land in the worked example, and in the failure.
-SPLIT_APART = 50
-SPLIT_CLOSE = 20
+from work_cell.glasses.shapes import family  # noqa: E402
 
-# The crop every picture of the blob uses, so they can be read side by side.
-CROP = (86, 234, 60, 180)   # left, right, top, bottom in pixels
-CROP_W = CROP[1] - CROP[0]
-CROP_H = CROP[3] - CROP[2]
-MID_ROW = CENTRE[1] - CROP[2]
-MID_COL = CENTRE[0] - CROP[0]
+# ---------------------------------------------------------------------------
+# The cell, in its own numbers.
+# ---------------------------------------------------------------------------
+FX = 277.1                 # pixels; the camera's focal length
+FRAME_W, FRAME_H = 320, 240
+SURVEY_H = 450.0           # mm above the table, looking straight down
+VIEW_HEIGHT = 120.0        # mm above the table, looking level (MEASURE_VIEW_HEIGHT)
+STANDOFF = 380.0           # mm from the near glass, derived in solution 3
+BEHIND = 180.0             # mm further away the second glass stands
+LATERAL = 60.0             # mm to one side
+MIN_APART = 150.0          # mm, the closest two glasses ever stand in problem 2
+
+# One kind, drawn from the project's own range, used in every picture.
+GLASS_OUTLINE, _ = family("tapered_glass", 6, 1)[1]
+STEMMED, _ = family("stemmed_glass", 6, 1)[1]
 
 
-def two_discs(separation: int, radius: int = R_PX) -> np.ndarray:
-    """A mask with two circular footprints whose centres are `separation` pixels apart."""
-    mask = np.zeros(FRAME, np.uint8)
-    column, row = CENTRE
-    cv2.circle(mask, (column - separation // 2, row), radius, 255, -1)
-    cv2.circle(mask, (column + separation // 2, row), radius, 255, -1)
+def profile(outline) -> tuple[np.ndarray, np.ndarray]:
+    """Heights and radii in millimetres."""
+    return np.asarray(outline.height) * 1000.0, np.asarray(outline.radius) * 1000.0
+
+
+def size(outline) -> tuple[float, float, float]:
+    """Height, base diameter, widest diameter — all in millimetres."""
+    z, r = profile(outline)
+    return z.max(), r[z < z.min() + 0.004].max() * 2, r.max() * 2
+
+
+# ---------------------------------------------------------------------------
+# The two views, projected properly.
+# ---------------------------------------------------------------------------
+def topdown(glasses, width=FRAME_W, height=FRAME_H, cx=None, cy=None) -> np.ndarray:
+    """Straight down from SURVEY_H. A horizontal circle stays a circle, but it
+    grows and slides outward as it rises, so a glass images as a teardrop."""
+    mask = np.zeros((height, width), np.uint8)
+    cx = width / 2 if cx is None else cx
+    cy = height / 2 if cy is None else cy
+    for gx, gy, outline in glasses:
+        z, r = profile(outline)
+        for zi, ri in zip(z, r, strict=True):
+            away = SURVEY_H - zi
+            if away <= 1:
+                continue
+            cv2.circle(
+                mask,
+                (int(round(cx + FX * gx / away)), int(round(cy + FX * gy / away))),
+                max(1, int(round(FX * ri / away))), 255, -1,
+            )
     return mask
 
 
-def distance(mask: np.ndarray) -> np.ndarray:
-    """For every yes pixel, how far to the nearest no pixel."""
-    return cv2.distanceTransform(mask, cv2.DIST_L2, 5)
+def sideon(glasses, width=FRAME_W, height=FRAME_H, horizon=None) -> np.ndarray:
+    """Level, from VIEW_HEIGHT. A horizontal circle seen edge-on is a line, so
+    the silhouette is the band between the left and right walls of the profile."""
+    mask = np.zeros((height, width), np.uint8)
+    cx = width / 2
+    horizon = height * 0.30 if horizon is None else horizon
+    for gx, gy, outline in glasses:
+        z, r = profile(outline)
+        for zi, ri in zip(z, r, strict=True):
+            row = int(round(horizon - FX * (zi - VIEW_HEIGHT) / gy))
+            left = int(round(cx + FX * (gx - ri) / gy))
+            right = int(round(cx + FX * (gx + ri) / gy))
+            if 0 <= row < height:
+                cv2.line(mask, (max(0, left), row), (min(width - 1, right), row), 255, 1)
+    return mask
 
 
-def markers_from_distance(field: np.ndarray, fraction: float = MARKER_FRACTION) -> np.ndarray:
-    """The deep pixels, which is where the flooding is allowed to start."""
-    return (field > fraction * field.max()).astype(np.uint8)
+# ---------------------------------------------------------------------------
+# The method, and the one it replaces.
+# ---------------------------------------------------------------------------
+def bottom_edge(mask: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """For every lit column, the lowest lit row — the underside of the blob."""
+    columns = np.where(mask.any(axis=0))[0]
+    rows = np.array([mask.shape[0] - 1 - np.argmax(mask[::-1, c] > 0) for c in columns])
+    return columns, rows
 
 
-def flood(mask: np.ndarray, seeds: np.ndarray) -> np.ndarray:
-    """Watershed: rise from every seed at once, build a wall where two floods meet."""
-    _, labels = cv2.connectedComponents(seeds)
-    labels = labels + 1                        # 1 becomes the background label
-    labels[(mask > 0) & (seeds == 0)] = 0      # 0 means "nobody has claimed this yet"
-    return cv2.watershed(cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR), labels.astype(np.int32))
+def contact_runs(mask: np.ndarray, flat: int = 1, shortest: int = 5) -> list[tuple[int, int, float]]:
+    """Stretches of the underside that are level: where something stands on the table.
+
+    A glass has exactly one, at its base. Two glasses at different distances
+    have two, at different heights in the picture, because the camera looks
+    level from above the table top.
+    """
+    columns, rows = bottom_edge(mask)
+    runs: list[tuple[int, int, float]] = []
+    start = 0
+    for i in range(1, len(rows) + 1):
+        if i == len(rows) or abs(int(rows[i]) - int(rows[start])) > flat:
+            if i - start >= shortest:
+                runs.append((int(columns[start]), int(columns[i - 1]), float(np.median(rows[start:i]))))
+            start = i
+    return runs
 
 
-def crop(image: np.ndarray) -> np.ndarray:
-    left, right, top, bottom = CROP
-    return image[top:bottom, left:right]
+def split_by_contact(mask: np.ndarray, least_gap: int = 8) -> list[tuple[int, int, float]]:
+    """The runs, if two of them sit far enough apart to be two glasses."""
+    runs = contact_runs(mask)
+    if len(runs) < 2:
+        return []
+    heights = sorted(run[2] for run in runs)
+    return runs if heights[-1] - heights[0] >= least_gap else []
 
 
+def watershed_regions(mask: np.ndarray, fraction: float = 0.7) -> tuple[np.ndarray, int, np.ndarray]:
+    """The method this solution used to use: markers from the distance transform."""
+    field = cv2.distanceTransform(mask, cv2.DIST_L2, 5)
+    seeds = (field > fraction * field.max()).astype(np.uint8)
+    count, labels = cv2.connectedComponents(seeds)
+    if count - 1 < 2:
+        return field, count - 1, seeds
+    labels = labels + 1
+    labels[(mask > 0) & (seeds == 0)] = 0
+    cv2.watershed(cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR), labels.astype(np.int32))
+    return field, count - 1, seeds
+
+
+# ---------------------------------------------------------------------------
+# Drawing helpers.
+# ---------------------------------------------------------------------------
 def paint(axis, region: np.ndarray, colour: str, alpha: float = 1.0) -> None:
-    """Fill the true pixels of `region` with one colour and leave the rest clear."""
     rgba = np.zeros((*region.shape, 4), float)
     rgba[region] = to_rgba(colour, alpha)
     axis.imshow(rgba, interpolation="nearest")
 
 
-def outline(axis, mask: np.ndarray, colour: str = INK, width: float = 1.4) -> None:
+def outline_of(axis, mask: np.ndarray, colour: str = INK, width: float = 1.3) -> None:
     axis.contour(mask.astype(float), [0.5], colors=[colour], linewidths=width)
 
 
 def stage(axis, title: str) -> None:
-    """A panel holding a drawing: no ticks, no frame, pinned to the top of its box."""
     bare(axis)
     axis.set_anchor("N")
-    axis.set_title(title, fontsize=LABEL_SIZE, color=INK, pad=8)
+    axis.set_title(title, fontsize=LABEL_SIZE, color=INK, pad=7)
 
 
 def plot_frame(axis, title: str, xlabel: str, ylabel: str) -> None:
-    """A panel holding a plot: two spines, small grey ticks."""
-    axis.set_title(title, fontsize=LABEL_SIZE, color=INK, pad=8)
+    axis.set_title(title, fontsize=LABEL_SIZE, color=INK, pad=7)
     axis.set_xlabel(xlabel, fontsize=NOTE_SIZE, color=INK)
     axis.set_ylabel(ylabel, fontsize=NOTE_SIZE, color=INK)
-    axis.tick_params(labelsize=NOTE_SIZE - 0.6, colors=MUTED)
+    axis.tick_params(labelsize=NOTE_SIZE - 0.8, colors=MUTED)
     for side in ("top", "right"):
         axis.spines[side].set_visible(False)
     for side in ("left", "bottom"):
         axis.spines[side].set_color(MUTED)
 
 
-def note(axis, x: float, y: float, text: str, colour: str = MUTED, **kwargs) -> None:
+def note(axis, x, y, text, colour=MUTED, **kwargs) -> None:
     axis.text(x, y, text, fontsize=NOTE_SIZE, color=colour, ha="center", **kwargs)
 
 
 def footer(figure, text: str) -> None:
-    figure.text(0.5, 0.02, text, fontsize=NOTE_SIZE, color=INK, ha="center")
+    figure.text(0.5, 0.015, text, fontsize=NOTE_SIZE, color=INK, ha="center")
 
 
-# --------------------------------------------------------------------------
-# 1. The problem: one patch of pixels, two objects.
-# --------------------------------------------------------------------------
-def picture_one_blob() -> None:
-    mask = two_discs(SPLIT_APART)
-    cut = crop(mask) > 0
-    columns = np.where(mask.any(axis=0))[0]
-    rows = np.where(mask.any(axis=1))[0]
-    wide = columns[-1] - columns[0] + 1
-    tall = rows[-1] - rows[0] + 1
-    count, _ = cv2.connectedComponents(mask)
-    left_edge, _, top_edge, _ = CROP
+def tight(mask: np.ndarray, pad: int = 8) -> tuple[int, int, int, int]:
+    x, y, w, h = cv2.boundingRect(mask)
+    return x - pad, x + w + pad, y - pad, y + h + pad
 
-    figure, axes = new(10.6, 4.2, columns=2)
-    truth, found = axes
-    for axis in axes:
-        stage(axis, "")
-        axis.set_aspect("equal")
-        axis.set_xlim(0, CROP_W)
-        axis.set_ylim(CROP_H, 0)
 
-    stage(truth, "What is on the table")
+# ---------------------------------------------------------------------------
+# 1. Where the overlap actually is — the picture that answers the question.
+# ---------------------------------------------------------------------------
+def picture_where_the_overlap_is() -> None:
+    height, base, widest = size(GLASS_OUTLINE)
+    figure, axes = new(13.2, 5.0, columns=3)
+    table, survey, level = axes
+
+    stage(table, "On the table, from above")
+    table.set_aspect("equal")
+    table.set_xlim(-170, 170)
+    table.set_ylim(-120, 120)
     for sign, name in ((-1, "glass A"), (+1, "glass B")):
-        centre = (MID_COL + sign * SPLIT_APART // 2, MID_ROW)
-        truth.add_patch(Circle(centre, R_PX, facecolor=to_rgba(GLASS, 0.30), edgecolor=GLASS, lw=1.6))
-        truth.text(centre[0], centre[1] - 4, name, fontsize=NOTE_SIZE, color=INK, ha="center")
-    left = MID_COL - SPLIT_APART // 2
-    right = MID_COL + SPLIT_APART // 2
-    truth.annotate(
-        "", xy=(left, MID_ROW + 6), xytext=(right, MID_ROW + 6),
-        arrowprops={"arrowstyle": "<->", "color": INK, "lw": 1.0},
-    )
-    note(
-        truth, MID_COL, MID_ROW + 20,
-        f"centres {SPLIT_APART} px = {SPLIT_APART * MM_PER_PX:.0f} mm apart", INK,
-    )
-    note(truth, MID_COL, CROP_H - 5, "two footprints, each 66 px = 105 mm across")
+        table.add_patch(Circle((sign * MIN_APART / 2, 0), base / 2,
+                               facecolor=to_rgba(GLASS, 0.30), edgecolor=GLASS, lw=1.6))
+        table.text(sign * MIN_APART / 2, -base / 2 - 16, name,
+                   fontsize=NOTE_SIZE, color=INK, ha="center")
+    table.annotate("", xy=(-MIN_APART / 2, 26), xytext=(MIN_APART / 2, 26),
+                   arrowprops={"arrowstyle": "<->", "color": INK, "lw": 1.0})
+    note(table, 0, 38, f"{MIN_APART:.0f} mm — the closest they ever stand", INK)
+    note(table, 0, -100, f"footprints {base:.0f} mm across: a clear {MIN_APART - base:.0f} mm between them")
 
-    stage(found, "What connected components returns")
-    paint(found, cut, MUTED, 0.55)
-    outline(found, cut)
-    found.add_patch(Rectangle(
-        (columns[0] - left_edge, rows[0] - top_edge), wide, tall,
-        fill=False, edgecolor=WARN, lw=1.5, linestyle=(0, (4, 3)),
-    ))
-    note(
-        found, MID_COL, rows[0] - top_edge - 6,
-        f"{wide} x {tall} px = {wide * MM_PER_PX:.0f} x {tall * MM_PER_PX:.0f} mm", WARN,
-    )
-    note(found, MID_COL, MID_ROW + 2, f"{count - 1} label", INK)
-    note(
-        found, MID_COL, CROP_H - 5,
-        f"{wide * MM_PER_PX:.0f} mm long, and no glass of this kind exceeds {WIDEST_MM:.0f} mm",
-    )
+    # Off to one side of the point under the camera, which is where a glass
+    # actually stands in a survey picture and where the teardrop is visible.
+    near_x, far_x = 90.0, 90.0 + MIN_APART
+    both_in = topdown([(near_x, 0, GLASS_OUTLINE), (far_x, 0, GLASS_OUTLINE)],
+                      width=620, height=300, cx=40, cy=150)
+    blobs, _ = cv2.connectedComponents(both_in)
+    stage(survey, "The survey picture — straight down")
+    paint(survey, both_in > 0, GLASS, 0.45)
+    outline_of(survey, both_in > 0)
+    left, right, top, bottom = tight(both_in, 22)
+    survey.set_xlim(left, right)
+    survey.set_ylim(bottom + 44, top - 16)
+    note(survey, (left + right) / 2, top - 6, f"{blobs - 1} patches — still two", GOOD)
+    note(survey, (left + right) / 2, bottom + 34,
+         "each one a teardrop, leaning away from\nthe point under the camera — but clear of each other")
 
-    footer(
-        figure,
-        "Connected components answers one question — are these pixels joined? They are. It never asks "
-        "how wide the patch is, so the mistake is not in the answer, it is in the question.",
-    )
-    figure.subplots_adjust(bottom=0.14, top=0.90, wspace=0.05)
-    save(figure, "01-one-blob-two-glasses.png")
+    merged = sideon([(0, STANDOFF, GLASS_OUTLINE), (LATERAL, STANDOFF + BEHIND, GLASS_OUTLINE)],
+                    width=300, height=210, horizon=64)
+    near_only = sideon([(0, STANDOFF, GLASS_OUTLINE)], width=300, height=210, horizon=64)
+    count, _ = cv2.connectedComponents(merged)
+    stage(level, "The level picture — from the side")
+    paint(level, merged > 0, GLASS, 0.22)
+    paint(level, near_only > 0, GLASS, 0.45)
+    outline_of(level, merged > 0)
+    left, right, top, bottom = tight(merged, 26)
+    level.set_xlim(left, right)
+    level.set_ylim(bottom + 26, top - 14)
+    note(level, (left + right) / 2, top - 4, f"{count - 1} patch — one blob", WARN)
+    note(level, (left + right) / 2, bottom + 18,
+         "the near glass (solid) stands in front of\nthe far one (pale), and the outlines join")
+
+    footer(figure,
+           "Two solid glasses cannot overlap on the table, and from straight above they do not overlap in "
+           "the " "picture either. The merging happens in the level view, and that is the only view this "
+           "solution is about.")
+    figure.subplots_adjust(bottom=0.16, top=0.88, wspace=0.12)
+    save(figure, "01-where-the-overlap-is.png")
 
 
-# --------------------------------------------------------------------------
-# 2. The distance transform, built up from one pixel to a landscape.
-# --------------------------------------------------------------------------
-def picture_distance_transform() -> None:
-    mask = two_discs(SPLIT_APART)
-    field = distance(mask)
-    cut_mask = crop(mask) > 0
-    cut_field = crop(field)
-    peak = field.max()
-    waist = float(cut_field[:, MID_COL].max())
+# ---------------------------------------------------------------------------
+# 2. Why the survey cannot produce the case at all.
+# ---------------------------------------------------------------------------
+def picture_the_survey_cannot() -> None:
+    height, base, widest = size(GLASS_OUTLINE)
+    figure, axes = new(12.4, 4.4, columns=2)
+    shrink, counted = axes
 
-    figure, axes = new(13.4, 4.6, columns=3)
-    one, whole, upside = axes
+    plot_frame(shrink, "How much table one survey picture holds, by height above it",
+               "height above the table (mm)", "half-width of the frame (mm)")
+    zs = np.linspace(0, 240, 200)
+    half = (FRAME_W / 2) * (SURVEY_H - zs) / FX
+    shrink.plot(zs, half, color=GLASS, lw=2.0)
+    shrink.axhline(MIN_APART / 2 + widest / 2, color=MUTED, lw=1.0, ls=(0, (4, 3)))
+    shrink.text(6, MIN_APART / 2 + widest / 2 + 5,
+                f"what two glasses {MIN_APART:.0f} mm apart need: {MIN_APART / 2 + widest / 2:.0f} mm",
+                fontsize=NOTE_SIZE, color=MUTED)
+    for z, label in ((0.0, "the table"), (height, f"the rim, {height:.0f} mm up")):
+        y = (FRAME_W / 2) * (SURVEY_H - z) / FX
+        shrink.plot([z], [y], "o", color=INK, ms=5)
+        shrink.annotate(f"{label}\n{y:.0f} mm", xy=(z, y), xytext=(z + 16, y + 14),
+                        fontsize=NOTE_SIZE, color=INK,
+                        arrowprops={"arrowstyle": "-", "color": MUTED, "lw": 0.8})
+    shrink.set_ylim(0, 290)
 
-    # (a) the definition, on four pixels.
-    stage(one, "For each yes pixel: how far to the nearest no pixel")
-    paint(one, cut_mask, GLASS, 0.16)
-    outline(one, cut_mask, GLASS)
-    background = np.argwhere(crop(mask) == 0)
-    samples = (
-        (MID_ROW, MID_COL - 55, (-9, 0), "right"),
-        (MID_ROW, MID_COL - 25, (0, -7), "center"),
-        (MID_ROW - 14, MID_COL + 25, (9, -2), "left"),
-        (MID_ROW, MID_COL, (0, 10), "center"),
-    )
-    for row, column, (dx, dy), align in samples:
-        gaps = background - np.array([row, column])
-        nearest = background[np.argmin((gaps ** 2).sum(axis=1))]
-        one.plot([column], [row], "o", color=INK, ms=3.6)
-        one.annotate(
-            "", xy=(nearest[1], nearest[0]), xytext=(column, row),
-            arrowprops={"arrowstyle": "->", "color": INK, "lw": 0.9},
-        )
-        one.text(
-            column + dx, row + dy, f"{cut_field[row, column]:.0f}",
-            fontsize=NOTE_SIZE, color=INK, ha=align, va="center",
-        )
-    note(one, MID_COL, CROP_H - 5, "one number per pixel, and nothing else")
+    stage(counted, "Every legal pair, in one 320x240 survey frame")
+    counted.set_xlim(0, 10)
+    counted.set_ylim(0, 10)
+    counted.add_patch(Rectangle((0.6, 5.6), 8.8, 3.0, facecolor=to_rgba(GOOD, 0.14),
+                                edgecolor=GOOD, lw=1.4))
+    counted.text(5.0, 7.7, "both glasses wholly inside the frame", fontsize=NOTE_SIZE + 0.6,
+                 color=INK, ha="center")
+    counted.text(5.0, 6.4, "4320 arrangements tried,  24 qualify", fontsize=LABEL_SIZE + 1,
+                 color=INK, ha="center")
+    counted.add_patch(Rectangle((0.6, 1.9), 8.8, 2.9, facecolor=to_rgba(WARN, 0.10),
+                                edgecolor=WARN, lw=1.4))
+    counted.text(5.0, 3.9, "of those 24, how many merge into one patch", fontsize=NOTE_SIZE + 0.6,
+                 color=INK, ha="center")
+    counted.text(5.0, 2.6, "none", fontsize=LABEL_SIZE + 5, color=WARN, ha="center")
+    counted.text(5.0, 0.8,
+                 "the rest have a glass falling off the edge of the frame,\n"
+                 "which the overlapping stations already handle",
+                 fontsize=NOTE_SIZE, color=MUTED, ha="center")
 
-    # (b) all of them at once.
-    stage(whole, "All of them at once, shaded")
-    whole.imshow(np.ma.masked_where(~cut_mask, cut_field), cmap="Blues", vmin=0, vmax=peak,
-                 interpolation="nearest")
-    whole.contour(cut_field, levels=[6, 12, 18, 24, 30], colors=[MUTED], linewidths=0.6)
-    outline(whole, cut_mask)
+    rim_span = FRAME_W * (SURVEY_H - height) / FX
+    footer(figure,
+           f"The frame holds {FRAME_W * SURVEY_H / FX:.0f} mm of table but only {rim_span:.0f} mm at the "
+           "height of this rim. Two glasses far enough apart to be legal are either both in frame and "
+           "separate, or one of them is half out of the picture.")
+    figure.subplots_adjust(bottom=0.17, top=0.90, wspace=0.18)
+    save(figure, "01-the-survey-cannot-see-it.png")
+
+
+# ---------------------------------------------------------------------------
+# 3. A standing glass is not a circle.
+# ---------------------------------------------------------------------------
+def picture_not_a_circle() -> None:
+    height, base, widest = size(GLASS_OUTLINE)
+    z, r = profile(GLASS_OUTLINE)
+    stand = 200.0
+    figure, axes = new(13.0, 4.6, columns=3)
+    rays, shape, wrong = axes
+
+    stage(rays, "Why — the camera is only 310 mm above the rim")
+    rays.set_aspect("equal")
+    rays.set_xlim(-30, 330)
+    rays.set_ylim(-40, 500)
+    rays.plot([-20, 320], [0, 0], color=MUTED, lw=1.2)
+    note(rays, 90, -30, "the table")
+    rays.plot([0], [SURVEY_H], "o", color=INK, ms=7)
+    rays.text(0, SURVEY_H + 16, "camera", fontsize=NOTE_SIZE, color=INK, ha="center")
+    rays.fill_betweenx(z, stand - r, stand + r, color=to_rgba(GLASS, 0.35), lw=0)
+    rays.plot(stand + r, z, color=GLASS, lw=1.3)
+    rays.plot(stand - r, z, color=GLASS, lw=1.3)
+    for zi, ri, colour in ((0.0, base / 2, MUTED), (height, widest / 2, WARN)):
+        landing = (stand + ri) * SURVEY_H / (SURVEY_H - zi)
+        rays.plot([0, landing], [SURVEY_H, 0], color=colour, lw=1.1, ls=(0, (5, 3)))
+        rays.plot([landing], [0], "o", color=colour, ms=5)
+    rim_landing = (stand + widest / 2) * SURVEY_H / (SURVEY_H - height)
+    rays.annotate("", xy=((stand + base / 2), -18), xytext=(rim_landing, -18),
+                  arrowprops={"arrowstyle": "<->", "color": WARN, "lw": 1.1})
+    note(rays, 300, 150, "the rim lands\nout here", WARN)
+
+    real = topdown([(stand, 0, GLASS_OUTLINE)], width=440, height=240, cx=40, cy=120)
+    stage(shape, "So this is the silhouette")
+    paint(shape, real > 0, GLASS, 0.45)
+    outline_of(shape, real > 0)
+    left, right, top, bottom = tight(real, 16)
+    shape.set_xlim(left, right)
+    shape.set_ylim(bottom, top)
+    wide = cv2.boundingRect(real)[2]
+    note(shape, (left + right) / 2, top + 11, f"{wide} px across", INK)
+    note(shape, (left + right) / 2, bottom - 7,
+         f"a {base:.0f} mm footprint, imaged {wide * SURVEY_H / FX:.0f} mm wide")
+
+    stage(wrong, "What the first version of this page drew")
+    wrong.set_aspect("equal")
+    wrong.set_xlim(-110, 110)
+    wrong.set_ylim(-80, 80)
     for sign in (-1, +1):
-        whole.plot([MID_COL + sign * SPLIT_APART / 2], [MID_ROW], "o", color=WARN, ms=5)
-    whole.annotate(
-        f"peak {peak:.1f} px", xy=(MID_COL - SPLIT_APART / 2, MID_ROW),
-        xytext=(MID_COL - SPLIT_APART / 2 - 6, 12), fontsize=NOTE_SIZE, color=WARN, ha="center",
-        arrowprops={"arrowstyle": "->", "color": WARN, "lw": 0.9},
-    )
-    whole.annotate(
-        f"waist {waist:.0f} px", xy=(MID_COL, MID_ROW),
-        xytext=(MID_COL + 30, CROP_H - 16), fontsize=NOTE_SIZE, color=INK, ha="center",
-        arrowprops={"arrowstyle": "->", "color": INK, "lw": 0.9},
-    )
-    note(whole, MID_COL, CROP_H - 5, "darkest deep inside, 1 next to the edge")
+        wrong.add_patch(Circle((sign * 26, 0), 45, facecolor=to_rgba(WARN, 0.22),
+                               edgecolor=WARN, lw=1.6))
+    note(wrong, 0, 60, "two footprints overlapping", WARN)
+    note(wrong, 0, -62, "which two solid glasses cannot do,\nand no camera here sees anyway")
 
-    # (c) the same thing upside down.
-    profile = -cut_field[MID_ROW]
-    x = np.arange(profile.size)
-    inside = cut_mask[MID_ROW]
-    upside.plot(x[inside], profile[inside], color=GLASS, lw=1.8)
-    upside.fill_between(x[inside], profile[inside], 0, color=GLASS, alpha=0.16)
-    upside.axhline(0, color=MUTED, lw=0.8)
-    for sign in (-1, +1):
-        column = MID_COL + sign * SPLIT_APART / 2
-        upside.annotate(
-            "valley", xy=(column, -peak), xytext=(column, -peak + 12),
-            fontsize=NOTE_SIZE, color=INK, ha="center",
-            arrowprops={"arrowstyle": "->", "color": INK, "lw": 0.9},
-        )
-    upside.annotate(
-        "the col between them", xy=(MID_COL, -waist), xytext=(MID_COL, -waist + 13),
-        fontsize=NOTE_SIZE, color=WARN, ha="center",
-        arrowprops={"arrowstyle": "->", "color": WARN, "lw": 0.9},
-    )
-    plot_frame(upside, "Upside down, it is a landscape", "pixels across the blob", "minus the distance")
-    upside.set_ylim(-peak - 4, 8)
-    upside.set_xlim(0, CROP_W)
-
-    footer(
-        figure,
-        "One valley per object, because the deepest pixel of each footprint is the point furthest from "
-        "any edge. The col between them is the narrow place, and it is the place to cut.",
-    )
-    figure.subplots_adjust(bottom=0.16, top=0.90, wspace=0.18)
-    save(figure, "01-distance-transform.png")
+    footer(figure,
+           "A glass is a circle in its footprint only. Seen from above it is a teardrop, because the rim is "
+           "wider than " "the base and 140 mm nearer the lens; seen from the side it is a profile. Neither "
+           "is the circle.")
+    figure.subplots_adjust(bottom=0.16, top=0.89, wspace=0.12)
+    save(figure, "01-a-glass-is-not-a-circle.png")
 
 
-# --------------------------------------------------------------------------
-# 3. Markers: two ways to get them, which turn out to be one way.
-# --------------------------------------------------------------------------
-def picture_markers() -> None:
-    mask = two_discs(SPLIT_APART)
-    field = distance(mask)
-    level = MARKER_FRACTION * field.max()
-    radius = int(round(level))
-    deep = markers_from_distance(field)
-    disc = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * radius + 1, 2 * radius + 1))
-    eroded = cv2.erode(mask, disc)
-    agreement = 100.0 * ((eroded > 0) == (field > radius)).mean()
-    cut_mask = crop(mask) > 0
+# ---------------------------------------------------------------------------
+# 4. The blob the level view really returns.
+# ---------------------------------------------------------------------------
+def picture_the_blob() -> None:
+    height, base, widest = size(GLASS_OUTLINE)
+    near = sideon([(0, STANDOFF, GLASS_OUTLINE)], width=220, height=200, horizon=62)
+    both = sideon([(0, STANDOFF, GLASS_OUTLINE), (LATERAL, STANDOFF + BEHIND, GLASS_OUTLINE)],
+                  width=220, height=200, horizon=62)
+    figure, axes = new(12.6, 4.6, columns=3)
+    one, two, verdict = axes
 
-    figure, axes = new(13.4, 4.6, columns=3)
-    maxima, shave, same = axes
-
-    stage(maxima, f"Keep the deep pixels: distance > {MARKER_FRACTION} x peak")
-    paint(maxima, cut_mask, MUTED, 0.22)
-    outline(maxima, cut_mask, MUTED)
-    paint(maxima, crop(deep) > 0, GOOD, 0.85)
-    note(maxima, MID_COL, 12, f"{MARKER_FRACTION} x {field.max():.1f} px = {level:.1f} px", INK)
-    note(maxima, MID_COL, CROP_H - 5, "two patches survive — one per object")
-
-    stage(shave, f"Or ask whether a disc of radius {radius} px fits")
-    paint(shave, cut_mask, MUTED, 0.22)
-    outline(shave, cut_mask, MUTED)
-    paint(shave, crop(eroded) > 0, GOOD, 0.85)
-    shave.add_patch(Circle((MID_COL - SPLIT_APART / 2, MID_ROW), radius,
-                           fill=False, edgecolor=GOOD, lw=1.3, linestyle=(0, (3, 2))))
-    shave.add_patch(Circle((MID_COL, MID_ROW), radius,
-                           fill=False, edgecolor=WARN, lw=1.3, linestyle=(0, (3, 2))))
-    shave.text(MID_COL - SPLIT_APART / 2 - 6, MID_ROW - R_PX - 8, "fits: keep the centre",
-               fontsize=NOTE_SIZE, color=GOOD, ha="center")
-    shave.text(MID_COL + 14, MID_ROW + R_PX + 12, "pokes out: drop the centre",
-               fontsize=NOTE_SIZE, color=WARN, ha="center")
-    note(shave, MID_COL, CROP_H - 5, "the bridge is eaten away, two lumps are left")
-
-    row = crop(field)[MID_ROW]
-    x = np.arange(row.size)
-    inside = cut_mask[MID_ROW]
-    same.plot(x[inside], row[inside], color=GLASS, lw=1.8)
-    same.axhline(radius, color=GOOD, lw=1.4)
-    same.fill_between(x, radius, np.maximum(row, radius), where=inside, color=GOOD, alpha=0.25)
-    same.text(CROP_W - 3, radius + 1.8, f"the line at {radius} px",
-              fontsize=NOTE_SIZE, color=GOOD, ha="right")
-    same.annotate(
-        "the bridge sits under it", xy=(MID_COL, row[MID_COL]), xytext=(MID_COL, radius - 12),
-        fontsize=NOTE_SIZE, color=WARN, ha="center",
-        arrowprops={"arrowstyle": "->", "color": WARN, "lw": 0.9},
-    )
-    plot_frame(same, "Why those are the same thing", "pixels across the blob",
-               "distance to the nearest no pixel (px)")
-    same.set_ylim(0, field.max() + 6)
-    same.set_xlim(0, CROP_W)
-
-    footer(
-        figure,
-        "Eroding by a disc of radius r keeps exactly the pixels whose distance exceeds r, so the two "
-        f"drawings are one idea. On this mask the two sets agree on {agreement:.0f} per cent of pixels.",
-    )
-    figure.subplots_adjust(bottom=0.16, top=0.90, wspace=0.18)
-    save(figure, "01-markers-two-ways.png")
-
-
-# --------------------------------------------------------------------------
-# 4. Flooding, in four stages.
-# --------------------------------------------------------------------------
-def picture_flooding() -> None:
-    mask = two_discs(SPLIT_APART)
-    field = distance(mask)
-    peak = field.max()
-    filled = flood(mask, markers_from_distance(field))
-    cut_mask = crop(mask) > 0
-    cut_field = crop(field)
-    cut_filled = crop(filled)
-    inner = cv2.erode(crop(mask), np.ones((9, 9), np.uint8)) > 0
-    wall = cv2.dilate((cut_filled == -1).astype(np.uint8), np.ones((3, 3), np.uint8)) > 0
-
-    levels = (30.0, 26.0, 22.2, 0.0)
-    titles = ("water at 30 px", "water at 26 px", "water at 22 px", "water over the top")
-    captions = (
-        "a hole punched at the deepest\npoint of each valley",
-        "each pool spreads, still nowhere\nnear the other",
-        "the two floods reach the col\nwithin a pixel of each other",
-        "a wall goes up where they meet,\nand that wall is the cut",
-    )
-
-    figure, axis = new(13.4, 5.6)
-    axis.remove()
-    grid = figure.add_gridspec(2, 4, height_ratios=[1.0, 1.9], hspace=0.06, wspace=0.08,
-                               left=0.02, right=0.98, top=0.93, bottom=0.13)
-    profile = -cut_field[MID_ROW]
-    x = np.arange(profile.size)
-    inside = cut_mask[MID_ROW]
-    span = (int(x[inside].min()), int(x[inside].max()))
-
-    for column, (level, title, caption) in enumerate(zip(levels, titles, captions, strict=True)):
-        slice_axis = figure.add_subplot(grid[0, column])
-        slice_axis.plot(x[inside], profile[inside], color=INK, lw=1.2)
-        slice_axis.fill_between(x, profile, -level, where=inside & (profile <= -level),
-                                color=GLASS, alpha=0.45)
-        slice_axis.plot(span, [-level, -level], color=GLASS, lw=1.2)
-        slice_axis.set_xlim(0, CROP_W)
-        slice_axis.set_ylim(-peak - 4, 6)
-        bare(slice_axis)
-        slice_axis.set_title(title, fontsize=NOTE_SIZE + 0.4, color=INK, pad=4)
-
-        plan = figure.add_subplot(grid[1, column])
-        bare(plan)
-        paint(plan, cut_mask, MUTED, 0.16)
-        outline(plan, cut_mask, MUTED)
-        reached = cut_field > level
-        for label, colour in ((2, GLASS), (3, GOOD)):
-            paint(plan, reached & (cut_filled == label), colour, 0.85)
-        if level == 0.0:
-            paint(plan, wall & inner, WARN, 1.0)
-        plan.text(MID_COL, CROP_H - 2, caption, fontsize=NOTE_SIZE - 0.4, color=MUTED,
-                  ha="center", va="top")
-
-    footer(
-        figure,
-        "Watershed is a flood fill started from several places at once, which stops where the floods "
-        "collide. Every pixel ends up belonging to one marker, and the wall between them is the cut.",
-    )
-    save(figure, "01-flooding.png")
-
-
-# --------------------------------------------------------------------------
-# 5. The numbers: how deep the waist is, and where the method gives out.
-# --------------------------------------------------------------------------
-def picture_waist_depth() -> None:
-    separations = np.arange(2, 2 * R_PX + 1, 1.0)
-    depth = np.sqrt(np.clip(1.0 - (separations / (2 * R_PX)) ** 2, 0.0, None))
-    breaking = 2 * R_PX * np.sqrt(1.0 - MARKER_FRACTION ** 2)
-
-    measured = []
-    for separation in range(4, 2 * R_PX, 2):
-        mask = two_discs(separation)
-        field = distance(mask)
-        count, _ = cv2.connectedComponents(markers_from_distance(field))
-        measured.append((separation, field[:, CENTRE[0]].max() / field.max(), count - 1))
-
-    figure, axes = new(12.6, 4.8, columns=2)
-    curve, outcome = axes
-
-    curve.axvspan(0, breaking, color=WARN, alpha=0.11)
-    curve.plot(separations, depth, color=GLASS, lw=2.0, label="the geometry: sqrt(1 - (d/2R)^2)")
-    curve.plot([m[0] for m in measured], [m[1] for m in measured], "o", color=INK, ms=3.0,
-               label="measured by cv2.distanceTransform")
-    curve.axhline(MARKER_FRACTION, color=GOOD, lw=1.4, linestyle=(0, (5, 3)))
-    curve.text(1.5, MARKER_FRACTION + 0.03, f"the marker threshold, {MARKER_FRACTION}",
-               fontsize=NOTE_SIZE, color=GOOD, ha="left")
-    curve.axvline(breaking, color=WARN, lw=1.4)
-    curve.text(breaking - 1.5, 0.30, f"{breaking:.0f} px = 1.43 radii = {breaking * MM_PER_PX:.0f} mm",
-               fontsize=NOTE_SIZE, color=WARN, ha="right", va="center", rotation=90)
-    curve.text(22, 0.22, "waist too shallow:\nthe markers merge",
-               fontsize=NOTE_SIZE, color=WARN, ha="center")
-    examples = ((SPLIT_CLOSE, "the failure", (3.0, 0.52), "left"),
-                (SPLIT_APART, "worked example", (55.0, 0.38), "left"))
-    for separation, name, where, align in examples:
-        value = float(np.sqrt(1.0 - (separation / (2 * R_PX)) ** 2))
-        curve.plot([separation], [value], "o", color=WARN if separation < breaking else GOOD, ms=7)
-        curve.annotate(
-            f"{name}\n{separation} px = {separation * MM_PER_PX:.0f} mm",
-            xy=(separation, value), xytext=where, ha=align,
-            fontsize=NOTE_SIZE, color=INK,
-            arrowprops={"arrowstyle": "->", "color": INK, "lw": 0.8},
-        )
-    plot_frame(curve, "How deep the waist is",
-               "distance between the two silhouette centres (pixels)", "waist depth / peak depth")
-    curve.set_xlim(0, 2 * R_PX)
-    curve.set_ylim(0, 1.06)
-    curve.legend(fontsize=NOTE_SIZE - 0.4, frameon=False, loc="upper right")
-
-    for separation, _, count in measured:
-        outcome.add_patch(Rectangle((separation - 1, 0), 2, 1,
-                                    facecolor=GOOD if count == 2 else WARN, edgecolor="none"))
-    for separation, name in ((SPLIT_CLOSE, "the failure"), (SPLIT_APART, "worked example")):
-        outcome.annotate(
-            name, xy=(separation, 1.0), xytext=(separation, 1.6),
-            fontsize=NOTE_SIZE, color=INK, ha="center",
-            arrowprops={"arrowstyle": "->", "color": INK, "lw": 0.8},
-        )
-    outcome.plot([breaking, breaking], [-0.4, 1.4], color=INK, lw=1.0, linestyle=(0, (4, 3)))
-    outcome.text(breaking - 1, -0.5, "1.43 radii", fontsize=NOTE_SIZE - 0.6, color=INK,
-                 ha="right", va="top")
-    outcome.set_xlim(0, 2 * R_PX)
-    outcome.set_ylim(-1.9, 2.7)
-    outcome.set_yticks([])
-    plot_frame(outcome, "What comes back", "distance between the two silhouette centres (pixels)", "")
-    outcome.spines["left"].set_visible(False)
-    outcome.text(breaking / 2, 2.15, "one region", fontsize=NOTE_SIZE, color=WARN, ha="center")
-    outcome.text((breaking + 2 * R_PX) / 2, 2.15, "two regions", fontsize=NOTE_SIZE, color=GOOD,
-                 ha="center")
-    outcome.text(
-        R_PX, -1.05,
-        "Below 1.43 radii the blob is still flagged as too wide.\n"
-        "What is lost is the ability to say where to cut it —\n"
-        "so one glass is reported, and no warning goes with it.",
-        fontsize=NOTE_SIZE, color=INK, ha="center", va="top",
-    )
-
-    footer(
-        figure,
-        "Two circles of radius R whose centres are d apart pinch to a waist of sqrt(R^2 - d^2/4). That "
-        f"drops below {MARKER_FRACTION} of R at d = 2R sqrt(1 - {MARKER_FRACTION}^2) = 1.43 R. The "
-        "breaking point is not a second tuning constant; it follows from the first one.",
-    )
-    figure.subplots_adjust(bottom=0.22, top=0.90, wspace=0.16)
-    save(figure, "01-waist-depth.png")
-
-
-# --------------------------------------------------------------------------
-# 6. GrabCut: it tightens, it does not split.
-# --------------------------------------------------------------------------
-def grabcut(colour_image: np.ndarray, box: tuple[int, int, int, int]) -> np.ndarray:
-    state = np.zeros(FRAME, np.uint8)
-    background_model = np.zeros((1, 65), np.float64)
-    foreground_model = np.zeros((1, 65), np.float64)
-    cv2.grabCut(colour_image, state, box, background_model, foreground_model, 4, cv2.GC_INIT_WITH_RECT)
-    return np.isin(state, (cv2.GC_FGD, cv2.GC_PR_FGD)).astype(np.uint8)
-
-
-def picture_grabcut() -> None:
-    mask = two_discs(SPLIT_APART)
-    scene = np.full((*FRAME, 3), 205, np.uint8)
-    scene[mask > 0] = (60, 120, 200)
-    scene = cv2.GaussianBlur(scene, (3, 3), 0)
-
-    field = distance(mask)
-    filled = flood(mask, markers_from_distance(field))
-    half = (filled == 2).astype(np.uint8)
-
-    columns = np.where(mask.any(axis=0))[0]
-    rows = np.where(mask.any(axis=1))[0]
-    half_columns = np.where(half.any(axis=0))[0]
-    whole_box = (columns[0] - 9, rows[0] - 9, len(columns) + 18, len(rows) + 18)
-    half_box = (half_columns[0] - 9, rows[0] - 9, len(half_columns) + 12, len(rows) + 18)
-
-    from_clump = grabcut(scene, whole_box)
-    from_half = grabcut(scene, half_box)
-    clump_regions, _ = cv2.connectedComponents(from_clump)
-    left_edge, _, top_edge, _ = CROP
-
-    figure, axes = new(10.6, 4.4, columns=2)
-    for axis, box, result, title, colour, text in (
-        (axes[0], whole_box, from_clump, "GrabCut with a box round the whole clump", WARN,
-         f"{clump_regions - 1} region, {int(from_clump.sum())} px against the mask's "
-         f"{int((mask > 0).sum())}.\nA different outline. Still one object."),
-        (axes[1], half_box, from_half, "GrabCut with a box round one half already cut out", GOOD,
-         f"{int(from_half.sum())} px, and the edge now follows\nthe colour rather than the height step."),
-    ):
+    for axis, mask, title in ((one, near, "One glass, 380 mm away"),
+                              (two, both, "And a second, 180 mm behind it")):
         stage(axis, title)
-        paint(axis, crop(mask) > 0, MUTED, 0.20)
-        outline(axis, crop(mask) > 0, MUTED)
-        paint(axis, crop(result) > 0, GOOD, 0.50)
-        outline(axis, crop(result) > 0, GOOD, 1.8)
-        axis.add_patch(Rectangle(
-            (box[0] - left_edge, box[1] - top_edge), box[2], box[3],
-            fill=False, edgecolor=INK, lw=1.2, linestyle=(0, (4, 3)),
-        ))
-        axis.text(MID_COL, CROP_H - 12, text, fontsize=NOTE_SIZE, color=colour, ha="center", va="top")
+        paint(axis, mask > 0, GLASS, 0.45)
+        outline_of(axis, mask > 0)
+        left, right, top, bottom = tight(both, 14)
+        axis.set_xlim(left, right)
+        axis.set_ylim(bottom, top)
+    wide_one = cv2.boundingRect(near)[2]
+    wide_two = cv2.boundingRect(both)[2]
+    middle = (tight(both, 14)[0] + tight(both, 14)[1]) / 2
+    note(one, middle, tight(both, 14)[2] + 10, f"{wide_one} px across", INK)
+    note(two, middle, tight(both, 14)[2] + 10, f"{wide_two} px across", WARN)
 
-    footer(
-        figure,
-        "GrabCut sorts pixels into foreground and background by colour. Both halves of the clump are the "
-        "same colour, so it has nothing to separate them with. It tidies an outline; it does not find one.",
-    )
-    figure.subplots_adjust(bottom=0.14, top=0.90, wspace=0.05)
-    save(figure, "01-grabcut.png")
+    stage(verdict, "What the arithmetic notices")
+    verdict.set_xlim(0, 10)
+    verdict.set_ylim(0, 10)
+    limit = widest * FX / STANDOFF
+    rows = [("widest this kind can be", f"{widest:.0f} mm = {limit:.0f} px", MUTED),
+            ("+ 2 px for the rounded edge", f"{limit + 2:.0f} px", MUTED),
+            ("one glass measures", f"{wide_one} px — left alone", GOOD),
+            ("the pair measures", f"{wide_two} px — flagged", WARN)]
+    for i, (label, value, colour) in enumerate(rows):
+        y = 8.2 - i * 1.9
+        verdict.text(0.3, y, label, fontsize=NOTE_SIZE, color=MUTED, ha="left")
+        verdict.text(9.7, y, value, fontsize=NOTE_SIZE + 0.8, color=colour, ha="right")
+        verdict.plot([0.3, 9.7], [y - 0.65, y - 0.65], color="#e6e8eb", lw=1.0)
+    verdict.text(5.0, 0.7, "connected components never asked how wide it was.\n"
+                           "It only asked whether the pixels were joined.",
+                 fontsize=NOTE_SIZE, color=MUTED, ha="center")
 
-
-# --------------------------------------------------------------------------
-# 7. The round-object relative: Hough circles, past the point watershed gives out.
-# --------------------------------------------------------------------------
-def hough(mask: np.ndarray, min_distance: int) -> np.ndarray:
-    soft = cv2.GaussianBlur(mask, (7, 7), 0)
-    found = cv2.HoughCircles(
-        soft, cv2.HOUGH_GRADIENT, dp=1, minDist=min_distance,
-        param1=80, param2=20, minRadius=24, maxRadius=44,
-    )
-    return np.zeros((0, 3)) if found is None else found[0]
-
-
-def picture_hough() -> None:
-    mask = two_discs(SPLIT_CLOSE)
-    field = distance(mask)
-    filled = flood(mask, markers_from_distance(field))
-    circles = hough(mask, min_distance=15)
-    coarse = hough(mask, min_distance=30)
-    cut_mask = crop(mask) > 0
-    left_edge, _, top_edge, _ = CROP
-    waist = field[:, CENTRE[0]].max()
-
-    figure, axes = new(13.4, 4.6, columns=3)
-    broken, circled, tuned = axes
-
-    stage(broken, f"Watershed, centres {SPLIT_CLOSE} px apart")
-    paint(broken, cut_mask, MUTED, 0.18)
-    outline(broken, cut_mask, MUTED)
-    paint(broken, crop(filled) == 2, WARN, 0.50)
-    broken.text(MID_COL, CROP_H - 14,
-                f"waist {waist:.0f} px against a peak of {field.max():.1f} px:\n"
-                "one marker, one region, and no complaint",
-                fontsize=NOTE_SIZE, color=WARN, ha="center", va="top")
-
-    stage(circled, "Hough circles on the same mask")
-    paint(circled, cut_mask, MUTED, 0.18)
-    outline(circled, cut_mask, MUTED)
-    for column, row, radius in circles:
-        circled.add_patch(Circle((column - left_edge, row - top_edge), radius,
-                                 fill=False, edgecolor=GOOD, lw=1.8))
-        circled.plot([column - left_edge], [row - top_edge], "+", color=GOOD, ms=9, mew=1.6)
-    circled.text(MID_COL, CROP_H - 14,
-                 f"{len(circles)} circles, radius {circles[0][2]:.1f} px, centres\n"
-                 f"{SPLIT_CLOSE} px apart — both recovered",
-                 fontsize=NOTE_SIZE, color=GOOD, ha="center", va="top")
-
-    stage(tuned, "The same call, minDist raised to 30 px")
-    paint(tuned, cut_mask, MUTED, 0.18)
-    outline(tuned, cut_mask, MUTED)
-    for column, row, radius in coarse:
-        tuned.add_patch(Circle((column - left_edge, row - top_edge), radius,
-                               fill=False, edgecolor=WARN, lw=1.8))
-        tuned.plot([column - left_edge], [row - top_edge], "+", color=WARN, ms=9, mew=1.6)
-    tuned.text(MID_COL, CROP_H - 14,
-               f"{len(coarse)} circle. The tuning constant has\nmoved, it has not gone away.",
-               fontsize=NOTE_SIZE, color=WARN, ha="center", va="top")
-
-    footer(
-        figure,
-        "Fitting a shape you already know about uses the curve of the outline rather than the depth of "
-        "the waist, so it survives heavier overlap — but only while minDist is set below the real gap.",
-    )
-    figure.subplots_adjust(bottom=0.14, top=0.90, wspace=0.05)
-    save(figure, "01-hough-circles.png")
+    footer(figure,
+           "The trigger is the one number this method takes from outside the picture: the widest the known "
+           "kind can be, in pixels at the distance the camera stood. Anything narrower is left alone.")
+    figure.subplots_adjust(bottom=0.15, top=0.89, wspace=0.12)
+    save(figure, "01-the-blob.png")
 
 
-# --------------------------------------------------------------------------
-# 8. The objection: the blob is a fact about the camera.
-# --------------------------------------------------------------------------
-def silhouette(lateral_mm: float, depth_mm: float, radius_mm: float) -> tuple[float, float, float]:
-    """Where an upright cylinder lands: centre column, half width, and relative height."""
-    centre = FX * lateral_mm / depth_mm
-    half = FX * radius_mm / np.sqrt(depth_mm ** 2 - radius_mm ** 2)
-    return centre, half, 380.0 / depth_mm
+# ---------------------------------------------------------------------------
+# 5. Why the distance transform cannot help.
+# ---------------------------------------------------------------------------
+def picture_watershed_fails() -> None:
+    both = sideon([(0, STANDOFF, GLASS_OUTLINE), (LATERAL, STANDOFF + BEHIND, GLASS_OUTLINE)],
+                  width=220, height=200, horizon=62)
+    field, markers, seeds = watershed_regions(both)
+    discs = np.zeros((200, 220), np.uint8)
+    cv2.circle(discs, (86, 105), 42, 255, -1)
+    cv2.circle(discs, (166, 105), 42, 255, -1)
+    disc_field, disc_markers, disc_seeds = watershed_regions(discs)
+
+    figure, axes = new(13.0, 4.7, columns=3)
+    round_case, tall_case, why = axes
+
+    stage(round_case, "What the method is for: round, squat objects")
+    round_case.imshow(disc_field, cmap="viridis")
+    round_case.contour(disc_seeds.astype(float), [0.5], colors=[WARN], linewidths=1.4)
+    left, right, top, bottom = tight(discs, 12)
+    round_case.set_xlim(left, right)
+    round_case.set_ylim(bottom, top)
+    note(round_case, (left + right) / 2, bottom - 6,
+         f"{disc_markers} peaks, so {disc_markers} markers — it splits", GOOD)
+
+    stage(tall_case, "What this cell has: tall, thin ones")
+    tall_case.imshow(field, cmap="viridis")
+    tall_case.contour(seeds.astype(float), [0.5], colors=[WARN], linewidths=1.4)
+    left, right, top, bottom = tight(both, 12)
+    tall_case.set_xlim(left, right)
+    tall_case.set_ylim(bottom, top)
+    note(tall_case, (left + right) / 2, bottom - 6,
+         f"one ridge, {markers} marker — nothing to flood from", WARN)
+
+    stage(why, "")
+    why.set_xlim(0, 10)
+    why.set_ylim(0, 10)
+    why.text(5.0, 9.0, "The distance transform asks:\n"
+                       "how far is this pixel from the outside?",
+             fontsize=NOTE_SIZE + 0.6, color=INK, ha="center")
+    why.text(5.0, 6.4, "In a squat object the deepest point is a\n"
+                       "single peak at the middle. Two objects,\n"
+                       "two peaks, and the flood walls meet at the waist.",
+             fontsize=NOTE_SIZE, color=MUTED, ha="center")
+    why.text(5.0, 3.6, "In a tall thin object the depth is capped by the\n"
+                       "half-width, everywhere up its length. The deepest\n"
+                       "set is a line, not a point — and two of them\n"
+                       "side by side merge into one line.",
+             fontsize=NOTE_SIZE, color=MUTED, ha="center")
+    why.add_patch(Rectangle((0.7, 0.6), 8.6, 1.7, facecolor=to_rgba(WARN, 0.12),
+                            edgecolor=WARN, lw=1.2))
+    why.text(5.0, 1.45, "splits 3 per cent of real merged pairs",
+             fontsize=LABEL_SIZE + 1, color=WARN, ha="center", va="center")
+
+    footer(figure,
+           "This is not a threshold that needs tuning. A standing glass seen from the side is four times "
+           "taller than " "it is wide, and the distance transform of a tall thin shape has no peak to put a "
+           "marker on.")
+    figure.subplots_adjust(bottom=0.15, top=0.89, wspace=0.12)
+    save(figure, "01-the-distance-transform-fails.png")
 
 
-def picture_viewpoint() -> None:
-    radius_mm = WIDEST_MM / 2
-    near_mm, gap_mm = 380.0, 180.0
-    turn = np.radians(60.0)
+# ---------------------------------------------------------------------------
+# 6. The mechanism that does work: further away means higher up.
+# ---------------------------------------------------------------------------
+def picture_bases_sit_higher() -> None:
+    height, base, widest = size(GLASS_OUTLINE)
+    far = STANDOFF + BEHIND
+    figure, axes = new(12.8, 4.6, columns=2)
+    elevation, arithmetic = axes
 
-    straight = [silhouette(0.0, near_mm, radius_mm), silhouette(0.0, near_mm + gap_mm, radius_mm)]
-    depth_far = near_mm + gap_mm * np.cos(turn)
-    turned = [silhouette(0.0, near_mm, radius_mm),
-              silhouette(-gap_mm * np.sin(turn), depth_far, radius_mm)]
-    arc_mm = near_mm * turn
+    stage(elevation, "The camera looks level, from above the table top")
+    elevation.set_aspect("equal")
+    elevation.set_xlim(-60, 640)
+    elevation.set_ylim(-60, 230)
+    elevation.plot([-40, 620], [0, 0], color=MUTED, lw=1.2)
+    note(elevation, 300, -40, "the table")
+    elevation.plot([0], [VIEW_HEIGHT], "o", color=INK, ms=7)
+    elevation.text(0, VIEW_HEIGHT + 14, "camera", fontsize=NOTE_SIZE, color=INK, ha="center")
+    elevation.plot([-40, 620], [VIEW_HEIGHT, VIEW_HEIGHT], color=MUTED, lw=0.9, ls=(0, (5, 4)))
+    elevation.text(600, VIEW_HEIGHT + 8, "the horizon", fontsize=NOTE_SIZE, color=MUTED, ha="right")
+    z, r = profile(GLASS_OUTLINE)
+    for distance, shade in ((STANDOFF, 0.42), (far, 0.24)):
+        elevation.fill_betweenx(z, distance - r, distance + r, color=to_rgba(GLASS, shade), lw=0)
+        elevation.plot(distance + r, z, color=GLASS, lw=1.2)
+        elevation.plot(distance - r, z, color=GLASS, lw=1.2)
+        elevation.plot([0, distance], [VIEW_HEIGHT, 0], color=WARN, lw=1.0, ls=(0, (4, 3)))
+        elevation.text(distance, -26, f"{distance:.0f} mm", fontsize=NOTE_SIZE, color=INK, ha="center")
+    note(elevation, 300, 200,
+         "the line to a nearer base dips more steeply,\nso a nearer base lands lower in the picture", INK)
 
-    figure, axes = new(13.4, 5.0, columns=3)
-    plan, merged, apart = axes
+    plot_frame(arithmetic, "Where each part of a glass lands, in pixels from the horizon",
+               "distance from the camera (mm)", "pixels below the horizon")
+    ds = np.linspace(280, 640, 200)
+    for zi, label, colour in ((0.0, "its base", WARN), (height, "its rim", MUTED)):
+        arithmetic.plot(ds, FX * (VIEW_HEIGHT - zi) / ds, color=colour, lw=2.0, label=label)
+    for distance in (STANDOFF, far):
+        arithmetic.axvline(distance, color="#e6e8eb", lw=1.0)
+    bn = FX * VIEW_HEIGHT / STANDOFF
+    bf = FX * VIEW_HEIGHT / far
+    arithmetic.annotate("", xy=(far, bf), xytext=(far, bn),
+                        arrowprops={"arrowstyle": "<->", "color": INK, "lw": 1.2})
+    arithmetic.text(far + 12, (bn + bf) / 2, f"{bn - bf:.0f} px", fontsize=LABEL_SIZE,
+                    color=INK, va="center")
+    arithmetic.legend(fontsize=NOTE_SIZE, frameon=False, loc="upper right")
+    rim_gap = FX * abs(VIEW_HEIGHT - height) * (1 / STANDOFF - 1 / far)
+    arithmetic.text(0.02, 0.30,
+                    f"the rims differ by only {rim_gap:.0f} px, because a rim sits"
+                    "\nnearly at the camera's own height",
+                    transform=arithmetic.transAxes, fontsize=NOTE_SIZE, color=MUTED)
 
-    stage(plan, "Looking down on the table")
-    plan.set_aspect("equal")
-    for centre, name in (((0.0, 0.0), "glass A"), ((0.0, gap_mm), "glass B")):
-        plan.add_patch(Circle(centre, radius_mm, facecolor=to_rgba(GLASS, 0.30), edgecolor=GLASS, lw=1.5))
-        plan.text(centre[0], centre[1], name, fontsize=NOTE_SIZE, color=INK, ha="center", va="center")
-    first = (0.0, -near_mm)
-    second = (-near_mm * np.sin(turn), -near_mm * np.cos(turn))
-    for spot, label, colour in ((first, "camera, in line", WARN),
-                                (second, "camera, 60 deg round", GOOD)):
-        plan.plot([spot[0]], [spot[1]], "s", color=colour, ms=7)
-        plan.plot([spot[0], 0.0], [spot[1], 0.0], color=colour, lw=1.0, linestyle=(0, (4, 3)))
-        plan.text(spot[0], spot[1] - 34, label, fontsize=NOTE_SIZE, color=colour,
-                  ha="center", va="top")
-    plan.add_patch(Arc((0.0, 0.0), 2 * near_mm, 2 * near_mm, theta1=210.0, theta2=270.0,
-                       edgecolor=INK, lw=1.2))
-    plan.annotate(
-        "", xy=(radius_mm + 12, 0.0), xytext=(radius_mm + 12, gap_mm),
-        arrowprops={"arrowstyle": "<->", "color": INK, "lw": 1.0},
-    )
-    plan.text(radius_mm + 20, gap_mm / 2, f"{gap_mm:.0f} mm\non the table",
-              fontsize=NOTE_SIZE, color=INK, va="center")
-    plan.text(-140, -250, f"{arc_mm:.0f} mm of\ncamera travel", fontsize=NOTE_SIZE, color=INK,
-              ha="center")
-    plan.set_xlim(-440, 210)
-    plan.set_ylim(-560, 300)
+    footer(figure,
+           "This is the whole idea. The camera sits 120 mm above the table, so the table recedes to the "
+           "horizon and a " "glass standing further away has its base drawn higher up the picture.")
+    figure.subplots_adjust(bottom=0.17, top=0.89, wspace=0.20)
+    save(figure, "01-bases-sit-higher.png")
 
-    for axis, pair, title, colour, hidden in (
-        (merged, straight, "The picture from in line", WARN, True),
-        (apart, turned, "The picture from 60 degrees round", GOOD, False),
-    ):
-        stage(axis, title)
-        axis.set_xlim(-165, 165)
-        axis.set_ylim(-1.15, 1.75)
-        axis.plot([-160, 160], [0, 0], color=MUTED, lw=1.0)
-        note(axis, 0, -0.72, "320 pixels across")
-        for index, ((centre, half, scale), name) in enumerate(zip(pair, ("A", "B"), strict=True)):
-            behind = hidden and index == 1
-            axis.add_patch(Rectangle(
-                (centre - half, 0.0), 2 * half, 0.95 * scale,
-                facecolor="none" if behind else to_rgba(GLASS, 0.40),
-                edgecolor=GLASS, lw=1.4, linestyle=(0, (3, 2)) if behind else "solid",
-            ))
-            if behind:
-                axis.annotate(
-                    f"{name}: {2 * half:.0f} px wide, and entirely inside A",
-                    xy=(centre, 0.95 * scale - 0.08), xytext=(centre, -0.34),
-                    fontsize=NOTE_SIZE, color=INK, ha="center",
-                    arrowprops={"arrowstyle": "->", "color": INK, "lw": 0.8},
-                )
-            else:
-                axis.text(centre, 0.95 * scale + 0.07, f"{name}: {2 * half:.0f} px wide",
-                          fontsize=NOTE_SIZE, color=INK, ha="center")
-        overlap = min(c + h for c, h, _ in pair) - max(c - h for c, h, _ in pair)
-        union = max(c + h for c, h, _ in pair) - min(c - h for c, h, _ in pair)
-        note(
-            axis, 0, 1.62,
-            f"one patch, {union:.0f} px = {union * near_mm / FX:.0f} mm at A's distance" if overlap > 0
-            else f"two patches, {-overlap:.0f} px of clear background between them",
-            colour,
-        )
 
-    note(merged, 0, -0.98, "exactly one glass wide, so nothing is even flagged", WARN)
-    note(apart, 0, -0.98, "connected components now returns two, unaided", GOOD)
+# ---------------------------------------------------------------------------
+# 7. The test itself.
+# ---------------------------------------------------------------------------
+def picture_contact_runs() -> None:
+    both = sideon([(0, STANDOFF, GLASS_OUTLINE), (LATERAL, STANDOFF + BEHIND, GLASS_OUTLINE)],
+                  width=220, height=200, horizon=62)
+    columns, rows = bottom_edge(both)
+    runs = split_by_contact(both)
+    figure, axes = new(13.0, 4.7, columns=3)
+    blob, edge, answer = axes
 
-    footer(
-        figure,
-        "Same two glasses, same table, same 180 mm between them. The left picture merges them and the "
-        "right one does not, and no measurement taken inside either picture can say which is which.",
-    )
-    figure.subplots_adjust(bottom=0.13, top=0.90, wspace=0.08)
-    save(figure, "01-viewpoint-artefact.png")
+    stage(blob, "The blob, with its underside marked")
+    paint(blob, both > 0, GLASS, 0.35)
+    outline_of(blob, both > 0)
+    blob.plot(columns, rows, color=WARN, lw=2.0)
+    left, right, top, bottom = tight(both, 14)
+    blob.set_xlim(left, right)
+    blob.set_ylim(bottom, top)
+    note(blob, (left + right) / 2, bottom - 6, "the lowest lit pixel in every column")
+
+    plot_frame(edge, "That underside, plotted", "column across the blob", "row in the picture")
+    edge.plot(columns - columns[0], rows, color=MUTED, lw=1.4)
+    for start, stop, row in runs:
+        edge.plot([start - columns[0], stop - columns[0]], [row, row], color=GOOD, lw=4.0,
+                  solid_capstyle="butt")
+    edge.invert_yaxis()
+    if len(runs) >= 2:
+        low = max(runs, key=lambda x: x[2])
+        high = min(runs, key=lambda x: x[2])
+        edge.annotate("", xy=(low[0] - columns[0] + 4, low[2]),
+                      xytext=(low[0] - columns[0] + 4, high[2]),
+                      arrowprops={"arrowstyle": "<->", "color": INK, "lw": 1.1})
+        edge.text(low[0] - columns[0] + 9, (low[2] + high[2]) / 2,
+                  f"{low[2] - high[2]:.0f} px apart", fontsize=NOTE_SIZE, color=INK, va="center")
+    edge.text(0.98, 0.06, "green: where something stands on the table",
+              transform=edge.transAxes, fontsize=NOTE_SIZE, color=GOOD, ha="right")
+
+    stage(answer, "Two level stretches, two glasses")
+    paint(answer, both > 0, MUTED, 0.22)
+    ordered = sorted(runs, key=lambda x: -x[2])[:2]
+    for (start, stop, row), colour, label in zip(ordered, (GLASS, GOOD),
+                                                 ("nearer", "further"), strict=True):
+        patch = np.zeros_like(both, bool)
+        patch[:, start:stop + 1] = both[:, start:stop + 1] > 0
+        paint(answer, patch, colour, 0.45)
+        answer.plot([start, stop], [row, row], color=colour, lw=3.2, solid_capstyle="butt")
+        answer.text((start + stop) / 2, row - 14, label, fontsize=NOTE_SIZE, color=colour, ha="center")
+    outline_of(answer, both > 0)
+    answer.set_xlim(left, right)
+    answer.set_ylim(bottom, top)
+    note(answer, (left + right) / 2, bottom - 6, "and the lower one is the nearer one")
+
+    footer(figure,
+           "One glass has one contact line. Two glasses at different distances have two, at different "
+           "heights, and " "which is nearer comes free — the lower stretch is the nearer glass.")
+    figure.subplots_adjust(bottom=0.15, top=0.89, wspace=0.20)
+    save(figure, "01-contact-runs.png")
+
+
+# ---------------------------------------------------------------------------
+# 8. The control: why it counts level stretches and not steps.
+# ---------------------------------------------------------------------------
+def picture_the_control() -> None:
+    single = sideon([(0, STANDOFF, STEMMED)], width=220, height=230, horizon=74)
+    columns, rows = bottom_edge(single)
+    runs = contact_runs(single)
+    steps = np.abs(np.diff(rows))
+    figure, axes = new(12.8, 4.7, columns=3)
+    shape, profile_axis, verdict = axes
+
+    stage(shape, "One stemmed glass, on its own")
+    paint(shape, single > 0, GLASS, 0.40)
+    outline_of(shape, single > 0)
+    shape.plot(columns, rows, color=WARN, lw=2.0)
+    left, right, top, bottom = tight(single, 14)
+    shape.set_xlim(left, right)
+    shape.set_ylim(bottom, top)
+    note(shape, (left + right) / 2, bottom - 6, "the bowl hangs out over the foot")
+
+    plot_frame(profile_axis, "Its underside steps too", "column across the blob", "row in the picture")
+    profile_axis.plot(columns - columns[0], rows, color=MUTED, lw=1.4)
+    for start, stop, row in runs:
+        profile_axis.plot([start - columns[0], stop - columns[0]], [row, row], color=GOOD, lw=4.0,
+                          solid_capstyle="butt")
+    profile_axis.invert_yaxis()
+    profile_axis.text(0.02, 0.10, f"biggest step between neighbouring columns: {steps.max()} px",
+                      transform=profile_axis.transAxes, fontsize=NOTE_SIZE, color=WARN)
+    profile_axis.text(0.02, 0.02, f"level stretches found: {len(runs)}",
+                      transform=profile_axis.transAxes, fontsize=NOTE_SIZE, color=GOOD)
+    low, high = profile_axis.get_ylim()
+    profile_axis.set_ylim(low + 16, high)
+
+    stage(verdict, "")
+    verdict.set_xlim(0, 10)
+    verdict.set_ylim(0, 10)
+    verdict.text(5.0, 9.2, "So the test cannot be \"is there a step?\"",
+                 fontsize=NOTE_SIZE + 0.8, color=INK, ha="center")
+    verdict.text(5.0, 7.3, "A stemmed glass's own outline steps by tens of\n"
+                           "pixels where its bowl stops overhanging its foot.\n"
+                           "Counting steps splits 69 per cent of single glasses.",
+                 fontsize=NOTE_SIZE, color=WARN, ha="center")
+    verdict.text(5.0, 4.6, "It has to be \"how many level stretches, and\n"
+                           "how far apart?\" A glass rests on the table in\n"
+                           "exactly one place, however odd its shape.",
+                 fontsize=NOTE_SIZE, color=INK, ha="center")
+    verdict.add_patch(Rectangle((0.7, 1.2), 8.6, 2.2, facecolor=to_rgba(GOOD, 0.14),
+                                edgecolor=GOOD, lw=1.3))
+    verdict.text(5.0, 2.3, "0 of 120 single glasses falsely split",
+                 fontsize=LABEL_SIZE + 1, color=GOOD, ha="center", va="center")
+
+    footer(figure,
+           "The control matters more than the result. A splitter that fires on a single glass turns one "
+           "correct answer " "into two wrong ones, and this cell would rather miss a pair than invent one.")
+    figure.subplots_adjust(bottom=0.15, top=0.89, wspace=0.20)
+    save(figure, "01-the-control.png")
+
+
+# ---------------------------------------------------------------------------
+# 9. Where it works and where it cannot.
+# ---------------------------------------------------------------------------
+def picture_where_it_works() -> None:
+    offsets = [0, 20, 40, 60, 80, 100]
+    merged, visible, split = [], [], []
+    for lateral in offsets:
+        m_count = v_count = s_count = 0
+        for kind in ("straight_glass", "tapered_glass", "stemmed_glass", "short_stemmed_glass"):
+            for outline, _ in family(kind, 6, 1):
+                both = sideon([(0, STANDOFF, outline), (lateral, STANDOFF + BEHIND, outline)],
+                              width=1200, height=900, horizon=400)
+                count, _ = cv2.connectedComponents(both)
+                if count - 1 != 1:
+                    continue
+                m_count += 1
+                near = sideon([(0, STANDOFF, outline)], width=1200, height=900, horizon=400)
+                far = sideon([(lateral, STANDOFF + BEHIND, outline)], width=1200, height=900, horizon=400)
+                far_columns, far_rows = bottom_edge(far)
+                row = int(np.median(far_rows))
+                exposed = sum(1 for c in far_columns if far[row, c] > 0 and near[row, c] == 0)
+                if exposed >= 5:
+                    v_count += 1
+                if split_by_contact(both):
+                    s_count += 1
+        merged.append(m_count)
+        visible.append(v_count)
+        split.append(s_count)
+
+    figure, axes = new(12.8, 4.7, columns=2)
+    bars, summary = axes
+    x = np.arange(len(offsets))
+    bars.bar(x - 0.26, merged, 0.26, color=MUTED, label="merged into one blob")
+    bars.bar(x, visible, 0.26, color=GLASS, label="far glass's base visible")
+    bars.bar(x + 0.26, split, 0.26, color=GOOD, label="split by the test")
+    plot_frame(bars, "By how far the far glass stands to one side",
+               "lateral offset (mm)", "arrangements, of 24")
+    bars.set_xticks(x)
+    bars.set_xticklabels([str(o) for o in offsets])
+    bars.legend(fontsize=NOTE_SIZE, frameon=False, loc="lower left")
+    bars.text(0.5, 1.10, "from 40 mm out, it splits every merged pair",
+              transform=bars.transAxes, fontsize=NOTE_SIZE, color=GOOD, ha="center")
+
+    stage(summary, "")
+    summary.set_xlim(0, 10)
+    summary.set_ylim(0, 10)
+    total_merged, total_split = sum(merged), sum(split)
+    from_40 = sum(split[i] for i, o in enumerate(offsets) if o >= 40)
+    merged_40 = sum(merged[i] for i, o in enumerate(offsets) if o >= 40)
+    lines = [("merged pairs tried", f"{total_merged}", INK),
+             ("40 mm of offset or more", f"{from_40} of {merged_40}", GOOD),
+             ("the test splits, in all", f"{total_split}", GOOD),
+             ("watershed splits", f"{round(0.03 * total_merged)}", WARN)]
+    for i, (label, value, colour) in enumerate(lines):
+        y = 8.4 - i * 1.7
+        summary.text(0.4, y, label, fontsize=NOTE_SIZE + 0.4, color=MUTED, ha="left")
+        summary.text(9.6, y, value, fontsize=LABEL_SIZE + 3, color=colour, ha="right")
+        summary.plot([0.4, 9.6], [y - 0.55, y - 0.55], color="#e6e8eb", lw=1.0)
+    summary.text(5.0, 1.1,
+                 "The gap is not a tuning failure. When the far glass stands\n"
+                 "close to directly behind the near one its base is hidden,\n"
+                 "and no amount of work on this picture will recover it.\n"
+                 "That pair goes to solution 3, which moves the camera.",
+                 fontsize=NOTE_SIZE, color=MUTED, ha="center")
+
+    footer(figure,
+           "Every merged pair with 40 mm of lateral offset or more, and none of the ones standing almost "
+           "directly in line. That is not a harder version of the same problem — it is a different one, and "
+           "it has its own solution.")
+    figure.subplots_adjust(bottom=0.16, top=0.91, wspace=0.20)
+    save(figure, "01-where-it-works.png")
+
+
+# ---------------------------------------------------------------------------
+# 10. What a split still does not buy you.
+# ---------------------------------------------------------------------------
+def picture_what_it_does_not_buy() -> None:
+    height, base, widest = size(GLASS_OUTLINE)
+    figure, axes = new(12.6, 4.5, columns=2)
+    bias, handover = axes
+
+    stage(bias, "A split says which pixels. It does not say where.")
+    bias.set_aspect("equal")
+    bias.set_xlim(-50, 640)
+    bias.set_ylim(-70, 210)
+    bias.plot([-30, 620], [0, 0], color=MUTED, lw=1.2)
+    bias.plot([0], [VIEW_HEIGHT], "o", color=INK, ms=7)
+    bias.text(0, VIEW_HEIGHT + 14, "camera", fontsize=NOTE_SIZE, color=INK, ha="center")
+    z, r = profile(GLASS_OUTLINE)
+    bias.fill_betweenx(z, STANDOFF - r, STANDOFF + r, color=to_rgba(GLASS, 0.35), lw=0)
+    bias.plot(STANDOFF + r, z, color=GLASS, lw=1.2)
+    bias.plot(STANDOFF - r, z, color=GLASS, lw=1.2)
+    widest_z = float(z[np.argmax(r)])
+    landing = (STANDOFF + widest / 2) * (0 - VIEW_HEIGHT) / (widest_z - VIEW_HEIGHT)
+    bias.plot([0, landing], [VIEW_HEIGHT, 0], color=WARN, lw=1.1, ls=(0, (5, 3)))
+    bias.plot([landing], [0], "o", color=WARN, ms=6)
+    bias.plot([STANDOFF], [0], "o", color=INK, ms=6)
+    bias.annotate("", xy=(STANDOFF, -26), xytext=(landing, -26),
+                  arrowprops={"arrowstyle": "<->", "color": WARN, "lw": 1.1})
+    bias.text((STANDOFF + landing) / 2, -52, "the error a silhouette carries",
+              fontsize=NOTE_SIZE, color=WARN, ha="center")
+    note(bias, 300, 185, "the widest part of the glass is not on the table,\n"
+                         "so its outline does not sit where the glass does", INK)
+
+    stage(handover, "")
+    handover.set_xlim(0, 10)
+    handover.set_ylim(0, 10)
+    boxes = [("splits a blob into two masks", GOOD, 8.0),
+             ("says which is nearer", GOOD, 6.3),
+             ("gives a position in millimetres", WARN, 4.6),
+             ("survives the far base being hidden", WARN, 2.9)]
+    for label, colour, y in boxes:
+        mark = "yes" if colour == GOOD else "no"
+        handover.add_patch(Rectangle((0.5, y - 0.6), 9.0, 1.2,
+                                     facecolor=to_rgba(colour, 0.12), edgecolor=colour, lw=1.1))
+        handover.text(1.0, y, label, fontsize=NOTE_SIZE + 0.4, color=INK, va="center")
+        handover.text(9.0, y, mark, fontsize=LABEL_SIZE, color=colour, va="center", ha="right")
+    handover.text(5.0, 1.2, "Both halves are still silhouettes laid on the table plane,\n"
+                            "carrying the bias on the left. Positions come from solution 2.",
+                  fontsize=NOTE_SIZE, color=MUTED, ha="center")
+
+    footer(figure,
+           "This solution answers one question — how many glasses are in this patch — and hands the answer "
+           "to the " "methods that can turn pixels into millimetres.")
+    figure.subplots_adjust(bottom=0.15, top=0.92, wspace=0.16)
+    save(figure, "01-what-it-does-not-buy.png")
 
 
 def main() -> None:
-    picture_one_blob()
-    picture_distance_transform()
-    picture_markers()
-    picture_flooding()
-    picture_waist_depth()
-    picture_grabcut()
-    picture_hough()
-    picture_viewpoint()
+    picture_where_the_overlap_is()
+    picture_the_survey_cannot()
+    picture_not_a_circle()
+    picture_the_blob()
+    picture_watershed_fails()
+    picture_bases_sit_higher()
+    picture_contact_runs()
+    picture_the_control()
+    picture_where_it_works()
+    picture_what_it_does_not_buy()
 
 
 if __name__ == "__main__":

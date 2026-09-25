@@ -29,16 +29,27 @@ view — the side-on picture problem 1 takes from 380 mm away — and the pictur
 in [`problem.md`](../problem.md) shows this case.
 
 *Looking down.* The survey camera is 450 mm above the table looking straight
-down, so nothing is exactly behind anything. What merges silhouettes here is
-**splay**: a glass is tall, and the ray from the camera through its rim carries
-on to the table further out than its base. A 205 mm glass has its top imaged as
-though it stood 450 / (450 − 205) = **1.84 times** further from the point
-directly under the camera than it really is. So every glass leans outward in
-the survey picture, and it leans onto whatever stands outward of it.
+down. Here a glass does not hide another — but it does **splay**: the ray from
+the camera through its rim carries on to the table further out than its base,
+so the silhouette is a teardrop leaning away from the point under the camera,
+and a 42 mm footprint comes back 156 mm wide. Every position the survey reports
+carries that bias, which is why problem 1 measured a glass 157 mm away at
+244 mm.
 
-Both are real and both produce one blob where there are two glasses. The
-difference matters when you choose a fix: moving the camera sideways cures the
-first, and only moving it *higher* or nearer the nadir weakens the second.
+**Splay does not, however, merge two legal glasses.** This was worth checking
+rather than assuming, and the answer is clean: across 4320 legal arrangements —
+four kinds, six sizes each, separations from 150 to 300 mm, every angle — with
+both glasses wholly inside one 320×240 frame, **not one came back as a single
+patch**. The frame holds 520 mm of table but only about 358 mm at the height of
+a rim, so two glasses far enough apart to be legal are either both in frame and
+clearly separate, or one of them is falling off the edge. A glass half out of
+the picture is a real problem, and it is the one the overlapping stations and
+[solution 3](#solution-3--move-the-camera) exist for — but it is not a merge.
+
+So the two views fail differently, and the fixes do not transfer. The level
+view merges constantly and has [solution 1](#solution-1--split-the-blob-in-the-picture)
+to unpick it. The survey view never merges, and its difficulty is the second
+one below.
 
 **The camera can no longer stand wherever it likes.** Problem 1 measures a
 glass from whichever of nine directions the arm can reach, and with a bare
@@ -243,7 +254,7 @@ inside the simulator.
 
 | | Solution | Family | Where the learned part sits | Closed loop? | Verdict |
 | --- | --- | --- | --- | --- | --- |
-| 1 | [Split the blob in the picture](#solution-1--split-the-blob-in-the-picture) | programmed | — | no | cheap, and treats the symptom |
+| 1 | [Split the blob in the picture](#solution-1--split-the-blob-in-the-picture) | programmed | — | no | free, and the right first pass in the level view |
 | 2 | [Cluster on the table](#solution-2--cluster-on-the-table) | programmed | — | no | **chosen — the core** |
 | 3 | [Move the camera](#solution-3--move-the-camera) | programmed | — | **yes** | **chosen — the loop** |
 | 4 | [Learned doubt steers the next picture](#solution-4--learned-doubt-steers-the-next-picture) | hybrid | ranker | **yes** | the richest version of solution 3 |
@@ -262,165 +273,221 @@ when it would be the right choice.
 
 ## Solution 1 — split the blob in the picture
 
-*Programmed. Keep the mask the geometry already builds. When one patch is
-too wide to be a single object, cut it in two, using nothing but the
-picture.*
+*Programmed. Keep the mask the detector already builds. When one patch is too
+wide to be a single object, cut it in two, using nothing but the picture.*
 
-Problem 1 turns each photograph into a mask and groups the marked pixels by
-whether they touch, so two glasses that overlap in the picture come back as one
-patch. This solution adds a step: when a patch is wider than the known kind
-allows, measure how deep inside it every pixel sits, take the two deepest
-points, and flood outwards from both until the floods meet. Where they meet is
-the cut. It costs a third of a millisecond and needs no depth and no training,
-and it fails silently once the centres come closer than 1.43 radii.
+When two glasses line up with the camera, the near one stands in front of the
+far one and the flood fill that works perfectly for one glass returns a single
+patch. This solution splits that patch without depth, a model or a second
+photograph. It works because the camera looks level from 120 mm above the table
+top, so the table recedes to a horizon and **a glass standing further away has
+its base drawn higher up the picture**. Find the level stretches along the
+underside of the patch: one glass makes one, two glasses at different distances
+make two at different heights, and the lower stretch is the nearer glass. It
+costs a fraction of a millisecond, it never splits a single glass, and it says
+nothing at all when the far glass's base is hidden.
 
 **The long version:** [01-split-the-blob-in-the-picture.md](01-split-the-blob-in-the-picture.md) — this solution explained
 from the beginning, with diagrams.
 
+### Which view this is about
+
+This matters more than anything else in the section, because the obvious answer
+is wrong.
+
+**The survey never produces the case.** Two solid glasses cannot interpenetrate,
+and problem 2 guarantees 150 mm between centres, so their footprints are never
+closer than about 45 mm. Looking straight down from 450 mm, their silhouettes
+do not touch either. Across 4320 legal arrangements — four kinds, six sizes,
+every separation from 150 to 300 mm, every angle — with both glasses wholly
+inside one 320×240 frame, **none merged**. A survey picture holds 520 mm of
+table but only 358 mm at the height of a rim, so two legal glasses are either
+both in frame and clearly separate, or one is falling off the edge, which the
+overlapping stations already handle.
+
+**The level view produces it constantly.** With the camera 380 mm from a glass
+and looking level, a glass 180 mm further back really is behind it. Of 168
+in-line pairs across the four kinds, 132 came back as one patch.
+
+So this solution belongs to the level view — the one
+[solution 3](#solution-3--move-the-camera) sends the camera to — and nowhere
+else.
+
+![Where the overlap actually is](../../../images/problem-2/01-where-the-overlap-is.png)
+
 ### What it is
 
-Problem 1 builds a **mask**: a picture the size of the camera's, each pixel
-marked yes where the 3D point there stands above the table top. It then runs a
-**flood fill**, or **connected components**: take an unvisited yes pixel, spread
-to every yes pixel touching it, call that patch one object, repeat.
+Problem 1 builds a **mask**: each pixel marked yes where the point there stands
+above the table top. It then runs **connected components**: take an unvisited
+yes pixel, spread to every yes pixel touching it, call that patch one object.
 
-Connected components answers one question — *are these pixels joined?* It never
-asks how wide the patch is. So two glasses whose silhouettes touch anywhere come
-back as one patch, and one patch means one glass downstream.
+That answers one question — *are these pixels joined?* It never asks how wide
+the patch is. Two glasses whose silhouettes touch come back as one patch, and
+one patch means one glass downstream.
 
-This approach adds a step: when a patch is too wide to be one glass, cut it,
+This solution adds a step: when a patch is too wide to be one glass, cut it,
 using only the picture.
 
 ### Why anyone does it this way
 
-Splitting a clump of touching things of one colour is an old job in image
-processing, and watershed was designed for it. robotics-basics sets it out under
-[watershed and GrabCut](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#15-watershed-and-grabcut),
-and lists "objects that overlap" as a job
-[connected components](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#13-edges-contours-and-connected-components)
-cannot do. It is also the cheapest thing on the list: no new sensor, no model
-file, no training set, no graphics card.
+Because the information is already there and costs nothing to read. The camera
+sits 120 mm above the table and points level, so the table recedes to a horizon
+and depth is written into the picture as height. A glass 380 mm away has its
+base 87 pixels below the horizon; one 560 mm away has its base 59 pixels below
+it. Twenty-eight pixels, from geometry that is fixed and known.
+
+It is the same reasoning a **ground-plane assumption** does in a driving
+pipeline, where the row at which an object meets the road gives its distance.
+Robotics-basics sets out the general form in
+[what a single camera can and cannot tell you](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/02_sensors.md).
+This cell has an unusually clean version: a flat, level table at a known
+height, and objects that all stand on it.
+
+### The method the textbooks would reach for, and why it fails here
+
+The standard tool for splitting a clump is **watershed on the distance
+transform** — treat the patch as a landscape whose depth is each pixel's
+distance from the outside, find the deepest points, flood outwards from each
+until the floods collide. Robotics-basics sets it out under
+[watershed and GrabCut](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#15-watershed-and-grabcut).
+
+It does not work on this cell's objects, and the reason is structural rather
+than a threshold to tune. The distance transform of a **squat, round** object
+has a single peak at the middle, and two of them give two peaks with a clean
+waist between. A standing glass seen from the side is four times taller than it
+is wide, so its distance from the outside is capped by its half-width all the
+way up: the deepest set is a **ridge, not a peak**. Two overlapping ridges merge
+into one, one marker survives, and there is nothing to flood from.
+
+Measured across the four kinds: of 122 merged pairs, watershed split **four**.
+
+![Why the distance transform cannot help](../../../images/problem-2/01-the-distance-transform-fails.png)
+
+**GrabCut** refines an outline and never decides how many objects there are, so
+it belongs downstream of a split rather than in place of one.
 
 ### How it would work here
 
-**The distance transform.** For every yes pixel, write down how far it is to the
-nearest no pixel. Deep inside a blob that number is large; one pixel in from the
-edge it is 1. Upside down, it is a landscape: blob middles are valleys, edges are
-ridges.
+**1. Notice the patch is too wide.** The one number from outside the picture is
+the widest the known kind can be. At 380 mm one pixel covers 1.37 mm, so a
+90 mm rim is 66 pixels; allow two more for a rasterised edge, which rounds
+outward on both sides. Anything up to 68 pixels is left alone.
 
-**Markers.** A marker is a patch declared in advance to belong to one object.
-Two ways to get them with no human. Take the **local maxima** of the distance
-transform — the deepest points, one per glass. Or shave layers off the outside
-until the bridge between the glasses is eaten away and two lumps are left. The
-**erosion trick** is the same thing: eroding by a disc of radius *r* keeps the
-pixels deeper than *r*.
+**2. Take the underside.** For every lit column, the lowest lit row.
 
-**Watershed, and what flooding means.** That landscape has one basin per glass.
-Punch a hole at each marker and let water rise through it at the same rate
-everywhere. Each basin fills with its own colour, and where two would meet a wall
-is built instead. When the flooding stops, every pixel belongs to one marker and
-the walls are the cuts. Watershed is a flood fill starting from several places at
-once and stopping where the floods collide.
+**3. Find the level stretches.** Maximal runs of columns whose row stays
+constant to within a pixel, at least five columns long. Each is a place where
+something stands on the table.
 
-**GrabCut, and where it fits.** GrabCut refines a rough box round one object
-into a tight outline, by modelling the colours inside the box against those
-outside. It does not split a clump, so it is not the tool for this job. It comes
-afterwards, to tighten each half.
+**4. Two stretches eight pixels apart or more means two glasses,** and the lower
+one is the nearer one. Eight is derivable: 150 mm of depth separation is about
+22 pixels here, and a rasterised edge is worth one or two.
 
-**The round-object version.** From above a glass is a circle, and two
-overlapping circles make a blob with a **waist**, a pinch where the outlines
-cross. That is the narrowest place, so the distance transform dips there, and
-cutting there is the whole method, specialised. Its close relative is **Hough
-circle detection**, which scores every centre and radius against the edges.
+![The test itself](../../../images/problem-2/01-contact-runs.png)
 
-**Licence.** `cv2.distanceTransform`, `cv2.erode`, `cv2.watershed`,
-`cv2.grabCut` and `cv2.HoughCircles` are OpenCV, Apache-2.0, free commercially;
-the same algorithms are in scikit-image, BSD-3. Neither needs a GPU, which
-matters on a Mac with no NVIDIA card.
+**Why level stretches and not steps.** The obvious test — *is there a step in
+the underside?* — catches 93 per cent of merged pairs and also splits **69 per
+cent of single glasses**, because a stemmed glass's bowl overhangs its foot and
+produces a 96-pixel step all by itself. Counting level stretches is immune:
+however odd its shape, a glass rests on the table in exactly one place. Across
+120 single glasses of all four kinds, it split none.
+
+**Licence.** Nothing beyond NumPy: the underside is one `argmax` per column and
+the runs are a single pass. `cv2.grabCut`, if used to tidy afterwards, is
+OpenCV, Apache-2.0.
 
 ### A worked example
 
-At survey height, 450 mm up, one picture covers about 520 by 390 mm across 320
-by 240 pixels, so one pixel is 1.6 mm.
+Camera level, 120 mm above the table. Two glasses of a kind whose rim is 90 mm
+and base 43 mm, standing 140 mm tall. Glass A is 380 mm away, glass B 180 mm
+further back and 60 mm to one side. One pixel covers 1.37 mm at A.
 
-Two glasses of the widest kind, 105 mm across, stand in line with the camera. Each
-silhouette is about 65 pixels wide, and their centres land 50 pixels apart, so the
-outlines overlap and the flood fill returns one blob of 114 pixels by 65 — **185
-by 105 mm**. No glass 105 mm across can be 185 mm long, so it is flagged.
+**What comes back.** One patch, 86 pixels wide — 118 mm, against the 68-pixel
+limit the kind allows. Flagged.
 
-The distance transform peaks at 32 pixels (52 mm) at each centre and dips to 20
-pixels (32 mm) at the waist. Threshold at 0.7 of the peak, 22.4 pixels: the bridge
-drops out and both peaks survive. Flood from them and they collide at the waist,
-leaving a cut 40 pixels long. Two pieces come out — but *how wide* each one is
-depends on how you measure it. The bounding box of a half is 57 pixels, 91 mm,
-14 mm under the true 105, because the watershed wall runs down the middle of
-the overlap and each half is missing the part the other one took. Fit a circle
-to the half instead and it returns 102 mm, inside the kind's range. Report the
-fitted diameter, not the box.
+**The underside.** Two level runs survive: columns 18–49 at row 148, and
+columns 55–74 at row 119. **29 pixels apart**, against the 28 the geometry
+predicts; the extra pixel is the rasterised edge.
 
-The split worked. Both positions are still silhouettes laid on the table plane,
-and problem 1 measured what that costs: a glass 157 mm away reported at 244 mm.
+**The answer.** Two glasses. The cut goes at column 52, and the lower run is the
+nearer one, so the left piece is A and the right piece is B. Two masks and an
+ordering, from one photograph and a third of a millisecond.
+
+**What it has not produced.** Any position in millimetres. Both pieces are still
+silhouettes, and a silhouette does not sit where its glass does — problem 1
+measured what that costs: a glass 157 mm away reported at 244 mm.
 
 ### What it needs
 
-The mask problem 1 already builds. One number, the largest footprint the kind
-can have, which its specification holds. One tuning constant, the fraction of the
-peak at which markers are cut. OpenCV, already a dependency.
+The mask problem 1 already builds. One number from outside the picture, the
+widest the kind can be, which its specification holds. The standoff the camera
+used, to turn that number into pixels — which the arm knows, because it chose
+it. NumPy; not even OpenCV, strictly. About thirty lines.
 
 ### What it is good at
 
-It is cheap: a millisecond a frame, no weights file to keep in step with the
-glassware, no data to collect. Its failures are legible — find the number that was
-too low and you know why. And it **needs no depth at all**. If the depth camera
-fails, or the glasses become real glass, every geometric method here stops and
-this one carries on, given a mask from colour.
+It is nearly free — a third of a millisecond — and it adds no dependency, which
+everything from solution 4 onward does. **It never invents a glass:** zero false
+splits across 120 single glasses of all four kinds, and the method is built
+round that asymmetry, because two wrong positions are worse downstream than one
+patch honestly reported as unresolved. It returns the **ordering** as well as
+the split, which is a genuine extra. Every step prints. And it **needs no
+depth**: if the glasses become real glass and the depth camera returns a
+glass-shaped hole, every method that clusters points in the room stops and this
+one carries on, given a mask from colour.
 
 ### What it is bad at
 
-It cannot tell a wide blob from two glasses; width is the whole of its evidence.
-It gives no position better than the one it started with, since both halves are
-still silhouettes on the table plane carrying the same bias. And 0.7 is not a fact
-about anything. It is a number that worked on the examples it was tried on.
+**It cannot see a base that is hidden.** Of 122 merged pairs it split 76, and
+the breakdown is sharp rather than gradual: from 40 mm of lateral offset onward
+it split **74 of 74**; below that, two of 48. There is no middle ground to tune
+into, because the question is only whether any of the far glass's base is
+exposed.
+
+![Where it works and where it cannot](../../../images/problem-2/01-where-it-works.png)
+
+**It gives no position.** Both pieces are silhouettes carrying the same bias
+they started with.
+
+**It assumes the table is flat, level and at a known height.** True here, and
+still three assumptions. Five millimetres out of level costs about a pixel at
+this standoff, which is tolerable; a sloping table would not be.
+
+**It only works from a level camera** — which is consistent, since from the
+survey view there is nothing to split.
 
 ### How it fails
 
-**Heavy overlap.** The same two glasses, 20 pixels apart instead of 50. The blob
-is 137 mm long, still too wide to be one glass, so it is noticed. But the waist is
-now 32 pixels against a 33-pixel peak, a dip of three per cent. No threshold
-separates the markers without destroying them, so watershed returns one region.
-The split holds only while the centres are more than about 1.43 radii apart, here
-46 pixels or 74 mm. Light overlap is easy. Heavy overlap is the case that matters,
-and it is the one that fails.
+**Silently, when the far base is hidden,** and the width check is what catches
+it. The method fails to a flag rather than to a wrong answer, which is the whole
+design.
 
-**Over-splitting.** A ragged mask edge puts a second dip in the distance
-transform, and watershed cuts one glass in two. That at least is loud: the pieces
-come out too small for the kind.
+**A glass cut off by the frame edge** has an underside that ends at the
+boundary. The level-run test survives it, but the width check does not, because
+a cut-off silhouette is narrower than its glass. A patch touching the edge
+should be reported as cut off rather than measured.
 
-**The fundamental objection.** The blob is wide **because of where the camera
-was standing**, not because of anything about the glasses. Two glasses 150 mm
-apart merge from one viewpoint and separate cleanly from another 200 mm along, and
-nothing in the mask records that. A method reasoning inside the picture cannot
-tell a projection accident from two objects genuinely side by side, so it cuts
-both the same way. The depth picture holds that answer already, and clustering on
-the table reads it directly.
+**Something else standing in the patch.** The method finds level stretches, not
+glasses. The rack's foot inside the same patch is a level stretch. The circle
+fit in solution 2 is the guard.
+
+**The standing objection, answered.** An earlier version of this section argued
+that a method reasoning inside the picture cannot tell a projection accident
+from two objects genuinely side by side. That is still true of the *width*
+trigger, and it is no longer true of the split: the contact rows are a
+measurement of depth, read off the picture. What remains true is that the method
+cannot choose a better viewpoint, and when the base it needs is hidden that is
+exactly what is wanted.
 
 ### When it would be the right choice
 
-When there is no depth. On real glassware the depth picture has a glass-shaped
-hole where the glass is, and every method that clusters points in the room has
-nothing to cluster. A mask from colour plus a watershed split is then a working
-answer rather than a worse one.
+**First, in the level view**, because it is free and resolves most in-line
+pairs. **Whenever there is no depth** — on real glassware, where clustering has
+nothing to cluster. **As a second opinion**, because it fails in different
+circumstances from the geometric methods, and two independent methods agreeing
+is worth more than either alone.
 
-Also as a cheap second check: if a cluster's fitted circle is far too big, a
-watershed on its pixels costs a millisecond and either agrees or does not.
-
-It is the wrong separator to lead with here, because the depth is present and
-already knows what the picture threw away.
-
-![Splitting the blob in the picture](../../../images/problem-2-the-waist.png)
-
-![Splitting the blob in the picture](../../../images/problem-2-the-waist.png)
-
+Not in the survey, because there the case does not arise.
 ---
 
 ## Solution 2 — cluster on the table
@@ -719,11 +786,16 @@ Connolly's, from *The Determination of Next Best Views* (ICRA, 1985).
 
 ### Why anyone does it this way
 
-Because projection throws information away and no processing puts it back.
-[`problem.md`](../problem.md) says it plainly: two glasses in line with the camera
-land on top of each other, and the picture no longer holds which pixels were
-near and which far. A watershed on that blob is guessing. A camera 200 mm to
-the left has the fact.
+Because projection throws information away and only some of it can be
+recovered. [`problem.md`](../problem.md) says it plainly: two glasses in line
+with the camera land on top of each other, and the picture no longer holds
+which pixels were near and which far.
+
+*Some* of it comes back without moving. [Solution 1](#solution-1--split-the-blob-in-the-picture)
+reads the contact rows and recovers the split in three cases out of four. But
+it recovers nothing at all when the far glass's base is hidden behind the near
+one, and that is precisely the arrangement most in need of an answer. A camera
+200 mm to the left simply has the fact.
 
 It is also cheap. A trained instance model wants a labelled set, weights and a
 graphics card this cell has not got. An extra viewpoint costs seconds of arm
@@ -1676,8 +1748,8 @@ becomes **counting clusters of votes**, which is easy.
 
 The idea predates neural networks. The **generalised Hough transform**
 (Ballard, *Pattern Recognition*, 1981) lets every edge point vote for where the
-object's centre would be, then looks for peaks — solution 1's Hough circle
-detection, generalised. The learned version replaces the hand-built vote table
+object's centre would be, then looks for peaks — Hough circle detection,
+generalised to shapes with no equation. The learned version replaces the hand-built vote table
 with a network trained on examples: first, I believe, **Hough Forests** (Gall
 and Lempitsky, CVPR 2009), though the neural descendants go under several names
 and I am not confident which is canonical.
