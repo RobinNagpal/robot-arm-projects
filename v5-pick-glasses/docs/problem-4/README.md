@@ -33,7 +33,7 @@ plans for the glasses still on the table.
 
 ## Where it sits
 
-← [Problem 3 — glasses standing too close](../problem-3/)
-→ [Problem 5 — kinds whose proportions are unknown](../problem-5/)
+← [Problem 3 — glasses standing too close](../problem-3)
+→ [Problem 5 — kinds whose proportions are unknown](../problem-5)
 
 [The five problems](../README.md) has the map.

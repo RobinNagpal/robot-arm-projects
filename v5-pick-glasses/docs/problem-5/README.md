@@ -33,6 +33,6 @@ So the work here does not start on the rules. It starts on the cell.
 
 ## Where it sits
 
-← [Problem 4 — several kinds at once](../problem-4/)
+← [Problem 4 — several kinds at once](../problem-4)
 
 [The five problems](../README.md) has the map.

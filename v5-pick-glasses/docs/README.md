@@ -12,11 +12,11 @@ to know, and what counts as done. Everything here follows from it.
 
 | | Problem | Where it stops | State |
 | --- | --- | --- | --- |
-| **1** | [One glass, start to finish](problem-1/) | the glass is on the rack | **built** |
-| **2** | [Many glasses of one kind](problem-2/) | a set of pixels per glass | designed, not built |
-| **3** | [Glasses standing too close](problem-3/) | the glasses are far enough apart to grip | designed, not built |
-| **4** | [Several kinds at once](problem-4/) | the table is clear | stated |
-| **5** | [Kinds whose proportions are unknown](problem-5/) | the table is clear | stated |
+| **1** | [One glass, start to finish](problem-1) | the glass is on the rack | **built** |
+| **2** | [Many glasses of one kind](problem-2) | a set of pixels per glass | designed, not built |
+| **3** | [Glasses standing too close](problem-3) | the glasses are far enough apart to grip | designed, not built |
+| **4** | [Several kinds at once](problem-4) | the table is clear | stated |
+| **5** | [Kinds whose proportions are unknown](problem-5) | the table is clear | stated |
 
 ## Why they are in this order
 
@@ -80,17 +80,29 @@ code as it stands, which is to say about problem 1.
 
 ## The pictures
 
-Two generators, and the difference between them matters.
+Every diagram in these documents is drawn by a script, and every script lives
+in [`images/generators/`](../images/generators/), next to the pictures it
+writes. Nothing in this project is a hand-drawn picture kept in step by hand.
 
-[`make_images.py`](make_images.py) draws everything in the problem-1
-walkthrough by importing the project's own modules and plotting what they
-return. Nothing there is illustrative: if a rule changes, the picture changes
-with it the next time the script is run.
+There are three families, and the difference between them matters.
 
-[`make_problem_images.py`](make_problem_images.py) draws the diagrams in the
-problem documents. Those describe problems that are not built, so there is no
-function to plot. They are drawn from the geometry written beside them, and the
-two have to be kept in step by hand.
+[`make_images.py`](../images/generators/make_images.py) draws everything in the
+problem-1 walkthrough by importing the project's own modules and plotting what
+they return. Nothing there is illustrative: if a rule changes, the picture
+changes with it the next time the script is run.
+
+[`make_problem_images.py`](../images/generators/make_problem_images.py) draws
+the diagrams in the problem documents. Those describe problems that are not
+built, so there is no function to plot. They are drawn from the geometry
+written beside them, and the two have to be kept in step by hand.
+
+[`generators/problem-2/`](../images/generators/problem-2/) holds one script per
+solution — `make_01_images.py` to `make_09_images.py` — plus
+[`diagram_style.py`](../images/generators/problem-2/diagram_style.py), the
+shared palette and page setup that keeps sixty-seven diagrams by nine different
+hands looking like one document. These compute their own geometry, so the
+arithmetic in a picture and the arithmetic in the prose beside it come from the
+same numbers.
 
 ## Where the techniques come from
 

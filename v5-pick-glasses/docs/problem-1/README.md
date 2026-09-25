@@ -168,13 +168,13 @@ project now does not.
 ## The pictures
 
 Every picture these six documents use is drawn by
-[`../make_images.py`](../make_images.py), which imports the project's modules
+[`images/generators/make_images.py`](../../images/generators/make_images.py), which imports the project's modules
 and plots what they return. Nothing is illustrative. If a rule changes, the
 pictures change with it the next time it is run, which is the only way a
 diagram stays true.
 
 The diagrams in the *problem* documents, here and in the folders for problems 2
-to 5, come from [`../make_problem_images.py`](../make_problem_images.py)
+to 5, come from [`images/generators/make_problem_images.py`](../../images/generators/make_problem_images.py)
 instead, and that promise does not hold for them: a problem that is not built
 has no function to plot. They are drawn from the geometry written beside them.
 

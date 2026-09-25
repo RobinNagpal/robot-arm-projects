@@ -5,10 +5,12 @@ standing too close together for the gripper to get round one without fouling
 its neighbour. The arm has to move them apart by **dragging them across the
 table**, not by lifting them.
 
+This folder holds the problem; [`solutions/`](solutions/) holds the answers.
+
 - [**The problem**](problem.md) — why dragging rather than lifting, the three
   distances that matter, how low a push has to be and why that is a property of
   the glass, and what "done" means.
-- [**Solution overview**](solution-overview.md) — **eleven solutions in full**:
+- [**Solution overview**](solutions/solution-overview.md) — **eleven solutions in full**:
   four programmed, four hybrid, three learned, and every one of them buildable
   inside the simulator. It starts with the vocabulary
   and the contact mechanics, because a push is less simple than it looks, and
@@ -18,7 +20,7 @@ table**, not by lifting them.
   does it like that, how it would work here, its feedback loop if it has one, a
   worked example with real numbers, what it needs, what it is good and bad at,
   how it fails, and when it would be the right choice.
-- [**The ones that need more than a simulator**](learned-with-hardware.md) —
+- [**The ones that need more than a simulator**](solutions/learned-with-hardware.md) —
   two good answers that were moved out: model-free reinforcement learning,
   which wants about eleven days of continuous simulation, and imitation from a
   scripted expert, which wants a transformer or a diffusion policy trained on a
@@ -51,7 +53,7 @@ decides — the same structure as the squeeze in problem 1.
 
 ## Where it sits
 
-← [Problem 2 — many glasses of one kind](../problem-2/)
-→ [Problem 4 — several kinds at once](../problem-4/)
+← [Problem 2 — many glasses of one kind](../problem-2)
+→ [Problem 4 — several kinds at once](../problem-4)
 
 [The five problems](../README.md) has the map.

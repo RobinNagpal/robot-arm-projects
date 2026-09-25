@@ -141,4 +141,4 @@ up from where the push aimed it, and how many were refused.
 
 ## How it would be solved
 
-→ [Solution overview](solution-overview.md)
+→ [Solution overview](solutions/solution-overview.md)

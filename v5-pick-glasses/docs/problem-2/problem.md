@@ -112,4 +112,4 @@ looks like one large glass, and everything downstream believes it.
 
 ## How it would be solved
 
-→ [Solution overview](solution-overview.md)
+→ [Solution overview](solutions/solution-overview.md)
