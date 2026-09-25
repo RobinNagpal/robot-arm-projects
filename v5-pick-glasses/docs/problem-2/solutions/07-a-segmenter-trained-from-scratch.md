@@ -1,5 +1,9 @@
 # Solution 7 — a segmenter trained from scratch
 
+*Learned, as the decider, and trained from random initialisation on renders
+alone. One class, one kind of object, one camera — a network that only has to
+work in this cell can be small enough to train in an afternoon.*
+
 ## In one paragraph
 
 This cell does not need a general-purpose model. One class, one kind of object,

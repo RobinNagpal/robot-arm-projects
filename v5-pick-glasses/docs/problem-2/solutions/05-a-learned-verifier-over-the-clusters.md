@@ -1,5 +1,9 @@
 # Solution 5 — a learned verifier over the clusters
 
+*Hybrid, with the model as a verifier. Do not learn the perception. Learn the
+one question the rules are worst at — is this one object or two — on the crop
+the rules have already isolated.*
+
 ## In one paragraph
 
 Do not learn the perception. The geometry already separates almost every glass

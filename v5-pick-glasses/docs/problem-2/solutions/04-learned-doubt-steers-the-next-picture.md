@@ -1,5 +1,9 @@
 # Solution 4 — learned doubt steers the next picture
 
+*Hybrid, with the model as a ranker. The fixed sweep happens first. Then a
+learned estimate of how unsure each object is decides which extra picture is
+worth taking, from candidate poses the geometry has already filtered.*
+
 ## In one paragraph
 
 The arm cannot look everywhere, so it has to choose. This solution leaves the
