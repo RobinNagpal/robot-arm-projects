@@ -346,8 +346,8 @@ what would change that.
 
 **Nothing here knows where the centre of mass is.** Every rule on this page
 reasons about the *outline*. A glass is near enough symmetric that the centre
-of the outline and the centre of the mass are the same place, so the omission
-costs nothing here — but it is an assumption nobody wrote down, and it is false
+of the outline and the centre of the mass are the same place, so leaving it out
+costs nothing here. But it is an assumption nobody wrote down, and it is false
 the moment the object is a mug with a handle or a bottle with liquid in the
 bottom. [The centre of mass, and the torque nobody budgets
 for](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/03_choosing-a-grip.md#5-the-centre-of-mass-and-the-torque-nobody-budgets-for)

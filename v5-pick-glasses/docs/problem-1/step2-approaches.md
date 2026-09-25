@@ -42,7 +42,10 @@ particular glass, and the only number it needs from outside is a distance the
 arm already knows. What it cannot see is anything that breaks the symmetry: a
 glass with a chip or a badge on one side is measured as though it were plain.
 
-*Needs, and from [step 1](step1-approaches.md):* one side-on picture plus the distance to the glass — today the wrist camera carried round to the side (approach 0), or a fixed camera at table level with no arm move (approach 2), with the distance taken from where step 1 found the glass.
+*Needs, and from [step 1](step1-approaches.md):* one side-on picture, plus the
+distance to the glass. Today that is the wrist camera carried round to the side
+(approach 0), or a fixed camera at table level with no arm move (approach 2).
+The distance comes from where step 1 found the glass.
 
 **Silhouettes from several sides** is the same idea taken further: photograph
 the object from several angles and keep only the space that every outline
@@ -53,43 +56,57 @@ than it sounds — a silhouette carve cannot see a dent in the side of a cup,
 because no outline shows it. It would be the right move the day this project
 had to pick up a jug.
 
-*Needs, and from [step 1](step1-approaches.md):* side-on pictures from several known angles — the wrist camera stopping at several points round the glass, or two or more fixed side cameras (approach 2).
+*Needs, and from [step 1](step1-approaches.md):* side-on pictures from several
+known angles. Either the wrist camera stopping at several points round the
+glass, or two or more fixed side cameras (approach 2).
 
 **Photogrammetry and the radiance-field methods** —
 [reconstruction, when you do not have a model](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/05_models-that-measure.md#4-reconstruction-when-you-do-not) —
 produce a genuine surface
-rather than an outline, and the newer ones handle transparency and specular
-highlights far better than anything classical. They are the state of the art
-for exactly this object. They are also seconds to minutes of computation per
-glass, they want many overlapping views, and what they give back is a dense
-model of which this task would use about six numbers. For a bin-picking cell
+rather than an outline. The newer ones handle transparency and bright
+reflections far better than anything classical, so they are the state of the art
+for exactly this object.
+
+They are also seconds to minutes of computation per glass, they want many
+overlapping views, and what they give back is a dense model of which this task
+would use about six numbers. For a bin-picking cell
 facing unknown objects that trade is often worth it; for a task whose shape
 rules need a profile and nothing else, it is not.
 
-*Needs, and from [step 1](step1-approaches.md):* dozens of overlapping colour pictures from all round the glass, with the camera's position for each — only the wrist camera circling the glass can give that; no fixed camera in step 1 does.
+*Needs, and from [step 1](step1-approaches.md):* dozens of overlapping colour
+pictures from all round the glass, with the camera's position for each. Only the
+wrist camera circling the glass can give that. No fixed camera in step 1 can.
 
 **Structured light and laser scanning** —
 [how the four sensing principles fail](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/02_sensors.md#11-how-the-four-sensing-principles-fail)
 is what each one does and does not survive — are how industry actually measures
-shapes to a fraction of a millimetre, and they fail on this object for the
-same reason the depth camera does: the pattern goes through the glass instead
-of landing on it. Making them work means coating the glass in scanning spray,
+shapes to a fraction of a millimetre. They fail on this object for the same
+reason the depth camera does: the pattern goes through the glass instead of
+landing on it. Making them work means coating the glass in scanning spray,
 which is fine in a metrology lab and absurd in a kitchen.
 
-*Needs, and from [step 1](step1-approaches.md):* a new sensor, a projector or laser line plus a camera, swept up the glass — the nearest thing in step 1 is the lidar (approach 4), which fails on real glass for the same reason.
+*Needs, and from [step 1](step1-approaches.md):* a new sensor — a projector or
+laser line plus a camera, swept up the glass. The nearest thing in step 1 is the
+lidar (approach 4), which fails on real glass for the same reason.
 
 **Fitting a parametric shape** is the most interesting alternative on the
 list, because it competes with step 3 rather than with this step. Instead of
-measuring a profile and then asking which kind of glass it resembles, you
-assume a family — a bowl on a stem on a foot, with a handful of free numbers —
-and fit the member that best matches the silhouette. What comes out is the
-kind and the dimensions in one go, with an error bar attached, which is more
-than the current arrangement gives. The catch is that it only works for families somebody has written down. A glass
+measuring a profile and then asking which kind of glass it resembles, you assume
+a family at the start: a bowl on a stem on a foot, with a handful of free
+numbers. Then you fit whichever member of that family best matches the outline.
+
+What comes out is the kind and the dimensions in one go, with an error bar
+attached, which is more than the current arrangement gives.
+
+The catch is that it only works for families somebody has written down. A glass
 of a shape nobody anticipated fits badly and reports a confident wrong answer.
 The rules in step 3 return `None` and leave it standing instead. That
 difference — a bad fit against an honest refusal — is why it was not chosen.
 
-*Needs, and from [step 1](step1-approaches.md):* no new picture at all — it runs on the outline one of the silhouette methods above already gives, so the same side picture as today (approach 0) or from a fixed side camera (approach 2).
+*Needs, and from [step 1](step1-approaches.md):* no new picture at all. It runs
+on the outline one of the silhouette methods above already gives. So the same
+side picture as today (approach 0), or one from a fixed side camera
+(approach 2).
 
 **Matching against a library of CAD models** —
 [pose estimation, when you have a model](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/05_models-that-measure.md#3-pose-estimation-when-you-have-a-model) —
@@ -99,6 +116,8 @@ attached. It is very accurate when the model exists and useless when it does
 not, and this project's opening premise is that the sizes are not known in
 advance, so the library cannot exist.
 
-*Needs, and from [step 1](step1-approaches.md):* a 3D point cloud of the glass, which the depth camera from above gives (approaches 0 and 1), plus a library of glass models, which this project's rule forbids.
+*Needs, and from [step 1](step1-approaches.md):* a 3D point cloud of the glass,
+which the depth camera from above gives (approaches 0 and 1). Plus a library of
+glass models, which this project's rule forbids.
 
 ← [Step 2 — measuring one](step2-measuring-one.md)

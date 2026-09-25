@@ -22,9 +22,9 @@ produce a grip that is arithmetically correct and a bad idea, which is what the
 five rejections exist to catch.
 
 **The rules already generalise. The gripper does not.** This is the part worth
-knowing before starting. Given 200 random glasses of each kind at their exact
-shapes, with no camera error at all, straight glasses got a usable grip 85 times
-out of 200 and short-stemmed ones got none — because a glass under about 120 mm
+knowing before starting. The test was 200 random glasses of each kind, at their
+exact shapes, with no camera error at all. Straight glasses got a usable grip 85
+times out of 200. Short-stemmed ones got none — because a glass under about 120 mm
 has no height at all between the lowest the gripper body can go and the highest
 a grip can be and still be turned over. The numbers are in
 [`known-gaps.md`](../known-gaps.md).

@@ -14,8 +14,8 @@ rule changes per glass.**
 
 **Naming becomes load-bearing.** In problem 1 a wrong name is cheap, because a
 rule applied to the wrong kind usually fails its own checks and the glass is
-refused. With several kinds a name can be wrong *and plausible* — a tumbler
-with a notch in its outline called stemmed — and the rule for a stemmed glass
+refused. With several kinds a name can be wrong *and plausible*. Call a
+tumbler with a notch in its outline stemmed, and the rule for a stemmed glass
 will return a grip at a stem that does not exist. Nothing downstream re-checks
 the name, because nothing downstream can.
 

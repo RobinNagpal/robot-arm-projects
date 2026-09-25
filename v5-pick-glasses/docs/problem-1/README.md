@@ -49,31 +49,27 @@ Anything a step cannot know honestly is left for the step that can measure it.
 Every one of them has the same five parts, in the same order:
 
 1. **The step in pseudocode**, and a table of what each library gives it. The
-   pseudocode marks every line as ours or as a library's, so it is clear where
-   the project's own thinking is and where it is standing on someone else's
-   work.
-2. **How the step works**, with the project's own arithmetic on the project's
-   own glasses.
-3. **What went wrong** when that step was first put in front of a simulator,
-   and what was done about it. Worth reading before changing anything near the
-   simulator. Almost none of these faults announced themselves anywhere near
-   where they lived: a missing line in a model file arrived as an arm that
-   could not plan a path, and a texture drawn at the wrong angle arrived as a
-   glass lowered onto bare table.
-4. **Where the current approach can fail.** What the step assumes, and what
-   happens when the assumption does not hold. These are the sections to read
-   before trusting any of this outside the simulator — they cover unknown
-   objects on the table, real glassware, wet glass, and the places a number was
-   chosen rather than derived.
-5. **How else it could have been done** — the models, the frameworks and the
-   classical methods that could have stood in that step's place. What each
-   would be good and bad at here, and why the code does what it does instead.
-   These comparisons are the quickest way to see what the project trades away.
-   It is usually the same trade: accuracy on a hard real-world case, against
-   being able to say why a glass was refused. For steps 1, 2, 4 and 6 this
-   part grew long enough to have its own document, `step1-approaches.md`,
-   `step2-approaches.md`, `step4-approaches.md` and `step6-approaches.md`, and
-   the step document links to it.
+pseudocode marks every line as ours or as a library's, so it is clear where the
+project's own thinking is and where it is standing on someone else's work. 2.
+**How the step works**, with the project's own arithmetic on the project's own
+glasses. 3. **What went wrong** when that step was first put in front of a
+simulator, and what was done about it. Worth reading before changing anything
+near the simulator. Almost none of these faults announced themselves anywhere
+near where they lived. A missing line in a model file arrived as an arm that
+could not plan a path, and a texture drawn at the wrong angle arrived as a
+glass lowered onto bare table. 4. **Where the current approach can fail.** What
+the step assumes, and what happens when the assumption does not hold. These are
+the sections to read before trusting any of this outside the simulator — they
+cover unknown objects on the table, real glassware, wet glass, and the places a
+number was chosen rather than derived. 5. **How else it could have been done**
+— the models, the frameworks and the classical methods that could have stood in
+that step's place. What each would be good and bad at here, and why the code
+does what it does instead. These comparisons are the quickest way to see what
+the project trades away. It is usually the same trade: accuracy on a hard real-
+world case, against being able to say why a glass was refused. For steps 1, 2,
+4 and 6 this part grew long enough to have its own document,
+`step1-approaches.md`, `step2-approaches.md`, `step4-approaches.md` and
+`step6-approaches.md`, and the step document links to it.
 
 ## The six
 
@@ -130,8 +126,8 @@ reword the other.
 ## Where the techniques come from
 
 None of the perception here is invented for this project. Each step is one named
-technique, and the place they are all set out side by side — what each is for,
-what it costs, and the five jobs it cannot do — is the **object perception**
+technique. The place they are all set out side by side — what each is for, what
+it costs, and the five jobs it cannot do — is the **object perception**
 area of [robotics-basics](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/01_overview.md). Every step document links to the
 sections it uses, and this is the map:
 
