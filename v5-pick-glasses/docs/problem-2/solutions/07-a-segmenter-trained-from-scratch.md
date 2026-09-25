@@ -427,7 +427,7 @@ Training from scratch on an endless supply of exact ones is not.
 
 ### The shape: a U-Net
 
-![The U-Net shape, with the tensor sizes for a 320 x 240 input](../../../images/problem-2/07-the-u-net-shape.png)
+![The U-Net shape, and the size of the block of numbers at each level](../../../images/problem-2/07-the-u-net-shape.png)
 
 Follow the left column down, then the right column up. The dashed green lines
 are the part that gives the shape its name.
@@ -682,8 +682,8 @@ What would be varied, scene by scene:
 - **the table** — its colour and texture;
 - **the glasses** — tint, shininess, and each one's proportions drawn
   independently from its kind's plausible range;
-- **the camera pose** — jittered slightly around the nominal survey pose,
-  because the arm's own positioning is not exact;
+- **the camera pose** — jittered slightly around the nominal place it looks down
+  from, because the arm's own positioning is not exact;
 - **exposure and sensor noise**;
 - **the arrangement** — four to six glasses, placed anywhere in the zone.
 
@@ -704,7 +704,7 @@ flat table, because that is the task, not an accident of the data.
 ### The data, the recipe and the machine
 
 The training set is generated, not collected. A script spawns a random scene in
-Gazebo according to the list above, renders it from a survey pose, and writes
+Gazebo according to the list above, renders it from the top, and writes
 the picture out together with the per-object mask the simulator already holds.
 Two pictures per station, a slide apart, matching exactly what the arm will
 really take.
