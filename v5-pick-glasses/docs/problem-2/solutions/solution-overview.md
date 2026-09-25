@@ -1525,13 +1525,13 @@ alone. One class, one kind of object, one camera — a network that only has to
 work in this cell can be small enough to train in an afternoon.*
 
 This cell does not need a general-purpose model. One class, one kind of object,
-one camera, one lighting rig, pictures 320 by 240. A small encoder-decoder — a
-U-Net of about 482,000 weights, which is arithmetic on its channel widths and
-not a measurement — can be trained from random initialisation on Gazebo renders
-alone, because the simulator labels every picture exactly and for nothing. It
-returns a probability at every pixel, and the pixels it is unsure about are a
-reason to take another picture. It gives semantic and not instance
-segmentation, and it learns Gazebo, not the world.
+one camera, one lighting setup, pictures 320 by 240. A small network — a U-Net of
+about 482,000 weights, which is arithmetic on its channel widths and not a
+measurement — can be trained from a random start on Gazebo renders alone, because
+the simulator labels every picture exactly and for nothing. It returns a
+probability at every pixel, and the pixels it is unsure about are a reason to
+take another picture. It tells you *which pixels are glass*, but not *which
+glass*, and it learns Gazebo rather than the world.
 
 **The long version:** [07-a-segmenter-trained-from-scratch.md](07-a-segmenter-trained-from-scratch.md) — this solution explained
 from the beginning, with diagrams.
