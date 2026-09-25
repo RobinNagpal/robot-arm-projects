@@ -488,9 +488,24 @@ def three_questions() -> None:
 
     boxes = {
         "start": (5.0, 9.3, "The measured profile\n(a width at every height)", start),
-        "waist": (5.0, 7.3, "1. Is there a waist?\nA narrow part with wider glass\nabove it and below it", question),
-        "low": (2.3, 4.6, f"2. Is the waist lower than\n{SHORT_STEM_FRACTION:.0%} of the glass's height?", question),
-        "lean": (7.7, 4.6, f"3. Does the lower wall lean\nmore than {TAPER_THRESHOLD_DEG:.0f} degrees?", question),
+        "waist": (
+            5.0,
+            7.3,
+            "1. Is there a waist?\nA narrow part with wider glass\nabove it and below it",
+            question,
+        ),
+        "low": (
+            2.3,
+            4.6,
+            f"2. Is the waist lower than\n{SHORT_STEM_FRACTION:.0%} of the glass's height?",
+            question,
+        ),
+        "lean": (
+            7.7,
+            4.6,
+            f"3. Does the lower wall lean\nmore than {TAPER_THRESHOLD_DEG:.0f} degrees?",
+            question,
+        ),
         "short": (1.1, 1.3, "short-stemmed\nglass", answer),
         "stemmed": (3.5, 1.3, "stemmed glass\n(wine glass)", answer),
         "tapered": (6.5, 1.3, "tapered\nglass", answer),
@@ -583,7 +598,14 @@ def four_kinds_named() -> None:
             low, high = (fraction * tall for fraction in LEAN_BAND)
             for ax in (shape, curve):
                 ax.axhspan(low, high, color=FAINT, alpha=0.25)
-            shape.text(LABEL_X, (low + high) / 2, f"lean measured\nhere: {lean:.1f}°", fontsize=8, color=INK, va="center")
+            shape.text(
+                LABEL_X,
+                (low + high) / 2,
+                f"lean measured\nhere: {lean:.1f}°",
+                fontsize=8,
+                color=INK,
+                va="center",
+            )
             side = "more" if lean > TAPER_THRESHOLD_DEG else "less"
             verdict = (
                 f"no waist; the lower wall\nleans {lean:.1f} degrees, "
@@ -1046,7 +1068,10 @@ def pad_shapes() -> None:
         ax.axis("off")
 
     # Side on: a taller pad means a longer contact line to resist tipping.
-    for x, height, label in ((-35, PAD_HEIGHT * 1000.0, "short pad"), (35, 3 * PAD_HEIGHT * 1000.0, "tall pad")):
+    for x, height, label in (
+        (-35, PAD_HEIGHT * 1000.0, "short pad"),
+        (35, 3 * PAD_HEIGHT * 1000.0, "tall pad"),
+    ):
         tall.add_patch(plt.Rectangle((x - 20, 0), 40, 100, color=GLASS, alpha=0.15))
         tall.plot([x - 20, x - 20], [0, 100], color=GLASS, linewidth=1.6)
         tall.plot([x - 20, x - 20], [50 - height / 2, 50 + height / 2], color=GRIP, linewidth=5)
@@ -1135,7 +1160,10 @@ def step_six_in_pictures() -> None:
     clearance = PLACE_CLEARANCE * 1000.0
 
     def pads(opening):
-        return [np.array([[x, g - pad_h / 2], [x + 4, g - pad_h / 2], [x + 4, g + pad_h / 2], [x, g + pad_h / 2]])
+        return [
+            np.array(
+                [[x, g - pad_h / 2], [x + 4, g - pad_h / 2], [x + 4, g + pad_h / 2], [x, g + pad_h / 2]]
+            )
                 for x in (-opening - 4, opening)]
 
     def draw_held(ax, angle, lift, opening=half):
