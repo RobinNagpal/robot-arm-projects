@@ -135,13 +135,31 @@ Measured across the four kinds: of 122 merged pairs, watershed split **four**.
 Three per cent. No choice of threshold rescues it, because the failure is that
 a tall thin shape has no peak to put a marker on.
 
-The method below replaces it. The contact-line idea is not novel either — it is
-the same reasoning a **ground-plane assumption** does in a driving or
-surveillance pipeline, where the row at which an object meets the road is used
-to estimate its distance. Robotics-basics sets out the general form in
-[what a single camera can and cannot tell you](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/02_sensors.md).
-The cell simply has an unusually clean version of it: a known, flat, level
-table, and objects that all stand on it.
+The method below replaces it, and it is not novel either. It is the
+**ground-plane constraint**: if a camera's height above a flat support surface
+is known, the image row at which an object meets that surface gives the
+object's distance directly, since a camera at height *h* looking level puts an
+object at distance *Z* exactly `f·h / Z` pixels below the horizon. The contact
+point is the *foot point* in pedestrian detection, and mapping the image onto
+the plane this way is **inverse perspective mapping** (Mallot et al.,
+*Biological Cybernetics*, 1991). The canonical statement of why it is worth so
+much is Hoiem, Efros and Hebert's
+[Putting Objects in Perspective](https://doi.org/10.1007/s11263-008-0137-5)
+(CVPR 2006): a ground plane plus a camera height turns a picture into a
+measurement.
+
+What is slightly unusual here is the *use*. That constraint is normally spent
+on estimating distance or pruning detections by scale. Using it to **separate**
+two objects — two contact rows in one patch means two objects — is the same
+arithmetic put to a different job.
+
+The cell has an unusually clean version of it: a flat, level table at a known
+height, rigid with the arm, and objects that all stand on it.
+
+> Robotics-basics has nothing on this. Its perception documents cover sensors,
+> programmed methods, and models that find and measure, but not the
+> ground-plane family — which is a real gap, because it is the cheapest
+> monocular depth cue there is and it needs no model at all.
 
 ## How it works, step by step
 
