@@ -13,14 +13,15 @@ is too wide to be a single glass, cut it into two.*
 Sometimes two glasses line up with the camera. The near one stands in front of
 the far one, so in the picture they touch and look like one object. This
 solution separates them. It does not need depth, a trained model, or a second
-photograph. It works because the camera looks straight ahead from 120 mm above
-the table. The table then stretches away to a horizon, and **a glass that is
-further away has its base drawn higher up in the picture**. So we look along the
-bottom edge of the shape and find the flat parts. One glass gives one flat part.
-Two glasses at different distances give two flat parts at different heights. The
-lower one is the nearer glass. The method takes less than a millisecond, it
-never cuts a single glass in two by mistake, and it says "I cannot tell" when
-the far glass's base is hidden.
+photograph. It works because of where the camera is standing: **from the side**,
+low down near the table, looking straight ahead rather than down. The table then
+stretches away from the lens to a horizon, and **a glass that is further away
+has its base drawn higher up in the picture**. So we look along the bottom edge
+of the shape and find the flat parts. One glass gives one flat part. Two glasses
+at different distances give two flat parts at different heights. The lower one
+is the nearer glass. The method is fast enough that its cost never shows up next
+to the arm's, it never cuts a single glass in two by mistake, and it says "I
+cannot tell" when the far glass's base is hidden.
 
 ## The problem this solves
 
@@ -43,37 +44,43 @@ picture, because one hides part of the other.
 
 ![Where the overlap actually is](../../../images/problem-2/01-where-the-overlap-is.png)
 
-**It does not happen in the survey.** In the survey the camera looks straight
-down from 450 mm above the table. Two solid glasses cannot pass through each
-other, and problem 2 promises they stand at least 150 mm apart, centre to
-centre. So the nearest their outlines can ever come is about 45 mm. Seen from
-straight above, they never touch.
+**It does not happen with the camera on top.** That is the survey: the arm lifts
+the camera high above the table and points it straight down. Two solid glasses
+cannot pass through each other, and problem 2 promises a smallest gap between
+their centres that is wider than any glass the cell handles. So there is always
+bare table between them, and seen from straight above their outlines never
+touch.
 
-We tested this rather than assuming it. We tried 4320 legal arrangements: four
-kinds of glass, six sizes of each, every spacing from 150 to 300 mm, and every
-angle. In every case where both glasses were fully inside one 320×240 picture,
-**not one pair merged**.
+We tested this rather than assuming it. We generated every arrangement the
+cell's own scene generator can legally produce — thousands of them, all four
+kinds, a range of sizes of each, every spacing the cell allows, and every angle.
+In every case where both glasses were fully inside one picture, **not one pair
+merged**.
 
-The reason is that the picture covers less table as you go higher up.
+The reason is that the picture covers less table the higher up you measure it.
 
 ![Why the survey cannot produce the case](../../../images/problem-2/01-the-survey-cannot-see-it.png)
 
-At table level one survey picture covers 520 mm of table. At the height of this
-kind's rim it covers only 358 mm, because the rim is 140 mm closer to the lens
-than the table is. So two glasses far enough apart to be legal are either both
-inside the picture and clearly separate, or one of them is falling off the edge.
-A glass half outside the picture is a different problem, and the survey already
-handles it: the camera takes pictures from several places, and they overlap, so
-a glass cut off in one picture is well inside another.
+The camera's view spreads out from the lens like a cone, so it covers a wide
+piece of table down at table level and a much narrower one up at the height of a
+glass's rim — because the rim has climbed a good part of the way from the table
+towards the lens. Two glasses standing far enough apart to be legal are
+therefore either both inside the picture and plainly separate, or one of them is
+falling off the edge of it. A glass half outside the picture is a different
+problem, and the survey already handles that one: the camera takes its pictures
+from several places and they overlap, so a glass cut off at the edge of one
+picture sits well inside another.
 
-**It happens in the level view.** Here the arm puts the camera 380 mm from a
-glass and points it horizontally. This is the view problem 1 uses to measure a
+**It happens with the camera at the side.** Here the arm brings the camera down
+low, stands it back from a glass, and points it level, straight at the glass
+rather than down at the table. This is the view problem 1 uses to measure a
 glass's shape, and the view [solution 3](03-move-the-camera.md) sends the camera
-to. In this view a glass 180 mm further back really is behind the near one. Now
-merging is normal, not rare: out of 168 pairs standing in line, 132 came back as
-a single patch.
+to. From here a glass standing behind another one really *is* behind it, in the
+plain everyday sense, and it is hidden. Now merging is not a rare corner case,
+it is the normal outcome: of all the pairs we stood in line with the camera, the
+large majority came back as a single patch.
 
-So this page is about the level view, and only the level view.
+So this page is about the camera at the side, and only about that.
 
 ### A glass looks like a circle in one place only
 
@@ -86,10 +93,13 @@ cell ever sees that.
 A glass is a circle when you look at the ring it makes on the table. No camera
 in this cell ever sees that ring face-on.
 
-From above, the rim is wider than the base, and it is also 140 mm nearer the
-lens. So the rim looks bigger and lands further out in the picture. The shape
-that comes back is like a teardrop, leaning away from the point directly under
-the camera. A base 42 mm wide can come back 156 mm wide.
+From the top, the rim is wider than the base to begin with, and it is also
+nearer the lens, because it has climbed most of the way from the table up
+towards the camera. Both of those make it look bigger, and being nearer also
+throws it further out from the middle of the picture. So the shape that comes
+back is not a circle and not even centred on the glass: it is something like a
+teardrop, leaning away from the point directly under the camera. A glass with a
+small base can come back several times wider than that base.
 
 From the side, the shape is the glass's side view: tall, and narrower at the
 bottom. Neither shape is a circle the size of the base. A method that assumes a
@@ -99,14 +109,17 @@ circle is answering some other question, not this one.
 
 ### The setup
 
-A table at a known height. It is level, and it is fixed to the same frame as the
-arm, so it does not move. Four to six glasses stand on it, at least 150 mm
-apart. Every glass is the same kind, and we know which kind, so we know the
-widest it can be before the run starts. We do **not** know how many glasses are
+A table at a known height. It is level, and it is bolted to the same frame as
+the arm, so it never moves. Four to six glasses stand on it, never closer than
+the smallest gap problem 2 promises between their centres. Every glass is the
+same kind, and we know which kind, so we know the widest any of them can
+possibly be before the run even starts. We do **not** know how many glasses are
 in any one picture, or where they stand.
 
-The camera is mounted on the wrist. It goes wherever the arm goes. So a
-viewpoint costs arm movement, which costs seconds.
+The camera is bolted to the wrist, so it goes wherever the arm goes and nowhere
+else. That has a consequence worth keeping in mind for the whole page: choosing
+a new place to look from is not free, it costs an arm movement, and an arm
+movement costs seconds. Computation, by comparison, costs nothing.
 
 ### The pictures
 
@@ -115,31 +128,43 @@ place to stand, and it does not need a pair of pictures.
 [Solution 3](03-move-the-camera.md) exists to get exactly those, and it pays in
 arm movement for them.
 
-The picture is the level view that problem 1 already takes. The arm puts the
-camera **380 mm** from the near glass, pointing horizontally, **120 mm above the
-table** (`MEASURE_VIEW_HEIGHT` in `arm/dimensions.py`).
+The picture is the one problem 1 already takes from the side. The arm stands the
+camera back from the near glass by the measuring standoff (`MEASURE_STANDOFF` in
+`arm/dimensions.py`), low down (`MEASURE_VIEW_HEIGHT`), and points it level.
 
-Why level? Because a level camera creates a **horizon** in the picture. The
-horizon is the row where the table would seem to disappear if it went on for
-ever. Every glass base sits below that row, and how far below depends only on
-how far away the glass is. That is the fact the whole method uses.
+Why level, and not tilted down a little? Because a level camera puts a
+**horizon** in the picture. The horizon is the row where the table would appear
+to vanish if the table went on for ever. It is not a thing in the room; it is a
+consequence of the camera being level, and it sits exactly halfway up the
+picture. Every glass base is drawn somewhere below that row, and how far below
+depends on one thing only: how far away the glass is. That is the single fact
+the whole method rests on. Tilt the camera and the horizon slides off the middle
+of the picture, and the relationship needs the tilt angle to untangle it.
 
-The arm records the pose it used. So we know the 380 mm rather than having to
-measure it, and that number is what turns millimetres into pixels.
+The arm records the pose it actually reached. So the standoff is a number we
+know rather than one we have to work out from the picture — and it is that
+number that lets a size in pixels be turned into a size on the table.
 
 ### What each picture captures
 
-The wrist camera returns a **320×240** depth picture and a colour picture of the
-same size. The lens is 1.047 radians wide, which gives a focal length of
-**fx = 277.1 pixels**. At 380 mm, one pixel covers **1.37 mm**.
+The wrist camera returns a depth picture and a colour picture of the same size,
+both small — a few hundred pixels across. The lens spreads a fixed angle over
+those pixels, which is all the geometry below needs: it fixes the **focal length
+in pixels**, the one conversion factor between a direction in the room and a
+position in the picture. Together with the standoff, that tells you how much
+table one pixel covers at the glass. Here it is a millimetre or so — coarse next
+to a ruler, but a glass is tens of pixels wide, which is plenty.
 
 Problem 1's detector turns the depth picture and the recorded pose into the
 mask: white wherever the point behind that pixel is above the table top.
 Connected components then groups the touching white pixels.
 
-This method uses only two things: the mask, and the distance the camera stood
-off. It never reads a single depth value. That is why it still works on real
-glass, where a depth camera returns a glass-shaped hole instead of a reading.
+This method uses only two things: the mask, and how far back the camera stood.
+It never reads a single depth value, and that is not an accident — it is the
+whole reason this solution is worth having. On real glassware a depth camera
+returns a glass-shaped hole rather than a reading, because the beam goes through
+the glass instead of bouncing back. Every method that groups 3-D points stops
+there. This one carries on.
 
 ### What is interpreted, and how
 
@@ -151,19 +176,25 @@ photograph than the near edge.
 
 ![Further away means higher up](../../../images/problem-2/01-bases-sit-higher.png)
 
-Now the arithmetic. If the camera is at height *h* and looks level, an object at
-distance *Z* has its base exactly `f·h / Z` pixels below the horizon. Here *f*
-is the focal length in pixels.
+Now the arithmetic, which is one line. If the camera sits at height *h* above
+the table and looks level, a glass standing at distance *Z* has its base drawn
+`f·h / Z` pixels below the horizon, where *f* is the focal length in pixels.
 
-- A glass 380 mm away: base **87 pixels** below the horizon.
-- A glass 560 mm away: base **59 pixels** below the horizon.
-- The difference is **28 pixels**, which is a lot.
+Read that as a shape rather than as a number. It is a *divide by distance*: the
+further the glass, the smaller the gap between its base and the horizon. Near
+the camera, moving a glass back by a hand's width shifts its base a long way up
+the picture. Far from the camera, the same move shifts it hardly at all. So the
+method is at its sharpest exactly where the glasses this cell cares about stand,
+and it goes blunt in the distance — which does not matter, because nothing that
+far away is going to be picked up.
 
-Look at the second line on that graph too. The two glasses' *rims* differ by only
-5 pixels. A rim sits almost at the camera's own height, so it lands almost on the
-horizon, and moving it further away barely shifts it. So the top of the shape
-tells you almost nothing about distance. All the useful information is along the
-bottom.
+Look at the second line on that graph too. Move a glass back by a good distance
+and its base climbs noticeably, but its **rim** barely moves at all. The reason
+is that the camera is low, at about the height of a glass's rim, so a rim sits
+almost on the horizon to begin with, and nothing you do to its distance moves it
+much further. So the top of the shape tells you almost nothing about how far
+away the glass is. Everything useful is along the bottom edge, and that is where
+the whole method looks.
 
 Four steps, in order.
 
@@ -173,37 +204,56 @@ the arm chose.
 
 ![The blob, and what flags it](../../../images/problem-2/01-the-blob.png)
 
-At 380 mm, this kind's 90 mm rim covers 66 pixels. We add 2 pixels. The reason is
-that the edge of a shape drawn on a grid of square pixels always rounds outward,
-so a real silhouette comes out about a pixel wider on each side than the
-arithmetic says. So anything up to 68 pixels wide is left alone. Our pair
-measures 86 pixels, so it is flagged.
+The widest this kind of glass can be is a limit that lives in `glasses/spec.py`.
+Divide it by how much table one pixel covers at the standoff, and you have the
+widest patch a single glass of this kind could possibly draw. Then add a pixel
+or two of slack. The reason for the slack is that the edge of a shape drawn on a
+grid of square pixels always rounds *outward*, so a real silhouette comes back
+about a pixel wider on each side than the arithmetic predicts. Anything up to
+that limit is left alone. Our merged pair is comfortably past it, so it is
+flagged.
 
-Those 2 pixels are not a number we chose to make the answer come out right. Take
-them away and the method flags every single glass it ever sees.
+That slack is not a number we picked to make the answer come out right. Take it
+away and the method flags every single glass it ever sees, because every single
+glass is a pixel or two wider than its own arithmetic says it should be.
 
 **2. Find the bottom edge.** For every column of the patch that has any white
 pixel, find the lowest white pixel. In code this is one `argmax` per column.
 
 **3. Find the flat runs.** Walk along that bottom edge. Collect the longest
-stretches where the row stays the same, give or take one pixel. Throw away any
-stretch shorter than five columns, because those are the steep sides of the
-glass, where the bottom edge is really the side wall and not a contact line.
+stretches where the row stays the same, give or take a pixel. Throw away any
+stretch that is only a few columns long. Those short stretches are the steep
+sides of the glass, where the lowest white pixel is really a bit of the side
+wall and not the place where the glass meets the table, and they would otherwise
+be mistaken for contact.
 
 Each surviving stretch is a place where something is standing on the table.
 
 ![The test itself](../../../images/problem-2/01-contact-runs.png)
 
-**4. Compare the two runs.** If two runs sit at least eight pixels apart
-vertically, there are two glasses. Cut between them. And **you get the order for
-free**: the lower run is the nearer glass.
+**4. Compare the two runs.** If two runs sit far enough apart up the picture,
+there are two glasses. Cut between them. And **you get the order for free**: the
+lower run is the nearer glass.
 
-Where does eight come from? We worked it out, we did not guess it. The smallest
-gap in depth we ever have to call two glasses is 150 mm, because problem 2
-promises that much between centres. At these distances 150 mm is about 22
-pixels. Eight is well below 22, so we will not miss a real pair. And eight is
-well above the one or two pixels of noise in an edge drawn on a grid, so noise
-will not make a pair out of one glass.
+What counts as "far enough"? Like the grouping distance in [solution
+2](02-cluster-on-the-table.md), it is pinned between two things that are both
+known before the run starts, and it sits in the gap between them.
+
+The **top end** is the smallest real difference the method must never miss.
+Problem 2 promises a smallest gap between the centres of two glasses; turn that
+gap into a difference in rows using the one-line formula above, and that is how
+far apart the two runs will be in the hardest legal case. The threshold has to
+be below it, or a legal pair gets missed.
+
+The **bottom end** is noise. An edge drawn on a grid of square pixels wobbles by
+a pixel or so from column to column, and two runs that differ by only that much
+are not two glasses, they are one glass and some rounding. The threshold has to
+be above that.
+
+The gap between those two is wide — the real difference is many times the noise
+— so the threshold is not a knob anybody has to tune. It sits in the middle, and
+both ends of the window are printed in the report, so a wrong answer is a pair
+of numbers you can read rather than a mystery.
 
 ### Why we look for flat runs, and not for steps
 
@@ -211,22 +261,22 @@ We tried the other test first and it failed, so it is worth writing down why.
 
 The other test is easy to think of: *does the bottom edge have a step in it?* If
 the edge suddenly jumps up, call that the place where the near glass ends and
-the far one begins. On merged pairs it works 93 times out of 100.
+the far one begins. On merged pairs it works nearly every time.
 
 ![The control](../../../images/problem-2/01-the-control.png)
 
 Then run it on one glass standing alone. Take a wine glass. Its bowl is wider
 than its foot, so the bowl hangs out over the foot on both sides. In the columns
-over the foot, the lowest white pixel is the foot, near the table. In the
+over the foot, the lowest white pixel is the foot, down near the table. In the
 columns just outside the foot, the lowest white pixel is the underside of the
-bowl, which is much higher up. So the bottom edge has a jump of **96 pixels** in
-it, and there is only one glass there. Counting steps cuts 69 out of every 100
-single glasses into two.
+bowl, which is much higher up. So the bottom edge jumps — by a long way, much
+more than any two real glasses would differ by — and there is only one glass
+there. Counting steps cuts most of the single glasses it is shown into two.
 
 Flat runs do not have this problem. A glass can be any shape it likes, but it
 stands on the table in one place only, so its bottom edge has one flat run only.
-We tried this on 120 single glasses — four kinds, four distances. It cut none of
-them.
+We tried this on single glasses of all four kinds, at a range of distances. It
+cut none of them.
 
 We want the mistakes to go this way round, and not the other way. If the method
 cuts one glass into two, we get two wrong answers in place of one right one, and
@@ -236,15 +286,15 @@ another picture.
 
 ### What comes out
 
-Two masks in the same 320×240 picture, plus which one is nearer. Or one mask,
+Two masks cut out of the one picture, plus which of them is nearer. Or one mask,
 untouched. Or a refusal to answer.
 
 What does **not** come out is a position in millimetres. Both pieces are still
 flat shapes in a picture, and a shape in a picture is not where the glass really
 stands.
 
-The masks go to problem 1's step 2, which measures each glass's shape from a
-level view. The refusal goes to the report and to
+The masks go to problem 1's step 2, which measures each glass's shape from the
+side. The refusal goes to the report and to
 [move the camera](03-move-the-camera.md).
 
 ## The sequence
@@ -259,16 +309,16 @@ sequenceDiagram
     participant C as Wrist camera
     participant P as Perception
     participant R as Report
-    T->>A: stand 380 mm off, level, 120 mm above the table
+    T->>A: stand back at the measuring standoff, low down, looking level
     A-->>T: pose reached
     T->>C: one frame
-    C-->>T: "depth + colour, 320x240, fx 277.1 px"
+    C-->>T: "depth and colour, plus the lens settings"
     T->>P: "mask above table (depth, pose)"
-    P-->>T: "one patch, 86 px wide"
-    Note over P: "limit = 90 mm / 1.37 + 2 = 68 px, and the patch is 86"
+    P-->>T: "one patch, and it is too wide"
+    Note over P: "the limit is the kind's widest, in pixels, plus a little slack"
     P->>P: "lowest white pixel in each column"
     P->>P: "one pass finds the flat runs"
-    P-->>T: "runs at rows 148 and 119, 29 px apart"
+    P-->>T: "two runs, well clear of the noise apart"
     T->>R: "two masks, lower run is the nearer glass"
 ```
 
@@ -282,15 +332,15 @@ sequenceDiagram
     participant P as Perception
     participant R as Report
     T->>C: one frame
-    C-->>T: "depth + colour, 320x240"
+    C-->>T: "depth and colour"
     T->>P: "mask above table (depth, pose)"
-    P-->>T: "one patch, 79 px wide"
-    alt "two runs, at least 8 px apart"
+    P-->>T: "one patch, and it is too wide"
+    alt "two runs, far enough apart"
         P-->>T: two glasses, near one first
     else "one run only"
         Note over P: "the far base is hidden, so there is nothing to find"
         P-->>T: "too wide, cannot tell"
-        T->>R: "one patch, 79 px against a 68 px limit"
+        T->>R: "the patch's width against the kind's limit"
         Note over T,R: "hand to solution 3 - a viewpoint where the base is not hidden"
     end
 ```
@@ -300,11 +350,11 @@ sequenceDiagram
 ```mermaid
 flowchart LR
     M["mask above the table"] --> CC["connected components"]
-    CC --> W{"patch wider than 68 px?"}
+    CC --> W{"patch wider than this kind can be?"}
     W -->|"no"| ONE["one glass, untouched"]
     W -->|"yes"| U["bottom edge: lowest white pixel per column"]
-    U --> RR["flat runs, 5 columns or more"]
-    RR --> G{"two runs, 8 px apart or more?"}
+    U --> RR["flat runs, more than a few columns long"]
+    RR --> G{"two runs, far enough apart?"}
     G -->|"yes"| CUT["cut between them; lower run is nearer"]
     G -->|"no"| AB["cannot tell: too wide, base hidden"]
     CUT --> REP["two masks and an ordering"]
@@ -325,24 +375,24 @@ flowchart LR
 Legend: **green** is new code written for this solution, **blue** is code the
 project already has, **grey** is a third-party library.
 
-Everything green below is about thirty lines of NumPy. There is no new import.
+Everything green below is a few dozen lines of NumPy. There is no new import.
 
 ```text
-pose = arm.stand_off(target, 0.380, level, MEASURE_VIEW_HEIGHT)  # have · work_cell.task
+pose = arm.stand_off(target, MEASURE_STANDOFF, MEASURE_VIEW_HEIGHT)  # have · work_cell.task
 depth = camera.frame()                                           # have · work_cell.task
 mask = detect.standing_on_the_table(depth, lens, pose, table_z)  # have · work_cell.glasses.detect
 patch = biggest_component(mask)                                  # have · cv2.connectedComponentsWithStats
 
-mm_per_px = 0.380 / lens.fx                                      # NEW  · 1.37 mm at this standoff
-limit_px = spec.widest(kind) / mm_per_px + 2                     # NEW  · +2 for the pixel grid
+mm_per_px = pose.standoff / lens.fx                              # NEW  · how much table one pixel covers
+limit_px = spec.widest(kind) / mm_per_px + GRID_SLACK            # NEW  · slack for the pixel grid
 if patch.width <= limit_px:                                      # NEW  · one glass; nothing to do
     return [patch]
 
 underside = rows - 1 - patch[::-1].argmax(axis=0)                # NEW  · numpy, lowest white pixel
 lit = patch.any(axis=0)                                          # NEW  · numpy
-runs = level_runs(underside, lit, flat=1, least=5)               # NEW  · ~20 lines, numpy only
+runs = level_runs(underside, lit, flat=1, least=SHORTEST_RUN)    # NEW  · ~20 lines, numpy only
 
-if len(runs) < 2 or runs[1].row - runs[0].row < 8:               # NEW  · 8 px, worked out above
+if len(runs) < 2 or runs[1].row - runs[0].row < ROWS_APART:      # NEW  · the window worked out above
     report.too_wide(patch, patch.width, limit_px)                # have · work_cell.report
     return [patch]                                               #      · hand to solution 3
 
@@ -367,40 +417,46 @@ no graphics card, no training data, and no licence to check.
 
 ## A worked example
 
-Two glasses of a kind whose rim is 90 mm and whose base is 43 mm. They stand
-140 mm tall. The camera is level, 120 mm above the table. Glass A is 380 mm away.
-Glass B is 180 mm further back and 60 mm to one side.
+Two glasses of one kind, whose rim is wider than its base — a tumbler shape, not
+a wine glass. The camera is at the side, low down and level, standing back at
+the measuring standoff from glass A. Glass B is further back along the same line
+of sight, and slightly off to one side, which is the only reason any part of its
+base is visible at all.
 
-**What comes back.** One patch, 86 pixels wide. At 1.37 mm per pixel that is
-118 mm. The kind's limit is 68 pixels. So it is flagged.
+**What comes back.** One patch. Measured across, it is clearly wider than the
+widest glass of this kind could draw at this standoff — about half again as
+wide. So it is flagged.
 
-**The bottom edge.** 86 columns, each with its lowest white pixel. Two flat runs
-survive:
+**The bottom edge.** One lowest white pixel per column of the patch. Most of the
+short stretches are thrown away as side walls, and two flat runs survive:
 
-| | columns | row | what it is |
+| | where along the patch | how high up | what it is |
 |---|---|---|---|
-| lower | 18 – 49 | 148 | glass A's base, 87 px below the horizon |
-| higher | 55 – 74 | 119 | glass B's base, 59 px below the horizon |
+| lower | the left part | lower | glass A's base, nearer the camera |
+| higher | the right part | higher | glass B's base, further away |
 
-They are **29 pixels apart**. The arithmetic above predicted 28. The extra pixel
-comes from the pixel grid. Either way it is well over the eight-pixel threshold.
+The two runs are separated by many times the wobble in the edge, and comfortably
+more than the threshold needs — and the separation matches what the one-line
+formula predicts for those two distances, to within a pixel. That last point is
+the real check: the runs are not just different, they are different by the
+amount the geometry says they should be.
 
-**The answer.** Two glasses. The cut goes at column 52. The lower run is the
-nearer one, so the left piece is glass A at about 380 mm, and the right piece is
-glass B, further away. Two masks and an ordering, from one photograph, in about a
-third of a millisecond.
+**The answer.** Two glasses. The cut goes between the two runs. The lower run is
+the nearer one, so the left piece is glass A, standing at the standoff, and the
+right piece is glass B, further away. Two masks and an ordering, from one
+photograph, in the time it takes NumPy to walk a small array twice.
 
 **What it has not produced.** Any position in millimetres.
 
 ## Where it comes from
 
 Splitting one patch into objects is an old problem, and the standard tool is
-**watershed on the distance transform**. The idea is this. For every white pixel,
-work out how far it is from the nearest black pixel. That gives a kind of
-landscape, where the middle of a blob is deep and the edges are shallow. Find the
-deepest points, then flood outwards from each one, and build a wall where two
-floods meet. It is one call in OpenCV. For touching cells under a microscope or
-coins on a scanner, it is the right answer.
+**watershed on the distance transform**. The idea is this. For every white
+pixel, work out how far it is from the nearest black pixel. That gives a kind of
+landscape, where the middle of a blob is deep and the edges are shallow. Find
+the deepest points, then flood outwards from each one, and build a wall where
+two floods meet. It is one call in OpenCV. For touching cells under a microscope
+or coins on a scanner, it is the right answer.
 
 Here it is the wrong answer. Not because some number needs tuning — because of
 the shape of a glass.
@@ -416,8 +472,10 @@ half-width all the way up. So the deepest part is not a point. It is a **line
 running up the middle**, like a ridge. Two overlapping ridges join into one
 ridge. Only one starting point survives, and there is nothing to flood from.
 
-We measured it across the four kinds: out of 122 merged pairs, watershed split
-**four**. No choice of threshold fixes that.
+We measured it across all four kinds, on every merged pair we could produce.
+Watershed split a **handful** of them and left the rest as one. No choice of
+threshold fixes that, because the problem is the shape of the landscape and not
+where the water line is put.
 
 The method on this page replaces it, and it is not new either. It is the
 **ground-plane constraint**. If you know how high the camera is above a flat
@@ -438,11 +496,12 @@ this cell is an easy case for it — a flat, level table at a known height, fixe
 to the same frame as the arm, with everything standing on it.
 
 **GrabCut** is the other tool people reach for, and it answers a different
-question. Given a rough box around an object, it separates object from background
-by modelling their colours, then smooths the result. It is useful when a
-threshold leaves a ragged edge. But it never decides *how many* objects there
-are. Give it a box around two merged glasses and it returns a tidier outline of
-the same merged pair. It belongs after this method, not instead of it.
+question. Given a rough box around an object, it separates object from
+background by modelling their colours, then smooths the result. It is useful
+when a threshold leaves a ragged edge. But it never decides *how many* objects
+there are. Give it a box around two merged glasses and it returns a tidier
+outline of the same merged pair. It belongs after this method, not instead of
+it.
 
 > Robotics-basics has nothing on this. Its perception documents cover sensors,
 > programmed methods, and models that find and measure, but not the
@@ -451,8 +510,8 @@ the same merged pair. It belongs after this method, not instead of it.
 
 ## The feedback loop
 
-There is none. This method looks at one picture and either answers or refuses. It
-cannot ask for another photograph, and it remembers nothing between pictures.
+There is none. This method looks at one picture and either answers or refuses.
+It cannot ask for another photograph, and it remembers nothing between pictures.
 
 What it does give is a **clean handover**. Three outcomes:
 
@@ -467,31 +526,37 @@ achieve.
 
 ## Where it is strong and where it breaks
 
-- **Free.** A third of a millisecond on a 320×240 patch. Thirty lines of code.
-  No new library.
-- **It never invents a glass.** Zero wrong splits across 120 single glasses. The
-  method is built around that.
-- **It gives the order for free.** Not just two masks, but which glass is nearer.
-  The near one is the one worth measuring first.
+- **Free.** A fraction of a millisecond on a patch this size, a few dozen lines
+  of code, and no new library. Against seconds for every move of the arm, its
+  cost does not appear in the accounts at all.
+- **It never invents a glass.** Not one wrong split across every single glass we
+  tested it on, of all four kinds and at a range of distances. The method is
+  built around that one property, and the next bullet is the price paid for it.
+- **It gives the order for free.** Not just two masks, but which glass is
+  nearer. The near one is the one worth measuring first.
 - **Every step can be printed.** Two run positions and a row difference. A wrong
   answer is a number you can read.
-- **It needs no depth.** Everything comes from the mask. On real glass, where the
-  depth camera returns a hole, every method that groups 3-D points stops working
-  and this one carries on.
-- **It cannot see a hidden base.** Out of 122 merged pairs it split 76. Broken
-  down by how far the far glass stood to one side, the pattern is sharp: from
-  40 mm of sideways offset onward it split **every** merged pair, 74 out of 74.
-  Below that it split 2 out of 48. There is no middle ground to tune, because the
-  question is simply whether any of the far glass's base can be seen.
-- **It gives no position.** Both pieces are still flat shapes in a picture,
-  carrying the error problem 1 already measured: a glass 157 mm from the camera
-  was reported at 244 mm.
+- **It needs no depth.** Everything comes from the mask. On real glass, where
+  the depth camera returns a hole, every method that groups 3-D points stops
+  working and this one carries on.
+- **It cannot see a hidden base.** It split somewhat over half of the merged
+  pairs we gave it. Broken down by how far the far glass stood off to one side,
+  the pattern is not a gentle slope but a cliff: once the far glass is offset by
+  more than a small amount — roughly half a glass's width — it split **every**
+  merged pair without exception. Below that it split almost none. There is
+  nothing in the middle to tune, because the question is not a matter of degree.
+  Either some of the far glass's base is visible or none of it is.
+- **It gives no position.** Both pieces are still flat shapes in a picture, and
+  they carry the whole error problem 1 already measured. Seen from the top,
+  splay reports a glass as standing much further out than it really does — in
+  problem 1 it overstated the distance by more than half. A mask is not a place.
 - **It assumes the table is flat, level and at a known height.** All three are
-  true here, and all three are still assumptions. Five millimetres out of level
-  costs about one pixel at this standoff, which is fine. A sloping table would
-  not be.
-- **It only works from a level camera**, which is consistent, because from the
-  survey view there is nothing to split.
+  true in this cell, and all three are still assumptions rather than facts about
+  the world. A table a few millimetres out of level moves the horizon by about a
+  pixel, which is inside the noise and harmless. A genuinely sloping table would
+  not be harmless at all, because the horizon would no longer be one row.
+- **It only works with the camera at the side**, looking level. That is not much
+  of a restriction, because with the camera on top there is nothing to split.
 - **When the base is hidden there is nothing to find**, and the method would say
   nothing at all about it. The width check is what notices. So what comes out is
   a flag, not a wrong answer.
@@ -512,11 +577,13 @@ camera.
 
 ![What a split does not buy](../../../images/problem-2/01-what-it-does-not-buy.png)
 
-**When to use it.** First, in the level view, because it is free and it resolves
-most in-line pairs. Whenever there is no depth, as on real glass. And as a second
-opinion, because it fails in different situations from the geometric methods, and
-two independent methods agreeing is worth more than either alone. Not in the
-survey, because there the problem does not arise.
+**When to use it.** First, whenever the camera is at the side, because it is
+free and it separates most of the pairs that line up. Whenever there is no depth
+to work with, as on real glass. And as a second opinion, because it fails in
+different situations from the methods that reason about distance, and two
+methods that fail differently agreeing with each other is worth more than either
+of them alone. Not with the camera on top, because from up there the problem
+does not arise.
 
 ## The general methods behind this
 
@@ -575,8 +642,8 @@ the landscape. The
   roughly the same size: cells, coins, grains, tablets. For those, nothing this
   cheap does better.
 - **Rarely right for** long, thin objects, because their landscape has a ridge
-  instead of a peak, so the starting points merge. That is why it splits only
-  three per cent of this cell's pairs, and why no threshold saves it.
+  instead of a peak, so the starting points merge. That is why it splits almost
+  none of this cell's pairs, and why no threshold saves it.
 - **More:** `cv2.distanceTransform` and `cv2.watershed` in OpenCV;
   `skimage.segmentation.watershed` in scikit-image.
 
@@ -587,8 +654,8 @@ outside, cut the boundary where the two disagree, and smooth the result
 ([GrabCut](https://en.wikipedia.org/wiki/GrabCut), Rother, Kolmogorov and Blake,
 SIGGRAPH 2004).
 
-- **Mostly used for** photo editing, and for cleaning up the last pixel or two of
-  a mask whose threshold was roughly right.
+- **Mostly used for** photo editing, and for cleaning up the last pixel or two
+  of a mask whose threshold was roughly right.
 - **Rarely right for** deciding *how many* objects are there. It improves one
   boundary. Give it two merged objects and it returns a tidier merged pair.
 - **More:** `cv2.grabCut` in OpenCV.
@@ -597,11 +664,11 @@ SIGGRAPH 2004).
 
 ## Where it sits
 
-It is a **first pass in the level view**, not a rival to
-[cluster on the table](02-cluster-on-the-table.md). The two do different jobs.
-This one says how many glasses are in a patch and which is nearer. Clustering
-says where they are in millimetres. Where depth works, clustering is the answer
-and this is a cheap cross-check. Where depth does not work, this is what is left.
+It is a **first pass for the camera at the side**, not a rival to [cluster on
+the table](02-cluster-on-the-table.md). The two do different jobs. This one says
+how many glasses are in a patch and which is nearer. Clustering says where they
+are in millimetres. Where depth works, clustering is the answer and this is a
+cheap cross-check. Where depth does not work, this is what is left.
 
 Its natural partner is [move the camera](03-move-the-camera.md), which gives the
 one thing this method cannot get for itself: a place to stand from where the
