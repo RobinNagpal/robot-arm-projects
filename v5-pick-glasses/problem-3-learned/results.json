@@ -1,0 +1,31 @@
+{
+  "scenes": 50,
+  "glasses": 251,
+  "crowded_at_start": 190,
+  "outcome": {
+    "done": 34,
+    "incomplete": 16,
+    "wrong": 0
+  },
+  "glasses_end": {
+    "racked": 208,
+    "refused": 43,
+    "toppled": 0,
+    "pushed_out_of_the_zone": 0,
+    "picked_without_room": 0,
+    "left_with_no_reason": 0
+  },
+  "refused_because": {
+    "no push the model expects to make room": 42,
+    "pushed 4 times and still without room": 1
+  },
+  "pushes": {
+    "total": 113,
+    "repeats": 15,
+    "blocked_on_the_way_down": 4,
+    "never_touched": 1,
+    "jammed": 1,
+    "aim_mm_median": 1.7,
+    "aim_mm_worst": 24.8
+  }
+}

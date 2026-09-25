@@ -1,0 +1,22 @@
+[workspace]
+name = "pick-glasses-push-programmed"
+version = "0.1.0"
+description = "Problem 3 by geometry alone: move crowded glasses apart by pushing them, checked against a physics engine"
+channels = ["conda-forge"]
+platforms = ["osx-arm64", "linux-64"]
+
+# No models, so no PyTorch. OpenCV because rack/layout.py imports it.
+[dependencies]
+python = "3.12.*"
+numpy = ">=1.26,<3"
+py-opencv = ">=4.9"
+pytest = ">=7"
+
+# The physics engine the pushes happen in. From PyPI, as in v5-learn-pick-place.
+[pypi-dependencies]
+mujoco = ">=3.3"
+
+[activation.env]
+# The project's own modules, and the scenes, physics and scoring shared with
+# problem-3-learned.
+PYTHONPATH = "$PIXI_PROJECT_ROOT/../src/work_cell:$PIXI_PROJECT_ROOT/../problem-3-sim"

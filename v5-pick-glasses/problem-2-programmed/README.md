@@ -12,11 +12,30 @@ only. No training data, no model, no weights.
    a check fails ──▶ next place, up to 3 ──▶ still failing: hand to problem 3
 ```
 
-| Step | What does it | How |
-|---|---|---|
-| 1. Find | `find.py` | Every pixel above the table becomes a point in the room. The points are grouped by where they stand on the table, in 5 mm squares, joined within 25 mm. The middle of each group's top points is the glass's axis. |
-| 2. Choose a place | `views.py` | The same veto as the learned version: out of reach, or a glass squarely in the way. Then the rule: the widest gap, as an angle at the camera, between the target and any glass that would cover it or join its outline. A glass in front always counts; one behind counts only inside the depth band. Ties go to the place nearest the middle of the arm's reach. |
-| 3. Measure | `measure.py` | Problem 1's silhouette, then three checks: the glass is not cut off at the frame edge, the outline is not ragged, and its widest width agrees within 6 mm with the width seen from above. Then two corrections worked out from where the lens is (below). |
+**1. Find — `find.py`.**
+- Turn every pixel above the table into a point in the room.
+- Group the points by where they stand on the table, not where they are in
+  the picture. Two glasses can overlap in the picture but are always apart on
+  the table.
+- Each group is one glass. The middle of its top points gives its place,
+  and the spread of its points gives its width.
+
+**2. Choose a place — `views.py`.**
+- Try 24 places in a circle round the glass. Throw out the same ones as the
+  learned version: out of reach, or a glass squarely in the way.
+- Order the rest by one rule: how big is the gap, in the picture, between the
+  target and the nearest glass that could cover it or join its outline. A
+  glass behind counts only if it is close behind. Ties go to the place the arm
+  reaches most easily.
+
+**3. Measure and check — `measure.py`.**
+- Take the side picture from the best place and cut out the glass's outline.
+- Check it. The picture is refused if the glass runs off the edge, or if its
+  widest width differs from the width seen from above by more than 6 mm (a
+  sign another glass is in the outline).
+- If it passes, read the profile and correct the height (below).
+- If it fails, try the next place, up to 3. If all 3 fail, hand the glass
+  to problem 3.
 
 **The height correction.** The camera looks level from 120 mm up. Above that
 height the top of the outline is the near side of the rim, which is nearer

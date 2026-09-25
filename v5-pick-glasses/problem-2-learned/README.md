@@ -13,16 +13,36 @@ pictures, which takes about a minute on a laptop.
 3. side depth picture from the best place ──SideNet──▶ height, and width at 16 heights
 ```
 
-| Step | Model | In | Out |
-|---|---|---|---|
-| 1. Find | **TopNet**, a small convolutional network | overhead depth | per pixel: glass or not, and the way to its glass's middle. Pixels voting for the same middle are one glass. |
-| 2. Choose a place | geometry veto, then **Ranker**, a small MLP | 7 numbers about one place: reach, gap to the glass in front, gap to the glass behind, … | chance the side picture is unspoiled |
-| 3. Measure | **SideNet**, a small convolutional network | side depth | height, and width at 16 fractions of it |
+**Training.** `train.py` draws 200 scenes. Each gives one picture from
+above and one side picture of one glass. The simulator knows the answers:
+which glass each pixel shows, each glass's true shape, and whether the side
+picture was spoiled. The models learn from those.
 
-The veto drops places out of reach or with a glass squarely in the way. The
-ranker only orders the rest, so a bad ranking costs a wasted look, never an
-unsafe move. A glass whose best place scores under 0.5 is handed to
-problem 3.
+**1. Find — TopNet**, a small convolutional network.
+- In: the depth picture from above.
+- Out, for every pixel: is it glass, and which way is the middle of its glass.
+- Each glass pixel casts a vote where it points. Where 30 or more votes land
+  together, that is one glass. Two glasses that overlap in the picture still
+  vote for two different middles, so they come apart.
+- The pixels that voted for a middle give the glass's place on the table and
+  its width.
+
+**2. Choose a place — geometry, then the Ranker**, a small MLP.
+- Try 24 places in a circle round the glass.
+- Geometry throws out places the arm cannot reach, and places with another
+  glass squarely in the way.
+- The Ranker scores each place that is left: the chance the side picture
+  will be clean. It is given 7 numbers about the place, such as the reach and
+  the gap to the nearest glass in front and behind. It cannot be given a
+  picture, because there is none until the arm goes there.
+- Take the best place. If it scores under 0.5, hand the glass to problem 3.
+  Because the ranker only orders places geometry allowed, a bad ranking
+  wastes a look but never makes an unsafe move.
+
+**3. Measure — SideNet**, a small convolutional network.
+- In: the side depth picture from the chosen place.
+- Out: the glass's height, and its width at 16 evenly spaced heights.
+- One picture, no retry, and nothing checks that the picture was good.
 
 ## Running it
 
