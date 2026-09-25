@@ -14,15 +14,14 @@ The cell they all share — layout, camera poses, sensors, vocabulary — is in
   two difficulties, and what "done" means.
 - [**Solution overview**](solutions/solution-overview.md) — **nine solutions in full**:
   three programmed, three hybrid, three learned, and every one of them
-  buildable inside the simulator. It starts with the vocabulary,
-  because three of the words this subject uses mean different things to
-  different people, and then with two ideas the rest depends on — where a
-  learned component can sit in a pipeline, and what it means for a system to
-  choose its own next measurement rather than taking a fixed number of
-  pictures. Each solution is written the same way: what it is, why anyone does
-  it like that, how it would work here, its feedback loop if it has one, a
-  worked example with real numbers, what it needs, what it is good and bad at,
-  how it fails, and when it would be the right choice.
+  buildable inside the simulator. It opens with the vocabulary, because
+  three of the words this subject uses mean different things to different
+  people. Then it covers two ideas the rest depends on: where a learned part can
+  sit in a pipeline, and what it means for a machine to choose its own next
+  measurement rather than taking a fixed number of pictures. Every solution is written to the same plan. What it is. Why
+  anyone does it that way. How it would work here. Its feedback loop, if it has
+  one. A worked example with real numbers. What it needs. What it is good and
+  bad at. How it fails. And when it would be the right choice.
 - **The nine solutions in full**, one document each in
   [`solutions/`](solutions/), written from the beginning and with six to eight
   diagrams apiece. The overview has a paragraph on each and the comparison;
@@ -77,12 +76,14 @@ step. So most "no viewpoint" reports are the *grid* running out, not the
 geometry, and refining it costs arithmetic and nothing else.
 [Solution 3](solutions/03-move-the-camera.md) has the working.
 
-And a second, from the other end: within problem 2's guarantee that glasses
-stand 150 mm apart, **two of them cannot merge into one cluster on the table**
-— the closest two footprints can come is 45 mm, against a 25 mm grouping
-distance. The ambiguity here is never a merge. It is a glass seen from too
-narrow an angle, whose circle fit looks perfectly healthy and whose position is
-quietly wrong. [The solution overview](solutions/solution-overview.md#when-can-a-cluster-actually-be-wrong)
+And a second finding, from the other end. Problem 2 guarantees that glasses
+stand 150 mm apart, and that means **two of them cannot merge into one cluster
+on the table**. The closest two footprints can ever come is 45 mm, against a
+25 mm grouping distance.
+
+So the ambiguity here is never a merge. It is a glass seen from too narrow an
+angle, whose circle fit looks perfectly healthy and whose position is quietly
+wrong. [The solution overview](solutions/solution-overview.md#when-can-a-cluster-actually-be-wrong)
 has the numbers.
 
 ## Where it sits

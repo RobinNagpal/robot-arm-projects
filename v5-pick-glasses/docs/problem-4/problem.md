@@ -23,15 +23,15 @@ The rack is where it always is: six slots, position found from its marker.
 
 In problem 1 the classifier has to be right, but a wrong answer is cheap. There
 is one glass, and a rule applied to the wrong kind of glass almost always fails
-its own checks — the opening comes out impossible, or the band is too short —
-so the glass is refused and the run says so.
+its own checks. The opening comes out impossible, or the band is too short. So
+the glass is refused and the run says so.
 
 With several kinds on the table, two things change. The classifier runs several
 times per run, so an error rate that was invisible at one glass a run becomes
-visible. And a wrong name can be **wrong and plausible**: a tapered glass with a
-very shallow wall called straight is fine, but a tumbler with a notch in its
-outline called stemmed is not, and the rule for a stemmed glass will happily
-return a grip at a stem that does not exist.
+visible. And a wrong name can be **wrong and plausible**. Calling a tapered glass with a
+very shallow wall "straight" is fine. Calling a tumbler with a notch in its
+outline "stemmed" is not: the rule for a stemmed glass will happily return a
+grip at a stem that does not exist.
 
 Nothing downstream re-checks the name, because nothing downstream can. The
 first thing that notices is the width at first contact in step 5, by which time

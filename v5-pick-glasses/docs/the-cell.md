@@ -91,8 +91,8 @@ out where the rack is, rather than trusting that it was placed exactly.
 
 The camera being *on the wrist* rather than above the table is the single fact
 that shapes most of these solutions. It means the arm chooses its own
-viewpoints, that moving the camera costs seconds of arm time, and that the
-camera's pose is known exactly from the joint encoders — which is what makes
+viewpoints. It means moving the camera costs seconds of arm time. And it means
+the camera's pose is known exactly, from the joint encoders — which is what makes
 [solution 9](problem-2/solutions/09-self-supervised-from-the-arms-own-movement.md)
 possible at all.
 
@@ -135,8 +135,8 @@ is the glass's profile.
 **Cluster.** A group of 3-D points that belong together, formed by distance in
 the room rather than by adjacency in the picture.
 
-**Footprint — and the one word that does double duty.** This is worth reading
-slowly, because two different quantities get called the same thing:
+**Footprint — and the one word that does double duty.** Read this one slowly.
+Two different quantities get called by the same name:
 
 - the **contact patch**, where the glass actually touches the table, which is
   30–88 mm across over the four kinds;

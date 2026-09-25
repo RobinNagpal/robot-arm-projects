@@ -12,18 +12,18 @@ This folder holds the problem; [`solutions/`](solutions/) holds the answers.
   the glass, and what "done" means.
 - [**Solution overview**](solutions/solution-overview.md) — **eleven solutions in full**:
   four programmed, four hybrid, three learned, and every one of them buildable
-  inside the simulator. It starts with the vocabulary
-  and the contact mechanics, because a push is less simple than it looks, and
-  then with two ideas the rest depends on — where a learned component can sit
-  in a pipeline, and what it means for a system to choose its own next
-  measurement. Each solution is written the same way: what it is, why anyone
-  does it like that, how it would work here, its feedback loop if it has one, a
-  worked example with real numbers, what it needs, what it is good and bad at,
-  how it fails, and when it would be the right choice.
+  inside the simulator. It opens with the vocabulary and the
+  mechanics of a push, because a push is less simple than it looks. Then it
+  covers two ideas the rest depends on: where a learned part can sit in a
+  pipeline, and what it means for a machine to choose its own next
+  measurement. Every solution is written to the same plan. What it is. Why
+  anyone does it that way. How it would work here. Its feedback loop, if it has
+  one. A worked example with real numbers. What it needs. What it is good and
+  bad at. How it fails. And when it would be the right choice.
 - [**The ones that need more than a simulator**](solutions/learned-with-hardware.md) —
-  two good answers that were moved out: model-free reinforcement learning,
-  which wants about eleven days of continuous simulation, and imitation from a
-  scripted expert, which wants a transformer or a diffusion policy trained on a
+  two good answers that were moved out. One is model-free reinforcement
+  learning, which wants about eleven days of continuous simulation. The other is
+  imitation from a scripted expert, which wants a large model trained on a
   machine with a graphics card.
 
 ## The short version

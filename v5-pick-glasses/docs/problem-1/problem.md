@@ -7,8 +7,8 @@ about the glass is known before the run starts.
 ![Problem 1: one glass, and nothing known about it in advance](../../images/problem-1-what-is-asked.png)
 
 This is the first of [five problems](../../problem-statement.md#five-problems-in-order-of-difficulty)
-and it is the only one that is built. It is worth being exact about what makes
-it hard, because most of that difficulty is still there in the other four, and
+and it is the only one that is built. It is worth being exact about what makes it
+hard, because most of that difficulty is still there in the other four. And
 about what makes it easy, because that part is what the next problems take
 away.
 
@@ -32,9 +32,9 @@ Four things, and each one is a separate difficulty:
 **How tall it is.** Not written down anywhere the arm can read. A 90 mm tumbler
 and a 240 mm flute are both possible.
 
-**How wide it is, at each height.** Not the rim width, not the base width, and
-not the width at the place the fingers will close — which is the number that
-actually matters, and which depends on where that place turns out to be.
+**How wide it is, at each height.** Not the rim width, and not the base width.
+The number that actually matters is the width where the fingers will close — and
+that depends on where that place turns out to be.
 
 **What kind it is.** Whether it has a stem is the question that decides where
 it may be held, and no part of the setup announces the answer.

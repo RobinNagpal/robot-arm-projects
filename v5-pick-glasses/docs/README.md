@@ -26,9 +26,9 @@ is something the next problem can stand on.
 **Problem 1** has one glass on a bare table. Nothing hides anything, the camera
 can go wherever it likes, and the glass is reachable where it stands. That
 leaves the difficulties that are about the *object* rather than about the
-scene: its size has to be measured, its weight cannot be seen at all, there is
-usually one place it may be held, and the set-down has to be felt rather than
-driven.
+scene. Its size has to be measured. Its weight cannot be seen at all. There is
+usually only one place it may be held. And the set-down has to be felt rather
+than driven.
 
 **Problem 2** puts several glasses of the same kind on the table. The kinds are
 known, so naming is not the difficulty. Telling one glass from another is — and
@@ -64,10 +64,10 @@ means. After that they differ, because the problems do:
   steps. Problem 2 stops at a set of pixels per glass; problem 3 stops at
   glasses far enough apart to be gripped. Each has a `solution-overview.md`
   instead — nine and eleven solutions respectively, grouped as programmed,
-  hybrid and learned, with which one is chosen and why. Both open with the
-  three ideas the comparisons turn on: where a learned component can sit in a
-  pipeline, what it takes for a system to choose its own next measurement, and
-  the rule that every solution in them can be built inside the simulator. Each
+  hybrid and learned, with which one is chosen and why. Both open with the three
+  ideas the comparisons turn on. Where a learned part can sit in a pipeline.
+  What it takes for a machine to choose its own next measurement. And the rule
+  that every solution in them can be built inside the simulator. Each
   folder also has a `learned-with-hardware.md` holding the answers that cannot
   — a foundation model, a fine-tune, a reinforcement-learning policy — beside
   the condition each one fails.
