@@ -279,16 +279,17 @@ when it would be the right choice.
 *Programmed. Keep the mask the detector already builds. When one patch is too
 wide to be a single object, cut it in two, using nothing but the picture.*
 
-When two glasses line up with the camera, the near one stands in front of the
-far one and the flood fill that works perfectly for one glass returns a single
-patch. This solution splits that patch without depth, a model or a second
-photograph. It works because the camera looks level from 120 mm above the table
-top, so the table recedes to a horizon and **a glass standing further away has
-its base drawn higher up the picture**. Find the level stretches along the
-underside of the patch: one glass makes one, two glasses at different distances
-make two at different heights, and the lower stretch is the nearer glass. It
-costs a fraction of a millisecond, it never splits a single glass, and it says
-nothing at all when the far glass's base is hidden.
+Sometimes two glasses line up with the camera. The near one stands in front of
+the far one, so in the picture they touch and look like one object. This
+solution separates them. It does not need depth, a trained model, or a second
+photograph. It works because the camera looks straight ahead from 120 mm above
+the table. The table then stretches away to a horizon, and **a glass that is
+further away has its base drawn higher up in the picture**. So we look along the
+bottom edge of the shape and find the flat parts. One glass gives one flat part.
+Two glasses at different distances give two flat parts at different heights. The
+lower one is the nearer glass. The method takes less than a millisecond, it
+never cuts a single glass in two by mistake, and it says "I cannot tell" when
+the far glass's base is hidden.
 
 **The long version:** [01-split-the-blob-in-the-picture.md](01-split-the-blob-in-the-picture.md) — this solution explained
 from the beginning, with diagrams.
