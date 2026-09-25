@@ -134,13 +134,13 @@ the very least, so 50,000 episodes is about **eleven days of continuous
 running**, or three days across four parallel instances. That is one reward
 function, and the reward needs several attempts.
 
-The usual escape is a GPU-batched simulator running thousands of worlds at once.
-**This machine is an Apple Silicon Mac with no NVIDIA GPU**, which rules that
-out specifically: Isaac Sim and Isaac Lab are CUDA-only with no macOS build at
-all, and MuJoCo's batched version, MJX, wants JAX on an NVIDIA GPU or a TPU.
-Plain MuJoCo runs natively, so rebuilding the cell there is possible, but it
-buys single-world speed, not thousands of worlds. PyTorch's MPS backend trains a
-small policy network happily; the network was never the bottleneck.
+The usual escape is a GPU-batched simulator running thousands of worlds at
+once. **This machine is an Apple Silicon Mac with no NVIDIA GPU.** That rules
+those out specifically. Isaac Sim and Isaac Lab are CUDA-only, with no macOS
+build at all, and MuJoCo's batched version, MJX, wants JAX on an NVIDIA GPU or
+a TPU. Plain MuJoCo runs natively, so rebuilding the cell there is possible,
+but it buys single-world speed, not thousands of worlds. PyTorch's MPS backend
+trains a small policy network happily; the network was never the bottleneck.
 
 Licences need the same look the grasp models get in
 [the licence picture](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/04_models-that-grasp.md#5-the-licence-picture):
@@ -239,13 +239,14 @@ twenty seconds, nobody holding a controller. So imitation here is not a way of
 avoiding a planner, but a way of **compressing a planner that already works
 into one fast reactive function**.
 
-The classic failure: the policy is slightly wrong, so it drifts into states the
-demonstrations never covered, where it is more wrong, so it drifts further —
-**compounding error**, with a worst case growing as the *square* of the episode
-length. The mitigation is **DAgger**, dataset aggregation (Ross, Gordon and
-Bagnell, 2011): run the half-trained learner, let it wander, ask the *expert*
-what it would have done at each state it reached, and retrain on those labels.
-The dataset then covers where the learner goes, not where the expert goes.
+The classic failure runs like this. The policy is slightly wrong, so it drifts
+into situations the demonstrations never covered. There it is more wrong, so it
+drifts further — **compounding error**, with a worst case growing as the
+*square* of the episode length. The mitigation is **DAgger**, dataset
+aggregation (Ross, Gordon and Bagnell, 2011): run the half-trained learner, let
+it wander, ask the *expert* what it would have done at each state it reached,
+and retrain on those labels. The dataset then covers where the learner goes,
+not where the expert goes.
 
 ### Why anyone does it this way
 
@@ -267,9 +268,9 @@ small delta on the wrist pose.
 [github.com/tonyzhaozh/act](https://github.com/tonyzhaozh/act), MIT licence,
 Zhao and colleagues, 2023. It predicts not one action but a **chunk** of the
 next *k* actions in one pass. One step at a time makes a policy dither, and at
-10 Hz dither is a knock; a chunk commits to a short smooth movement, which is
-what a push is, and cuts decisions per episode — compounding error compounds
-per decision.
+10 Hz dither is a knock. A chunk commits to a short smooth movement, which is
+what a push is, and that cuts the number of decisions per episode — and
+compounding error compounds per decision.
 
 **Diffusion policies** —
 [github.com/real-stanford/diffusion_policy](https://github.com/real-stanford/diffusion_policy),

@@ -70,8 +70,8 @@ whose base is `2a` across, standing on a table it rubs against with friction
     h  <  a / μ
 
 and tips above it. A 60 mm base at μ = 0.3 gives 100 mm of room to push in. A
-45 mm base at μ = 0.5 gives 45 mm — which is below the lowest the gripper can
-reach without fouling the table, so that glass cannot be pushed safely at all,
+45 mm base at μ = 0.5 gives 45 mm. That is below the lowest the gripper can
+reach without fouling the table. So that glass cannot be pushed safely at all,
 and the only correct answer for it is to refuse.
 
 Three things follow, and they are the shape of the problem:
@@ -85,9 +85,9 @@ slides. That has to be a refusal, not an attempt.
 
 **μ is not known.** It is a property of the glass, the table and whatever is on
 both, and nothing in the cell measures it. So the arithmetic above gives a
-bound that is only as good as a guessed number — which is an argument for
-pushing as low as the gripper can reach, always, and for watching what actually
-happens rather than trusting the prediction.
+limit that is only as good as a guessed number. That is an argument for always
+pushing as low as the gripper can reach, and for watching what actually happens
+rather than trusting the prediction.
 
 ## What else makes this hard
 

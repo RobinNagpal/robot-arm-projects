@@ -72,7 +72,7 @@ rule down, and for some questions nobody can.
 
 **Learned.** The behaviour comes from numbers fitted to examples rather than
 from a rule anybody wrote. It can do things nobody knows how to state — telling
-one object from another in a cluttered photograph, for one — and it pays for
+one object from another in a cluttered photograph, for instance. It pays for
 that with a training set, a file of weights that has to be kept in step with
 the world, hardware to run it on, and an answer that cannot explain itself.
 
@@ -209,10 +209,10 @@ inside the simulator.
 | 10 | [Learn a forward model, then plan](#solution-10--learn-a-forward-model-then-plan-against-it) | learned | decider | **yes** | the best of the three learned ones |
 | 11 | [Search a push strategy](#solution-11--search-a-push-strategy) | learned | decider | partly | hours, where reinforcement learning wants days |
 
-Each is written the same way: what it is, why anyone does it like that, how it
-would work in this cell, **the feedback loop** if it has one, a worked example
-with real numbers, what it needs, what it is good and bad at, how it fails, and
-when it would be the right choice.
+Every one is written to the same plan. What it is. Why anyone does it that way.
+How it would work in this cell. **The feedback loop**, if it has one. A worked
+example with real numbers. What it needs. What it is good and bad at. How it
+fails. And when it would be the right choice.
 
 ---
 
