@@ -4,8 +4,9 @@
 picture. Decide it by looking at where they are in the room.*
 
 > **The cell is described once, in [the cell](../../the-cell.md)** — the layout,
-> the two camera poses, all four sensors, and the words this project uses them
-> with. What follows is only what is specific to this solution.
+> the two places the camera works from, from the top and from the side, all four
+> sensors, and the words this project uses them with. What follows is only what
+> is specific to this solution.
 
 ## In one paragraph
 
@@ -16,17 +17,26 @@ where the direction starts. Once the pixels are points, the question "which
 glass is this?" stops being about the picture and becomes about distance on the
 table. So we flatten the points down onto the table, group the ones that are
 close together, fit a circle to each group, and check that circle against the
-sizes this kind of glass can be. Two glasses that touch in a photograph are
-still 150 mm apart in the room.
+sizes this kind of glass can be. Two glasses that touch each other in a
+photograph are still standing well apart on the table, and on the table is where
+we do the deciding.
 
 ## The problem this solves
 
 Four to six drinking glasses stand on a table. They are all the same kind, we
-know which kind, they are solid and upright, and they stand at least 150 mm
-apart in a zone 320 mm by 360 mm. A camera on the arm's wrist photographs them
-from about 450 mm above the table. The job is to say **which pixels belong to
-which glass**, where each glass is, and roughly how wide it is. And to say
-honestly which glasses could not be told apart.
+know which kind, they are solid and upright, and they stand well apart from each
+other inside a patch of table that is a little wider than it is deep — the glass
+zone. The camera sits on the arm's wrist, and here it works **from the top**:
+the arm lifts it high above the table, well clear of the tallest glass, and
+points it straight down. The job is to say **which pixels belong to which
+glass**, where each glass is, and roughly how wide it is. And to say honestly
+which glasses could not be told apart.
+
+"Well apart" has a definite meaning in this cell. Problem 2 promises a smallest
+gap between the centres of any two glasses, and that gap is wider than any glass
+of any kind the cell handles. So no two glasses can ever be touching, and there
+is always a strip of bare table between them. The whole of this solution rests
+on that strip.
 
 The method the project already has for one glass does not survive several. It
 takes the pixels that sit above the table top and runs a **flood fill**: pick a
@@ -37,25 +47,29 @@ table that is enough. With five it is not.
 ![Merged in the picture, plainly apart on the table](../../../images/problem-2/02-merged-in-the-picture.png)
 
 On the left, two outlines touch, so the flood fill returns one patch. On the
-right, the same two glasses on the table, with 102 mm of empty table between
-them. The camera did not move them closer together. It threw away the one thing
-that would have kept them apart: which pixels were near the camera and which
-were far.
+right, the same two glasses on the table, with a clear strip of bare table
+between them. The camera did not move them closer together. It threw away the
+one thing that would have kept them apart: which pixels were near the camera and
+which were far.
 
 Why does this happen? Because a photograph of a tall object is not a photograph
-of its base. Take a glass 205 mm tall, seen from 450 mm up. Its rim is only
-450 − 205 = 245 mm from the lens, while the table is the full 450 mm away.
-Nearer things look bigger and land further out. Working it through, the rim is
-drawn as though it stood 450 / 245 = **1.84 times** further from the point
-directly below the camera than it really is. We call this **splay**. So a tall
-glass's outline leans outwards, and it can land on top of whatever is standing
-in that direction.
+of its base. The camera is looking from the top, so the table is the furthest
+thing from the lens and a glass's rim is the nearest — the rim has climbed most
+of the way from the table towards the camera. Nearer things look bigger and land
+further out from the middle of the picture. So the rim of a glass is drawn as
+though the glass stood further out from the point directly below the camera than
+it really does, and the taller the glass, the further out it is thrown. We call
+this **splay**, and [the cell](../../the-cell.md) explains it in full. A tall
+glass's outline leans outwards, away from the camera, and it can land on top of
+whatever is standing in that direction.
 
 One point worth being exact about, because it is easy to get wrong. Splay does
-**not** merge two glasses that are both fully inside one picture. We tested
-4320 legal arrangements and none of them merged. What splay does is push a
-glass's outline outwards until part of it falls off the edge of the frame — and
-*that* is when it can land on a neighbour. The worked example below is exactly
+**not** merge two glasses that are both fully inside one picture. We tried this
+against every legal arrangement the cell's own scene generator can make —
+thousands of them, across all four kinds, every spacing and every angle — and
+not one of those pairs merged. What splay does is push a glass's outline
+outwards until part of it falls off the edge of the frame, and *that* is when
+what is left of it can land on a neighbour. The worked example below is exactly
 this case, and it says so.
 
 The fix is not a better flood fill. It is to stop grouping in the picture.
@@ -101,21 +115,25 @@ choose.
 
 ### The setup
 
-The table top is at 750 mm, and every height in this project is measured from it
-(`table/layout.py`). The arm is fixed to the same frame at the near edge and
-reaches out along +x. So "where the table is" is a constant, not something to be
-found.
+The table top's height is written down once, in `table/layout.py`, and every
+height in this project is measured up from it. The arm is bolted to the same
+frame, at the near edge, and reaches out across the table. So "where the table
+is" is a constant the code can look up, not something that has to be found in
+the picture. That single fact saves a whole step later on.
 
-The glasses stand in a zone 320 mm by 360 mm —
-`GLASS_ZONE = (0.32, 0.64, −0.44, −0.08)`. Four to six of them, all one kind,
-upright, solid, at least 150 mm apart centre to centre. The rack stands across
-the table, far enough away that it is not behind the glasses in a survey
-picture.
+The glasses stand inside the **glass zone** (`GLASS_ZONE` in `table/layout.py`)
+— a rectangle of table a little wider than it is deep, well within the arm's
+reach. Four to six glasses, all one kind, upright, solid, and never closer than
+the smallest centre-to-centre gap problem 2 promises. The rack stands across the
+table, far enough away that it is never behind a glass when the camera looks
+down at the zone.
 
-The camera is on the wrist, 85 mm to one side of the tool centre and 15 mm above
-it (`CAMERA_OFFSET` in `arm/dimensions.py`). So pointing the tool at something is
-not the same as pointing the camera at it. Every step below uses the camera's own
-measured pose, not the pose the arm was told to go to.
+The camera is bolted to the wrist, a little to one side of the tool centre and a
+little above it (`CAMERA_OFFSET` in `arm/dimensions.py`). That offset is small
+but it is not nothing: pointing the *tool* at something is not the same as
+pointing the *camera* at it. So every step below uses the camera's own measured
+pose, read back from the joint angles, and never the pose the arm was told to go
+to.
 
 **Known before the run:** the table top's height, the camera's lens settings,
 which kind of glass is on the table, the range of widths that kind can be, and
@@ -124,75 +142,92 @@ stand, how tall they are, or how wide.
 
 ### The pictures
 
-Every picture here is a survey picture: the wrist camera 450 mm above the table
-(`SURVEY_HEIGHT`), looking straight down. That height is chosen for two reasons.
-It clears the tallest glass the cell handles, 230 mm, with room for the arm above
-it. And it is high enough to cover the zone in a handful of pictures rather than
-a dozen.
+Every picture this solution uses is taken **from the top**. The arm lifts the
+camera to the survey height (`SURVEY_HEIGHT` in `arm/dimensions.py`) and turns
+it to look straight down at the table. That height was chosen for two reasons.
+It clears the tallest glass the cell is allowed to be given, with room for the
+wrist above it, so the arm can travel across the zone without knocking anything
+over. And it is high enough that one picture covers a useful piece of table, so
+the zone can be covered in a handful of pictures rather than dozens.
 
-At 450 mm the lens — 320 by 240 pixels over a 60 degree field — covers
+How much table one picture covers follows from the lens and nothing else. The
+camera's picture is a fixed number of pixels wide, and the lens spreads a fixed
+angle across them, so the higher the camera goes, the more table each pixel
+covers. High above the table like this, each pixel covers a millimetre or two of
+table top — coarse compared to a ruler, but fine compared to a glass, which is
+tens of pixels across. That ratio is the reason this works at all.
 
-    450 × 320 / 277.1 = 520 mm across   and   450 × 240 / 277.1 = 390 mm down
+`survey_stations()` in `arm/dimensions.py` spreads the stations out over the
+zone, overlapping them (`SURVEY_OVERLAP`) so that nothing ends up only on the
+edge of one picture, where the view of it is worst. There is a subtlety here.
+The area a *station* can be trusted for is smaller than the area one picture
+covers, for two reasons: the camera slides sideways between the station's two
+pictures, so only the part both pictures see counts; and the gripper's own
+fingers, opened wide, eat into the frame at the edges. What is left after both
+of those is a band noticeably shorter front-to-back than the full picture. Held
+against the shape of the glass zone, that works out to a single column of
+**three stations**, one behind the other, marching away from the arm.
 
-of table. So **one pixel is 1.6 mm** there.
-
-`survey_stations()` in `arm/dimensions.py` spreads the stations over the zone,
-with `SURVEY_OVERLAP` = 35 per cent, so that nothing lands only on the edge of
-one picture. The part of the footprint that *both* pictures of a pair share is
-smaller than the full footprint: the sideways slide costs the baseline off one
-axis, and the gripper's widest opening costs 95 mm off both. That leaves 425 by
-175 mm. Against a zone 320 by 360 mm, the result is **one column of three
-stations, 92.5 mm apart** along y.
-
-Each station takes **two pictures 120 mm apart** (`SURVEY_BASELINE`), sliding
-sideways between them. That pair exists because the current method has to work
-out each glass's height from how far it appears to shift — see
-`where_they_stand()`. This method does not need the pair for that, because depth
-gives the height directly. It keeps the pair anyway, because two views of the
-same footprint from 120 mm apart are what the agreement rule at the end is built
-on. Six pictures in all.
+Each station takes **two pictures**, sliding the camera a short way sideways
+between them (`SURVEY_BASELINE`). The existing survey needs that pair because it
+has no depth to work with, and has to get each glass's height from how far the
+glass appears to shift between the two — see `where_they_stand()`. This solution
+does not need the pair for that; depth gives it the height directly. It keeps
+the pair anyway, because two views of the same patch of table from slightly
+different places are exactly what the agreement rule at the end of the method is
+built on. Three stations, two pictures each.
 
 ### What each picture captures
 
 The camera hands over four things at the moment of capture.
 
-- **Colour**, 320 by 240 by 3. Used for the report's pictures, not for the
-  method.
-- **Depth**, 320 by 240, one distance per pixel in metres. It is measured along
-  the lens axis, not along the slanted ray, which matters to the arithmetic
-  below. A pixel with no distance is dropped, because a pixel with no distance
-  cannot be placed anywhere.
-- **The lens settings**, from `CameraInfo`: fx = fy = 277.1 pixels and cx = 160,
-  cy = 120. The focal length here is not a length in millimetres. It is a
-  conversion factor, and it comes straight from the field of view:
-  160 / tan(30°) = 277.1 for a camera 320 pixels wide covering 60 degrees.
-- **The pose**, a 4 by 4 matrix that takes the camera's own frame to the arm's,
-  read from tf2.
+- **A colour picture.** Used for the pictures in the run report, not for the
+  method itself.
+- **A depth picture**, the same size, with one distance per pixel. Two things
+  about it matter later. The distance is measured straight out along the lens
+  axis, not along the slanted line from the lens to that particular pixel — so a
+  pixel near the corner of the picture is genuinely further away than its depth
+  reading says, and the arithmetic below has to account for that. And some
+  pixels come back with no distance at all; those are dropped, because a pixel
+  with no distance cannot be placed anywhere in the room.
+- **The lens settings**, which arrive with the picture in a `CameraInfo`
+  message: the focal length, and the pixel the lens axis passes through, which
+  is the middle of the picture. The focal length here is not a length in
+  millimetres, and reading it that way is a common confusion. It is a conversion
+  factor between directions and pixels, and it falls straight out of how wide an
+  angle the lens covers and how many pixels it covers it with. A wider lens over
+  the same number of pixels gives a smaller focal length.
+- **The pose** — where the camera was, and which way it was facing, at the
+  moment of the shutter, read from tf2.
 
-From those, `standing_on_the_table()` in `glasses/detect.py` builds **the mask**:
-the pixels whose points sit more than 5 mm above the table top
-(`STANDING_CLEARANCE` — below that is just noise on the table itself) and less
-than 260 mm above it (`TALLEST_GLASS`). Everything the mask keeps is standing on
-the table.
+From those, `standing_on_the_table()` in `glasses/detect.py` builds **the
+mask**. A pixel is kept if the point behind it sits clear of the table top by
+more than a small margin (`STANDING_CLEARANCE`, which exists because a depth
+reading of the bare table is never exactly the table) and below the height of
+the tallest glass the cell accepts (`TALLEST_GLASS`). Everything the mask keeps
+is something standing on the table.
 
 ### What is interpreted, and how
 
 ![The whole method in four pictures](../../../images/problem-2/02-four-steps.png)
 
 The four panels are the pipeline: the depth picture, the points that stand above
-the table, the flattened dots grouped at 25 mm, and one circle per group. Six
-steps get from the first to the last.
+the table, the flattened dots grouped by how close together they are, and one
+circle per group. Six steps get from the first to the last.
 
-First, how much data this is. The zone is 320 mm by 360 mm and one pixel covers
-1.6 mm, so the zone fills about 200 by 225 pixels — around 45,000 of the
-picture's 76,800. Five glasses take up a quarter to a third of that. So one
-picture gives roughly **ten thousand points** above the table.
+First, a sense of how much data this is. Looking down from the survey height,
+the glass zone fills most of the picture, and the glasses standing in it take up
+something like a quarter to a third of that. So one picture leaves **thousands
+of points** above the table — enough that every group has plenty of dots to fit
+a circle to, and few enough that a plain loop in Python can handle them. The
+exact count is printed in the report, and it is worth watching, because a count
+far below normal means most of the zone was hidden or out of frame.
 
-**1. Threshold.** That is the mask above. The standard recipe spends RANSAC here,
-hunting for the largest plane. Here the plane is a constant, so the test is just
-a comparison. That is a saving worth understanding rather than copying blindly:
-if the table were moved or the arm remounted, the constant would be wrong in a
-way that RANSAC would not be.
+**1. Threshold.** That is the mask above. The standard recipe spends RANSAC
+here, hunting for the largest plane. Here the plane is a constant, so the test
+is just a comparison. That is a saving worth understanding rather than copying
+blindly: if the table were moved or the arm remounted, the constant would be
+wrong in a way that RANSAC would not be.
 
 **2. Back-projection.** Every masked pixel becomes a point in the room.
 
@@ -210,10 +245,11 @@ For a pixel at column u and row v with depth Z:
     Y = (v − cy) × Z / fy
     Z = Z
 
-X, Y and Z are in the camera's own frame: X to the right of the lens axis, Y
-down, Z out along it. One 4 by 4 multiply by the pose turns them into three
-numbers in the arm's frame, which is the frame everything else in this project
-speaks.
+X, Y and Z are still measured from the camera itself: X to the right of the lens
+axis, Y down, Z straight out along it. Multiplying them by the camera's pose
+moves them into the arm's frame, which is the one frame everything else in this
+project speaks. From here on, a point is a place in the room, not a place in a
+picture.
 
 Do that for every masked pixel and you get a **point cloud**: just a list of
 positions in the room. No grid, no neighbours, no order.
@@ -223,29 +259,40 @@ positions in the room. No grid, no neighbours, no order.
 
 ![Why flattening comes before grouping](../../../images/problem-2/02-why-flatten.png)
 
-On the left, two glasses as points in full 3-D. Notice the shaded band: there are
-points on the tops, a few near the bases, and almost nothing in between. That is
-because a camera looking nearly straight down sees a vertical wall edge-on. On
-the right, the same points flattened.
+On the left, two glasses as points in full 3-D. Notice the shaded band: there
+are points on the tops, a few near the bases, and almost nothing in between.
+That is because a camera looking down from the top sees the side wall of a glass
+edge-on, and an edge-on wall catches almost no pixels. So the cloud is not a
+glass. It is a lid with a ring of crumbs under it.
 
-The numbers make the case. In 3-D, the top of one glass and the base of the
-*same* glass are 205 mm apart, with a hole between them. Meanwhile the nearest
-points of two *different* glasses are 102 mm apart. So no single grouping
-distance works. Anything under 102 mm splits one glass into a top and a bottom.
-Anything over 205 mm joins the two glasses together. Since 205 is bigger than
-102, there is no number in between to pick. Flattened, the same glass is a disc
-76 mm across and the gap to its neighbour is still 102 mm. That is a wide window,
-and any sensible number sits inside it.
+That is fatal if you try to group the points in 3-D, and the reason is worth
+following, because it is the heart of this step. In 3-D, the top of a glass and
+the base of the **same** glass are separated by the glass's whole height, with a
+hole in between where the wall should be. The nearest points of two
+**different** glasses are separated by the strip of bare table between them,
+which is smaller than a glass is tall. So the gap inside one object is *bigger*
+than the gap between two objects, and there is no grouping distance that can
+work: any distance small enough to keep the two glasses apart also cuts each
+glass into a top and a bottom, and any distance big enough to hold one glass
+together also reaches across to its neighbour.
+
+Flatten the height away and the problem disappears. Each glass becomes a small
+solid disc, no taller than the paper it is drawn on, and the strip of bare table
+between two discs is unchanged — because flattening does not move anything
+sideways. Now the gap inside one object is zero and the gap between two objects
+is the whole strip. Any sensible grouping distance sits between those, with room
+to spare on both sides.
 
 In short: **height is the dimension that varies most and tells you least.**
 
 One caveat. The flattened disc is not the glass's base. It is the outline of its
 **widest horizontal slice**, because that is what hides everything underneath it
 from a camera looking down. For a tumbler the rim and the base are nearly the
-same width and it does not matter. For a wine glass, whose bowl is wider than its
-foot, the disc is the bowl. Problem 2 asks for a *rough width*, and the widest
-slice is the honest answer to that. The exact shape is problem 1's side-on
-measurement.
+same width and it does not matter. For a wine glass, whose bowl is wider than
+its foot, the disc is the bowl. Problem 2 asks for a *rough width*, and the
+widest slice is the honest answer to that. The exact shape is what problem 1
+gets later, with the camera brought down and round to look at the glass **from
+the side**.
 
 **4. Cluster by distance.** The rule is one sentence:
 
@@ -259,39 +306,54 @@ matters, because a method that is told to find five groups cannot report that
 there were four or six — which is the whole point of problem 2.
 
 The rule also chains: if A joins B and B joins C, then all three are one group,
-even if A and C are 300 mm apart. That is what keeps a long thin scatter
-together. It is also why a single stray dot in a gap can join two glasses.
+even if A and C are right across the table from each other. That is what keeps a
+long thin scatter together, and it is why the method needs no idea of a group's
+size or shape. It is also the rule's one weakness — a single stray dot sitting
+in the strip between two glasses is enough to chain them into one group.
 
 ![Choosing the one parameter](../../../images/problem-2/02-grouping-distance.png)
 
-The shaded ends are the two ways of getting it wrong, and the band between them
-is everything that works. Note where 150 mm sits: that is centre-to-centre
-spacing, not the gap.
+So how is *d* chosen? It is pinned between two things, and the useful part is
+that both of them are known before the run starts. The shaded ends of the
+picture are the two ways of getting it wrong, and the band between them is
+everything that works.
 
-*The lower end* is the largest gap between neighbouring dots on one glass's own
-footprint. On the table top the dots are 1.6 mm apart. On the top of a 205 mm
-glass the camera is 245 mm away instead of 450, so 1.6 × 245 / 450 ≈ 0.9 mm. On a
-wall seen at a slant the spacing stretches, but stays within a few millimetres.
-Below about **10 mm** the chain starts breaking, and one glass comes back as
-several.
+*The bottom end is set by how far apart the dots on one glass are.* Neighbouring
+pixels land on neighbouring bits of table, so the dots come out in a mesh whose
+spacing is roughly what one pixel covers. Two things stretch that mesh. The top
+of a glass is nearer the lens than the table is, which actually *tightens* the
+mesh there. But a surface seen at a slant — the shoulder of a glass, the outer
+curve of a bowl — spreads its dots out, because the same pixel now covers a
+longer piece of surface. Choose *d* smaller than the widest stretch in that mesh
+and the chain breaks in the middle of a single glass, which comes back as two or
+three groups.
 
-*The upper end* is the smallest clear gap between two different glasses'
-footprints. They stand 150 mm apart centre to centre, and clustering measures
-edge to edge. So the gap is 150 mm minus the two radii. For the widest glasses of
-this kind, 90 mm across, that is 150 − 45 − 45 = **60 mm**. Above that the chain
-can hop across.
+*The top end is set by the strip of bare table between two glasses.* Problem 2
+promises a smallest gap between centres, and clustering measures edge to edge,
+so the worst case is that smallest centre gap with the two widest glasses of
+this kind standing in it — take half of each glass off the gap and what is left
+is the narrowest strip the method will ever be shown. Choose *d* bigger than
+that strip and the chain hops across it, and two glasses come back as one.
 
-So the window is about 10 mm to 60 mm, and **25 mm** is the choice. It is
-comfortably above the noise and comfortably below the smallest real gap. It sits
-low in the window on purpose, because a glass split in two announces itself,
-while two glasses merged into one does not.
+The good news is that there is a lot of daylight between those two limits: the
+narrowest strip is several times the widest stretch in the mesh. So *d* is not a
+knob that has to be tuned. It is a constant sitting in the middle of a wide
+window, and the picture above shows how wide.
 
-One practical note. The obvious way to run the rule compares every dot with every
-other dot. Ten thousand dots is a hundred million comparisons, which is hopeless
-in Python. Sorting the dots into square bins of side *d* first fixes it: two dots
-within *d* of each other must be in the same bin or one of the eight touching it,
-so each dot is only compared with a handful. The same trick under a fancier name
-is a k-d tree, which is what `scipy.spatial.cKDTree` builds.
+It is deliberately placed **low** in that window rather than in the exact
+middle. The reason is that the two mistakes are not equally bad. A glass split
+into two groups announces itself loudly: both halves fail the width check
+further down, because half a footprint is far too narrow to be a glass of this
+kind. Two glasses merged into one group are much quieter. So we lean towards
+splitting.
+
+One practical note on running the rule. The obvious way compares every dot with
+every other dot, and with thousands of dots that is millions of comparisons,
+which is hopeless in Python. Sorting the dots into square bins whose side is *d*
+fixes it: two dots within *d* of each other must be in the same bin or in one of
+the eight bins touching it, so each dot is only ever compared with a handful of
+others. The same trick, under a grander name, is a k-d tree, which is what
+`scipy.spatial.cKDTree` builds.
 
 **5. Fit a circle, and check it.** A glass seen from above is a circle, so each
 group is a filled disc. Fitting a circle to it gives a centre and a diameter.
@@ -311,11 +373,16 @@ to be noise.
 
 ![The circle fit is the safety net](../../../images/problem-2/02-circle-fit-decides.png)
 
-Left: one circle fitted to the whole group comes out at 260 mm, which nothing of
-this kind can be, so it is rejected. Middle: two circles are tried instead, at 76
-and 73 mm. Right: the ruler they are measured against — the kind's own range.
-Across the four kinds the cell handles that is 45 to 105 mm; within a single kind
-it is much narrower, 60 to 90 mm for the kind used in these examples.
+Left: one circle fitted to the whole group comes out around three times as wide
+as any glass of this kind can be, so it is rejected out of hand. Middle: two
+circles are tried instead, and both land inside the range. Right: the ruler they
+are measured against, which is the kind's own range of widths and nothing else.
+
+That ruler matters more than it looks. Across all four kinds the cell handles,
+the range of possible widths is broad — a narrow flute and a wide tumbler are
+very different objects. Within a *single* kind it is much narrower, and problem
+2 tells us which kind is on the table. So the check available here is far
+tighter than a general-purpose "is this object-sized?" test would be.
 
 Four outcomes:
 
@@ -326,10 +393,11 @@ Four outcomes:
 - **Still out of range** — report the group as doubtful, with its measured width
   and the range it failed, and do not guess.
 
-Splitting the group means k-means with k = 2. Drop two seeds, give each dot to
-the nearer seed, move each seed to the middle of what it was given, and repeat
-until nothing moves. Then fit a circle to each half. It takes a millisecond on a
-few hundred dots, and needs no model.
+Splitting the group means k-means with k = 2. Drop two seeds anywhere in the
+group, give each dot to whichever seed is nearer, move each seed to the middle
+of the dots it was given, and repeat until nothing moves any more. Then fit a
+circle to each half. On a group this size it finishes in the blink of an eye,
+and it needs no model of anything.
 
 What makes this check worth having is that it is **arithmetic, not judgement**.
 "Too wide to be one glass" is a sentence with two numbers in it, both known
@@ -341,10 +409,13 @@ merges what they saw, so this costs nothing extra.
 ![Two stations, and why they are asked to agree](../../../images/problem-2/02-two-stations-agree.png)
 
 The grey patches are the table that each glass hides from that station. In the
-left panel one glass sits 254 mm off to the side, so its top is thrown outwards
-past the edge of the frame, and only the near half of its footprint comes back.
-In the right panel that same glass is nearly straight below the camera and its
-footprint is complete, while a different one is now the awkward one.
+left panel one glass sits well out towards the corner of the frame, so splay
+throws its top outwards past the edge of the picture and only the near part of
+its footprint comes back. In the right panel that same glass is nearly straight
+below the camera, where splay throws it almost nowhere, so its footprint is
+complete — and now a *different* glass is the awkward one. That swap is the
+whole point: which glass is seen badly depends on where the camera is standing,
+so moving the camera changes which glass is the problem.
 
 Three rules follow:
 
@@ -369,16 +440,18 @@ For each glass, three things and a flag:
 
 They come out as the same `Detection` records the survey already produces, so
 nothing downstream changes. `task.py`'s step 2 drives the camera to
-`MEASURE_STANDOFF` for the side-on measurement of each glass, the run report
+`MEASURE_STANDOFF` to look at each glass from the side, the run report
 prints the positions and widths, and any pair that could not be separated is the
 handover to [problem 3](../../problem-3/problem.md).
 
 **What it costs.** Back-projection is arithmetic the project already does. The
 rest is a comparison, a column drop, a binned flood fill and a least-squares
-solve — about **25 lines of NumPy**. Exact timings on this machine are not
-measured yet, but the shape of the answer is clear: milliseconds to tens of
-milliseconds, against seconds for every centimetre the arm moves. Computation is
-not the thing to save on here.
+solve — a couple of dozen lines of NumPy. We have not timed it on this machine
+yet, but the shape of the answer is not in doubt: this is the kind of work a CPU
+finishes while the arm is still deciding to move. Every small move of the arm
+costs seconds. So computation is not the thing to economise on here, and any
+argument of the form "that would be too slow to compute" should be checked
+against that before it is believed.
 
 ## The sequence
 
@@ -392,22 +465,22 @@ sequenceDiagram
     participant C as Wrist camera
     participant P as Perception
     participant R as Report
-    T->>P: survey_stations over the 320 x 360 mm glass zone
-    P-->>T: 3 stations, 92.5 mm apart, 35 per cent overlap
-    loop each station, twice, 120 mm apart
-        T->>A: move 450 mm above the table, looking straight down
+    T->>P: survey_stations over the glass zone
+    P-->>T: three stations, overlapping, one behind the other
+    loop each station, two pictures, a short slide apart
+        T->>A: lift to the survey height, look straight down
         A-->>T: where the camera really ended up
         T->>C: capture
-        C-->>P: colour and depth 320 x 240, plus the 4 x 4 pose
-        P->>P: mask the points 5 to 260 mm above the table top
+        C-->>P: colour and depth, the lens settings, and the pose
+        P->>P: keep the pixels standing clear of the table
         P->>P: back-project into the arm frame, then drop the height
-        P->>P: cluster the dots at 25 mm
+        P->>P: chain the dots that are close together
         P->>P: fit a circle to each group
-        P-->>T: one centre, diameter and residual per group
+        P-->>T: one centre, width and residual per group
     end
     T->>P: merge groups that land in the same place
-    P-->>T: one entry per glass, width from the nearest-to-overhead station
-    T->>R: positions in metres, widths in millimetres
+    P-->>T: one entry per glass, width from the most overhead station
+    T->>R: a position and a width for each glass
 ```
 
 The interesting path: what happens when a fitted circle is too wide to be one
@@ -420,14 +493,14 @@ sequenceDiagram
     participant P as Perception
     participant R as Report
     T->>P: fit a circle to this group
-    P->>P: diameter 165 mm, against the kind's 60 to 90 mm
+    P->>P: far too wide to be one glass of this kind
     alt two circles fit, and together use every dot
         P->>P: split with k-means, k = 2, then refit both halves
-        P-->>T: two glasses, 76 mm and 73 mm
+        P-->>T: two glasses, both widths inside the kind's range
         T->>R: two entries, both in range
     else still out of range, or seen from one station only
         P-->>T: doubtful group
-        T->>R: measured width, the range it failed, and the dot count
+        T->>R: the measured width, the range it failed, and how many dots
         Note over T,R: the arm does not go and look again. That is solution 3
     end
 ```
@@ -438,15 +511,15 @@ Most of this pipeline already exists. The coloured boxes say which parts.
 
 ```mermaid
 flowchart TD
-    S["survey_stations — 3 stations over the glass zone"] --> CAP["look_down_from — two pictures 120 mm apart"]
-    CAP --> BR["cv_bridge and tf2 — arrays, and the 4x4 pose"]
-    BR --> MK["standing_on_the_table — 5 to 260 mm above the top"]
+    S["survey_stations — three stations over the glass zone"] --> CAP["look_down_from — two pictures, a short slide apart"]
+    CAP --> BR["cv_bridge and tf2 — the arrays, and the pose"]
+    BR --> MK["standing_on_the_table — clear of the top, under the tallest glass"]
     MK --> BP["back-project each masked pixel into the arm frame"]
     BP --> FL["drop the height — dots on the table"]
-    FL --> CL["cluster the dots at 25 mm"]
+    FL --> CL["chain the dots that are close together"]
     CL --> FIT["fit a circle to each group"]
-    FIT --> LS["numpy.linalg.lstsq — centre, diameter, residual"]
-    LS --> CHK{"diameter inside the kind's range"}
+    FIT --> LS["numpy.linalg.lstsq — centre, width, residual"]
+    LS --> CHK{"width inside the kind's range"}
     CHK -- yes --> MG["merge_sightings — agree across stations"]
     CHK -- no --> SP["split in two with k-means, and refit"]
     SP --> MG
@@ -481,7 +554,7 @@ for station in stations:                                 # have  · work_cell.ta
 
         # ---- the new work starts here: three functions, ~25 lines ----
         flat = points[:, :2]                             # NEW   · numpy, 1 line
-        groups = cluster_by_distance(flat, 0.025)        # NEW   · ~15 lines, numpy only
+        groups = cluster_by_distance(flat, GROUP_GAP)    # NEW   · ~15 lines, numpy only
         for group in groups:
             centre, width, rms = fit_circle(group)       # NEW   · ~8 lines, numpy.linalg.lstsq
             if kind.accepts(width):                      # have  · work_cell.glasses.spec
@@ -500,10 +573,12 @@ for glass in glasses:                                    # have  · work_cell.ta
         report.doubtful(glass, "seen once")              # have  · work_cell.report
 ```
 
-`cluster_by_distance`, `fit_circle` and `split_in_two` are the 25 lines. Two
-existing files gain a little. `glasses/spec.py` gains the kind's width range —
-which is a limit, not a glass's size, so it belongs there. And `Detection` gains
-a count of how many stations saw it.
+`cluster_by_distance`, `fit_circle` and `split_in_two` are all the new code
+there is. Two existing files gain a little. `glasses/spec.py` gains the range of
+widths this kind of glass can be — which is a limit on a *kind*, not the size of
+any one glass, so it is allowed to live in the project and it belongs there with
+the other limits. And `Detection` gains a count of how many stations saw it,
+which is what the agreement rule needs.
 
 The libraries this needs:
 
@@ -522,126 +597,165 @@ simple.
 
 ## A worked example
 
-Five glasses of one kind, each about 205 mm tall, footprints between 60 and
-90 mm. Their true positions, in metres from the arm's base:
+Five glasses, all of one kind, all tall for their kind, with footprints spread
+across the range that kind allows. Call them G1 to G5.
 
-| | x | y | width |
-| --- | --- | --- | --- |
-| G1 | 0.533 | −0.320 | 85 mm |
-| G2 | 0.636 | −0.436 | 68 mm |
-| G3 | 0.360 | −0.120 | 76 mm |
-| G4 | 0.580 | −0.140 | 73 mm |
-| G5 | 0.360 | −0.330 | 81 mm |
+| | where it stands | how wide, as kinds go |
+| --- | --- | --- |
+| G1 | middle of the zone, a little to the near side | near the top of the range |
+| G2 | the far corner of the zone, diagonally out past G1 | near the bottom |
+| G3 | the near corner on the other side | middle |
+| G4 | out along the far edge, away from G2 | middle |
+| G5 | the near corner on G1's side | upper middle |
 
-The closest pair is G1 and G2, 155 mm apart, which satisfies the cell's 150 mm
-rule with 5 mm to spare. Station A puts the camera 450 mm above the table,
-straight above (0.48, −0.26), the middle of the zone. Its picture covers 520 by
-390 mm, so the whole zone is in frame.
+The important relation is this: **G1 and G2 are the closest pair, and they are
+only just legally apart** — their centres are barely further apart than problem
+2's smallest gap. They are also lined up with each other along the diagonal
+running away from the middle of the zone, which is the direction splay throws
+things. That is not an accident in this example. It is the worst case, chosen on
+purpose.
+
+The camera goes to the middle station, lifted to the survey height and looking
+straight down at the centre of the zone. From there the whole zone is inside the
+frame, so nothing is missing for a boring reason.
 
 ### One pixel
 
-Take the pixel at column 200, row 169, whose depth reads 0.245 m.
+Start with a single pixel, because everything after this is the same arithmetic
+done thousands of times.
 
-    X = (200 − 160) × 0.245 / 277.1 = +0.0354 m
-    Y = (169 − 120) × 0.245 / 277.1 = +0.0433 m
-    Z =  0.245 m
+Take a pixel some way out from the middle of the picture, whose depth reading is
+clearly shorter than the camera's height above the table. A short reading means
+the surface behind that pixel is not the table — it is something standing on it.
 
-The ray to that point is √(0.0354² + 0.0433² + 0.245²) = 0.2513 m long. That is
-about 2.5 per cent longer than the depth reading, which is the difference between
-"along the lens axis" and "along the ray". It is also why the two sideways terms
-are needed, rather than just the distance.
+Three things come out of that one pixel. Its column and row, measured from the
+middle of the picture, give a **direction** — how far off the lens axis the ray
+points, sideways and up-and-down. The depth gives **how far** along that
+direction to travel. And the camera's pose says **where the ray starts**. Put
+them together and the pixel becomes one point in the room:
 
-The camera looks straight down and its picture is lined up with the table, so
-moving right in the picture is +x and moving down the picture is −y. The pose
-turns those three numbers into a point at
+    X = (column − middle column) × depth / focal length
+    Y = (row    − middle row   ) × depth / focal length
+    Z = depth
 
-    x = 0.480 + 0.0354 = 0.515      y = −0.260 − 0.0433 = −0.303
+There is a detail hidden in there that catches people out. The straight-line
+distance from the lens to that point is *longer* than the depth reading, because
+the depth is measured along the lens axis and the point is off to one side. For
+a pixel near the middle the difference is nothing; for a pixel out near the
+corner it is a few per cent. This is exactly why the two sideways terms above
+are needed and why you cannot just take the depth as the distance.
 
-standing 450 − 245 = 205 mm above the table top. That is a point on the top of
-G1, 25 mm in from its centre. One pixel down, 76,799 to go.
+Because the camera is looking straight down and its picture is squared up with
+the table, the last step is easy to picture: moving right in the picture means
+moving one way across the table, moving down the picture means moving the other
+way, and the depth turns into a **height above the table** — the camera's own
+height minus the depth. Do it for our pixel and the point lands on the top
+surface of G1, in from its edge, standing up at the height of G1's rim.
+
+One pixel done. Tens of thousands to go, and NumPy does them all at once.
 
 ### What grouping in the picture returns
 
-G1 stands 80 mm from the point straight below the camera, in the direction of the
-zone's far corner. Its rim, 205 mm up, is drawn as though it stood 1.84 times
-further out — and so is its radius. So its outline reaches
-1.84 × (80 + 42.5) = 225 mm out from the point below the camera.
+G1 stands a short way out from the point directly below the camera, on the
+diagonal towards the far corner. Splay throws its rim outwards along that
+diagonal, so in the picture G1's outline does not sit over G1 — it leans out
+past it, towards G2.
 
-G2 stands 235 mm out in the same direction, and its own near edge is at
-235 − 34 = 201 mm. Since 225 is more than 201, **the two outlines overlap**, and
-the flood fill returns them as one patch. Four blobs for five glasses.
+G2 stands much further out along the same diagonal. Splay throws *its* rim
+outwards too, and by more, because the further a glass stands from the point
+below the camera, the further splay pushes it. That is the trouble: G2's outline
+is pushed so far out that part of it runs off the edge of the picture, and only
+the near part of it comes back. G1's outline, leaning outwards, reaches the near
+edge of what is left of G2's. **The two outlines touch**, so the flood fill
+hands back one patch where there are two glasses. Four blobs for five glasses.
 
-Note *why* this one merges, because it is the exception rather than the rule.
-G2's imaged top would sit at 1.84 × 235 = 432 mm out, and the frame only reaches
-325 mm at the corner. So G2 is partly outside the picture. That is the case the
-survey has to watch, and it is the only case in which splay merges anything: two
-glasses both fully inside one frame never merge.
+It is worth being careful about *why* this one merges, because it is the
+exception and not the rule. The two outlines meet only because G2 is half out of
+frame. Had G2 been fully inside the picture, splay would have pushed *both*
+outlines outwards along the same diagonal, and pushed the far one more than the
+near one, so the gap between them in the picture would have grown rather than
+closed. That is the result the thousands of test arrangements confirm: two
+glasses both fully inside one frame never merge. The dangerous glass is always
+the one falling off the edge.
 
-The merged blob runs from G1's near edge at 80 − 42.5 = 37 mm out, to the corner
-of the frame at 325 mm. That is about 180 pixels, or roughly 290 mm at the
-table's scale. No glass of this kind is wider than 90 mm, so the picture can tell
-that *something* is wrong. It cannot tell what, because the thing that would
-separate them — which pixels were near and which were far — was thrown away when
-the picture was taken.
+The merged patch runs from G1's near edge all the way to the corner of the
+frame. It is several times wider than any glass of this kind could possibly be,
+so the picture *can* tell that something is wrong. What it cannot tell is *what*
+is wrong — one impossibly wide object, two glasses, or three — because the one
+thing that would separate them, which pixels were near the camera and which were
+far, was thrown away the moment the picture was flattened into pixels.
 
 ### What grouping on the table returns
 
-G1 and G2 are 155 mm apart, centre to centre. Take off their two radii, 42.5 and
-34, and there is **78 mm of clear table** between their footprints. At a 25 mm
-grouping distance the chain cannot cross 78 mm of nothing, so they are two
-groups. Every other pair is further apart than that, so five groups come out of
-one picture:
+G1 and G2 are the closest pair in the scene, and they are still nowhere near
+touching. Take their centre-to-centre gap, subtract half of each glass, and what
+is left is a strip of bare table several times wider than the grouping distance.
+The chain cannot cross a strip of nothing, so G1 and G2 come back as two
+separate groups. Every other pair in the scene stands further apart than that
+pair, so they are separate too. Five groups come out of the one picture that
+gave four blobs.
 
-| | fitted diameter | true width | in range 60–90? | dots |
-| --- | --- | --- | --- | --- |
-| G1 | 84 mm | 85 mm | yes | full footprint |
-| G2 | 69 mm | 68 mm | yes | **partial** — its top is out of frame |
-| G3 | 76 mm | 76 mm | yes | full footprint |
-| G4 | 74 mm | 73 mm | yes | full footprint |
-| G5 | 81 mm | 81 mm | yes | full footprint |
+| | fitted width | in the kind's range? | dots |
+| --- | --- | --- | --- |
+| G1 | close to its true width | yes | full footprint |
+| G2 | close to its true width | yes | **partial** — its top ran off the edge |
+| G3 | close to its true width | yes | full footprint |
+| G4 | close to its true width | yes | full footprint |
+| G5 | close to its true width | yes | full footprint |
 
-The fits land within a millimetre or two of the truth. That is what using every
-dot, rather than the two extreme ones, buys you.
+Every fit lands within a millimetre or two of the real width. That accuracy is
+not luck, and it is not the sensor being good — it is what fitting a circle to
+*every* dot buys you over taking the two extreme dots as a bounding box. The
+extreme dots are exactly the two most likely to be noise; the other few hundred
+outvote them.
 
-G2 needs its footnote. Part of it is simply not in the picture, so its group is
-short of dots, and its fitted circle is pulled towards the part that is present.
-The value is plausible, and it is not trusted.
+G2 still needs its footnote. Part of it is simply not in the picture, so its
+group is short of dots, and its fitted circle is pulled towards the part that is
+there. The width it reports is perfectly plausible, and that is the danger. So
+it is not trusted, and the report says why.
 
-The other stations do not rescue it. They sit 92.5 mm along y from station A. The
-nearest of them puts G2 158 mm from the point below the camera instead of 235 —
-better, but its top is still drawn at 1.84 × 158 = 291 mm out, past the 260 mm
-the frame reaches sideways. G2 stands in the far corner of the zone, and it is
-the glass this survey sees worst. Its width keeps the partial-footprint flag, and
-that flag is exactly what problem 2 asks for: a number, plus a statement that the
-number has not been checked.
+The other stations do not rescue it, and it is worth saying why not. They sit
+along the same line, one behind the other, so moving to the next one brings G2
+closer to being straight below the camera — an improvement — but not close
+enough. G2 is in the far corner of the glass zone, and from every station this
+survey visits, splay still throws its top past the edge of the frame. G2 is
+simply the glass this survey sees worst. Its width keeps the partial-footprint
+flag, and that flag is exactly what problem 2 asked for: a number, together with
+an honest statement that the number has not been checked.
 
 **Result:** five glasses, five positions, five widths, no merges, and one width
-flagged as measured from a partial footprint — from pictures in which the old
-method saw four objects.
+flagged as measured from a partial footprint — from the very pictures in which
+the old method saw four objects and said nothing was wrong.
 
 ### Now the awkward case
 
-The problem's scene generator will not produce this one, because it keeps glasses
-150 mm apart. The method still has to behave sensibly in it, because problem 3 is
-about exactly this.
+The cell's scene generator will never produce this one, because it always keeps
+the glasses a legal distance apart. The method still has to behave sensibly in
+it, because problem 3 is about exactly this case.
 
 ![Where the method stops working](../../../images/problem-2/02-touching-is-the-limit.png)
 
 Three scenes, in order of difficulty. The first is the case above. The second is
 recoverable, but not by distance. The third is not recoverable at all.
 
-Two glasses 76 and 73 mm wide standing 90 mm apart have
-90 − 38 − 36.5 = 15.5 mm of clear table between them. That is less than 25 mm, so
-the chain crosses and they come back as one group. The circle fitted to that
-group is 165 mm across, well outside 60 to 90, so the group is split and two
-circles are tried: 76 mm and 73 mm, both in range, and together they account for
-every dot. Two glasses — and a pair standing this close is precisely what
-problem 3 exists to move apart.
+**Scene two: standing close, but not touching.** Move two glasses much closer
+than the cell allows, so that the strip of bare table between them is narrower
+than the grouping distance. Now the chain *does* cross the strip, and they come
+back as one group. This is where the circle fit earns its place. The circle
+fitted to that group is about twice as wide as a glass of this kind can be, so
+the group is rejected as one glass and split in two. Two circles are fitted to
+the halves, both come out inside the kind's range, and between them they account
+for every dot in the group. So the answer is two glasses — recovered not by
+distance, which had already failed, but by the check on the width. And a pair
+standing this close is precisely what problem 3 exists to move apart.
 
-Two glasses actually touching have no gap at any grouping distance. One group,
-always. The fit can suspect two from the width, but there is nothing left to
-measure and no distance reasoning left to do. With three in a row it cannot even
-say how many. That case is the handover.
+**Scene three: actually touching.** Now there is no strip of bare table at all,
+at any grouping distance, so distance has nothing left to say. It is one group,
+always. The width check can still *suspect* two, because the group is too wide
+to be one glass, but suspecting is all it can do: there is no gap to measure and
+no distance reasoning left to do. And with three glasses in a row the fit cannot
+even say how many there are, only that there are too many. That case is the
+handover, and it is the honest edge of this method.
 
 ## The feedback loop
 
@@ -650,9 +764,9 @@ oversight.**
 
 A feedback loop, in the sense the other solutions here use the term, needs three
 things: a measure of doubt, a set of actions that might reduce it, and a budget
-to stop it running forever. Cluster-on-the-table has the first and neither of the
-others. It runs on whatever pictures the survey gave it and produces an answer.
-If a glass was seen badly, it stays seen badly.
+to stop it running forever. Cluster-on-the-table has the first and neither of
+the others. It runs on whatever pictures the survey gave it and produces an
+answer. If a glass was seen badly, it stays seen badly.
 
 What it does produce is good doubt, in four named forms, each a number rather
 than a feeling:
@@ -663,15 +777,17 @@ than a feeling:
 - a group with fewer dots than a glass of that size should give, which usually
   means most of it was hidden.
 
-Those four flags are exactly the input that
-[move the camera](solution-overview.md#solution-3--move-the-camera) consumes.
-That solution's whole job is to take a doubtful group, work out where the camera
+Those four flags are exactly the input that [move the
+camera](solution-overview.md#solution-3--move-the-camera) consumes. That
+solution's whole job is to take a doubtful group, work out where the camera
 would have to stand for it to become clear, check that the arm can get there, go
-and look, and run the clustering again on the better picture.
-[Learned doubt steers the next picture](solution-overview.md#solution-4--learned-doubt-steers-the-next-picture)
-and [learn which viewpoints pay off](solution-overview.md#solution-6--learn-which-viewpoints-pay-off)
-are richer versions of the same loop, and
-[a learned verifier over the clusters](solution-overview.md#solution-5--a-learned-verifier-over-the-clusters)
+and look, and run the clustering again on the better picture. [Learned doubt
+steers the next
+picture](solution-overview.md#solution-4--learned-doubt-steers-the-next-picture)
+and [learn which viewpoints pay
+off](solution-overview.md#solution-6--learn-which-viewpoints-pay-off) are richer
+versions of the same loop, and [a learned verifier over the
+clusters](solution-overview.md#solution-5--a-learned-verifier-over-the-clusters)
 adds a fifth flag by looking at each group and saying whether it looks like one
 glass or two.
 
@@ -689,13 +805,13 @@ licence question about what a model was trained on.
 card. It runs unchanged on an Apple Silicon Mac.
 
 **Numbers it needs to be told.** Three already exist in the project: the table
-top's height, from `table/layout.py`; the camera's lens settings, from the camera
-description; and the kind's width range, which belongs in `glasses/spec.py` with
-the other limits. The grouping distance, 25 mm, is new and belongs with the
-perception code that uses it.
+top's height, from `table/layout.py`; the camera's lens settings, which arrive
+with every picture; and the range of widths this kind of glass can be, which
+belongs in `glasses/spec.py` with the other limits. Only the grouping distance
+is new, and it belongs with the perception code that uses it.
 
-**Time.** Around 25 lines of new code, plus the tests. There is no training step,
-so there is no day of waiting to find out whether it worked.
+**Time.** A couple of dozen lines of new code, plus the tests. There is no
+training step, so there is no day of waiting to find out whether it worked.
 
 ## Where it is strong and where it breaks
 
@@ -703,30 +819,44 @@ so there is no day of waiting to find out whether it worked.
 
 - No training data, no model file, no graphics card. It groups points that are
   close together, so it works on an object nobody has described.
-- Exact and repeatable. Every step prints a number: points kept, groups, dots per
-  group, diameter, residual. One of them always goes wrong first.
-- The range check is arithmetic, not judgement: the kind's own limits, not a
-  tuned threshold.
-- It answers in metres from the arm's base. It gets three gifts here: a known
-  table height, upright glasses that flatten to discs, and one known kind.
+- Exact and repeatable. Every step prints something you can read: how many
+  points were kept, how many groups came out, how many dots each group had, each
+  fitted width, each residual. When the answer is wrong, one of those goes wrong
+  first, and you can see which.
+- The range check is arithmetic, not judgement. It compares a measured width
+  against the kind's own limits, both of which are known before the run — not
+  against a threshold somebody tuned until the tests passed.
+- It answers in real distances from the arm's base, which is what the arm needs
+  anyway. It gets three gifts here that make that easy: the table's height is
+  known, the glasses are upright so they flatten to neat discs, and there is
+  only one kind of glass on the table at a time.
 
 **Breaks**
 
-- Touching glasses have no gap to find. That is the real limit, and
-  [problem 3](../../problem-3/problem.md) exists to remove it.
-- Two glasses one behind the other at the same distance stay one group. Only the
-  fitted width notices.
-- Four kinds widen the range to 45–105 mm and weaken the check in proportion.
-  That is problem 4.
-- It assumes a round footprint. The fit's residual would notice a jug.
-- It needs depth. Real glassware returns none. The cell gets away with it only
-  because the simulator renders glasses as solid.
-- 25 mm is justified rather than tuned, but it still assumes things stand apart.
-- One stray dot joins two groups, and a table 3 mm too low joins everything into
-  one. The guards are a minimum dot count and DBSCAN's minimum-neighbours rule.
-- Points above 260 mm are dropped silently. The tallest glass is 230 mm, so
-  nothing legal is cut, but the report should say how many were dropped at each
-  end.
+- Touching glasses have no strip of bare table to find. That is the real limit,
+  and [problem 3](../../problem-3/problem.md) exists to remove it.
+- Two glasses one behind the other, the same distance from the camera, stay one
+  group. Distance cannot separate them because they are not apart in the
+  direction being measured. Only the fitted width notices.
+- Allowing all four kinds at once widens the acceptable range of widths, and
+  weakens the check by exactly as much. A group that would be impossible for a
+  flute is ordinary for a tumbler. That is problem 4.
+- It assumes a round footprint. Give it a jug and the fit's residual would be
+  the thing that complains.
+- It needs depth, and real glassware gives none — the beam goes through the
+  glass instead of bouncing off it. The cell gets away with this only because
+  the simulator renders the glasses as solid objects.
+- The grouping distance is justified rather than tuned, which is much better,
+  but it still rests on the assumption that things stand apart.
+- One stray dot in the wrong place chains two groups into one, and a table
+  constant a few millimetres too low turns the whole table top into one enormous
+  group. The guards are a minimum number of dots per group, and DBSCAN's
+  minimum-neighbours rule, which throws away dots with nothing around them.
+- Points above the tallest allowed glass are dropped without comment. Nothing
+  legal is cut, because the limit is set above the tallest glass the cell
+  accepts — but the report ought to say how many points were dropped at each
+  end, because a sudden change there means something is wrong that nothing else
+  will catch.
 
 ## The general methods behind this
 
@@ -775,8 +905,8 @@ table-top scene becomes "just the objects".
 Start from a point, take everything within a chosen distance, take everything
 within that distance of those, and repeat until nothing new joins. One setting,
 and no assumption about what the objects are. Its density-aware cousin is
-**DBSCAN**, which adds a minimum-neighbours rule so that scattered noise does not
-form clusters of its own (Ester et al., KDD 1996).
+**DBSCAN**, which adds a minimum-neighbours rule so that scattered noise does
+not form clusters of its own (Ester et al., KDD 1996).
 
 - **Mostly used for** table-top work and bin picking, where objects are separated
   in space and nobody wants to say in advance what they look like. It is the
@@ -816,12 +946,13 @@ It stands on problem 1's work. The pixel-to-point arithmetic and the measured
 table height are already there, and this solution is the steps that come after
 them.
 
-It replaces
-[split the blob in the picture](solution-overview.md#solution-1--split-the-blob-in-the-picture),
-which attacks the same merges with a cut through the mask, and so treats the
-symptom of a projection that has already lost the information. It hands its doubt
-to [move the camera](solution-overview.md#solution-3--move-the-camera), which is
-the loop this solution has not got. Its groups are the input that
-[a learned verifier over the clusters](solution-overview.md#solution-5--a-learned-verifier-over-the-clusters)
-would check. And where it stops — two glasses touching — is where
-[problem 3](../../problem-3/problem.md) starts.
+It replaces [split the blob in the
+picture](solution-overview.md#solution-1--split-the-blob-in-the-picture), which
+attacks the same merges with a cut through the mask, and so treats the symptom
+of a projection that has already lost the information. It hands its doubt to
+[move the camera](solution-overview.md#solution-3--move-the-camera), which is
+the loop this solution has not got. Its groups are the input that [a learned
+verifier over the
+clusters](solution-overview.md#solution-5--a-learned-verifier-over-the-clusters)
+would check. And where it stops — two glasses touching — is where [problem
+3](../../problem-3/problem.md) starts.

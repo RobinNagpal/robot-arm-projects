@@ -4,8 +4,9 @@
 have, go and take better ones. Choose where to stand with a rule you can print.*
 
 > **The cell is described once, in [the cell](../../the-cell.md)** — the layout,
-> the two camera poses, all four sensors, and the words this project uses them
-> with. What follows is only what is specific to this solution.
+> the two places the camera works from, from the top and from the side, all four
+> sensors, and the words this project uses them with. What follows is only what
+> is specific to this solution.
 
 ## In one paragraph
 
