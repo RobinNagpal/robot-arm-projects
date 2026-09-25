@@ -38,7 +38,7 @@ For one glass on an empty table, that question is enough. For several glasses it
 is not. Two glasses can be far apart on the table and still touch in the
 picture, because one hides part of the other.
 
-But *where* this happens matters, and the obvious answer is wrong.
+*Where* this happens matters. And the first answer most people give is wrong.
 
 ![Where the overlap actually is](../../../images/problem-2/01-where-the-overlap-is.png)
 
@@ -76,9 +76,9 @@ So this page is about the level view, and only the level view.
 
 ### A glass looks like a circle in one place only
 
-This is worth clearing up, because getting it wrong is what produced an earlier
-version of this page. That version drew two round footprints overlapping, which
-is a picture of something that cannot happen.
+We write this down because an earlier version of this page got it wrong. That
+version had a drawing of two round footprints overlapping. No camera in this
+cell ever sees that.
 
 ![A standing glass is not a circle](../../../images/problem-2/01-a-glass-is-not-a-circle.png)
 
@@ -91,8 +91,8 @@ that comes back is like a teardrop, leaning away from the point directly under
 the camera. A base 42 mm wide can come back 156 mm wide.
 
 From the side, the shape is the glass's side view: tall, and narrower at the
-bottom. Neither shape is a circle the size of the base. Any method that assumes
-it is a circle is solving a different problem.
+bottom. Neither shape is a circle the size of the base. A method that assumes a
+circle is answering some other question, not this one.
 
 ## How it works, end to end
 
@@ -109,9 +109,10 @@ viewpoint costs arm movement, which costs seconds.
 
 ### The pictures
 
-**One picture.** That is the point of this method. It needs no second viewpoint
-and no pair of pictures, unlike [solution 3](03-move-the-camera.md), which
-exists to buy exactly that.
+**One picture.** That is the point of this method. It does not need a second
+place to stand, and it does not need a pair of pictures.
+[Solution 3](03-move-the-camera.md) exists to get exactly those, and it pays in
+arm movement for them.
 
 The picture is the level view that problem 1 already takes. The arm puts the
 camera **380 mm** from the near glass, pointing horizontally, **120 mm above the
@@ -177,8 +178,8 @@ so a real silhouette comes out about a pixel wider on each side than the
 arithmetic says. So anything up to 68 pixels wide is left alone. Our pair
 measures 86 pixels, so it is flagged.
 
-That 2-pixel margin is not a fudge. Leave it out and the method fires on every
-single glass it ever sees.
+Those 2 pixels are not a number we chose to make the answer come out right. Take
+them away and the method flags every single glass it ever sees.
 
 **2. Find the bottom edge.** For every column of the patch that has any white
 pixel, find the lowest white pixel. In code this is one `argmax` per column.
@@ -196,43 +197,50 @@ Each surviving stretch is a place where something is standing on the table.
 vertically, there are two glasses. Cut between them. And **you get the order for
 free**: the lower run is the nearer glass.
 
-Where does eight come from? It is worked out, not guessed. The smallest depth
-difference worth calling two glasses is the 150 mm that problem 2 promises
-between centres. At these distances that is about 22 pixels. Eight is well below
-22, and well above the one or two pixels of noise in an edge drawn on a grid.
+Where does eight come from? We worked it out, we did not guess it. The smallest
+gap in depth we ever have to call two glasses is 150 mm, because problem 2
+promises that much between centres. At these distances 150 mm is about 22
+pixels. Eight is well below 22, so we will not miss a real pair. And eight is
+well above the one or two pixels of noise in an edge drawn on a grid, so noise
+will not make a pair out of one glass.
 
-### Why flat runs and not steps
+### Why we look for flat runs, and not for steps
 
-This choice is the difference between a method that works and one that does not.
+We tried the other test first and it failed, so it is worth writing down why.
 
-The obvious test is: *is there a step in the bottom edge?* It catches 93 per cent
-of merged pairs, which sounds excellent.
+The other test is easy to think of: *does the bottom edge have a step in it?* If
+the edge suddenly jumps up, call that the place where the near glass ends and
+the far one begins. On merged pairs it works 93 times out of 100.
 
 ![The control](../../../images/problem-2/01-the-control.png)
 
-Then you run it on a single glass. A wine glass's bowl hangs out over its foot.
-The columns under the foot report the foot. The columns past the foot but still
-under the bowl report the underside of the bowl, which is much higher up. That is
-a step of **96 pixels** in one glass standing by itself. Counting steps splits
-69 per cent of single glasses into two.
+Then run it on one glass standing alone. Take a wine glass. Its bowl is wider
+than its foot, so the bowl hangs out over the foot on both sides. In the columns
+over the foot, the lowest white pixel is the foot, near the table. In the
+columns just outside the foot, the lowest white pixel is the underside of the
+bowl, which is much higher up. So the bottom edge has a jump of **96 pixels** in
+it, and there is only one glass there. Counting steps cuts 69 out of every 100
+single glasses into two.
 
-Counting flat runs does not have this problem. However strange a glass's shape,
-it rests on the table in exactly one place, so it has exactly one flat run. We
-tested this on 120 single glasses, of all four kinds, at four distances. It split
-**none** of them.
+Flat runs do not have this problem. A glass can be any shape it likes, but it
+stands on the table in one place only, so its bottom edge has one flat run only.
+We tried this on 120 single glasses — four kinds, four distances. It cut none of
+them.
 
-This one-sidedness is on purpose. A method that cuts a single glass in two turns
-one right answer into two wrong ones. Two wrong positions are worse for
-everything downstream than one patch honestly reported as "I cannot tell".
+We want the mistakes to go this way round, and not the other way. If the method
+cuts one glass into two, we get two wrong answers in place of one right one, and
+nobody later in the chain can tell that anything went wrong. If the method says
+"I cannot tell", the next step knows there is a problem and can go and take
+another picture.
 
 ### What comes out
 
 Two masks in the same 320×240 picture, plus which one is nearer. Or one mask,
 untouched. Or a refusal to answer.
 
-What does **not** come out is any position in millimetres. Both pieces are still
-flat shapes in a picture, and a shape in a picture does not sit where its glass
-really is.
+What does **not** come out is a position in millimetres. Both pieces are still
+flat shapes in a picture, and a shape in a picture is not where the glass really
+stands.
 
 The masks go to problem 1's step 2, which measures each glass's shape from a
 level view. The refusal goes to the report and to
@@ -351,11 +359,10 @@ The libraries, and what each is for.
 | OpenCV | connected components, before this method runs | **yes** | Apache-2.0 |
 | Matplotlib | the diagrams on this page only, not the run | **yes** | Matplotlib (BSD-style) |
 
-Nothing else. No SciPy, no scikit-learn, no PyTorch. That is worth saying,
-because everything from
-[solution 4](04-learned-doubt-steers-the-next-picture.md) onward starts by
-adding one of them. There is no model here, no weights file, no graphics card,
-no training data and no licence to worry about.
+Nothing else. No SciPy, no scikit-learn, no PyTorch. We say this because
+[solution 4](04-learned-doubt-steers-the-next-picture.md) and every solution
+after it begins by adding one of them. Here there is no model, no weights file,
+no graphics card, no training data, and no licence to check.
 
 ## A worked example
 
@@ -394,7 +401,8 @@ deepest points, then flood outwards from each one, and build a wall where two
 floods meet. It is one call in OpenCV. For touching cells under a microscope or
 coins on a scanner, it is the right answer.
 
-It is the wrong answer here, and not because a number needs tuning.
+Here it is the wrong answer. Not because some number needs tuning — because of
+the shape of a glass.
 
 ![Why the distance transform cannot help](../../../images/problem-2/01-the-distance-transform-fails.png)
 
@@ -421,12 +429,12 @@ write-up of why this is so useful is Hoiem, Efros and Hebert's
 (CVPR 2006, extended in *IJCV* 2008): a known ground plane plus a known camera
 height turns a picture into a measurement.
 
-What is slightly unusual here is what we use it for. Normally it is used to
-estimate how far away something is, or to throw out detections that are the wrong
-size for their position. Using it to **separate** two objects — two contact rows
-in one patch means two objects — is the same arithmetic doing a different job.
-This cell has an unusually clean version of it: a flat, level table at a known
-height, fixed to the same frame as the arm, and objects that all stand on it.
+What is a little different here is the job we give it. Usually people use it to
+work out how far away something is, or to throw away a detection whose size does
+not match its distance. We use it to **separate** two objects instead: two
+contact rows in one patch means two glasses. Same arithmetic, different job. And
+this cell is an easy case for it — a flat, level table at a known height, fixed
+to the same frame as the arm, with everything standing on it.
 
 **GrabCut** is the other tool people reach for, and it answers a different
 question. Given a rough box around an object, it separates object from background
@@ -483,8 +491,9 @@ achieve.
   not be.
 - **It only works from a level camera**, which is consistent, because from the
   survey view there is nothing to split.
-- **It fails quietly when the base is hidden**, and the width check is what
-  catches it. The method fails to a flag, not to a wrong answer.
+- **When the base is hidden there is nothing to find**, and the method would say
+  nothing at all about it. The width check is what notices. So what comes out is
+  a flag, not a wrong answer.
 - **A glass cut off by the edge of the picture** has a bottom edge that stops at
   the boundary. The flat-run test survives this, but the width check does not,
   because a cut-off shape is narrower than its glass. A patch touching the edge
@@ -495,9 +504,10 @@ achieve.
 
 ![Where it works and where it cannot](../../../images/problem-2/01-where-it-works.png)
 
-The gap is not a tuning failure. When the far glass stands almost directly behind
-the near one, its base is hidden, and no amount of work on this picture will
-recover it. That pair goes to solution 3, which moves the camera.
+This gap is not something tuning can close. When the far glass stands almost
+exactly behind the near one, its base is hidden, and no amount of work on this
+one picture will bring it back. That pair goes to solution 3, which moves the
+camera.
 
 ![What a split does not buy](../../../images/problem-2/01-what-it-does-not-buy.png)
 
@@ -517,8 +527,8 @@ out of a single camera.
 
 Go through a black-and-white picture and give every group of touching white
 pixels one label. It answers *are these pixels joined?* and nothing else. It has
-no idea about size, shape, or how many objects a group ought to contain. It is
-the step this solution exists to repair.
+no idea about size, shape, or how many objects a group should hold. It is the
+step this solution exists to repair.
 
 - **Mostly used for** counting and separating blobs that are already well apart:
   cells on a slide, letters on a scanned page, moving objects seen by a fixed
@@ -561,8 +571,8 @@ the landscape. The
 (Vincent and Soille, *PAMI*, 1991) does the flooding.
 
 - **Mostly used for** separating touching objects that are *round and squat* and
-  roughly the same size: cells, coins, grains, tablets. For those it is very hard
-  to beat for the price.
+  roughly the same size: cells, coins, grains, tablets. For those, nothing this
+  cheap does better.
 - **Rarely right for** long, thin objects, because their landscape has a ridge
   instead of a peak, so the starting points merge. That is why it splits only
   three per cent of this cell's pairs, and why no threshold saves it.
@@ -592,10 +602,10 @@ This one says how many glasses are in a patch and which is nearer. Clustering
 says where they are in millimetres. Where depth works, clustering is the answer
 and this is a cheap cross-check. Where depth does not work, this is what is left.
 
-Its natural partner is [move the camera](03-move-the-camera.md), which supplies
-the one thing this method cannot ask for: a viewpoint where the hidden base is
-not hidden. A pair this solution cannot split is not a failure report. It is a
-well-specified request.
+Its natural partner is [move the camera](03-move-the-camera.md), which gives the
+one thing this method cannot get for itself: a place to stand from where the
+hidden base is not hidden. When this solution cannot split a pair, that is not a
+complaint. It is a clear request — stand somewhere else and look again.
 
 ← [Solution overview](solution-overview.md) ·
 → [Solution 2 — cluster on the table](02-cluster-on-the-table.md)
