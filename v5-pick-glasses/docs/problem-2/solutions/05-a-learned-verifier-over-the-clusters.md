@@ -4,6 +4,10 @@
 one question the rules are worst at — is this one object or two — on the crop
 the rules have already isolated.*
 
+> **The cell is described once, in [the cell](../../the-cell.md)** — the layout,
+> the two camera poses, all four sensors, and the words this project uses them
+> with. What follows is only what is specific to this solution.
+
 ## In one paragraph
 
 Do not learn the perception. The geometry already separates almost every glass

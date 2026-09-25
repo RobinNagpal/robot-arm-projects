@@ -7,6 +7,8 @@ It stops there. It does not measure a profile, and it does not pick anything
 up.
 
 This folder holds the problem; [`solutions/`](solutions/) holds the answers.
+The cell they all share — layout, camera poses, sensors, vocabulary — is in
+[the cell](../the-cell.md).
 
 - [**The problem**](problem.md) — what is on the table, what is asked for, the
   two difficulties, and what "done" means.

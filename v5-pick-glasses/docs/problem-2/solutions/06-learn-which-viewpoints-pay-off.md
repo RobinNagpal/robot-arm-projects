@@ -6,6 +6,10 @@ should fall. This one predicts, directly, whether taking that picture will
 change the answer — and trains that prediction on an experiment the simulator
 can run exhaustively.*
 
+> **The cell is described once, in [the cell](../../the-cell.md)** — the layout,
+> the two camera poses, all four sensors, and the words this project uses them
+> with. What follows is only what is specific to this solution.
+
 ## In one paragraph
 
 Three solutions here choose where to look next; they differ in what they

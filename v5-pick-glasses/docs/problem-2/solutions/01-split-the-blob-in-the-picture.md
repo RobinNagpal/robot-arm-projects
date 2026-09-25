@@ -4,6 +4,10 @@
 pixels is too wide to be a single glass, cut it in two, using nothing but the
 picture.*
 
+> **The cell is described once, in [the cell](../../the-cell.md)** — the layout,
+> the two camera poses, all four sensors, and the words this project uses them
+> with. What follows is only what is specific to this solution.
+
 ## In one paragraph
 
 When two glasses line up with the camera, the near one stands in front of the

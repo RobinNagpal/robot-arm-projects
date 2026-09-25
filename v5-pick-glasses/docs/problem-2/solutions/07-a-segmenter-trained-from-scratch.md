@@ -4,6 +4,10 @@
 alone. One class, one kind of object, one camera — a network that only has to
 work in this cell can be small enough to train in an afternoon.*
 
+> **The cell is described once, in [the cell](../../the-cell.md)** — the layout,
+> the two camera poses, all four sensors, and the words this project uses them
+> with. What follows is only what is specific to this solution.
+
 ## In one paragraph
 
 This cell does not need a general-purpose model. One class, one kind of object,

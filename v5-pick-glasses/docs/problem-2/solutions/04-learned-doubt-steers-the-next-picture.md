@@ -4,6 +4,10 @@
 learned estimate of how unsure each object is decides which extra picture is
 worth taking, from candidate poses the geometry has already filtered.*
 
+> **The cell is described once, in [the cell](../../the-cell.md)** — the layout,
+> the two camera poses, all four sensors, and the words this project uses them
+> with. What follows is only what is specific to this solution.
+
 ## In one paragraph
 
 The arm cannot look everywhere, so it has to choose. This solution leaves the

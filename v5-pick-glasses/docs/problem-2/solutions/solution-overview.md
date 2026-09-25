@@ -4,6 +4,9 @@
 it would be answered. It is long, because the point of it is to compare five
 ways of doing the job properly rather than to announce one.
 
+> **The cell is described once, in [the cell](../../the-cell.md)** — the layout, the
+> two camera poses, all four sensors, and the words this project uses them with.
+
 ## Where we are
 
 The arm has photographed a table with four to six glasses on it. They are all

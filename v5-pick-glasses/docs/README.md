@@ -78,6 +78,15 @@ means. After that they differ, because the problems do:
 fixed, such as the glass sizes the grip rules cannot handle. It is about the
 code as it stands, which is to say about problem 1.
 
+## The cell
+
+[**The cell**](the-cell.md) describes the room every problem works in: the
+layout with its dimensions, the two poses the camera is ever put in, all four
+sensors, the four kinds of glass, and the vocabulary — survey, station,
+standoff, nadir, splay, footprint. Every number on it is read from the
+project's own constants rather than typed in. The solution documents point at
+it rather than restating it.
+
 ## The pictures
 
 Every diagram in these documents is drawn by a script, and every script lives

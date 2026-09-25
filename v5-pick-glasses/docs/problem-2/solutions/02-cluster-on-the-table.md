@@ -3,6 +3,10 @@
 *Programmed. Stop deciding which pixels go together by looking at the picture.
 Decide it by looking at where they are in the room.*
 
+> **The cell is described once, in [the cell](../../the-cell.md)** — the layout,
+> the two camera poses, all four sensors, and the words this project uses them
+> with. What follows is only what is specific to this solution.
+
 ## In one paragraph
 
 Every pixel in a depth picture can be turned into a point in the room: the
