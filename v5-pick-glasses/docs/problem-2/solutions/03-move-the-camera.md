@@ -22,6 +22,11 @@ whether one object blocks another turns out to be pure geometry rather than
 image processing, and why the order in which those tests run is what makes the
 whole method work.
 
+There is a second kind of request this solution now has to serve, and it arrives
+from a different difficulty. Sometimes there is no object to go and look at,
+only a **place that could not have been seen** — and serving that request turns
+the choice of where to stand into a covering problem rather than a scoring one.
+
 Throughout this document we say "object" rather than "glass", because nothing in
 this solution depends on the objects being glasses. We say "glass" only where
 the cell itself is meant.
@@ -45,25 +50,56 @@ patch where there are two objects.
 difficulty. It throws the pixels back onto the table as points, groups them
 there, and two objects a legal distance apart then come apart cleanly.
 
-Where the merge happens is not where people expect, and we measured it rather
-than assuming it. **With the camera on top**, high up and looking straight down,
-it does not happen at all. We tried every arrangement the cell's scene generator
-can legally produce, which is thousands of them across all four kinds at every
-legal spacing and angle, and wherever both objects fell wholly inside one frame,
-none merged. The reason is that the cone the camera sees through covers a wide
-piece of table down at table level and a much narrower one up at the height of a
-rim, so a legal pair is either plainly separate or one of the two is falling off
-the edge of the frame.
+Where the merge happens used to be a tidy story, and it is worth saying how it
+changed. It used to be that **with the camera on top** it did not happen at all,
+tested across thousands of arrangements. That claim rested on the objects being
+roughly the same size. In this problem one kind spans a tapered shot glass at
+one end and a large tapered glass at the other, and once the heights differ
+several times over, a tall object's outline is thrown outwards far enough to
+reach a short one standing well beyond it. So merging happens from the top as
+well now.
 
-The merge belongs instead to **the camera at the side**, which means down low,
-standing back from the object, looking level. That is the position the shape
-measurement needs anyway, and from there most in-line pairs come back as one
-patch.
+The merge is still worst **from the side**, which means down low, standing back
+from the object, looking level — the position the shape measurement needs
+anyway, and from where most in-line pairs come back as one patch. But it is no
+longer confined there.
 
-### The second difficulty is that there may be nowhere to stand
+### The second difficulty is that an object can be absent altogether
 
-The second difficulty is the one this solution exists for, and it is the larger
-of the two: **an object can have no clear viewpoint at all.**
+This difficulty is new, and it is the one that changes what this solution has to
+do.
+
+Take the mechanism above and push it one step further. If a tall object's
+outline reaches a short one it merges with it, which is loud, because the patch
+is then wider than any object of the kind can be. But if the outline covers the
+short one **entirely**, the short object contributes no pixels at all. What
+comes back is one patch of one entirely legal width, and nothing about it is
+wrong.
+
+That is not a merge and it is not a doubtful measurement. It is a **missing
+object**, and it has a property neither of the other difficulties has: **there
+is nothing in the data to flag.** Every check in this project tests something
+that was found — a fitted width against a range, a residual, a count of stations
+— and none of them can fire for something that produced no pixels.
+
+Solution 2 answers this as far as it can be answered from arithmetic. Because
+splay is exact and the objects that *were* found have known positions, widths
+and heights, the region of table that could not have been seen is computable,
+and any patch of it large enough to hold the smallest object of the kind is
+reported as **unsearched**.
+
+What that leaves is a request this solution has to serve, and it is a different
+request from the one it was built for. A doubtful object has a position, so the
+viewpoints worth trying are the ones round it. **An unsearched patch has no
+object in it at all** — that is the entire point — so what is wanted is any
+viewpoint from which the patch itself can be seen. Serving that request turns
+out to change the shape of the problem, and the section [covering the places
+nobody could see](#covering-the-places-nobody-could-see) is about how.
+
+### The third difficulty is that there may be nowhere to stand
+
+The third difficulty is the one this solution was originally built for: **an
+object can have no clear viewpoint at all.**
 
 With the coarse ring of directions the cell tries today, which offers only a
 handful of widely spaced spokes around each object, getting on for half of all
@@ -77,11 +113,11 @@ objects are genuinely boxed in by their neighbours. So most of the loss is a
 choice the cell made, and not a fact about the world. Later in this document we
 will see exactly that happen to one object.
 
-### Why the two difficulties need different fixes
+### Why the three difficulties need different fixes
 
-Nothing you do to a picture fixes the second difficulty, and that is why this
-solution is a separate thing from solution 2. The difference is worth stating
-carefully, because it is the reason the project needs both.
+Nothing you do to a picture fixes the second or the third difficulty, and that
+is why this solution is a separate thing from solution 2. The difference is
+worth stating carefully, because it is the reason the project needs both.
 
 Separating objects in a picture is a question about **labelling**, which means
 deciding which pixel belongs to which thing. The information needed for that is
@@ -99,7 +135,13 @@ measurement.
 
 So separation is about interpreting a measurement, while viewpoint is about
 making a good one. The two barely overlap, and a cell that answers only the
-first has answered half the problem.
+first has answered part of the problem.
+
+The second difficulty is a third thing again, and placing it correctly matters.
+Separation asks *which object is this?* Viewpoint asks *can I measure this
+object?* The missing object asks **is there an object at all?** — and that
+question cannot be asked of the data, because the data is exactly what is
+absent. It can only be asked of the geometry.
 
 ## The main idea
 
@@ -364,6 +406,94 @@ for. Here the doubt is a short list of named questions, such as *is that one
 impossibly wide patch really one object, or is it two?* — and a score that
 answers a named question beats one that measures unknown volume in general.
 
+## Covering the places nobody could see
+
+Everything up to here answers one shape of question: *an object needs measuring,
+so where should the camera stand to see it?* This section is about the other
+shape, the one the missing object created: *a place could not have been seen, so
+where should the camera stand to see the place?*
+
+The difference sounds small and is not, because it changes what a good answer
+looks like.
+
+### Why a ring of directions is the wrong tool
+
+The ring of candidate directions exists because an object has a position, so
+"somewhere round it, at the right distance, looking at it" is a sensible family
+of poses to search. An unsearched patch has no object in it. There is nothing to
+look *at* and nothing to stand *round*.
+
+Worse, a patch is not a point. It has extent, and a viewpoint either sees all of
+it, or part of it, or none of it. So the test that matters is not "is the line
+of sight clear?" but **"is this patch inside this camera position's visible
+region?"** — which is the same arithmetic solution 2 used to find the patch in
+the first place, run forwards instead of backwards.
+
+That arithmetic is already available and cheap. For a candidate camera position,
+the wedges the known objects hide are computable, and so is the part of the
+frame that falls outside the picture. What is left is the visible region for
+that position, and testing a patch against it is a containment test.
+
+### Which turns the choice into a covering problem
+
+Now put several patches together, which is the normal case, and the shape of the
+problem appears.
+
+Each candidate camera position sees **some subset** of the unsearched patches.
+The run wants every patch seen, and every camera position costs seconds. So the
+question is: *what is the smallest set of camera positions whose visible regions
+between them cover every patch?*
+
+That is a classical problem, and knowing its name is worth more than solving it
+well. It is **set cover**: given a collection of sets and a target to cover,
+choose as few of the sets as possible. It is known to be hard to solve exactly,
+and — this is the useful part — it has a simple approximate method that is
+provably close to the best possible. **Take the candidate that covers the most
+patches not yet covered. Repeat until everything is covered.** That is called
+the greedy method, and for set cover it is about as good as any simple method
+can be.
+
+So the procedure for the new kind of request is short.
+
+First, for every candidate camera position that survives the existing three
+tests, compute which unsearched patches it would see. Second, take the candidate
+that covers the most patches, and mark those as covered. Third, repeat until no
+patches remain, or until the budget of extra looks runs out. Whatever is still
+uncovered at the end is reported as **unsearched**, which is an honest statement
+about the run rather than a failure of it.
+
+### Why this is better than looping over patches
+
+It is tempting to treat each patch separately: pick a patch, find a viewpoint,
+go, repeat. That is the loop the rest of this document describes, and for
+patches it is the wrong shape, for one reason that is worth seeing.
+
+**Patches are cheap to cover together and expensive to cover apart.** A single
+well-chosen camera position often sees several patches at once, because the
+patches are wedges behind objects and one move can swing several wedges out of
+the way. A per-patch loop would pay for one arm movement per patch and get the
+same information for several times the cost.
+
+That is the general lesson, and it applies whenever the thing being requested
+has extent rather than position: **batch the requests before choosing the
+actions, and choose the action that serves the most requests.** A loop that
+takes requests one at a time cannot see that two of them share an answer.
+
+### What it costs, and what it is worth
+
+The cost is arithmetic and nothing else. Computing a candidate's visible region
+is the same wedge arithmetic already used twice, and the greedy choice is a
+count and a maximum over a short list.
+
+What it is worth is worth being honest about, and solution 2 measured it. In
+this cell the three survey stations already see every object between them, so
+the covering step usually finds nothing left to cover and costs no arm movements
+at all. Its value here is that it **proves** the survey was complete rather than
+assuming it. Its value changes the day somebody drops a station, moves the zone,
+or lets the objects stand closer — at which point the run starts asking for
+looks it can justify, instead of silently reporting fewer objects than are on
+the table.
+
 ## How the concepts fit together
 
 Put in order, the concepts make one loop, and the loop only ever runs on objects
@@ -372,6 +502,11 @@ the survey could not settle.
 ```mermaid
 flowchart TD
     E1["survey from the top: cover the zone, assume nothing"] --> E3["parallax: a position and a rough width for each object"]
+    E3 --> BL["compute what could not have been seen"]
+    BL --> PAT{"any unsearched patch big enough to hold the smallest object?"}
+    PAT -->|"yes"| COV["choose the fewest camera positions that cover them all"]
+    COV --> E5
+    PAT -->|"no"| E7
     E3 --> N1{"is this object doubtful?"}
     N1 -->|"settled"| E7["report its mask, position and width"]
     N1 -->|"doubtful"| E4["list a fine ring of directions round it"]
@@ -396,13 +531,23 @@ flowchart TD
     style N4 fill:#e8f3ec,stroke:#5aa469,color:#22272e
     style N5 fill:#e8f3ec,stroke:#5aa469,color:#22272e
     style L2 fill:#eef0f2,stroke:#8b949e,color:#22272e
+    style BL fill:#e8f3ec,stroke:#5aa469,color:#22272e
+    style PAT fill:#e8f3ec,stroke:#5aa469,color:#22272e
+    style COV fill:#e8f3ec,stroke:#5aa469,color:#22272e
 ```
 
 Green marks what this solution adds, blue marks work the project already does,
 and grey marks the motion planner.
 
-Notice the step that decides whether an object is doubtful, because it is what
-keeps the arm from wandering round the table for no reason. An object whose
+Notice that there are **two paths into the arm movement**, and they arrive from
+different places. The lower path starts from an object whose measurement cannot
+be trusted, and asks which direction to view it from. The upper path starts from
+a place nothing could have seen, and never looks at an object at all. Both end
+at the same movement, which is why they belong in one solution rather than in
+two.
+
+Notice also the step that decides whether an object is doubtful, because it is
+what keeps the arm from wandering round the table for no reason. An object whose
 fitted footprint comes out wider than any single object of this kind can
 possibly be, or an object that only one station ever saw, is marked doubtful.
 Everything inside the allowed range is settled, and settled objects never enter
@@ -586,7 +731,7 @@ is how neighbours get knocked over.
 
 This solution is an example of a named research programme rather than a trick.
 The idea that a camera should be *moved on purpose* rather than read passively
-has forty years of literature behind it, and the four ideas below are the
+has forty years of literature behind it, and the five ideas below are the
 standard vocabulary.
 
 ### Active perception — treating the sensor's pose as something to choose
@@ -641,6 +786,32 @@ For more, see [occupancy grid
 mapping](https://en.wikipedia.org/wiki/Occupancy_grid_mapping) and
 [OctoMap](https://octomap.github.io/).
 
+### Set cover — choosing the fewest actions that between them do everything
+
+This is the idea the covering section rests on, and it is worth knowing by name
+because it turns up constantly once you start batching requests.
+
+The problem is stated like this: you have a target made of many pieces, and a
+collection of actions where each action covers some of the pieces, and you want
+the fewest actions that between them cover every piece. That is **set cover**.
+Here the pieces are the unsearched patches and the actions are the camera
+positions, but the same shape appears in choosing which tests to run, which
+sensors to install, and which items to stock.
+
+Two facts about it are the useful ones. It is **hard to solve exactly**, so
+nobody should spend effort trying on a problem this small. And the obvious
+greedy method — repeatedly take whatever covers the most pieces still uncovered
+— is **provably close to the best possible**, which is an unusually comfortable
+position to be in: the easy method is also the right one.
+
+It is used for facility placement, test selection, sensor placement and camera
+placement, which is this case exactly. It is rarely right when the actions
+interact, meaning when taking one changes what another would cover, because then
+the sets are not fixed and the greedy argument stops applying. Here they do not
+interact, because the objects do not move between looks.
+
+For more, see [set cover](https://en.wikipedia.org/wiki/Set_cover_problem).
+
 ### Bounding a search by feasibility before scoring it
 
 The last idea is not a vision method at all but a structural pattern, and it is
@@ -662,6 +833,11 @@ you can check rather than a shrug. And it costs nothing when it is not needed,
 because settled objects never enter the loop, so a scene with no doubt in it
 runs exactly as it did before.
 
+It has also become the only place in the project that can act on a **place**
+rather than an object, which is what the missing-object difficulty requires.
+That is worth listing as a strength rather than as an extra job, because the
+alternative is a run that quietly reports fewer objects than are on the table.
+
 The weaknesses divide into what it spends, what it assumes, and where it stops.
 
 What it spends is arm time, which is the cell's dearest resource. Give every
@@ -677,9 +853,17 @@ What it assumes is that the survey's footprints are right, and this is the
 subtlest weakness on the page. The line-of-sight test predicts what is hidden
 from the **survey's own** footprint circles. So if the survey measured a
 footprint badly, then the prediction is wrong, and the arm is confidently sent
-to a viewpoint that turns out not to be clear after all. It also assumes depth
-readings work, and real glassware reads badly on a depth camera, so with no
-depth there is no belief about the table for any of this to reason about.
+to a viewpoint that turns out not to be clear after all.
+
+The covering step inherits exactly the same weakness, and one worse than it. It
+works out the unsearched patches from the objects that **were found**, so an
+object hidden behind an object that was itself hidden lies outside its reasoning
+altogether. In this cell that does not arise, because no object is hidden from
+every station, but it is the thing to watch the day the station layout changes.
+
+It also assumes depth readings work, and real glassware reads badly on a depth
+camera, so with no depth there is no belief about the table for any of this to
+reason about.
 
 Where it stops is at three places. Without the per-object cap it thrashes on one
 stubborn object. The planner can refuse every survivor, in which case all the
@@ -696,13 +880,21 @@ the benefit, and then the loop afterwards.
 
 ## Where it sits among the other solutions
 
-This solution answers a different difficulty from **cluster on the table**, so
+This solution answers different difficulties from **cluster on the table**, so
 the two are partners rather than rivals. Clustering says which pixels belong to
-which object and where each one stands; this solution supplies the one thing
-clustering cannot get for itself, which is a better picture to work from.
+which object and where each one stands, and works out which places it could not
+have seen. This solution supplies the two things clustering cannot get for
+itself: a better picture of a doubtful object, and a view of a place nothing has
+looked at.
 
-It is also the baseline underneath the three solutions that replace only its
-score. Solutions 4, 5 and 6 each keep this structure — generate candidates,
-filter them with arithmetic, then order what survives — and change only how the
-ordering is decided. So understanding this document is what makes those three
+Those two together are why the recommended answer to this problem is a
+**combination** rather than a choice. Clustering alone is confidently wrong on a
+hidden object. This solution alone has nothing to reason from, because it needs
+the footprints and heights clustering produces. Neither is a solution to problem
+2 on its own.
+
+This document is also the baseline underneath the solutions that replace only
+its score. Solutions 4 and 6 keep this structure — generate candidates, filter
+them with arithmetic, then order what survives — and change only how the
+ordering is decided. So understanding this document is what makes those two
 short.
