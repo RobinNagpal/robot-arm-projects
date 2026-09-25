@@ -19,6 +19,22 @@ up.
   it like that, how it would work here, its feedback loop if it has one, a
   worked example with real numbers, what it needs, what it is good and bad at,
   how it fails, and when it would be the right choice.
+- **The nine solutions in full**, one document each, written from the beginning
+  and with five to eight diagrams apiece. The overview has a paragraph on each
+  and the comparison; these have the explanation.
+
+  | | Solution | Family |
+  |---|---|---|
+  | 1 | [Split the blob in the picture](01-split-the-blob-in-the-picture.md) | programmed |
+  | 2 | [Cluster on the table](02-cluster-on-the-table.md) | programmed — **chosen** |
+  | 3 | [Move the camera](03-move-the-camera.md) | programmed — **chosen** |
+  | 4 | [Learned doubt steers the next picture](04-learned-doubt-steers-the-next-picture.md) | hybrid |
+  | 5 | [A learned verifier over the clusters](05-a-learned-verifier-over-the-clusters.md) | hybrid |
+  | 6 | [Learn which viewpoints pay off](06-learn-which-viewpoints-pay-off.md) | hybrid |
+  | 7 | [A segmenter trained from scratch](07-a-segmenter-trained-from-scratch.md) | learned |
+  | 8 | [Per-pixel votes for the centre](08-per-pixel-votes-for-the-centre.md) | learned |
+  | 9 | [Self-supervised from the arm's own movement](09-self-supervised-from-the-arms-own-movement.md) | learned |
+
 - [**The ones that need more than a simulator**](learned-with-hardware.md) —
   four good answers that were moved out, each with the condition it fails: a
   promptable foundation model, a fine-tuned instance segmenter, amodal masks
@@ -44,6 +60,23 @@ its reach at once, and a glass can end up with no usable viewpoint at all.
 That second one is what makes this a different problem rather than a harder
 version of problem 1. And a glass with no viewpoint is not a failure: it is the
 handover to [problem 3](../problem-3/), which moves it.
+
+**One finding from writing these up is worth reading on its own.** Over 600
+drawn arrangements, 45 per cent of glasses have no usable viewpoint on the
+cell's current nine-direction grid — but only 14 per cent if the grid is
+refined from 40 degrees to 5. The clear arcs in a typical scene run 34, 16,
+110, 7 and 10 degrees wide, and only one of those is wider than a 40-degree
+step. So most "no viewpoint" reports are the *grid* running out, not the
+geometry, and refining it costs arithmetic and nothing else.
+[Solution 3](03-move-the-camera.md) has the working.
+
+And a second, from the other end: within problem 2's guarantee that glasses
+stand 150 mm apart, **two of them cannot merge into one cluster on the table**
+— the closest two footprints can come is 45 mm, against a 25 mm grouping
+distance. The ambiguity here is never a merge. It is a glass seen from too
+narrow an angle, whose circle fit looks perfectly healthy and whose position is
+quietly wrong. [The solution overview](solution-overview.md#when-can-a-cluster-actually-be-wrong)
+has the numbers.
 
 ## Where it sits
 

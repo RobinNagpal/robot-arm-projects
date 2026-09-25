@@ -18,9 +18,27 @@ on this being right, which is why a wrong answer here is expensive.
 Two things stand in the way, and they are different problems wearing the same
 coat.
 
-**Glasses merge in the picture even when they are far apart on the table.** If
-the camera is in line with two of them, one lands on top of the other in the
-photograph, and the method problem 1 uses returns them as a single object.
+**Glasses merge in the picture even when they are far apart on the table.** The
+method problem 1 uses returns them as a single object. Two different geometries
+cause it, and it is worth keeping them apart, because the documents below use
+both.
+
+*Looking along the line.* The camera stands level with the glasses and two of
+them line up with it. The near one hides the far one. This is the measurement
+view — the side-on picture problem 1 takes from 380 mm away — and the picture
+in [`problem.md`](problem.md) shows this case.
+
+*Looking down.* The survey camera is 450 mm above the table looking straight
+down, so nothing is exactly behind anything. What merges silhouettes here is
+**splay**: a glass is tall, and the ray from the camera through its rim carries
+on to the table further out than its base. A 205 mm glass has its top imaged as
+though it stood 450 / (450 − 205) = **1.84 times** further from the point
+directly under the camera than it really is. So every glass leans outward in
+the survey picture, and it leans onto whatever stands outward of it.
+
+Both are real and both produce one blob where there are two glasses. The
+difference matters when you choose a fix: moving the camera sideways cures the
+first, and only moving it *higher* or nearer the nadir weakens the second.
 
 **The camera can no longer stand wherever it likes.** Problem 1 measures a
 glass from whichever of nine directions the arm can reach, and with a bare
@@ -197,6 +215,27 @@ everywhere else. For a cell that handles one kind of object, under one lighting
 setup, through one camera, that turns out to be less of a sacrifice than it
 sounds — and the sections below say where it does cost something.
 
+### What is actually installed
+
+"Runs in simulation" is not the same as "runs today", and the difference is one
+line of `pixi.toml` for some solutions and a real decision for others. What the
+environment holds right now:
+
+| Package | Installed? | Which solutions need it |
+|---|---|---|
+| NumPy | **yes** | all of them |
+| OpenCV | **yes** | 1, 3 |
+| Matplotlib | **yes** | the diagrams only |
+| SciPy | no | 4, 7 |
+| scikit-learn | no | 5, 8 |
+| PyTorch | no | 4, 5 (optional), 7, 8, 9 |
+
+Solutions 1, 2 and 3 need nothing added. Everything from 4 down starts by
+adding a dependency, and PyTorch in particular is a large one to take on for a
+cell whose chosen method is 25 lines of NumPy. That is not an argument against
+the learned solutions — it is part of their cost, and it belongs in the
+comparison rather than being discovered later.
+
 ## The nine solutions, at a glance
 
 Three programmed, three hybrid, three learned — and every one of them buildable
@@ -226,6 +265,17 @@ when it would be the right choice.
 *Programmed. Keep the mask the geometry already builds. When one patch is
 too wide to be a single object, cut it in two, using nothing but the
 picture.*
+
+Problem 1 turns each photograph into a mask and groups the marked pixels by
+whether they touch, so two glasses that overlap in the picture come back as one
+patch. This solution adds a step: when a patch is wider than the known kind
+allows, measure how deep inside it every pixel sits, take the two deepest
+points, and flood outwards from both until the floods meet. Where they meet is
+the cut. It costs a third of a millisecond and needs no depth and no training,
+and it fails silently once the centres come closer than 1.43 radii.
+
+**The long version:** [01-split-the-blob-in-the-picture.md](01-split-the-blob-in-the-picture.md) — this solution explained
+from the beginning, with diagrams.
 
 ### What it is
 
@@ -301,8 +351,12 @@ by 105 mm**. No glass 105 mm across can be 185 mm long, so it is flagged.
 The distance transform peaks at 32 pixels (52 mm) at each centre and dips to 20
 pixels (32 mm) at the waist. Threshold at 0.7 of the peak, 22.4 pixels: the bridge
 drops out and both peaks survive. Flood from them and they collide at the waist,
-leaving a cut 40 pixels long. Two pieces come out, each about 104 mm across,
-inside the kind's range.
+leaving a cut 40 pixels long. Two pieces come out — but *how wide* each one is
+depends on how you measure it. The bounding box of a half is 57 pixels, 91 mm,
+14 mm under the true 105, because the watershed wall runs down the middle of
+the overlap and each half is missing the part the other one took. Fit a circle
+to the half instead and it returns 102 mm, inside the kind's range. Report the
+fitted diameter, not the box.
 
 The split worked. Both positions are still silhouettes laid on the table plane,
 and problem 1 measured what that costs: a glass 157 mm away reported at 244 mm.
@@ -332,7 +386,7 @@ about anything. It is a number that worked on the examples it was tried on.
 
 **Heavy overlap.** The same two glasses, 20 pixels apart instead of 50. The blob
 is 137 mm long, still too wide to be one glass, so it is noticed. But the waist is
-now 30 pixels against a 32-pixel peak, a dip of six per cent. No threshold
+now 32 pixels against a 33-pixel peak, a dip of three per cent. No threshold
 separates the markers without destroying them, so watershed returns one region.
 The split holds only while the centres are more than about 1.43 radii apart, here
 46 pixels or 74 mm. Light overlap is easy. Heavy overlap is the case that matters,
@@ -373,6 +427,17 @@ already knows what the picture threw away.
 
 *Programmed. Stop deciding which pixels go together by looking at the
 picture. Decide it by looking at where they are in the room.*
+
+Every pixel in a depth picture can be turned into a point in the room: the
+pixel gives a direction, the depth gives how far along it, and the camera's
+pose says where it starts. Once the pixels are points, "which object is this?"
+becomes a question about distance on the table rather than about the picture.
+Flatten the points onto the table, group them by distance, fit a circle to each
+group, and check that circle against what the kind can be. Two objects that
+overlap in a photograph are still 150 mm apart in the room.
+
+**The long version:** [02-cluster-on-the-table.md](02-cluster-on-the-table.md) — this solution explained
+from the beginning, with diagrams.
 
 ### What it is
 
@@ -429,10 +494,13 @@ less than 260 mm above it, which is the tallest glass the cell handles.
 onto the table and group the resulting dots. Two glasses 150 mm apart are two
 groups of dots 150 mm apart, whatever the camera was doing. The grouping
 distance has to be smaller than the gap between glasses and larger than the gap
-between two points on one glass. At survey height one pixel is about 1.6 mm on
-the table, and the glasses stand at least 150 mm apart, so anything between
-about 10 mm and 100 mm works. Take 25 mm: comfortably above the noise, and far
-below the smallest real gap.
+between two points on one glass. Both ends are derivable. At survey height one
+pixel is about 1.6 mm on the table, so a few millimetres clears the noise; call
+the floor 10 mm. The ceiling is not the 150 mm the glasses stand apart, because
+that is measured centre to centre and clustering sees *edge to edge*: subtract
+the two radii and the widest glasses of one kind leave 60 mm, and across all
+four kinds 45 mm. So the real window is about 10 to 60 mm. Take 25 mm:
+comfortably above the noise, and comfortably below the smallest real gap.
 
 Projecting down rather than clustering in full 3-D is worth doing on purpose.
 A glass is a tall thin thing, and in 3-D its top and its bottom are 200 mm
@@ -446,11 +514,64 @@ rather than the two extreme ones.
 
 Then check the diameter. **This is the step that makes the whole thing safe,
 and it is only available because problem 2 says every glass is one known kind.**
-The kind's own specification holds the range its rim can be — 45 to 105 mm
-across the four kinds, and much narrower within one. A footprint outside that
-range is not one glass. Try two circles instead. If two circles fit and both are
-in range, there were two glasses; if they are not, say so and move on rather
-than guess.
+The kind's own specification holds the range its rim can be.
+
+Two ranges get used below and they are not the same number, so it is worth
+naming them once. **Across all four kinds** a footprint runs 45 to 105 mm —
+that is the widest the cell ever sees, and it is the bound anything
+kind-agnostic has to cover. **Within one kind** it is much narrower; the kind
+used in the worked examples here runs 60 to 90 mm. Problem 2 says every glass
+on the table is one known kind, so the check is against the narrow range, and
+that is exactly why this test is strong here and why problem 4 takes it away.
+
+A footprint outside the kind's range is not one glass. Try two circles instead.
+If two circles fit and both are in range, there were two glasses; if they are
+not, say so and move on rather than guess.
+
+#### When can a cluster actually be wrong?
+
+This is worth settling now, because it decides what the six solutions after
+this one are *for*, and it is easy to assume the wrong answer.
+
+**Two glasses cannot merge into one cluster in problem 2.** The problem
+guarantees the glasses stand at least 150 mm apart, centre to centre. Clustering
+works edge to edge, so the closest two footprints can ever come is 150 mm minus
+two radii: 60 mm for the widest glasses of one kind, 45 mm across all four.
+Both are far outside a 25 mm grouping distance. Grouping in the room does not
+merely usually work here — given clean points, it cannot fail. A pair closer
+than 150 mm is [problem 3](../problem-3/problem.md)'s input, and these same
+methods will meet that case there.
+
+So the ambiguity in problem 2 is not a merge. It is an **under-observed glass**,
+and it is quieter and more dangerous. A glass standing behind a neighbour shows
+the camera only the arc of its footprint that is not blocked. Fit a circle to
+that arc and this is what comes back, at 1.6 mm of depth noise and a 75 mm
+glass:
+
+| visible arc | fitted diameter | centre off by | RMS residual | passes the 60–90 mm check |
+|---|---|---|---|---|
+| 300° | 75.3 mm | 0.4 mm | 1.48 mm | yes — and correctly |
+| 130° | 72.7 mm | 1.6 mm | 1.61 mm | yes |
+| 95° | 66.5 mm | **4.9 mm** | 1.67 mm | **yes — and wrongly** |
+| 85° | 62.0 mm | **7.4 mm** | 1.73 mm | yes, 82 per cent of the time |
+| 70° | 51.6 mm | 13.0 mm | 1.89 mm | no — caught |
+
+Read the third row. A glass showing a 95-degree arc fits a circle of 66.5 mm,
+which is comfortably inside the kind's range, so the range check passes and the
+run reports a glass — standing 5 mm from where it really is. Nothing errors.
+And notice the residual column: it barely moves, 1.48 mm to 1.89 mm, so the
+quality of the fit does **not** betray the problem. The range check only starts
+catching it once the arc is under about 80 degrees, by which point the position
+is already 9 mm out.
+
+Two things do detect it, and neither is clever: the **angular span of the arc**,
+which is a number you can compute from the points you have, and **disagreement
+between stations**, since a glass blocked from one station is rarely blocked
+from another. Both are in step 4 below.
+
+That is the real question problem 2 has to answer — not *split this blob*, but
+*which glass have I not seen enough of, and where should I stand to see more of
+it?* Solutions 3 through 6 are four answers to it.
 
 **4. Agree across stations.** The survey already visits several stations and
 merges what they saw. Ask more of it: a glass should be found in about the same
@@ -476,11 +597,24 @@ they are two groups, not one.
 *The circle fit:* 76 mm and 73 mm. Both inside the kind's 60–90 mm range. Two
 glasses, at those two places, with a width each. Done.
 
-Now the awkward case. The two glasses stand 90 mm apart, so their footprints
-are 15 mm from touching. At 25 mm grouping they become one group. The circle
-fit returns 165 mm, which is outside the range. Two circles are tried: 74 mm and
-72 mm, 90 mm apart, both in range. Two glasses — and a pair this close is
-exactly what problem 3 has to move.
+Now the awkward case — and by the note above, it is not the one you would
+expect. The far glass is not merged with the near one; it is **hidden behind
+it**. Only 95 degrees of its footprint reaches the camera. Those points cluster
+on their own, 105 mm from the near glass's, and the circle fit returns 66 mm,
+inside the kind's 60–90 mm range. The run would report two glasses and be
+quietly wrong about where the second one stands, by about 5 mm.
+
+What catches it is step 4. The arc spans 95 degrees where a clear glass spans
+close to 300, and the second station, 200 mm away along the table, sees the same
+glass through 240 degrees and puts its middle 5 mm from where the first station
+did. The two stations disagree by more than depth noise allows, so the glass is
+reported with the second station's fit and a note, not the average of the two.
+
+For completeness, the case everyone expects: two glasses 90 mm apart, footprints
+15 mm from touching, one group at 25 mm grouping, one circle fitted at 165 mm,
+which no glass of this kind can be, and two circles of 74 and 72 mm that both
+fit. That pair is real — but it is below problem 2's 150 mm floor, so it belongs
+to [problem 3](../problem-3/problem.md), which exists to move it.
 
 ### What it needs
 
@@ -546,8 +680,6 @@ when the viewpoint itself is the problem.
 
 ![The chosen method, in three steps](../../images/problem-2-cluster-and-fit.png)
 
-![The chosen method, in three steps](../../images/problem-2-cluster-and-fit.png)
-
 ---
 
 ## Solution 3 — move the camera
@@ -555,6 +687,19 @@ when the viewpoint itself is the problem.
 *Programmed, and a closed loop. Instead of working harder on the pictures
 you happen to have, go and take better ones — choosing where to stand by a
 rule you can print.*
+
+A camera that can move is a different instrument from one that cannot, and this
+solution treats it that way. Separating objects and finding a viewpoint are two
+different difficulties: no processing of a picture in which one object stands
+behind another produces the side-on outline the next step needs. So the arm
+goes and stands somewhere better. Three independent tests decide where — a
+clear line of sight, a standoff point inside the 300 to 780 mm reach, and a path
+the arm can fly — and the first two are arithmetic, so they run before the
+motion planner is asked anything. An object with no viewpoint left is not an
+error. It is the handover to problem 3.
+
+**The long version:** [03-move-the-camera.md](03-move-the-camera.md) — this solution explained
+from the beginning, with diagrams.
 
 ### What it is
 
@@ -606,9 +751,31 @@ Delmerico et al. (*Autonomous Robots*, 2018) work the variants through, and it
 is all CPU ray casting, so none of it wants CUDA.
 
 It is also more than this cell needs. With one known kind and five glasses the
-doubt is a short list of questions, mostly *is that 260 mm blob one glass or
-two?* So the score becomes a heuristic: prefer the viewpoint whose wedge holds
-the doubtful cluster and no other glass, then the one needing least reach.
+doubt is a short list of questions, mostly *have I seen enough of that glass to
+believe where it is?* So the score becomes a heuristic: prefer the viewpoint
+whose wedge holds the doubtful cluster and no other glass, then the one needing
+least reach.
+
+That tie-break has a blind spot worth naming, because it is structural rather
+than an oversight. Reach depends only on the angle between the standoff
+direction and the line out from the arm's base — so **every viewpoint has a
+mirror image with identical reach**. Whenever two candidates sit either side of
+that line, least-reach cannot separate them, however different what they would
+see. One of the two may look straight along the direction that is hiding the
+glass and learn nothing. This is the specific gap
+[solution 6](#solution-6--learn-which-viewpoints-pay-off) exists to fill, and it
+is also fixable without a model, by preferring the candidate perpendicular to
+the line joining the doubtful glass and whatever is blocking it.
+
+*How many candidates.* This turns out to matter more than anything else in the
+solution. The cell's `_standoffs()` offers nine directions, 40 degrees apart.
+Over 600 drawn arrangements, **45 per cent of glasses have no usable viewpoint
+on that grid — and only 14 per cent on a 5-degree one.** The clear arcs in a
+typical five-glass scene run 34, 16, 110, 7 and 10 degrees wide, so only one of
+the five is wider than a single 40-degree step. Most of what this cell reports
+as "no viewpoint" is the grid running out, not the geometry. Refining the
+candidate set costs arithmetic and nothing else, and it is the cheapest real
+improvement available here.
 
 *Cost.* The camera is on the wrist, so every viewpoint is an arm pose, and can
 be unreachable or unplannable. Test reach with inverse kinematics first —
@@ -704,6 +871,17 @@ unknown kinds mean the doubt stops being a short list.
 *Hybrid, with the model as a ranker. The fixed sweep happens first. Then a
 learned estimate of how unsure each object is decides which extra picture is
 worth taking, from candidate poses the geometry has already filtered.*
+
+The arm cannot look everywhere, so it has to choose. This solution leaves the
+geometry in charge of where the camera may stand — reachable, unoccluded,
+plannable — and gives a learned number the smaller job of saying which survivor
+is worth the seconds. The number estimates how much doubt a look would remove.
+It never admits a pose the arithmetic rejected, and never decides that a cluster
+is settled. That ordering is what makes this a hybrid, and what caps the damage
+when the estimate is wrong — which is the failure the design is arranged around.
+
+**The long version:** [04-learned-doubt-steers-the-next-picture.md](04-learned-doubt-steers-the-next-picture.md) — this solution explained
+from the beginning, with diagrams.
 
 ### What it is
 
@@ -806,9 +984,14 @@ handover to problem 3.
 
 ### A worked example
 
-The survey finishes with five clusters. Four fit circles of 71 to 78 mm, inside
-the kind's range. The fifth fits at **165 mm**, which no single glass here can
-be. It stands 530 mm from the base; budget, four extra looks.
+The survey finishes with five clusters. All five fit circles inside the kind's
+range — four between 71 and 78 mm, the fifth at **66 mm**. The range check is
+content. What is not content is the fifth cluster's shape: its dots span only
+**95 degrees** of that circle, and there are **115** of them where a 66 mm
+footprint at this range should return about 340. It is a clean fit to a third
+of a glass, and by the table in [solution 2](#when-can-a-cluster-actually-be-wrong)
+its middle is about 5 mm from the truth. It stands 530 mm from the base;
+budget, four extra looks.
 
 **Reach.** The camera lands sqrt(530² + 380² + 2·530·380·cos θ) from the base,
 where θ is the angle between the standoff direction and the line out from the
@@ -823,9 +1006,12 @@ target. **Eight left.**
 The best predicts a 0.41 drop in mean per-pixel entropy, the runner-up 0.12.
 
 **Move and re-run.** Plan, move, settle: seconds, then five pictures along the
-120 mm slide rather than two, because a picture costs milliseconds. The group
-resolves into circles of 74 mm and 71 mm, centres 88 mm apart, both in range.
-One look spent of four.
+120 mm slide rather than two, because a picture costs milliseconds. From the new
+station the glass that was showing a 95-degree arc shows 250 degrees, and its
+circle fits at **76 mm** with its middle **6 mm** from where the first station
+put it — the error the first fit was hiding. Its neighbour, unblocked from both,
+fits at 74 mm in the same place twice. Two glasses, 155 mm apart, both in range
+and both now believed. One look spent of four.
 
 ### What it needs
 
@@ -857,7 +1043,7 @@ and the run reports one large glass — the failure `problem.md` watches hardest
 Four guards, and none of them is the model:
 
 - **The geometry decides; the model only orders.** Whether a cluster is resolved
-  is the circle fit against the kind's 45 to 105 mm range, never the entropy.
+  is the circle fit against the kind's own range, never the entropy.
 - **A floor that ignores the score.** A cluster seen from one station only gets a
   look regardless.
 - **The model-free cross-check.** If a station's two views disagree about a glass
@@ -887,6 +1073,17 @@ rule chooses wrongly.
 *Hybrid, with the model as a verifier. Do not learn the perception. Learn the
 one question the rules are worst at — is this one object or two — on the crop
 the rules have already isolated.*
+
+The geometry already separates almost every glass on the table, in millimetres
+you can print. What it cannot settle is the
+handful of groups on the boundary — one object, or two? So learn that one
+decision, from the thirteen numbers the circle fit has already produced. The
+input is small, so the model trains in minutes on a laptop. Its most useful
+answer is "I cannot tell", which asks the arm for one more picture. Delete the
+weights file and the geometry answers as before.
+
+**The long version:** [05-a-learned-verifier-over-the-clusters.md](05-a-learned-verifier-over-the-clusters.md) — this solution explained
+from the beginning, with diagrams.
 
 ### What it is
 
@@ -927,6 +1124,9 @@ of fine-tuning and this forest costs seconds.
 - RMS residual of the one-circle fit, its worst single residual, the same for the
   best two-circle fit, and the ratio of the two;
 - gap between the two candidate centres, in fitted radii;
+- **angular span of the dots around the fitted centre**, which is what tells a
+  whole footprint from an arc of one, and which nothing else in the pipeline
+  looks at;
 - dot count, and dots per square millimetre against what the camera predicts at
   that range — at 450 mm one pixel is 1.6 mm, so that is arithmetic;
 - stations that saw it, how far its centre moved between them, and its height,
@@ -948,9 +1148,12 @@ mask as well, a tiny convolutional network in [PyTorch](https://pytorch.org/)
 on the Mac's MPS backend. Start with the trees.
 
 **The data.** [Gazebo](https://gazebosim.org/) (Apache-2.0) knows what it spawned,
-so every group comes labelled for nothing. Do not sample uniformly: spawn pairs 60
-to 120 mm apart, where the ambiguity lives. A few thousand rows is the order to
-aim for, settled on a held-out set.
+so every group comes labelled for nothing. Do not sample uniformly: spawn
+layouts that put one glass **behind another from a survey station** — legal
+separations of 150 mm and up, arranged so the arc the camera gets runs from a
+full circle down to a sliver. That is where problem 2's ambiguity lives, not in
+close pairs, which the problem does not allow. A few thousand rows is the order
+to aim for, settled on a held-out set.
 
 ### The feedback loop
 
@@ -971,20 +1174,27 @@ is a dial: wide buys certainty with arm time, narrow merges more.
 
 ### A worked example
 
-The kind's footprint range is 60 to 90 mm. A group comes back with 340 dots. One
-circle fits at **97 mm**, RMS residual **6.2 mm** — outside the range, but by four
-pixels' worth. Two circles fit at **63 mm** and **59 mm**, RMS **3.1 mm**, centres
-**44 mm** apart. Both are in range, but 44 mm between circles of 63 and 59 mm
-means the rims interpenetrate, which two upright glasses cannot do.
+The kind's footprint range is 60 to 90 mm. A group comes back with **115 dots**.
+One circle fits at **66 mm**, RMS residual **1.67 mm**. Every number the
+geometry looks at is content: the diameter is mid-range, the residual is one
+pixel's worth, the fit is clean. Solution 2 would report a glass here and be
+5 mm wrong about where it stands.
 
-The verifier gets the row: diameter ratio 1.29, residual ratio 2.0, centre gap
-1.40 radii, 340 dots at 0.81 per square mm against 0.78 expected, one station. It
-returns **0.46** — inside the 0.25 to 0.75 band, so it abstains.
+What the verifier sees that the range check does not: the dots span **95
+degrees** of the fitted circle where an unblocked glass spans close to 300, and
+115 dots is **a third** of the 340 a 66 mm footprint should return at this
+range. A clean fit to a third of a glass.
 
-The arm takes one more picture, perpendicular to the 44 mm line, 380 mm back. The
-group splits into **72 mm** and **69 mm**, 88 mm apart, and the geometry answers on
-its own. The model's contribution was not the answer. It was knowing it did not
-have one, and where to look.
+The row: fitted diameter 66 mm, residual 1.67 mm, arc span 95 degrees, 115 dots
+against 340 expected, one station, no second fit worth trying. It returns
+**0.38** — inside the 0.25 to 0.75 band, so it abstains.
+
+The arm takes one more picture, 380 mm back and 90 degrees round from the
+blocked direction. The same glass now shows **250 degrees** and fits at **76
+mm**, with its middle **6 mm** from where the first station put it. The
+geometry answers on its own, and the answer is different from the one that
+looked fine. The model's contribution was not the measurement. It was knowing
+the first measurement was not to be trusted, and where to stand instead.
 
 ### What it needs
 
@@ -1051,11 +1261,23 @@ depth, no cluster and no circle to verify. That is solution 5's day.
 somebody wrote. This predicts, from an experiment the simulator can run
 exhaustively, whether taking that picture will actually change the answer.*
 
+Three solutions here choose where to look next; they differ in what they
+score. This one scores the thing actually wanted: the chance that a
+picture from a given pose splits an ambiguous cluster into two glasses. That
+question has an exact answer the simulator can look up — spawn an arrangement,
+render from the pose, see whether the ambiguity went — so choosing a viewpoint
+becomes ordinary supervised learning on free, exact labels. The geometry still
+generates the candidates and still holds the veto; the model only orders what
+survives, so a bad prediction costs one wasted look.
+
+**The long version:** [06-learn-which-viewpoints-pay-off.md](06-learn-which-viewpoints-pay-off.md) — this solution explained
+from the beginning, with diagrams.
+
 ### What it is
 
 Solutions 3 and 5 also pick where to look next, so the difference is what gets
 scored. Solution 3 scores a candidate viewpoint with a rule somebody wrote:
-prefer a clear line of sight, then least reach. Solution 5 scores it by how far
+prefer a clear line of sight, then least reach. Solution 4 scores it by how far
 the perception step's **uncertainty** — the number it returns beside its answer
 — should fall. This one scores neither. It predicts, directly, **whether the
 picture would change the answer**: the probability that a picture from this pose
@@ -1161,7 +1383,13 @@ being 18 degrees from a station already visited — the feature a hand-written
 rule has not got.
 
 One move, three seconds. At 380 mm one pixel covers 1.37 mm, and the cluster
-resolves into circles of 74 and 70 mm, 96 mm apart. A row is appended,
+resolves into circles of 74 and 70 mm — **168 mm apart**, not the 54 mm the
+merged view proposed. That under-estimate is not a mistake in the first fit; it
+is what a two-circle fit must return when the far glass is mostly hidden, since
+the only points it has to work with are on the near side. Which is the lesson
+this solution's features carry: *separation in fitted radii* is a real signal
+and a systematically biased one, and how much to trust it is exactly the kind
+of thing a model can learn and a hand-written rule cannot. A row is appended,
 outcome 1.
 
 ### What it needs
@@ -1216,6 +1444,18 @@ is in the log already.
 *Learned, as the decider, and trained from random initialisation on renders
 alone. One class, one kind of object, one camera — a network that only has to
 work in this cell can be small enough to train in an afternoon.*
+
+This cell does not need a general-purpose model. One class, one kind of object,
+one camera, one lighting rig, pictures 320 by 240. A small encoder-decoder — a
+U-Net of about 482,000 weights, which is arithmetic on its channel widths and
+not a measurement — can be trained from random initialisation on Gazebo renders
+alone, because the simulator labels every picture exactly and for nothing. It
+returns a probability at every pixel, and the pixels it is unsure about are a
+reason to take another picture. It gives semantic and not instance
+segmentation, and it learns Gazebo, not the world.
+
+**The long version:** [07-a-segmenter-trained-from-scratch.md](07-a-segmenter-trained-from-scratch.md) — this solution explained
+from the beginning, with diagrams.
 
 ### What it is
 
@@ -1301,10 +1541,19 @@ A per-pixel model returns a **confidence map** rather than a mask: a
 probability at every pixel, near 1 where it is sure the pixel is glass, near 0
 where it is sure it is not, and near 0.5 where it cannot tell.
 
-Two things read off it: **how much** doubt surrounds an object — the fraction
-of its pixels between 0.3 and 0.7 — and **where** it sits. A clean glass is
-confident but for its rim; doubt in a band across a region's middle is the
-signature of a second glass behind it.
+Two things read off it: **how much** doubt surrounds an object and **where** it
+sits.
+
+"How much" needs care, because the obvious statistic does not work. Counting
+the fraction of a region's pixels between 0.3 and 0.7 measures the rim, not the
+doubt: every region has an uncertain rim a pixel or two wide, and for a glass
+48 by 126 pixels that rim is already about 12 per cent of its area. The
+interesting doubt is drowned before you start.
+
+So **erode the region by 3 pixels first**, throwing the rim away, and count
+what is left. A glass the network is sure about has essentially nothing
+uncertain inside it. Doubt in a band across a region's middle is the signature
+of a second glass behind it, and after erosion it is the only thing there.
 
 So a region far more doubtful than its neighbours is one to photograph again,
 and
@@ -1319,10 +1568,14 @@ At survey height, 450 mm up, fx = 277.1, so one pixel covers 450 / 277.1 =
 and their centres land **30 pixels** apart, so the silhouettes overlap and the
 class map returns one region **79 pixels** wide.
 
-The confidence map says more. Across the three unoccluded glasses 2 per cent of
-pixels fall between 0.3 and 0.7, all on the rim; in this region it is 11 per
-cent, running in a band 4 pixels wide down the middle, where the near glass's
-edge crosses the far one.
+The confidence map says more, once the rim is out of the way. Each glass stands
+about **126 pixels** tall, so eroding 3 pixels off every side leaves interiors
+of roughly 42 by 120 pixels for a clean glass and 73 by 120 for the merged
+region. Across the three unoccluded glasses **under 1 per cent** of interior
+pixels fall between 0.3 and 0.7. In the merged region a band **4 pixels wide**
+runs the full 120 down the middle, where the near glass's edge crosses the far
+one: about 480 pixels of 8,760, or **5.5 per cent** — five times its
+neighbours, and in a shape that points somewhere.
 
 So the arm looks again along that band, from 380 mm back, where one pixel
 covers 380 / 277.1 = **1.37 mm**. The second picture returns two regions, each
@@ -1330,14 +1583,26 @@ confident to its rim.
 
 ### What it needs
 
-PyTorch on MPS, NumPy and SciPy, all present. Gazebo, plus a randomising
+PyTorch on MPS, NumPy and SciPy. NumPy and OpenCV are in the pixi environment
+today; **PyTorch, SciPy and scikit-learn are not**, so every solution from here
+down starts with adding dependencies, which is a decision rather than a
+detail — see [what is actually installed](#what-is-actually-installed) above.
+Gazebo, plus a randomising
 spawner and a script that dumps each render with its masks. A version-pinned
-weights file under a megabyte. No CUDA, no downloaded weights, no annotator.
+weights file of about **1.9 MB** — 480,000 weights at four bytes each — or half
+that if it is saved at 16-bit. No CUDA, no downloaded weights, no annotator.
 
 ### What it is good at
 
-**It needs no depth.** The map is learned from colour, so it survives the day
-the glasses become real glass and clustering loses its input.
+**It can be made to survive without depth.** As described the network takes
+depth as its fourth channel, so it does not get this for free — a model trained
+that way leans on depth and fails with it. The fix costs one line of the
+training loop: **drop the depth channel at random**, on a third of the examples,
+so the network is forced to learn the shape from colour as well. Then the same
+weights run on colour alone, less accurately, on the day the glasses become
+real glass and clustering loses its input entirely. That is the one thing this
+solution offers that nothing else in this document does, and it is worth the
+accuracy it costs.
 
 **It is small enough to retrain on a whim**: change the lighting or the kind,
 regenerate and retrain in an afternoon, where a fine-tune costs most of a day.
@@ -1381,6 +1646,17 @@ the moment either goes.
 *Learned, as the decider. Predict, at every object pixel, a short vector
 pointing to the middle of the object that pixel belongs to — and separation
 becomes counting clusters of votes.*
+
+A network that labels each pixel "glass" or "not glass" cannot separate two
+glasses that touch: a class label has nowhere to record *which* glass. So ask
+for a different output: at each glass pixel, a short vector pointing to the
+middle of its own glass. Add it to the pixel's position and you have a vote.
+One glass makes one pile of votes, two make two. Predict the vector **in table
+millimetres** rather than image pixels, and the camera drops out. The spread of
+a pile is a confidence, and a loose pile is a reason to look again.
+
+**The long version:** [08-per-pixel-votes-for-the-centre.md](08-per-pixel-votes-for-the-centre.md) — this solution explained
+from the beginning, with diagrams.
 
 ### What it is
 
@@ -1450,8 +1726,14 @@ centre minus that pixel's own table position. Spawn pairs 60 to 120 mm apart,
 where the ambiguity is.
 
 *Votes to objects.* Put every vote down as a dot on the table. Slide a circular
-window of radius 30 mm to the average of the dots inside it until it
-stops moving; every start ending in the same place is one peak. That is **mean
+window to the average of the dots inside it until it stops moving;
+**radius 18 mm**, and the number is derivable at both ends. The floor is the
+spread of the votes themselves, 6 to 8 mm when the network is right, so the
+window has to be at least twice that or one glass breaks into several peaks.
+The ceiling is the closest two centres can be: two 45 mm footprints touching
+put their centres 45 mm apart, so a window reaching more than about 22 mm
+swallows both. A 30 mm window spans 60 mm and merges exactly the pairs this
+solution exists to separate. 18 mm sits between the two with room either side; every start ending in the same place is one peak. That is **mean
 shift**, in scikit-learn as `sklearn.cluster.MeanShift` (BSD-3,
 https://scikit-learn.org/stable/modules/generated/sklearn.cluster.MeanShift.html).
 One peak is one glass; its voters are its mask.
@@ -1479,10 +1761,18 @@ At 450 mm up one pixel covers 1.6 mm, so a glass 75 mm across is 47 pixels
 wide and holds roughly 1,700 votes.
 
 *Where solution 2 fails.* Two such glasses stand 90 mm apart, footprints 15 mm
-from touching, so at a 25 mm grouping distance they are one group. The votes do
-not care: peaks at (0.42, −0.31) and (0.51, −0.30), RMS 6 and 8 mm, both inside
-the held-out spread. Circle fits 76 and 73 mm, inside the kind's 60 to 90 mm
-range.
+from touching, so at a 25 mm grouping distance they are one group, and one
+circle fitted to it comes back at 90 + 38 + 36.5 = **164.5 mm**, 101 pixels,
+which no glass of this kind can be. The votes do not care: peaks at (0.42,
+−0.31) and (0.51, −0.30), RMS 6 and 8 mm, both inside the held-out spread.
+Circle fits 76 and 73 mm, inside the kind's 60 to 90 mm range.
+
+Note what this example is. Problem 2 guarantees 150 mm between centres, so a
+90 mm pair is not something problem 2 will hand this solution — it is
+[problem 3](../problem-3/problem.md)'s input. That is the honest case for
+building this: it is the one method here that keeps working after problem 2's
+spacing guarantee is withdrawn, and the only one that separates glasses which
+genuinely touch.
 
 *Unsure.* A glass 80 per cent hidden leaves about 340 votes, all from one
 crescent. Its peak sits 9 mm from the truth — the votes agree with each other
@@ -1547,6 +1837,18 @@ is no depth and so nothing to vote with.
 moved the camera, so the geometry between two pictures of a still scene is a
 free training signal — one that needs neither a human nor the simulator's
 ground truth.*
+
+Teaching a network which pixels belong to which glass normally needs somebody
+to draw round every glass in every picture. This solution needs nobody. The
+camera sits on the wrist, so the arm knows exactly how far it moved between two
+pictures, and geometry then says where each surface point must land in the
+second. Points on one glass move together; points on the glass behind move by a
+different amount. That agreement is the label. It comes from the joint
+encoders, not from a human and not from the simulator, so the same training
+would run on real hardware.
+
+**The long version:** [09-self-supervised-from-the-arms-own-movement.md](09-self-supervised-from-the-arms-own-movement.md) — this solution explained
+from the beginning, with diagrams.
 
 ### What it is
 
@@ -1647,11 +1949,23 @@ leave the frame, and it becomes solution 3's new station.
 
 ### A worked example
 
-A station 450 mm above the table returns one blob 164 pixels across — 262 mm on
-the table, against the kind's 60–90 mm range. Two glasses, in line.
+This one needs a **side-on** station, not the overhead survey, and the reason
+is worth stating: parallax separates things by how far away they are, and from
+directly above two glasses of the same kind have their tops at the same
+distance. Overhead, the shift is identical and the method has nothing to work
+with. Side-on it has everything.
 
-Between that station's two pictures the near glass's pixels shift about 66
-pixels and the far glass's about 51. The network was fitted so that pixels
+So: a station 380 mm from the near glass, level, with a second glass 180 mm
+further back and 60 mm to one side. At fx = 277.1 the near glass images
+**55 pixels** wide and the far one, at 560 mm, **37**. They overlap, and the
+blob spans **76 pixels** — 104 mm at the near glass's scale of 1.37 mm a pixel,
+against the kind's 60–90 mm range. Flagged. Two glasses, in line.
+
+Now slide the camera 120 mm and take the second picture. The near glass's
+pixels shift 277.1 × 120 / 380 = **87 pixels**; the far glass's shift
+277.1 × 120 / 560 = **59**. Nearer things shift more, which is the whole of the
+signal, and 28 pixels between the two populations is far more than the
+network needs. The network was fitted so that pixels
 whose shift agrees share a vector, so the two populations land in different
 directions in the embedding space. Clustering returns two regions, and the
 boundary runs where the shift changes — an occlusion edge, not a brightness
