@@ -24,28 +24,31 @@ Four to six glasses stand on the table. They are all one kind, and the kind is
 known. The arm has to say which pixels belong to which glass, give each glass a
 position on the table, and name honestly any pair it could not separate.
 
-The difficulty is not seeing the glasses. It is telling one from another. Two
-glasses standing 150 mm apart on the table land on top of each other in a
-photograph whenever the camera is in line with both, and then the usual method
-— take every pixel standing above the table top, and group the ones that touch
-— returns a single blob. One blob means one glass to everything downstream, and
+The difficulty is not seeing the glasses. It is telling one from another.
+
+Two glasses standing 150 mm apart on the table land on top of each other in a
+photograph whenever the camera is in line with both. The usual method — take
+every pixel standing above the table top, and group the ones that touch — then
+returns a single blob. One blob means one glass to everything downstream, and
 that mistake does not announce itself.
 
-A learned method could draw the boundary the touching-pixels rule cannot. But
-it has to be trained, and training needs the right answer written beside each
+A learned method could draw the boundary the touching-pixels rule cannot. But it
+has to be trained, and training needs the right answer written beside each
 example. Those right answers are the **labels**, and getting them is where most
 of the cost of a learned method lives.
 
 ![Three ways to get the right answer written beside each picture](../../../images/problem-2/09-where-the-labels-come-from.png)
 
 The first column is the usual recipe: a person draws round every object,
-thousands of times. The second is what the other two learned solutions in this
-set do — Gazebo already knows which mesh each rendered pixel came from, so the
-labels are free. The third is this solution, and its supervision does not come
-from inside the simulator at all. It comes from the joint encoders, which a
-real arm also has. Everything else learned here would have to be retrained from
-scratch, with new labels, the day the code met a real camera. This one would
-not.
+thousands of times.
+
+The second is what the other two learned solutions here do. Gazebo already knows
+which object each rendered pixel came from, so the labels are free.
+
+The third is this solution. Its supervision does not come from inside the
+simulator at all. It comes from the joint encoders, which a real arm also has.
+Everything else learned here would have to be retrained from scratch, with new
+labels, the day the code met a real camera. This one would not.
 
 ## How it works, end to end
 
@@ -79,15 +82,20 @@ far apart in depth they are. It can only split two glasses if the gap between
 them is much bigger than the range of depths each glass covers by itself.
 
 Looking straight down from the survey height of 450 mm fails that test
-outright. Two glasses **of one kind** have their rims at nearly the same
-height, so nearly the same distance from an overhead camera. Worse, each glass
-on its own runs from its rim — 250 mm below the camera, for a 200 mm glass —
-down to the table at 450 mm, so both glasses fill the same range of depths and
-the same range of shifts: 133 pixels at the rim falling to 74 at the table, for
-each of them. Two populations lying on top of each other cannot be told apart
-at any baseline. The overhead view does not produce the merge anyway: across
-4320 legal arrangements with both glasses wholly inside one 320 by 240 frame,
-none merged.
+outright, for two reasons.
+
+First, two glasses **of one kind** have their rims at nearly the same height, so
+at nearly the same distance from an overhead camera.
+
+Second, and worse, each glass on its own runs from its rim — 250 mm below the
+camera, for a 200 mm glass — down to the table at 450 mm. So both glasses cover
+the same range of depths, and therefore the same range of shifts: 133 pixels at
+the rim falling to 74 at the table, for each of them. Two groups lying on top of
+each other cannot be told apart at any baseline.
+
+And the overhead view does not produce the merge anyway. Across 4320 legal
+arrangements, with both glasses wholly inside one 320 by 240 frame, none
+merged.
 
 Turn the camera on its side and the geometry turns with it. The station is the
 same one problem 1 measures a glass from: **level, 120 mm above the table
@@ -100,11 +108,11 @@ gap between the two glasses is 180 mm while each glass covers only its own
 
 ![The scene stands still; only the camera moves](../../../images/problem-2/09-two-views-parallax.png)
 
-The two frames on the right are the effect. Glass A, the nearer one, moves 66
-pixels. Glass B, 150 mm further away, moves 51. The gap between them grows by
-15 pixels, and that growth is the only thing in the two pictures that says they
-are two objects: same kind, same colour, same shape, so appearance says
-nothing.
+The two frames on the right are the effect. Glass A, the nearer one at 380 mm,
+moves 87 pixels. Glass B, 180 mm further away, moves 59. The gap between them
+grows by 28 pixels, and that growth is the only thing in the two pictures that
+says they are two objects. Same kind, same colour, same shape — so appearance
+says nothing at all.
 
 At each station the arm slides the camera sideways by 120 mm — the survey's own
 baseline, `SURVEY_BASELINE` — and photographs as it goes. A picture costs
@@ -143,11 +151,13 @@ the shift is 33,252 divided by the depth in millimetres.
 ![Apparent shift against depth, and separation against slide](../../../images/problem-2/09-depth-against-shift.png)
 
 The left-hand plot is that formula drawn. The curve is steep close up and flat
-far away, so the same 20 mm of depth difference is worth far more separation
-near the camera than far from it; the marked pair at 500 and 520 mm is the hard
-case, only 2.6 pixels apart. The right-hand plot is what makes this a method
-rather than an observation: separation is **linear in the slide**. Double the
-slide, double the separation. That turns the arm into a dial.
+far away. So the same 20 mm of depth difference is worth far more separation
+near the camera than far from it. The marked pair at 500 and 520 mm is the hard
+case, only 2.6 pixels apart.
+
+The right-hand plot is what makes this a method rather than an observation. The
+separation grows **in step with the slide**: double the slide, double the
+separation. That turns the arm into a dial.
 
 The chain from pixels to answer, in order:
 
@@ -155,20 +165,21 @@ The chain from pixels to answer, in order:
 2. **Warp** picture 1 into the viewpoint of picture 2, using that depth and the
    camera motion the encoders give. Every pixel is moved to where the predicted
    depth says it should now be.
-3. **Photometric loss** — compare the warped picture with picture 2, pixel by
+3. **Photometric loss.** Compare the warped picture with picture 2, pixel by
    pixel, on brightness. Where the warp lands on matching brightness the depth
-   was right; where it does not, the mismatch is what training pushes down.
-   This is the whole of the supervision: two pictures and two encoder readings.
-4. **Make pairs.** Once depth is roughly right the apparent shift of each pixel
+   was right. Where it does not, the mismatch is what training pushes down. This
+   is the whole of the supervision: two pictures and two encoder readings.
+4. **Make pairs.** Once the depth is roughly right, the shift of each pixel
    follows from the formula. Two pixels whose shifts agree to within the
-   measurement noise are a **positive pair** — same surface. Two whose shifts
-   differ by clearly more than the noise are a **negative pair**.
-5. **Contrastive loss** over an embedding. The network's second output is, for
-   every pixel, a list of perhaps 16 numbers, arranged so that *distance
-   between the lists means similarity*. Pick a pixel, take its positive
-   partner and a handful of negatives, and the loss is low only when the
-   partner is nearer than every negative. It **pulls** the anchor and its
-   partner together and **pushes** the anchor and its negatives apart.
+   measurement noise are a **positive pair** — the same surface. Two whose
+   shifts differ by clearly more than the noise are a **negative pair**.
+5. **Contrastive loss.** The network's second output is, for every pixel, a
+   list of perhaps 16 numbers. That list is called an **embedding**, and it is
+   arranged so that *two lists being close together means the two pixels belong
+   together*. Pick a pixel, take its positive partner and a handful of
+   negatives, and the loss is low only when the partner is closer than every
+   negative. So it **pulls** a pixel and its partner together, and **pushes** it
+   and its negatives apart.
 
 ![An embedding: every pixel becomes a point](../../../images/problem-2/09-embedding-space.png)
 
@@ -366,10 +377,10 @@ reported as unseparated, which is a result the problem explicitly asks for.
 
 ## The feedback loop
 
-Most learned components answer whatever they are asked and give no useful sign
+Most learned components answer whatever they are asked, and give no useful sign
 when they should not have. This one does, because the doubt has a number
-attached: **the separation, in pixels, between two candidate populations of
-shifts.** If that number is 23, the answer is settled. If it is 2.6, it is not.
+attached: **the gap, in pixels, between the two groups of shifts.** If that
+number is 23, the answer is settled. If it is 2.6, it is not.
 
 And because separation is linear in the slide, the arm can work out exactly how
 far it must move to make a named doubtful pair unambiguous.
@@ -411,31 +422,35 @@ Three limits on the loop, all arithmetic rather than opinion:
 
 ## Where it comes from
 
-**Self-supervised depth and ego-motion learning** is the nearest living
-relative. SfMLearner ([Zhou et al., CVPR 2017](https://github.com/tinghuiz/SfMLearner),
-MIT licence) trains two networks together from unlabelled video — one guesses
-depth, the other guesses how the camera moved — by warping one frame into the
-next and checking the brightness. Monodepth2
-([Godard et al., ICCV 2019](https://github.com/nianticlabs/monodepth2)) refines
-the recipe, under **Niantic's own non-commercial licence**: usable for reading
-and research, not for a product. Both have to *estimate* the camera motion, and
-that estimate is where a large part of their error lives. **Here the motion is
-not estimated. It is commanded.** Half of the hard problem in that literature
-does not exist in this cell.
+**Learning depth and camera motion together, with no labels**, is the nearest
+living relative. SfMLearner
+([Zhou et al., CVPR 2017](https://github.com/tinghuiz/SfMLearner), MIT licence)
+trains two networks at once from ordinary video. One guesses depth, the other
+guesses how the camera moved. It checks both by warping one frame into the next
+and comparing the brightness. Monodepth2
+([Godard et al., ICCV 2019](https://github.com/nianticlabs/monodepth2)) improves
+the recipe, under **Niantic's own non-commercial licence** — usable for reading
+and research, not for a product.
 
-**Motion segmentation** is the classical form of the grouping idea, and layered
+Both of those have to *estimate* the camera motion, and that estimate is where a
+large part of their error lives. **Here the motion is not estimated. It is
+commanded.** So half of the hard problem in that literature does not exist in
+this cell.
+
+**Motion segmentation** is the classical form of the grouping idea. Layered
 models go back at least to Wang and Adelson's *Representing Moving Images with
-Layers* (1994 — confident of the paper's existence and its subject, less so of
-its details). It assumes the *objects* move. Here they do not; the camera does,
-and relative motion is relative motion. The Gestalt psychologists called
-grouping by shared motion **common fate**: a flock of birds is one flock because
-the birds turn together.
+Layers* (1994 — I am confident of the paper and its subject, less so of its
+details). It assumes the *objects* move. Here they do not; the camera does. But
+relative motion is relative motion, so the same reasoning applies.
 
-**Contrastive learning** is how the grouping becomes something a network can
+The Gestalt psychologists called grouping by shared motion **common fate**: a
+flock of birds is one flock because the birds turn together.
+
+**Contrastive learning** is how that grouping becomes something a network can
 output. SimCLR ([Chen et al., 2020](https://arxiv.org/abs/2002.05709)) and MoCo
 ([He et al., 2019](https://arxiv.org/abs/1911.05722)) are the standard
-references. Both train on whole images rather than pixels, but the loss has the
-same shape, and it is a dozen lines of code rather than a library.
+references. Both train on whole pictures rather than on pixels, but the loss has
+the same shape, and it is a dozen lines of code rather than a library.
 
 ## What it needs
 
@@ -462,33 +477,40 @@ it. That distinction is the whole point of this solution.
 
 **Strong**
 
-- Learns a boundary nobody can write down: an occlusion edge, not a brightness
-  edge.
-- Labels are free and endless: every pair of pictures the arm took is one.
-- Colour is irrelevant, and it transfers to hardware unchanged: a real UR5e has
-  encoders and a wrist camera. No other learned solution here does.
-- Doubt carries a number, and separation is linear in the slide, so the arm
-  prices a decisive picture in millimetres.
+- **It learns a boundary nobody can write down.** The line it draws is where the
+  depth jumps, not where the brightness changes.
+- **Labels are free and endless.** Every pair of pictures the arm took is one.
+- **Colour does not matter**, so two identical glasses are no harder than two
+  different ones.
+- **It transfers to real hardware unchanged.** A real UR5e has joint encoders
+  and a wrist camera, which is all this needs. No other learned solution here
+  can say that.
+- **The doubt carries a number**, and the separation grows in step with the
+  slide, so the arm can work out in millimetres how far it must move to settle a
+  question.
 
 **Breaks**
 
-- Only the camera moves, so the only signal is parallax: a
-  depth-discontinuity detector in an embedding's clothes.
-- Two glasses at equal range separate by nothing; 20 mm apart, by 2.6 pixels.
-  Identical kind, so no appearance cue.
-- Affinity, not a count: something must still choose how many groups, and too
-  few is the merge.
-- The photometric loss needs brightness variation, weakest where the glasses
-  are plainest.
-- Change the lighting or the kind and the embedding describes a cell that no
-  longer exists.
-- A merged pair returns one tidy region with no complaint, so the circle-fit
-  check is not optional.
-- **The cell already has a depth camera**, measuring what parallax is trained
-  to infer, so not here. It earns its place on problem 4's open catalogue, or
-  the day depth fails on real glassware.
-- Competes with the other two learned deciders; leans on *cluster on the
-  table*; loops like *move the camera*.
+- **Only the camera moves, so parallax is the only signal.** Underneath, this is
+  a detector for sudden changes in depth, dressed up as a learned model.
+- **Two glasses at the same distance separate by nothing.** Twenty millimetres
+  apart they separate by 2.6 pixels. They are the same kind, so there is no clue
+  in how they look either.
+- **It says which pixels go together, not how many glasses there are.**
+  Something still has to choose the number of groups, and choosing too few is
+  the merge this problem fears.
+- **The photometric loss needs variation in brightness**, and it is weakest
+  exactly where the glasses are plainest.
+- **Change the lighting or the kind** and the learned embedding describes a cell
+  that no longer exists.
+- **A merged pair comes back as one tidy region with no complaint**, so the
+  circle-fit check afterwards is not optional.
+- **The cell already has a depth camera**, which measures directly what parallax
+  is being trained to infer. So this does not earn its place here. It earns it
+  on problem 4, where the kinds are open, or on the day depth fails on real
+  glassware.
+- It competes with the other two learned deciders, leans on *cluster on the
+  table*, and loops the way *move the camera* does.
 
 ## The general methods behind this
 

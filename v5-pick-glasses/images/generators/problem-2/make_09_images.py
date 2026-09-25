@@ -187,8 +187,8 @@ def two_views_parallax() -> None:
     axis.add_patch(Circle(far_xy, 0.26, facecolor=WARN, edgecolor=WARN, alpha=0.30, linewidth=1.6))
     axis.text(2.45, 3.05, "A", ha="center", va="center", fontsize=LABEL_SIZE, color=INK, weight="bold")
     axis.text(2.85, 4.45, "B", ha="center", va="center", fontsize=LABEL_SIZE, color=INK, weight="bold")
-    axis.text(2.90, 2.78, "500 mm away", ha="left", va="center", fontsize=NOTE_SIZE, color=INK)
-    axis.text(3.22, 4.45, "650 mm away", ha="left", va="center", fontsize=NOTE_SIZE, color=INK)
+    axis.text(2.90, 2.78, "380 mm away", ha="left", va="center", fontsize=NOTE_SIZE, color=INK)
+    axis.text(3.22, 4.45, "560 mm away", ha="left", va="center", fontsize=NOTE_SIZE, color=INK)
 
     for x, name in ((1.75, "picture 1"), (3.15, "picture 2")):
         axis.add_patch(
@@ -243,8 +243,8 @@ def two_views_parallax() -> None:
         axis.text(left + frame_width / 2, 2.44, title, ha="center", va="center", fontsize=NOTE_SIZE,
                   color=INK)
 
-        moved_a = 0.0 if index == 0 else -shift_px(500.0) * per_pixel
-        moved_b = 0.0 if index == 0 else -shift_px(650.0) * per_pixel
+        moved_a = 0.0 if index == 0 else -shift_px(380.0) * per_pixel
+        moved_b = 0.0 if index == 0 else -shift_px(560.0) * per_pixel
         x_a, x_b = left + a_at + moved_a, left + b_at + moved_b
         tumbler(axis, x_a, 3.24, 1.02, 0.46, colour=GLASS)
         tumbler(axis, x_b, 3.52, 0.78, 0.38, colour=WARN, alpha=0.30)
@@ -257,19 +257,19 @@ def two_views_parallax() -> None:
                   fontsize=NOTE_SIZE, color=INK)
 
     second = 8.15
-    arrow(axis, (second + a_at, 5.06), (second + a_at - shift_px(500.0) * per_pixel, 5.06),
+    arrow(axis, (second + a_at, 5.06), (second + a_at - shift_px(380.0) * per_pixel, 5.06),
           colour=GLASS, width=1.6)
-    axis.text(second + a_at + 0.12, 5.06, "A moves 66 px", ha="left", va="center", fontsize=NOTE_SIZE,
+    axis.text(second + a_at + 0.12, 5.06, "A moves 87 px", ha="left", va="center", fontsize=NOTE_SIZE,
               color=GLASS, weight="bold")
-    arrow(axis, (second + b_at, 4.84), (second + b_at - shift_px(650.0) * per_pixel, 4.84),
+    arrow(axis, (second + b_at, 4.84), (second + b_at - shift_px(560.0) * per_pixel, 4.84),
           colour=WARN, width=1.6)
-    axis.text(second + b_at + 0.12, 4.84, "B moves 51 px", ha="left", va="center", fontsize=NOTE_SIZE,
+    axis.text(second + b_at + 0.12, 4.84, "B moves 59 px", ha="left", va="center", fontsize=NOTE_SIZE,
               color=WARN, weight="bold")
 
     axis.text(
         8.35,
         1.55,
-        "Every pixel of A moves by the same 66 px; every pixel of B by the same 51 px.\n"
+        "Every pixel of A moves by the same 87 px; every pixel of B by the same 59 px.\n"
         "So the gap between them grows by 15 px — and moving together is the only thing that\n"
         "marks them as two objects, because their colour is identical.\n"
         "That agreement is the label, and neither a human nor the simulator wrote it.",
@@ -334,7 +334,7 @@ def embedding_space() -> None:
     axis.text(
         2.20,
         0.98,
-        "pixels 1 and 2 shift by 66 px;\npixels 3 and 4 shift by 51 px",
+        "pixels 1 and 2 shift by 87 px;\npixels 3 and 4 shift by 59 px",
         ha="center",
         va="center",
         fontsize=NOTE_SIZE,
