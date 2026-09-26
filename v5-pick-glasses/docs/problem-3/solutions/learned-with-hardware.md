@@ -37,10 +37,16 @@ different *setup*: a graphics card, or a camera on a real table, or both.
 
 ## Learn to push
 
-> **Fails condition 4, badly.** About eleven days of continuous simulation for
-> one reward function, and a reward function needs several attempts. GPU-batched simulators are what make this practical elsewhere and none of them
-> runs here. *An evolutionary search over a handful of strategy parameters
-> gets some of the same benefit in hours, and it is in the main overview.*
+> **Fails condition 4, but by much less than this document first said.** The
+> figure below — eleven days for one reward function — was worked out for
+> Gazebo, and the cell has since been rebuilt in MuJoCo. Measured there, one
+> reward function is about **29 core-hours**, not eleven days. What still holds
+> is that a reward function needs several attempts, which multiplies that by
+> five or so, and that GPU-batched simulators are what make this comfortable
+> elsewhere and none of them runs here. *An evolutionary search over a handful
+> of strategy parameters gets some of the same benefit in under three
+> core-hours, and it is in
+> [solution 11](11-search-a-push-strategy.md).*
 
 *Learned, as the decider. Let the arm discover which pushes separate objects,
 by trying them in simulation and being rewarded when it works.*
@@ -141,6 +147,19 @@ build at all, and MuJoCo's batched version, MJX, wants JAX on an NVIDIA GPU or
 a TPU. Plain MuJoCo runs natively, so rebuilding the cell there is possible,
 but it buys single-world speed, not thousands of worlds. PyTorch's MPS backend
 trains a small policy network happily; the network was never the bottleneck.
+
+**That rebuild has since happened, and single-world speed turned out to be
+enough to change the answer.** Problem 3's bench, `problem-3-sim/bench.py`, is
+MuJoCo, and it has been timed rather than estimated: one push costs about a
+seventh of a second of wall clock against nearly eight seconds of simulated arm
+motion, so the physics runs fifty to a hundred times faster than real time. A
+full fifteen-push episode is about two seconds. Fifty thousand of them is
+therefore **roughly 29 hours on one core, or seven across four** — not eleven
+days. The paragraph above is kept because its reasoning is the reasoning to
+use; only its engine was wrong. [Solution
+11](11-search-a-push-strategy.md) has the measured budget, and the
+same arithmetic is what makes an evolutionary search over a few parameters an
+afternoon's work rather than a week's.
 
 Licences need the same look the grasp models get in
 [the licence picture](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/04_models-that-grasp.md#5-the-licence-picture):

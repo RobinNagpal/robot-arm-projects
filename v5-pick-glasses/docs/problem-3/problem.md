@@ -74,6 +74,15 @@ and tips above it. A 60 mm base at μ = 0.3 gives 100 mm of room to push in. A
 reach without fouling the table. So that glass cannot be pushed safely at all,
 and the only correct answer for it is to refuse.
 
+**The height to compare against is the top edge of the jaw, not the bottom.**
+The middle of the jaw rides as low as the gripper goes, 50 mm, but the jaw is
+30 mm tall, so its top edge is at 65 mm. A glass that is wider higher up meets
+that top edge before anything else touches it, and the tapered kind is wider
+higher up by definition. So `h` in the rule above is 65 mm for these glasses,
+not 50. The difference is not a detail: checked at 50 mm about three quarters
+of the kind look safe to push, and checked at 65 mm about a quarter are, with
+every one of the mistakes in the direction that topples a glass.
+
 Three things follow, and they are the shape of the problem:
 
 **The push height has to be worked out per glass**, from its measured base
