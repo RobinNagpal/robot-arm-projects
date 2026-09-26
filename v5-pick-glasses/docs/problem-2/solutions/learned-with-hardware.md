@@ -425,6 +425,11 @@ wrong place**, because the centre of the visible part is not the centre of the
 glass. And both of those errors are silent, because a wrong footprint comes back
 not as an error but as a plausible number.
 
+That failure has become much more common than it was. Because one kind now spans
+a shot glass to a large tapered glass, a large glass in front of a small one
+cuts a great deal more off it than two glasses of similar size ever did — so the
+truncated footprint is now a routine outcome rather than an unlucky one.
+
 The second half is **association**, which means deciding that a detection in one
 picture is the same physical glass as one in another. With several stations, two
 pictures each, and five glasses, there are dozens of detections and only five
@@ -572,12 +577,38 @@ hidden part is not extra machinery — **it is the measurement**. It is also the
 natural partner for the verifier on real glassware, where no depth is left to
 cluster.
 
-For this cell it is far more than the problem needs. Four to six glasses stand a
-comfortable distance apart on a bare table, and most pictures show every glass
-whole. Where one does not, solution 3 moves the camera a short way and the
-occlusion goes away, which is seconds of arm time against two trained models. It
-earns its place when the arm *cannot* reach a clear viewpoint, and here it
-usually can.
+**This assessment has changed, and it is the one place in this document where
+the change of problem promotes an approach rather than leaving it where it
+was.**
+
+It used to be true that most pictures showed every glass whole, because the
+glasses were all roughly the same size and stood a comfortable distance apart.
+That is no longer true. One kind now spans a tapered shot glass at one end and a
+large tapered glass at the other, so a large glass standing in front of a small
+one hides a great deal more of it than a glass of its own size would. **Partly
+hidden objects are the normal case in this problem now, not the accident.**
+
+That matters because of the failure described above: a mask cut short gives a
+circle too small and in the wrong place, with a plausible width and a small fit
+error, so the check that was supposed to catch it passes instead. The more often
+objects are partly hidden, the more often that failure is available — and
+predicting the whole extent is the only approach in this entire set that attacks
+it directly.
+
+So this is now the closest learned answer to a real and common difficulty in
+this problem, rather than a heavyweight answer to a rare one. What still keeps
+it out is only the training setup: real-image backbones and days of machine
+time.
+
+One limit is worth stating plainly so that nobody expects more of it than it can
+give. **It cannot complete what it cannot see at all.** If a large glass covers
+a small one completely, there are no visible pixels of the small glass, so there
+is no partial evidence to extend and nothing for the model to work from.
+Complete occlusion is not an amodal problem; it is a geometry problem, and the
+argument about where an object could have been hiding — in [solution
+2](02-cluster-on-the-table.md) — is what answers it. Predicting hidden extents
+handles the large middle ground between fully visible and entirely absent, which
+is exactly where most of this problem now lives.
 
 ---
 
@@ -587,9 +618,9 @@ usually can.
 > what makes it frustrating. The cost is throughput: thousands of simulator
 > resets and days of machine time, and the usual escape — a simulator running
 > on a graphics card with thousands of worlds at once — is exactly what this
-> machine cannot do. *A supervised version of the same idea, which predicts whether a
-> viewpoint will pay off rather than learning a policy, does fit, and it is in
-> the main overview as [solution 6](06-learn-which-viewpoints-pay-off.md).*
+> machine cannot do. *A supervised version of the same idea, which predicts
+> whether a viewpoint will pay off rather than learning a policy, does fit, and it
+> is in the main overview as [solution 6](06-learn-which-viewpoints-pay-off.md).*
 
 *Learned, as the decider, and a closed loop by construction. A policy takes the
 current belief about the table and outputs where to point the camera next.*
