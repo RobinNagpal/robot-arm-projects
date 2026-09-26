@@ -23,15 +23,15 @@ deliberate.
 
 **The kind is tapered, and its range of sizes is wide.** Tapered means the rim
 is wider than the base, so the glass opens outwards as it rises. The range runs
-from a tapered shot glass at one end to a large tapered glass at the other, so
-two glasses of the *same kind* can differ several times over in height and more
-than twice over in width. That is unusual — most of this project's kinds are
-narrow — and the next section is what it causes.
+from a small tapered glass at one end to a large one at the other, and the tall
+end is more than twice the height of the short end. It is the widest range of
+any kind in this cell, and the next section is what that width causes.
 
-**They stand apart, but not comfortably apart.** There is a guaranteed smallest
-gap between the centres of any two glasses, and it is wide enough that the two
-widest glasses of the kind still leave a strip of bare table between their rims.
-So no two glasses ever touch. But that strip is narrow, which matters later.
+**They stand apart.** There is a guaranteed smallest gap between the centres of
+any two glasses, and it is wide enough that even the two widest glasses of the
+kind leave a clear strip of bare table between their rims, so no two glasses
+ever touch. Separating glasses that touch is [problem
+3](../problem-3/problem.md).
 
 ## What is asked for
 
@@ -162,15 +162,6 @@ to place what was seen, a way to work out what could not have been seen, and a
 way to go and look again. Any solution that supplies only the first of those has
 answered the easy difficulty.
 
-There is one more consequence, and it is a tightening rather than a new
-difficulty. Because the guaranteed gap is only wide enough to leave a narrow
-strip of bare table between the two widest glasses of the kind, the one free
-choice in the usual grouping method — how close two points have to be to count
-as the same object — no longer sits in a comfortably wide window. It has to be
-derived from the widest rim and the guaranteed gap, and then checked against how
-far apart the measured points actually fall. What used to be a safe constant is
-now a calculation with two sides to it.
-
 ## What is deliberately not in this problem
 
 **Naming the kind.** The glasses are all of the same kind and that kind is
@@ -216,12 +207,18 @@ glass could have been hiding.
 
 ## A note on the cell's own settings
 
-This specification describes a wider range of sizes and a smaller guaranteed gap
-than the cell's spawner currently produces. The spawner's range for this kind
-and its minimum separation both need widening and narrowing respectively to
-match what is written here, and the grouping distance in the perception code
-needs re-deriving against the new gap. Until that is done, the documents
-describe the problem and the code produces an easier one.
+The range of sizes and the guaranteed gap described here are the ones the cell
+actually uses, and both are recorded in [the cell](../the-cell.md) together with
+the file that holds them. The tapered kind is the widest of the four kinds on
+purpose, because a narrow range of sizes cannot produce the first difficulty at
+all.
+
+The short end of that range is set by two parts of the cell that have nothing to
+do with perception: below it a glass no longer clears a rack peg when it is
+stood mouth down, and the gripper can no longer close on it where the rule for
+this kind says to hold it. So the hardest arrangement this problem can be given
+is the hardest one the rest of the arm can still work with, which is the right
+place for the limit to come from.
 
 ## How it would be solved
 

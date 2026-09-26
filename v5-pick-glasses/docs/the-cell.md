@@ -46,11 +46,11 @@ these documents comes from mixing them up.
 | the frame covers | 519 by 390 mm of table | 439 by 329 mm |
 | what it is for | finding everything, roughly | measuring one glass, precisely |
 
-These two have three more beside them — over the rack, down the fingers, and
-the spot the arm waits at. All five are named and drawn in
-[Where the camera stands](#where-the-camera-stands-and-what-each-place-is-called).
-Older documents call these two the *survey pose* and the *side-on pose*; they
-are the same two places.
+These two have three more beside them — over the rack, down the fingers, and the
+spot the arm waits at. All five are named and drawn in [Where the camera
+stands](#where-the-camera-stands-and-what-each-place-is-called). Older documents
+call these two the *survey pose* and the *side-on pose*; they are the same two
+places.
 
 The 380 mm is **not a constant**. `MEASURE_STANDOFF` fixes only a floor of
 300 mm — nearer than that and a glass fills the frame before it is all in it.
@@ -73,10 +73,29 @@ different thing and is what makes the tests meaningful.
 | kind | height | across the top |
 |---|---|---|
 | straight glass | 65–170 mm | 45–90 mm |
-| tapered glass | 120–200 mm | 75–105 mm |
+| tapered glass | 90–230 mm | 65–105 mm |
 | stemmed glass | 165–230 mm | 60–100 mm |
 | short stemmed glass | 110–165 mm | 60–85 mm |
 | **all four** | **65–230 mm** | **45–105 mm** |
+
+**The tapered kind is deliberately the widest of the four, and it is worth
+knowing why.** A camera looking straight down does not draw a glass's outline
+over the glass, because the rim is nearer the lens than the table is, so the
+outline leans outwards away from the point directly below the camera, and the
+taller the glass the further out it is thrown. When one kind holds both a short
+glass and a much taller one, the tall one's outline can therefore sweep over the
+short one and cover it completely, and the short glass then appears in no
+picture at all. That is the headline difficulty of [problem
+2](problem-2/problem.md), and with a narrow range of sizes it cannot happen,
+which is why this one range is wide on purpose rather than by accident.
+
+The range is as wide as the rest of the cell allows, and two other parts of the
+cell are what set its short end. A glass shorter than this no longer clears a
+rack peg when it is stood mouth down, and the gripper can no longer close on it
+where the rule for this kind says to hold it. Neither of those has anything to
+do with perception, which is a good illustration of something this project runs
+into often: a limit on what the arm can be asked to see is frequently a limit on
+what it can be asked to do.
 
 ## The sensors
 
@@ -98,8 +117,9 @@ out where the rack is, rather than trusting that it was placed exactly.
 The camera being *on the wrist* rather than above the table is the single fact
 that shapes most of these solutions. It means the arm chooses its own
 viewpoints. It means moving the camera costs seconds of arm time. And it means
-the camera's pose is known exactly, from the joint encoders — which is what makes
-[solution 9](problem-2/solutions/09-self-supervised-from-the-arms-own-movement.md)
+the camera's pose is known exactly, from the joint encoders — which is what
+makes [solution
+9](problem-2/solutions/09-self-supervised-from-the-arms-own-movement.md)
 possible at all.
 
 ## Where the camera stands, and what each place is called
@@ -272,7 +292,7 @@ the room rather than by adjacency in the picture.
 Two different quantities get called by the same name:
 
 - the **contact patch**, where the glass actually touches the table, which is
-  30–88 mm across over the four kinds;
+  25–95 mm across over the four kinds;
 - the **flattened disc**, what you get when every point of a glass is dropped
   straight down onto the table, which is the glass's *widest* part and is
   45–105 mm across.
@@ -310,6 +330,7 @@ rather than a second copy.
 | pad | 14 × 40 mm | `arm/dimensions.py` `PAD_HEIGHT`, `PAD_LENGTH` |
 | camera | 320 × 240, 1.047 rad, 15 Hz | `arm/camera/wrist_camera.urdf.xacro` |
 | the kinds and their ranges | see above | `glasses/shapes.py` `KIND_RANGES` |
+| smallest gap between two glasses | 150 mm centre to centre | `glasses/spawn.py` `MIN_SEPARATION` |
 
 Two useful numbers are **derived**, not stored, and are recomputed every run:
 

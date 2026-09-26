@@ -167,8 +167,19 @@ KIND_RANGES: dict[str, dict[str, tuple[float, float]]] = {
         "taper": (0.02, 0.10),
     },
     "tapered_glass": {
-        "height": (0.120, 0.200),
-        "rim_diameter": (0.075, 0.105),
+        # The widest range of any kind, from a tapered shot glass up to a large
+        # tapered glass, and deliberately so. A tall glass's outline is thrown
+        # outwards when seen from above, and the taller it is the further out it
+        # goes, so a range this wide is what lets one glass cover a shorter one
+        # completely in an overhead picture. That is the headline difficulty of
+        # problem 2, and with a narrow range it cannot happen at all.
+        #
+        # The short end is as low as the rest of the cell allows: below this a
+        # glass no longer clears a rack peg when it is stood mouth down, and the
+        # gripper can no longer close on it where the rule says. Those two are
+        # what set it, not the perception problem.
+        "height": (0.090, 0.230),
+        "rim_diameter": (0.065, 0.105),
         "base_fraction": (0.38, 0.58),
     },
     "stemmed_glass": {
