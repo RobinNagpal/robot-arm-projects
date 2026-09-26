@@ -158,8 +158,8 @@ wedge pointing away from that point, so **moving the point swings every wedge**.
 An object hidden behind a taller one at one end of the slide may therefore be
 plainly visible at the other end, without the arm going anywhere new.
 
-This matters because one kind now spans a shot glass to a large tapered glass,
-so a tall glass can cover a short one completely from a given camera position.
+This matters because one kind spans a small tapered glass to a large one, so a
+tall glass can cover a short one completely from a given camera position.
 The slide does not solve that — the swing is small, because the slide is short —
 but it is coverage the survey has already paid for, and any method that treats a
 station's pictures as one viewpoint is throwing it away.

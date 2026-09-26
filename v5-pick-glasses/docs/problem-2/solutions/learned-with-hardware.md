@@ -425,10 +425,10 @@ wrong place**, because the centre of the visible part is not the centre of the
 glass. And both of those errors are silent, because a wrong footprint comes back
 not as an error but as a plausible number.
 
-That failure has become much more common than it was. Because one kind now spans
-a shot glass to a large tapered glass, a large glass in front of a small one
-cuts a great deal more off it than two glasses of similar size ever did — so the
-truncated footprint is now a routine outcome rather than an unlucky one.
+That failure is common rather than exotic in this problem. Because one kind
+spans a small tapered glass to a large one, a large glass standing in front of a
+small one cuts a great deal more off it than two glasses of similar size would,
+so a truncated footprint is a routine outcome rather than an unlucky one.
 
 The second half is **association**, which means deciding that a detection in one
 picture is the same physical glass as one in another. With several stations, two
@@ -577,16 +577,13 @@ hidden part is not extra machinery — **it is the measurement**. It is also the
 natural partner for the verifier on real glassware, where no depth is left to
 cluster.
 
-**This assessment has changed, and it is the one place in this document where
-the change of problem promotes an approach rather than leaving it where it
-was.**
+**This is the one approach in this document that the problem argues for rather
+than against, and it is worth reading closely for that reason.**
 
-It used to be true that most pictures showed every glass whole, because the
-glasses were all roughly the same size and stood a comfortable distance apart.
-That is no longer true. One kind now spans a tapered shot glass at one end and a
-large tapered glass at the other, so a large glass standing in front of a small
-one hides a great deal more of it than a glass of its own size would. **Partly
-hidden objects are the normal case in this problem now, not the accident.**
+One kind spans a small tapered glass at one end and a large one at the other, so
+a large glass standing in front of a small one hides a great deal more of it
+than a glass of its own size would. **Partly hidden objects are the normal case
+in this problem, not the accident.**
 
 That matters because of the failure described above: a mask cut short gives a
 circle too small and in the wrong place, with a plausible width and a small fit

@@ -26,24 +26,29 @@ sensors and the vocabulary — is described once in [the cell](../the-cell.md).
   techniques it is built from, with an honest note on where each one is normally
   the right tool and where it is not.
 
-  | | Solution | Family |
-  |---|---|---|
-  | 1 | [Split the blob in the picture](solutions/01-split-the-blob-in-the-picture.md) | programmed |
-  | 2 | [Cluster on the table](solutions/02-cluster-on-the-table.md) | programmed — **chosen** |
-  | 3 | [Move the camera](solutions/03-move-the-camera.md) | programmed — **chosen** |
-  | 4 | [Learned doubt steers the next picture](solutions/04-learned-doubt-steers-the-next-picture.md) | hybrid |
-  | 5 | [Is anything hiding there?](solutions/05-is-anything-hiding-there.md) | hybrid |
-  | 6 | [Learn which viewpoints pay off](solutions/06-learn-which-viewpoints-pay-off.md) | hybrid |
-  | 7 | [A segmenter trained from scratch](solutions/07-a-segmenter-trained-from-scratch.md) | learned |
-  | 8 | [Per-pixel votes for the centre](solutions/08-per-pixel-votes-for-the-centre.md) | learned |
-  | 9 | [Self-supervised from the arm's own movement](solutions/09-self-supervised-from-the-arms-own-movement.md) | learned |
+  | | Solution | Family | |---|---|---| | 1 | [Split the blob in the
+  picture](solutions/01-split-the-blob-in-the-picture.md) | programmed | | 2 |
+  [Cluster on the table](solutions/02-cluster-on-the-table.md) | programmed —
+  **chosen** | | 3 | [Move the camera](solutions/03-move-the-camera.md) |
+  programmed — **chosen** | | 4 | [Learned doubt steers the next
+  picture](solutions/04-learned-doubt-steers-the-next-picture.md) | hybrid | | 5
+  | [Is anything hiding there?](solutions/05-is-anything-hiding-there.md) |
+  hybrid | | 6 | [Learn which viewpoints pay
+  off](solutions/06-learn-which-viewpoints-pay-off.md) | hybrid | | 7 | [A
+  segmenter trained from
+  scratch](solutions/07-a-segmenter-trained-from-scratch.md) | learned | | 8 |
+  [Per-pixel votes for the
+  centre](solutions/08-per-pixel-votes-for-the-centre.md) | learned | | 9 |
+  [Self-supervised from the arm's own
+  movement](solutions/09-self-supervised-from-the-arms-own-movement.md) |
+  learned |
 
-- [**The ones that need more than a simulator**](solutions/learned-with-hardware.md) —
-  four good answers that were moved out, each with the condition it fails: a
-  promptable foundation model, a fine-tuned instance segmenter, amodal masks
-  with learned association, and an active-vision policy. None of them needs a
-  different algorithm to become usable. They need a graphics card, or a real
-  camera.
+- [**The ones that need more than a
+  simulator**](solutions/learned-with-hardware.md) — four good answers that were
+  moved out, each with the condition it fails: a promptable foundation model, a
+  fine-tuned instance segmenter, amodal masks with learned association, and an
+  active-vision policy. None of them needs a different algorithm to become
+  usable. They need a graphics card, or a real camera.
 
 ## The short version
 

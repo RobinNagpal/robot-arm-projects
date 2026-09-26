@@ -68,19 +68,15 @@ table.
 
 ### From the top it happens too, and it happens worse
 
-It used to be true that two glasses never overlapped when seen from directly
-above, and that claim is worth retiring carefully, because the reason it failed
-is the reason this problem is interesting.
+There is a tempting argument that says overlap cannot happen when the camera
+looks straight down, and it is worth following, because seeing where it breaks
+is the quickest way into this problem. The argument goes like this. Two solid
+glasses cannot pass through each other, and the problem guarantees a smallest
+gap between their centres, so there is always a strip of bare table between
+them, and seen from straight above that strip must be visible.
 
-The old argument went like this. Two solid glasses cannot pass through each
-other, and the problem guarantees a smallest gap between their centres, so there
-is always a strip of bare table between them, and seen from straight above that
-strip is visible. It was tested rather than assumed, across thousands of
-arrangements, and no pair came back joined.
-
-That argument had a hidden assumption: that the glasses were all roughly the
-same size. Once one kind spans a tapered shot glass at one end and a large
-tapered glass at the other, it fails, and here is why.
+The hidden assumption in it is that the glasses are all of a similar size.
+Inside this kind they are not, and here is what that does.
 
 ![Where the overlap actually is](../../../images/problem-2/01-where-the-overlap-is.png)
 
@@ -130,21 +126,22 @@ camera, so it cannot be seen at all.
 This is not a rare corner case. Of all the pairs we deliberately stood in line
 with the camera, the large majority came back as a single patch.
 
-The wide range of sizes inside one kind makes it worse here as well, and in the
-same two ways. A large glass standing in front of a shot glass hides far more of
-it than a glass of its own size would, so more pairs merge. And a large glass
-can hide a shot glass **completely**, in which case there is no seam to find and
-no second base to stand on — which is the case this method has to refuse rather
-than answer.
+The wide range of sizes inside one kind bites here as well, and in the same two
+ways. A large glass standing in front of a small one hides far more of it than a
+glass of its own size would, so more pairs merge. And a large glass can hide a
+small one **completely**, in which case there is no seam to find and no second
+base to stand on, which is the case this method has to refuse rather than
+answer.
 
 So the rest of this document is about the camera at the side, and about nothing
 else.
 
 ### A glass looks like a circle in one place only
 
-Before we go on, one wrong picture has to be removed, because an earlier version
-of this document was built on it. That version showed two round footprints
-overlapping each other. No camera in this cell ever sees such a thing.
+Before we go on, one tempting picture has to be put aside, because a lot of
+reasoning about this problem is built on it. The picture shows two round
+footprints overlapping each other. No camera in this cell ever sees such a
+thing.
 
 ![A standing glass is not a circle](../../../images/problem-2/01-a-glass-is-not-a-circle.png)
 
@@ -230,17 +227,18 @@ So the check is simple. If a patch is wider than the widest single glass of this
 kind could ever draw, then the patch holds more than one thing. Our merged pair
 is comfortably past that limit, so it is flagged.
 
-**But this check is no longer allowed to be the gate.** Since one kind now spans
-a shot glass to a large tapered glass, a large glass standing in front of a
-small one produces a patch of the large glass's width, which is entirely legal.
-The width check says nothing, and the two glasses are still there.
+**But this check must not be used as the gate.** Because the range of sizes
+inside one kind is wide, a large glass standing in front of a small one produces
+a patch of the large glass's width, which is entirely legal. The width check
+says nothing, and the two glasses are still there.
 
-So the width check keeps its job, which is to *notice* trouble, and loses its
-other one, which was to *start* the test. The bottom-edge test in the next three
-sections now runs on **every** patch, not only on the over-wide ones. That costs
-almost nothing — it is one pass along the bottom of a shape — and the two checks
-then fail independently, which is what you want from two checks. A patch can be
-flagged by being too wide, or by holding two places of contact, or by both.
+So the width check has exactly one job, which is to *notice* trouble, and it
+must not be given the other one of deciding whether to *start* the test. The
+bottom-edge test in the next three sections now runs on **every** patch, not
+only on the over-wide ones. That costs almost nothing — it is one pass along the
+bottom of a shape — and the two checks then fail independently, which is what
+you want from two checks. A patch can be flagged by being too wide, or by
+holding two places of contact, or by both.
 
 One detail here is easy to mistake for a fudge, so it is worth explaining. The
 limit has a small amount of slack added to it, of a pixel or two. The reason is
@@ -568,8 +566,8 @@ The wide range of sizes inside one kind makes that limit bite harder, and in a
 way worth stating separately, because it is the difference between an incomplete
 answer and a wrong one. When two glasses are of similar size, the far one's base
 usually peeks out somewhere, so the method either splits the pair or refuses.
-When a large glass stands in front of a shot glass, there may be nothing peeking
-out at all, and then the method does not refuse. It reports one glass,
+When a large glass stands in front of a much smaller one, there may be nothing
+peeking out at all, and then the method does not refuse. It reports one glass,
 confidently, because one glass is all the evidence shows. **Its refusal protects
 you only when something is visibly wrong**, and complete hiding is the case
 where nothing is.
@@ -580,11 +578,10 @@ table is flat, level, and at a known height. A table a few millimetres out of
 level moves the horizon by about a pixel, which sits inside the noise and is
 harmless, but a genuinely sloping table would not be harmless at all, because
 then the horizon would no longer be a single row. The method also only works
-with the camera at the side, looking level. That used to be no restriction at
-all, on the grounds that there was nothing to split from the top. That is no
-longer true — a tall glass can cover a short one from the top as well — but it
-remains true that this method cannot help there, because from the top there is
-no horizon and so no relationship between a place of contact and a distance.
+with the camera at the side, looking level, and that is a real restriction
+rather than a formality, because a tall glass can cover a short one from the top
+as well. This method cannot help there, because from the top there is no horizon
+and so no relationship between a place of contact and a distance.
 
 Two failure modes are worth knowing in advance. A glass cut off by the edge of
 the picture has a bottom edge that simply stops at the boundary. The

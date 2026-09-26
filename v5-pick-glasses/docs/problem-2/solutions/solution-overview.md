@@ -430,10 +430,10 @@ and then count the places the arrows point at. **Nothing has to find a boundary,
 so nothing can get a boundary wrong**, which is why this is the only method here
 that separates glasses that touch.
 
-The wide range of sizes makes it more valuable than it was, because partly
-hidden glasses are now the normal case and a crescent of pixels still votes
-towards the right centre. It is still blind to a glass that is hidden
-completely, because a glass with no pixels casts no votes.
+The wide range of sizes makes it valuable here, because partly hidden glasses
+are the normal case and a crescent of pixels still votes towards the right
+centre. It is still blind to a glass that is hidden completely, because a glass
+with no pixels casts no votes.
 
 → [the full document](08-per-pixel-votes-for-the-centre.md)
 
@@ -511,26 +511,19 @@ in the wrong place. A small share of glasses is seen from only one station, and
 those are exactly the glasses whose fitted circle is wrong in a plausible way,
 so the flag that marks them is the defence and it is not optional.
 
-**The grouping distance no longer sits in a wide window.** With the guaranteed
-gap brought down and the widest rims what they are, the worst-case strip of bare
-table between two glasses is only a few times the spacing of the measured dots.
-The distance therefore has to be derived from both sides and printed, rather
-than chosen once and then trusted.
+**The grouping distance depends on two numbers this solution does not own.** How
+close two measured dots have to be before they count as the same object sits in
+a window whose ends come from the widest rim the kind allows and the guaranteed
+gap between centres, and both of those live elsewhere. The window is wide today,
+so the value is easy to get right and just as easy to leave behind on the day
+somebody widens a kind. Deriving it and printing both ends costs nothing and is
+the only version of this that stays correct.
 
 **Two glasses that genuinely touch** leave no strip of bare table at any
 grouping distance, so distance has nothing left to say and only the fitted width
 can suspect that something is wrong. That case is [problem
 3](../../problem-3/problem.md)'s business, and it is where solution 8 would
 begin to earn its keep.
-
-## A note on the pictures in these documents
-
-Several of the diagrams in the nine documents were drawn against the previous
-version of this problem, in which the glasses were all roughly the same size.
-Their geometry is still correct, but a few of them illustrate claims the text no
-longer makes, in particular any picture asserting that two glasses inside one
-frame never merge. The text in each document stands on its own, and the diagrams
-need redrawing against the new range of sizes.
 
 ## How it would be solved
 

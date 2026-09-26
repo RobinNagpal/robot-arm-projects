@@ -50,14 +50,11 @@ patch where there are two objects.
 difficulty. It throws the pixels back onto the table as points, groups them
 there, and two objects a legal distance apart then come apart cleanly.
 
-Where the merge happens used to be a tidy story, and it is worth saying how it
-changed. It used to be that **with the camera on top** it did not happen at all,
-tested across thousands of arrangements. That claim rested on the objects being
-roughly the same size. In this problem one kind spans a tapered shot glass at
-one end and a large tapered glass at the other, and once the heights differ
-several times over, a tall object's outline is thrown outwards far enough to
-reach a short one standing well beyond it. So merging happens from the top as
-well now.
+Merging happens from both places the camera works from, and the reason differs
+between them. **From the top** it happens because the range of sizes inside one
+kind is wide: a tall object's outline is thrown outwards far enough to reach a
+short one standing well beyond it, even though the two are a legal distance
+apart on the table.
 
 The merge is still worst **from the side**, which means down low, standing back
 from the object, looking level — the position the shape measurement needs
@@ -66,10 +63,10 @@ longer confined there.
 
 ### The second difficulty is that an object can be absent altogether
 
-This difficulty is new, and it is the one that changes what this solution has to
-do.
+This is the difficulty that decides most of what this solution has to do, so it
+is worth building up carefully from the mechanism above.
 
-Take the mechanism above and push it one step further. If a tall object's
+Take that mechanism and push it one step further. If a tall object's
 outline reaches a short one it merges with it, which is loud, because the patch
 is then wider than any object of the kind can be. But if the outline covers the
 short one **entirely**, the short object contributes no pixels at all. What

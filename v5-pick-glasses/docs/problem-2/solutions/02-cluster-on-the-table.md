@@ -22,12 +22,12 @@ nothing more than how close together they are, and why fitting a circle to each
 group is what keeps the whole method honest.
 
 There is a second half to this document, and it exists because of one property
-of the glasses in this problem. Since a single kind now spans a tapered shot
-glass at one end and a large tapered glass at the other, a tall glass can cover
-a short one completely when seen from above — and a glass that produced no
-pixels cannot be found by any method that looks at pixels. So the last part of
-this document is about a different question: **not what was seen, but what could
-not have been.**
+of the glasses in this problem. Because a single kind spans a small tapered
+glass at one end and a large one at the other, a tall glass can cover a short
+one completely when seen from above — and a glass that produced no pixels cannot
+be found by any method that looks at pixels. So the last part of this document
+is about a different question: **not what was seen, but what could not have
+been.**
 
 ## The problem this solves
 
@@ -90,19 +90,12 @@ The practical result is that a tall glass's outline leans outwards, away from
 the point below the camera, and it can come to rest on top of whatever is
 standing in that direction.
 
-Now for the part that used to be different. This document used to say that splay
-never merges two glasses that are both fully inside one picture, and that was
-tested rather than assumed, across thousands of arrangements. **That claim has
-been retired**, and it is worth knowing why, because the reason is not a mistake
-in the test.
-
-The old test swept the arrangements the cell could produce at the time, and in
-all of them the glasses were of roughly similar size. This problem now puts a
-much wider range inside one kind, spanning a tapered shot glass at one end and a
-large tapered glass at the other. Once the heights differ several times over,
-the tall glass is thrown outwards a long way while the short glass beyond it is
-barely thrown at all — so the sweep can reach the short glass and pass right
-over it.
+Whether that matters depends entirely on how much the heights inside the kind
+differ, and in this problem they differ a great deal: the tall end of the
+tapered kind is more than twice the height of the short end. A tall glass is
+therefore thrown outwards a long way while a short glass standing beyond it is
+barely thrown at all, so the tall glass's outline can reach the short one and
+pass right over it.
 
 That gives two failures rather than one, and they are not equally dangerous.
 
@@ -116,10 +109,10 @@ back is one patch, of one perfectly legal width, with a clean outline. **Nothing
 about it is wrong.** The picture simply holds one glass fewer than the table
 does.
 
-The second failure is the one that changes this document, and it cannot be
-answered by grouping pixels better, because the pixels are not there to group.
-It is answered instead by a piece of arithmetic that never looks at the
-picture's contents at all, and that arithmetic has its own section below.
+The second failure cannot be answered by grouping pixels better, because the
+pixels are not there to group. It is answered instead by a piece of arithmetic
+that never looks at the picture's contents at all, and that arithmetic has its
+own section below.
 
 So the fix is not a better flood fill, however carefully it is written. The fix
 is to stop grouping in the picture.
@@ -308,34 +301,28 @@ left is the narrowest strip the method will ever be shown. If the chosen
 distance is larger than that strip, the chain hops across it and two glasses
 come back as one.
 
-How much room is there between those two limits? This used to be a comfortable
-question and it no longer is, which is worth following, because it is the second
-thing the wide size range changed.
+How much room is there between those two limits? The worst case for the ceiling
+is the guaranteed centre gap with the two **widest** glasses of the kind
+standing in it, and that strip is comfortably wider than the widest stretch in
+the dot mesh. So there is a broad window, and almost any sensible value inside
+it works.
 
-The strip in the worst case is the guaranteed centre gap with the two **widest**
-glasses of the kind standing in it. When the kind was narrow, that strip was
-many times the widest stretch in the dot mesh, so the grouping distance sat in a
-wide window and almost any sensible value worked. With the kind widened and the
-guaranteed gap brought down, the worst-case strip is only a few times the mesh
-spacing. There is still a window, and the value still sits inside it, but it is
-narrow.
+That is a reason to derive the value rather than to relax about it. The window
+is wide today because of two numbers that live in two different files, the
+widest rim this kind allows and the guaranteed gap between centres, and neither
+of them is this solution's to choose. So the grouping distance should be
+**computed** from those two and **checked from the other side as well**, against
+how far apart the measured dots actually fall, and the run should print both
+ends. A value that is derived stays correct when somebody widens a kind or moves
+the glasses closer together; a value that was typed in once goes quietly wrong
+on that day and takes a while to find.
 
-Two things follow, and both are improvements in discipline rather than
-inconveniences. The grouping distance now has to be **derived** from the widest
-rim and the guaranteed gap rather than chosen, because there is no longer enough
-slack to absorb a guess. And it has to be **checked from the other side too**,
-against how far apart the measured dots actually fall, because the floor and the
-ceiling are now close enough together that an unexpectedly stretched mesh could
-cross the value from below. What used to be a safe constant is now a calculation
-with two sides to it, and the run should print both.
-
-Within that narrower window the value is still placed deliberately **low**
-rather than in the middle, and the reason has not changed: the two mistakes are
-not equally bad. A glass split into two groups announces itself loudly, because
-both halves then fail the width check described next, since half a footprint is
-far too narrow to be a glass of this kind. Two glasses merged into one group are
-much quieter. So the setting leans towards splitting, which is the mistake that
-gets caught.
+Inside that window the value is placed deliberately **low** rather than in the
+middle, because the two mistakes are not equally bad. A glass split into two
+groups announces itself loudly, because both halves then fail the width check
+described next, since half a footprint is far too narrow to be a glass of this
+kind. Two glasses merged into one group are much quieter. So the setting leans
+towards splitting, which is the mistake that gets caught.
 
 There is also a practical point about running the rule, and it is a useful habit
 rather than a detail of this problem. Comparing every dot with every other dot
@@ -437,21 +424,20 @@ footprint is least bitten into. And a group found from one station only is
 reported as doubtful rather than as a glass, not because it is probably wrong,
 but because it has been seen once.
 
-That third rule used to be a refinement. With the wide range of sizes it is now
-**the load-bearing part of the whole method**, and the measurements in the next
-section are what promote it. Roughly two glasses in five are invisible from at
-least one of the three stations, so a single station's view of the table is
-routinely incomplete — and about one glass in twenty-five is seen from only one
-station, which means its position comes from an arc rather than a footprint.
-Those are precisely the glasses whose fitted circle is wrong in a way that looks
-plausible, so the flag that marks them is the difference between an honest
-answer and a confident one.
+That third rule is **the load-bearing part of the whole method**, and the
+measurements in the next section are what make it so. A sizeable share of
+glasses are invisible from at least one of the three stations, so a single
+station's view of the table is routinely incomplete — and a smaller share are
+seen from only one station, which means the position comes from an arc rather
+than from a whole footprint. Those are precisely the glasses whose fitted circle
+is wrong in a way that looks plausible, so the flag that marks them is the
+difference between an honest answer and a confident one.
 
 ## Working out what you could not have seen
 
 Everything so far places the glasses the pictures contain. This section is about
-the glasses they do not, and it is the part of the method the wide range of
-sizes made necessary.
+the glasses they do not, and it is the half of the method that the wide range of
+sizes inside this kind makes necessary.
 
 The problem is stated plainly enough. A tall glass's splayed outline can cover a
 short one completely, and then the short glass contributes no pixels, so there
@@ -722,7 +708,7 @@ range the kind allows. Call them G1 to G6.
 | G3 | the near corner on the other side | middling |
 | G4 | out along the far edge, away from G2 | middling |
 | G5 | the near corner on G1's side | middling |
-| G6 | on the same diagonal as G1, beyond it | **a shot glass: the smallest the kind allows** |
+| G6 | on the same diagonal as G1, beyond it | **the smallest glass the kind allows** |
 
 Two relations matter, and neither is accidental. Both are worst cases, chosen on
 purpose.
@@ -759,18 +745,19 @@ outwards, reaches the near edge of what is left of G2's. The two outlines touch,
 so the flood fill hands back one patch where there are two glasses, and the
 picture shows four blobs for five glasses.
 
-It is worth being careful about *why* this pair merges, because the reason used
-to be narrower than it is now. When every glass was roughly the same size, two
-outlines met only when one of them was half out of frame: splay pushed both
-outwards along the same diagonal and pushed the further one more, so the gap
-between them in the picture **grew** rather than closed. That is what the old
-test arrangements confirmed.
+It is worth being careful about *why* this pair merges, because two outlines can
+meet by either of two routes and they are worth keeping apart.
 
-With a wide range of sizes inside the kind, there is a second route to the same
-place, and it does not need the frame edge at all. If the nearer glass is much
+The first needs the frame edge. When two glasses of similar height stand along
+the same diagonal from the point below the camera, splay pushes both outwards
+and pushes the further one more, so the gap between them in the picture
+**grows** rather than closes, and they meet only when one of them is half out of
+frame.
+
+The second does not need the frame edge at all. If the nearer glass is much
 taller than the further one, splay pushes the near one's outline out by a large
 factor and the far one's by a small factor, so the gap between them in the
-picture **closes**. Whether two outlines meet is now a question about the
+picture **closes**. Whether two outlines meet is therefore a question about the
 difference in their heights as much as about where they stand.
 
 The merged patch runs from G1's near edge all the way to the corner of the
@@ -828,7 +815,7 @@ Count the rows of that table again. There are five, and six glasses are standing
 on the table.
 
 G6 is missing, and nothing above noticed. G1 is tall and wide and stands nearer
-the point below the camera; G6 is a shot glass standing further out along the
+the point below the camera; G6 is a small glass standing further out along the
 same diagonal. Splay throws G1's outline a long way out along that diagonal and
 barely moves G6's, so G1's outline sweeps over G6 and covers it completely. G6
 contributes no pixels, so there is no group, no fitted circle, no residual, and
@@ -845,8 +832,8 @@ G1 was found, so its position, its width and its height are all known. Its wedge
 of hidden directions can be computed, and so can the stretch of that wedge its
 outline covers. G6's position falls inside that stretch. The arithmetic does not
 know that G6 is there — it cannot — but it does know that **a patch of table the
-size of a shot glass could be standing in that wedge and would have left no
-trace.** So the patch is reported as unsearched.
+size of the kind's smallest glass could be standing in that wedge and would have
+left no trace.** So the patch is reported as unsearched.
 
 The second station then settles it. From there the point below the camera has
 moved, so G1's wedge has swung away, and G6 is plainly visible. The union of the
@@ -1100,16 +1087,15 @@ loop this solution does not have. The first is a **doubtful group**, which is an
 object whose measurement cannot be trusted, and the viewpoints worth trying are
 the ones round it. The second is an **unsearched patch**, which is a place with
 no object in it at all, and there the question is not which direction to view an
-object from but simply how to get a view of the region. That second kind of
-request is new, and it changes what solution 3 has to do.
+object from but simply how to get a view of the region. Those two requests want
+different things from solution 3.
 
 And where this solution stops, with two glasses touching, is where [problem
 3](../../problem-3/problem.md) starts.
 
 One last point about how to read this document, because it is the honest summary
-of what the change of problem did. This solution now has **two halves that share
-nothing but their inputs**. The first half places what was photographed, and it
-is the same method it always was. The second half reasons about what could not
-have been photographed, and it looks at no pixels at all. Neither half can do
-the other's job, and a run that has only the first half will be confidently
-wrong on exactly the case this problem says to watch hardest.
+of what this solution is. It has **two halves that share nothing but their
+inputs**. The first half places what was photographed. The second half reasons
+about what could not have been photographed, and it looks at no pixels at all.
+Neither half can do the other's job, and a run that has only the first half will
+be confidently wrong on exactly the case this problem says to watch hardest.
