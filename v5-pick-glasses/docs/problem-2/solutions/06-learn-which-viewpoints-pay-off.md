@@ -44,7 +44,7 @@ so a viewpoint is an arm pose, and that costs seconds of movement while the
 picture itself costs milliseconds. So the question is not *can we look again*.
 The question is **where**, given that we can only afford one or two more looks.
 
-[Solution 3](solution-overview.md#solution-3--move-the-camera) answers that
+[Solution 3](03-move-the-camera.md) answers that
 question with a rule. Throw away the poses the arm cannot reach. Throw away the
 ones looking through another glass. Of whatever is left, take the one that asks
 least of the arm's reach.
@@ -275,7 +275,7 @@ ordering needs only the ranking, so a yes-or-no target is enough to start with.
 ![The geometry vetoes, and the model only orders](../../../images/problem-2/06-veto-then-ordering.png)
 
 Before the model is consulted at all, the candidates pass through the same three
-vetoes [solution 3](solution-overview.md#solution-3--move-the-camera) uses, in
+vetoes [solution 3](03-move-the-camera.md) uses, in
 the same order, cheapest first.
 
 The **reach** veto requires the camera to land inside the band of distances the

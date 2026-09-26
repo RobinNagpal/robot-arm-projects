@@ -694,7 +694,7 @@ wrong at all, and it is the only one that could ever point at a glass nobody has
 seen.
 
 All five are the input that [move the
-camera](solution-overview.md#solution-3--move-the-camera) consumes. For the
+camera](03-move-the-camera.md) consumes. For the
 first four, that solution's job is to take a doubtful group, work out where the
 camera would have to stand for it to become clear, check that the arm can get
 there, go and look, and run the grouping again on the better picture. For the
@@ -1090,12 +1090,12 @@ and the measured table height are already there, and what this adds is the steps
 that come after them.
 
 It replaces [split the blob in the
-picture](solution-overview.md#solution-1--split-the-blob-in-the-picture), which
+picture](01-split-the-blob-in-the-picture.md), which
 attacks the same merges with a cut through the mask and so treats the symptom of
 a projection that has already lost the information.
 
 It hands two quite different things to [move the
-camera](solution-overview.md#solution-3--move-the-camera), which is the feedback
+camera](03-move-the-camera.md), which is the feedback
 loop this solution does not have. The first is a **doubtful group**, which is an
 object whose measurement cannot be trusted, and the viewpoints worth trying are
 the ones round it. The second is an **unsearched patch**, which is a place with

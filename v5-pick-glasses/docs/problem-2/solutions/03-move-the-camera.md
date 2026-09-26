@@ -46,7 +46,7 @@ The first difficulty is that a camera standing in line with two objects sees
 their outlines overlap, so the step that groups touching pixels hands back one
 patch where there are two objects.
 
-[Solution 2](solution-overview.md#solution-2--cluster-on-the-table) answers that
+[Solution 2](02-cluster-on-the-table.md) answers that
 difficulty. It throws the pixels back onto the table as points, groups them
 there, and two objects a legal distance apart then come apart cleanly.
 

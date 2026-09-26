@@ -52,7 +52,7 @@ mounted on the wrist, so choosing where it stands means choosing where the whole
 arm stands. A viewpoint has to clear the line of sight, the arm's own reach, and
 the motion planner, all at once. With five glasses on the table, a glass can end
 up with no usable viewpoint at all. [Solution
-3](solution-overview.md#solution-3--move-the-camera) works through that problem
+3](03-move-the-camera.md) works through that problem
 in detail, and this solution keeps its whole structure.
 
 The problem statement also names the failure to watch hardest, and it is worth
@@ -773,7 +773,7 @@ rather than written down in advance. The solution also **degrades to something
 that works**: without the weights file, the geometric filter still returns
 reachable, unblocked poses that the arm can hold, and sorting those by the
 printed rule is exactly [move the
-camera](solution-overview.md#solution-3--move-the-camera). Failure is bounded,
+camera](03-move-the-camera.md). Failure is bounded,
 because a bad ordering costs one wasted look and nothing else, the two caps
 bound the total waste, and neither the arm's safety nor the test that decides an
 object is resolved depends on the model at all. The labels are free, because the
