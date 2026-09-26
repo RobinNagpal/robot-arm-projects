@@ -1,8 +1,19 @@
 # Problem 2 — how it would be solved
 
+## Introduction
+
 [`problem.md`](../problem.md) says what is being asked for. This document says
-how it would be answered. It is long on purpose: the point is to compare nine
-ways of doing the job properly, not to announce one.
+how it would be answered, and it is the way into the nine solutions that follow
+it. It explains the three difficulties the problem sets, the words all nine
+documents share, the one question worth asking of any solution that contains a
+trained model, and the combination of solutions this project recommends. By the
+end you will know which document to read next and why, and you will know that
+the answer to this problem is a combination of methods rather than a choice
+between them.
+
+Each of the nine has a full document of its own, so this one does not repeat
+them. For each it says what the method is for, which difficulty it attacks, and
+when it is worth reaching for.
 
 > **The cell is described once, in [the cell](../../the-cell.md)** — the layout,
 > the two places the camera works from, from the top and from the side, all four
@@ -10,2382 +21,519 @@ ways of doing the job properly, not to announce one.
 
 ## Where we are
 
-The arm has photographed a table with four to six glasses on it. They are all
-the same kind, the kind is known, and they are opaque, so the depth camera sees
-them perfectly well.
+The arm has photographed a table with four to six glasses on it. They are all of
+one kind, the kind is known, and they are opaque, so the depth camera sees them
+perfectly well.
 
 What it has to produce is one set of pixels per glass, a place on the table for
-each, and an honest list of the ones it could not separate. It does not pick
-anything up. It does not measure a profile. Those come later, and they depend
+each, a rough width for each, and two honest statements: which glasses it could
+not separate, and where it could not have seen a glass at all. It does not pick
+anything up and it does not measure a shape. Those come later, and they depend
 on this being right, which is why a wrong answer here is expensive.
 
-Two things stand in the way. They look like one problem and they are two.
+Two properties of the arrangement create every difficulty below, and both are
+deliberate choices in the problem statement.
 
-**Glasses merge in the picture even when they are far apart on the table.** The
-method problem 1 uses returns them as a single object. Two different geometries
-cause that, and it is worth keeping them apart, because the documents below use
-both.
+**The kind is tapered and its range of sizes is wide.** Tapered means the rim is
+wider than the base, so the glass opens outwards as it rises. The range runs
+from a tapered shot glass at one end to a large tapered glass at the other, so
+two glasses of the same kind can differ several times over in height.
 
-*The camera from the side.* The camera comes down low, stands back from a glass
-and looks level at it, and two glasses line up with it. The near one simply
-hides the far one — hidden in the plain everyday sense. This is the measurement
-view, the one problem 1 takes to measure a profile, and it is the case the
-picture in [`problem.md`](../problem.md) shows.
+**The glasses stand apart, but not comfortably apart.** There is a guaranteed
+smallest gap between centres, and it is wide enough that even the two widest
+glasses of the kind leave a strip of bare table between their rims, so nothing
+ever touches. However, that strip is narrow, and a later section explains what
+that costs.
 
-*The camera from the top.* The arm lifts the camera high above the table and
-points it straight down. Here a glass does not hide another. But it does
-**splay**. The ray from the camera through a glass's rim carries on past its
-base and lands further out, so the outline comes back as a teardrop leaning away
-from the point directly under the camera. A glass with a small base can come
-back several times wider than that base.
+## The one effect behind everything
 
-Every position the survey reports carries that error, and it is a large one.
-Problem 1 measured it: a glass out to one side was reported as standing much
-further out than it really was — more than half again as far.
+Before the three difficulties, one effect needs naming, because all three of
+them come from it.
 
-**Splay does not, however, merge two legal glasses.** That was worth checking
-rather than assuming, and the answer came back clean. We tried every arrangement
-the cell's own scene generator can legally produce — thousands of them, all four
-kinds, a range of sizes, every spacing the cell allows, every angle — and
-wherever both glasses were wholly inside one frame, **not one came back as a
-single patch**.
+![Why splay happens](../../../images/splay-why-it-happens.png)
 
-The reason is the cone the camera sees through. It covers a wide piece of table
-down at table level and a much narrower one up at the height of a rim, because a
-rim has climbed most of the way from the table towards the lens. So two glasses
-far enough apart to be legal are either both in frame and plainly separate, or
-one of them is falling off the edge. A glass half out of the picture is a real
-problem — it is the one the overlapping stations and [solution
-3](#solution-3--move-the-camera) exist for — but it is not a merge.
+From the top, the arm lifts the camera high above the table and points it
+straight down. From up there a glass's outline is not drawn over the glass,
+because the rim is nearer the lens than the table is, so it is drawn larger and
+further out from the middle of the picture. The outline therefore leans
+outwards, away from the point directly below the camera, and **the taller the
+glass, the further out it is thrown**. This project calls that effect **splay**.
 
-So the two views fail differently, and the fixes do not transfer between them.
-From the side, merging is constant, and [solution
-1](#solution-1--split-the-blob-in-the-picture) exists to unpick it. From the top
-it never happens, and the difficulty there is the second one below.
+Splay has a second property that is less obvious and that the solutions lean on
+heavily. It is a **radial scaling** about the point directly below the camera,
+meaning it multiplies distance-from-that-point and size by the same factor. A
+scaling about a point leaves angles about that point unchanged, so splay never
+alters how wide a glass looks *as an angle*; it only decides how far out along
+its own direction the outline lands. That is what turns the difficulties below
+from things you can describe into things you can compute.
 
-**The camera can no longer stand wherever it likes.** Problem 1 measures a glass
-from whichever direction in a ring round it the arm can reach, and with a bare
-table several always work. With five glasses on the table, a direction has to
-clear the line of sight, the arm's own path, *and* the edge of its reach, all at
-the same time.
+## The three difficulties
+
+The difficulties are ordered here by how dangerous they are, which is not the
+order in which they are easiest to notice.
+
+### A glass can be missing from a picture altogether
+
+Put a tall glass somewhere near the middle of the picture and a short one beyond
+it. The tall one's outline sweeps a long way outwards and the short one's barely
+moves, so the sweep can pass over the short glass and cover it entirely. The
+short glass then produces no pixels at all, and the picture holds one glass of
+an entirely legal width with nothing wrong about it.
+
+This is the worst of the three, and the reason is worth stating plainly. **Every
+check in this project is a check on something that was found.** A width can be
+compared against what the kind allows, a fitted circle has a residual, and a
+group can be asked how many stations saw it. None of those exists for a glass
+that produced no pixels, so none of them can fire.
+
+### Glasses merge in the picture even when they are apart on the table
+
+![Overlapping in the picture is not touching on the table](../../../images/problem-2-merged-in-the-picture.png)
+
+If the tall glass's outline reaches the short one without covering it, the two
+outlines touch, and the step that groups touching pixels hands back a single
+patch. One patch means one glass to everything downstream.
+
+This failure is at least **loud**, because the patch is wider than any glass of
+the kind can be, so something can notice. But noticing is not separating, and
+the projection has already thrown away what would be needed to separate them,
+which is which pixels were near the camera and which were far. The fix is
+therefore not a better grouping rule in the picture; it is to stop grouping in
+the picture.
+
+### The camera can no longer stand wherever it likes
+
+![Where the camera may stand, once there are several glasses](../../../images/problem-2-where-can-the-camera-stand.png)
+
+The camera is on the wrist, so choosing where the camera stands means choosing
+where the whole arm stands. A viewpoint therefore has to clear three things at
+once: the line of sight, because a glass behind the target lands in the same
+picture; the reach, because standing well back from a glass near the edge puts
+the camera outside the working area; and the motion planner, because the path
+there may cross a glass that is in the way. Each of those alone is survivable,
+but together they can leave a glass with no usable viewpoint at all.
 
 ## The words, first
 
-Five terms are used throughout, and three of them are used loosely almost
-everywhere else. It is worth fixing them before the solutions start.
+Five terms run through all nine documents, and three of them are used loosely
+almost everywhere else, so it is worth fixing them before the solutions start.
 
-A **pixel** is one dot in a picture. This camera's pictures are small — a few
-hundred dots across, and fewer than that tall.
-
-A **mask** is a picture the same size where every pixel is just yes or no. Here,
-yes means "this pixel is part of a glass".
+A **pixel** is one dot in a picture, and a **mask** is a picture of the same
+size in which every pixel is simply yes or no. Here, yes means that the pixel is
+part of a glass.
 
 **Connected components**, also called a flood fill, is the step that turns a
 mask into separate objects. Take a yes pixel nobody has visited, spread out to
-every yes pixel touching it, and call that patch one object. Repeat. It answers
-exactly one question — *are these pixels joined?* — and it never asks anything
-else, which is the root of the first difficulty above.
+every yes pixel touching it, call that patch one object, and then repeat. It
+answers exactly one question — *are these pixels joined?* — and it never asks
+anything else, which is the root of the second difficulty above.
 
-A **point cloud** is what you get when every pixel with a depth reading is
+A **point cloud** is what you get when every pixel that has a depth reading is
 turned into a point in the room. The pixel says which direction the camera was
 looking, the depth says how far along that direction to go, and the camera's
-pose says where the direction starts. Problem 1 already does this.
+pose says where that direction starts.
 
 **Segmentation** is the word that carries three different jobs, and only one of
 them answers this problem.
 
 ![Three things the word segmentation is used for](../../../images/problem-2-three-answers.png)
 
-- **Detection** puts a rectangle round each object. Two overlapping glasses get
-  two overlapping rectangles, and the pixels in the overlap belong to both.
-- **Semantic segmentation** labels every pixel with a class. Every glass pixel
-  comes back labelled "glass", and nothing says which glass. Two overlapping
-  glasses are one region — which is the merge this problem exists to prevent.
-- **Instance segmentation** labels every pixel with a class *and* with which
-  object it belongs to. Five glasses come back as five separate masks.
+**Detection** puts a rectangle round each object, so two overlapping glasses
+give two overlapping rectangles and the pixels in the overlap belong to both.
+**Semantic segmentation** labels every pixel with a class, so every glass pixel
+comes back labelled "glass" and nothing says which glass, which makes two
+overlapping glasses into one region — exactly the merge this problem exists to
+prevent. **Instance segmentation** labels every pixel with a class *and* with
+which object it belongs to, so five glasses come back as five separate masks.
 
-Problem 2 asks for instance segmentation. Anything that gives less than that
-has not answered it.
+This problem asks for instance segmentation, and anything that gives less than
+that has not answered it.
 
 ## Three families, and what "hybrid" means
 
-Every solution below belongs to one of three families. The difference is worth
-setting out before the list, because it is not quite the difference most people
-expect.
+With the words fixed, the nine can be grouped. Every one of them belongs to one
+of three families, and the difference between the families is not quite the one
+most people expect.
 
-**Programmed.** You state the rule and the computer applies it. No training
-data, no model file, no graphics card. It runs in about a millisecond, it works
-on an object it has never seen, and when it fails you can usually find out why
-by printing one number. Its limit is that somebody has to be able to write the
-rule down, and for some questions nobody can.
+**Programmed.** You state the rule and the computer applies it. There is no
+training data, no file of weights and no graphics card. It runs in about a
+millisecond, it works on an object it has never seen before, and when it fails
+you can usually find out why by printing one number. Its limit is that somebody
+has to be able to write the rule down, and for some questions nobody can.
 
-**Learned.** The behaviour comes from numbers fitted to examples, rather than
-from a rule anybody wrote. It can do things nobody knows how to state — telling
-one object from another in a cluttered photograph, for instance. It pays for
-that with a training set, a file of weights that has to be kept in step with the
-world, hardware to run it on, and an answer that cannot explain itself.
+**Learned.** The behaviour comes from numbers fitted to examples rather than
+from a rule anybody wrote, so it can do things nobody knows how to state. It
+pays for that with a training set, a file of weights that has to be kept in step
+with the world, hardware to run it on, and an answer that cannot explain itself.
 
-**Hybrid.** Both, arranged so that the learned part sits inside something
-checkable.
+**Hybrid.** Both together, arranged so that the learned part sits inside
+something checkable.
+
+### The question to ask of any hybrid
 
 The interesting question about a hybrid is not how much of it is learned. It is
 **where the learned part sits**, because that is what decides what happens when
-the model is wrong — and a model is wrong sometimes, by construction.
+the model is wrong, and a model is wrong sometimes by construction.
 
 ![Where the learned part sits decides what happens when it is wrong](../../../images/where-the-learned-part-sits.png)
 
-There are four positions, and only the first is what most people picture when
-they hear "we used a model".
+There are four positions it can occupy, and only the first is what most people
+picture when they hear that a model was used.
 
 **As the decider.** The model takes the input and its answer is the answer. A
-wrong answer is acted on, because nothing downstream is in a position to
-disagree.
+wrong answer is acted on, because nothing further down the pipeline is in a
+position to disagree with it.
 
-**As a proposer.** The rules find candidates and hand the hard ones to the
-model; the model suggests something better; the rules then check the
-suggestion. A wrong suggestion is rejected by arithmetic, and the system falls
-back to what it had.
+**As a proposer.** The rules find the candidates and hand the hard ones to the
+model, the model suggests something better, and the rules then check the
+suggestion. A wrong suggestion is rejected by arithmetic, so the system falls
+back to what it already had.
 
-**As a ranker.** The rules generate every candidate *and* veto the unsafe ones.
-The model only puts the survivors in order. A bad ordering costs one wasted
-attempt. It cannot cost anything worse, because every candidate had already
-passed the safety checks before the model saw it.
+**As a ranker.** The rules generate every candidate *and* reject the unsafe
+ones, and the model only puts the survivors in order. A bad ordering costs one
+wasted attempt and cannot cost anything worse, because every candidate had
+already passed the safety checks before the model saw it.
 
-**As a verifier.** The rules act, and the model's job is to check what actually
-happened. A wrong check costs one extra measurement.
+**As a verifier.** The rules act, and the model's job is to check what happened.
+A wrong check costs one extra measurement.
 
 The last three share something worth naming, because it is the whole argument
 for hybrids in a machine that moves: **the learned part's mistakes are limited
-by something that does not need the model to be right.**
-
-That is not a claim about how good the model is. A better model makes failures
-rarer. Only the arrangement puts a ceiling on how bad they can get.
+by something that does not need the model to be right.** That is not a claim
+about how good the model is. A better model makes failures rarer; only the
+arrangement puts a ceiling on how bad they can get.
 
 One practical consequence is worth having in mind while reading. A hybrid is
-usually *cheaper* than a fully learned solution, not more expensive, because the
-learned piece has one narrow job. Learning "is this one object or two?" needs a
-fraction of the data that learning "find all the objects" needs, and it trains
-on a laptop.
+usually *cheaper* than a fully learned solution rather than more expensive,
+because the learned piece has one narrow job. Learning "is this one object or
+two?" needs a small fraction of the data that learning "find all the objects"
+needs, and it trains on an ordinary laptop.
 
 ## Feedback: choosing what to measure next
 
-The second theme running through what follows is that **the number of
-measurements does not have to be decided in advance.**
+The second theme running through the nine is that **the number of measurements
+does not have to be decided in advance.**
 
 ![Deciding what to measure next, rather than measuring once](../../../images/open-and-closed-loop.png)
 
-Most pipelines are open loop. Take the pictures, work everything out, act. The
-number of pictures is fixed before the run starts, so if one object turns out
-to be unclear, unclear is how it stays. Everything downstream inherits the
-doubt without being told there was one.
+Most pipelines are open loop. They take the pictures, work everything out, and
+act. The number of pictures is fixed before the run starts, so if one object
+turns out to be unclear then unclear is how it stays, and everything downstream
+inherits the doubt without ever being told there was one.
 
-A closed loop spends its measurements where they are needed. It takes a
-picture, works out what is settled and what is not, and if something is not, it
-asks a different question: *where would I have to look for this to become
-clear?* Then it goes and looks there, and repeats.
+A closed loop spends its measurements where they are needed. It takes a picture,
+works out what is settled and what is not, and when something is not it asks a
+different question: *where would I have to look for this to become clear?* Then
+it goes and looks there, and repeats. This is the same shape as any control loop
+in physics, where the next action depends on the error measured after the last
+one.
 
-Three things are needed to make that work, and a solution that has only two of
-them is not really a loop:
+Three things are needed to make that work, and a solution with only two of them
+is not really a loop.
 
-1. **A measure of doubt.** Something that distinguishes "settled" from "not
-   sure", rather than always producing an answer. A method that cannot be
-   unsure has nothing to drive the loop with.
-2. **Actions that could reduce it.** A set of measurements the arm could
-   actually take — reachable camera poses, a touch, a different angle — and
-   some way of guessing which would help.
-3. **A budget.** Every extra look costs arm time, which is by far the most
-   expensive resource here. Moving the camera and letting it settle costs
-   seconds; running any of the models below costs milliseconds. So the loop has
-   to stop, and the sensible rule is to stop when nothing is unclear *or* the
-   budget is spent, reporting whatever is still doubtful rather than guessing
-   at it.
+The first is **a measure of doubt**, meaning something that separates settled
+from not sure rather than always producing an answer. A method that cannot be
+unsure has nothing to drive a loop with.
 
-That third point reverses the instinct most programmers bring with them. The
+The second is **actions that could reduce it**, meaning a set of measurements
+the arm could actually take together with some way of guessing which of them
+would help.
+
+The third is **a budget**. Every extra look costs arm time, which is by far the
+most expensive resource here, because moving the camera and letting it settle
+costs seconds while running any of these models costs milliseconds. So the loop
+has to stop, and the sensible rule is to stop when nothing is unclear or when
+the budget is spent, reporting whatever is still doubtful rather than guessing
+at it.
+
+That third point reverses the instinct most programmers bring with them. **The
 thing to save here is not computation. It is the number of times the arm has to
-move.
+move.**
 
 ## Everything here runs in simulation
 
-One rule has been applied to every solution below, and it is worth stating
-before the list because it removed some obvious candidates.
+One rule has been applied to all nine, and it is worth stating before the list,
+because it removed some otherwise obvious candidates.
 
-**A solution is in this document only if everything it needs can be produced by
-Gazebo on the machine this project runs on** — an Apple Silicon Mac with no
-NVIDIA graphics card, no robot on a bench, and no real-world data. Four
-conditions:
+**A solution appears in this document only if everything it needs can be
+produced by the simulator on the machine this project runs on.** That machine
+has no dedicated graphics card, there is no robot on a bench, and there is no
+real-world data. Four conditions follow from that.
 
-1. **No artefact from outside.** Any model has to be trainable from what the
-   simulator renders. A downloaded file of weights fitted to photographs of the
-   real world is not reproducible here, however good it is.
-2. **No sensor the simulator does not have.** This cell has a depth camera, pad
-   contact sensors and a wrist force-torque sensor. Anything else is a purchase
-   order.
-3. **No graphics card it has not got.** Anything needing compiled CUDA kernels
-   is out.
-4. **Hours, not days.** A method needing a week of continuous simulation to
-   train cannot be iterated on, and a method you cannot iterate on will not get
-   debugged.
+There may be **no artefact from outside**, because any model has to be trainable
+from what the simulator renders, and a downloaded file of weights fitted to
+photographs of the real world is not reproducible here however good it is. There
+may be **no sensor the simulator does not have**, since this cell has a depth
+camera, contact sensors in the gripper pads and a force sensor at the wrist, and
+anything else is a purchase order rather than a solution. There may be **no
+graphics card it has not got**. And training must take **hours rather than
+days**, because a method needing a week of continuous simulation cannot be
+iterated on, and a method you cannot iterate on will not get debugged.
 
-That rule is not a view about learned methods. Several good answers fail it,
-and they are written up in full in
-[`learned-with-hardware.md`](learned-with-hardware.md) beside the condition
-each one fails — a promptable foundation model, a fine-tuned instance
-segmenter, and the rest. None of them needs a different *algorithm* to become
-usable. They need a different *setup*.
+That rule is not a view about learned methods. Several good answers fail it, and
+they are written up in full in
+[`learned-with-hardware.md`](learned-with-hardware.md) beside the condition each
+one fails. None of them needs a different algorithm to become usable; they need
+a different setup.
 
 The rule does have one consequence worth seeing coming. It pushes the learned
 solutions towards **small models trained from scratch on synthetic data**, and
-away from the fine-tune-a-big-model recipe that is the default advice
-everywhere else. For a cell that handles one kind of object, under one lighting
-setup, through one camera, that turns out to be less of a sacrifice than it
-sounds — and the sections below say where it does cost something.
-
-### What is actually installed
-
-"Runs in simulation" is not the same as "runs today", and the difference is one
-line of `pixi.toml` for some solutions and a real decision for others. What the
-environment holds right now:
-
-| Package | Installed? | Which solutions need it |
-|---|---|---|
-| NumPy | **yes** | all of them |
-| OpenCV | **yes** | 1, 3 |
-| Matplotlib | **yes** | the diagrams only |
-| SciPy | no | 4, 7 |
-| scikit-learn | no | 5, 8 |
-| PyTorch | no | 4, 5 (optional), 7, 8, 9 |
-
-Solutions 1, 2 and 3 need nothing added. Everything from 4 down starts by
-adding a dependency, and PyTorch in particular is a large one to take on for a
-cell whose chosen method is a page of NumPy. That is not an argument against
-the learned solutions — it is part of their cost, and it belongs in the
-comparison rather than being discovered later.
-
-## The nine solutions, at a glance
-
-Three programmed, three hybrid, three learned — and every one of them buildable
-inside the simulator.
-
-| | Solution | Family | Where the learned part sits | Closed loop? | Verdict |
-| --- | --- | --- | --- | --- | --- |
-| 1 | [Split the blob in the picture](#solution-1--split-the-blob-in-the-picture) | programmed | — | no | free, and the right first pass with the camera at the side |
-| 2 | [Cluster on the table](#solution-2--cluster-on-the-table) | programmed | — | no | **chosen — the core** |
-| 3 | [Move the camera](#solution-3--move-the-camera) | programmed | — | **yes** | **chosen — the loop** |
-| 4 | [Learned doubt steers the next picture](#solution-4--learned-doubt-steers-the-next-picture) | hybrid | ranker | **yes** | the richest version of solution 3 |
-| 5 | [A learned verifier over the clusters](#solution-5--a-learned-verifier-over-the-clusters) | hybrid | verifier | **yes** | **the first learned thing worth adding** |
-| 6 | [Learn which viewpoints pay off](#solution-6--learn-which-viewpoints-pay-off) | hybrid | ranker | **yes** | supervised, where solution 3 is a rule |
-| 7 | [A segmenter trained from scratch](#solution-7--a-segmenter-trained-from-scratch) | learned | decider | partly | one class, one camera, one afternoon |
-| 8 | [Per-pixel votes for the centre](#solution-8--per-pixel-votes-for-the-centre) | learned | decider | partly | the learned answer that actually separates |
-| 9 | [Self-supervised from the arm's own movement](#solution-9--self-supervised-from-the-arms-own-movement) | learned | decider | **yes** | needs no labels at all, not even the simulator's |
-
-Each is written the same way: what it is, why anyone does it like that, how it
-would work in this cell, **the feedback loop** if it has one, a worked example
-with real numbers, what it needs, what it is good and bad at, how it fails, and
-when it would be the right choice.
-
----
-
-## Solution 1 — split the blob in the picture
-
-*Programmed. Keep the mask the detector already builds. When one patch is too
-wide to be a single object, cut it in two, using nothing but the picture.*
-
-Sometimes two glasses line up with the camera. The near one stands in front of
-the far one, so in the picture they touch and look like one object. This
-solution separates them. It does not need depth, a trained model, or a second
-photograph. It works because of where the camera is standing: from the side, low
-down, looking straight ahead rather than down. The table then stretches away to
-a horizon, and **a glass that is further away has its base drawn higher up in
-the picture**. So we look along the bottom edge of the shape and find the flat
-parts. One glass gives one flat part. Two glasses at different distances give
-two flat parts at different heights, and the lower one is the nearer glass. It
-is fast enough that its cost never shows up beside the arm's, it never cuts a
-single glass in two by mistake, and it says "I cannot tell" when the far glass's
-base is hidden.
-
-**The long version:**
-[01-split-the-blob-in-the-picture.md](01-split-the-blob-in-the-picture.md) —
-this solution explained from the beginning, with diagrams.
-
-### Which view this is about
-
-This matters more than anything else in the section, because the obvious answer
-is wrong.
-
-**From the top, the case never arises.** Two solid glasses cannot pass through
-each other, and problem 2 guarantees a gap between their centres that is wider
-than any glass the cell handles — so there is always a strip of bare table
-between their footprints. Looking straight down, their silhouettes do not touch
-either. We tried every legal arrangement the scene generator can make, thousands
-of them across all four kinds, and with both glasses wholly inside one frame
-**none merged**. The cone the camera sees through covers much less table up at
-rim height than it does at table level, so two legal glasses are either both in
-frame and plainly separate, or one is falling off the edge — which the
-overlapping stations already handle.
-
-**From the side, it happens constantly.** With the camera standing back from a
-glass and looking level, a glass further back really *is* behind it. Of all the
-pairs we stood in line across the four kinds, the large majority came back as
-one patch.
-
-So this solution belongs to the camera at the side — the view
-[solution 3](#solution-3--move-the-camera) sends the camera to — and nowhere
-else.
-
-![Where the overlap actually is](../../../images/problem-2/01-where-the-overlap-is.png)
-
-### What it is
-
-Problem 1 builds a **mask**: each pixel marked yes where the point there stands
-above the table top. It then runs **connected components**: take an unvisited
-yes pixel, spread to every yes pixel touching it, call that patch one object.
-
-That answers one question — *are these pixels joined?* It never asks how wide
-the patch is. Two glasses whose silhouettes touch come back as one patch, and
-one patch means one glass downstream.
-
-This solution adds a step: when a patch is too wide to be one glass, cut it,
-using only the picture.
-
-### Why anyone does it this way
-
-Because the information is already there and costs nothing at all to read. The
-camera sits low down and points level, so the table recedes to a horizon and
-**depth is written into the picture as height**. A glass's base sits below the
-horizon by an amount that goes as one over its distance — so a nearer glass's
-base is drawn well below the horizon and a further one's noticeably closer to
-it. That difference is large, and it comes out of geometry that is fixed and
-known rather than from anything that has to be estimated.
-
-It is the same reasoning a **ground-plane assumption** does in a driving
-pipeline, where the row at which an object meets the road gives its distance.
-Robotics-basics sets out the general form in [what a single camera can and
-cannot tell
-you](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/02_sensors.md).
-This cell has an unusually clean version: a flat, level table at a known height,
-and objects that all stand on it.
-
-### The method the textbooks would reach for, and why it fails here
-
-The standard tool for splitting a clump is **watershed on the distance
-transform** — treat the patch as a landscape whose depth is each pixel's
-distance from the outside, find the deepest points, flood outwards from each
-until the floods collide. Robotics-basics sets it out under [watershed and
-GrabCut](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#15-watershed-and-grabcut).
-
-It does not work on this cell's objects, and the reason is structural rather
-than a threshold to tune. The distance transform of a **squat, round** object
-has a single peak at the middle, and two of them give two peaks with a clean
-waist between. A standing glass seen from the side is four times taller than it
-is wide, so its distance from the outside is capped by its half-width all the
-way up: the deepest set is a **ridge, not a peak**. Two overlapping ridges merge
-into one, one marker survives, and there is nothing to flood from.
-
-Measured across the four kinds, on every merged pair we could produce: watershed
-split a **handful** and left the rest as one.
-
-![Why the distance transform cannot help](../../../images/problem-2/01-the-distance-transform-fails.png)
-
-**GrabCut** refines an outline and never decides how many objects there are, so
-it belongs downstream of a split rather than in place of one.
-
-### How it would work here
-
-**1. Notice the patch is too wide.** The one number taken from outside the
-picture is the widest the known kind of glass can be. Turn it into pixels using
-the standoff the arm chose, then allow a pixel or two more, because an edge
-drawn on a grid of square pixels always rounds outward on both sides. Anything
-up to that limit is left alone.
-
-**2. Take the underside.** For every lit column, the lowest lit row.
-
-**3. Find the level stretches.** The longest runs of columns whose row stays
-constant to within a pixel, discarding any that are only a few columns long.
-Each survivor is a place where something stands on the table.
-
-**4. Two stretches far enough apart means two glasses,** and the lower one is
-the nearer one. "Far enough" is derived rather than tuned: it must be below the
-difference the smallest legal depth separation produces, so a real pair is never
-missed, and above the pixel-or-two wobble of an edge drawn on a grid, so noise
-never invents a pair. There is a wide gap between those two.
-
-![The test itself](../../../images/problem-2/01-contact-runs.png)
-
-**Why level stretches and not steps.** The obvious test — *is there a step in
-the underside?* — catches nearly every merged pair, and also splits **most
-single glasses**, because a stemmed glass's bowl overhangs its foot and so
-produces a large step in the underside all by itself. Counting level stretches
-is immune to that: however odd its shape, a glass rests on the table in exactly
-one place, so its underside has exactly one level stretch. Across single glasses
-of all four kinds, at a range of distances, it split none.
-
-**Licence.** Nothing beyond NumPy: the underside is one `argmax` per column and
-the runs are a single pass. `cv2.grabCut`, if used to tidy afterwards, is
-OpenCV, Apache-2.0.
-
-### A worked example
-
-The camera stands at the side, low down and level, back at the measuring
-standoff from glass A. Glass B stands further back along the same line of sight
-and slightly to one side — which is the only reason any of its base is visible
-at all.
-
-**What comes back.** One patch, about half again as wide as the widest glass of
-this kind could draw at this standoff. Flagged.
-
-**The underside.** Two level runs survive, one to the left and lower, one to the
-right and higher. They are separated by many times the wobble in the edge — and,
-more usefully, by close to the amount the one-line formula predicts for those
-two distances. That agreement is the real check: the runs are not merely
-different, they are different by the amount the geometry says they should be.
-
-**The answer.** Two glasses. The cut goes between the two runs, and the lower
-run is the nearer one, so the left piece is A and the right piece is B. Two
-masks and an ordering, from one photograph, in the time NumPy takes to walk a
-small array twice.
-
-**What it has not produced.** Any position in millimetres. Both pieces are still
-silhouettes, and a silhouette does not sit where its glass does — problem 1
-measured what that costs, and it overstated a distance by more than half.
-
-### What it needs
-
-The mask problem 1 already builds. One number from outside the picture — the
-widest the kind can be, which its specification holds. The standoff the camera
-used, to turn that number into pixels, which the arm knows because it chose it.
-NumPy, and not even OpenCV strictly speaking. A few dozen lines.
-
-### What it is good at
-
-It is nearly free — a fraction of a millisecond — and it adds no dependency at
-all, which everything from solution 4 onward does. **It never invents a glass:**
-not one false split across every single glass we tested it on, of all four
-kinds, and the method is built round that asymmetry on purpose, because two
-wrong positions are worse downstream than one patch honestly reported as
-unresolved. It returns the **ordering** as well as the split, which is a genuine
-extra. Every step prints. And it **needs no depth**: if the glasses become real
-glass and the depth camera returns a glass-shaped hole, every method that
-clusters points in the room stops and this one carries on, given a mask from
-colour.
-
-### What it is bad at
-
-**It cannot see a base that is hidden.** It split somewhat over half of the
-merged pairs, and the breakdown is a cliff rather than a slope: once the far
-glass is offset sideways by more than about half a glass's width it split
-**every single pair**, and below that almost none. There is no middle ground to
-tune into, because the question is only whether any of the far glass's base is
-exposed.
-
-![Where it works and where it cannot](../../../images/problem-2/01-where-it-works.png)
-
-**It gives no position.** Both pieces are silhouettes carrying the same bias
-they started with.
-
-**It assumes the table is flat, level and at a known height.** True here, and
-still three assumptions rather than facts about the world. A table a few
-millimetres out of level moves the horizon by about a pixel, which is inside the
-noise and tolerable. A genuinely sloping table would not be, because then the
-horizon is no longer one row.
-
-**It only works with the camera at the side**, looking level — which is no
-restriction at all, since from the top there is nothing to split.
-
-### How it fails
-
-**Silently, when the far base is hidden** — there is simply nothing there to
-find, and the method would say nothing about it. The width check is what
-notices. So what comes out is a flag rather than a wrong answer, which is the
-whole design.
-
-**A glass cut off by the frame edge** has an underside that ends at the
-boundary. The level-run test survives it, but the width check does not, because
-a cut-off silhouette is narrower than its glass. A patch touching the edge
-should be reported as cut off rather than measured.
-
-**Something else standing in the patch.** The method finds level stretches, not
-glasses. The rack's foot inside the same patch is a level stretch. The circle
-fit in solution 2 is the guard.
-
-**The standing objection, answered.** An earlier version of this section argued
-that a method reasoning inside the picture cannot tell a projection accident
-from two objects genuinely side by side. That is still true of the *width*
-trigger, and it is no longer true of the split: the contact rows are a
-measurement of depth, read off the picture. What remains true is that the method
-cannot choose a better viewpoint, and when the base it needs is hidden that is
-exactly what is wanted.
-
-### When it would be the right choice
-
-**First, whenever the camera is at the side**, because it is free and it
-resolves most of the pairs that line up. **Whenever there is no depth** — on
-real glassware, where clustering has nothing to cluster. **As a second
-opinion**, because it fails in different circumstances from the methods that
-reason about distance, and two methods that fail differently agreeing is worth
-more than either of them alone.
-
-Not with the camera on top, because from up there the case does not arise.
----
-
-## Solution 2 — cluster on the table
-
-*Programmed. Stop deciding which pixels go together by looking at the
-picture. Decide it by looking at where they are in the room.*
-
-A depth camera gives a distance for every pixel. That is enough to turn each
-pixel into a point in the room: the pixel tells you the direction, the depth
-tells you how far along that direction to go, and the camera's pose tells you
-where the direction starts. Once the pixels are points, the question "which
-glass is this?" stops being about the picture and becomes about distance on the
-table. So we flatten the points down onto the table, group the ones that are
-close together, fit a circle to each group, and check that circle against the
-sizes this kind of glass can be. Two glasses that touch each other in a
-photograph are still standing well apart on the table, and on the table is where
-we decide.
-
-**The long version:** [02-cluster-on-the-table.md](02-cluster-on-the-table.md) —
-this solution explained from the beginning, with diagrams.
-
-### What it is
-
-Stop deciding which pixels go together by looking at the picture. Decide it by
-looking at the table.
-
-Every pixel in a depth picture can be turned into a point in the room — the
-pixel says which direction the camera was looking, the depth says how far along
-that direction to go, and the camera's pose says where that direction starts.
-Problem 1 already does this, to find out which points are above the table top.
-
-Once the pixels are points, "which glass is this?" becomes a question about
-distance in the room rather than about neighbouring pixels. Points that are
-close together in the room are one glass. Points that are far apart are two,
-**even when they were next to each other in the picture.**
-
-Grouping points by how close they are is called **clustering**. The version
-used here is the simplest one: start with a point, take everything within a few
-millimetres of it, take everything within a few millimetres of those, and carry
-on until nothing new is added. That clump is one object. Then start again with
-a point that has not been used. It has a name — Euclidean cluster extraction —
-and one parameter, the distance that counts as "close".
-
-### Why anyone does it this way
-
-Because it is the standard recipe for a robot arm over a table, and it has been
-for twenty years. Robotics-basics sets it out as [point clouds: remove the
-plane, then
-cluster](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/03_programmed-methods.md#16-point-clouds-remove-the-plane-then-cluster):
-take the depth picture as a cloud of points, find the biggest flat surface and
-delete it — that is the table — and group what is left into clumps. Each clump
-is an object.
-
-It is the default because of what it does *not* need. No training data. No
-model file. No idea what the objects are. It works on an object the robot has
-never seen, which no model trained on fixed classes does, and it gives 3-D
-positions in metres directly, which is what the arm needs anyway.
-
-This cell gets one simplification for free. The standard recipe finds the table
-with RANSAC, a search that picks three points at random, makes the plane through
-them, counts how many other points lie on it, and keeps the best after a few
-hundred tries. Here the table is bolted to the same frame as the arm and its
-height was measured at startup, so the plane is a constant and finding it is a
-comparison rather than a search.
-
-### How it would work here
-
-Four steps, and the project already has the first.
-
-**1. Points above the table.** Unchanged from problem 1. Every pixel with a
-depth becomes a point; keep the ones standing clear of the table top and below
-the tallest glass the cell handles.
-
-**2. Group them by distance on the table.** Project each point straight down
-onto the table and group the resulting dots. Two glasses standing apart are two
-groups of dots standing apart, whatever the camera happened to be doing. The
-grouping distance has to be **smaller** than the strip of bare table between two
-glasses and **larger** than the gap between two dots on one glass. Both ends are
-derivable before the run.
-
-The floor comes from how far apart the dots on one glass are, which follows from
-how much table one pixel covers, stretched a little by any surface seen at a
-slant.
-
-The ceiling is **not** the gap problem 2 promises between glasses, and getting
-this wrong is the easy mistake. That gap is measured **centre to centre**, and
-clustering sees **edge to edge**. Take half of each glass off the centre gap and
-what is left is the narrowest strip the method will ever be shown — much less
-than the centre gap itself.
-
-There is comfortable daylight between those two limits, so the grouping distance
-is a constant sitting in a wide window rather than a knob anybody has to tune.
-
-Projecting down rather than clustering in full 3-D is done on purpose, and the
-reason is worth following. A glass is a tall thin thing. In 3-D, the top of one
-glass and the bottom of the *same* glass are separated by its whole height —
-which is **further** than the strip of bare table separating it from its
-neighbour. So the gap inside one object is bigger than the gap between two
-objects, and **no grouping distance can work at all**. Flatten the height away
-and each glass becomes a small solid disc, the strip between two discs is
-unchanged, and the ambiguity disappears completely.
-
-**3. Fit a circle to each footprint.** A glass seen from above is a circle.
-Fit one to each group's dots and you get a middle and a diameter, both better
-than the bounding box the current code uses, because a fit uses every dot
-rather than the two extreme ones.
-
-Then check the diameter. **This is the step that makes the whole thing safe,
-and it is only available because problem 2 says every glass is one known kind.**
-The kind's own specification holds the range its rim can be.
-
-Two ranges get used below and they are not the same number, so it is worth
-naming them once. **Across all four kinds** the range of possible footprint
-widths is broad — a narrow flute and a wide tumbler are very different objects —
-and that broad range is the bound anything kind-agnostic has to cover. **Within
-one kind** it is much narrower. Problem 2 says every glass on the table is one
-known kind, so the check here runs against the **narrow** range. That is exactly
-why this test is strong in problem 2, and exactly why problem 4 takes its
-strength away.
-
-A footprint outside the kind's range is not one glass. Try two circles instead.
-If two circles fit and both are in range, there were two glasses; if they are
-not, say so and move on rather than guess.
-
-#### When can a cluster actually be wrong?
-
-This is worth settling now, because it decides what the six solutions after
-this one are *for*, and it is easy to assume the wrong answer.
-
-**Two glasses cannot merge into one cluster in problem 2.** The problem
-guarantees a smallest gap between centres. Clustering works edge to edge, so the
-closest two footprints can ever come is that gap minus half of each glass — and
-even in the worst case, with the two widest glasses of a kind, what is left is
-several times the grouping distance. So grouping in the room does not merely
-*usually* work here: **given clean points, it cannot fail.** A pair standing
-closer than the guaranteed gap is [problem 3](../../problem-3/problem.md)'s
-input, and these same methods will meet that case there.
-
-So the ambiguity in problem 2 is not a merge. It is an **under-observed glass**,
-and it is quieter and more dangerous. A glass standing behind a neighbour shows
-the camera only the arc of its footprint that is not blocked. Fit a circle to
-that arc and this is the pattern that comes back:
-
-| how much of the footprint is visible | the fitted width | the fitted centre | the residual | does the range check catch it? |
+away from the fine-tune-a-large-model recipe that is the default advice
+everywhere else. For a cell that handles one kind of object under one lighting
+setup through one camera, that turns out to be less of a sacrifice than it
+sounds.
+
+There is also a practical gradient across the nine that belongs here rather than
+being discovered later. The first three need nothing added to the environment at
+all. Everything from the fourth onwards begins by adding a dependency, and the
+learned ones add a large one, which is part of their cost in a cell whose
+recommended answer is a page of arithmetic.
+
+## The nine, at a glance
+
+| # | Solution | Family | Where the model sits | Which difficulty it attacks |
 |---|---|---|---|---|
-| most of the circle | right | right | small | it passes, and **correctly** |
-| well over half | slightly narrow | slightly off | small | it passes, harmlessly |
-| about a quarter | noticeably narrow | **noticeably off** | still small | **it passes, and wrongly** |
-| a little less | narrower still | **badly off** | still small | it mostly passes |
-| a thin sliver | far too narrow | badly off | still small | it fails — **caught at last** |
-
-Read the middle row, because it is the one that matters. A glass showing about a
-quarter of its footprint fits a circle that is narrower than the truth but still
-**comfortably inside** the kind's allowed range. So the range check passes and
-the run confidently reports a glass, standing several millimetres from where it
-really is. Nothing errors anywhere.
-
-And now look at the residual column. **It barely moves down the whole table.** A
-circle fitted to an arc fits that arc *well* — an arc of a circle is, after all,
-part of a circle. So the quality of the fit does not betray the problem either.
-The range check only starts catching it when the visible arc is down to a
-sliver, by which point the reported position is badly wrong.
-
-Two things do detect it, and neither is clever. One is **how much of the circle
-the dots span**, which is a number you can compute from the dots you already
-have. The other is **disagreement between stations**, since a glass blocked from
-one station is rarely blocked from another. Both are in step 4 below.
-
-That is the real question problem 2 has to answer — not *split this blob*, but
-*which glass have I not seen enough of, and where should I stand to see more of
-it?* Solutions 3 through 6 are four answers to it.
-
-**4. Agree across stations.** The survey already visits several stations and
-merges what they saw. Ask more of it: a glass should be found in about the same
-place from more than one station, and a group seen from one station only should
-be reported as doubtful rather than as a glass. Two glasses that merge from one
-station will almost never merge from another one a good distance away.
-
-### A worked example
-
-Two glasses of one kind, standing a comfortable legal distance apart, with the
-camera in line with both.
-
-*In the picture:* one blob. Splay throws the far glass's outline outwards past
-the near one, so the two touch, and connected components returns a single object
-far wider than any glass the cell handles. Something is clearly wrong, but the
-picture cannot say **what** is wrong.
-
-*On the table:* the near glass's points land in one disc and the far glass's
-points land in another, each disc where its glass really stands. The nearest dot
-of one group is a long way from the nearest dot of the other — several times the
-grouping distance — so they are two groups, and not one.
+| 1 | [Split the blob in the picture](01-split-the-blob-in-the-picture.md) | programmed | — | the merge, mainly from the side |
+| 2 | [Cluster on the table](02-cluster-on-the-table.md) | programmed | — | the merge, **and where nobody could have seen** |
+| 3 | [Move the camera](03-move-the-camera.md) | programmed | — | no usable viewpoint, and covering unsearched places |
+| 4 | [Learned doubt steers the next picture](04-learned-doubt-steers-the-next-picture.md) | hybrid | ranker | which look to spend the budget on |
+| 5 | [Is anything hiding there?](05-is-anything-hiding-there.md) | hybrid | verifier | which unsearched place is likely occupied |
+| 6 | [Learn which viewpoints pay off](06-learn-which-viewpoints-pay-off.md) | hybrid | ranker | which look to spend the budget on |
+| 7 | [A segmenter trained from scratch](07-a-segmenter-trained-from-scratch.md) | learned | decider | finding glasses with no depth readings |
+| 8 | [Per-pixel votes for the centre](08-per-pixel-votes-for-the-centre.md) | learned | decider | separating glasses that touch |
+| 9 | [Self-supervised from the arm's own movement](09-self-supervised-from-the-arms-own-movement.md) | learned | decider | separating glasses with no labels |
+
+## The three programmed solutions
+
+### Solution 1 — split the blob in the picture
+
+Read the bottom edge of a patch and find the flat stretches along it, because a
+glass rests on the table in exactly one place, so each flat stretch is one glass
+standing on it. With the camera at the side and held level, how far below the
+horizon a base is drawn depends only on how far away the glass is, which turns
+the bottom edge of a patch into a set of distances that can be read straight off
+the picture.
+
+Its appeal is that it needs **no depth readings at all**, which matters because
+real glassware returns none. Its limit is that it cannot see a base that is
+hidden, and with the wide range of sizes a large glass can hide a small one so
+completely that the method reports one glass and is right about everything it
+was actually asked.
+
+→ [the full document](01-split-the-blob-in-the-picture.md)
+
+### Solution 2 — cluster on the table
+
+Stop deciding which pixels belong together by looking at the picture, and decide
+it by looking at where they are in the room instead. Every pixel with a depth
+reading becomes a point, the points are dropped onto the table, and dots close
+together are chained into one glass. A circle fitted to each group then gives a
+position and a width, and checking that width against the range the kind allows
+is what keeps the whole thing honest.
+
+**This solution now has a second half, and that second half is the reason the
+problem was changed.** It also works out which parts of the table could not have
+been seen. Because splay is a radial scaling and the glasses that were found
+have known positions, widths and heights, the region each found glass hides is a
+wedge with a closed form, and any part of that wedge large enough to hold the
+smallest glass of the kind is reported as an **unsearched patch**. That makes
+this the only solution here that can say anything at all about a glass nobody
+has seen.
 
-*The circle fit:* two widths, both inside the kind's range. Two glasses, at
-those two places, with a width each. Done.
+→ [the full document](02-cluster-on-the-table.md)
 
-Now the awkward case — and by the note above, it is **not** the one you would
-expect. The far glass is not merged with the near one; it is **hidden behind
-it**. Only about a quarter of its footprint reaches the camera. Those points
-cluster happily on their own, well away from the near glass's, and the circle
-fitted to them comes back inside the kind's allowed range. So the run reports
-two glasses and is quietly wrong about where the second one stands.
-
-What catches it is step 4. The dots span only a small arc of the circle where a
-clear glass spans most of it — and the next station along, from a different
-direction, sees that same glass through most of its circle and puts its middle
-somewhere else. The two stations disagree by more than depth noise can account
-for, so the glass is reported with the *better* station's fit and a note, rather
-than the average of the two. Averaging a good measurement with a bad one is how
-the bad one gets in.
-
-For completeness, here is the case everyone expects and which problem 2 never
-actually produces. Move two glasses so close that the strip between their rims
-is narrower than the grouping distance. Then they are one group. One circle
-fitted to it comes back about twice as wide as any glass of this kind can be,
-and two circles fitted to the halves both come back in range instead.
-
-That pair is real enough. But it stands closer than problem 2's floor, so it
-belongs to [problem 3](../../problem-3/problem.md), which exists to move it
-apart.
-
-### What it needs
-
-Nothing that is not already installed. NumPy for the arithmetic. The depth
-camera the cell already has. No model, no weights, no graphics card, no training
-set, and no licence question.
-
-A couple of dozen lines of new code: the projection to the table, the grouping,
-and the circle fit. Everything else exists.
-
-### What it is good at
-
-**It works on an object nobody has described.** The clustering knows nothing
-about glasses. It groups points.
-
-**It is fast and it is exact.** No inference, no sampling, no randomness. On a
-picture this size it is a few milliseconds — which, next to seconds per arm
-move, is nothing.
-
-**It fails legibly.** Every step is a number you can print. A merged pair is a
-diameter outside a range, and the report can say which range and by how much.
-
-**The circle fit turns a guess into arithmetic.** "That is too wide to be one
-glass" is a sentence with two numbers in it, and both are known.
-
-### What it is bad at
+### Solution 3 — move the camera
+
+If you cannot see something from where you are standing, walk round. The work is
+in choosing where to walk to, and three tests decide it, cheapest first: the
+arm's reach, then whether another glass would share the frame, then whether the
+planner can find a path. Everything that can reject a pose is arithmetic, and it
+all runs before the planner is asked anything.
+
+It now serves two kinds of request rather than one. A **doubtful glass** has a
+position, so the viewpoints worth trying are the ones around it. An **unsearched
+patch** has no glass in it at all, so the question becomes which fewest camera
+positions between them see every patch. That is the set cover problem, and its
+greedy method is provably close to the best possible, which is why the solution
+chooses positions for all the patches together instead of one patch at a time.
 
-**It cannot separate glasses that genuinely touch.** Distance separates them
-only where there is distance. This is the limit that problem 3 exists to remove,
-and it is a real one.
+→ [the full document](03-move-the-camera.md)
 
-**The circle fit depends on knowing the kind.** That is what makes it strong in
-problem 2 and it is exactly what problem 4 takes back. With four kinds on the
-table the range is the union of four ranges, and a footprint too wide for a
-tumbler is an ordinary wine glass foot.
+## The three hybrids
 
-**It needs depth.** Everything here begins with "turn the pixel into a point in
-the room". Real glassware returns no depth at all, and then none of this runs.
+### Solution 4 — learned doubt steers the next picture
 
-### How it fails
+Keep solution 3's structure exactly as it is, and replace only the rule that
+orders the surviving candidates with a learned estimate of how much doubt a look
+would remove. The geometry still generates the candidates and still holds every
+rejection, so a wrong prediction costs one wasted look and nothing more.
+
+Its most useful idea is that **the doubt has to be a list of measurements rather
+than one number from the model**, combined in such a way that a confident model
+cannot silence a geometric complaint. That list now has a fifth entry, the
+unsearched area, and without it the loop spends its whole budget improving
+glasses it can already see while an unseen one goes unmentioned.
+
+→ [the full document](04-learned-doubt-steers-the-next-picture.md)
+
+### Solution 5 — is anything hiding there?
+
+The geometry can say that a patch **could** be hiding a glass. It cannot say
+that one probably **is**, because the evidence bearing on that question is
+several weak pieces at once, and weighing several weak pieces is exactly what a
+fixed threshold does worst.
+
+Two things about it are worth reading even if it is never built. This verifier
+cannot be shown pixels even in principle, because the thing it is asked about is
+defined by the absence of pixels, which is a useful reminder to ask what
+evidence exists before asking what a model should look at. And its strongest
+single input comes from the **problem statement** rather than from the camera:
+the table holds four to six glasses, so finding four means two are somewhere.
+
+→ [the full document](05-is-anything-hiding-there.md)
+
+### Solution 6 — learn which viewpoints pay off
+
+Score a candidate viewpoint by the thing actually wanted, which is the chance
+that a picture from there splits an ambiguous group or finds a glass that was
+not in the list before. That question has an exact answer the simulator can look
+up, so choosing a viewpoint becomes ordinary supervised learning with labels
+that cost nothing.
 
-**Two glasses one behind the other at almost the same distance** stay one
-group, because on the table their discs overlap. The circle fit is the only
-thing that notices.
-
-**A glass at the edge of the picture** has half its points missing, and a circle
-fitted to half a disc is biased towards the half you have.
-
-**A reflection or a stray depth reading** adds dots where there is no glass. One
-stray dot inside the grouping distance joins two groups into one. Dropping
-groups below a minimum size handles most of this.
-
-**The grouping distance is still a chosen number.** It is derived rather than
-tuned, which is much better, but it works because the glasses stand apart. It
-will not work for glasses nearly touching — and producing glasses that stand
-further apart is problem 3's whole job.
-
-### When it would be the right choice
-
-Whenever the objects are opaque, standing on a known surface, and mostly not
-touching — which is to say, almost every table-top cell. It should be the first
-thing tried, and the other four solutions in this document are what to reach
-for when it is not enough: when the objects touch, when there is no depth, or
-when the viewpoint itself is the problem.
-
-![The chosen method, in three steps](../../../images/problem-2-cluster-and-fit.png)
-
----
-
-## Solution 3 — move the camera
-
-*Programmed, and a closed loop. Instead of working harder on the pictures
-you happen to have, go and take better ones — choosing where to stand by a
-rule you can print.*
-
-A camera that can move is a different instrument from one that cannot, and this
-solution treats it that way. Separating objects and finding a viewpoint are two
-different problems. If one object stands behind another, no amount of processing
-will produce the outline from the side that the next step needs. The information
-was never captured. So the arm goes and stands somewhere better. Three separate
-tests decide where: a clear line of sight, a place to stand inside the arm's
-comfortable working reach, and a path the arm can actually fly. The first two
-are arithmetic, so they run before the motion planner is asked anything at all.
-An object with no viewpoint left is not an error. It is the handover to problem
-3.
-
-**The long version:** [03-move-the-camera.md](03-move-the-camera.md) — this
-solution explained from the beginning, with diagrams.
-
-### What it is
-
-Every other approach here takes the pictures as given and works harder on them.
-This one changes the pictures.
-
-**Active perception** is the idea that a camera which can move is not the same
-instrument as one that cannot. A fixed camera receives whatever the scene sends
-it. A camera on a wrist can be *aimed*, and the aiming is part of the
-measurement. The name is from Ruzena Bajcsy's *Active Perception* (Proceedings
-of the IEEE, 1988), and the claim is that a problem unsolvable from one
-viewpoint, however clever the maths, is often easy once the camera may move.
-
-**Next best view**, usually NBV, is the loop that follows. Given what has been
-seen, and the viewpoints the camera could reach, which one next? The term is
-Connolly's, from *The Determination of Next Best Views* (ICRA, 1985).
-
-### Why anyone does it this way
-
-Because projection throws information away and only some of it can be
-recovered. [`problem.md`](../problem.md) says it plainly: two glasses in line
-with the camera land on top of each other, and the picture no longer holds
-which pixels were near and which far.
-
-*Some* of it comes back without moving. [Solution
-1](#solution-1--split-the-blob-in-the-picture) reads the contact rows and
-recovers the split in most cases. But it recovers nothing at all when the far
-glass's base is hidden behind the near one — and that is precisely the
-arrangement most in need of an answer. A camera standing well to one side simply
-**has** the fact, with no cleverness required.
-
-It is also cheap. A trained instance model wants a labelled set, weights and a
-graphics card this cell has not got. An extra viewpoint costs seconds of arm
-motion.
-
-### How it would work here
-
-An NBV loop has four parts: a **belief** about what is out there, a set of
-**candidate viewpoints**, a **score** for how much each would help, and a
-**cost** to reach it.
-
-*Belief.* The survey already builds one: every cluster has a position, a
-footprint circle and a confidence.
-
-*Candidates.* Problem 1's `_standoffs()` already makes a ring of directions
-round a glass, each at the measuring standoff, low down and level — and making
-that ring finer is free.
-
-*Score.* The textbook score is **information gain**: mark the room in small
-cubes as free, occupied or unknown, cast a ray per pixel from the candidate
-pose, and count the unknown volume it would resolve.
-[OctoMap](https://octomap.github.io/) (Hornung et al., *Autonomous Robots*,
-2013; BSD licence) is the standard implementation, and MoveIt 2 keeps one
-already, through its occupancy map monitor. Isler et al. (ICRA 2016) and
-Delmerico et al. (*Autonomous Robots*, 2018) work the variants through, and it
-is all CPU ray casting, so none of it wants CUDA.
-
-It is also more than this cell needs. With one known kind and five glasses the
-doubt is a short list of questions, mostly *have I seen enough of that glass to
-believe where it is?* So the score becomes a heuristic: prefer the viewpoint
-whose wedge holds the doubtful cluster and no other glass, then the one needing
-least reach.
-
-That tie-break has a blind spot worth naming, because it is structural rather
-than an oversight. Reach depends only on the angle between the standoff
-direction and the line out from the arm's base — so **every viewpoint has a
-mirror image with identical reach**. Whenever two candidates sit either side of
-that line, least-reach cannot separate them, however different what they would
-see. One of the two may look straight along the direction that is hiding the
-glass and learn nothing. This is the specific gap
-[solution 6](#solution-6--learn-which-viewpoints-pay-off) exists to fill, and it
-is also fixable without a model, by preferring the candidate perpendicular to
-the line joining the doubtful glass and whatever is blocking it.
-
-*How many candidates.* This turns out to matter more than anything else in the
-whole solution. The cell's `_standoffs()` offers a **coarse** ring. Measured
-over hundreds of drawn arrangements, a coarse ring leaves getting on for
-**half** of all glasses with no usable viewpoint, while a fine ring leaves only
-a small fraction.
-
-The reason is worth seeing. Measure the clear arc of directions for each glass
-in a typical five-glass scene and the arcs vary enormously — one may be wide
-enough that any ring would find it, while others are only a few degrees across.
-A coarse ring finds the wide arc reliably and the narrow ones only by luck,
-depending on where its spokes happen to fall. So **most of what this cell
-reports as "no viewpoint" is the ring running out of spokes, not the geometry
-running out of room.** Refining the ring costs arithmetic and nothing else, and
-it is the cheapest real improvement available anywhere on this page.
-
-*Cost.* The camera is on the wrist, so every viewpoint is an arm pose, and can
-be unreachable or unplannable. Test reach with inverse kinematics first —
-MoveIt 2's `setFromIK`, milliseconds — then call the planner on the survivors,
-best first.
-
-### A worked example
-
-Glass A stands about halfway out across the arm's comfortable reach. Glass B
-stands further out, at the smallest gap from A the cell allows, on the diagonal
-away from the arm.
-
-Two of the candidate directions lie **along** the line joining A and B, and both
-die on **reach** alone. Standing back from A on the far side from B puts the
-camera in close to the base, well inside the inner limit, where the arm has to
-fold over itself. Standing back on B's side puts it out past the outer limit,
-where the arm is stretched straight with nothing left over to point the wrist.
-
-The first of those was blocked as well, and it is worth saying by how much. From
-there, B's outline would cover a large part of the width of the picture, sitting
-directly behind A. Two glasses, one silhouette.
-
-Now take the direction **square across** the A–B line. The camera lands
-comfortably inside the reach band, with B right out to the side of the line of
-sight rather than along it. **That is the next best view, and pure arithmetic
-found it before the planner was asked anything at all.**
-
-### What it needs
-
-A belief to start from, which is the chicken and egg: you cannot predict what a
-viewpoint would show without knowing roughly what is on the table, and that is
-the job.
-
-Two ways out. One is to score unknown volume rather than objects: at the start
-everything is unknown, so a volumetric score works from nothing, which is what
-exploration planners such as Bircher et al.'s open-source receding-horizon NBV
-planner (ICRA 2016) do. The other is to keep the fixed opening sweep and go
-adaptive afterwards, and that is the one to use here, because the sweep already
-exists. The three stations assume nothing, cover the glass zone with overlap to
-spare, and hand back a coarse map; the next-best-view loop then runs on the
-doubtful clusters only. It is **the tail of the survey, not a replacement for
-it.**
-
-Last, a cost model. One extra look is a plan, a move, a settle, and the pair of
-pictures the parallax wants. That is about what one more station costs, which
-makes it the natural unit to count in — and the figure should be timed from
-`_survey()` rather than guessed at here. With it goes a cap: a small number of
-extra looks per cluster, stopping as soon as the circle fit passes.
-
-### What it is good at
-
-Merges caused by where the camera happened to be, which is most of them. A
-merge is an accident of geometry, and geometry is what an arm can change. The
-loop stops when the doubt is gone, so a run that stops early names the cluster
-it stopped on.
-
-### What it is bad at
-
-It is heavier than the problem needs, which is why the overview marks it *the
-right idea, more than is needed*. A bounded search with a fixed scoring rule
-gets most of the benefit, with no loop at all. It also spends arm time to buy
-certainty, and six glasses each wanting a confirming look is six extra
-stations.
-
-### How it fails
-
-**No candidate survives.** If all nine directions round a glass are out of
-reach, blocked or unplannable, the search returns nothing. That is not a
-perception failure but a fact about where the glasses stand, and the only
-remedy is to move one — the handover to
-[problem 3](../../problem-3/problem.md).
-
-**The belief is wrong where the score cannot see it.** Occlusion is predicted
-from footprint circles, so a merged pair modelled as one wide circle predicts
-its own occlusions wrongly, and the loop chooses a viewpoint that is blocked.
-
-**It thrashes.** Without the cap, a doubtful cluster pulls look after look and
-the run never ends.
-
-**Real glassware removes the belief**, which starts from depth readings that
-real glass does not give.
-
-### When it would be the right choice
-
-When scoring a viewpoint is cheap next to moving to it, and there is a
-specific, nameable doubt to settle. Here: run the fixed survey, fit circles,
-then invoke the loop only on clusters that failed the fit or were seen from one
-station. Full information gain earns its weight at problem 4, where several
-unknown kinds mean the doubt stops being a short list.
-
----
-
-## Solution 4 — learned doubt steers the next picture
-
-*Hybrid, with the model as a ranker. The fixed sweep happens first. Then a
-learned estimate of how unsure each object is decides which extra picture is
-worth taking, from candidate poses the geometry has already filtered.*
-
-The arm cannot look everywhere, so it has to choose. This solution leaves the
-geometry in charge of where the camera is allowed to stand — it must be
-reachable, not blocked, and the planner must accept it. A learned number then
-does the smaller job of saying which of the survivors is worth the seconds. That
-number estimates how much doubt a look would remove. It can never let in a pose
-the arithmetic rejected, and it can never declare an object settled. That
-ordering is what makes this a hybrid, and it is what limits the damage when the
-estimate is wrong — which is the failure the whole design is arranged around.
-
-**The long version:**
-[04-learned-doubt-steers-the-next-picture.md](04-learned-doubt-steers-the-next-picture.md)
-— this solution explained from the beginning, with diagrams.
-
-### What it is
-
-Solution 3 moves the camera by a rule somebody wrote. This one moves it by a
-number the machine learned.
-
-**Uncertainty** is a number the perception step returns beside its answer,
-saying how far to trust it. A **detection** — a rectangle round an object —
-gets one number. A **segmentation** — a yes-or-no label per pixel — gets one
-per pixel, so the doubt is itself a picture: a map of where the model is
-guessing.
-
-**Aleatoric** doubt is noise in the picture; another picture from the same place
-will not remove it. **Epistemic** doubt is the model not knowing, and a better
-picture will ([Kendall and Gal](https://arxiv.org/abs/1703.04977)). Only
-epistemic doubt is worth an arm move.
-
-The survey runs first and is not learned. Then a loop: score the reachable
-viewpoints by how much each should cut the doubt, take that picture, run the
-geometry again.
-
-### Why anyone does it this way
-
-A hand-written score can only be suspicious of what its author knew to distrust.
-A fitted score is not.
-
-The real ways to get the number:
-
-- **Predictive entropy.** A segmentation model ends in a softmax — a probability
-  per class per pixel. Entropy over those is near zero when one class wins, high
-  when two are level. One pass. But softmax scores are badly calibrated ([Guo et
-  al.](https://arxiv.org/abs/1706.04599)): a confident wrong answer gets a
-  confident low entropy.
-- **Monte Carlo dropout.** Dropout switches random units off during training.
-  Leave it on at inference, run the same picture several times, and measure the
-  spread ([Gal and Ghahramani](https://arxiv.org/abs/1506.02142); [Bayesian
-  SegNet](https://arxiv.org/abs/1511.02680) is the per-pixel version).
-- **Ensembles.** Train several copies with different random seeds and take their
-  disagreement. [Deep ensembles](https://arxiv.org/abs/1612.01474) win most
-  published comparisons and cost the most, because you pay the training bill
-  once per copy.
-- **Evidential deep learning.** The network predicts a distribution *over* the
-  class probabilities, so in one pass it can say "I have seen little like this"
-  ([Sensoy et al.](https://arxiv.org/abs/1806.01768); [Amini et
-  al.](https://arxiv.org/abs/1910.02600) for regression).
-- **Disagreement between two views.** No model at all. Segment both pictures of
-  a station, project each onto the table, and measure how far apart the two put
-  the same glass. The survey already takes both pictures, so this one is free.
-
-[PyTorch](https://github.com/pytorch/pytorch) (BSD-3-Clause) gives dropout and
-ensembles alone;
-[TorchUncertainty](https://github.com/ENSTA-U2IS-AI/torch-uncertainty) and
-[Laplace](https://github.com/aleximmer/Laplace) package the rest. Both look
-permissive, but I have not read their licence files.
-
-### How it would work here
-
-**The classical half.** The textbook score is **information gain**. Cut the room
-into cubes, each holding a probability it is occupied: a cube at 0.5 is one bit
-of doubt, a cube the map is nearly sure about almost none. Cast a ray per pixel
-from a candidate pose and add the entropy of every cube it crosses.
-[OctoMap](https://octomap.github.io/) (BSD-3) is the usual store.
-
-CPU-feasible? Comfortably. A grid fine enough to be useful over the glass zone
-comes to a few hundred thousand cubes. One candidate casts one ray per pixel,
-each crossing tens of cubes: that is milliseconds, and a whole ring of
-candidates stays well inside a second, with nothing wanting CUDA on this Apple
-Silicon Mac. **But** occupancy entropy answers the question *where is the room
-unmapped*, and the doubt here is *one glass or two* — a different question, and
-the reason the cheaper score wins.
-
-**The ordering is the whole point.** Candidates are generated and filtered
-geometrically *before* anything learned runs.
-
-1. **Generate.** `_standoffs()` makes a ring of directions round a target, each
-   at the measuring standoff, low down and level. Make the ring fine rather than
-   coarse.
-2. **Reach.** The camera lands at the cluster plus the standoff along the chosen
-   direction, and must come down inside the arm's comfortable band of distances.
-3. **Occlusion.** Reject any line of sight passing through another cluster's
-   fitted footprint circle.
-4. **Plannability.** Inverse kinematics on the survivors — MoveIt 2's
-   `setFromIK`, milliseconds each.
-
-The model scores only what is left. It never proposes a pose, only ranks ones
-the arm is known to reach — the ordering that makes this hybrid.
-
-**Training.** In: the picture, the belief, one candidate pose. Out: the expected
-drop in that object's uncertainty. Labels are free — render the view, run the
-geometry, measure the drop. [Gazebo](https://gazebosim.org/) is Apache-2.0 and
-already running, so a few thousand examples is an overnight job.
-
-### The feedback loop
-
-1. **Survey.** A few fixed stations from the top, two pictures at each. Not
-   learned: it assumes nothing, which an adaptive method cannot do from a
-   standing start.
-2. **Geometry and doubt.** Cluster, fit a circle, check the diameter. A cluster
-   is doubtful on an out-of-range circle, on two circles fitting no better, or
-   on one station only.
-3. **Choose.** Generate, filter, score, take the best.
-4. **Move, photograph, back to step 2.**
-
-It stops on no doubt left, the budget spent, or no candidate surviving — the
-handover to problem 3.
-
-### A worked example
-
-The survey finishes with one cluster per glass. Every one of them fits a circle
-**inside** the kind's allowed range, so the range check is perfectly content.
-
-What is not content is the *shape* of one of those clusters. Its dots span only
-a narrow arc of the circle where a well-seen glass spans most of it, and there
-are far fewer of them than a footprint that size should return at that height.
-It is a clean fit to a fraction of a glass — and, by the table in [solution
-2](#when-can-a-cluster-actually-be-wrong), its middle is several millimetres
-from the truth. Nothing errors. Nothing complains.
-
-**Reach.** Swinging the candidate direction round the ring moves the camera
-nearer the base or further from it, smoothly. So the reach veto keeps a
-continuous **arc** of the ring and throws away the two ends — the directions
-pointing back at the base, and the directions pointing away from it. That
-removes over half the candidates, at one square root each.
-
-**Occlusion.** A couple of the survivors would look straight through a
-neighbour. Confirming that this is a real objection: from those directions the
-neighbour's outline would cover a good fraction of the width of the picture,
-sitting on top of the target. They go.
-
-**Score.** `setFromIK` fails on one more, and the rest are scored, milliseconds
-each. The best predicts a substantial drop in the mean per-pixel doubt; the
-runner-up predicts a small one.
-
-**Move and re-run.** Plan, move, settle: seconds. Then several pictures along
-the slide rather than only two, because the arm is already there and a picture
-costs milliseconds. From the new station the glass that was showing a narrow arc
-now shows most of its circle, and its circle fits **wider** — with its middle
-several millimetres from where the first station put it. **That difference is
-the error the first fit was hiding.** Its neighbour, unblocked from both
-stations, fits the same width in the same place twice, which is what agreement
-is supposed to look like. Two glasses, both in range, and now both believed. One
-look spent.
-
-### What it needs
-
-One of the five uncertainty methods, bolted onto the segmenter in use. A scoring
-model and the simulator run behind it. The geometric filter, needed anyway. And
-a budget with arithmetic behind it. A few stations at a few seconds each is what
-the run costs today, and the whole perception step should take tens of seconds —
-so a small cap per cluster and a small cap per run roughly doubles the survey
-and still fits. Going a step higher does not fit at every plausible unit cost,
-which is why the cap is set where it is.
-
-### What it is good at
-
-It spends arm time in proportion to the doubt, which a fixed rule cannot. And it
-degrades gracefully: strip the model out and the filter still returns reachable,
-unoccluded viewpoints — the first of which is solution 3.
-
-### What it is bad at
-
-It buys a better *ordering* where the cheap rule already picks an acceptable
-viewpoint most of the time. With one known kind the doubt is a short list of
-near-identical questions, which is not where learning earns its keep.
-
-### How it fails
-
-**Confidently wrong, which is worse than uncertain.** A merged pair comes back
-as one clean mask with low entropy everywhere. Nothing is flagged, no look is
-taken, and the run reports one large glass — the failure `problem.md` watches
-hardest.
-
-Four guards, and none of them is the model:
-
-- **The geometry decides; the model only orders.** Whether a cluster is resolved
-  is the circle fit against the kind's own range, never the entropy.
-- **A floor that ignores the score.** A cluster seen from one station only gets
-  a look regardless.
-- **The model-free cross-check.** If a station's two views disagree about a
-  glass by more than depth noise allows, believe the disagreement.
-- **Calibration, measured.** Against the simulator's record of what it spawned,
-  check that the predictions it is confident about come true about as often as
-  it claims. If they do not, this is a heuristic wearing a weights file.
-
-**Out of distribution.** The model is trained on one kind, and problem 4 puts
-four on the table — an unfamiliar shape is where a miscalibrated model is most
-confident. Without the cap on extra looks, a cluster resolvable from nowhere
-pulls look after look, each scoring well and none helping.
-
-### When it would be the right choice
-
-When the doubt stops being a short list. Here it is *one glass or two*, asked
-five times, and a fixed rule answers it. At problem 4 the kind is unknown, the
-allowed diameter becomes the union of four ranges, and the doubt turns graded
-rather than binary — which is when a per-pixel map says what a threshold cannot.
-Build the filter now, and fit the model once a scored run shows where the cheap
-rule chooses wrongly.
-
----
-
-## Solution 5 — a learned verifier over the clusters
-
-*Hybrid, with the model as a verifier. Do not learn the perception. Learn the
-one question the rules are worst at — is this one object or two — on the crop
-the rules have already isolated.*
-
-Do not learn the perception. The geometry already separates almost every glass
-on the table, in millimetres you can print. What it cannot settle is the handful
-of groups on the boundary: one object, or two? So learn that one decision, from
-the thirteen numbers the circle fit has already produced. The input is small, so
-the model trains in minutes on a laptop. Its most useful answer is "I cannot
-tell", which asks the arm for one more picture. Delete the weights file and the
-geometry answers exactly as it did before.
-
-**The long version:**
-[05-a-learned-verifier-over-the-clusters.md](05-a-learned-verifier-over-the-clusters.md)
-— this solution explained from the beginning, with diagrams.
-
-### What it is
-
-Solution 2 groups points on the table and fits a circle to each footprint. The
-residue is a narrow band where the fit is *ambiguous*: one circle slightly too
-wide for the kind, or two circles that both fit badly.
-
-This does not replace the geometry. It adds a **small learned classifier** with
-one job: *is this group one object or two?* It is asked only about groups the
-geometry could not settle, using numbers it already computed.
-
-The pattern has no settled name. **Verifier**, when a cheap stage proposes and a
-second checks. **Cascade**, when cheap tests run first and the costly one only
-on survivors, as in [OpenCV's cascade
-classifier](https://docs.opencv.org/4.x/db/d28/tutorial_cascade_classifier.html).
-**Learned gating**, when a model picks a rule-based system's branch. "Residual
-learning" is used this way in talk, but in papers it means a ResNet's skip
-connections. In one sentence: **do not learn the whole task, learn the one
-decision the rules are worst at.**
-
-### Why anyone does it this way
-
-The geometry is exact, fast and inspectable, and needs no data. Its weakness is
-the threshold it has to commit to: a group a hair under the limit is one glass,
-a group a hair over it is not — **and nothing in the physical world changes at
-that limit.** So the rule is wrong in a band around its own threshold, and
-choosing the threshold more carefully only slides the band somewhere else. A
-model gives a soft boundary instead, learned from examples.
-
-A model's weaknesses are data, opacity and going stale. Ask it one binary
-question on a dozen numbers and all three shrink. Size matters too: **this is an
-Apple Silicon Mac with no NVIDIA GPU**, where a full instance model costs a day
-of fine-tuning and this forest costs seconds.
-
-### How it would work here
-
-**The input is features, not pixels.** A dozen numbers per doubtful group:
-
-- fitted diameter over the kind's mean diameter;
-- RMS residual of the one-circle fit, its worst single residual, the same for
-  the best two-circle fit, and the ratio of the two;
-- gap between the two candidate centres, in fitted radii;
-- **angular span of the dots around the fitted centre**, which is what tells a
-  whole footprint from an arc of one, and which nothing else in the pipeline
-  looks at;
-- dot count, and dots per unit area against what the camera predicts at that
-  height — which is arithmetic, because how much table one pixel covers follows
-  from the lens;
-- how many stations saw it, how far its centre moved between them, and its
-  height above the table.
-
-Features beat raw pixels here, for three reasons. They are lengths measured on
-the table, so the model never has to relearn the camera, and they do not change
-with where the arm happened to stand. A dozen numbers need hundreds of examples
-where a crop of the picture, with thousands of pixels in it, needs tens of
-thousands. And each one prints beside the answer, so a wrong call can be read.
-
-**The model.** A gradient-boosted tree or random forest from
-[scikit-learn](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.HistGradientBoostingClassifier.html)
-(BSD-3-Clause,
-[licence](https://github.com/scikit-learn/scikit-learn/blob/main/COPYING)): a
-few hundred shallow trees, seconds to train on the CPU. To use a small crop of
-the mask as well, a tiny convolutional network in
-[PyTorch](https://pytorch.org/) (BSD-3-style,
-[licence](https://github.com/pytorch/pytorch/blob/main/LICENSE)) trains in
-minutes on the Mac's MPS backend. Start with the trees.
-
-**The data.** [Gazebo](https://gazebosim.org/) (Apache-2.0) knows what it
-spawned, so every group comes labelled for nothing. Do not sample uniformly:
-spawn layouts that put one glass **behind another from a survey station** — at
-every legal separation, arranged so that the arc the camera gets runs all the
-way from a full circle down to a sliver. That whole range is where problem 2's
-ambiguity actually lives, and **not** in close pairs, which the problem does not
-allow. A few thousand rows is the order of magnitude to aim for, settled on a
-held-out set.
-
-### The feedback loop
-
-**The most useful output is not yes or no. It is "I cannot tell".**
-
-The model returns a probability, calibrated on held-out data ([scikit-learn's
-calibration guide](https://scikit-learn.org/stable/modules/calibration.html)).
-Two thresholds give three answers: one glass, two glasses, or abstain — Chow's
-**reject option** (IEEE Transactions on Information Theory, 1970, [IEEE
-Xplore](https://ieeexplore.ieee.org/document/1054406)).
-
-An abstention is a request with an address: solution 3. The two-circle fit gives
-two candidate centres, so the viewpoint that resolves them is the one
-perpendicular to the line between them — a next-best-view with no search. Take
-that picture, re-cluster, re-fit and ask again, capped at two extra looks. If it
-still abstains, the pair is reported unseparated and handed to problem 3. The
-band is a dial: wide buys certainty with arm time, narrow merges more.
-
-### A worked example
-
-A group comes back short of dots. One circle fits it at a width comfortably
-inside the kind's range, with a small residual. **Every number the geometry
-looks at is content**: the width is mid-range, the residual is about a pixel's
-worth, the fit is clean. Solution 2 would report a glass here, several
-millimetres from where it really stands, and say nothing.
-
-What the verifier sees that the range check does not: the dots span only a
-narrow arc of the fitted circle where an unblocked glass spans most of it, and
-the dot count is a fraction of what a footprint that size should return at that
-height. In other words, **a clean fit to a fraction of a glass** — which is
-exactly what a circle fitted to an arc always is.
-
-The row goes in: a mid-range width, a small residual, a narrow arc, a low dot
-count, one station only, and no second fit worth trying. It returns a
-probability **inside the reject band**, so it abstains rather than answering.
-
-The arm then takes one more picture, from the side and square round from the
-blocked direction. The same glass now shows most of its circle, and fits
-**wider**, with its middle several millimetres from where the first station put
-it. **The geometry answers on its own**, and the answer is different from the
-one that looked fine. The model's contribution was not the measurement. It was
-knowing that the first measurement was not to be trusted, and where to stand
-instead.
-
-### What it needs
-
-NumPy and scikit-learn, both BSD-3. One version-pinned weights file of a few
-hundred kilobytes, checked in beside its loader. A feature extractor,
-about thirty lines on solution 2's clustering. No GPU and no CUDA. And a hash of
-the feature list inside the model file, so adding a feature makes the loader
-refuse the old model rather than misread it.
-
-### What it is good at
-
-**It is small enough to trust, and cheap to retrain:** one binary question, a
-dozen inputs, a training set you can look at.
-
-**It degrades to the geometry.** Missing file, corrupt file, wrong feature list,
-failed import — the caller catches it and abstains on every doubtful group,
-which is what solutions 2 and 3 do today. A few more pictures, a few more
-unseparated pairs, and nothing downstream notices but the timing. A learned
-component whose worst case is the previous behaviour is a rare and valuable
-thing.
-
-**Its failures are bounded.** It cannot invent a glass, move a position or
-report a width. Those come from depth measured during the run.
-
-### What it is bad at
-
-**It is only as good as the band it is asked about.** Draw that band wrong and
-it never sees the cases that matter.
-
-**It holds a size-shaped prior.** Ratios help, but a model trained on one kind
-has learned that kind's proportions — knowledge about glass sizes in a file
-nobody can read, which the report should admit. And it does not carry into
-problem 4, where the allowed range becomes a union of ranges and the question
-changes.
-
-### How it fails
-
-**Confidently and wrongly.** A merged pair the model scores as clearly "one
-glass" is the failure to watch hardest. Miscalibration is how it arrives: a
-probability that looks decisive because the training set held too few hard
-cases.
-
-**It abstains on everything.** A change in the camera, the table height or the
-lighting shifts the features away from what it saw, every group lands in the
-band, and the arm thrashes. Loud, which is the good news.
-
-**It goes stale silently.** Change the spawner's proportion ranges and the model
-describes glasses that no longer exist. The tests still pass.
-
-### When it would be the right choice
-
-When a programmed method already gets most of the way, the residual failure is
-one nameable decision, and truth for it is cheap to generate. All three hold
-here, and that is why this beats replacing the whole perception step: a model
-owning every pixel costs thousands of labelled pictures and a day of training,
-cannot be checked, and buys an answer the geometry already gives in millimetres.
-
-It is wrong when the rules are not already close: a tie-breaker in front of a
-bad answer is still a bad answer. And it is wrong on real glassware, where there
-is no depth, no cluster and no circle to verify. That is solution 5's day.
-
----
-
-## Solution 6 — learn which viewpoints pay off
-
-*Hybrid, with the model as a ranker. Solution 3 scores a viewpoint with a rule
-somebody wrote. This predicts, from an experiment the simulator can run
-exhaustively, whether taking that picture will actually change the answer.*
-
-Three solutions here choose where to look next. They differ in what they score.
-This one scores the thing actually wanted: the chance that a picture from a
-given pose splits an ambiguous group into two glasses. That question has an
-exact answer the simulator can look up — spawn an arrangement, render from the
-pose, see whether the ambiguity went away. So choosing a viewpoint becomes
-ordinary supervised learning, on labels that are free and exact. The geometry
-still generates the candidates and still holds the veto. The model only orders
-what survives, so a bad prediction costs one wasted look.
-
-**The long version:**
-[06-learn-which-viewpoints-pay-off.md](06-learn-which-viewpoints-pay-off.md) —
-this solution explained from the beginning, with diagrams.
-
-### What it is
-
-Solutions 3 and 5 also pick where to look next, so the difference is what gets
-scored. Solution 3 scores a candidate viewpoint with a rule somebody wrote:
-prefer a clear line of sight, then least reach. Solution 4 scores it by how far
-the perception step's **uncertainty** — the number it returns beside its answer
-— should fall. This one scores neither. It predicts, directly, **whether the
-picture would change the answer**: the probability that a picture from this pose
-splits this ambiguous cluster into two circles the kind's range accepts.
-
-A simulator can look that up. Spawn an arrangement, note the ambiguous clusters,
-render from pose P, re-cluster, record whether the ambiguity went. That is the
-label: free, exact, generated overnight.
-
-### Why anyone does it this way
-
-It makes choosing a viewpoint **supervised learning** — fitting a function from
-inputs to known answers — which is the cheapest learning there is. Compare [an
-active-vision policy](learned-with-hardware.md#an-active-vision-policy). A
-policy trained by reinforcement learning must work out which look was the good
-one from a single reward at the end of an episode, and an episode means the arm
-moving several times before anything is learned: days of machine time, and a
-reward somebody must design and can get wrong. Here there is no episode and no
-reward, because the label for one look does not depend on what follows it — and
-Gazebo renders from any pose without the arm going there.
-
-### How it would work here
-
-**The target.** Binary: did the cluster become two in-range circles, yes or no.
-A scalar version — the drop in the one-circle fit's RMS residual — trains the
-same way, but an ordering needs only a ranking.
-
-**The features are geometry, not pixels.** A couple of dozen numbers per
-candidate, all of them computable **before the picture exists**: the angle
-between the line of sight and the line joining the two centres the two-circle
-fit proposed — square across being the separating direction, straight along
-being useless — and their separation measured in fitted radii; predicted
-occlusion, meaning how close the ray passes to each other cluster's centre,
-measured in that cluster's own radii; the standoff, and how the camera's
-distance from the base sits against the two ends of the comfortable band; the
-angle from the nearest view **already taken**, because a picture from almost
-where you already stood adds nothing; and the cluster's own width.
-
-Why not raw pixels? Decisively, because **the picture does not exist yet** —
-there is nothing to feed the model but predicted geometry. A couple of dozen
-numbers also need far fewer rows than a picture would, and lengths on the table
-transfer where appearance will not.
-
-**The model and the data.** A gradient-boosted tree,
-[`HistGradientBoostingClassifier`](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.HistGradientBoostingClassifier.html)
-from scikit-learn (BSD-3-Clause,
-[licence](https://github.com/scikit-learn/scikit-learn/blob/main/COPYING)),
-trains on the CPU in seconds; a small network in [PyTorch](https://pytorch.org/)
-(BSD-3-style, [licence](https://github.com/pytorch/pytorch/blob/main/LICENSE))
-handles the scalar target in minutes on the Mac's MPS backend.
-
-[Gazebo](https://gazebosim.org/) (Apache-2.0) knows what it spawned, so the
-label is read, not judged. A couple of thousand arrangements, each sweeping its
-ambiguous cluster against every pose that survives the veto, is tens of
-thousands of rows: a few hours unattended, with nothing wanting CUDA.
-
-**The ordering, which is the safety argument.** The geometry runs first and
-holds the veto: a fine ring of directions, each at the measuring standoff, low
-down and level; the reach test rejects poses outside the arm's comfortable band;
-the line-of-sight test rejects rays through another cluster's footprint;
-`setFromIK` from [MoveIt 2](https://moveit.ai/) (BSD-3-Clause) rejects what the
-arm cannot hold. **The model sees only the survivors, and only orders them**, so
-a bad prediction costs one wasted look, never an unsafe move.
-
-### The feedback loop
-
-Predict, look, and then — the part worth being concrete about — **write down
-what happened.**
-
-1. **Fit.** A cluster failing the kind's range is ambiguous.
-2. **Generate and veto.** The whole ring of candidates, filtered for reach,
-   occlusion and inverse kinematics.
-3. **Predict and order.** Score each survivor; take the highest.
-4. **Move and photograph.** Seconds for the move, then several pictures along
-   the parallax slide, since a picture costs milliseconds.
-5. **Observe.** Re-fit. Two in-range circles, or not?
-6. **Record.** One row: step 3's features, step 5's outcome.
-
-Step 6 separates this from a model trained once. **The run-time label needs no
-ground truth.** It is not *was the answer right* but *did the answer change*,
-observable in normal running. So every look the arm takes is another labelled
-example, and the predictor improves with use.
-
-Two guards. Retrain offline, never mid-run, against a held-out set and a
-calibration check ([scikit-learn's
-guide](https://scikit-learn.org/stable/modules/calibration.html)): of the looks
-the model was confident about, did about that share actually resolve? And take
-the **second**-ranked candidate now and then, because a log containing only the
-poses the model already liked teaches it nothing whatever about the rest.
-
-### A worked example
-
-An ambiguous cluster stands about halfway out across the arm's reach. One circle
-fits it about twice as wide as any glass of the kind can be; two circles fit the
-halves at plausible widths, but with their centres much **closer together** than
-any two real glasses could stand.
-
-Now the vetoes. Swinging the candidate direction round the ring carries the
-camera nearer the base and then further from it, so the reach test keeps a
-continuous arc of the ring and throws away both ends — and that alone removes
-about half the candidates. A few of the survivors would look straight through a
-neighbour, whose outline would cover a good part of the width of the picture on
-top of the target, so those go. `setFromIK` fails on one more. A handful are
-left to be scored.
-
-The best score goes to the direction **square across** the line joining the
-proposed pair: clear of every footprint, and well round from any view already
-taken. The runner-up scores far lower for one reason only — it sits close to a
-station the survey has already visited, so whatever it returns, the run has seen
-it. **That is the feature a hand-written rule has not got.**
-
-One move, a few seconds. The cluster resolves into two circles, both inside the
-kind's range, with their centres the **full** distance apart that two real
-glasses stand — not the short distance the merged view proposed. That
-under-estimate is not a mistake in the first fit; it is what a two-circle fit
-must return when the far glass is mostly hidden, since the only points it has to
-work with are on the near side. Which is the lesson this solution's features
-carry: *separation in fitted radii* is a real signal and a systematically biased
-one, and how much to trust it is exactly the kind of thing a model can learn and
-a hand-written rule cannot. A row is appended, with the outcome recorded as a
-success.
-
-### What it needs
-
-NumPy and scikit-learn, both BSD-3-Clause. A weights file of a few hundred
-kilobytes, holding a hash of the feature list so a changed feature makes the
-loader refuse rather than misread. The geometric filter, needed anyway. A log
-file. And a sweep harness over Gazebo, which is the real work.
-
-### What it is good at
-
-It optimises the thing actually wanted — a look that changes the answer —
-rather than a proxy for it, and gets most of what such a policy offers
-with no episodes, no rewards and no days of machine time. Strip it out and the
-order falls back to solution 3's rule.
-
-### What it is bad at
-
-It buys an ordering where the cheap rule already picks an acceptable viewpoint,
-which with one known kind is often. It is useless when no candidate survives the
-veto, which is what problem 3 exists for. And it needs the two-circle fit to
-state the ambiguity, so a degenerate cluster arrives half described.
-
-### How it fails
-
-**It predicts a payoff that never arrives.** One look wasted, the pair reported
-unseparated. Bounded and cheap.
-
-**It predicts no payoff anywhere**, no look is taken, and a merged pair is
-reported as one large glass — the failure `problem.md` watches hardest. The
-guard is not the model: any cluster failing the circle fit gets one look
-whatever the score.
-
-**The log is a biased sample**, holding outcomes only for poses the model
-already favoured, so retraining on it can entrench an early mistake.
-
-**It goes stale silently** when the standoff list or the spawner's ranges
-change. And real glassware removes its input altogether.
-
-### When it would be the right choice
-
-When the candidate list is long enough that the order matters, a wasted look is
-the worst outcome, and the label is exact and free. All three hold here. Even
-so, build solution 3 first and score a run: if its first choice usually resolves
-the cluster, this earns nothing — and if it does not, the data for fixing that
-is in the log already.
-
----
-
-## Solution 7 — a segmenter trained from scratch
-
-*Learned, as the decider, and trained from random initialisation on renders
-alone. One class, one kind of object, one camera — a network that only has to
-work in this cell can be small enough to train in an afternoon.*
-
-This cell does not need a general-purpose model. One class, one kind of object,
-one camera, one lighting setup, small pictures. A small network — a U-Net whose
-size follows from arithmetic on its channel widths rather than from any
-measurement — can be trained from a random start on Gazebo renders alone,
-because the simulator labels every picture exactly and for nothing. It returns a
-probability at every pixel, and the pixels it is unsure about are a reason to
-take another picture. It tells you *which pixels are glass*, but not *which
-glass*, and it learns Gazebo rather than the world.
-
-**The long version:**
-[07-a-segmenter-trained-from-scratch.md](07-a-segmenter-trained-from-scratch.md)
-— this solution explained from the beginning, with diagrams.
-
-### What it is
-
-A **neural network** is a program whose behaviour comes from numbers fitted to
-examples rather than rules anybody wrote. The numbers are **weights**: they
-start as random noise, and **training** nudges each towards the answer wanted.
-
-This one is trained from that random start on simulator renders and nothing
-else, because **this cell does not need a general-purpose model**: one kind of
-object, one camera, one lighting setup, small pictures. A network that only has
-to work here can be small, and a small one with free labels trains in an
-afternoon.
-
-### Why anyone does it this way
-
-**Fine-tuning** means taking a network somebody else trained on a large
-collection of photographs and continuing its training on your own small set. It
-is the default advice because **labelled real pictures are scarce**: somebody
-must draw round every object by hand. That does not hold here: Gazebo renders
-unlimited pictures with an exact mask per object, and with no annotator there
-is no annotator error.
-
-The borrowed weights are ruled out anyway. **Every backbone worth borrowing was
-trained on real photographs** — ImageNet and COCO classifiers, Segment
-Anything, any downloadable foundation model — and this cell has none, nor any
-real-world data. Most want CUDA too, and this is an Apple Silicon Mac with no
-NVIDIA card.
-
-### How it would work here
-
-**The architecture.** A **U-Net** (Ronneberger et al.,
-[arXiv:1505.04597](https://arxiv.org/abs/1505.04597)) is an encoder-decoder: the
-**encoder** halves the picture repeatedly while doubling the number of channels,
-so that later layers see much more of the scene at once, and the **decoder**
-doubles it back up to full size. Its crossbars are **skip connections**: each
-encoder level is copied across to the matching decoder level, so the fine detail
-lost on the way down is available again on the way back up.
-
-Four channels in — red, green, blue and depth — a couple of convolutions per
-level, a mirrored decoder, and a single-pixel convolution on top to collapse the
-channels to one probability. The total comes to a few hundred thousand weights.
-That is arithmetic on the channel widths, not a measurement, and whether they
-are *enough* is genuinely uncertain.
-
-One consequence of that arithmetic is worth carrying away: **the weight count of
-a block grows with the product of its two channel counts**, so the deep, narrow
-levels hold nearly all the weights and the first level holds almost none.
-Widening the bottom is expensive; widening the top is nearly free.
-
-**Why a small network is enough.** Capacity is needed for *variety*, and there
-is almost none here: one class, one camera, one lighting rig, and objects that
-are always upright and always opaque, varying only within one kind's range of
-shapes. A borrowed backbone would spend most of its weights on the thousand
-things this cell never contains.
-
-**What it gives, and what it does not.** A per-pixel class map is **semantic**
-segmentation: every glass pixel labelled "glass", and nothing saying which
-glass. Problem 2 wants **instance** segmentation, so the separating has to come
-from somewhere. The two cheap places to put it are a second channel predicting
-the object **boundary**, or a per-pixel **offset towards its own object's
-centre** — and offsets fail more gently, because one bad pixel in a seam
-rejoins two objects. [Solution 8](#solution-8--per-pixel-votes-for-the-centre)
-is that idea in full.
-
-**The data and the recipe.** Gazebo spawns a random scene and writes the render
-with the per-object masks it already holds. A few thousand scenes is the order
-to aim for; how many is enough is uncertain. Loss is binary cross-entropy plus
-Dice ([arXiv:1606.04797](https://arxiv.org/abs/1606.04797)), which scores
-overlap, not pixel counts. Adam, small batches, and as many passes as it takes
-until the held-out loss stops falling. [PyTorch](https://pytorch.org/)
-(BSD-3-style [licence](https://github.com/pytorch/pytorch/blob/main/LICENSE))
-with [NumPy](https://numpy.org/) and [SciPy](https://scipy.org/) (both BSD-3) is
-all it takes. Any ready-made U-Net defaults to an ImageNet encoder; that switch
-has to be off. Time on **MPS**, PyTorch's route to Apple's GPU, is
-**uncertain**: time one epoch and multiply, and expect CPU fallbacks.
-
-**Domain randomisation.** [Gazebo](https://gazebosim.org/) (Apache-2.0) will
-render the same table under the same light for ever, and a network given a
-constant will use it. Randomising (Tobin et al.,
-[arXiv:1703.06907](https://arxiv.org/abs/1703.06907)) varies everything you are
-not teaching — light, textures, glass tint, camera pose, exposure, noise, how
-many glasses and where — so shape is all that is left to learn. It matters
-**inside one simulator**, because this cell's own lighting and table will
-change during the project's life.
-
-### The feedback loop
-
-A per-pixel model returns a **confidence map** rather than a mask: a probability
-at every pixel, near one where it is sure the pixel is glass, near zero where it
-is sure it is not, and somewhere in the middle where it genuinely cannot tell.
-
-Two things read off it: **how much** doubt surrounds an object and **where** it
-sits.
-
-"How much" needs care, because the obvious statistic does not work.
-
-Counting what fraction of a region's pixels are undecided measures **the rim**,
-not the doubt. Every region has an uncertain rim a pixel or two wide, because at
-the edge of any object some pixel really is half glass and half table — that is
-the correct answer, not a failure. But it is not small either: for a
-glass-shaped region, a rim that thin is already a noticeable share of the whole
-region. And worse, the share depends on the region's *shape* rather than on its
-trouble, because a long thin region has more perimeter per unit of area than a
-fat one. The interesting doubt is drowned before you start.
-
-So **erode the region first**, throwing the rim away, and count only what is
-left. A glass the network is sure about then has essentially nothing uncertain
-inside it. Doubt in a band across a region's **middle** is the signature of a
-second glass behind it — and after erosion, it is the only thing left there.
-
-So a region far more doubtful than its neighbours is one to photograph again,
-and
-the band gives the direction: look along it, not across. Cap it at two extra
-looks, then report the object doubtful rather than guess.
-
-### A worked example
-
-The camera works from the top. Two glasses stand a comfortable distance apart on
-the table, but the line joining them points almost straight away from the
-camera.
-
-That last sentence is the whole example. Their separation is a real distance in
-the room, but the camera can only record the part of it that runs **across** the
-view; the part running **along** the line of sight is flattened away entirely.
-And here almost all of it is along the line of sight. So two glasses a ruler
-would call well apart land with their centres only a few pixels apart, their
-outlines overlap, and the class map returns **one region**.
-
-The confidence map says more than the class map does — once the rim is out of
-the way.
-
-Erode every region, then count the undecided pixels inside what is left. Across
-the glasses standing clear, essentially **none** of their interior pixels are
-undecided. In the merged region, a band of undecided pixels runs the **full
-height** down the middle, exactly where the near glass's edge crosses the far
-one. That is a large share of its interior against nothing at all for its
-neighbours — and, more usefully, it comes in a shape that **points somewhere**.
-
-So the arm looks again along that band, from the side. The second picture
-returns two regions, each confident right up to its own rim, and the merge is
-gone.
-
-### What it needs
-
-PyTorch on MPS, NumPy and SciPy. NumPy and OpenCV are in the pixi environment
-today. **PyTorch, SciPy and scikit-learn are not.** So every solution from here
-down starts by adding a dependency, which is a decision rather than a detail —
-see [what is actually installed](#what-is-actually-installed) above. Gazebo,
-plus a randomising spawner and a script that dumps each render with its masks. A
-version-pinned weights file of a couple of megabytes — or half that if it is
-saved at half precision. No CUDA, no downloaded weights, no annotator.
-
-### What it is good at
-
-**It can be made to survive without depth.** As described the network takes
-depth as its fourth channel, so it does not get this for free — a model trained
-that way leans on depth and fails with it. The fix costs one line of the
-training loop: **drop the depth channel at random**, on a third of the examples,
-so the network is forced to learn the shape from colour as well. Then the same
-weights run on colour alone, less accurately, on the day the glasses become
-real glass and clustering loses its input entirely. That is the one thing this
-solution offers that nothing else in this document does, and it is worth the
-accuracy it costs.
-
-**It is small enough to retrain on a whim**: change the lighting or the kind,
-regenerate and retrain in an afternoon, where a fine-tune costs most of a day.
-
-### What it is bad at
-
-**It does not separate instances on its own.** A class map is one region per
-clump; the separating has to be bolted on — solution 8.
-
-**It says nothing in millimetres.** Every number the arm acts on comes from
-measured depth.
-
-**It carries a size-shaped prior nobody can read.** Trained on one kind's
-range, it has learned that range — glass sizes in a file, which the report
-should admit.
-
-### How it fails
-
-**It learns Gazebo.** A network trained only on renders has fitted one
-renderer's shading, so pointed at a real camera it will not work, and domain
-randomisation narrows that gap without closing it. **That is an accepted trade
-here**, because this cell only ever runs in Gazebo, and stops being acceptable
-the moment a real arm is involved.
-
-**It is confident and wrong.** A merged pair can come back as one region with a
-clean edge and no doubt in it. Nothing fires the loop, and one large glass is
-reported. The guard is not the model but the circle fit against the kind's
-range.
-
-### When it would be the right choice
-
-When the labels are free and the problem is narrow — one class, one camera, one
-cell, and a simulator that labels pictures while you sleep. Those two are the
-condition under which training from scratch beats fine-tuning, and it is wrong
-the moment either goes.
-
----
-
-## Solution 8 — per-pixel votes for the centre
-
-*Learned, as the decider. Predict, at every object pixel, a short vector
-pointing to the middle of the object that pixel belongs to — and separation
-becomes counting clusters of votes.*
-
-A network that labels each pixel "glass" or "not glass" cannot separate two
-glasses that touch. A class label has nowhere to record *which* glass. So ask
-for a different output: at each glass pixel, a short arrow pointing to the
-middle of its own glass. Add that arrow to the pixel's own position and you have
-a vote. One glass makes one pile of votes; two glasses make two. Predict the
-arrow **in table millimetres** rather than image pixels, and the camera drops
-out of the problem. The spread of a pile is a confidence, and a loose pile is a
-reason to look again.
-
-**The long version:**
-[08-per-pixel-votes-for-the-centre.md](08-per-pixel-votes-for-the-centre.md) —
-this solution explained from the beginning, with diagrams.
-
-### What it is
-
-A network that labels every pixel "glass" or "not glass" is doing **semantic
-segmentation**. Every glass pixel comes back labelled "glass", and nothing says
-*which* glass, so two glasses whose outlines touch come back as one region —
-and one region means one glass downstream. Training does not fix it: a class
-label has no field in it for which object.
-
-So ask the network for something else. At every glass pixel, predict **a small
-vector pointing to the middle of the glass that pixel belongs to**. Pixels on
-the left glass point right, those on the right glass point left, and following
-every arrow to its end lands all of one glass's arrows on one spot. Separation
-becomes **counting clusters of votes**, which is easy.
-
-### Why anyone does it this way
-
-The idea predates neural networks. The **generalised Hough transform** (Ballard,
-*Pattern Recognition*, 1981) lets every edge point vote for where the object's
-centre would be, then looks for peaks — Hough circle detection, generalised to
-shapes with no equation. The learned version replaces the hand-built vote table
-with a network trained on examples: first, I believe, **Hough Forests** (Gall
-and Lempitsky, CVPR 2009), though the neural descendants go under several names
-and I am not confident which is canonical.
-
-A vote is **local evidence for a global claim**. One pixel cannot count the
-glasses on the table, but it can know which way the middle of its own glass
-lies, and hundreds of votes per centre mean a few wrong ones do not move it.
-
-### How it would work here
-
-**Vote in millimetres on the table, not in pixels in the picture.** That is
-what makes it work on a small budget.
-
-The table height is known and the glasses are opaque, so depth comes back for
-every glass pixel, and solution 2 already drops each one onto the table. So
-**every glass pixel already has a position on the table in millimetres** before
-the network is asked anything, and its job shrinks to one question: how far and
-which way to my glass's footprint centre?
-
-**The target is then bounded and scale-free.** An offset runs from a pixel to
-the centre of its own glass, so the longest one that can ever occur is half the
-widest footprint the cell handles — whatever the range, whatever the angle. A
-network predicting *pixel* offsets would instead have to learn that **the same
-glass at half the distance needs twice the offset** — which is to say, learn the
-camera. Measured on the table, there is nothing of the sort left to learn.
-
-**The votes land where the answer is obvious.** On the table a glass is a small
-solid disc, and its votes collapse to a point at its centre, where solution 2's
-circle fit and range check run on them unchanged.
-
-**The mask is free.** Nothing has to be learned to decide *whether* a pixel is a
-glass pixel: the existing test — does the point behind it stand clear of the
-table and below the tallest glass the cell accepts — already says so. So the
-network needs only **two output channels**, dx and dy.
-
-*The network.* A small U-Net: in, four channels the size of the picture, three
-colour plus height above the table; out, two channels the same size. Loss,
-smooth L1 on dx and dy in millimetres, over glass pixels only. **Trained from
-scratch**, since a torchvision ResNet backbone would be downloaded weights, so
-the substitute is a smaller network, of uncertain parameter count. PyTorch
-(BSD-3, https://github.com/pytorch/pytorch/blob/main/LICENSE) on Apple's MPS
-backend, there being no NVIDIA GPU; a few hours is the target, uncertain, to be
-timed.
-
-*The data.* Gazebo Harmonic (Apache-2.0, https://gazebosim.org/) renders
-unlimited pictures with exact per-object masks and positions, free, and the
-label is arithmetic: for a pixel in glass *k*'s mask, target = *k*'s footprint
-centre minus that pixel's own table position. Spawn pairs far closer together
-than the cell allows, because that is where the ambiguity is — a training set
-drawn only from legal spacings never shows the network a hard case.
-
-*Votes to objects.* Put every vote down as a dot on the table. Slide a circular
-window to the average of the dots inside it until it stops moving. There is
-exactly one number to choose, the window radius, and it is pinned at **both**
-ends before anything is run.
-
-The **floor** is the spread of the votes themselves, which can be measured on
-held-out renders. A window smaller than that spread fits *inside* one pile,
-climbs some local lump within it, and breaks one glass into several peaks.
-
-The **ceiling** is the closest two centres can ever be, which is two of the
-narrowest glasses the cell handles pressed rim to rim. A window reaching much
-more than half of that swallows **both** centres and merges exactly the pairs
-this solution exists to separate — silently, because a merged pile looks
-perfectly tight.
-
-There is comfortable room between the two, and the chosen radius sits inside it.
-Every window that ends up in the same place is one peak. That is **mean shift**,
-in scikit-learn as `sklearn.cluster.MeanShift` (BSD-3,
-https://scikit-learn.org/stable/modules/generated/sklearn.cluster.MeanShift.html).
-One peak is one glass; its voters are its mask.
-
-### The feedback loop
-
-**The spread of the votes is a confidence, and it comes free.** Measure the RMS
-distance of votes from their peak on held-out renders: that is the spread when
-the answer is right.
-
-**Bimodal.** Two tight knots inside one cluster means two glasses, and the
-peaks say where both are. Accept the split only if both circle fits land in the
-kind's range.
-
-**Smeared.** One broad cloud, with no peak sharper than the rest, is the network
-saying it is unsure. Re-grouping will not manufacture an answer that is not
-there.
-
-**An unsure group is a reason to take another picture from a different angle**,
-and the cloud says which angle. If the smear has a long axis, look **square
-across** it, from the side at the measuring standoff. That is a next-best-view
-with no search in it at all — the cloud names the direction, and existing
-geometry turns a direction into a reachable pose. Cap it at a couple of extra
-looks, then report the pair unseparated for problem 3.
-
-### A worked example
-
-Seen from the top, a glass's footprint is a few tens of pixels across, so it
-casts well over a thousand votes. Keep that number in mind: it is why a handful
-of wrong votes change nothing.
-
-*Where solution 2 fails.* Put two glasses much closer together than the cell
-allows, so that the strip of bare table between their rims is narrower than the
-grouping distance. The chain crosses it, and they come back as one group. One
-circle fitted to that group comes back about twice as wide as any glass of this
-kind can be.
-
-The votes do not care in the slightest. Each glass's pixels point inwards at
-their own glass's centre, so the votes land in two piles the full
-centre-to-centre distance apart. Both piles are tight, with spreads inside the
-held-out figure, and circle fits on the two sets of voters come back inside the
-kind's range.
-
-Note carefully what this example is. Problem 2 guarantees a gap between centres,
-so a pair standing this close is **not** something problem 2 will ever hand this
-solution — it is [problem 3](../../problem-3/problem.md)'s input. And that is
-the honest case for building this at all: it is the one method here that keeps
-working after problem 2's spacing guarantee is withdrawn, and the only one that
-separates glasses which genuinely touch.
-
-*Unsure.* Now hide most of a glass behind another, so that only a crescent down
-one side of it is visible. It casts a small fraction of the votes it should, and
-every one of them comes from that crescent — so the votes **agree with each
-other and are wrong in the same direction**, which is what a one-sided view
-always does. The pile lands noticeably off the true centre, and its spread comes
-out several times the held-out figure. One look square across the line joining
-it and whatever is hiding it brings the spread back to normal.
-
-### What it needs
-
-The depth camera, the known table height and the camera pose, which the cell
-has. PyTorch on MPS, scikit-learn and Gazebo — licences above, none needing
-CUDA or downloaded weights. On top of solution 2: a label generator, a training
-script, a version-pinned weights file, and forty lines of peak-finding.
-
-### What it is good at
-
-**It separates glasses that touch**, which solution 2 cannot, because votes
-need no gap — only enough pixels on each glass. And **its output is in
-millimetres**, so the arithmetic still decides: every peak still goes through
-the circle fit and the kind's diameter range.
-
-### What it is bad at
-
-**It learns the renderer.** Trained only on Gazebo output, it has learned this
-simulator's depth noise, dropout and lighting. Domain randomisation mitigates
-that, and with no real-world data nothing checks whether it worked.
-
-**It inherits the table assumption.** A table height a few millimetres out moves
-every single vote, quietly and in the same direction, so nothing disagrees with
-anything.
-
-**It holds a size-shaped prior**, the offsets being millimetres of one kind's
-radius, which is glass sizes in a file nobody can read.
-
-### How it fails
-
-**Too few votes.** A heavily occluded glass votes from a crescent, biased
-towards its visible side, and below a few hundred votes it is doubtful on count
-alone.
-
-**Two peaks on one glass**, splitting it. Loud: both fits come out too small
-for the kind.
-
-**One peak on two glasses**, merging them — quiet, and the failure to watch
-hardest. The circle fit is the guard: pixels that fit a circle twice as wide as
-the kind allows are not one glass, whatever the votes may say.
-
-### When it would be the right choice
-
-When glasses genuinely touch. Solution 2 stops there, and this is the cheapest
-learned thing past that line: the mask free from the table height, the labels
-free from the simulator.
-
-It is the wrong choice while the glasses stand a legal distance apart, which a
-page of clustering code answers with no training at all. And it stops existing
-entirely on real glassware, where there is no depth and therefore nothing to
-vote with.
-
----
-
-## Solution 9 — self-supervised from the arm's own movement
-
-*Learned, as the decider, with no labels at all. The arm knows exactly how it
-moved the camera, so the geometry between two pictures of a still scene is a
-free training signal — one that needs neither a human nor the simulator's
-ground truth.*
-
-Teaching a network which pixels belong to which glass normally needs somebody
-to draw round every glass in every picture. This solution needs nobody. The
-camera sits on the wrist, so the arm knows exactly how far it moved between two
-pictures, and geometry then says where each surface point must land in the
-second. Points on one glass move together; points on the glass behind move by a
-different amount. That agreement is the label. It comes from the joint
-encoders, not from a human and not from the simulator, so the same training
-would run on real hardware.
-
-**The long version:**
-[09-self-supervised-from-the-arms-own-movement.md](09-self-supervised-from-the-arms-own-movement.md)
-— this solution explained from the beginning, with diagrams.
-
-### What it is
-
-**Supervised learning** needs a right answer written beside each example. Those
-answers are the **labels**, and they are the expensive part. Here a label is a
-picture with every pixel marked "glass 3" or "glass 4", drawn by hand thousands
-of times. **Self-supervised learning** removes the human. The labels are
-computed from the data itself, by something already known to be true, and here
-that is geometry.
-
-The camera is on the wrist, so its pose comes from the joint encoders, exact to
-a fraction of a millimetre. Two pictures of a still scene from two known poses
-are not two unrelated pictures. Every surface point in the first has one
-correct place in the second, and where it lands depends only on how far away it
-is. Near points shift a long way across the image, far points less. That is
-**parallax**: a constraint, not a guess.
-
-The constraint is the training signal. It needs no human and — the part worth
-noticing — **no simulator ground truth either**: only the encoders and the
-pictures, which a real arm also has. So the same loop trains on hardware.
-
-What it learns is which pixels belong together. Points on one glass shift by
-one amount, points on the glass behind by a different amount, and pixels that
-move together are one thing. The Gestalt psychologists called that **common
-fate**.
-
-### Why anyone does it this way
-
-Because labelling is the bottleneck, and here it is hopeless: with identical
-glasses overlapping, the boundary between two of them is a human's guess too.
-
-Two named neighbours. **Motion segmentation** groups pixels by common motion,
-and is the classical form of this idea; layered models go back to Wang and
-Adelson's *Representing Moving Images with Layers* (1994 — confident of the
-paper, less so of its details). It assumes the *objects* move. Here they do
-not.
-
-**Self-supervised depth and ego-motion learning** is closer. SfMLearner ([Zhou
-et al., CVPR 2017](https://github.com/tinghuiz/SfMLearner), MIT) trains depth
-and pose networks together, unlabelled; Monodepth2 ([Godard et al., ICCV
-2019](https://github.com/nianticlabs/monodepth2)) refines it under **Niantic's
-own non-commercial licence**. Both must *estimate* the camera motion, and that
-estimate is where most of their error lives. Here it is not estimated but
-**commanded**.
-
-### How it would work here
-
-**The data already exists.** Each station takes two pictures a short slide
-apart; a picture costs milliseconds and an arm move seconds, so take five along
-that slide. A few hundred scenes give tens of thousands of pairs.
-
-**An embedding** is a short list of numbers attached to something, arranged so
-that distance between lists means similarity. The network returns, per pixel of
-the 320×240 picture, a vector of perhaps 16 numbers. Two pixels on one glass
-point nearly the same way; two on different glasses do not. Nothing names a
-glass — the vectors carry only *same* or *different*.
-
-**Contrastive learning** fits them. The loss has two halves: pull together, so
-a pixel and another the geometry says belongs with it move closer; push apart,
-so pixels on different surfaces move further. It is low only when the true
-partner is nearer than the distractors. SimCLR ([Chen et
-al.](https://arxiv.org/abs/2002.05709)) and MoCo ([He et
-al.](https://arxiv.org/abs/1911.05722)) are the whole-image references.
-
-**Where the pairs come from.** Warp the first picture into the second using a
-predicted depth and the known pose. Where the warp lands on the right
-brightness, the depth was right — trained by pictures and encoders alone.
-Pixels whose shifts then agree are positives; those differing by more than the
-noise are negatives.
-
-**Licences.** [PyTorch](https://pytorch.org/) (BSD-3-style,
-[licence](https://github.com/pytorch/pytorch/blob/main/LICENSE)) on MPS;
-[Gazebo Harmonic](https://gazebosim.org/) (Apache-2.0) for renders;
-[NumPy](https://numpy.org/) (BSD-3) for geometry. **No pretrained weights are
-downloaded** — it trains from scratch on this cell's pictures. No CUDA.
-
-### The feedback loop
-
-When the embedding cannot separate two pixels, the arm buys a clearer answer by
-moving further.
-
-When the camera slides sideways, a surface shifts across the picture by an
-amount that goes as **the slide divided by the depth**. So two surfaces at
-different depths shift by different amounts, and the difference between those
-two shifts is exactly the separation the embedding needs.
-
-Read that as a shape. Because it is one over the depth, the curve is steep close
-up and nearly flat far away:
-
-- **Two glasses whose depths differ a lot** shift by clearly different amounts,
-  and the two populations come apart easily. Settled.
-- **Two glasses whose depths differ only a little**, out where the curve has
-  gone flat, shift by almost the same amount — barely more than the matcher's
-  own precision. Here the embedding may fairly say it is unsure.
-
-But separation is **linear in the slide**, and that is what makes it a dial
-rather than a limitation. Each extra millimetre of slide buys a fixed amount of
-extra separation, so divide the separation you need by that and **you have the
-exact slide that settles this particular doubt**. So the answer to an ambiguous
-pair is not a bigger network. It is: slide further and ask again — a measurement
-chosen to resolve one named doubt.
-
-The dial does not turn for ever, though. Slide far enough and the glasses leave
-the frame altogether, and at that point it has stopped being one station with a
-long slide and become solution 3's new station somewhere else.
-
-### A worked example
-
-This one needs the camera **at the side**, not on top, and the reason is worth
-stating plainly. Parallax separates things by how far apart in depth they are,
-and from directly above, two glasses of one kind have their rims at nearly the
-same distance from the lens — while each glass by itself runs from its rim all
-the way down to the table, covering a wide range of depths. So from the top the
-two populations of shifts lie exactly on top of each other, and the method has
-nothing at all to work with. From the side it has everything: the gap between
-the two objects is large, and the spread within each one is only its own width.
-
-So: a station at the side, standing back from the near glass at the measuring
-standoff, with a second glass further back along the line of sight and slightly
-to one side. The near glass, being closer, is drawn wider than the far one even
-though the two are the same size. Their outlines overlap, and the blob comes
-back wider than any glass of the kind can be. Flagged. Two glasses, in line.
-
-Now slide the camera and take the second picture. **The near glass's pixels move
-a long way; the far glass's move noticeably less.** Nearer things shift more,
-and that is the whole of the signal. The two bands of shifts do not touch —
-there is clear air between them, because the depth gap between the glasses is
-much larger than the depth spread within either one. The network was fitted so
-that pixels whose shift agrees share a direction in the embedding, so the two
-bands land in two separate places there. Clustering returns two regions, and the
-boundary runs where the shift changes — **an occlusion edge, not a brightness
-edge**, so the fact that the two glasses are identical in colour costs nothing
-at all.
-
-Both regions then go through solution 2's arithmetic, and are accepted only if
-both fitted widths land inside the kind's range. The embedding proposes; the
-circle fit decides.
-
-### What it needs
-
-PyTorch on MPS, and Gazebo renders of a few hundred scenes with the joint
-encoders logged beside every picture. No labels, no pretrained weights, no
-NVIDIA card. The spawn record scores the result; it never trains it.
-
-### What it is good at
-
-It learns a boundary nobody can write down, from free data, and is indifferent
-to colour. Because the signal is the encoders rather than the simulator, the
-same code retrains itself on a real cell.
-
-### What it is bad at
-
-**Nothing moves in this scene except the camera.** The only differential signal
-is parallax, so what the network learns is a depth-discontinuity detector
-wearing an embedding's clothes.
-
-**It returns affinity, not a count.** It says two pixels are alike or unalike;
-it never says "four glasses". Something must still cluster the vectors and
-decide how many groups there are — the merged pair again.
-
-### How it fails
-
-**Identical objects at equal range.** Two glasses whose depths differ only
-slightly barely separate at all, and two at exactly the same distance separate
-by nothing whatever, however far the camera slides. Appearance cannot break the
-tie, because the kind is one kind.
-
-**Textureless surfaces.** The photometric loss needs brightness variation to
-match on; flat lighting gives the warp nothing to grip.
-
-**Staleness.** Change the lighting or the kind and the embedding describes a
-cell that no longer exists, while the tests still pass.
-
-**Confidence where it is wrong.** A merged pair returns one tidy region with no
-complaint — the failure `problem.md` watches hardest.
-
-### When it would be the right choice
-
-When labels are impossible and the objects are not one known kind — problem 4
-rather than this one. Here the depth camera measures the parallax directly and
-solution 2 clusters it in millimetres.
-
-It earns its place the day the depth fails. On real glassware there is nothing
-to cluster, and this is one of the few methods here that could still be
-trained, because its supervision is the arm's own motion — though whether a
-photometric loss survives a transparent surface is uncertain.
-
-## The decision
-
-**Solutions 2 and 3 are the core. Solution 5 is the first learned thing worth
-adding, and solution 6 is the second. Solutions 7, 8 and 9 are the sim-only
-learned answers, and it is worth being exact about when each would earn its
-place.**
-
-### Why the core is programmed
-
-Problem 2 gives away two things for free, and together they make the separation
-arithmetic rather than inference. **Every object is one known kind**, so its
-footprint is a circle whose diameter sits inside a range the project already
-holds. **And they are opaque**, so the depth camera can see them. Group the
-points on the table, fit a circle, check it against the range.
-
-Nothing learned improves on that, because there is nothing left to infer.
-
-### Why one loop is chosen with it
-
-Separation cannot fix a viewpoint. No cleverness applied to a picture of an
-object standing behind another object produces the measurement from the side
-that the next step needs. Solution 3 answers the *other* difficulty, and the two
-barely overlap.
-
-Solutions 3, 4 and 6 are the same loop with three different scores: a rule, an
-uncertainty estimate, and a prediction of whether the picture will change the
-answer. Start with the rule. It is auditable, needs no data, and is the
-baseline that decides whether either of the others is worth its cost.
-
-### Why the verifier comes first, and the viewpoint predictor second
-
-**Solution 5** learns the one thing the rules are worst at — the ambiguous
-cluster — on an input small enough that a gradient-boosted tree trains in
-minutes. Its mistakes cost one extra picture. It degrades to the pure-geometry
-answer if the weights go missing. And its most useful output is "I cannot
-tell", which is what makes the thing a loop.
-
-**Solution 6** is the cheapest real upgrade to solution 3, and the reason is
-the shape of its training problem rather than its cleverness. Predicting
-whether a viewpoint will resolve an ambiguity is *supervised learning on a
-label the simulator can produce exhaustively*. Spawn an arrangement, note what
-is ambiguous, take the picture, record whether it helped. No episodes, no
-reward design, no policy — and it gets most of what an active-vision policy
-offers at a fraction of the cost. That comparison is the single clearest case
-in this document for asking what shape a learning problem really has before
-reaching for the heaviest tool that fits it.
-
-### What the three learned solutions are for
-
-All three are sim-buildable, and none is currently needed — because the
-geometry works. They become the answer when it stops working.
-
-**Solution 7**, a segmenter trained from scratch, is what to reach for if the
-depth reading degrades — a noisier sensor, a shinier object, a surface the
-camera reads badly. It needs only colour.
-
-**Solution 8**, per-pixel centre votes, is the learned answer that actually
-*separates*, rather than labelling pixels and leaving the separation to
-something else. If a learned perception step is ever going to replace solution
-2, this is its shape, and the detail that makes it fit here is predicting the
-offset in table millimetres rather than in pixels.
-
-**Solution 9**, self-supervision from the arm's own movement, is the one with a
-property the others lack: it needs no labels at all, **not even the
-simulator's**. That means it is the only learned solution here that would
-transfer to a real table unchanged. On a project whose simulator is a stand-in
-for a real cell, that is worth more than its accuracy.
-
-### What would be built, in order
-
-1. **The clustering and the circle fit** — solution 2. A couple of dozen lines
-   on top of what exists, and it fixes the failure that does not announce
-   itself.
-2. **The viewpoint filter** — the safety half of solution 3. Reject occluded and
-   unreachable poses before asking the planner, and report objects with no
-   viewpoint left.
-3. **The extra look** — the loop half of solution 3, with a rule for the score
-   and a budget of one or two extra looks.
-4. **The verifier** — solution 5, once a run has been scored and the numbers say
-   the ambiguous cluster is a real share of the failures. Not before.
-5. **The viewpoint predictor** — solution 6, once step 3 has produced enough
-   looks to learn from, which it does in the course of ordinary running.
-
-Steps 1 to 3 are programmed. Steps 4 and 5 are where a model earns its place,
-and the ordering is the argument: **measure which failure you actually have
-before choosing a component to fix it.**
-
-### How it would be known to work
-
-The simulator writes down every object it spawned — a file the report may read
-and the arm may not:
-
-- **merged**: two real objects reported as one. Watch this hardest; it is the
-  failure that looks plausible downstream.
-- **split**: one real object reported as two. It looks wrong immediately, so it
-  is the safe direction to be wrong in.
-- **position error** per object, against the truth.
-- **extra looks spent**, and how many changed the answer. A loop whose extra
-  looks never change anything is a loop worth deleting.
-- **no viewpoint**: objects handed on to problem 3, which is a result rather
-  than a failure.
-## Where the chosen solution can fail
-
-**Glasses that genuinely touch still cluster into one.** Distance separates them
-only where there is distance. The circle fit notices — a footprint too wide for
-one glass and not resolvable into two — and then there is nothing more this
-problem can do. That is the handover to [problem 3](../../problem-3).
-
-**The circle fit assumes the kind, and problem 4 takes that back.** Across four
-kinds the allowed diameter is the union of four ranges, wide enough that a
-footprint too wide for a tumbler is an ordinary wine glass foot.
-
-**A glass seen from one station only is reported as doubtful, and may be real.**
-Safe direction, and it will sometimes mean a real glass left out of a run.
-
-**Pairing the two pictures of a station gets harder with every glass added.** A
-wrong pairing gives a confident position for a glass that is not there. The
-height check catches the impossible pairings and not the plausible ones.
-
-**None of it runs on real glassware**, for the reason the decision gives.
+Its best property is the choice of label. It records *did the answer change*
+rather than *was the answer correct*, and the first of those needs no ground
+truth, so it can be read on a real table as well as in simulation. Every look
+the arm ever takes becomes another labelled example.
+
+→ [the full document](06-learn-which-viewpoints-pay-off.md)
+
+## The three learned solutions
+
+### Solution 7 — a segmenter trained from scratch
+
+Train a small network from a random start, on pictures the simulator renders and
+labels for nothing, to say at every pixel whether that pixel is glass. The cell
+is narrow enough that a small network is enough, and the document's most useful
+sections are the ones about the traps: why the obvious measure of success
+rewards saying nothing at all, and an arithmetic check worth doing before
+training rather than after.
+
+It can say which pixels are glass but not which glass they belong to, and like
+everything that works from pixels, it is blind to a glass that produced none.
+
+→ [the full document](07-a-segmenter-trained-from-scratch.md)
+
+### Solution 8 — per-pixel votes for the centre
+
+Ask each glass pixel for an arrow pointing towards the middle of its own glass,
+and then count the places the arrows point at. **Nothing has to find a boundary,
+so nothing can get a boundary wrong**, which is why this is the only method here
+that separates glasses that touch.
+
+The wide range of sizes makes it more valuable than it was, because partly
+hidden glasses are now the normal case and a crescent of pixels still votes
+towards the right centre. It is still blind to a glass that is hidden
+completely, because a glass with no pixels casts no votes.
+
+→ [the full document](08-per-pixel-votes-for-the-centre.md)
+
+### Solution 9 — self-supervised from the arm's own movement
+
+The arm knows exactly how it moved the camera, so the geometry between two
+pictures of a still scene is a training signal that costs nothing. Points on one
+glass shift together, points on the glass behind shift by a different amount,
+and that agreement is the label.
+
+It is the only learned solution here whose training would survive being moved to
+real hardware, because its supervision comes from the joint encoders rather than
+from the simulator's private record of the scene. It is also more machinery than
+this cell needs, because the cell already has a depth camera that measures
+directly what parallax is being trained to infer.
+
+→ [the full document](09-self-supervised-from-the-arms-own-movement.md)
+
+## The decision, which is a combination
+
+The change to the problem changed this section more than any other, and the
+short version is that **there is no longer a single solution to choose**.
+
+The reason is that the three difficulties need different kinds of answer, and no
+single method supplies more than one of them. A method that places what it can
+see cannot say what it could not see, and a method that says what it could not
+see cannot go and look.
+
+**Build solution 2 first, both halves of it.** The clustering places every glass
+the pictures contain, and it is a small amount of arithmetic on work the project
+already does. The blind-region arithmetic is a similar amount again, and it is
+what lets a run say where it has not looked. A run with only the first half is
+confidently wrong on exactly the failure the problem says to watch hardest.
+
+**Build solution 3 next, including the covering step.** Without it, solution 2's
+doubts and unsearched patches are reported and nothing acts on them. With it,
+the arm can go and settle them, and the covering step is what stops the arm
+paying one movement per patch when a single position often serves several
+patches at once.
+
+**Then stop, and measure.** Measure how often an unsearched patch actually turns
+out to have something standing in it, and how often the printed rule in solution
+3 picks a viewpoint that settles the doubt on its first try. Those two
+measurements decide whether anything else on this list is worth building, and
+both of them are cheap to take.
+
+Everything beyond those two is an **ordering improvement rather than a new
+capability**. Solutions 4, 5 and 6 all leave the answers exactly as they were
+and change only which look the budget is spent on, which is worth having when
+the budget binds and worth nothing when it does not — and that is precisely what
+the measurement above tells you.
+
+Solutions 7, 8 and 9 are for a different world rather than a better version of
+this one. They earn their place on the day depth readings stop working, which is
+the day the glasses become real glass, or on the day the glasses are allowed to
+touch. Until one of those happens they are answers to questions this cell is not
+asking.
+
+## Where the recommended combination can fail
+
+Naming the failures of the chosen answer is more useful than listing its
+strengths, and there are four worth carrying into the individual documents.
+
+**A glass hidden behind a glass that was itself hidden** is outside the reach of
+the blind-region arithmetic, because that arithmetic reasons from the glasses it
+found. Across every legal arrangement that was checked, this does not arise in
+this cell, because the survey stations between them see every glass. It is,
+however, exactly what to watch on the day somebody removes a station or widens
+the zone the glasses may stand in.
+
+**A badly measured glass casts a badly computed wedge.** Both the line-of-sight
+test and the blind-region arithmetic take their input from fitted circles, so a
+footprint measured from an arc rather than from a whole circle produces a wedge
+in the wrong place. A small share of glasses is seen from only one station, and
+those are exactly the glasses whose fitted circle is wrong in a plausible way,
+so the flag that marks them is the defence and it is not optional.
+
+**The grouping distance no longer sits in a wide window.** With the guaranteed
+gap brought down and the widest rims what they are, the worst-case strip of bare
+table between two glasses is only a few times the spacing of the measured dots.
+The distance therefore has to be derived from both sides and printed, rather
+than chosen once and then trusted.
+
+**Two glasses that genuinely touch** leave no strip of bare table at any
+grouping distance, so distance has nothing left to say and only the fitted width
+can suspect that something is wrong. That case is [problem
+3](../../problem-3/problem.md)'s business, and it is where solution 8 would
+begin to earn its keep.
+
+## A note on the pictures in these documents
+
+Several of the diagrams in the nine documents were drawn against the previous
+version of this problem, in which the glasses were all roughly the same size.
+Their geometry is still correct, but a few of them illustrate claims the text no
+longer makes, in particular any picture asserting that two glasses inside one
+frame never merge. The text in each document stands on its own, and the diagrams
+need redrawing against the new range of sizes.
+
+## How it would be solved
 
 ← [The problem](../problem.md) · [The ones that need more than a
 simulator](learned-with-hardware.md) · [Problem 3 — moving them
-apart](../../problem-3) →
+apart](../../problem-3/problem.md) →
