@@ -151,6 +151,19 @@ takes **several pictures along that slide rather than two**. That costs almost
 nothing extra and gives many pairs per station instead of one, because every
 picture can be paired with every other.
 
+That slide turns out to buy something this problem needs, and it is worth
+spelling out because it is free and easy to overlook. Sliding the camera
+sideways moves the point directly below it. Every object's hidden region is a
+wedge pointing away from that point, so **moving the point swings every wedge**.
+An object hidden behind a taller one at one end of the slide may therefore be
+plainly visible at the other end, without the arm going anywhere new.
+
+This matters because one kind now spans a shot glass to a large tapered glass,
+so a tall glass can cover a short one completely from a given camera position.
+The slide does not solve that — the swing is small, because the slide is short —
+but it is coverage the survey has already paid for, and any method that treats a
+station's pictures as one viewpoint is throwing it away.
+
 ## The dial: separation grows in step with the slide
 
 The right-hand plot of the earlier picture is what turns this from an
@@ -461,10 +474,14 @@ plainest.
 
 What the method cannot say comes second. **It says which pixels go together, and
 not how many glasses there are.** Something still has to choose the number of
-groups, and choosing too few is exactly the merge this problem fears. A merged
-pair comes back as one tidy region with no complaint, so the circle-fit check
-afterwards is not optional. And changing the lighting or the kind of glass
-leaves the learned embedding describing a cell that no longer exists.
+groups, and choosing too few is exactly the merge this problem fears. And as
+with every other pixel-based method here, a glass covered completely by a taller
+one contributes no pixels to group, so this method is silent about it — the
+geometric argument in [solution 2](02-cluster-on-the-table.md) is what speaks to
+that case. A merged pair comes back as one tidy region with no complaint, so the
+circle-fit check afterwards is not optional. And changing the lighting or the
+kind of glass leaves the learned embedding describing a cell that no longer
+exists.
 
 Why it is not the thing to build here comes third, and it is the honest
 conclusion. **The cell already has a depth camera**, which measures directly

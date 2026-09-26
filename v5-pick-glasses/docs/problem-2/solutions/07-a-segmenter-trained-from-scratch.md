@@ -628,6 +628,16 @@ glass, and not which glass**, giving one region per clump, so on its own it does
 not answer this problem. And **nothing in real distances comes out of it**,
 because the arm's numbers still come from the depth under those pixels.
 
+There is a second structural limitation, and it is worse, because no change to
+the output would fix it. Since one kind now spans a shot glass to a large
+tapered glass, a tall glass's outline can cover a short one completely from
+above — and then the short glass contributes **no pixels at all**. A network
+that labels pixels has nothing to label. It is not that it would label them
+wrongly; there is nothing there to be right or wrong about. So this solution is
+blind to the failure the problem says to watch hardest, and the only thing that
+is not blind to it is the geometric argument in [solution
+2](02-cluster-on-the-table.md) about where a glass could have been hiding.
+
 What it cannot see is the failure the problem singles out. **Confident and
 wrong** is exactly the merged case, and the loop cannot catch it, because a mask
 over two glasses has low doubt everywhere. Only the arithmetic downstream guards

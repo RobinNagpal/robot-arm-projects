@@ -551,6 +551,24 @@ Where it is the wrong tool comes first, and it is the most important caution.
 does the job**, with no weights file to maintain. This solution earns its place
 only where that spacing rule no longer holds.
 
+Two things are worth adding now that one kind spans a shot glass to a large
+tapered glass, and they pull in opposite directions.
+
+The first raises this solution's value. A large glass standing in front of a
+small one hides much more of it than a glass of its own size would, so **partly
+hidden objects are now the normal case rather than the exception**. Voting is
+unusually good there, because a crescent of a footprint still votes towards the
+right centre, where a method that needs a boundary has no boundary to find. So
+the wide range of sizes is an argument in this solution's favour.
+
+The second is a hard limit, and it is the same one every pixel-based method here
+runs into. If the large glass covers the small one **completely**, the small one
+casts no votes at all. There is nothing to pile up and no pile to be loose, so
+neither the spread nor the vote count fires, because both are measurements of
+votes that do not exist. The only thing that speaks to that case is the
+geometric argument about where a glass could have been hiding, and it lives in
+[solution 2](02-cluster-on-the-table.md).
+
 What it quietly assumes comes second. **It learns the renderer**, and
 randomisation narrows that gap without closing it, and with no real data nothing
 checks whether it closed. **A wrong table height is silent**, because it moves

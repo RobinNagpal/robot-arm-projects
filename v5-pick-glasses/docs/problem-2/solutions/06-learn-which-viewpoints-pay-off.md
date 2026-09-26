@@ -184,6 +184,23 @@ ordinary run**, on a real table, with no simulator and nobody watching.
 That one property is what turns this from a thing you train once into a thing
 that improves with use.
 
+The same label extends cleanly to the second kind of request this problem
+created, and it is worth noticing that it needs no new idea. Since one kind of
+glass now spans a shot glass to a large tapered glass, a tall glass can cover a
+short one completely, so [solution 2](02-cluster-on-the-table.md) also reports
+**unsearched patches**: places that could not have been seen and are large
+enough to hold the smallest glass. A look aimed at such a patch has an outcome
+that is just as observable as a look aimed at a group. Did a glass appear that
+was not in the list before? That is a count and a comparison, it needs no ground
+truth, and it can be read on a real table exactly like the other label.
+
+So the same model can order both kinds of request, trained on the same kind of
+row. The one thing it must not do is treat them as interchangeable, because the
+two outcomes are not equally valuable: resolving a merged pair corrects a
+measurement, while finding a hidden glass corrects an **omission**, and an
+omission is the worse failure. That weighting belongs in a written rule rather
+than inside the model.
+
 ## What the model is shown
 
 ![Everything the model is given, drawn where it lives](../../../images/problem-2/06-the-features.png)
