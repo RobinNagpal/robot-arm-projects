@@ -844,10 +844,7 @@ What it spends is arm time, which is the cell's dearest resource. Give every
 object its full allowance of looks and the extra travel dwarfs the original
 survey, which is why the budget exists. It is also heavier than it strictly
 needs to be, since the filter on its own gets most of the benefit, and the loop
-around it wants a better measure of doubt than a width check — which is what
-[solution
-5](solution-overview.md#solution-5--a-learned-verifier-over-the-clusters)
-provides.
+around it wants a better measure of doubt than a width check.
 
 What it assumes is that the survey's footprints are right, and this is the
 subtlest weakness on the page. The line-of-sight test predicts what is hidden

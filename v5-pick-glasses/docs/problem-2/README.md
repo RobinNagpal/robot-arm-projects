@@ -35,7 +35,7 @@ The cell they all share — layout, camera poses, sensors, vocabulary — is in
   | 2 | [Cluster on the table](solutions/02-cluster-on-the-table.md) | programmed — **chosen** |
   | 3 | [Move the camera](solutions/03-move-the-camera.md) | programmed — **chosen** |
   | 4 | [Learned doubt steers the next picture](solutions/04-learned-doubt-steers-the-next-picture.md) | hybrid |
-  | 5 | [A learned verifier over the clusters](solutions/05-a-learned-verifier-over-the-clusters.md) | hybrid |
+  | 5 | [A learned verifier over the places nobody could see](solutions/05-is-anything-hiding-there.md) | hybrid |
   | 6 | [Learn which viewpoints pay off](solutions/06-learn-which-viewpoints-pay-off.md) | hybrid |
   | 7 | [A segmenter trained from scratch](solutions/07-a-segmenter-trained-from-scratch.md) | learned |
   | 8 | [Per-pixel votes for the centre](solutions/08-per-pixel-votes-for-the-centre.md) | learned |
