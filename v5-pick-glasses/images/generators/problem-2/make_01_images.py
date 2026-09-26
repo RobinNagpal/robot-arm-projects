@@ -17,13 +17,31 @@ from pathlib import Path
 
 import cv2
 import numpy as np
-from diagram_style import GLASS, GOOD, INK, LABEL_SIZE, MUTED, NOTE_SIZE, WARN, bare, new, save
+from diagram_style import (
+    GLASS,
+    GOOD,
+    INK,
+    KIND_TALLEST,
+    KIND_WIDEST,
+    LABEL_SIZE,
+    MUTED,
+    NOTE_SIZE,
+    SHORT_A,
+    TALL_A,
+    WARN,
+    bare,
+    new,
+    save,
+    splay_circles,
+    splay_covers,
+    splay_width,
+)
 from matplotlib.colors import to_rgba
 from matplotlib.patches import Circle, Rectangle
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src" / "work_cell"))
 
-from work_cell.glasses.shapes import family  # noqa: E402
+from work_cell.glasses.shapes import build, family  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # The cell, in its own numbers.
@@ -40,6 +58,19 @@ MIN_APART = 150.0          # mm, the closest two glasses ever stand in problem 2
 # One kind, drawn from the project's own range, used in every picture.
 GLASS_OUTLINE, _ = family("tapered_glass", 6, 1)[1]
 STEMMED, _ = family("stemmed_glass", 6, 1)[1]
+
+# The tall and the short end of the same kind, built by the project's own
+# builder at the two sizes diagram_style holds for this kind. Both sets of
+# proportions are inside KIND_RANGES["tapered_glass"], so these are ordinary
+# glasses of the kind rather than special cases invented for a picture.
+TALL_GLASS = build("tapered_glass", height=TALL_A[0] / 1000.0,
+                   rim_diameter=TALL_A[1] / 1000.0, base_fraction=0.45)
+SHORT_GLASS = build("tapered_glass", height=SHORT_A[0] / 1000.0,
+                    rim_diameter=SHORT_A[1] / 1000.0, base_fraction=0.45)
+
+NEAR_R = 200.0     # mm out from the point under the survey camera
+PAIR_GAP = 160.0   # mm between the two centres, above the guaranteed minimum
+APART = 300.0      # mm between two glasses standing in line with the level camera
 
 
 def profile(outline) -> tuple[np.ndarray, np.ndarray]:
@@ -771,6 +802,226 @@ def picture_what_it_does_not_buy() -> None:
     save(figure, "01-what-it-does-not-buy.png")
 
 
+# ---------------------------------------------------------------------------
+# 11. Completely hidden from above: splay, and what it costs the frame.
+# ---------------------------------------------------------------------------
+def picture_hidden_from_above() -> None:
+    """The one arrangement in which a glass reaches the survey picture not at all.
+
+    Both silhouettes are real projections through ``topdown``. ``splay_covers``
+    is the test for the short glass appearing in no picture at all, and the
+    dashed rectangle is the real 320x240 frame, so what the arrangement costs
+    is visible in the same picture as the arrangement.
+    """
+    scale = FX / SURVEY_H                      # pixels per millimetre of splayed offset
+    nadir = np.array([0.0, 0.0])
+    tall_at = np.array([NEAR_R, 0.0])
+    along = tall_at + np.array([PAIR_GAP, 0.0])
+    across = tall_at + np.array([0.0, PAIR_GAP])
+
+    width, height = 540, 400
+    nx, ny = 180, 170
+
+    def picture(short_at):
+        args = {"width": width, "height": height, "cx": nx, "cy": ny}
+        both = topdown([(tall_at[0], tall_at[1], TALL_GLASS),
+                        (short_at[0], short_at[1], SHORT_GLASS)], **args)
+        tall = topdown([(tall_at[0], tall_at[1], TALL_GLASS)], **args)
+        short = topdown([(short_at[0], short_at[1], SHORT_GLASS)], **args)
+        patches, _ = cv2.connectedComponents(both)
+        return {"both": both, "tall": tall, "short": short, "patches": patches - 1,
+                "showing": int(((short > 0) & (tall == 0)).sum()),
+                "total": int((short > 0).sum())}
+
+    hidden = picture(along)
+    beside = picture(across)
+    covers = splay_covers(splay_circles(nadir, tall_at, *TALL_A),
+                          splay_circles(nadir, along, *SHORT_A))
+    patch_mm = splay_width(splay_circles(nadir, tall_at, *TALL_A))
+    kind_mm = splay_width(splay_circles(nadir, tall_at, KIND_TALLEST, KIND_WIDEST))
+    reach_px = (2.0 * (NEAR_R + TALL_A[1] / 2.0)) * scale
+
+    figure, axes = new(13.4, 4.4, columns=3)
+    table, gone, there = axes
+
+    # ---------------------------------------------------- panel 1: the table
+    stage(table, "On the table: one legal arrangement, turned two ways")
+    table.set_aspect("equal")
+    table.set_xlim(-90, 480)
+    table.set_ylim(-150, 280)
+    table.plot([0, 470], [0, 0], color=MUTED, lw=0.8, ls=(0, (5, 4)), zorder=1)
+    table.plot([0], [0], "x", color=WARN, ms=9, mew=1.8, zorder=4)
+    note(table, 0, -22, "the point under\nthe camera", WARN, va="top")
+    table.add_patch(Circle(tuple(tall_at), size(TALL_GLASS)[1] / 2,
+                           facecolor=to_rgba(GLASS, 0.34), edgecolor=GLASS, lw=1.6, zorder=3))
+    note(table, tall_at[0], -22, f"the tall glass,\n{TALL_A[0]:.0f} mm", GLASS, va="top")
+    for spot in (along, across):
+        table.add_patch(Circle(tuple(spot), size(SHORT_GLASS)[1] / 2,
+                               facecolor=to_rgba(GOOD, 0.30), edgecolor=GOOD, lw=1.6, zorder=3))
+        table.annotate("", xy=tuple(spot), xytext=tuple(tall_at),
+                       arrowprops={"arrowstyle": "<->", "color": INK, "lw": 1.1}, zorder=2)
+    note(table, along[0], -22, f"the short glass,\n{SHORT_A[0]:.0f} mm", GOOD, va="top")
+    note(table, (tall_at[0] + along[0]) / 2, 12, f"{PAIR_GAP:.0f} mm", INK, va="bottom")
+    table.text(tall_at[0] - 12, PAIR_GAP / 2, f"{PAIR_GAP:.0f} mm",
+               fontsize=NOTE_SIZE, color=INK, ha="right", va="center")
+    note(table, across[0], across[1] + 26, "the same glass, moved\nacross the radius instead",
+         GOOD, va="bottom")
+
+    # ------------------------------------------- panels 2 and 3: the pictures
+    for axis, case, title in ((gone, hidden, "The picture: along the radius"),
+                              (there, beside, "The picture: across the radius")):
+        stage(axis, title)
+        axis.add_patch(Rectangle((nx - FRAME_W / 2, ny - FRAME_H / 2), FRAME_W, FRAME_H,
+                                 facecolor="none", edgecolor=MUTED, lw=1.2, ls=(0, (5, 4))))
+        paint(axis, case["tall"] > 0, GLASS, 0.34)
+        paint(axis, (case["short"] > 0) & (case["tall"] == 0), GOOD, 0.55)
+        outline_of(axis, case["both"] > 0)
+        axis.contour(case["short"].astype(float), [0.5], colors=[WARN], linewidths=1.1,
+                     linestyles="dashed")
+        axis.plot([nx], [ny], "x", color=WARN, ms=8, mew=1.6)
+        axis.set_xlim(-6, 524)
+        axis.set_ylim(392, -20)
+        colour = WARN if case["showing"] == 0 else GOOD
+        note(axis, 258, -14, f"{case['patches']} patch" if case["patches"] == 1
+             else f"{case['patches']} patches", colour)
+        axis.text(26, 284, "the 320x240 survey frame", fontsize=NOTE_SIZE, color=MUTED,
+                  ha="left", va="bottom")
+
+    note(gone, 360, 100, "the dashed line is the short glass,\n"
+                         "inside the tall one's silhouette", WARN, va="bottom",
+         bbox={"facecolor": "white", "edgecolor": "none", "pad": 1.5})
+    note(gone, 258, 336,
+         f"{hidden['showing']} of the short glass's {hidden['total']} pixels reach the picture,\n"
+         f"and the patch that comes back is the tall glass's\n"
+         f"own silhouette, {patch_mm:.0f} mm across against the {kind_mm:.0f} mm\n"
+         f"a single glass of this kind can draw from there", WARN, va="top")
+    note(there, 258, 336,
+         f"all {beside['showing']} of the short glass's pixels reach the picture,\n"
+         f"from the same two glasses, the same {PAIR_GAP:.0f} mm apart,\n"
+         f"turned a quarter turn about the tall one", GOOD, va="top")
+
+    footer(figure,
+           f"Splay is radial, so it hides only along a radius. The price is in the dashed rectangle: to "
+           f"throw its outline {PAIR_GAP:.0f} mm out and over its neighbour, the tall glass has to stand "
+           f"{NEAR_R:.0f} mm from the point under the\ncamera, and from there its own silhouette reaches "
+           f"{reach_px:.0f} px out into a frame that is 160 px to the edge. The arrangement that hides a "
+           f"glass is also the arrangement that leaves the hider crossing the frame edge.")
+    figure.subplots_adjust(bottom=0.16, top=0.90, wspace=0.10)
+    save(figure, "01-hidden-from-above.png")
+    print(f"  along the radius: {hidden['patches']} patch, {hidden['showing']} of {hidden['total']} "
+          f"short-glass pixels, patch {patch_mm:.1f} mm of a permitted {kind_mm:.1f} mm, "
+          f"splay_covers={covers}, silhouette reaches {reach_px:.1f} px of a 160 px half-frame")
+    print(f"  across the radius: {beside['patches']} patches, {beside['showing']} of "
+          f"{beside['total']} short-glass pixels")
+
+
+# ---------------------------------------------------------------------------
+# 12. Completely hidden from the side: plain line of sight.
+# ---------------------------------------------------------------------------
+def picture_hidden_from_the_side() -> None:
+    """Two glasses in line with the level camera, and what the method returns.
+
+    Every silhouette is a real projection through ``sideon``. The second and
+    third panels differ only in which of the two glasses is the tall one, and
+    they return the same answer, which is the point.
+    """
+    tall_h, tall_base, tall_wide = size(TALL_GLASS)
+    far = STANDOFF + APART
+    width, height, horizon = 300, 260, 90
+
+    def picture(near_glass, far_glass):
+        args = {"width": width, "height": height, "horizon": horizon}
+        both = sideon([(0, STANDOFF, near_glass), (0, far, far_glass)], **args)
+        close = sideon([(0, STANDOFF, near_glass)], **args)
+        back = sideon([(0, far, far_glass)], **args)
+        patches, _ = cv2.connectedComponents(both)
+        return {"both": both, "near": close, "far": back, "patches": patches - 1,
+                "showing": int(((back > 0) & (close == 0)).sum()),
+                "total": int((back > 0).sum()),
+                "wide": cv2.boundingRect(both)[2],
+                "runs": contact_runs(both)}
+
+    behind_tall = picture(TALL_GLASS, TALL_GLASS)
+    behind_short = picture(SHORT_GLASS, TALL_GLASS)
+    limit = KIND_WIDEST * FX / STANDOFF
+
+    figure, axes = new(13.4, 5.0, columns=3)
+    sight, swallowed, showing = axes
+
+    # ------------------------------------------------- panel 1: the elevation
+    stage(sight, f"In line with the camera, {APART:.0f} mm apart")
+    sight.set_aspect("equal")
+    sight.set_xlim(-70, 800)
+    sight.set_ylim(-140, 272)
+    sight.plot([-50, 780], [0, 0], color=MUTED, lw=1.2, zorder=4)
+    note(sight, 110, -18, "the table", va="top")
+    sight.plot([0], [VIEW_HEIGHT], "o", color=INK, ms=7, zorder=5)
+    note(sight, 0, VIEW_HEIGHT + 12, "camera", INK, va="bottom")
+    sight.plot([-50, 780], [VIEW_HEIGHT, VIEW_HEIGHT], color=MUTED, lw=0.9, ls=(0, (5, 4)))
+    sight.text(612, VIEW_HEIGHT + 10, "the horizon", fontsize=NOTE_SIZE, color=MUTED,
+               ha="right", va="bottom")
+
+    top_slope = (tall_h - VIEW_HEIGHT) / (STANDOFF - tall_wide / 2)
+    base_slope = (0.0 - VIEW_HEIGHT) / (STANDOFF - tall_base / 2)
+    span = np.array([STANDOFF - tall_wide / 2, 790.0])
+    sight.fill_between(span, VIEW_HEIGHT + base_slope * span, VIEW_HEIGHT + top_slope * span,
+                       color=to_rgba(WARN, 0.10), lw=0, zorder=1)
+    for slope in (top_slope, base_slope):
+        sight.plot([0, 790], [VIEW_HEIGHT, VIEW_HEIGHT + slope * 790],
+                   color=WARN, lw=1.1, ls=(0, (5, 3)), zorder=2)
+    z, r = profile(TALL_GLASS)
+    for distance, shade in ((STANDOFF, 0.44), (far, 0.26)):
+        sight.fill_betweenx(z, distance - r, distance + r, color=to_rgba(GLASS, shade), lw=0, zorder=3)
+        sight.plot(distance + r, z, color=GLASS, lw=1.2, zorder=3)
+        sight.plot(distance - r, z, color=GLASS, lw=1.2, zorder=3)
+        note(sight, distance - 25, -18, f"{distance:.0f} mm", INK, va="top")
+    note(sight, 200, -52, "the shaded wedge is what\n"
+                          "the near glass's outline covers,\n"
+                          "and the far glass is wholly inside it", WARN, va="top")
+
+    # ---------------------------------------- panels 2 and 3: the two pictures
+    for axis, case, title in ((swallowed, behind_tall, "A tall glass behind a tall one"),
+                              (showing, behind_short, "A tall glass behind a short one")):
+        stage(axis, title)
+        paint(axis, case["near"] > 0, GLASS, 0.42)
+        # Paler blue, not green: green already means "a level stretch" in this
+        # document, and the far glass is named by its dashed outline instead.
+        paint(axis, (case["far"] > 0) & (case["near"] == 0), GLASS, 0.16)
+        axis.contour(case["far"].astype(float), [0.5], colors=[WARN], linewidths=1.1,
+                     linestyles="dashed")
+        outline_of(axis, case["both"] > 0)
+        columns, rows = bottom_edge(case["both"])
+        axis.plot(columns, rows, color=WARN, lw=1.8)
+        for start, stop, row in case["runs"]:
+            axis.plot([start, stop], [row, row], color=GOOD, lw=4.0, solid_capstyle="butt")
+        axis.set_xlim(100, 200)
+        axis.set_ylim(224, -32)
+        note(axis, 150, -30,
+             f"{case['patches']} patch, {case['wide']} px wide, against a {limit:.0f} px limit",
+             WARN, va="top")
+
+    note(swallowed, 150, 188,
+         f"{behind_tall['showing']} of the far glass's {behind_tall['total']} pixels reach the picture\n"
+         f"(its dashed outline is where it would be)\n"
+         f"{len(behind_tall['runs'])} level stretch, so the answer is one glass", WARN, va="top")
+    note(showing, 150, 188,
+         f"{behind_short['showing']} of the far glass's {behind_short['total']} pixels reach the picture,\n"
+         f"but its base is not among them\n"
+         f"{len(behind_short['runs'])} level stretch, so the answer is one glass", WARN, va="top")
+
+    footer(figure,
+           f"Line of sight needs no splay, so the distance between the two glasses buys nothing: at "
+           f"{APART:.0f} mm apart the far glass is gone, and it is still gone at 600 mm. Which glass is "
+           f"hidden is settled by which is nearer,\nnot by which is taller. Either way the patch is inside "
+           f"the width one glass of this kind may draw, and its underside holds one level stretch, so the "
+           f"method reports one glass and is not wrong about anything it was asked.")
+    figure.subplots_adjust(bottom=0.16, top=0.90, wspace=0.12)
+    save(figure, "01-hidden-from-the-side.png")
+    for name, case in (("tall behind tall ", behind_tall), ("tall behind short", behind_short)):
+        print(f"  {name}: {case['patches']} patch, {case['showing']} of {case['total']} far pixels, "
+              f"{case['wide']} px wide (limit {limit:.1f}), {len(case['runs'])} level stretch, "
+              f"split={len(split_by_contact(case['both']))}")
+
 def main() -> None:
     picture_where_the_overlap_is()
     picture_the_survey_cannot()
@@ -782,6 +1033,8 @@ def main() -> None:
     picture_the_control()
     picture_where_it_works()
     picture_what_it_does_not_buy()
+    picture_hidden_from_above()
+    picture_hidden_from_the_side()
 
 
 if __name__ == "__main__":

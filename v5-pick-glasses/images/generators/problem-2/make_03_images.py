@@ -1,6 +1,6 @@
 """Pictures for solution 3 — move the camera.
 
-Seven diagrams, each carrying a different point:
+Nine diagrams, each carrying a different point:
 
     03-two-difficulties.png       separation and viewpoint are not one problem
     03-the-fixed-sweep.png        the three-station sweep the cell already runs
@@ -9,6 +9,12 @@ Seven diagrams, each carrying a different point:
     03-bound-then-score.png       filter first, or score first and let the planner reject
     03-the-budget.png             extra looks against the tens-of-seconds ceiling
     03-no-viewpoint.png           the object with nowhere to look from
+    03-hidden-from-above.png      a glass covered by a taller one, from three nadirs
+    03-hidden-from-the-side.png   a glass behind another, and the step that frees it
+
+The last two project real glass outlines, taken from ``work_cell.glasses.shapes``,
+through the cell's own camera. A standing glass is a circle only in its
+footprint, which neither of the two views ever sees straight on.
 
 Run from the project root:
 
@@ -19,7 +25,10 @@ from __future__ import annotations
 
 import math
 import random
+import sys
+from pathlib import Path
 
+import cv2
 import numpy as np
 from diagram_style import (
     GLASS,
@@ -28,13 +37,22 @@ from diagram_style import (
     LABEL_SIZE,
     MUTED,
     NOTE_SIZE,
+    SHORT_A,
+    TALL_A,
     TITLE_SIZE,
     WARN,
     bare,
     new,
     save,
+    splay_circles,
+    splay_covers,
 )
+from matplotlib.colors import to_rgba
 from matplotlib.patches import Arc, Circle, Polygon, Rectangle, Wedge
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src" / "work_cell"))
+
+from work_cell.glasses.shapes import build  # noqa: E402
 
 # ---------------------------------------------------------------- the cell
 
@@ -1020,6 +1038,416 @@ def no_viewpoint() -> None:
     save(figure, "03-no-viewpoint.png")
 
 
+# --------------------------------------------- real projections of real glasses
+#
+# The two diagrams below draw silhouettes rather than plan views, so every
+# outline has to be projected properly. Both projections use the cell's own
+# camera and the cell's own two heights, and every glass is one of the
+# project's own outlines from work_cell.glasses.shapes. A standing glass is a
+# circle only in its footprint, which neither view ever sees straight on.
+
+FRAME = (320, 240)              # the wrist camera's picture, in pixels
+VIEW_HEIGHT = 120.0             # mm above the table, the height the level look is taken from
+SURVEY_MM = SURVEY_HEIGHT * 1000.0
+CANVAS = (520, 475)             # a drawing canvas, in those same pixels
+NADIR_ON_CANVAS = (185, 105)    # where the point below the camera sits on it
+
+
+def glass_outline(height_mm: float, rim_mm: float, base_fraction: float = 0.45):
+    """One of the project's own outlines, at a size inside the kind's own range."""
+    return build(
+        "tapered_glass",
+        height=height_mm / 1000.0,
+        rim_diameter=rim_mm / 1000.0,
+        base_fraction=base_fraction,
+    )
+
+
+TALL = glass_outline(*TALL_A)     # 225 mm tall, 102 mm across the rim
+SHORT = glass_outline(*SHORT_A)   # 95 mm tall, 67 mm across the rim
+
+
+def profile(outline) -> tuple[np.ndarray, np.ndarray]:
+    """The outline's heights and radii, in millimetres."""
+    return np.asarray(outline.height) * 1000.0, np.asarray(outline.radius) * 1000.0
+
+
+def topdown(glasses, size=CANVAS, centre=NADIR_ON_CANVAS) -> np.ndarray:
+    """Straight down from 450 mm, with the nadir at ``centre``.
+
+    Each horizontal slice of the glass stays a circle, but it slides away from
+    the nadir and grows as it rises, because it is nearer the lens than the
+    table is. So a glass images as a teardrop pointing away from the nadir.
+    """
+    width, height = size
+    mask = np.zeros((height, width), np.uint8)
+    for gx, gy, outline in glasses:
+        z, r = profile(outline)
+        for zi, ri in zip(z, r, strict=True):
+            away = SURVEY_MM - zi
+            cv2.circle(
+                mask,
+                (int(round(centre[0] + FX * gx / away)), int(round(centre[1] + FX * gy / away))),
+                max(1, int(round(FX * ri / away))), 255, -1,
+            )
+    return mask
+
+
+def sideon(glasses, size=FRAME) -> np.ndarray:
+    """Level, from 120 mm up, the pose the shape measurement is taken from.
+
+    ``gy`` is the distance along the way the camera is looking and ``gx`` the
+    offset across it. A horizontal circle seen edge-on is a line, so the
+    silhouette is the band between the left and right walls of the profile.
+    """
+    width, height = size
+    mask = np.zeros((height, width), np.uint8)
+    for gx, gy, outline in glasses:
+        z, r = profile(outline)
+        for zi, ri in zip(z, r, strict=True):
+            row = int(round(height / 2 - FX * (zi - VIEW_HEIGHT) / gy))
+            left = int(round(width / 2 + FX * (gx - ri) / gy))
+            right = int(round(width / 2 + FX * (gx + ri) / gy))
+            if 0 <= row < height:
+                cv2.line(mask, (max(0, left), row), (min(width - 1, right), row), 255, 1)
+    return mask
+
+
+def paint(axis, region: np.ndarray, colour: str, alpha: float = 1.0) -> None:
+    """Lay one mask over a picture panel in one colour."""
+    rgba = np.zeros((*region.shape, 4), float)
+    rgba[region > 0] = to_rgba(colour, alpha)
+    axis.imshow(rgba, interpolation="nearest", zorder=3)
+
+
+def edge(axis, mask: np.ndarray, colour: str, width: float = 1.1, style="-") -> None:
+    axis.contour(mask.astype(float), [0.5], colors=[colour], linewidths=width,
+                 linestyles=style, zorder=5)
+
+
+def picture_panel(axis, size, *, frame: bool = True, centre=None) -> None:
+    """A panel holding one projected picture, with the real frame marked on it."""
+    width, height = size
+    bare(axis)
+    axis.set_xlim(0, width)
+    axis.set_ylim(height, 0)
+    axis.set_aspect("equal")
+    if frame:
+        cx, cy = centre
+        axis.add_patch(
+            Rectangle((cx - FRAME[0] / 2, cy - FRAME[1] / 2), FRAME[0], FRAME[1],
+                      facecolor="none", edgecolor=MUTED, linewidth=1.1, linestyle="--", zorder=6)
+        )
+
+
+def bisect(test, low: float, high: float, tolerance: float = 0.05) -> float:
+    """The smallest value in [low, high] at which ``test`` turns true.
+
+    Used to put a number on each threshold the text quotes, rather than
+    quoting the nearest value on a coarse sweep.
+    """
+    while high - low > tolerance:
+        middle = (low + high) / 2.0
+        if test(middle):
+            high = middle
+        else:
+            low = middle
+    return high
+
+
+def footprint(axis, place, rim_mm: float, base_fraction: float = 0.45, *, colour=GLASS) -> None:
+    """A glass on a plan view: the circle it stands on, and the rim over it."""
+    axis.add_patch(Circle(tuple(place), rim_mm / 2.0 * base_fraction, facecolor=colour,
+                          edgecolor=INK, linewidth=1.0, alpha=0.85, zorder=6))
+    axis.add_patch(Circle(tuple(place), rim_mm / 2.0, facecolor="none", edgecolor=INK,
+                          linewidth=0.8, linestyle=":", zorder=6))
+
+
+# ----------------------------------------- 8. hidden from straight above
+
+
+def hidden_from_above() -> None:
+    """The same legal pair of glasses, from each of the three stations' nadirs.
+
+    A slice at height z is imaged as if it were scaled about the nadir by
+    H / (H - z), so a 225 mm rim seen from 450 mm lands at twice its real
+    offset and twice its real radius. Radially outwards from the nadir, that
+    splayed outline can swallow a short glass whole. Move the nadir sideways
+    and it stops being able to.
+    """
+    spacing = (STATIONS_Y[1] - STATIONS_Y[0]) * 1000.0      # 92.6 mm between stations
+    tall_at = np.array([190.0, 0.0])
+    short_at = np.array([340.0, 0.0])
+    nadirs = [np.array([0.0, -index * spacing]) for index in range(3)]
+
+    shots = []
+    for nadir in nadirs:
+        tall_xy = tall_at - nadir
+        short_xy = short_at - nadir
+        only_tall = topdown([(tall_xy[0], tall_xy[1], TALL)])
+        only_short = topdown([(short_xy[0], short_xy[1], SHORT)])
+        both = topdown([(tall_xy[0], tall_xy[1], TALL), (short_xy[0], short_xy[1], SHORT)])
+        extra = (both > 0) & (only_tall == 0)
+        patches, _ = cv2.connectedComponents((both > 0).astype(np.uint8))
+        shots.append({
+            "nadir": nadir,
+            "both": both,
+            "only_short": only_short,
+            "extra": extra,
+            "added": int(extra.sum()),
+            "alone": int((only_short > 0).sum()),
+            "patches": patches - 1,
+            "covers": splay_covers(
+                splay_circles(nadir, tall_at, *TALL_A), splay_circles(nadir, short_at, *SHORT_A)
+            ),
+        })
+        print(f"    nadir {nadir[1]:+7.1f} mm: the short glass adds {shots[-1]['added']:5d} px "
+              f"of its {shots[-1]['alone']:5d}, {shots[-1]['patches']} patch(es), "
+              f"splay_covers {shots[-1]['covers']}")
+
+    def adds_pixels(tall_out: float, sideways: float = 0.0, pair=(TALL, SHORT)) -> bool:
+        nadir = np.array([0.0, -sideways])
+        tall_xy = np.array([tall_out, 0.0]) - nadir
+        short_xy = np.array([tall_out + 150.0, 0.0]) - nadir
+        only_tall = topdown([(tall_xy[0], tall_xy[1], pair[0])])
+        both = topdown([(tall_xy[0], tall_xy[1], pair[0]), (short_xy[0], short_xy[1], pair[1])])
+        return bool(((both > 0) & (only_tall == 0)).any())
+
+    starts = bisect(lambda out: not adds_pixels(out), 100.0, 260.0)
+    moved = bisect(lambda over: adds_pixels(190.0, over), 0.0, 120.0)
+    widest = glass_outline(230.0, 105.0, 0.58)
+    narrowest = glass_outline(90.0, 65.0, 0.38)
+    extreme = bisect(lambda out: not adds_pixels(out, pair=(widest, narrowest)), 100.0, 260.0)
+    print(f"    covering starts with the tall glass {starts:.1f} mm out from the nadir; "
+          f"the nadir then has to slide {moved:.0f} mm sideways to break it")
+    print(f"    at the ends of the kind's range it starts {extreme:.1f} mm out, and that rim "
+          f"lands {FX * extreme / (SURVEY_MM - 230.0):.0f} px from the centre of a picture "
+          f"that ends {FRAME[0] / 2:.0f} px out")
+    print(f"    in the arrangement drawn, the tall rim images "
+          f"{FX * tall_at[0] / (SURVEY_MM - TALL_A[0]):.0f} px from the picture centre and the "
+          f"short rim {FX * short_at[0] / (SURVEY_MM - SHORT_A[0]):.0f} px")
+    corners = [np.array([x, y]) for x in ZONE[:2] for y in ZONE[2:]]
+    furthest = [max(float(np.linalg.norm(corner - np.array([STATION_X, y]))) for corner in corners)
+                * 1000.0 for y in STATIONS_Y]
+    print(f"    no point in the zone lies more than {max(furthest):.0f} mm from any station's "
+          f"nadir, or more than {furthest[1]:.0f} mm from the middle station's")
+
+    figure, axes = new(18.0, 6.0, columns=4)
+    plan, *pictures = axes
+
+    # --- the plan view: where the pair stands, and where the camera stands ---
+    plan_axes(plan, (-330.0, 470.0), (-310.0, 350.0))
+    plan.plot([0.0, 460.0], [0.0, 0.0], color=WARN, linewidth=1.0, zorder=2)
+    for index, nadir in enumerate(nadirs, start=1):
+        plan.plot([nadir[0]], [nadir[1]], marker="x", markersize=9, markeredgewidth=2.0,
+                  color=WARN if index == 1 else MUTED, zorder=9)
+        plan.text(nadir[0] - 18.0, nadir[1], f"nadir {index}", ha="right", va="center",
+                  fontsize=NOTE_SIZE, color=WARN if index == 1 else MUTED, zorder=9)
+    for place, size_mm, label in ((tall_at, TALL_A, "tall"), (short_at, SHORT_A, "short")):
+        footprint(plan, place, size_mm[1])
+        note(plan, place[0], place[1] + size_mm[1] / 2 + 12.0, label, colour=INK,
+             ha="center", va="bottom")
+    plan.annotate("", xy=(short_at[0], -46.0), xytext=(tall_at[0], -46.0),
+                  arrowprops={"arrowstyle": "<->", "color": GOOD, "linewidth": 1.2}, zorder=7)
+    note(plan, (tall_at[0] + short_at[0]) / 2.0, -50.0, "150 mm apart", colour=GOOD,
+         ha="center", va="top")
+    for place, up, text in ((tall_at, 120.0, "190 mm out"), (short_at, 172.0, "340 mm out")):
+        plan.annotate("", xy=(place[0], up), xytext=(0.0, up),
+                      arrowprops={"arrowstyle": "<->", "color": WARN, "linewidth": 1.0}, zorder=7)
+        note(plan, place[0] - 6.0, up + 5.0, text, colour=WARN, ha="right", va="bottom")
+    for place in (tall_at, short_at):
+        plan.plot([nadirs[2][0], place[0]], [nadirs[2][1], place[1]], color=GOOD,
+                  linewidth=1.0, zorder=2)
+    bearings = [math.degrees(math.atan2(*(place - nadirs[2])[::-1])) for place in (tall_at, short_at)]
+    note(plan, -325.0, 345.0,
+         f"tall     225 mm tall, 102 across\n"
+         f"short     95 mm tall,  67 across\n"
+         f"H/(H-z)  450 / (450 - 225) = {SURVEY_MM / (SURVEY_MM - TALL_A[0]):.1f}",
+         colour=MUTED, mono=True)
+    note(plan, 70.0, -305.0,
+         "From nadir 1 the pair lies along one radius.\n"
+         f"From nadir 3 the two bearings are {abs(bearings[0] - bearings[1]):.1f} degrees apart.",
+         colour=INK, ha="center", va="bottom")
+
+    # --- the three pictures ------------------------------------------------
+    for axis, shot in zip(pictures, shots, strict=True):
+        picture_panel(axis, CANVAS, centre=NADIR_ON_CANVAS)
+        paint(axis, shot["both"], GLASS, 0.34)
+        paint(axis, shot["extra"], GOOD, 0.75)
+        edge(axis, shot["only_short"], WARN, 1.1, ":")
+        axis.plot([NADIR_ON_CANVAS[0]], [NADIR_ON_CANVAS[1]], marker="x", markersize=8,
+                  markeredgewidth=1.8, color=WARN, zorder=8)
+        axis.text(NADIR_ON_CANVAS[0] - 8, NADIR_ON_CANVAS[1] - 8, "nadir", ha="right", va="bottom",
+                  fontsize=NOTE_SIZE, color=WARN, zorder=8)
+        axis.text(
+            NADIR_ON_CANVAS[0] - FRAME[0] / 2 + 6, NADIR_ON_CANVAS[1] + FRAME[1] / 2 - 6,
+            "the 320 x 240 frame", ha="left", va="bottom", fontsize=NOTE_SIZE, color=MUTED, zorder=8,
+        )
+        wording = ("not one pixel of it" if shot["added"] == 0
+                   else f"{shot['added']} pixels of it")
+        axis.text(
+            10, CANVAS[1] - 8,
+            f"dotted red: where the short glass is\n{wording} reaches the picture, "
+            f"out of {shot['alone']}\nthe picture holds {shot['patches']} patch"
+            f"{'' if shot['patches'] == 1 else 'es'}",
+            ha="left", va="bottom", fontsize=NOTE_SIZE,
+            color=WARN if shot["added"] == 0 else GOOD, zorder=8,
+        )
+
+    titles(
+        figure, axes,
+        [
+            "The pair, and the three nadirs",
+            "From nadir 1: swallowed whole",
+            "One station along: a crescent",
+            "Two stations along: nearly all of it",
+        ],
+        [INK, WARN, GOOD, GOOD],
+        heading=(
+            "Looking straight down: splay is radial from the nadir, so which station "
+            "you look from decides whether the short glass exists"
+        ),
+    )
+    save(figure, "03-hidden-from-above.png")
+
+
+# -------------------------------------------- 9. hidden from the level view
+
+
+def level_camera(near_at, far_at, azimuth_deg: float):
+    """Where the two glasses sit in the camera's own frame.
+
+    The camera stands at the 380 mm standoff from the near glass, 120 mm up,
+    looking level at it. ``azimuth_deg`` is how far round the near glass it has
+    stepped from the direction that lines the two glasses up.
+    """
+    angle = math.radians(azimuth_deg)
+    eye = near_at + STANDOFF * 1000.0 * np.array([-math.sin(angle), -math.cos(angle)])
+    forward = (near_at - eye) / float(np.linalg.norm(near_at - eye))
+    across = np.array([forward[1], -forward[0]])
+    return eye, [(float((place - eye) @ across), float((place - eye) @ forward))
+                 for place in (near_at, far_at)]
+
+
+def hidden_from_the_side() -> None:
+    """Plain line-of-sight blocking, and the step round that undoes it.
+
+    No splay is needed here. The near glass's outline simply covers the far
+    one's, and because the near glass is the nearer of the two it is magnified,
+    so it covers a far glass much taller than itself.
+    """
+    near_at = np.array([0.0, 0.0])
+    far_at = np.array([0.0, 300.0])
+
+    def shot(azimuth_deg, near=TALL, far=SHORT):
+        _, (gn, gf) = level_camera(near_at, far_at, azimuth_deg)
+        only_near = sideon([(gn[0], gn[1], near)])
+        only_far = sideon([(gf[0], gf[1], far)])
+        both = sideon([(gn[0], gn[1], near), (gf[0], gf[1], far)])
+        extra = (both > 0) & (only_near == 0)
+        patches, _ = cv2.connectedComponents((both > 0).astype(np.uint8))
+        return {"both": both, "only_far": only_far, "extra": extra,
+                "added": int(extra.sum()), "alone": int((only_far > 0).sum()),
+                "patches": patches - 1, "near": gn, "far": gf}
+
+    in_line = shot(0.0)
+    stepped = shot(19.8)
+    reversed_pair = shot(0.0, near=SHORT, far=TALL)
+    for name, s in (("in line", in_line), ("19.8 deg round", stepped),
+                    ("short in front of tall", reversed_pair)):
+        print(f"    {name:24s}: the far glass adds {s['added']:5d} px of its {s['alone']:5d}, "
+              f"{s['patches']} patch(es)")
+
+    first = bisect(lambda turn: shot(turn)["added"] > 0, 0.0, 15.0)
+    apart = bisect(lambda turn: shot(turn)["patches"] > 1, 10.0, 30.0)
+
+    def still_refused(turn: float) -> bool:
+        _, (near_xy, far_xy) = level_camera(near_at, far_at, turn)
+        between = abs(math.atan2(*near_xy[::-1]) - math.atan2(*far_xy[::-1]))
+        limit = (half_width(TALL_A[1] / 2.0, float(np.hypot(*near_xy)))
+                 + half_width(SHORT_A[1] / 2.0, float(np.hypot(*far_xy))))
+        return between < limit
+
+    refuses_to = bisect(lambda turn: not still_refused(turn), 10.0, 40.0)
+    print(f"    the far glass shows its first pixel after a {first:.1f} degree step round, comes "
+          f"clear of the near one at {apart:.1f}, and test two refuses everything up to "
+          f"{refuses_to:.1f}")
+
+    figure, axes = new(17.2, 5.4, columns=4)
+    plan, *pictures = axes
+
+    # --- the plan view -----------------------------------------------------
+    plan_axes(plan, (-455.0, 455.0), (-510.0, 570.0))
+    for place, size_mm, label in ((near_at, TALL_A, "the near glass,\n225 mm tall,\n102 across"),
+                                  (far_at, SHORT_A, "the far glass,\n95 mm tall,\n67 across")):
+        footprint(plan, place, size_mm[1])
+        note(plan, place[0] + size_mm[1] / 2 + 18.0, place[1], label, colour=INK,
+             ha="left", va="center")
+    plan.annotate("", xy=(-115.0, far_at[1]), xytext=(-115.0, near_at[1]),
+                  arrowprops={"arrowstyle": "<->", "color": GOOD, "linewidth": 1.2}, zorder=7)
+    note(plan, -123.0, 150.0, "300 mm", colour=GOOD, ha="right", va="center")
+    for azimuth, colour, label, dx, ha in ((0.0, WARN, "in line with the pair", 34.0, "left"),
+                                           (19.8, GOOD, "19.8 degrees round", -34.0, "right")):
+        eye, (gn, gf) = level_camera(near_at, far_at, azimuth)
+        camera(plan, eye, near_at, colour=colour, size=24.0)
+        note(plan, eye[0] + dx, eye[1], label, colour=colour, ha=ha, va="center")
+        for place, size_mm in ((near_at, TALL_A), (far_at, SHORT_A)):
+            span = place - eye
+            distance = float(np.linalg.norm(span))
+            heading = math.atan2(span[1], span[0])
+            for sign in (-1.0, 1.0):
+                angle = heading + sign * half_width(size_mm[1] / 2.0, distance)
+                plan.plot([eye[0], eye[0] + math.cos(angle) * distance * 1.06],
+                          [eye[1], eye[1] + math.sin(angle) * distance * 1.06],
+                          color=colour, linewidth=0.9, alpha=0.8, zorder=3)
+    plan.add_patch(
+        Arc(tuple(near_at), 2 * STANDOFF * 1000.0, 2 * STANDOFF * 1000.0,
+            theta1=250.0, theta2=292.0, edgecolor=MUTED, linewidth=1.0, linestyle="--", zorder=2)
+    )
+    note(plan, -450.0, 565.0,
+         "The camera stands 380 mm back from the near\n"
+         "glass, 120 mm up, looking level. That is the\n"
+         "pose the shape measurement needs anyway.",
+         colour=INK)
+    note(plan, 450.0, -505.0,
+         "The step is round the pair, not away from it:\n"
+         "standing further back changes nothing here.",
+         colour=GOOD, ha="right", va="bottom")
+
+    # --- the three pictures ------------------------------------------------
+    stories = (
+        (in_line, "in line: the far glass is gone", WARN),
+        (stepped, "19.8 degrees round: it is back", GOOD),
+        (reversed_pair, "the short glass in front: it keeps the top", GOOD),
+    )
+    for axis, (s, _, colour) in zip(pictures, stories, strict=True):
+        picture_panel(axis, FRAME, frame=False)
+        axis.add_patch(Rectangle((0, 0), FRAME[0] - 1, FRAME[1] - 1, facecolor="#f7f8fa",
+                                 edgecolor=MUTED, linewidth=1.0, zorder=0))
+        paint(axis, s["both"], GLASS, 0.34)
+        paint(axis, s["extra"], GOOD, 0.7)
+        edge(axis, s["only_far"], WARN, 1.1, ":")
+        wording = ("not one pixel of it" if s["added"] == 0 else f"{s['added']} pixels of it")
+        axis.text(
+            8, FRAME[1] - 8,
+            f"dotted red: where the far glass is\n{wording} reaches the picture, "
+            f"out of {s['alone']}\nthe picture holds {s['patches']} patch"
+            f"{'' if s['patches'] == 1 else 'es'}",
+            ha="left", va="bottom", fontsize=NOTE_SIZE, color=colour, zorder=8,
+        )
+
+    titles(
+        figure, axes,
+        ["Where the two glasses stand"] + [label for _, label, _ in stories],
+        [INK] + [colour for _, _, colour in stories],
+        heading=(
+            "Looking level: no splay is needed, the near outline simply covers the far one, "
+            "and the cure is a step round rather than a step out"
+        ),
+    )
+    save(figure, "03-hidden-from-the-side.png")
+
+
 def main() -> None:
     two_difficulties()
     fixed_sweep()
@@ -1028,6 +1456,8 @@ def main() -> None:
     bound_then_score()
     budget()
     no_viewpoint()
+    hidden_from_above()
+    hidden_from_the_side()
 
 
 if __name__ == "__main__":

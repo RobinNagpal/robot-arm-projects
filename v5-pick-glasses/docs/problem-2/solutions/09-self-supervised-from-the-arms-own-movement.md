@@ -151,18 +151,12 @@ takes **several pictures along that slide rather than two**. That costs almost
 nothing extra and gives many pairs per station instead of one, because every
 picture can be paired with every other.
 
-That slide turns out to buy something this problem needs, and it is worth
-spelling out because it is free and easy to overlook. Sliding the camera
-sideways moves the point directly below it. Every object's hidden region is a
-wedge pointing away from that point, so **moving the point swings every wedge**.
-An object hidden behind a taller one at one end of the slide may therefore be
-plainly visible at the other end, without the arm going anywhere new.
-
-This matters because one kind spans a small tapered glass to a large one, so a
-tall glass can cover a short one completely from a given camera position.
-The slide does not solve that — the swing is small, because the slide is short —
-but it is coverage the survey has already paid for, and any method that treats a
-station's pictures as one viewpoint is throwing it away.
+That slide turns out to buy something this problem needs, and it is set out in
+[when the glasses are completely
+hidden](#when-the-glasses-are-completely-hidden): the same sideways movement
+that separates two glasses by depth also swings the region each glass hides
+behind it, so a glass covered completely at one end of the slide can be in plain
+view at the other.
 
 ## The dial: separation grows in step with the slide
 
@@ -334,6 +328,172 @@ the network costs milliseconds, so the loop has to stop: when nothing is
 unclear, or when the budget is spent. A pair the arm could not separate is a
 result this problem asks for, and not a failure.
 
+## When the glasses are completely hidden
+
+Everything above this point assumes that each glass puts at least a few pixels
+into the picture. The hardest case this problem has is the one where a glass
+puts in none at all. That is not a small region or a doubtful boundary. It is
+nothing, and nothing is what every method in this project works from, so a glass
+with no pixels cannot be counted, measured or reported by any of them.
+
+Of the nine solutions this one has the most direct answer to that case, and it
+is worth being exact about why before saying how far the answer goes. The signal
+this method lives on is the difference between how far a near thing and a far
+thing shift when the camera moves, and that difference comes from the shift
+going as one divided by the depth. A glass that contributes no pixels is hidden
+from **one place the camera stood**. Move the camera and it stops being hidden.
+The movement that reveals it is the same movement the method already makes in
+order to train, so the reveal costs no extra arm time.
+
+That is the claim. What follows is the arithmetic behind it, and it comes out
+differently for each of the two places this cell puts its camera, because a
+glass is hidden in each of them for a different reason.
+
+### When the camera is looking straight down
+
+The plain answer first. **This solution never works from the survey view.** [Why
+the camera must work from the side](#why-the-camera-must-work-from-the-side) is
+the section that shows why, and the short of it is that looking down leaves this
+method nothing to measure at all. So hiding that happens up there is not a case
+this solution handles, and pretending otherwise would be inventing a treatment
+for a view the method never uses.
+
+It is still worth following how the hiding works, because it is the difficulty
+the whole of problem 2 is named after, and because the geometry turns out to say
+something useful about where it can happen.
+
+A camera looking straight down does not draw a glass's outline over the glass. A
+horizontal slice of the glass at height z above the table is nearer the lens
+than the table is, so it is imaged as though it had been scaled outwards about
+the point on the table directly below the camera. That point is called the
+**nadir**, which is the ordinary word for the spot straight below. The scale
+factor is the camera's height divided by its height above the slice, which is
+450 / (450 − z). At the rim of a 225 mm glass that is 450 / 225, or exactly 2.
+The rim circle therefore lands at twice its real distance from the nadir and at
+twice its real radius. That outward throw is called **splay**, and it is what
+lets a tall glass's silhouette reach across a neighbour that is standing well
+clear of it on the table.
+
+When the splayed silhouette of the tall glass contains the whole splayed
+silhouette of the short one, the short glass contributes no pixels. What comes
+back is one patch, and it is exactly the patch the tall glass would have made
+standing by itself, so nothing about it looks wrong. Hiding this way needs two
+things together: the two glasses close to each other, and very different in
+height. The hidden one is always the shorter.
+
+Splay runs outwards from the nadir, so where the pair sits relative to the nadir
+is what decides whether it hides. A pair lying along a radius from the nadir
+hides. The same pair turned across a radius does not. Sliding the camera
+sideways moves the nadir, which swings the splay, which ends the hiding.
+
+![Two glasses of the kind's extreme sizes, projected through the overhead camera at four positions along one slide, with the frame the picture actually covers drawn as a dashed rectangle](../../../images/problem-2/09-hidden-from-above.png)
+
+That picture stands the tallest glass the kind allows, 230 mm, 200 mm out from
+the nadir, and the shortest it allows, 90 mm, a further 150 mm out along the
+same radius. 150 mm is the closest two glasses in this cell are ever allowed to
+stand. Where the camera already is, the short glass is entirely inside the tall
+one's outline. A slide of **48.5 mm outward along that radius** brings the first
+points of its outline clear, and a slide across the radius does it in 76 mm.
+Both are shorter than the 120 mm the arm slides at a station anyway.
+
+But the dashed rectangle is what settles the case, and it is the reason this
+subsection ends where it does. The hidden glass sits between 207 and 294 pixels
+from the centre of a picture whose own corner is only 200 pixels out, so it is
+off the edge of the frame. That is not a quirk of this one arrangement. Taking
+the kind at its extremes — the tallest and widest glass over the shortest and
+narrowest, at the closest spacing the cell allows, which is the arrangement most
+likely to hide — the closest a completely covered glass can ever sit to the
+centre of an overhead picture is 258 pixels. The splay that covers the short
+glass is the same splay that has already carried it out of shot.
+
+So this kind of hiding never happens to a glass that was in the picture to begin
+with. It is a question of survey coverage rather than of occlusion, and the cell
+answers it with the three overlapping stations the survey already runs. Where a
+glass is genuinely missing from a survey picture, the case is handed to the
+geometric argument in [solution 2](02-cluster-on-the-table.md), which reasons
+about where a glass could be standing unseen instead of waiting for its pixels.
+This solution hands that case on and does not pretend to it.
+
+### When the camera is looking level
+
+This is the view the method does use: 120 mm above the table, looking level,
+standing back 380 mm from the glass being measured. Hiding here needs no splay.
+It is plain line of sight. The near glass's outline covers the far one's, and
+that is the whole of it.
+
+Two things follow, and both are the opposite of the overhead case. The first is
+that putting the two glasses further apart buys nothing. A far glass standing
+250 mm behind the near one contributes no pixels, and neither does the same
+glass at 300 mm behind, or at 500 mm behind, because it shrinks in the picture
+as fast as it moves out of line. The second is that the hidden one is the
+further one whatever its height. The near glass is nearer, so it is magnified in
+the picture, and a short glass in front can cover a taller glass behind.
+
+![Four real level-view frames along one 120 mm slide, and the count of the far glass's pixels that reach the picture at every slide in between](../../../images/problem-2/09-hidden-from-the-side.png)
+
+The pair in that picture is an ordinary one, drawn by the project's own spawner.
+The near glass is 181 mm tall and the far one 216 mm, so the taller of the two
+is the one that disappears. At the camera's own position not one of the far
+glass's 1749 pixels reaches the picture.
+
+Now slide the camera, and watch which way the hiding breaks. Both glasses move
+across the picture, but the near one moves faster, because the shift goes as one
+divided by the depth and the near one is at 380 mm while the far one is at
+680 mm. The near glass's shift grows 0.32 pixels faster per millimetre of slide
+than the far glass's, which is exactly the quantity this method was built to
+measure. The far glass comes out from behind the near one at the rate that
+difference sets, and it comes out at the base first, where the near glass tapers
+inwards.
+
+The numbers are on the right-hand panel of that picture. The far glass's **first
+pixel arrives after 48 mm of slide**, it has fifty pixels by 55 mm, and half of
+it is in the picture by 86 mm. The arm slides 120 mm at a station regardless,
+and by the end of that slide 1542 of the far glass's 1749 pixels are in plain
+view. Because the arm photographs several times along the slide rather than
+twice, the frames in which the glass appears are already taken and already
+labelled with the encoder reading that says where the camera was.
+
+That is one pair. Across every arrangement of the project's own glasses in which
+the far one contributes no pixels at all — 75 of them — the first pixel arrives
+somewhere between 0.5 and 67 mm of slide, and fifty pixels between 7 and
+71.5 mm. **The longest slide any of the 75 needs for fifty pixels is 71.5 mm,
+and the station slides 120 mm anyway.** So for the level view the answer is not
+that the method could uncover a hidden glass if it were asked to. It is that it
+has already done so, in pictures it took for another purpose.
+
+Now the part that is not solved, because it is the honest limit of all this. **A
+hidden glass does not announce itself.** The arm has no reading that says a
+glass is missing. It has a picture with one silhouette in it, and a picture with
+one silhouette in it is exactly what a table holding one glass produces. So the
+arm cannot price this the way [the
+dial](#the-dial-separation-grows-in-step-with-the-slide) prices an unclear pair:
+there is no separation to divide by, because there is no second thing yet. It
+can only slide far enough on the chance that something is there, and the budget
+for that is finite — an arm movement costs seconds while a picture costs
+milliseconds.
+
+Worse, the slide the arm does make was chosen for a different job. Its length
+and its direction were picked to separate a pair the arm can already see, and a
+slide that is right for that is not necessarily a slide that uncovers a glass
+the arm cannot see. The region a near glass hides is a wedge pointing away from
+the camera, and sliding sideways swings that wedge; but it swings it one way,
+and a glass hiding on the far side of the wedge has to wait longer. Put the far
+glass 20 mm off the line of sight instead of exactly on it and it is still
+completely hidden, but now one direction of slide uncovers it after 22 mm while
+the other takes 72.5 mm. Push it 30 mm off the line and the two figures are
+9.5 mm and 86.5 mm. The arm has no way to know which of those two cases it is
+in, because the thing that would tell it is the glass it cannot see.
+
+So the plain verdict is that this solution handles the hidden case **only
+partly**. Where the camera looks level, which is where the method works, it
+handles the case genuinely and cheaply, and the evidence is already in the
+pictures it took to train on. Where the camera looks straight down it handles
+nothing, and hands the case to [solution 2](02-cluster-on-the-table.md) and to
+the survey's overlapping stations. And in neither view can it promise that a
+glass it has not seen will be revealed by a slide it chose for another reason,
+which is the case [move the camera](03-move-the-camera.md) exists to take on,
+because that solution reasons about viewpoints before it spends them.
+
 ## A worked example
 
 This example follows one pair through the method.
@@ -474,14 +634,13 @@ plainest.
 
 What the method cannot say comes second. **It says which pixels go together, and
 not how many glasses there are.** Something still has to choose the number of
-groups, and choosing too few is exactly the merge this problem fears. And as
-with every other pixel-based method here, a glass covered completely by a taller
-one contributes no pixels to group, so this method is silent about it — the
-geometric argument in [solution 2](02-cluster-on-the-table.md) is what speaks to
-that case. A merged pair comes back as one tidy region with no complaint, so the
-circle-fit check afterwards is not optional. And changing the lighting or the
-kind of glass leaves the learned embedding describing a cell that no longer
-exists.
+groups, and choosing too few is exactly the merge this problem fears. A glass
+that contributes no pixels at all is a case of its own, and [when the glasses
+are completely hidden](#when-the-glasses-are-completely-hidden) is where this
+document answers it. A merged pair comes back as one tidy region with no
+complaint, so the circle-fit check afterwards is not optional. And changing the
+lighting or the kind of glass leaves the learned embedding describing a cell
+that no longer exists.
 
 Why it is not the thing to build here comes third, and it is the honest
 conclusion. **The cell already has a depth camera**, which measures directly

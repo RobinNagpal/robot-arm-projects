@@ -1,9 +1,17 @@
 """Diagrams for solution 9 — self-supervised from the arm's own movement.
 
-Six pictures, each carrying its own point: where the training labels come from,
-what the parallax signal is, what an embedding is, the arithmetic of how much
-slide buys how much separation, the deliberate-motion loop, and the case where
-the whole idea has nothing to work with.
+Eight pictures, each carrying its own point: where the training labels come
+from, what the parallax signal is, what an embedding is, the arithmetic of how
+much slide buys how much separation, the deliberate-motion loop, the case where
+the whole idea has nothing to work with, and the two geometries in which a glass
+can contribute no pixels at all.
+
+The last two draw silhouettes rather than schematics, and every silhouette in
+them is a real projection of one of the project's own glass outlines, taken from
+``work_cell.glasses.shapes``, through the cell's own camera. A standing glass is
+a circle only in its footprint, which neither of this cell's camera poses ever
+sees straight on, and drawing it as one is what the first version of these two
+pictures got wrong.
 
 Run from the project root:
 
@@ -12,6 +20,10 @@ Run from the project root:
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
+import cv2
 import numpy as np
 from diagram_style import (
     GLASS,
@@ -20,16 +32,28 @@ from diagram_style import (
     LABEL_SIZE,
     MUTED,
     NOTE_SIZE,
+    SURVEY_H,
     TITLE_SIZE,
     WARN,
     bare,
     new,
     save,
+    splay_covers,
+    splay_width,
 )
-from matplotlib.patches import Circle, FancyArrowPatch, FancyBboxPatch, Polygon
+from matplotlib.colors import to_rgba
+from matplotlib.patches import Circle, FancyArrowPatch, FancyBboxPatch, Polygon, Rectangle
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src" / "work_cell"))
+
+from work_cell.glasses.shapes import build, family  # noqa: E402
 
 FX = 277.1            # pixels; the camera's focal length, the same in both axes
 SURVEY_SLIDE = 120.0  # mm; the sideways slide between a station's two pictures
+FRAME_W, FRAME_H = 320, 240   # the camera's picture, in pixels
+VIEW_HEIGHT = 120.0   # mm above the table, the height the level view looks from
+STANDOFF = 380.0      # mm from the near glass, the distance the level view stands back
+MM_PER_PX = SURVEY_H / FX     # how much table one pixel of a survey picture covers
 
 
 def shift_px(depth_mm: float, slide_mm: float = SURVEY_SLIDE) -> float:
@@ -91,6 +115,106 @@ def tumbler(axis, x, base, height, width, *, colour=GLASS, face=None, alpha=0.35
             zorder=z,
         )
     )
+
+
+# ---------------------------------------------------------------------------
+# The two camera poses, projected properly, from the project's own outlines.
+# ---------------------------------------------------------------------------
+
+# The kind's own extremes, straight out of KIND_RANGES["tapered_glass"]: 90 to
+# 230 mm tall and 65 to 105 mm across the rim. The taper is the middle of its
+# range. These are the two glasses between which the overhead view can hide one
+# entirely, and no pair closer together in size can do it.
+TALLEST = build("tapered_glass", height=0.230, rim_diameter=0.105, base_fraction=0.45)
+SMALLEST = build("tapered_glass", height=0.090, rim_diameter=0.065, base_fraction=0.45)
+
+# Two ordinary glasses of the kind, drawn by the project's own spawner, for the
+# level view. The near one is shorter than the far one, which is the point.
+_FAMILY = [outline for outline, _ in family("tapered_glass", 12, 1)]
+NEAR_GLASS, FAR_GLASS = _FAMILY[2], _FAMILY[6]
+
+
+def profile_mm(outline) -> tuple[np.ndarray, np.ndarray]:
+    """One side of a glass, in millimetres: heights up the glass, and radii."""
+    return np.asarray(outline.height) * 1000.0, np.asarray(outline.radius) * 1000.0
+
+
+def rim_size(outline) -> tuple[float, float]:
+    """How tall the glass is and how wide across its rim, in millimetres."""
+    z, r = profile_mm(outline)
+    return float(z.max()), float(2.0 * r.max())
+
+
+def overhead_circles(nadir, centre, outline, slices: int = 60):
+    """The stack of circles a standing glass draws in a picture taken from above.
+
+    A horizontal slice of the glass stays a circle when the camera looks straight
+    down, but the slice at height z is nearer the lens than the table is, so it is
+    imaged as though it had been scaled about the point directly below the camera
+    by SURVEY_H / (SURVEY_H - z). The silhouette is the union of those circles.
+
+    The format is the one diagram_style's splay_covers, splay_patch and
+    splay_width take, so those can be used on it unchanged. Everything is in
+    millimetres on the table, measured from ``nadir``.
+    """
+    z, r = profile_mm(outline)
+    index = np.linspace(0, len(z) - 1, slices).astype(int)
+    offset = np.asarray(centre, dtype=float) - np.asarray(nadir, dtype=float)
+    out = []
+    for i in index:
+        k = SURVEY_H / (SURVEY_H - z[i])
+        out.append((offset * k, r[i] * k))
+    return out
+
+
+def escaping_points(big, small, angles: int = 180) -> np.ndarray:
+    """The points of ``small``'s outline that ``big``'s silhouette does not cover.
+
+    This is splay_covers opened up: the same test, point by point, returning the
+    points that fail rather than one verdict. Those points are where the hidden
+    glass's first pixels come from.
+    """
+    free = []
+    for centre, radius in small:
+        for angle in np.linspace(0.0, 2.0 * np.pi, angles, endpoint=False):
+            point = centre + radius * np.array([np.cos(angle), np.sin(angle)])
+            if not any(np.hypot(*(point - cb)) <= rb + 1e-9 for cb, rb in big):
+                free.append(point)
+    return np.array(free) if free else np.empty((0, 2))
+
+
+def level_mask(glasses, width: int = FRAME_W, height: int = FRAME_H, horizon=None) -> np.ndarray:
+    """What the camera sees from VIEW_HEIGHT, looking level.
+
+    A horizontal circle seen edge-on is a line, so a glass's silhouette is the
+    region between the left and right walls of its outline. Each glass is given
+    as (sideways offset, depth, outline), all in millimetres, and a nearer glass
+    is drawn larger because its depth divides into the focal length.
+    """
+    mask = np.zeros((height, width), np.uint8)
+    middle = width / 2.0
+    horizon = height * 0.62 if horizon is None else horizon
+    for offset, depth, outline in glasses:
+        z, r = profile_mm(outline)
+        left, right = [], []
+        for zi, ri in zip(z, r, strict=True):
+            row = horizon - FX * (zi - VIEW_HEIGHT) / depth
+            left.append((middle + FX * (offset - ri) / depth, row))
+            right.append((middle + FX * (offset + ri) / depth, row))
+        polygon = np.round(np.array(left + right[::-1])).astype(np.int32)
+        cv2.fillPoly(mask, [polygon], 255)
+    return mask
+
+
+def paint(axis, region: np.ndarray, colour: str, alpha: float = 1.0) -> None:
+    """Show a boolean mask in one colour, leaving the rest of the frame clear."""
+    rgba = np.zeros((*region.shape, 4), float)
+    rgba[region] = to_rgba(colour, alpha)
+    axis.imshow(rgba, interpolation="nearest")
+
+
+def edge_of(axis, mask: np.ndarray, colour: str = INK, width: float = 1.1) -> None:
+    axis.contour(mask.astype(float), [0.5], colors=[colour], linewidths=width)
 
 
 # ---------------------------------------------------------------------------
@@ -715,6 +839,265 @@ def the_limit() -> None:
     save(figure, "09-the-limit.png")
 
 
+# ---------------------------------------------------------------------------
+# 7. Completely hidden, looking straight down: splay, and where it happens.
+# ---------------------------------------------------------------------------
+
+OVERHEAD_TALL_OUT = 200.0     # mm from the point below the camera to the tall glass
+OVERHEAD_GAP = 150.0          # mm between the two centres: the cell's own smallest
+
+
+def hidden_from_above() -> None:
+    """Four overhead pictures as the camera slides outward along the pair's radius.
+
+    Everything drawn is measured, not placed by eye. The silhouettes are real
+    projections of the kind's tallest and shortest glasses, the verdict on each
+    panel comes from splay_covers, and the slide written on the third panel is
+    the first half-millimetre step at which that verdict changes.
+    """
+    direction = np.array([1.0, 0.0])  # outward along the radius through the pair
+
+    def pair(slide: float):
+        nadir = direction * slide
+        return (
+            overhead_circles(nadir, (OVERHEAD_TALL_OUT, 0.0), TALLEST),
+            overhead_circles(nadir, (OVERHEAD_TALL_OUT + OVERHEAD_GAP, 0.0), SMALLEST),
+        )
+
+    reveal = None
+    for millimetres in np.arange(0.0, 300.5, 0.5):
+        if not splay_covers(*pair(float(millimetres))):
+            reveal = float(millimetres)
+            break
+    slides = (0.0, 24.0, reveal, 90.0)
+
+    tall_h, tall_w = rim_size(TALLEST)
+    short_h, short_w = rim_size(SMALLEST)
+    hidden = pair(0.0)[1]
+    out_px = max(c[0] + r for c, r in hidden) / MM_PER_PX
+    in_px = min(c[0] - r for c, r in hidden) / MM_PER_PX
+    corner_px = np.hypot(FRAME_W / 2, FRAME_H / 2)
+    patch_mm = splay_width(pair(0.0)[0])
+
+    figure, axes = new(15.0, 4.6, columns=4)
+    half_w, half_h = FRAME_W / 2 * MM_PER_PX, FRAME_H / 2 * MM_PER_PX
+
+    for index, (axis, slide) in enumerate(zip(axes, slides, strict=True)):
+        bare(axis)
+        axis.set_aspect("equal")
+        axis.set_xlim(-330, 760)
+        axis.set_ylim(-260, 260)
+
+        big, small = pair(slide)
+        nadir = direction * slide
+
+        axis.add_patch(
+            Rectangle(
+                (nadir[0] - half_w, nadir[1] - half_h),
+                2 * half_w,
+                2 * half_h,
+                facecolor=to_rgba(MUTED, 0.07),
+                edgecolor=MUTED,
+                linewidth=1.2,
+                linestyle=(0, (5, 3)),
+                zorder=1,
+            )
+        )
+        axis.plot([nadir[0]], [nadir[1]], marker="x", color=WARN, markersize=7, zorder=8)
+
+        for centre, radius in big:
+            axis.add_patch(Circle(tuple(centre), radius, facecolor=GLASS, alpha=0.14,
+                                  edgecolor="none", zorder=3))
+        for centre, radius in small:
+            axis.add_patch(Circle(tuple(centre), radius, facecolor="none",
+                                  edgecolor=WARN, linewidth=0.5, alpha=0.55, zorder=4))
+
+        free = escaping_points(big, small)
+        if len(free):
+            axis.scatter(free[:, 0], free[:, 1], s=22, color=GOOD, zorder=6, linewidths=0)
+
+        verdict = (f"{len(free)} points of the short glass's\noutline are clear of the tall one's"
+                   if len(free) else
+                   "the short glass is inside the tall\none's outline: it contributes no pixels")
+        heading = "where the camera already is" if index == 0 else f"slide {slide:.1f} mm"
+        axis.set_title(f"{heading}\n{verdict}", fontsize=NOTE_SIZE, pad=7, linespacing=1.6,
+                       color=GOOD if len(free) else WARN)
+
+    axes[2].annotate(
+        "the first pixels",
+        xy=tuple(escaping_points(*pair(slides[2]))[0]), xytext=(700, -170),
+        fontsize=NOTE_SIZE, color=GOOD, ha="right",
+        arrowprops={"arrowstyle": "-|>", "color": GOOD, "linewidth": 1.0},
+    )
+
+    figure.suptitle(
+        "Looking straight down, a glass can be hidden — but only out where the picture "
+        "no longer reaches",
+        fontsize=TITLE_SIZE, color=INK, y=0.99,
+    )
+    figure.tight_layout(rect=(0, 0.30, 1, 0.92))
+    figure.text(
+        0.5, 0.275,
+        f"Blue is the tallest glass the kind allows, {tall_h:.0f} mm tall and {tall_w:.0f} mm across. "
+        f"The red outline is the shortest, {short_h:.0f} mm tall and {short_w:.0f} mm across, standing "
+        f"{OVERHEAD_GAP:.0f} mm further out along the same radius. The cross is the point directly "
+        f"below the camera, and the dashed rectangle is how much table the 320 x 240 picture reaches.",
+        fontsize=NOTE_SIZE, color=INK, ha="center", va="top", linespacing=1.8,
+    )
+    figure.text(
+        0.5, 0.185,
+        f"A slice at height z is imaged as though scaled about the point below the camera by "
+        f"450 / (450 - z), so a 225 mm rim lands at twice its real offset and twice its real radius. "
+        f"That splay is what lets the tall glass reach over the short one, and the\npatch that comes "
+        f"back is {patch_mm:.0f} mm across — exactly the patch the tall glass would make standing "
+        f"alone. Sliding the camera moves the point the splay radiates from, so {slides[2]:.1f} mm of "
+        f"slide is enough to end it.",
+        fontsize=NOTE_SIZE, color=INK, ha="center", va="top", linespacing=1.8,
+    )
+    figure.text(
+        0.5, 0.075,
+        f"But read the dashed rectangle. The hidden glass sits {in_px:.0f} to {out_px:.0f} pixels from "
+        f"the centre of a picture whose own corner is only {corner_px:.0f} pixels out, so it is off "
+        f"the edge of the frame in every panel. Across the kind's whole range the closest a\n"
+        f"completely covered glass can ever sit to the centre is 258 pixels. This kind of hiding never "
+        f"happens to a glass that was in the picture to begin with, which makes it a survey-coverage "
+        f"problem rather than a parallax one.",
+        fontsize=NOTE_SIZE, color=WARN, ha="center", va="top", linespacing=1.8,
+    )
+    save(figure, "09-hidden-from-above.png")
+
+
+# ---------------------------------------------------------------------------
+# 8. Completely hidden, looking level: line of sight, and the slide that ends it.
+# ---------------------------------------------------------------------------
+
+BEHIND = 300.0        # mm further back the far glass stands, along the line of sight
+
+
+def hidden_from_the_side() -> None:
+    """Four real level-view frames along one slide, and the count that marks it.
+
+    The far glass's free pixels are counted in the frame itself: the pixels its
+    own silhouette lights that the near glass's silhouette does not. The slides
+    written on the panels are the first half-millimetre steps at which that count
+    reaches one pixel, fifty pixels and half the glass.
+    """
+    near_h, near_w = rim_size(NEAR_GLASS)
+    far_h, far_w = rim_size(FAR_GLASS)
+
+    def frames(slide: float):
+        near = level_mask([(-slide, STANDOFF, NEAR_GLASS)])
+        far = level_mask([(-slide, STANDOFF + BEHIND, FAR_GLASS)])
+        return near > 0, far > 0
+
+    total = int(frames(0.0)[1].sum())
+    counts = []
+    for millimetres in np.arange(0.0, 160.5, 0.5):
+        near, far = frames(float(millimetres))
+        counts.append((float(millimetres), int((far & ~near).sum())))
+
+    def first(threshold: int) -> float:
+        return next(mm for mm, free in counts if free >= threshold)
+
+    at_one, at_fifty, at_half = first(1), first(50), first(total // 2)
+
+    shown = [0.0, 24.0, at_one, SURVEY_SLIDE]
+    figure, axes = new(15.4, 4.4, columns=5)
+
+    for axis, slide in zip(axes[:4], shown, strict=True):
+        bare(axis)
+        near, far = frames(slide)
+        free = far & ~near
+        axis.imshow(np.ones((FRAME_H, FRAME_W)), cmap="gray", vmin=0, vmax=1)
+        paint(axis, far & ~free, MUTED, 0.16)
+        paint(axis, near, GLASS, 0.40)
+        paint(axis, free, GOOD, 0.95)
+        axis.contour(far.astype(float), [0.5], colors=[MUTED], linewidths=1.0,
+                     linestyles=[(0, (4, 3))])
+        edge_of(axis, near.astype(np.uint8) * 255, INK, 1.1)
+        axis.set_xlim(0, FRAME_W)
+        axis.set_ylim(FRAME_H, 0)
+        count = int(free.sum())
+        if 0 < count < 200:
+            rows, columns = np.nonzero(free)
+            axis.add_patch(Circle((columns.mean(), rows.mean()), 22, facecolor="none",
+                                  edgecolor=GOOD, linewidth=1.3, zorder=7))
+        axis.set_title(
+            f"slide {slide:.0f} mm\n{count} of the far glass's {total} pixels free",
+            fontsize=NOTE_SIZE, color=GOOD if count else WARN, pad=6, linespacing=1.6,
+        )
+
+    axes[2].text(10, 26, "the first pixels appear low down,\nat the base, where the near\n"
+                 "glass tapers in",
+                 fontsize=NOTE_SIZE, color=GOOD, va="top", linespacing=1.6)
+
+    count_axis = axes[4]
+    millimetres = np.array([mm for mm, _ in counts])
+    free_pixels = np.array([free for _, free in counts])
+    count_axis.plot(millimetres, free_pixels, color=GOOD, linewidth=2.0)
+    count_axis.set_xlim(0, 160)
+    count_axis.set_ylim(0, total * 1.12)
+    count_axis.set_xlabel("how far the camera has slid, mm", fontsize=NOTE_SIZE, color=INK)
+    count_axis.set_ylabel("pixels of the far glass in the picture", fontsize=NOTE_SIZE, color=INK)
+    count_axis.set_title("When the hidden glass arrives", fontsize=LABEL_SIZE, color=INK, pad=8)
+    count_axis.grid(True, color=MUTED, alpha=0.25, linewidth=0.7)
+    count_axis.tick_params(labelsize=NOTE_SIZE - 0.8, colors=INK)
+    for side in ("top", "right"):
+        count_axis.spines[side].set_visible(False)
+    for side in ("left", "bottom"):
+        count_axis.spines[side].set_color(MUTED)
+    count_axis.axvline(SURVEY_SLIDE, color=INK, linewidth=1.0, linestyle=(0, (4, 3)))
+    count_axis.text(SURVEY_SLIDE + 4, total * 0.46, "the slide the\nstation already\nmakes",
+                    fontsize=NOTE_SIZE, color=INK, ha="left", va="bottom", linespacing=1.5)
+    for millimetre, colour in ((at_one, WARN), (at_fifty, GOOD), (at_half, GOOD)):
+        height = np.interp(millimetre, millimetres, free_pixels)
+        count_axis.plot([millimetre], [height], "o", color=colour, markersize=6, zorder=5)
+    count_axis.annotate(
+        f"{at_one:.0f} mm:\nthe first pixel",
+        xy=(at_one, 0), xytext=(4, total * 0.30), fontsize=NOTE_SIZE, color=WARN,
+        linespacing=1.5, arrowprops={"arrowstyle": "-|>", "color": WARN, "linewidth": 1.0},
+    )
+    count_axis.annotate(
+        f"{at_fifty:.0f} mm: fifty pixels",
+        xy=(at_fifty, np.interp(at_fifty, millimetres, free_pixels)),
+        xytext=(4, total * 0.55), fontsize=NOTE_SIZE, color=GOOD,
+        arrowprops={"arrowstyle": "-|>", "color": GOOD, "linewidth": 1.0},
+    )
+    count_axis.annotate(
+        f"{at_half:.0f} mm:\nhalf the glass",
+        xy=(at_half, np.interp(at_half, millimetres, free_pixels)),
+        xytext=(78, total * 0.13), fontsize=NOTE_SIZE, color=GOOD, linespacing=1.5,
+        arrowprops={"arrowstyle": "-|>", "color": GOOD, "linewidth": 1.0},
+    )
+
+    figure.suptitle(
+        "Looking level, the far glass is hidden by line of sight alone — and the slide the method "
+        "already makes ends it",
+        fontsize=TITLE_SIZE, color=INK, y=1.00,
+    )
+    figure.tight_layout(rect=(0, 0.20, 1, 0.92))
+    figure.text(
+        0.5, 0.175,
+        f"Blue is the near glass, {near_h:.0f} mm tall and {near_w:.0f} mm across the rim, standing "
+        f"{STANDOFF:.0f} mm from the camera. The dashed grey outline is the far glass, {far_h:.0f} mm "
+        f"tall and {far_w:.0f} mm across, {BEHIND:.0f} mm further back on the same line of sight. "
+        f"Green is whatever of it reaches the picture.",
+        fontsize=NOTE_SIZE, color=INK, ha="center", va="top", linespacing=1.8,
+    )
+    figure.text(
+        0.5, 0.085,
+        f"The near glass is {near_h:.0f} mm tall and the far one {far_h:.0f} mm, so the far glass is "
+        f"the taller of the two. It is hidden anyway, because at {STANDOFF:.0f} mm the near glass is "
+        f"magnified and at {STANDOFF + BEHIND:.0f} mm the far one is not. Standing further back buys "
+        f"the far glass nothing:\nit contributes no pixels at {BEHIND:.0f} mm behind and none at "
+        f"500 mm behind either. Sliding sideways is what ends it, because the near glass's shift is "
+        f"{FX * (1 / STANDOFF - 1 / (STANDOFF + BEHIND)):.2f} pixels per millimetre larger than the "
+        f"far one's — the same one-over-the-depth difference this method already measures.",
+        fontsize=NOTE_SIZE, color=INK, ha="center", va="top", linespacing=1.8,
+    )
+    save(figure, "09-hidden-from-the-side.png")
+
+
 def main() -> None:
     labels_come_from()
     two_views_parallax()
@@ -722,6 +1105,8 @@ def main() -> None:
     parallax_arithmetic()
     deliberate_motion_loop()
     the_limit()
+    hidden_from_above()
+    hidden_from_the_side()
 
 
 if __name__ == "__main__":

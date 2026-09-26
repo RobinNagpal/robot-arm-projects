@@ -1,10 +1,16 @@
 """Diagrams for solution 2 — cluster on the table.
 
-Eight pictures, each carrying one point of the argument: how a pixel becomes a
+Ten pictures, each carrying one point of the argument: how a pixel becomes a
 point in the room, why the room beats the picture, the four steps, why the
 points are flattened onto the table first, how the one grouping distance is
 chosen, how the circle fit vetoes an impossible footprint, why two stations are
-asked to agree, and where the whole idea stops working.
+asked to agree, where the whole idea stops working, and the two ways a glass
+comes to be hidden completely.
+
+Every silhouette drawn here is a real projection of one of the project's own
+glass outlines, taken from ``work_cell.glasses.shapes``, through the cell's own
+camera. A standing glass is a circle only in its footprint, which no camera in
+this cell ever sees straight on, so nothing here is drawn as one.
 
 Run from the project root:
 
@@ -13,6 +19,10 @@ Run from the project root:
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
+import cv2
 import numpy as np
 from diagram_style import (
     GLASS,
@@ -37,7 +47,12 @@ from diagram_style import (
     splay_patch,
     splay_width,
 )
+from matplotlib.colors import to_rgba
 from matplotlib.patches import Circle, FancyArrowPatch, Polygon, Rectangle
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src" / "work_cell"))
+
+from work_cell.glasses.shapes import family  # noqa: E402
 
 RNG = np.random.default_rng(20250925)
 
@@ -45,8 +60,25 @@ RNG = np.random.default_rng(20250925)
 ZONE = (320.0, 640.0, -440.0, -80.0)
 
 SURVEY_HEIGHT = 450.0   # mm above the table top
+VIEW_HEIGHT = 120.0     # mm above the table, the height the level view looks from
+STANDOFF = 380.0        # mm back from the glass the level view stands
+FX = 277.1              # pixels; the camera's focal length
 MIN_APART = 150.0       # mm centre to centre, the closest two glasses ever stand
 OBJECT_HEIGHT = 205.0   # mm, the one glass the pixel-to-point figure draws
+
+# Two of the project's own glasses, drawn from the two ends of this kind's range
+# by the same spawner the run uses. The hiding pictures need real outlines rather
+# than the plain heights and widths the other pictures work from, because whether
+# one glass covers another depends on the shape of the wall between base and rim.
+_FAMILY = [outline for outline, _ in family("tapered_glass", 40, 2)]
+TALL_GLASS = max(_FAMILY, key=lambda outline: outline.total_height)
+SHORT_GLASS = min(_FAMILY, key=lambda outline: outline.total_height)
+TALL_HEIGHT = TALL_GLASS.total_height * 1000.0
+SHORT_HEIGHT = SHORT_GLASS.total_height * 1000.0
+TALL_RIM = TALL_GLASS.max_diameter * 1000.0
+SHORT_RIM = SHORT_GLASS.max_diameter * 1000.0
+TALL_LIFT = SURVEY_HEIGHT / (SURVEY_HEIGHT - TALL_HEIGHT)
+SHORT_LIFT = SURVEY_HEIGHT / (SURVEY_HEIGHT - SHORT_HEIGHT)
 
 # The pair most of these pictures use, taken from the two ends of this kind's
 # range rather than from the middle. Drawing two glasses of a similar size would
@@ -345,10 +377,11 @@ def figure_picture_versus_table() -> None:
         "Every pair of centres here is at least the guaranteed gap apart, and every size is inside "
         "the kind's range, so the arrangement is an ordinary one.\n"
         f"T1 is tall and close to the camera, so its outline is thrown a long way outwards — far "
-        f"enough to cover S1 entirely. The patch that comes back is about {patch_mm:.0f} mm across, "
-        "which is a legal width for\nthis kind, so nothing about it looks wrong. The merge of T2 and "
-        "S2 is at least loud, because that patch is wider than any one glass can be. The missing "
-        "glass is silent.",
+        f"enough to cover S1 entirely. That outline runs across about {patch_mm:.0f} mm of table, but "
+        "every dot under it back-projects to\nT1's own footprint, "
+        f"{FOOTPRINT_A:.0f} mm across, which is an ordinary width for this kind, so the group that "
+        "comes back looks perfectly normal. The merge of T2 and S2 is at least\nloud, because that "
+        "group is wider than any one glass can be. The missing glass is silent.",
         fontsize=NOTE_SIZE, color=INK, ha="left", va="top",
     )
     save(figure, "02-merged-in-the-picture.png")
@@ -922,6 +955,339 @@ def figure_the_limit() -> None:
     save(figure, "02-touching-is-the-limit.png")
 
 
+# --------------------------------------------------------------------------- #
+# 9. a glass that is completely hidden, seen the two ways the arm looks
+# --------------------------------------------------------------------------- #
+
+def outline_profile(outline):
+    """One of the project's own glass outlines, as heights and radii in millimetres."""
+    return np.asarray(outline.height) * 1000.0, np.asarray(outline.radius) * 1000.0
+
+
+def splay_from_outline(nadir, centre, outline, slices=80):
+    """The stack of circles a real glass outline draws in an overhead picture.
+
+    Same arithmetic as splay_circles — a slice at height z is scaled about the
+    point below the camera by H / (H - z) — and the same list of (centre, radius)
+    pairs, so splay_covers, splay_patch and splay_width all take it. The
+    difference is that every slice comes from one of the project's own outlines
+    rather than from a straight taper drawn here.
+    """
+    z, radii = outline_profile(outline)
+    picks = np.linspace(0, len(z) - 1, slices).astype(int)
+    offset = np.asarray(centre, dtype=float) - np.asarray(nadir, dtype=float)
+    factors = SURVEY_HEIGHT / (SURVEY_HEIGHT - z[picks])
+    return [(offset * k, r * k) for k, r in zip(factors, radii[picks], strict=True)]
+
+
+def silhouette_overlap(first, second, step=2.0):
+    """How much table two splayed silhouettes share, in square millimetres.
+
+    Zero means the two glasses appear in the picture as two separate patches.
+    """
+    stacks = (first, second)
+    lows = [min(c[i] - r for c, r in stack) for stack in stacks for i in (0, 1)]
+    highs = [max(c[i] + r for c, r in stack) for stack in stacks for i in (0, 1)]
+    x = np.arange(min(lows[0], lows[2]), max(highs[0], highs[2]) + step, step)
+    y = np.arange(min(lows[1], lows[3]), max(highs[1], highs[3]) + step, step)
+    grid_x, grid_y = np.meshgrid(x, y)
+    inside = []
+    for stack in stacks:
+        covered = np.zeros(grid_x.shape, dtype=bool)
+        for c, r in stack:
+            covered |= (grid_x - c[0]) ** 2 + (grid_y - c[1]) ** 2 <= r * r
+        inside.append(covered)
+    return float((inside[0] & inside[1]).sum()) * step * step
+
+
+def level_picture(glasses, width=420, height=300, horizon=96.0):
+    """What the camera sees from the level view: 120 mm up, looking level.
+
+    A horizontal circle seen edge-on is a line, so a glass images as the band
+    between the left and right walls of its own profile. Every row of the band
+    comes from one slice of one of the project's own outlines.
+    """
+    mask = np.zeros((height, width), np.uint8)
+    middle = width / 2.0
+    for across, away, outline in glasses:
+        z, radii = outline_profile(outline)
+        for zi, ri in zip(z, radii, strict=True):
+            row = int(round(horizon - FX * (zi - VIEW_HEIGHT) / away))
+            left = int(round(middle + FX * (across - ri) / away))
+            right = int(round(middle + FX * (across + ri) / away))
+            if 0 <= row < height:
+                cv2.line(mask, (max(0, left), row), (min(width - 1, right), row), 255, 1)
+    filled = mask.copy()
+    for column in range(width):
+        lit = np.where(filled[:, column] > 0)[0]
+        if len(lit):
+            filled[lit.min():lit.max() + 1, column] = 255
+    return filled
+
+
+def hidden_table(camera, centre, outline, grid_x, grid_y, steps=200):
+    """Which cells of table no ray from `camera` reached, because the glass was in the way.
+
+    `camera` is a position and a height. A cell is hidden when the straight line
+    from the lens to that cell passes inside the glass, which is a solid of
+    revolution, so the test at one point on the line is a distance from the
+    glass's axis compared with the glass's own radius at that height.
+    """
+    z, radii = outline_profile(outline)
+    lens = np.asarray(camera, dtype=float)
+    axis_x, axis_y = centre
+    blocked = np.zeros(grid_x.shape, dtype=bool)
+    for fraction in np.linspace(0.02, 1.0, steps):
+        along_x = lens[0] + (grid_x - lens[0]) * fraction
+        along_y = lens[1] + (grid_y - lens[1]) * fraction
+        height = lens[2] * (1.0 - fraction)
+        if height > z[-1]:
+            continue
+        radius = float(np.interp(height, z, radii))
+        blocked |= (along_x - axis_x) ** 2 + (along_y - axis_y) ** 2 <= radius * radius
+    return blocked
+
+
+def paint_mask(axis, region, colour, alpha=1.0, extent=None):
+    """Draw a boolean mask as a flat wash of one colour."""
+    rgba = np.zeros((*region.shape, 4), dtype=float)
+    rgba[region] = to_rgba(colour, alpha)
+    axis.imshow(rgba, interpolation="nearest", extent=extent,
+                origin="upper" if extent is None else "lower", zorder=2)
+
+
+def silhouette_edge(axis, stack, colour, step=2.0, lw=1.3, ls="dashed", zorder=6):
+    """The boundary of a splayed silhouette, drawn as a line rather than a wash."""
+    low_x = min(c[0] - r for c, r in stack) - 4 * step
+    high_x = max(c[0] + r for c, r in stack) + 4 * step
+    low_y = min(c[1] - r for c, r in stack) - 4 * step
+    high_y = max(c[1] + r for c, r in stack) + 4 * step
+    grid_x, grid_y = np.meshgrid(np.arange(low_x, high_x, step), np.arange(low_y, high_y, step))
+    covered = np.zeros(grid_x.shape, dtype=float)
+    for c, r in stack:
+        covered = np.maximum(covered, ((grid_x - c[0]) ** 2 + (grid_y - c[1]) ** 2 <= r * r) * 1.0)
+    axis.contour(grid_x, grid_y, covered, [0.5], colors=[colour], linewidths=lw,
+                 linestyles=ls, zorder=zorder)
+
+
+def figure_hidden_from_above() -> None:
+    """The same two glasses, the same distance apart, hiding and not hiding.
+
+    Splay scales a slice outwards from the point below the camera, so it acts
+    along a radius and not across one. That is what makes complete hiding a
+    question about which direction the pair lies in as well as about height.
+    """
+    nadir = np.array([0.0, 0.0])
+    ring = 275.0
+    swing = np.arcsin(MIN_APART / 2.0 / ring)
+    cases = (
+        ("Along one radius: the short glass is gone",
+         np.array([200.0, 0.0]), np.array([200.0 + MIN_APART, 0.0]),
+         (150.0, -170.0), (185.0, -46.0), (430.0, -200.0), (352.0, -40.0)),
+        ("Across it: the same two glasses, the same distance apart",
+         np.array([ring * np.cos(-swing), ring * np.sin(-swing)]),
+         np.array([ring * np.cos(swing), ring * np.sin(swing)]),
+         (110.0, -250.0), (245.0, -100.0), (264.0, 232.0), (264.0, 120.0)),
+    )
+
+    figure, axes = new(13.4, 5.6, columns=2)
+    measured = []
+    for axis, (title, tall_at, short_at, tall_text, tall_head, short_text, short_head) in zip(
+            axes, cases, strict=True):
+        tall = splay_from_outline(nadir, tall_at, TALL_GLASS)
+        short = splay_from_outline(nadir, short_at, SHORT_GLASS)
+        covered = splay_covers(tall, short)
+        shared = silhouette_overlap(tall, short)
+        measured.append((covered, shared))
+
+        panel_title(axis, title, colour=WARN if covered else GOOD)
+        bare(axis)
+        axis.set_aspect("equal")
+        axis.set_xlim(-120, 700)
+        axis.set_ylim(-310, 320)
+        for centre in (tall_at, short_at):
+            reach = centre / np.hypot(*centre) * 680.0
+            axis.plot([0, reach[0]], [0, reach[1]], color=MUTED, lw=0.8, ls=(0, (7, 6)), zorder=1)
+        splay_patch(axis, tall, colour=GLASS, alpha=0.30, zorder=2)
+        if covered:
+            silhouette_edge(axis, short, WARN)
+        else:
+            splay_patch(axis, short, colour=GOOD, alpha=0.34, zorder=3)
+        for centre, rim, colour in ((tall_at, TALL_RIM, INK),
+                                    (short_at, SHORT_RIM, WARN if covered else GOOD)):
+            footprint(axis, tuple(centre), rim, colour=colour, dots=80, edge=False)
+            axis.add_patch(Circle(tuple(centre), rim / 2.0, facecolor="none", edgecolor=colour,
+                                  lw=1.0, zorder=5))
+        axis.scatter([0.0], [0.0], s=40, color=INK, marker="x", zorder=9)
+        note(axis, 0, -34, "camera, straight\nabove here", colour=INK, ha="center", va="top")
+
+        for text, place, head, colour in (
+                (f"the tall glass, {TALL_HEIGHT:.0f} mm tall", tall_text, tall_head, INK),
+                (f"the short glass, {SHORT_HEIGHT:.0f} mm tall", short_text, short_head,
+                 WARN if covered else GOOD)):
+            axis.annotate(text, xy=head, xytext=place, fontsize=NOTE_SIZE, color=colour,
+                          ha="center", va="center", zorder=8,
+                          arrowprops={"arrowstyle": "->", "color": colour, "lw": 1.0})
+        if covered:
+            note(axis, 300, 300,
+                 "Every point of the short glass's silhouette, dashed, is inside the\n"
+                 "tall glass's. It contributes no pixels at all, and the group that\n"
+                 f"comes back is the tall glass's own footprint, {TALL_RIM:.0f} mm across — "
+                 "an\nordinary width for a kind whose glasses run "
+                 f"{KIND_NARROWEST:.0f} to {KIND_WIDEST:.0f} mm.",
+                 colour=INK, ha="center", va="top")
+        else:
+            note(axis, 300, 300,
+                 f"The two silhouettes share {shared:.0f} mm² of table, so the picture holds\n"
+                 "two patches and both glasses are found. Nothing about the pair\n"
+                 "changed except the direction it lies in.",
+                 colour=INK, ha="center", va="top")
+
+    figure.suptitle(
+        "Hiding from above is radial: it needs the pair to lie along a line out from the camera.",
+        fontsize=TITLE_SIZE, color=INK, y=1.00,
+    )
+    figure.tight_layout()
+    figure.text(
+        0.5, -0.02,
+        f"Both panels hold the same two glasses of one kind, {TALL_HEIGHT:.0f} mm and "
+        f"{SHORT_HEIGHT:.0f} mm tall, with their centres {MIN_APART:.0f} mm apart, which is the "
+        "closest this problem ever puts two glasses. The rings and dots are where they "
+        "really stand.\nThe pale "
+        f"shapes are what the camera draws from {SURVEY_HEIGHT:.0f} mm up: a slice at height z is "
+        "moved out to H / (H - z) times its own distance from the point below the camera, so the tall "
+        f"glass's rim goes out by {TALL_LIFT:.2f}\nand the short one's by {SHORT_LIFT:.2f}. Turning "
+        "the pair about the camera, without moving either glass relative to the other, is enough to "
+        "undo the hiding.",
+        ha="center", va="top", fontsize=NOTE_SIZE, color=INK,
+    )
+    straight = np.array([200.0, 0.0])
+    checks = (
+        ("tall, then the short one 150 mm further out", TALL_GLASS, SHORT_GLASS, MIN_APART),
+        ("tall, then a second tall one 150 mm further out", TALL_GLASS, TALL_GLASS, MIN_APART),
+        ("short, then the tall one 150 mm further out", SHORT_GLASS, TALL_GLASS, MIN_APART),
+        ("tall, then the short one 200 mm further out", TALL_GLASS, SHORT_GLASS, 200.0),
+    )
+    print(f"  above: along a radius covered={measured[0][0]}, shared={measured[0][1]:.0f} mm2; "
+          f"across covered={measured[1][0]}, shared={measured[1][1]:.0f} mm2")
+    for at, lift, which in ((200.0, TALL_LIFT, "tall"), (350.0, SHORT_LIFT, "short")):
+        print(f"    the {which} glass stands {at:.0f} mm out and its rim is drawn "
+              f"{at * (lift - 1.0):.0f} mm further out")
+    for label, near, far, gap in checks:
+        covers = splay_covers(splay_from_outline(nadir, straight, near),
+                              splay_from_outline(nadir, straight + (gap, 0.0), far))
+        print(f"    {label}: hidden={covers}")
+    save(figure, "02-hidden-from-above.png")
+
+
+def figure_hidden_from_the_side() -> None:
+    """Line-of-sight hiding, and the strip of table it leaves behind.
+
+    From the level view there is no splay to help or hurt. The near glass stands
+    in front of the far one, and the table it blocks is a strip that widens the
+    further away it goes instead of stopping.
+    """
+    near_at, far_at = 370.0, 600.0
+    apart = far_at - near_at
+    lens = (near_at - STANDOFF, -260.0, VIEW_HEIGHT)
+
+    near_only = level_picture([(0.0, STANDOFF, TALL_GLASS)])
+    far_only = level_picture([(0.0, STANDOFF + apart, SHORT_GLASS)])
+    both = level_picture([(0.0, STANDOFF, TALL_GLASS), (0.0, STANDOFF + apart, SHORT_GLASS)])
+    left_out = int(((far_only > 0) & ~(near_only > 0)).sum())
+    patches, _ = cv2.connectedComponents((both > 0).astype(np.uint8))
+    near_px = int(cv2.boundingRect(near_only)[2])
+    far_px = int(cv2.boundingRect(far_only)[2])
+    far_rows = np.where((far_only > 0).any(axis=1))[0]
+
+    figure, (picture, plan) = new(13.4, 5.6, columns=2)
+
+    panel_title(picture, "The level picture: one patch, with two glasses in it", colour=WARN)
+    bare(picture)
+    paint_mask(picture, both > 0, GLASS, 0.40)
+    picture.contour((both > 0).astype(float), [0.5], colors=[INK], linewidths=1.3)
+    picture.contour((far_only > 0).astype(float), [0.5], colors=[WARN], linewidths=1.2,
+                    linestyles="dashed")
+    x, y, w, h = cv2.boundingRect(near_only)
+    picture.set_xlim(x - 100, x + w + 280)
+    picture.set_ylim(y + h + 52, y - 60)
+    note(picture, x + w / 2, y - 18, f"the near glass, {near_px} px across",
+         colour=INK, ha="center", va="bottom")
+    picture.annotate(
+        f"the far glass is in here, {far_px} px across,\n"
+        f"and {left_out} of those pixels are its own",
+        xy=(x + w / 2 + 16, float(far_rows.mean())), xytext=(x + w + 40, float(far_rows.mean())),
+        fontsize=NOTE_SIZE, color=WARN, ha="left", va="center",
+        arrowprops={"arrowstyle": "->", "color": WARN, "lw": 1.0},
+    )
+
+    panel_title(plan, "The table that picture could not reach", colour=WARN)
+    bare(plan)
+    plan.set_aspect("equal")
+    plan.set_xlim(-90, 1090)
+    plan.set_ylim(-660, -20)
+    step = 2.0
+    grid_x, grid_y = np.meshgrid(np.arange(-90.0, 1090.0 + step, step),
+                                 np.arange(-660.0, -20.0 + step, step))
+    blocked = hidden_table(lens, (near_at, -260.0), TALL_GLASS, grid_x, grid_y)
+    paint_mask(plan, blocked, WARN, 0.22,
+               extent=(grid_x.min(), grid_x.max(), grid_y.min(), grid_y.max()))
+    zone_x0, zone_x1, zone_y0, zone_y1 = ZONE
+    plan.add_patch(Rectangle((zone_x0, zone_y0), zone_x1 - zone_x0, zone_y1 - zone_y0,
+                             facecolor="none", edgecolor=MUTED, lw=0.9, ls=(0, (4, 3)), zorder=4))
+    note(plan, zone_x0 + 8, zone_y1 - 10, "the glass zone", colour=MUTED, va="top")
+    footprint(plan, (near_at, -260.0), TALL_RIM, colour=GLASS, dots=110)
+    footprint(plan, (far_at, -260.0), SHORT_RIM, colour=WARN, dots=70)
+    plan.scatter([lens[0]], [lens[1]], s=46, color=INK, marker="x", zorder=9)
+    note(plan, lens[0], lens[1] - 24, f"camera,\n{VIEW_HEIGHT:.0f} mm up,\nlooking level",
+         colour=INK, ha="center", va="top")
+    widths = []
+    z, radii = outline_profile(TALL_GLASS)
+    for beyond in (zone_x1 - near_at, 1020.0 - near_at):
+        reach = VIEW_HEIGHT * (1.0 - STANDOFF / (STANDOFF + beyond))
+        width = 2.0 * float(np.interp(reach, z, radii)) / (1.0 - reach / VIEW_HEIGHT)
+        widths.append((beyond, width))
+        at = near_at + beyond
+        plan.plot([at, at], [-260.0 - width / 2, -260.0 + width / 2], color=INK, lw=1.3, zorder=6)
+        note(plan, at - 10, -260.0 + width / 2 + 12, f"{width:.0f} mm",
+             colour=INK, ha="right", va="bottom")
+    note(plan, -70, -490,
+         "The blue dots are the near glass, the orange dots the far one, both where they really stand, "
+         "and the two marks are how wide\nthe blocked strip is there. The strip never closes. A ray "
+         "that clears the rim of the near glass just under the camera's own\nheight lands a long way "
+         "beyond it, so the further out the strip runs the wider it gets. Standing further back on the "
+         "same line\nchanges none of it.",
+         colour=INK, va="top")
+
+    figure.suptitle(
+        "From the side there is no splay to help: the near glass simply stands in front of the far one.",
+        fontsize=TITLE_SIZE, color=INK, y=1.00,
+    )
+    figure.tight_layout()
+    figure.text(
+        0.5, -0.02,
+        f"The near glass is {TALL_HEIGHT:.0f} mm tall and the far one {SHORT_HEIGHT:.0f} mm, standing "
+        f"{apart:.0f} mm behind it and in line with the camera. Not one pixel of the far glass is its "
+        "own, and being further back does not help it: the same\npair is covered just as completely "
+        f"at {MIN_APART:.0f} mm apart as at 600 mm apart. What the arm can report is the strip of "
+        f"table the near glass blocked, and at the far edge of the zone that strip is still "
+        f"{widths[0][1]:.0f} mm wide,\nwhich is more than the {KIND_NARROWEST:.0f} mm footprint of "
+        "the smallest glass this kind allows. So the strip stays open, and only moving the camera "
+        "off this line closes it.",
+        ha="center", va="top", fontsize=NOTE_SIZE, color=INK,
+    )
+    other_way = level_picture([(0.0, STANDOFF, SHORT_GLASS)])
+    tall_behind = level_picture([(0.0, STANDOFF + apart, TALL_GLASS)])
+    still_out = int(((tall_behind > 0) & ~(other_way > 0)).sum())
+    print(f"  side: far glass {far_px} px across, {left_out} pixels of its own, "
+          f"{patches - 1} patch; strip widths {[(int(b), round(v, 1)) for b, v in widths]}")
+    print(f"    the other way round, a short glass in front of a tall one: "
+          f"{100 * (1 - still_out / (tall_behind > 0).sum()):.0f}% of the far glass covered, "
+          f"near {int(cv2.boundingRect(other_way)[2])} px across against its "
+          f"{int(cv2.boundingRect(tall_behind)[2])} px")
+    save(figure, "02-hidden-from-the-side.png")
+
+
 def main() -> None:
     figure_pixel_to_point()
     figure_picture_versus_table()
@@ -931,6 +1297,8 @@ def main() -> None:
     figure_circle_fit()
     figure_two_stations()
     figure_the_limit()
+    figure_hidden_from_above()
+    figure_hidden_from_the_side()
 
 
 if __name__ == "__main__":

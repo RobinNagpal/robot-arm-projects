@@ -19,8 +19,10 @@ The idea here is to let the geometry decide which places the camera is *allowed*
 to stand, and to let a learned number decide only the *order* in which the
 allowed places are tried. By the end you will understand what a doubt number is,
 the one case it has to catch and usually does not, why the doubt has to be a
-list of measurements rather than a single number from the model, and why the
-ordering of the steps is what limits the damage when the learned part is wrong.
+list of measurements rather than a single number from the model, what this
+method can and cannot do about a glass that appears in no picture at all, and
+why the ordering of the steps is what limits the damage when the learned part is
+wrong.
 
 That last point is the heart of it. Everything in this design is arranged around
 one failure, which is a model that is **confident and wrong**.
@@ -43,9 +45,9 @@ that picture puts it back.
 The second is that **a glass can be absent from a picture altogether**. Because
 one kind spans a shot glass to a large tapered glass, a tall glass's outline can
 be thrown outwards far enough to cover a short one completely, and then the
-short glass produces no pixels at all. That case matters here more than anywhere
-else in this document, because it is the one case in which none of the doubt
-signals below can fire.
+short glass produces no pixels at all. What this solution can do about that
+case, and where it can do nothing, is [its own section
+below](#when-the-glasses-are-completely-hidden).
 
 The third is that **the camera can no longer stand wherever it likes**. It is
 mounted on the wrist, so choosing where it stands means choosing where the whole
@@ -301,15 +303,9 @@ The fifth entry is different in kind from the other four, and it has to be there
 because of the difficulty this problem added. **It is the unsearched area** —
 how much table could not have been seen, in patches large enough to hold the
 smallest glass of the kind, as computed by [solution
-2](02-cluster-on-the-table.md)'s blind-region arithmetic.
-
-Why that entry is necessary is worth following, because leaving it out produces
-a particular and quiet failure. The other four entries are all doubts about a
-group. A glass hidden completely behind a taller one produces **no group at
-all**, so all four stay silent, and the loop then spends its whole budget
-improving measurements of glasses it can already see while an entirely unseen
-glass goes unmentioned. The loop would be busy and useless in exactly the case
-that matters most.
+2](02-cluster-on-the-table.md)'s blind-region arithmetic. Why that entry is
+necessary, what it buys and what it does not, is the subject of [when the
+glasses are completely hidden](#when-the-glasses-are-completely-hidden) below.
 
 Two properties of that list matter more than its contents.
 
@@ -323,18 +319,6 @@ list, and where the model is confidently wrong the geometric entries still have
 something to say, so the score still orders the candidates sensibly. **Making a
 model's own confidence the sole currency of doubt is the mistake.** The geometry
 has to be in the currency too.
-
-There is a third property once the fifth entry is included, and it changes what
-the model is choosing between. With only the first four entries, every candidate
-pose was a view of a **glass**. With the fifth, some candidates are views of a
-**place** instead, and the two are not compared on the same footing: a view of a
-place can only reduce the unsearched area, and a view of a glass can only reduce
-the doubt about that glass. So the learned score has to predict a drop in a list
-whose entries are not interchangeable, and the honest way to handle that is to
-let the score decide the order *within* each kind of request and let a written
-rule decide how the budget is split *between* them. A model is a poor place to
-put a judgement about which kind of failure matters more, because that judgement
-belongs to whoever reads the report.
 
 ### What the model is trained on, and where that comes from
 
@@ -504,6 +488,200 @@ Measured against the cost of one arm movement in seconds, every bit of that is
 free. So **the thing to economise on is the number of times the arm moves, and
 not the arithmetic.** A design that saves computation by taking one more look
 has the trade exactly backwards.
+
+## When the glasses are completely hidden
+
+The difficulty this section is about was named near the start of this document:
+a glass can be absent from a picture altogether. Everything since then has been
+about doubt attached to something the camera found. This section is about the
+case where the camera found nothing, and that case breaks the connection between
+the two.
+
+Start from where a doubt number comes from. A doubt number is produced from
+something the model was shown. A glass that contributed no pixels was not shown.
+There is no mask of it, no group of points, no fitted circle and no entropy over
+anything. Four of the five entries in the doubt list are measurements of a
+group, so all four stay silent. The loop then spends its whole budget improving
+measurements of glasses it can already see, while an entirely unseen glass goes
+unmentioned. It would be busy and useless in exactly the case that matters most.
+
+So if the run is to hold any doubt at all about a glass it never saw, that doubt
+cannot be attached to a detection. It has to be attached to a **place**: a patch
+of table, carrying a statement about what could have been standing on it. That
+is what the fifth entry in the doubt list is, and it is why the list has one
+entry that is not about any object.
+
+A doubt attached to a place cannot be worked out from the picture alone, and it
+is worth being exact about what else has to be fed in. The first thing is where
+the camera stood and how high, because without that nothing about the picture
+can be turned back into positions on the table. The second is the height and
+width of every glass that *was* found, because each of those is what hides the
+table behind it. The third is the edge of the frame, which is a fact about the
+lens rather than about the table. The fourth is the smallest footprint this kind
+of glass can have, which comes from the problem statement and not from any
+camera. None of those four is in the pixels, and a model shown only pixels
+cannot supply any of them.
+
+The two ways a glass ends up contributing nothing are different failures with
+different cures, and the rest of this section takes them one at a time.
+
+### When the camera is looking straight down
+
+This is the survey view: the camera 450 mm above the table, pointed straight
+down. The mechanism here is splay, and it is worth restating in the form this
+case needs.
+
+A slice of a standing glass at height *z* is nearer the lens than the table is,
+so it is drawn as though it had been scaled about the point directly below the
+camera by *H* / (*H* − *z*), where *H* is the camera's height. The point
+directly below the camera is called the nadir. At *H* = 450 mm a slice 225 mm
+up has a
+factor of exactly 2, so the rim of a 225 mm glass is drawn twice as far out from
+the nadir as the glass really stands, and twice as wide. Every part of the glass
+moves directly away from the nadir, which is why the effect is radial rather
+than in some fixed direction.
+
+That outward throw is what lets one glass's outline reach over a neighbour. A
+short glass standing beyond a tall one is thrown outwards hardly at all, while
+the tall one is thrown a long way, so the tall one's outline can sweep over it.
+When the tall glass's splayed outline contains the whole of the short glass's,
+the short glass contributes no pixels at all. What comes back is one patch, and
+it is one patch of an entirely ordinary glass: the group fits a circle at the
+tall glass's own width, which is a legal width for the kind, with a small
+residual and dots round most of it. The model's own doubt about it is low, and
+correctly so, because the mask really is a good mask of the tall glass.
+
+Three things have to be true at once for this to happen, and they are worth
+separating. The two glasses have to stand close together. They have to differ a
+lot in height, which is why this problem widened the kind's range. And they have
+to lie the right way round: splay is radial, so a pair lying along a radius from
+the nadir can hide and the same pair lying across a radius cannot. Of the 132
+ordered pairs that twelve glasses drawn from this kind's range make, twenty can
+swallow the other whole at the guaranteed 150 mm gap, and in every one of the
+twenty the hidden glass is the shorter one.
+
+![A tall glass's outline swallowing a short one in a picture taken straight down, and the patch of table the arithmetic can still report as unsearched](../../../images/problem-2/04-hidden-from-above.png)
+
+There is a measured limit to this, and it changes the question worth asking. The
+nearest-in pair of the twenty still needs the hider to stand 290 mm from the
+nadir, which puts the hidden glass 440 mm out. One survey picture reaches only
+260 mm of bare table sideways, and a glass of the shortest size this kind allows
+is thrown past that edge once it stands more than 208 mm from the nadir. So the
+hidden glass is off the edge of the picture as well as underneath its
+neighbour's outline. The two causes arrive together, and neither the picture nor
+any model can separate them. The honest question is therefore not "was it
+hidden?" but "**could I have seen it at all?**"
+
+That question is arithmetic, which is the whole reason this case is handled at
+all. Splay is exact, the glasses that were found have known positions, widths
+and heights, and the frame edge is known from the lens. So the table each found
+glass hides is computable, the ring outside the frame is computable, and what
+comes out is a short list of patches, each one wide enough to hold the smallest
+glass of the kind. That list is [solution
+2](02-cluster-on-the-table.md)'s blind-region arithmetic, and it is the fifth
+entry in the doubt list. Nothing in it is learned, and nothing in it needs to
+be.
+
+Once that entry is in the list, what the loop is choosing between changes. With
+only the first four entries, every candidate pose was a view of a **glass**.
+With the fifth, some candidates are views of a **place** instead, and the two
+are not compared on the same footing: a view of a place can only reduce the
+unsearched area, and a view of a glass can only reduce the doubt about that
+glass. So the learned score has to predict a drop in a list whose entries are
+not interchangeable, and the honest way to handle that is to let the score
+decide the order *within* each kind of request and let a written rule decide how
+the budget is split *between* them. A model is a poor place to put a judgement
+about which kind of failure matters more, because that judgement belongs to
+whoever reads the report.
+
+What the arithmetic cannot do is say whether a patch is worth the seconds. It
+reports possibility and the loop needs likelihood, and every scene produces some
+unsearched patches because every glass hides something behind it. Deciding which
+of them probably has a glass in it is a different job, and it is the one [a
+learned verifier over the places nobody could
+see](05-is-anything-hiding-there.md) exists to do.
+
+### When the camera is looking level
+
+This is the measuring view: the camera 120 mm above the table, standing 380 mm
+back from the glass and looking level at it. It is the view every extra look in
+this solution is taken from, so a failure here is a failure of the loop itself
+rather than of the survey.
+
+The mechanism is plain line of sight, and no splay is needed for it. The near
+glass simply stands between the lens and the far one, and its outline covers the
+far one's. Standing the two further apart does not help, because the far glass
+shrinks in the picture faster than it moves sideways in it. With a 207 mm glass
+at the standoff and a 92 mm glass 300 mm behind it, the far glass would have lit
+1231 pixels of the camera's 320 by 240 on its own, and it lights none. At the
+guaranteed 150 mm gap fifty of its pixels survive, at 200 mm four survive, and
+from about 250 mm apart none do. Of the same 132 ordered pairs, 77 leave the far
+glass with no pixels at all at this spacing.
+
+![A far glass standing behind a near one in a level picture, and the two identical masks that result](../../../images/problem-2/04-hidden-from-the-side.png)
+
+Height decides much less here than it does from above. The hidden glass is the
+further one whatever its height, because the near glass is the magnified one: at
+380 mm and 680 mm the near glass is drawn about 1.8 times larger than a glass of
+the same size standing behind it. A 175 mm glass in front therefore hides a
+207 mm one behind it completely, which never happens in the overhead case, where
+the hidden glass is always the shorter one.
+
+The difference that matters most between the two cases is what each leaves
+behind in the picture. Looking straight down, the splay factor can be read back
+out of the patch itself, so the picture carries a geometric hint that something
+could be underneath, and the blind-region sum turns that hint into a number.
+Looking level, there is nothing to read. The mask with both glasses standing
+there and the mask with the far glass taken off the table are the same mask, to
+the pixel: 7763 lit pixels either way, and a difference of 0 out of 76,800. A
+level picture of one glass in line with another is a picture of one glass.
+
+So nothing in the doubt list fires, and nothing can. Every defence against this
+case is upstream of the look and is pure geometry. [Solution
+3](03-move-the-camera.md) drops any candidate pose whose sight line crosses
+another group's fitted footprint circle, and the ordering in [the worked
+example](#a-worked-example) below prefers poses square across the line joining a
+doubtful glass and its neighbour. Both of those work on *fitted* circles, which
+is one of the two holes this solution's own list of limits names: a circle
+fitted to a sliver of a glass is too small and in the wrong place, so it fails
+to block the sight lines it should have blocked.
+
+The learned part does contribute something here, and it is worth stating exactly
+what, because it is easy to claim more. The score is trained on what actually
+happened when the arm went to each pose, so poses that look down the line
+joining two glasses are trained towards a low score by every arrangement in
+which they wasted a look. That is a preference learned across thousands of
+scenes, and it is not a detection in the scene in front of it. On any single
+run, a look taken from a blocked direction comes back, the doubt list does not
+fall, and nothing says why. The loop has spent a look and learned nothing from
+it. What follows is the per-object cap, and then the object reported as
+unresolved with its reason attached, which the problem statement asks for. When
+no candidate pose survives the geometric veto at all, that is a fact about where
+the glasses stand rather than a perception failure, and it goes to [problem
+3](../../problem-3/problem.md).
+
+The two cases are worth holding side by side, because what this solution can do
+about each follows from what each leaves behind. Read the table a row at a time:
+each row asks one question of both cases.
+
+| | looking straight down | looking level |
+| --- | --- | --- |
+| what makes it happen | one glass's outline is thrown outwards over another | one glass stands in front of another |
+| what it needs | the two close together, differing a lot in height, and lying along a radius | only that the camera, the near glass and the far glass are in line |
+| which glass goes missing | the shorter one, every time | the further one, whatever its height |
+| does one picture carry a hint | **yes** — splay is exact, so the table behind each found glass is computable | **no** — the mask is identical to a mask of one glass |
+| what this solution does | counts the unsearched patches as the fifth doubt entry, and can send a look to a place | nothing during the run; the geometric veto has to prevent it beforehand |
+| what it hands on | which patch is likely to hold a glass, to [solution 5](05-is-anything-hiding-there.md) | an unresolved object, to the report and to [problem 3](../../problem-3/problem.md) |
+
+So the honest summary is this. **This solution handles the overhead case only
+partly, and the level case not at all.** It handles the overhead case to the
+point of knowing that a place went unsearched and being able to spend a look
+there, and every bit of that comes from arithmetic rather than from the model.
+It cannot handle the level case during a run, because the picture that would
+have to raise the alarm is the picture the glass is missing from, and the only
+signal it ever produces is a look that changed nothing. What stands between the
+loop and that failure is the geometry that chooses where to stand, and the two
+caps that stop a hopeless object eating the budget.
 
 ## A worked example
 

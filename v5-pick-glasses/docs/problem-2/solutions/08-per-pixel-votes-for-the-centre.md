@@ -452,6 +452,210 @@ its position and its reason, and handed to problem 3.
 That is a result rather than a failure. The rule the whole project runs on
 applies here too: anything doubtful is reported, and never guessed.
 
+## When the glasses are completely hidden
+
+A glass can be missing from a picture altogether. It is standing on the table,
+it is solid, the depth camera is pointed straight at the part of the table it
+is on, and not one pixel of it comes back. This section works out what this
+solution does about that. It is for anyone deciding how much of problem 2 this
+solution can be asked to carry on its own, and the answer has two halves that
+point in opposite directions, so it is worth going through both.
+
+Start with what makes this solution's position unusual. Every other method on
+these pages separates two glasses by finding something between them: a gap in
+the picture, a strip of bare table, a seam. This one finds nothing between
+them. Each glass pixel votes for where its own glass's centre is, and it casts
+that vote whether or not anything can be told apart anywhere. So a glass that
+is **partly** covered still speaks. Its surviving pixels vote for the right
+centre, and they do not have to be joined to each other, or to make a
+recognisable shape, or to lie on any particular part of the glass.
+
+A large glass standing in front of a small one hides much more of it than a
+glass of its own size would, so partly hidden glasses are the normal case here
+rather than the exception. That is the case voting is unusually good at, and it
+is worth putting a number on how good.
+
+**The arithmetic needs very few votes.** A vote is the pixel's own place on the
+table plus the arrow to its own glass's centre, so every vote is an estimate of
+the same point, and averaging several of them shrinks the scatter. Against the
+held-out spread of 6 mm this document calibrates everything else against, five
+votes put the peak within 4.6 mm of the true centre nineteen times in twenty,
+and twenty votes put it within 2.3 mm.
+
+**Finding a pile that small is the harder half.** The windows are started from
+a few hundred votes drawn at random, as [choosing the one window
+size](#choosing-the-one-window-size) describes, and a pile only gets a window
+started in it if one of those seeds lands in it. In a picture holding about
+seventeen thousand votes, a pile of twenty is found by three hundred seeds
+thirty per cent of the time, a pile of a hundred eighty-three per cent of the
+time, and a pile of three hundred, which is under two per cent of the picture,
+ninety-nine and a half per cent of the time. That floor is a choice rather than
+a law: seeding a window at every vote removes it entirely, at the price of the
+arithmetic that made the sampling worth doing.
+
+**And the vote count check refuses to believe a pile that small anyway.** That
+is deliberate and it is argued in [too few votes, whatever the
+spread](#too-few-votes-whatever-the-spread): a crescent's votes agree with each
+other and are wrong together.
+
+So the honest figure is a few hundred pixels — well under a tenth of a glass —
+for voting to find a hidden glass and place it to a millimetre or two.
+
+**None of which helps when the number is nought.** A glass that is covered
+completely owns no pixels, so it casts no votes, so there is no pile to find,
+no spread to be loose and no count to be short. The vote map simply has one
+peak where two glasses are standing, and **nothing in it is wrong**. Both of
+this solution's own alarms are measurements of votes, and there are no votes to
+measure.
+
+That is a limit rather than a bug, and it is the same limit every method here
+that works from pixels runs into. This solution cannot handle the completely
+hidden case and must hand it on. What it hands on is not a glass but a region:
+the part of the table it could not have seen. Working out that region is
+arithmetic on splay and on the glasses that *were* found, and it belongs to
+[cluster on the table](02-cluster-on-the-table.md). Deciding which of those
+places is worth spending a picture on belongs to [is anything hiding
+there](05-is-anything-hiding-there.md). Moving the camera and taking that
+picture belongs to [move the camera](03-move-the-camera.md).
+
+The two subsections below work out how a glass comes to be covered in each of
+the cell's two views, because the geometry is different in each and so is the
+handful of pixels that survives when the covering is not quite complete.
+
+### When the camera is looking straight down
+
+The survey looks straight down from 450 mm above the table top. The table is
+the furthest thing from the lens and a glass's rim is the nearest, because the
+rim has climbed most of the way from the table towards the camera, and anything
+nearer the lens is drawn larger and further out from the middle of the picture.
+
+The arithmetic is exact. A slice of a standing glass at height *z* is drawn as
+though it had been scaled about the point directly below the camera by
+
+    k = H / (H - z)
+
+where *H* is the camera's height above the table top. At the survey height a
+slice 225 mm up has k = 450 / 225 = **2.00**: its circle is drawn at twice its
+real distance out from that point, and at twice its real radius. This project
+calls that outward stretch **splay**.
+
+Now take two glasses of the one kind, both drawn from the project's own range.
+One is 223.8 mm tall with a rim 102.9 mm across, so its rim is scaled by 1.99.
+The other is 93.8 mm tall with a rim 83.6 mm across, so its rim is scaled by
+1.26. Stand the tall one 205 mm out from the point below the camera and the
+short one 150 mm further out along the same line — and 150 mm is the closest
+two glasses ever stand, so this is an ordinary arrangement rather than a
+contrived one.
+
+The tall glass's splayed outline then contains the short glass's outline
+entirely. **Nought of the short glass's 4,669 pixels reach the picture.**
+
+What comes back is one patch of 16,781 pixels. Those pixels back-project to a
+footprint 103 mm across, and the widest this kind of glass can be is 105 mm, so
+the patch is an entirely legal width and nothing about it looks wrong. It is
+worth being clear about why the patch measures 103 mm when its outline in the
+picture spans 325 mm. Splay decides which pixels exist; it does not decide
+where they land. Each pixel's depth reading puts it back at its own true place
+on the table, so the tall glass's pixels come back as its own real footprint.
+
+Hiding this way needs two things at once. The two glasses have to be close
+together, and they have to differ a lot in height, because k grows with height
+and it is the difference in k that lets one outline sweep over the other. The
+hidden glass is therefore always the shorter one.
+
+It also depends on where the pair is standing relative to the point below the
+camera, because splay runs outwards from that point and nowhere else. Read the
+next table as follows: keep the two glasses 150 mm apart and swing the short
+one about the tall one, away from the line running out from the camera, and
+count how many of the short glass's pixels reach the picture. The whole-glass
+count changes a little from row to row because swinging the glass moves it
+nearer to or further from that point, which changes how large it is drawn.
+
+| the short glass, swung off the line out from the camera | its pixels that reach the picture |
+| --- | --- |
+| 0 degrees | 0 of 4,669 |
+| 8 degrees | 0 of 4,687 |
+| 12 degrees | 87 of 4,704 |
+| 16 degrees | 324 of 4,716 |
+| 20 degrees | 663 of 4,658 |
+| 30 degrees | 2,107 of 4,653 |
+| 90 degrees | 4,043 of 4,043 |
+
+A pair lying along that line hides. The same pair lying across it does not hide
+at all. And the change between the two is quick: the short glass goes from
+invisible at eight degrees to keeping nearly half of itself at thirty.
+
+![The short glass under the tall one's splayed outline, and the same pair swung twelve degrees](../../../images/problem-2/08-hidden-from-above.png)
+
+The second panel is the case this section is about. One peak, where two glasses
+are standing, and the peak that is there is in exactly the right place with an
+entirely believable width behind it.
+
+The fourth panel is the other half of the argument. Swung twelve degrees, the
+short glass keeps 87 pixels — under two per cent of itself, a thin crescent
+along one edge — and a window started in those votes comes to rest 1.1 mm from
+where the glass really stands. A boundary method has nothing to work with
+there, because there is no boundary between the two outlines to find. Voting
+does not need one.
+
+One measurement is worth recording about *which* pixels survive, because it
+decides how hard the network's job is. Looking straight down, the mouth of the
+glass is visible and it is the part nearest the lens, so it is the first thing
+a covering outline takes. What is left is a strip of far wall and far rim. Those
+survivors sit on average 41.7 mm out from their own glass's centre, on a rim
+radius of 41.8 mm, against 29.4 mm averaged over the whole glass. They are the
+most extreme pixels the glass has, which means their arrows are the longest the
+network is ever asked to predict.
+
+### When the camera is looking level
+
+The measuring view is different in kind. The camera stands 120 mm above the
+table top and 380 mm back from the glass it is looking at, and it looks level.
+A level camera throws nothing outwards, so splay plays no part at all. What
+happens here is plain line of sight: the near glass is in the way.
+
+Put the short glass straight behind the tall one and it disappears, and the
+distance between them buys nothing whatever. Nought of its pixels survive at
+150 mm apart, nought at 300 mm, and nought at 600 mm. The reason is that the
+near glass is nearer, so it is drawn larger: the tall glass, 102.9 mm across,
+is 75 pixels wide in the picture at the standoff, while the short glass, 83.6 mm
+across, is 34 pixels wide at 300 mm behind it.
+
+So the hidden glass here is the further one, whatever its height. Swap the two
+round and the magnification works the same way. The near short glass is
+61 pixels wide in the picture against the far tall glass's 42, so it covers
+26 per cent of that glass: the lower part of it, up to about the height of its
+own rim.
+
+![The far glass straight behind the near one, and the same pair with it stepped 30 mm aside](../../../images/problem-2/08-hidden-from-the-side.png)
+
+Again the second panel has one peak where two glasses stand, and again there is
+nothing wrong with it: 8,628 votes, a fitted footprint 102 mm across, a tight
+pile. Step the far glass 30 mm to one side and 76 of its 1,000 pixels survive,
+as a strip down the edge of the near glass's outline, and a window started in
+those votes comes to rest 0.6 mm from the truth.
+
+The survivors sit differently here, and the difference is smaller than it
+sounds. Looking level, the lens is below the rim of anything tall, so there is
+no mouth to lose in the first place, and the strip that survives sits 35.5 mm
+out from its own centre against 31.8 mm over the whole glass. Looking straight
+down, the surviving pixels were the most extreme the glass had; from the side
+they are barely more extreme than average.
+
+What the two cases share is the thing that matters to the network. Whichever
+view it is, the pixels that survive are a crescent down one edge, and every
+pixel of that crescent sees the same one-sided part of the glass. So their
+arrow errors agree with each other rather than cancelling, which is exactly
+what the count check in [too few votes, whatever the
+spread](#too-few-votes-whatever-the-spread) exists to catch. The arithmetic
+earlier in this section is therefore a floor on what is possible and not a
+promise about what a trained network will do.
+
+And when the crescent is empty, none of that applies. There is no strip, no
+pile, no spread and no count. The only remaining question is a geometric one
+about where a glass could have been standing unseen, and this solution does not
+answer it.
+
 ## A worked example
 
 Everything below follows from the cell's own constants and nothing else.
@@ -552,22 +756,11 @@ does the job**, with no weights file to maintain. This solution earns its place
 only where that spacing rule no longer holds.
 
 Two things are worth adding now that one kind spans a shot glass to a large
-tapered glass, and they pull in opposite directions.
-
-The first raises this solution's value. A large glass standing in front of a
-small one hides much more of it than a glass of its own size would, so **partly
-hidden objects are now the normal case rather than the exception**. Voting is
-unusually good there, because a crescent of a footprint still votes towards the
-right centre, where a method that needs a boundary has no boundary to find. So
-the wide range of sizes is an argument in this solution's favour.
-
-The second is a hard limit, and it is the same one every pixel-based method here
-runs into. If the large glass covers the small one **completely**, the small one
-casts no votes at all. There is nothing to pile up and no pile to be loose, so
-neither the spread nor the vote count fires, because both are measurements of
-votes that do not exist. The only thing that speaks to that case is the
-geometric argument about where a glass could have been hiding, and it lives in
-[solution 2](02-cluster-on-the-table.md).
+tapered glass, and they pull in opposite directions. The wide range of sizes
+makes partly hidden glasses the normal case, which is where voting is at its
+best, and it also lets one glass cover another completely, which is where
+voting has nothing whatever to offer. Both are worked out in [when the glasses
+are completely hidden](#when-the-glasses-are-completely-hidden) above.
 
 What it quietly assumes comes second. **It learns the renderer**, and
 randomisation narrows that gap without closing it, and with no real data nothing

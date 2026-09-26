@@ -88,13 +88,10 @@ out it is thrown**.
 
 So put a tall glass near the middle of the picture and a short one beyond it.
 The tall one's outline sweeps outwards; the short one's barely moves. The sweep
-can reach the short glass and pass over it — and if it passes over all of it,
-the short glass contributes no pixels at all.
-
-That is not a merge, and the difference matters more than anything else on this
-page. A merge leaves a patch that is too wide, which something can notice. This
-leaves **one patch of a perfectly legal width**, belonging to the tall glass,
-which nothing can notice.
+can reach the short glass and pass over it, and it can pass over all of it. What
+that does to this method is different in kind from a merge, and it is the
+subject of [when the glasses are completely
+hidden](#when-the-glasses-are-completely-hidden) below.
 
 ![Why the survey cannot produce the case](../../../images/problem-2/01-the-survey-cannot-see-it.png)
 
@@ -126,12 +123,12 @@ camera, so it cannot be seen at all.
 This is not a rare corner case. Of all the pairs we deliberately stood in line
 with the camera, the large majority came back as a single patch.
 
-The wide range of sizes inside one kind bites here as well, and in the same two
-ways. A large glass standing in front of a small one hides far more of it than a
-glass of its own size would, so more pairs merge. And a large glass can hide a
-small one **completely**, in which case there is no seam to find and no second
-base to stand on, which is the case this method has to refuse rather than
-answer.
+The wide range of sizes inside one kind matters here as well, and in the same
+two ways. A large glass standing in front of a small one hides far more of it
+than a glass of its own size would, so more pairs merge. And a glass standing in
+line with the camera can be covered completely, which is a different case again
+and is dealt with in [when the glasses are completely
+hidden](#when-the-glasses-are-completely-hidden).
 
 So the rest of this document is about the camera at the side, and about nothing
 else.
@@ -411,14 +408,159 @@ where I am standing.* That is the valuable outcome, because it names what a new
 viewpoint has to achieve, where a vague failure would leave the next solution
 guessing.
 
-And the fourth outcome is the one the wide size range adds, and it is the honest
-limit of this page. **A large glass can hide a small one so completely that
-neither the width nor the bottom edge shows anything at all.** The patch is one
-glass wide and has one place of contact, so this method returns one glass and is
-right about everything it was asked. It was simply not asked the right question.
-Nothing inside one picture can be asked that question, which is why [solution
-2](02-cluster-on-the-table.md) has to work out where a glass could have been
-hiding, from the positions and heights of the glasses that were found.
+And the fourth outcome is the one the wide range of sizes adds, and it is not a
+refusal at all. A glass can be covered so completely that neither the width nor
+the bottom edge shows anything, and then this method returns one glass without
+hesitating. That outcome, and what has to be done about it, is the subject of
+[when the glasses are completely
+hidden](#when-the-glasses-are-completely-hidden).
+
+## When the glasses are completely hidden
+
+Everything above this point has assumed that each glass puts at least a few
+pixels into the picture. This section is about the case where one of them puts
+in none. It is the case the wide range of sizes inside a single kind makes
+possible, and it is not a harder version of the merging problem. It is a
+different problem, and the honest summary of it is short. **This solution does
+not handle it, and it cannot even notice it.** A merge leaves a patch that is
+too wide, which something can see. A glass that contributes no pixels leaves one
+patch of a perfectly legal width, belonging to the glass in front of it, which
+nothing inside this picture can see. So the method returns one glass, without
+hesitating, and the count it passes on is one too low.
+
+The two camera positions produce this case in two quite different ways, and the
+difference decides what can be done about each. From the top it is caused by the
+outward lean of a tall glass's outline, and it needs the two glasses to be close
+together and very different in height. From the side it is plain line of sight,
+and it needs neither. They are taken in turn.
+
+### When the camera is looking straight down
+
+From the top the arm holds the camera 450 mm above the table and points it
+straight down, which is the view this project surveys the table from.
+
+Start with what that camera does to one standing glass. A horizontal slice of
+the glass at height *z* above the table is nearer the lens than the table is, by
+exactly *z*. So the slice is drawn as though it had been scaled about the point
+directly under the camera. Writing *H* for the camera's height above the table,
+the factor is
+
+> *k* = *H* / (*H* − *z*)
+
+which is the ratio [the cell](../../the-cell.md) derives for how far out a glass
+is reported to be, applied here one slice at a time. The scaling moves the
+slice's centre away from the point under the camera and makes its radius larger,
+both by the same *k*. At the rim of a 225 mm glass, *k* is 450 / (450 − 225),
+which is exactly 2. The rim circle is therefore drawn twice as far out from the
+point under the camera as it really is, and twice as wide. This document calls
+that outward lean **splay**, and it is what lets a tall glass's outline reach
+over a neighbour standing beyond it.
+
+When the splayed outline of a tall glass contains the whole splayed outline of a
+shorter one, the shorter one contributes no pixels at all. What comes back is
+one patch, belonging to the tall glass, of an entirely legal width.
+
+![A tall glass covering a short one in the survey picture, and the same two glasses turned a quarter turn, where it does not](../../../images/problem-2/01-hidden-from-above.png)
+
+Here is one arrangement that does it. Both glasses are of the same tapered kind
+and both sizes are inside the range that kind allows. The tall one is 225 mm
+high and stands 200 mm out from the point under the camera. The short one is
+95 mm high and stands 160 mm further out along the same line, which is
+comfortably past the 150 mm this problem guarantees between two centres. None of
+the short glass's 3448 pixels reaches the picture. The patch that comes back
+measures 325 mm across the table, where a single glass of this kind standing in
+that spot could draw 340 mm, so no width check can object to it.
+
+Now move the short glass the same 160 mm across that line instead of along it,
+and leave the tall glass where it was. All 2891 of its pixels come back, in a
+patch of its own. Splay throws everything directly away from the point under the
+camera, so it can only hide along a line out from that point.
+
+That is the first of four conditions, and together they make this a narrow
+arrangement rather than a common one. The pair has to lie within about six
+degrees of the line out from the point under the camera. The two glasses have to
+be close together: at 200 mm out the tall glass covers the short one at 160 mm
+of separation and fails to at 170 mm. They have to differ a great deal in
+height, and the glass that disappears is always the shorter one, because across
+every arrangement tried a glass never covered another of its own height and a
+short glass never covered a tall one. And the glass doing the hiding has to
+stand well out from the point under the camera, because splay grows with
+distance from it: at the closest spacing this problem allows, nothing is covered
+at all until the tall glass is 180 mm out.
+
+That last condition settles the matter for this cell, because it costs more than
+it buys. A tall glass standing 200 mm out has its own outline thrown 309 pixels
+from the middle of the picture, and the frame is 320 pixels wide, so the edge of
+the frame is only 160 pixels from the middle. The glass doing the hiding is
+therefore cut by the edge of the frame, and a patch that touches the edge of the
+frame is reported as cut off rather than measured. This agrees with the count
+made earlier on this page: of the 24 legal arrangements that put both glasses
+wholly inside one survey frame, not one of them merged.
+
+There is a plainer reason as well why this solution has nothing to offer from
+the top. The whole method reads the bottom edge of a shape against a horizon,
+and a camera pointing straight down has no horizon. So from the top this
+solution is neither asked the question nor able to answer it. Deciding whether a
+glass could have been hiding in a survey picture belongs to [solution
+2](02-cluster-on-the-table.md), which works it out from the positions and
+heights of the glasses that were found.
+
+### When the camera is looking level
+
+From the side the arm brings the camera down to 120 mm above the table and
+stands it 380 mm back from the glass it is measuring, pointing level rather than
+down. That is the view this whole solution works in.
+
+Hiding here needs no splay and no difference in height. It is line of sight in
+the everyday sense: the near glass's outline covers the far one's, the way a
+person standing in front of you hides someone behind them.
+
+Two things follow, and both are the opposite of what happens from the top. The
+first is that the distance between the two glasses buys nothing. Two glasses of
+this kind standing 300 mm apart and in line with the camera cover each other
+completely, and they still do at 600 mm apart. The second is that which glass
+disappears is settled by which one is nearer, and not by which one is taller.
+And because the near glass is nearer, it is drawn larger, so a short glass in
+front can cover the lower part of a tall glass behind it.
+
+![Two glasses in line with the level camera: the near one's outline covers the far one whatever their heights](../../../images/problem-2/01-hidden-from-the-side.png)
+
+Take the first case. A 225 mm glass stands 380 mm from the camera, and another
+of the same height stands 300 mm behind it, directly in line. None of the far
+glass's 2901 pixels reaches the picture. What comes back is one patch, 75 pixels
+wide, against the 77 pixels the widest glass of this kind could draw from
+380 mm, so the width check says nothing. Its underside holds one level stretch,
+so the bottom-edge test says nothing either. The patch is one glass wide and has
+one place of contact, so this method returns one glass and is right about
+everything it was asked. It was simply not asked the right question.
+
+The second case is sharper, and it shows what the method is actually short of.
+Put the 95 mm glass in front and the 225 mm one 300 mm behind it. Now 2145 of
+the far glass's 2901 pixels do reach the picture, because it stands up above the
+near glass's rim. The answer does not change. The patch is 49 pixels wide, which
+is legal, and its underside still holds one level stretch, because the base of
+the far glass is behind the near one. What this method needs from a second glass
+is not pixels but a **base**, and the base is the first part of a glass that a
+nearer glass covers.
+
+This is why the refusal described earlier does not protect you here. When two
+glasses are of similar size, some part of the far one's base usually shows, so
+the method either splits the pair or refuses and asks for another viewpoint.
+When one glass covers another completely, nothing about the picture looks wrong,
+so there is nothing to refuse. The refusal protects you only when the evidence
+is visibly incomplete, and this is the case where it is not.
+
+So what does this solution hand off, and to whom? By itself, nothing, and that
+is the uncomfortable part of the answer. It cannot raise the case because it
+cannot see it. The check that catches a completely hidden glass has to be made
+somewhere that knows where the glasses that *were* found are standing and how
+tall they are, and that is [solution 2](02-cluster-on-the-table.md), which asks
+whether there is a piece of table where a glass could have stood and still
+produced nothing. Once something has said that a glass may be missing, [solution
+3](03-move-the-camera.md) supplies the cure, by standing the camera somewhere
+the missing glass is no longer behind anything. This solution's whole part in
+that is to be honest about what its count means: it reports the glasses it could
+see, and it must never be read as reporting how many glasses are there.
 
 ## A worked example
 
@@ -562,15 +704,11 @@ almost exactly behind the near one, its base is hidden, and no amount of work on
 this one picture will bring it back. Such a pair has to go to the solution that
 moves the camera.
 
-The wide range of sizes inside one kind makes that limit bite harder, and in a
+The wide range of sizes inside one kind makes that limit harder still, and in a
 way worth stating separately, because it is the difference between an incomplete
-answer and a wrong one. When two glasses are of similar size, the far one's base
-usually peeks out somewhere, so the method either splits the pair or refuses.
-When a large glass stands in front of a much smaller one, there may be nothing
-peeking out at all, and then the method does not refuse. It reports one glass,
-confidently, because one glass is all the evidence shows. **Its refusal protects
-you only when something is visibly wrong**, and complete hiding is the case
-where nothing is.
+answer and a wrong one. That case is [when the glasses are completely
+hidden](#when-the-glasses-are-completely-hidden), and it is the one place where
+this method answers rather than refuses.
 
 The assumptions are worth stating because they are true in this cell and are
 still assumptions rather than facts about the world. The method assumes the
@@ -580,8 +718,8 @@ harmless, but a genuinely sloping table would not be harmless at all, because
 then the horizon would no longer be a single row. The method also only works
 with the camera at the side, looking level, and that is a real restriction
 rather than a formality, because a tall glass can cover a short one from the top
-as well. This method cannot help there, because from the top there is no horizon
-and so no relationship between a place of contact and a distance.
+as well. What happens then is [when the camera is looking straight
+down](#when-the-camera-is-looking-straight-down).
 
 Two failure modes are worth knowing in advance. A glass cut off by the edge of
 the picture has a bottom edge that simply stops at the boundary. The

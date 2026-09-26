@@ -63,15 +63,13 @@ longer confined there.
 
 ### The second difficulty is that an object can be absent altogether
 
-This is the difficulty that decides most of what this solution has to do, so it
-is worth building up carefully from the mechanism above.
+This is the difficulty that decides most of what this solution has to do.
 
-Take that mechanism and push it one step further. If a tall object's
-outline reaches a short one it merges with it, which is loud, because the patch
-is then wider than any object of the kind can be. But if the outline covers the
-short one **entirely**, the short object contributes no pixels at all. What
-comes back is one patch of one entirely legal width, and nothing about it is
-wrong.
+Push that mechanism one step further and the object disappears from the picture
+altogether, contributing no pixels at all. The section [when the glasses are
+completely hidden](#when-the-glasses-are-completely-hidden) works through how
+that happens from each of the two places the camera works from, and what this
+solution does about it.
 
 That is not a merge and it is not a doubtful measurement. It is a **missing
 object**, and it has a property neither of the other difficulties has: **there
@@ -84,14 +82,6 @@ splay is exact and the objects that *were* found have known positions, widths
 and heights, the region of table that could not have been seen is computable,
 and any patch of it large enough to hold the smallest object of the kind is
 reported as **unsearched**.
-
-What that leaves is a request this solution has to serve, and it is a different
-request from the one it was built for. A doubtful object has a position, so the
-viewpoints worth trying are the ones round it. **An unsearched patch has no
-object in it at all** — that is the entire point — so what is wanted is any
-viewpoint from which the patch itself can be seen. Serving that request turns
-out to change the shape of the problem, and the section [covering the places
-nobody could see](#covering-the-places-nobody-could-see) is about how.
 
 ### The third difficulty is that there may be nowhere to stand
 
@@ -608,6 +598,181 @@ One measurement is worth recording from the very first version: **how many extra
 looks were spent, and how many of them changed the answer.** A loop whose extra
 looks never change anything is a loop worth deleting, and you cannot know which
 kind you have built until you count.
+
+## When the glasses are completely hidden
+
+The second difficulty, named near the top of this document, is that an object
+can be absent altogether. This section works it out. It says what has to be true
+for a glass to contribute no pixels at all, how that differs between the two
+places the camera works from, and what this solution does about it. Everything
+below is measured off the cell's own camera and the cell's own kind of glass,
+which is why it says "glass" here rather than "object".
+
+Start with what this solution does about it, because the answer is smaller than
+the rest of this document might lead you to expect.
+
+The loop runs on doubtful objects. An object is doubtful because it was found
+and then failed a check, and being found is also what gives the ring of
+candidate directions something to be a ring *round*. A glass that produced no
+pixels was never found. So it fails no check, it is never marked doubtful, no
+ring is ever listed for it, and none of the three tests is ever asked about it.
+This solution cannot notice a completely hidden glass, and it cannot choose a
+viewpoint for one.
+
+What it can act on is a **place**. The second difficulty above ends with
+solution 2 turning the geometry of the objects that *were* found into the region
+of table that could not have been seen, and reporting a large enough patch of
+that region as unsearched. What that leaves is a request this solution has to
+serve, and it is a different request from the one it was built for. A doubtful
+object has a position, so the viewpoints worth trying are the ones round it. **An
+unsearched patch has no object in it at all** — that is the entire point — so
+what is wanted is any viewpoint from which the patch itself can be seen. Serving
+that request is what [covering the places nobody could
+see](#covering-the-places-nobody-could-see) above works through.
+
+So the handling of a completely hidden glass is a handover in both directions.
+Noticing that one might be there belongs to solution 2, whose arithmetic is the
+only thing in the project that can make a claim about a glass that produced no
+pixels. Going to look belongs here, through the covering step. And a patch that
+no reachable viewpoint covers is reported rather than guessed at, which is the
+same handover to [problem 3](../../problem-3/problem.md) that the rest of this
+document ends in.
+
+The two places the camera works from produce complete hiding in two quite
+different ways, and they want different cures, so they get a subsection each.
+
+### When the camera is looking straight down
+
+This is the survey view: the camera 450 mm above the table, pointing straight
+down. The hiding follows from what that view does to a standing glass, so start
+there.
+
+The point on the table directly below the camera is called the **nadir**. A
+horizontal slice of a glass at height z is imaged as though that slice had been
+scaled about the nadir by H / (H - z), where H is the camera's height above the
+table. The reason is that the slice is nearer the lens than the table is, so it
+covers more of the frame. At H = 450 mm a rim 225 mm up has a factor of
+450 / (450 - 225) = 2.0, so the rim circle appears at twice its real distance
+from the nadir and at twice its real radius. That outward stretch is called
+**splay**, and it runs along the radius from the nadir, because that is the
+direction the scaling moves things in.
+
+Now take the merge and push it one step further. If a tall glass's outline
+reaches a short one it merges with it, which is loud, because the patch is then
+wider than any glass of the kind can be. But if the outline covers the short one
+**entirely**, the short glass contributes no pixels at all. What comes back is
+one patch of one entirely legal width, and nothing about it is wrong.
+
+Three things have to be true together for that to happen. The two glasses have
+to stand close together. They have to differ a lot in height, because splay is
+what carries the tall one's outline over the short one and a short glass splays
+hardly at all, which is also why the hidden one is always the shorter of the
+two. And the pair has to lie along a radius from the nadir, because splay runs
+radially. The same two glasses lying across a radius do not hide each other at
+all, and that is the lever this solution pulls.
+
+![The same two glasses from each of the three survey stations: swallowed whole
+from the first nadir, a crescent from the second, nearly all of it from the
+third](../../../images/problem-2/03-hidden-from-above.png)
+
+Every silhouette in that picture is a real projection of one of the project's
+own glass outlines through the cell's own camera, so the pixel counts on it are
+counted rather than asserted. The pair is a 225 mm glass 102 mm across the rim
+and a 95 mm glass 67 mm across, standing 150 mm apart, which is the closest the
+problem lets two glasses stand. With the tall one 190 mm out from the first
+station's nadir and the short one along the same radius beyond it, the short
+glass contributes none of the 3310 pixels it would contribute on its own. Slide
+the nadir 45 mm sideways and the first of its pixels comes back. From the next
+station's nadir, 92.6 mm along, 789 of them are in the picture. From the one
+after that, 3629 of 3642 are, and the patch is then wider than any glass of the kind can be,
+which is the ordinary merge, and the width check catches it.
+
+The covering has a threshold as well as a direction, and the threshold is the
+awkward part of this mechanism. It begins only once the tall glass stands
+176.6 mm out from the nadir. Nearer in than that, some part of the short glass
+always shows. And 176.6 mm out is further than the picture reaches. In the
+arrangement drawn above the tall glass's rim images 234 pixels from the centre
+of a picture that ends 160 pixels out, and the short glass's rim images 265.
+Take both glasses to the ends of the kind's size range, the tallest and widest
+beside the shortest and narrowest, and the covering starts 150.5 mm out, where
+the rim still images 190 pixels from that same centre. So inside a single
+picture from this camera, one glass never covers another completely. At the
+distances the covering would need, what removes the short glass from the picture
+is the edge of the frame.
+
+The zone makes that firmer. Even at the ends of the size range the short glass
+has to stand 300 mm out from the nadir, and no point in the zone lies more than
+316 mm from any station's nadir, or more than 241 mm from the middle station's.
+So the arrangement is available only from the two outer stations, only at the
+far corner of the zone, and only with the biggest glass the kind allows standing
+beside the smallest.
+
+None of that makes the mechanism idle, because what matters downstream is that
+the glass is absent from the picture, and the frame produces that just as
+thoroughly as the covering does. What it does settle is which cure is the right
+one. Both cases are cured by the same move, and it is a move this cell already
+makes before any of this runs: look from another nadir. The three survey
+stations stand 92.6 mm apart so that their shared strips overlap by about half,
+and a consequence of that spacing is that a pair lying along a radius from one
+nadir lies across a radius from the next. So the answer from the top is the
+station layout, which this solution inherits rather than chooses, and then the
+covering step for whatever solution 2 still reports as unsearched. There is
+nothing here for a ring of candidate directions to do.
+
+### When the camera is looking level
+
+This is the measuring view: the camera 120 mm above the table, standing 380 mm
+back from the glass it is measuring, pointing level at it. It is the pose the
+shape measurement needs, and it is the pose this solution flies to.
+
+Hiding here needs no splay, and it needs no difference in height. The near
+glass's outline simply covers the far one's, which is what a line of sight does.
+In the pair below, the far glass is covered completely whether it stands 300 mm
+behind the near one or 800 mm behind it. More distance between the two makes the
+hiding more complete rather than less, because the far glass shrinks in the
+frame as it goes further away while the near one does not change at all. That is
+the sharpest difference from the view from above, where the whole mechanism
+turned on how far out from the nadir the pair stood.
+
+The glass that loses pixels is the further one, whatever the two heights are.
+And because the near glass is the nearer of the two it is magnified in the
+picture, so even a near glass much shorter than the far one covers a useful part
+of it.
+
+![A glass hidden behind another in the measuring view, the step round that
+brings it back, and what a short glass in front still costs a tall one
+behind](../../../images/problem-2/03-hidden-from-the-side.png)
+
+The first two pictures are the same two glasses as before, 300 mm apart, with
+the camera at its standoff from the near one. In line with the pair, the far
+glass contributes none of the 840 pixels it would contribute on its own. Step
+6.0 degrees round the near glass and its first pixel appears. Step 19.8 degrees
+and the picture holds two patches, with the far glass whole. Standing further
+back helps at none of those angles, which is why the cure here is a step round
+rather than a step out.
+
+The third picture is the same pair the other way about, with the 95 mm glass in
+front and the 225 mm glass 300 mm behind it. The far glass keeps 2145 of its
+2901 pixels. The 756 it loses are all at the bottom and they include its base,
+and the shape measurement turns rows into heights, so the row where a glass
+meets the table is what fixes how far away it stands. A measurement of that far
+glass would be wrong about where it stands while most of it is in plain view.
+
+This is the one place where this solution does act on complete hiding, and it
+acts by prevention rather than by cure. Test two asks whether another object
+would share the frame, judged as an angle at the camera. For this pair it
+refuses every direction up to 23.9 degrees, which is four degrees past the angle
+at which the two silhouettes actually come apart. So the filter throws away
+every viewpoint that would hide one known glass behind another, and it does it
+before the planner is asked about any of them.
+
+That protection is worth stating precisely, because it is complete in one
+direction and empty in the other. For glasses the survey found, this solution
+will not create a hidden glass by flying somewhere careless. Against a glass the
+survey never found, it offers nothing at all, because a glass that is not in the
+belief about the table is not in the world the wedge test reasons about. When
+the arm goes to measure a doubtful glass and an unknown one is standing behind
+it, the picture that comes back looks exactly like a picture of one glass.
 
 ## A worked example
 

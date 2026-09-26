@@ -86,6 +86,37 @@ compared against what the kind allows, a fitted circle has a residual, and a
 group can be asked how many stations saw it. None of those exists for a glass
 that produced no pixels, so none of them can fire.
 
+The two places the camera works from produce this in quite different ways, and
+only one of them produces it in this cell. Looking straight down, the sweep
+described above is what would do it, and the arithmetic says it does not get
+the chance: covering needs the two glasses closer together than the 150 mm this
+problem guarantees between centres, and every arrangement that would manage it
+puts the covering glass out past the edge of the frame. So from the top a glass
+goes missing because the survey never looked at that piece of table, which is
+why the signal worth having is *unsearched area* rather than *hidden glass*.
+Looking level there is no sweep involved at all. One glass stands in front of
+another, which needs neither a height difference nor closeness: two glasses
+600 mm apart hide each other as completely as two 150 mm apart, and the one
+that goes is the further one whatever its height.
+
+Every solution below now ends with a section called "when the glasses are
+completely hidden", which says what that solution does about it. They do not
+agree, and the disagreement is the useful part. Read the table as a verdict per
+solution, with the two camera positions kept separate because most solutions
+treat them differently.
+
+| # | Looking straight down | Looking level |
+|---|---|---|
+| [1](01-split-the-blob-in-the-picture.md#when-the-glasses-are-completely-hidden) | never asked: the method reads a bottom edge against a horizon, and there is none | answers "one glass" confidently and is not wrong about anything it was asked |
+| [2](02-cluster-on-the-table.md#when-the-glasses-are-completely-hidden) | partly: it cannot find the glass but it can bound where one could be, and the stations then look | no: the blocked strip never closes, so it cannot be bounded |
+| [3](03-move-the-camera.md#when-the-glasses-are-completely-hidden) | no: the cure is the station layout, not anything the loop decides | partly: it refuses poses that would hide one *known* glass behind another |
+| [4](04-learned-doubt-steers-the-next-picture.md#when-the-glasses-are-completely-hidden) | partly: doubt attaches to a place rather than a glass | no: two pictures differing by zero pixels cannot carry different doubt |
+| [5](05-is-anything-hiding-there.md#when-the-glasses-are-completely-hidden) | yes, as far as ranking goes: the blind wedge has a measurable reach and area | barely: the strip is computed from what was already known, so nothing varies |
+| [6](06-learn-which-viewpoints-pay-off.md#when-the-glasses-are-completely-hidden) | no: the candidate poses are one ring at one height | partly: it can learn which way round to step, but is never told to |
+| [7](07-a-segmenter-trained-from-scratch.md#when-the-glasses-are-completely-hidden) | no, and this is the cleanest no of the nine | no: the two scenes produce the same picture pixel for pixel |
+| [8](08-per-pixel-votes-for-the-centre.md#when-the-glasses-are-completely-hidden) | no: zero pixels cast zero votes | no, though a sliver of a glass is worth more here than anywhere else |
+| [9](09-self-supervised-from-the-arms-own-movement.md#when-the-glasses-are-completely-hidden) | no: hands it to solution 2 and the overlapping stations | yes: the revealing pictures are already being taken |
+
 ### Glasses merge in the picture even when they are apart on the table
 
 ![Overlapping in the picture is not touching on the table](../../../images/problem-2-merged-in-the-picture.png)

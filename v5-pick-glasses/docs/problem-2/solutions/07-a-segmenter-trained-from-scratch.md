@@ -520,6 +520,245 @@ the movement**, by a factor of thousands. So the loop caps the extra looks per
 doubtful region, and when the budget is spent it reports the region as doubtful
 rather than guessing.
 
+## When the glasses are completely hidden
+
+This section answers one question. What does this solution do when a glass is
+hidden so thoroughly that it contributes no pixels at all? It matters because
+the answer decides what has to be built around this network rather than inside
+it. Everywhere else in this document a difficulty ends with the network doing
+something imperfect. Here it ends with the network doing nothing, and saying
+that plainly is more useful than softening it.
+
+Start with what the words mean. A glass is **partly hidden** when something
+nearer the camera covers some of it, and the picture then still holds a piece
+of that glass to work from. A glass is **completely hidden** when every point
+on it is behind something nearer the camera. The mask the simulator would write
+for it is not a small mask. It is an empty one.
+
+**This solution cannot handle the completely hidden case.** A segmenter labels
+pixels. It is a function from a picture to one number for each pixel of that
+same picture, so a glass with no pixels has nothing to be labelled. There is no
+wrong answer to correct here, because there is no place in the output where the
+answer would have gone.
+
+That also settles whether more training would help, and the reason is worth
+being exact about. Take the scene with the hidden glass and the same scene with
+that glass removed. The two produce the same picture, pixel for pixel. No
+function of the picture can tell them apart, whatever its shape and however it
+was fitted, because the thing that differs between the two scenes left no trace
+in the input. This is the one limitation in this document that is a fact about
+the input rather than about the model.
+
+There is a qualification that deserves working out rather than waving at,
+because it is the obvious objection. A network *can* be trained to mark part of
+an object it cannot see. The name for that is **amodal segmentation**, which
+means predicting an object's whole extent rather than only the visible pixels
+of it, and it is ordinary rather than exotic — it is what lets a person report
+one cat behind a railing instead of five slices of cat. The silhouette of a
+tall glass is sometimes consistent with something standing behind it, so a
+network could in principle learn to mark that, and the simulator can supply the
+label to train it on.
+
+The segmenter described here does **not** do that. It has one output channel
+and it is trained against the mask the simulator returns for what the camera
+can see, so the only thing it can learn to mark is glass that is visible.
+Making it amodal would take three things: ask the simulator for each glass's
+mask with the other objects taken away, which costs no more than the visible
+mask; train against that instead; and accept that the mask now claims pixels
+whose evidence is some other object's surface, so the circle fitted to those
+pixels is a prediction rather than a measurement.
+
+Even then it would not answer this section's question, and the reason is the
+same one as before. Amodal completion extends evidence, so it needs some of the
+object to be visible to extend from. With no pixels at all there is nothing to
+extend, and a model asked to mark a glass that *might* be behind this one would
+be inventing a scene rather than reading a picture. The same limit is written
+down for the hardware version of the idea, in
+[`learned-with-hardware.md`](learned-with-hardware.md), and the right machinery
+for a guess about a scene is not a segmenter at all.
+
+So what this solution does with the completely hidden case is hand it on, and
+it is worth naming what it hands on and to whom. What it keeps is the part it
+can do: one region per visible clump, with a probability at every pixel, which
+back-projects into the patches of table that are accounted for. What it hands
+on is the question of which patches of table are *not* accounted for and could
+be holding something. That question is geometry rather than appearance.
+[Solution 2](02-cluster-on-the-table.md) is the argument about where a glass
+could have been hiding, [solution 3](03-move-the-camera.md) is what acts on
+that argument by choosing somewhere else to stand, and [solution
+5](05-is-anything-hiding-there.md) is the learned version of deciding whether a
+particular hiding place is worth the trip. This solution contributes the masks
+those three argue from, and none of the argument.
+
+One expectation has to be corrected before the two cases, because the rest of
+this document invites it. The feedback loop described above runs on doubt
+inside a region, and a completely hidden glass produces no doubt anywhere. The
+region is the front glass's own silhouette, the network is sure about every
+pixel of it, and it is sure for the ordinary reason rather than by luck.
+Interior doubt finds a glass that is *partly* hidden, because that is the case
+where a second object's edge runs through a region. It cannot find one that is
+absent from the picture, so the loop is never even asked.
+
+The receptive field cannot rescue this either, and the earlier section makes
+that worth spelling out. A wider field lets one unit see more of the picture at
+once. It does not let it see a glass that is not in the picture. What the field
+decides is how well the partly hidden case goes, and the two views put
+different demands on it, which is part of why they are worth separating.
+
+### When the camera is looking straight down
+
+This is the survey view: the camera 450 mm above the table, pointing straight
+down. Hiding works here through the same splay that [the
+cell](../../the-cell.md) describes, so it is worth restating in the form this
+section needs.
+
+A horizontal slice of a standing glass at height *z* is nearer the lens than
+the table is, by exactly *z*. So that slice is imaged as though it had been
+scaled about the **nadir**, the point on the table directly below the camera,
+by a factor of *H* / (*H* − *z*), where *H* is the camera's height. With *H* at
+450 mm, a slice 225 mm up has a factor of exactly 2.0. Its circle appears twice
+as far from the nadir as the glass really stands, and twice as wide. The
+tallest glass this kind allows is 230 mm high, and its rim comes out at 2.042.
+
+The consequence is that a tall glass's silhouette is not where the glass
+stands. It is pushed outward, away from the nadir, and blown up on the way.
+That is what lets one glass's outline reach over a neighbour that a ruler would
+call clear of it.
+
+![A tall glass's splayed silhouette swallows a short one, and the label that comes back is one legal glass](../../../images/problem-2/07-hidden-from-above.png)
+
+The scene in that picture is built from two of this kind's own glasses,
+projected through this cell's own camera. The tall one is 230 mm high and
+105 mm across the rim and stands 46 mm from the nadir. The short one is 90 mm
+high and 68 mm across, and stands 80 mm further out along the same radius. The
+short glass would cover 2,248 pixels on its own. Standing where it stands, it
+contributes none of them.
+
+What comes back is one patch 132 px across. That number is worth dwelling on,
+because the patch is not a merged blob of two glasses: it is exactly the tall
+glass's own silhouette, unchanged by the presence of the short one. So the
+check that saves this solution in the merged case — refusing a footprint wider
+than any glass of this kind could be — cannot fire, because the width is the
+entirely legal width of one glass. Nothing about the picture is odd.
+
+Hiding this way needs three conditions at once, and each of them is
+restrictive. The two glasses have to differ a lot in height, because the splay
+factor is what carries the tall one's outline over its neighbour, and the
+hidden one is therefore always the shorter of the two. They also have to be
+close together. And the third is easy to miss: because the splay runs radially
+outward from the nadir, the pair has to lie *along* a radius rather than across
+one. The table below reads across one row for each direction the pair could be
+turned, keeping the same 80 mm gap and swinging the short glass about the tall
+one.
+
+| where the short glass sits | its own pixels | pixels of it in the picture |
+| --- | --- | --- |
+| straight out along the radius | 2,248 | **0** |
+| 15 degrees off it | 2,252 | 3 |
+| 30 degrees off it | 2,249 | 89 |
+| 45 degrees off it | 2,254 | 282 |
+| 60 degrees off it | 2,164 | 516 |
+| square across the radius | 2,176 | 1,164 |
+
+The same pair at the same separation goes from invisible to more than half
+visible, purely by being turned. This is also why the survey takes pictures
+from several stations rather than one: a pair that lies along the radius from
+one station does not lie along it from the next.
+
+How close the two have to be is a number rather than a feeling, and it is the
+most useful thing in this subsection. Sweeping the gap, and for each one asking
+whether every point of the short glass's silhouette falls inside the tall
+one's, the widest gap at which the tall glass hides the short one completely,
+with both of them inside one 320 × 240 frame, is **98 mm**. Allowing the tall
+glass's own silhouette to run off the edge of the frame stretches that to
+130 mm. At the 150 mm this cell guarantees between two centres, the tall glass
+would have to stand 156 mm from the nadir and the short one 306 mm, and 306 mm
+is outside the 260 mm half-frame — so the short glass is not standing on table
+that this picture covers at all.
+
+That is worth stating in full, because it is more encouraging than the earlier
+sections suggest. **In the survey view, at the separation this cell guarantees,
+complete hiding does not happen.** It starts about 50 mm inside the guarantee.
+It is still worth training for, because the randomisation described above
+deliberately places glasses closer than the specification allows, so the
+training set contains it even though the cell does not. But the case the
+running system actually meets from above is the partly hidden one.
+
+The receptive field has a plain reading here. One unit at the bottleneck of the
+four-level design sees 68 pixels of the input, which is 110 mm of table from
+this height. The patch in the picture above is 214 mm across. So the one layer
+with any context at all cannot see the whole of a single tall glass's
+silhouette, let alone compare it with anything. A fourth halving lifts that to
+227 mm, which is about one silhouette. Neither figure changes the hidden case,
+because both are measurements of how much *picture* a unit sees.
+
+### When the camera is looking level
+
+This is the measuring view: the camera 120 mm above the table, 380 mm back from
+the glass it is looking at, pointing level rather than down. Hiding works quite
+differently here, and it is much easier.
+
+There is no splay to arrange. One glass simply stands in front of another, and
+its outline covers the other's. That is all the mechanism there is.
+
+![The near glass covers the far one outright, whatever the distance between them](../../../images/problem-2/07-hidden-from-the-side.png)
+
+The two glasses in that picture are the same glass twice, 230 mm high and
+105 mm across the rim, standing 380 mm and 680 mm from the camera and in line
+with it. The far one covers 3,243 pixels on its own, and none of them appears
+in the picture.
+
+The first difference from the overhead case is that **the distance between the
+two glasses buys nothing at all**. Moving the far glass back makes it smaller
+in the picture, which makes hiding easier rather than harder. With the same
+glass 150 mm behind, 300 mm behind and 600 mm behind, the number of its pixels
+that reach the picture is zero every time. A gap that would comfortably
+separate two glasses from above does nothing here.
+
+The second difference is who ends up hidden. It is the further glass, and its
+own height does not save it, because the near glass is nearer and therefore
+magnified: at 380 mm against 680 mm it is drawn 1.8 times larger than the same
+glass would be at the back. What decides the case is how high each glass
+reaches *in the picture* rather than on the table. The far glass is completely
+covered when
+
+> near height ≥ 120 mm + (380 / 680) × (far height − 120 mm)
+
+reading the two heights as the glasses' heights above the table, the 120 mm as
+the height the camera looks from, and 380 and 680 mm as their two distances
+from it. Three readings of that are worth having. To hide the tallest glass
+this kind allows, 300 mm behind it, the near glass has to be at least 181 mm
+high. Two glasses of the same size always satisfy it, as long as they are
+taller than the camera's own 120 mm. And two of the *shortest* glasses do not
+satisfy it: both stand below the camera's line, so the far one appears higher
+in the picture than the near one and its rim comes over the top, leaving 274 of
+its 852 pixels visible.
+
+A near glass that is too short for the condition still covers a great deal. The
+shortest glass of this kind, standing in front of the tallest one 300 mm behind
+it, leaves 2,483 of the far glass's 3,243 pixels showing, so it hides a little
+under a quarter of it. That is the partly hidden case rather than this
+section's case, and it is the one the interior-doubt loop is good at.
+
+The pair also has to be close to in line with the camera, though not as close
+as might be expected. Sliding the far glass sideways off the line of sight, it
+stays completely hidden out to 30 mm, and at 35 mm the first 99 of its pixels
+appear. The plan panel of the picture above draws that as a wedge: anything
+standing in the wedge behind the near glass is hidden sideways, however far
+away it is, and the height condition above is the other half of the test.
+
+The receptive field reads differently here, in a way that is worth noticing. At
+the near glass's distance, 68 pixels of input covers 93 mm, and the near glass
+is 76 pixels wide in the picture. So a bottleneck unit sees about one glass and
+nothing else. There is also a difference in what the two views leave for a
+network to work with. From above, the place where a hidden glass could be is a
+patch of bounded size sitting beside a silhouette of known shape. From the
+side, the region the near glass hides is a corridor that runs back to the edge
+of the table, so there is no bound on where the missing glass might be. That is
+why the level view's version of this failure is the one that the covering
+argument in [solution 3](03-move-the-camera.md) has to work hardest on, and why
+nothing in a single level picture will ever settle it.
+
 ## A worked example
 
 Take the merge this problem exists to prevent, and follow it through.
@@ -629,14 +868,12 @@ not answer this problem. And **nothing in real distances comes out of it**,
 because the arm's numbers still come from the depth under those pixels.
 
 There is a second structural limitation, and it is worse, because no change to
-the output would fix it. Because one kind spans a small tapered glass to a large
-one, a tall glass's outline can cover a short one completely from above — and
-then the short glass contributes **no pixels at all**. A network that labels
-pixels has nothing to label. It is not that it would label them wrongly; there
-is nothing there to be right or wrong about. So this solution is blind to the
-failure the problem says to watch hardest, and the only thing that is not blind
-to it is the geometric argument in [solution 2](02-cluster-on-the-table.md)
-about where a glass could have been hiding.
+the output would fix it: a glass can be hidden so completely that it contributes
+no pixels at all, and a network that labels pixels then has nothing to label.
+[When the glasses are completely
+hidden](#when-the-glasses-are-completely-hidden), above, works through the two
+ways that happens, what this solution does about it, which is nothing, and who
+it has to hand the case to.
 
 What it cannot see is the failure the problem singles out. **Confident and
 wrong** is exactly the merged case, and the loop cannot catch it, because a mask

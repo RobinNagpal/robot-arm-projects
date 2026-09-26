@@ -25,9 +25,10 @@ There is a second half to this document, and it exists because of one property
 of the glasses in this problem. Because a single kind spans a small tapered
 glass at one end and a large one at the other, a tall glass can cover a short
 one completely when seen from above — and a glass that produced no pixels cannot
-be found by any method that looks at pixels. So the last part of this document
-is about a different question: **not what was seen, but what could not have
-been.**
+be found by any method that looks at pixels. So one section of this document,
+[when the glasses are completely
+hidden](#when-the-glasses-are-completely-hidden), is about a different question:
+**not what was seen, but what could not have been.**
 
 ## The problem this solves
 
@@ -111,8 +112,9 @@ does.
 
 The second failure cannot be answered by grouping pixels better, because the
 pixels are not there to group. It is answered instead by a piece of arithmetic
-that never looks at the picture's contents at all, and that arithmetic has its
-own section below.
+that never looks at the picture's contents at all, and [when the glasses are
+completely hidden](#when-the-glasses-are-completely-hidden) is where that
+arithmetic is set out.
 
 So the fix is not a better flood fill, however carefully it is written. The fix
 is to stop grouping in the picture.
@@ -425,143 +427,14 @@ reported as doubtful rather than as a glass, not because it is probably wrong,
 but because it has been seen once.
 
 That third rule is **the load-bearing part of the whole method**, and the
-measurements in the next section are what make it so. A sizeable share of
-glasses are invisible from at least one of the three stations, so a single
-station's view of the table is routinely incomplete — and a smaller share are
-seen from only one station, which means the position comes from an arc rather
-than from a whole footprint. Those are precisely the glasses whose fitted circle
-is wrong in a way that looks plausible, so the flag that marks them is the
-difference between an honest answer and a confident one.
-
-## Working out what you could not have seen
-
-Everything so far places the glasses the pictures contain. This section is about
-the glasses they do not, and it is the half of the method that the wide range of
-sizes inside this kind makes necessary.
-
-The problem is stated plainly enough. A tall glass's splayed outline can cover a
-short one completely, and then the short glass contributes no pixels, so there
-is no group, no fitted circle, no residual, and no flag. **Every check described
-above is a check on something that was found.** None of them can fire for
-something that was not.
-
-So the question has to be turned round. Instead of asking "did I miss a glass?",
-which nothing in the picture can answer, ask **"where could a glass have been
-hiding?"** — and that question has an exact answer, because splay is arithmetic
-and the glasses that *were* found have known positions, widths and heights.
-
-### Splay is a radial scaling, and that is what makes it computable
-
-One property of splay does all the work here, and it is worth stating on its own
-because it is not obvious.
-
-Take a horizontal slice of a glass at some height, which is a circle. Seen from
-above, that circle is drawn as a circle again — moved outwards from the point
-below the camera, and enlarged, both by the same factor. The factor depends only
-on how high the slice is: the higher the slice, the larger the factor. So splay
-is a **radial scaling about the point below the camera**.
-
-Two consequences follow, and the second is the useful one.
-
-The first is that a whole glass images as the union of those scaled circles, one
-per slice, which for a tapered glass is a teardrop shape leaning away from the
-camera. That is the shape the earlier sections kept describing.
-
-The second is that **splay does not change a glass's angular width about the
-point below the camera at all.** Scaling a circle's centre distance and its
-radius by the same factor leaves the ratio between them unchanged, and that
-ratio is what fixes the angle the circle subtends. So a glass covers the same
-wedge of directions whatever its height. Height only decides **how far out along
-that wedge** its outline is thrown.
-
-That is why the hidden region is computable in closed form rather than by
-drawing the scene and looking: **the region a glass hides is a wedge, and the
-only question is where along that wedge it starts and stops.**
-
-### Only taller glasses can hide a shorter one
-
-The second idea cuts the work down, and it comes free with the first.
-
-Because the scaling factor grows with height, a taller glass is always thrown
-further out than a shorter one standing at the same distance. So for any glass,
-the only things that can be covering it are the glasses **taller than it**.
-Shorter neighbours cannot reach it, however close they stand.
-
-That gives a cheap ordering. Sort the glasses found by height, tallest first,
-and each glass only has to be tested against the ones above it in the list. It
-is the same trick as drawing a scene back to front, and it turns a test over
-every pair into a test over about half of them.
-
-### A blind patch only matters if something could stand in it
-
-The third idea is what makes the output finite and useful.
-
-Put the two ideas above together and, for one camera position, you can mark out
-every piece of table that could not have been seen. Each taller glass
-contributes a wedge, clipped between the radius where its outline starts and the
-radius where it ends, and the frame edge contributes a ring outside everything.
-The union of all that is the **blind region** for that camera position.
-
-As it stands that is a shape, not an answer, because a blind region always
-exists and most of it is harmless. The test that turns it into an answer uses
-the one thing this problem guarantees about sizes: **the smallest glass of this
-kind has a known smallest footprint.** So a blind patch matters only if it is
-large enough to hold that footprint. Anything narrower cannot be hiding a glass,
-whatever else it is hiding.
-
-What comes out is therefore a short list of **suspect patches**: places on the
-table, each big enough to hold the smallest glass of this kind, that this camera
-position could not have seen. That is a finite list, it is computed from
-arithmetic alone, and it can be printed.
-
-### What this actually buys, measured
-
-It is worth being exact about how much this is worth in this cell, because it is
-easy to oversell and the honest answer is more interesting.
-
-We swept several hundred legal arrangements of four to six glasses of the
-widened kind, at the guaranteed gap, and asked of every glass how many of the
-survey's three stations could see it at all. Three results came back.
-
-**About two glasses in five are invisible from at least one station.** That is
-far more often than anybody would guess, and it settles one thing immediately:
-**a single station's count is worthless.** Nothing in the run may ever conclude
-"there are four glasses here" from one picture.
-
-**No glass was invisible from all three stations.** Not one, in any arrangement,
-even with several taller glasses contributing wedges at once. The reason is that
-the stations stand well apart, and moving the camera moves the point below it,
-which swings every wedge. So the union of the survey does find every glass, and
-the wide size range does not lose glasses outright in this cell.
-
-**About one glass in twenty-five is seen from only one station**, and almost all
-of those are the shorter glass of a pair. Those are the dangerous ones, and they
-are dangerous for a reason the earlier sections already documented: a glass seen
-from one viewpoint only is fitted from an arc rather than a whole footprint, and
-an arc fits a circle that is too small and in the wrong place, with a plausible
-width and a small residual.
-
-So the honest summary is this. **The blind-region arithmetic is not what finds
-the glasses in this cell — the spread of the stations already does that.** What
-it does is let the run *prove* that its answer is complete, instead of hoping
-so. And it is what would catch the problem the day somebody moves the stations,
-drops one of them, widens the zone, or puts a glass on a coaster. A method that
-relies on three stations happening to be enough should be able to say so out
-loud.
-
-### Where the suspect patches go
-
-A suspect patch is not a failure. It is a request, and it goes to the same place
-the doubtful groups go: the solution that [moves the
-camera](03-move-the-camera.md).
-
-There is one difference worth noticing, and it changes that solution's job. A
-doubtful group has a position, so the viewpoints worth trying are the ones round
-*it*. A suspect patch has no object in it — that is the point — so what is
-wanted is a viewpoint from which the patch itself is visible. That turns
-choosing the next place to stand from a question about one object into a
-question about **covering a set of regions**, which is where solution 3 picks it
-up.
+measurements in [when the glasses are completely
+hidden](#when-the-glasses-are-completely-hidden) are what make it so. A
+sizeable share of glasses are invisible from at least one of the three
+stations, so a single station's view of the table is routinely incomplete — and
+a smaller share are seen from only one station, which means the position comes
+from an arc rather than from a whole footprint. Those are precisely the glasses
+whose fitted circle is wrong in a way that looks plausible, so the flag that
+marks them is the difference between an honest answer and a confident one.
 
 ## How the concepts fit together
 
@@ -607,7 +480,9 @@ Notice that the right-hand branch takes its input from the **fitted circles**
 rather than from the pixels. It needs the positions, widths and heights of the
 glasses that were found, and nothing else. That is why it can say something
 about glasses that produced no pixels at all: it reasons about what those
-glasses would have been behind.
+glasses would have been behind. [When the glasses are completely
+hidden](#when-the-glasses-are-completely-hidden), below, is where that branch is
+worked out.
 
 Green marks what this solution adds, and blue marks work the project already
 does.
@@ -632,7 +507,9 @@ that raised it.
 
 And there is now a fifth thing, which does not belong to any glass: **a list of
 unsearched patches**, each one a place on the table that no picture could have
-seen and that is large enough to hold the smallest glass of this kind.
+seen and that is large enough to hold the smallest glass of this kind. Where
+that list comes from is [when the glasses are completely
+hidden](#when-the-glasses-are-completely-hidden), below.
 
 That fifth output is the one worth insisting on, because it is the only part of
 the report that says anything about what is *not* in it. The four per-glass
@@ -692,6 +569,275 @@ the survey happens to visit is reported as one wide object with a flag saying
 its width is out of range, and nothing more. That is not a wrong answer, because
 it is flagged, but it is an incomplete one, and closing that gap is what the arm
 has to move for.
+
+## When the glasses are completely hidden
+
+Everything so far places the glasses the pictures contain. This section is about
+the glasses they do not, and it is the half of the method that the wide range of
+sizes inside this kind makes necessary.
+
+The difficulty was named at the start of this document, and it is worth putting
+once more in the form the method has to deal with. A glass can contribute no
+pixels at all — not a partial arc, not a few dots, none — and then there is no
+group, no fitted circle, no residual and no flag. **Every check described above
+is a check on something that was found.** None of them can fire for something
+that was not.
+
+So the question has to be turned round. Instead of asking "did I miss a glass?",
+which nothing in the picture can answer, ask **"where could a glass have been
+hiding?"**
+
+That second question is one this solution can answer, and it can because of the
+same choice that makes the rest of it work. A method that decides in the picture
+has nothing left to work with once the pixels are gone. This one already holds
+the position, the width and the height of every glass it did find, in
+millimetres on the table, and it holds the camera's own position in the same
+millimetres. From those it can work out which pieces of table no ray from the
+lens ever reached, and it never has to look at the picture's contents again to
+do it. The union of those pieces is the **blind region** for that camera
+position.
+
+A blind region always exists and most of it is harmless, so on its own it is a
+shape rather than an answer. The test that turns it into an answer uses the one
+thing this problem guarantees about sizes: **the smallest glass of this kind has
+a known smallest footprint**, which is 65 mm across. A blind patch matters only
+if it is large enough to hold that footprint. Anything narrower cannot be hiding
+a glass, whatever else it is hiding.
+
+What comes out is therefore a short list of **suspect patches**: places on the
+table, each big enough to hold the smallest glass of this kind, that this camera
+position could not have seen. That is a finite list, it is computed from
+arithmetic alone, and it can be printed.
+
+The arithmetic is not the same in the two places the camera works from, because
+a glass goes missing in two different ways there and the two want different
+cures. The sections below take them in order: first the survey view, 450 mm
+above the table looking straight down, which is where this solution does its
+clustering; then the level view, 120 mm above the table and 380 mm back from the
+glass, which is where the arm goes to measure one glass and where it is sent
+back when a group is doubtful.
+
+### When the camera is looking straight down
+
+Start with the arithmetic, because everything in this case follows from it.
+
+Take a horizontal slice of a glass at some height, which is a circle. Seen from
+straight above, that circle is drawn as a circle again — moved outwards from
+the point below the camera, and enlarged, both by the same factor. The factor
+is the camera's height divided by the distance from the camera down to the
+slice: with the camera H above the table and the slice z above the table, it is
+H / (H − z). It is never less than one. A slice lying on the table has a factor
+of exactly one and does not move at all. A slice 225 mm up, half way to a
+camera at the survey height of 450 mm, has a factor of exactly two: it is drawn
+twice as far out from the point below the camera as it really is, and twice as
+wide. So splay is a **radial scaling about the point below the camera**, and
+the higher the slice the harder it is thrown.
+
+That is what lets one glass's outline reach over another. Take two glasses of
+this kind from the two ends of its range, 230 mm and 93 mm tall, and stand the
+tall one 200 mm out from the point below the camera with the short one 150 mm
+beyond it on the same line, which is the closest together this problem ever puts
+two glasses. The tall glass's rim has a factor of 2.04 and is drawn 209 mm
+further out than it stands. The short glass's rim has a factor of 1.26 and is
+drawn 91 mm further out. The tall glass's outline therefore crosses the short
+one's and keeps going, and every point of the short glass's outline ends up
+inside it. The short glass contributes no pixels.
+
+Hiding this way needs two things at once — the two glasses standing close
+together, and a large difference in their heights — and the quickest way to see
+that is to break each of them in turn. Move the short glass another 50 mm out,
+so the pair is 200 mm apart rather than 150 mm, and it is visible again. Put it
+back and make it a second tall glass instead, so that the pair differ in
+position but no longer in height, and it is visible again. Swap the two over,
+so that the short glass is the nearer one, and it is visible again, because a
+short glass's outline is barely thrown at all and cannot reach over anything.
+So **the hidden glass is always the shorter one, and it is hidden only when the
+two stand close together and differ a great deal in height.**
+
+There is a third condition, and it is the one the picture below is about. Splay
+is radial, which means it acts along the line running out from the point below
+the camera and not across that line.
+
+![The same pair hides along a radius and does not across
+one](../../../images/problem-2/02-hidden-from-above.png)
+
+On the left of that picture is the pair just described, lying along one radius,
+with the short glass's outline drawn as a dashed line inside the tall glass's.
+On the right are the same two glasses, still 150 mm apart and still of the same
+two sizes, turned about the camera so that they lie across a radius instead,
+both the same distance out. Nothing about the pair has changed except the
+direction it lies in, and now the two outlines share no table at all: the
+picture holds two patches and both glasses are found. Whether a glass is hidden
+therefore depends on where the camera is standing, which is the same fact that
+[asking the stations to agree](#asking-the-stations-to-agree) rests on, arrived
+at from the other end.
+
+It is worth being exact about what the run gets when the hiding does happen,
+because what comes back is not a damaged group. The pixels are the tall glass's
+outline, and every one of them carries a depth reading, so they back-project to
+the tall glass's own surface and flatten to its own footprint, 92 mm across.
+That is an ordinary width for a kind whose glasses run 65 to 105 mm. The circle
+fits it well, the residual is small, the group holds about as many dots as a
+glass that size should, and the next station finds a glass in the same place,
+because the tall glass really is there.
+Every check passes, and every one of them is right to pass. The glass that is
+missing was never what they were asked about.
+
+One thing about the scaling factor cuts the work of the blind reasoning down,
+and it comes free with the mechanism. Because the factor grows with height, a
+taller glass is always thrown further out than a shorter one standing at the
+same distance, so for any glass the only things that can be covering it are the
+glasses **taller than it**. Shorter neighbours cannot reach it, however close
+they stand. That gives a cheap ordering: sort the glasses found by height,
+tallest first, and test each one only against the ones above it in the list. It
+is the same trick as drawing a scene back to front, and it turns a test over
+every pair into a test over about half of them.
+
+A second property of the scaling is what makes the blind region cheap to write
+down. **Splay does not change a glass's angular width about the point below the
+camera at all.** Scaling a circle's centre distance and its radius by the same
+factor leaves the ratio between them unchanged, and that ratio is what fixes the
+angle the circle subtends. So a glass covers the same wedge of directions
+whatever its height, and height only decides **how far out along that wedge** its
+outline is thrown.
+
+That is why the hidden region can be computed in closed form rather than by
+drawing the scene and looking at it: **the region a glass hides is a wedge, and
+the only question is where along that wedge it starts and stops.** Each taller
+glass contributes one, clipped between the radius where its outline starts and
+the radius where it ends, and the edge of the frame contributes a ring outside
+everything. The union of all that is the blind region for that station. The
+important word is *stops*: no glass of this kind is thrown out by a factor of
+more than about two, so each wedge ends at a radius the arithmetic knows, and
+the blind region is a bounded shape with room inside it for a bounded number of
+glasses.
+
+What all that is worth in this cell has a measured answer, and it is worth
+having, because this is an easy thing to oversell and the honest number is more
+interesting.
+
+We swept several hundred legal arrangements of four to six glasses of the
+widened kind, at the guaranteed gap, and asked of every glass how many of the
+survey's three stations could see it at all. Three results came back.
+
+**About two glasses in five are invisible from at least one station.** That is
+far more often than anybody would guess, and it settles one thing immediately:
+**a single station's count is worthless.** Nothing in the run may ever conclude
+"there are four glasses here" from one picture.
+
+**No glass was invisible from all three stations.** Not one, in any arrangement,
+even with several taller glasses contributing wedges at once. The reason is the
+one the picture above shows: the stations stand well apart, moving the camera
+moves the point below it, and every wedge swings when it does. So the union of
+the survey does find every glass, and the wide size range does not lose glasses
+outright in this cell.
+
+**About one glass in twenty-five is seen from only one station**, and almost all
+of those are the shorter glass of a pair. Those are the dangerous ones, and they
+are dangerous for a reason the earlier sections already documented: a glass seen
+from one viewpoint only is fitted from an arc rather than a whole footprint, and
+an arc fits a circle that is too small and in the wrong place, with a plausible
+width and a small residual.
+
+So the honest summary for this view is that the method handles the hidden case
+**in part**. It never finds the hidden glass, because there is nothing of it to
+find, but it says exactly where one could have been standing, and the spread of
+the stations then finds it. **The blind-region arithmetic is not what finds the
+glasses in this cell — the spread of the stations already does that.** What it
+does is let the run *prove* that its answer is complete, instead of hoping so.
+And it is what would catch the problem the day somebody moves the stations,
+drops one of them, widens the zone, or puts a glass on a coaster. A method that
+relies on three stations happening to be enough should be able to say so out
+loud.
+
+### When the camera is looking level
+
+The other case belongs to the level view, where the camera is 120 mm above the
+table, 380 mm back from a glass, and pointing level at it. This solution does
+not cluster from there, but the arm spends a good deal of its time there:
+problem 1 measures every glass's shape from that pose, and [move the
+camera](03-move-the-camera.md) sends the camera back to it whenever a group is
+doubtful. A glass can be completely hidden in that picture too, by a mechanism
+that has nothing to do with splay and does not answer to the same cure.
+
+From the side, one glass simply stands in front of another and its outline
+covers it. That is all there is to the mechanism.
+
+![In line with the camera, the near glass covers the far one
+completely](../../../images/problem-2/02-hidden-from-the-side.png)
+
+On the left of that picture is what the camera returns with a 230 mm glass
+380 mm in front of it and a 93 mm glass 230 mm behind that, the two of them in
+line with the lens. The far glass's own outline is 35 pixels across, and not one
+of those pixels falls outside the near glass's outline. What comes back is one
+patch.
+
+Three things follow, and the first is the one that decides what can be done
+about it.
+
+**Putting the two glasses further apart buys nothing.** That pair is covered
+just as completely 150 mm apart as it is 600 mm apart. The reason is the one
+solution 3 sets out as [the
+wedge](03-move-the-camera.md#the-wedge-why-the-answer-does-not-depend-on-distance):
+as the far glass moves away, its own width in the picture shrinks in exactly the
+same proportion as its distance from the near glass, so the two keep the same
+relation to each other and the covering does not loosen. What breaks it is
+turning the camera off the line joining the pair, and only the arm can do that.
+
+**The hidden glass is the further one, whatever its height.** Looking straight
+down it is always the shorter glass that loses. Here height does not decide it,
+position does. And because the near glass is nearer it is magnified, so it can
+be much the smaller of the two and still cover a great deal: with the 93 mm
+glass in front and the 230 mm glass 230 mm behind it, the near one is 55 pixels
+across against the far one's 43, and it hides a quarter of the far glass. It
+does not hide it completely, because the far glass's rim stands above it, but
+what it hides is the bottom — the base, and the part of the wall that shows
+where the glass meets the table.
+
+**The blind region does not close.** This is what the case costs this method,
+and it is worth following. The reasoning is the same in kind as it is from
+above: work out which pieces of table no ray from the lens reached, and report
+any that could hold the smallest glass of the kind. What differs is the shape of
+the answer. From above the wedge stops, because the factor that throws an
+outline outwards is bounded by the glass's own height. From the side there is no
+such bound. A ray that clears the near glass just under the camera's own height
+of 120 mm lands a very long way behind it, so the blocked strip grows wider the
+further out it runs instead of ending. The right-hand panel of the picture above
+shows it: 85 mm wide where it leaves the glass zone, and 152 mm wide 650 mm
+beyond the near glass. The narrowest footprint this kind allows is 65 mm, so the
+strip is wide enough to be hiding a glass everywhere along its length. The patch
+the arithmetic reports is true, and it is nearly useless, because it says only
+that everything behind this glass and out of the zone was not looked at.
+
+So the honest answer for this view is that the method **cannot handle it**. It
+cannot find the hidden glass, for the same reason as before. It cannot bound the
+place the glass might be in, which is the part it could do from above. And it
+has no move of its own to make, because it has no feedback loop at all: it runs
+on the pictures it was handed. What it can do is notice the case and pass it on,
+and the last part of this section is about where it goes.
+
+A suspect patch is not a failure. It is a request, and it goes to the same place
+the doubtful groups go: the solution that [moves the
+camera](03-move-the-camera.md).
+
+There is one difference worth noticing, and it changes that solution's job. A
+doubtful group has a position, so the viewpoints worth trying are the ones round
+*it*. A suspect patch has no object in it — that is the point — so what is
+wanted is a viewpoint from which the patch itself is visible. That turns
+choosing the next place to stand from a question about one object into a
+question about **covering a set of regions**, which is where solution 3 picks it
+up.
+
+The two cases send that solution different requests. A wedge left by the survey
+is closed by any station far enough round from the one that cast it, and the
+three stations the survey already visits do it without being asked. A strip left
+by a level picture cannot be closed from anywhere along the line it lies on, at
+any distance, so the request is specifically for a pose off that line — which is
+the arithmetic solution 3 spends its own wedge section on. And because every
+look costs seconds and the run has a budget, [is anything hiding
+there](05-is-anything-hiding-there.md) takes the list of patches and asks the
+one question this method refuses to answer: which of them is *likely* to have a
+glass in it.
 
 ## A worked example
 

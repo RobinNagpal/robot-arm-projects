@@ -36,10 +36,14 @@ input from there and adds nothing to the perception.
 
 [Solution 2](02-cluster-on-the-table.md) places every object the pictures
 contain, and then does something less obvious: it works out which parts of the
-table **could not have been seen**. Because splay is exact arithmetic and the
-objects that were found have known positions, widths and heights, the region
-each one hides is computable. Any patch of that region large enough to hold the
-smallest object of the kind is reported as an **unsearched patch**.
+table **could not have been seen**. Because the objects that were found have
+known positions, widths and heights, the region each one hides is computable.
+Any patch of that region large enough to hold the smallest object of the kind is
+reported as an **unsearched patch**. The arithmetic that computes that region is
+not the same from the two places this cell photographs the table, and the
+difference decides what the verifier can usefully be asked; [when the glasses
+are completely hidden](#when-the-glasses-are-completely-hidden) works both cases
+out.
 
 So the run ends up holding a short list of places, each carrying one honest
 statement: *an object of this kind could be standing here, and nothing would
@@ -127,6 +131,12 @@ from what *was* seen. This is a useful reminder about learned components in
 general: before asking what a model should be shown, it is worth asking what
 evidence exists at all.
 
+One qualification belongs with that argument. The absence of pixels is not the
+same absence in the two views. A picture taken straight down at least shows the
+outline that does the hiding, and that outline says how far the hiding reaches.
+A level picture does not show even that. [When the glasses are completely
+hidden](#when-the-glasses-are-completely-hidden) separates the two.
+
 ## What the verifier is shown
 
 The input is a handful of measurements, and they fall into three groups. Each
@@ -141,8 +151,9 @@ a compact one.
 **About what casts it**, there is the height and the width of the object whose
 outline hides it, how many objects contribute to it, and whether the patch is
 cast by an object or by the edge of the frame. Those matter because they say how
-the patch came to exist, and a patch cast by a very tall object covers more
-table than one cast by a short one.
+the patch came to exist. How much the casting object's height buys it depends on
+which of the two views the patch came from, and that is worked out in [when the
+glasses are completely hidden](#when-the-glasses-are-completely-hidden).
 
 **About the scene as a whole**, there is how many objects the survey found
 against the number the problem allows, how much of the zone is accounted for by
@@ -156,7 +167,7 @@ than treating it in isolation.
 | how many of the smallest footprints fit in the patch | a patch that can only just hold one is a weaker candidate than one that could hold three |
 | how elongated the patch is | a sliver of a given area is less likely to hold a round footprint |
 | how far the patch is from the middle of the zone | objects are placed inside the zone, so the edges hold fewer |
-| how tall the object casting it is | tall objects hide much more table, so their patches are more often occupied |
+| how tall the object casting it is | seen from above, tall objects hide much more table, so their patches are more often occupied |
 | how many objects cast the patch together | a patch several objects conspire to hide is a different proposition |
 | whether the frame edge contributes | a patch that is partly off the edge of the picture is not the same as one behind an object |
 | how many objects were found, against the number allowed | the count prior: found four of up to six, and two may be missing |
@@ -272,6 +283,198 @@ The second is that **every patch reaches the report**, whatever the model said
 about it. The probability changes the queue and never the record. That is the
 property that makes this safe: the worst failure in this problem is a missing
 object nobody knows about, and no score the model produces can bring that about.
+
+## When the glasses are completely hidden
+
+The rest of this document takes one situation for granted: an object that
+contributes no pixels at all. That is the difficulty this solution exists for,
+so it is worth being exact about it, and being exact splits it in two. The cell
+photographs the table from two places, and the arithmetic that hides an object
+is different in each. Which of the two produced a patch decides what the
+verifier can be asked about that patch, so the two are worth separating before
+the worked example puts numbers on one of them.
+
+The objects in this cell are drinking glasses, and this section says glass
+rather than object throughout, because every number in it was measured on one of
+the project's own glass shapes rather than reasoned about in the abstract.
+
+The two places are set out in full in [the cell](../../the-cell.md). The survey
+view is the camera 450 mm above the table looking straight down, which is what
+finds the glasses in the first place. The level view is the camera 120 mm above
+the table, standing 380 mm back from one glass and looking level at it, which is
+what measures that glass once it has been found. This section calls them looking
+straight down and looking level.
+
+### When the camera is looking straight down
+
+Start with why a standing glass does not photograph as its footprint.
+
+The camera is 450 mm above the table and points straight down. Call that height
+H, and call the point on the table directly below the lens the nadir. Take a
+horizontal slice of a standing glass at height z above the table. That slice is
+nearer the lens than the table is, so it is imaged as though it had been scaled
+about the nadir by a factor
+
+    k = H / (H - z)
+
+and both the slice's distance from the nadir and its radius are multiplied by
+it. At H = 450 mm a slice 225 mm up has k = 2.0, so it appears twice as far from
+the nadir as it really is and twice as wide. This project calls that outward
+throw splay, and [solution 2](02-cluster-on-the-table.md) works through its
+consequences for the geometry.
+
+Splay is what lets one glass reach over another, and the reaching is worth
+following with real numbers.
+
+Take the largest glass this kind allows, 229 mm tall and 103 mm across the rim,
+and stand it 200 mm from the nadir. Its rim is thrown out by 2.04, so its
+outline does not sit over the glass. The outline runs from 175 mm to 513 mm from
+the nadir, and it covers a wedge 29.8 degrees wide.
+
+Now stand the smallest glass the kind allows, 94 mm tall and 84 mm across, 150
+mm further out along the same line from the nadir. That 150 mm is the closest
+two glasses ever stand in this cell. Because the short glass is short, its own
+rim is thrown out by only 1.26. Its whole outline therefore falls inside the
+tall glass's, and it contributes not one pixel.
+
+What comes back is a single group, and the circle fitted to it is 103 mm across.
+That is the tall glass's own width and it sits inside the kind's range of 65 to
+105 mm, so nothing about the group looks wrong. The picture is one legal glass
+where there are two.
+
+Three properties of this case are worth having separately, because the second
+case below has none of them.
+
+**It needs both closeness and a large difference in height.** The difference in
+height is the gap between the two throws above, 2.04 against 1.26. The closeness
+shows up in how far out the pair has to stand before the swallowing happens at
+all. At 150 mm apart the tall glass has to stand at least 178 mm from the nadir.
+At 200 mm apart it has to stand 260 mm out, and at 250 mm apart, 342 mm out,
+which needs the camera at one end of the glass zone and the pair at the far
+corner of it, because the zone is only 320 by 360 mm.
+
+**The hidden glass is always the shorter one.** The factor k grows with height,
+so a shorter glass is never thrown far enough to reach over a taller one,
+however close the two stand.
+
+**It depends on where the pair lies about the nadir.** Splay throws both
+outlines away from the same point, so what matters is whether the pair lies
+along a radius from that point or across one. The same two glasses, the same 150
+mm apart, turned across the radius instead of along it, both come back: the
+short one's outline clears the tall one's entirely.
+
+**What this leaves the verifier.** The picture carries a geometric hint, which
+is the whole difference between this case and the next one. The survey reads
+depth, so the tall glass's height is measured and k follows from it by
+arithmetic. The outline says the same thing a second way: its outer edge is the
+rim thrown out by 2.04 and its inner edge is the base thrown out by almost
+nothing, so the ratio between them is the splay factor. Either route gives the
+wedge and the stretch of it that nothing could see. For the pair above that
+comes to about 43,000 mm² of table.
+
+One of the verifier's inputs is how many of the smallest object's footprints
+would fit in a patch, and this patch shows why that input has to be computed
+carefully. The smallest glass of the kind has a footprint of 3,300 mm², and
+43,000 divided by 3,300 is thirteen. Only six of them actually fit, because
+circles do not tile and this patch is a long wedge rather than a compact blob.
+The input is meant to say how many glasses could be standing there, so it has to
+be the packed count and not the ratio of the areas.
+
+Nothing in the picture says a glass is standing in that patch. What the picture
+does say is how much room there is, where the room is and what shape it has, and
+those are numbers a model can be fitted on. Keep hold of that, because the next
+case does not have it.
+
+![Looking straight down: the tall glass swallows the short one, the survey hands
+back one group of one legal width, and the patch left over has a wedge, a reach
+and an area that were all read off the
+picture](../../../images/problem-2/05-hidden-from-above.png)
+
+### When the camera is looking level
+
+The level view differs in every respect that matters, and the reason is that
+nothing is thrown anywhere.
+
+The camera comes down to 120 mm above the table, stands 380 mm back from the
+glass it is measuring, and points level. A glass in front of another glass
+covers it, and that is the whole mechanism. There is no scaling about a point,
+so none of the three conditions above applies.
+
+Take the narrowest glass this kind allows, 197 mm tall and 65 mm across.
+Standing 380 mm from the camera it blocks a wedge 9.8 degrees wide. By 231 mm
+behind it that wedge is already 105 mm across, which is the widest glass the
+kind allows. So from 231 mm behind the near glass outwards, the blocked strip
+can hide a glass of any size this cell puts on the table.
+
+Now put the largest glass the kind allows, 229 mm tall and 103 mm across, 300 mm
+behind it and in line with the camera. On its own that glass would fill 3,073
+pixels of the 320 by 240 frame. Behind the near glass it fills none of them. The
+picture the camera returns is identical, pixel for pixel, to the picture it
+would return with the far glass taken off the table altogether.
+
+Three things follow, and each is the opposite of what held above.
+
+**Distance between the two glasses buys nothing.** Two glasses of the same size,
+one behind the other in line with the camera, hide each other exactly at 150 mm
+apart and exactly at 300 mm apart. Hiding here is a question of angle rather
+than of separation. So the cell's rule that two glasses never stand closer than
+150 mm centre to centre does not remove this case, although it does keep two
+glasses standing side by side from merging into one shape.
+
+**The glass that is lost is the further one, not the shorter one.** Being tall
+is no protection. In the pair above, the glass that disappears is the taller of
+the two by 32 mm and the wider of the two by 38 mm. What decides whether it
+disappears completely is how much of the frame the near glass fills, and the
+next point is why that is so heavily in the near glass's favour.
+
+**Being nearer is worth more than being large.** The near glass is magnified
+relative to the far one by the ratio of their distances from the camera, which
+here is 680 over 380, or 1.79. That is why a glass 65 mm across covers one 103
+mm across. The near glass may also be shorter than the one it hides, though not
+by any amount: of the glasses drawn for this check, the shortest one that still
+covers that 229 mm glass completely is 181 mm tall. Below that, the near glass
+covers the lower part of the far one and its rim shows above.
+
+The strip itself can still be computed, and it is not small. Over the 360 mm
+depth of the glass zone the near glass blocks about 32,500 mm² of table, with
+room for four of the kind's smallest footprints. But every one of those numbers
+comes from the near glass's position and its size, which the survey and the
+measurement between them already knew. The level picture contributed none of
+them and could not have, because it is the same picture whether that strip holds
+a glass or nothing.
+
+**What this leaves the verifier.** Nothing from that picture. Two pictures that
+differ by no pixels cannot carry two different sets of inputs, so no measurement
+taken on a level picture can tell a patch with a glass in it from the same patch
+empty. Every number the verifier is given about such a patch has to come from
+somewhere else, and there are three places it can come from. The survey looked
+from above and from three stations, and it may have placed the far glass
+already. The count of objects found against the number the problem allows is the
+input described [above](#and-one-piece-of-evidence-that-is-not-in-the-pictures-at-all),
+and it says how seriously to take the set of patches at all. And the level views
+already taken from other angles each blocked a different strip, so between them
+they narrow where an unaccounted-for glass can be.
+
+That asymmetry is the reason for separating the two cases. Looking straight
+down, the patch has a measured size, a measured shape and a measured cast, so
+the verifier's questions about the patch have answers. Looking level, those same
+questions have no answers, and the whole weight falls on the group of inputs
+about the scene as a whole: how many objects are unaccounted for, how much of
+the zone the objects already placed account for, and how many stations failed to
+see this patch.
+
+The practical consequence is small and worth writing down before any of this is
+trained. One model serves both cases, and it has to, because the patches arrive
+in one list. But a patch from a level view arrives with its patch-description
+inputs carrying almost nothing, and a model fitted mostly on overhead patches
+will learn to lean on exactly those. So the training set has to hold both kinds
+in the proportion the run will meet them, and the inputs about the scene as a
+whole are the ones that must not be dropped for looking weak on average.
+
+![Looking level: the picture with both glasses standing and the picture with the
+far one taken away are the same picture, and the strip of table the verifier is
+handed was computed entirely from what was already
+known](../../../images/problem-2/05-hidden-from-the-side.png)
 
 ## A worked example
 

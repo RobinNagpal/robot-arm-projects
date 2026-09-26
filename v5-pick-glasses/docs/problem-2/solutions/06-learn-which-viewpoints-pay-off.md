@@ -185,21 +185,9 @@ That one property is what turns this from a thing you train once into a thing
 that improves with use.
 
 The same label extends cleanly to the second kind of request this problem makes,
-and it is worth noticing that it needs no new idea. Because one kind of glass
-spans a small tapered glass to a large one, a tall glass can cover a short one
-completely, so [solution 2](02-cluster-on-the-table.md) also reports
-**unsearched patches**: places that could not have been seen and are large
-enough to hold the smallest glass. A look aimed at such a patch has an outcome
-that is just as observable as a look aimed at a group. Did a glass appear that
-was not in the list before? That is a count and a comparison, it needs no ground
-truth, and it can be read on a real table exactly like the other label.
-
-So the same model can order both kinds of request, trained on the same kind of
-row. The one thing it must not do is treat them as interchangeable, because the
-two outcomes are not equally valuable: resolving a merged pair corrects a
-measurement, while finding a hidden glass corrects an **omission**, and an
-omission is the worse failure. That weighting belongs in a written rule rather
-than inside the model.
+which is a look aimed at a place a glass could be hiding in rather than at a
+group that came back too wide. [When the glasses are completely
+hidden](#when-the-glasses-are-completely-hidden) works that case through.
 
 ## What the model is shown
 
@@ -400,6 +388,184 @@ of what the active-learning literature calls exploration, and Settles' [*Active
 Learning Literature
 Survey*](https://burrsettles.com/pub/settles.activelearning.pdf) (2009) tours
 the better versions, none of which is needed at this scale.
+
+## When the glasses are completely hidden
+
+Everything above is about a group that came back too wide. This section is
+about the other failure, which is a glass that contributes **no pixels at
+all**. It is not drawn wrongly. It is absent, and the picture that left it out
+looks perfectly ordinary. What follows says what this solution does about that,
+which is less than it does about a merged pair, and where the rest of the work
+has to go.
+
+Start with the part that settles everything else. **This solution is never
+consulted about a glass that produced no pixels.** It scores candidate
+viewpoints against a request, and the requests described so far all come from a
+group whose fitted circle was the wrong width. A glass that produced no group
+produces no such request, so the model is never asked about it, never predicts
+a payoff for it, and never gets the chance to be wrong about it. Position in
+the pipeline is what limits the damage a wrong prediction can do, and it limits
+the usefulness in exactly the same way.
+
+What raises the request instead is arithmetic. Because one kind of glass spans
+a small tapered glass to a large one, a tall glass can cover a short one
+completely, so [solution 2](02-cluster-on-the-table.md) also reports
+**unsearched patches**: places that could not have been seen and are large
+enough to hold the smallest glass. A look aimed at such a patch has an outcome
+that is just as observable as a look aimed at a group. Did a glass appear that
+was not in the list before? That is a count and a comparison, it needs no
+ground truth, and it can be read on a real table exactly like the other label.
+
+So the same model can order both kinds of request, trained on the same kind of
+row. The one thing it must not do is treat them as interchangeable, because the
+two outcomes are not equally valuable: resolving a merged pair corrects a
+measurement, while finding a hidden glass corrects an **omission**, and an
+omission is the worse failure. That weighting belongs in a written rule rather
+than inside the model.
+
+That splits the hidden case across three solutions, and it is worth saying out
+loud which part is whose. Working out *where* something could be hiding is
+solution 2's geometry. Deciding whether a given patch is likely enough to be
+worth the seconds is [solution 5](05-is-anything-hiding-there.md)'s question.
+All this solution does is put the looks in order once one of those two has
+asked for one. On its own it handles the hidden case not at all.
+
+There is one more thing to settle before the geometry, and it is about the
+training data rather than the run. A hidden glass never appears in the training
+signal as a missed object unless the training data knows the truth. During a
+run all the arm can observe is that a glass appeared which was not in the list
+before, and that says nothing about the looks that found nothing. The sweep
+described earlier is different, because the simulator holds the true pose of
+everything it spawned. So a row from the sweep can be labelled with the thing
+that actually matters: there was a glass in that patch, and this look did or
+did not bring it back. A look that should have found something and did not
+becomes a negative example rather than silence. That is the only place such a
+label can come from, and it is what makes learning this at all possible.
+
+The two viewpoints the cell works from hide a glass for different reasons, and
+they pay a candidate look back for different moves. The next two sections take
+them in turn.
+
+### When the camera is looking straight down
+
+The survey looks straight down from 450 mm above the table. A camera in that
+pose does not draw a glass's outline over the glass. A horizontal slice of a
+glass at height z is nearer the lens than the table is, so it is drawn larger
+and further out from the **nadir**, which is the point on the table directly
+under the camera. The scale factor is H / (H - z), where H is the camera's
+height, and this project calls the effect **splay** — see [the
+words](../../the-cell.md#the-words). At the survey height of 450 mm, a rim
+225 mm up has a factor of 2.00: the rim circle is drawn at twice its real
+offset from the nadir, and at twice its real radius.
+
+That outward throw is what lets a tall glass's outline reach over a neighbour.
+When the taller glass's splayed outline contains the whole of the shorter
+one's, the shorter glass contributes nothing to the picture, and what comes
+back is one silhouette of one entirely legal width.
+
+![The short glass sits wholly inside the taller one's splayed outline, and every other station is scored by how much of it would have come back](../../../images/problem-2/06-hidden-from-above.png)
+
+The picture above is drawn with two real glasses of the tapered kind, the
+tallest and the shortest of sixty the spawner drew: 228 mm tall with a 99 mm
+rim, and 93 mm tall with an 83 mm rim. Their splay factors are 2.03 and 1.26.
+They stand 150 mm apart, which is as close as the spawner ever puts two
+glasses.
+
+Three things have to be true together for the covering to happen, and each of
+them is a real restriction. The two glasses have to be close together. They
+have to differ a lot in height, and the hidden one is always the shorter,
+because the shorter glass is the one that gets less splay. And the pair has to
+lie along a radius out from the nadir, because splay throws everything
+radially: a pair strung out along a radius hides, and the same pair laid across
+one does not.
+
+The last of those is the useful one, because the amount of movement it asks for
+is computable. For the pair drawn above, the covering only begins once the
+taller glass stands 185 mm out from the nadir. From a station where it does,
+moving the camera 61 mm across the radius ends the covering, and moving it
+96 mm along the radius towards the pair ends it too. Both are small compared
+with the table.
+
+Now the honest complication, which the right-hand panel above is there to show.
+One survey frame holds 520 by 390 mm of table. A 93 mm glass is wholly inside
+that frame only while it stands within 164 mm of the nadir, and the covering
+needs it 335 mm out or further. Those two ranges do not overlap, so for this
+pair the short glass is never both covered and in the picture. It is outside
+the frame instead. The same comparison goes the same way for any pair of this
+kind, because a shorter glass gets less splay and therefore has to stand
+further out before a taller one's outline can reach over it, while the edge of
+the frame stays where it is.
+
+So from above, a glass that contributes no pixels is usually out of frame as
+much as it is covered, and that is exactly what [the problem
+statement](../problem.md) says: the honest question is not "was it hidden" but
+"could I have seen it at all". Scored by the pixels of the short glass it
+recovers, a station has to stand 198 mm further along the radius before any of
+the short glass arrives at all.
+
+None of that is a payoff this solution can rank, and it is worth being blunt
+about why. The candidate ring this solution scores is one standoff at one
+height, and that height is the side-on measuring pose. Where the survey parks
+its stations is a covering pattern settled before any request exists. So the
+one move that would have recovered this glass from above is not in the
+candidate list, and a model that orders that list cannot propose it.
+
+### When the camera is looking level
+
+The measuring pose is different in kind. The camera stands 120 mm above the
+table, 380 mm back from the glass it is looking at, and looks level. Hiding
+there is plain line of sight and needs no splay at all: the near glass's
+outline simply covers the far one's.
+
+![The near glass covers the far one completely, and every azimuth round it is scored by the pixels of the far glass it brings back](../../../images/problem-2/06-hidden-from-the-side.png)
+
+The middle panel is the same two glasses, the 228 mm one in front and the 93 mm
+one 300 mm behind it, seen from straight along the line joining them. The near
+glass is 380 mm from the lens and the far one 680 mm. What comes back is one
+silhouette 72 px across, a width the fit accepts without complaint. The far
+glass would have covered 983 pixels of its own, and none of them reach the
+lens.
+
+Distance between the two buys nothing here. With the tall glass in front, the
+far glass shows zero pixels at 150 mm behind, at 300 mm and at 600 mm. Moving
+the far glass away makes it smaller in the picture, which is the opposite of
+help.
+
+The hidden one is the further one whatever its height, but how much of it is
+lost depends on which glass is in front. Because the near glass is nearer it is
+magnified, so a short glass standing in front of a tall one still swallows a
+good part of it: 30 per cent of the far glass at 150 mm behind, 26 per cent at
+300 mm and 18 per cent at 600 mm. That is the lower part of the far glass in
+each case, and its rim still shows, which is why this arrangement is loud
+rather than silent.
+
+Breaking the hiding takes a step round the glass in front, and the step is
+small. Five degrees of azimuth brings back the far glass's first pixel. At
+29.5 degrees there are 10 px of clear table between the two silhouettes, which
+is enough for the fit to return two circles rather than one. The reason so
+little is needed is that the apparent shift of a glass goes as one over its
+distance from the lens: a millimetre sideways moves the near glass 0.73 px and
+the far one 0.41 px, so one degree of azimuth swings the far glass 2.1 px
+across the frame while the near one barely moves.
+
+This is the geometry this solution was built for, and the fit is close but not
+exact. The candidate ring is this ring. The measurements the model is shown —
+the angle between the line of sight and the line joining the pair, the
+predicted separation in pixels, the predicted overlap — are the quantities that
+decide the answer here. What is missing is the pair itself. A completely hidden
+glass leaves no two-circle fit, so there is no proposed pair and no line
+joining it, and the whole first group of measurements comes back empty. The row
+for a patch request is shorter than the row for a group request, and running a
+model trained on the second against the first is the mistake to avoid.
+
+The last thing to carry away is that these two cases share almost nothing. From
+above, the payoff is decided by how far the station stands from the pair and
+which side of the radius it is on, and it is measured in hundreds of
+millimetres. From the side, it is decided by an azimuth step of a few degrees
+about a glass the arm can already see. **A model that has learned the overhead
+case has not learned the level one**, and it will answer about the other with
+its usual confidence. Either the training sweep covers both geometries or the
+model is told which one it is being asked about.
 
 ## A worked example
 
