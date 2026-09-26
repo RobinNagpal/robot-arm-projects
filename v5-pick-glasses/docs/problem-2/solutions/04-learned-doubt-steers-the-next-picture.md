@@ -33,14 +33,21 @@ the smallest gap this problem promises between their centres. The arm has to say
 which pixels belong to which glass, where each one stands, and how wide its
 footprint is, and it has to say honestly which glasses it could not separate.
 
-Two things get in the way, and they are different problems.
+Three things get in the way, and they are different problems.
 
 The first is that **two glasses can hide each other**. If the camera stands in
 line with both, the near one covers part of the far one, so the picture no
 longer holds the fact that would have separated them, and no amount of work on
 that picture puts it back.
 
-The second is that **the camera can no longer stand wherever it likes**. It is
+The second is that **a glass can be absent from a picture altogether**. Because
+one kind spans a shot glass to a large tapered glass, a tall glass's outline can
+be thrown outwards far enough to cover a short one completely, and then the
+short glass produces no pixels at all. That case matters here more than anywhere
+else in this document, because it is the one case in which none of the doubt
+signals below can fire.
+
+The third is that **the camera can no longer stand wherever it likes**. It is
 mounted on the wrist, so choosing where it stands means choosing where the whole
 arm stands. A viewpoint has to clear the line of sight, the arm's own reach, and
 the motion planner, all at once. With five glasses on the table, a glass can end
@@ -279,7 +286,7 @@ every candidate scores near zero, and the ordering carries no information at all
 
 The repair is to make the doubt a list of measurements that come from different
 places, and then to have the learned part predict how far that whole list would
-fall. The list has four entries in this solution.
+fall. The list has five entries in this solution.
 
 The first entry is the model's own doubt, as the average per-pixel entropy over
 the group's mask. The second is pure geometry, owing nothing to the model: the
@@ -289,6 +296,20 @@ catches the case the model is blind to: how much of the circle the points
 actually span, and how many points there are against how many a footprint that
 size should give. The fourth is the model-free disagreement between the
 station's two views, which is already paid for.
+
+The fifth entry is different in kind from the other four, and it has to be there
+because of the difficulty this problem added. **It is the unsearched area** —
+how much table could not have been seen, in patches large enough to hold the
+smallest glass of the kind, as computed by [solution
+2](02-cluster-on-the-table.md)'s blind-region arithmetic.
+
+Why that entry is necessary is worth following, because leaving it out produces
+a particular and quiet failure. The other four entries are all doubts about a
+group. A glass hidden completely behind a taller one produces **no group at
+all**, so all four stay silent, and the loop then spends its whole budget
+improving measurements of glasses it can already see while an entirely unseen
+glass goes unmentioned. The loop would be busy and useless in exactly the case
+that matters most.
 
 Two properties of that list matter more than its contents.
 
@@ -302,6 +323,18 @@ list, and where the model is confidently wrong the geometric entries still have
 something to say, so the score still orders the candidates sensibly. **Making a
 model's own confidence the sole currency of doubt is the mistake.** The geometry
 has to be in the currency too.
+
+There is a third property once the fifth entry is included, and it changes what
+the model is choosing between. With only the first four entries, every candidate
+pose was a view of a **glass**. With the fifth, some candidates are views of a
+**place** instead, and the two are not compared on the same footing: a view of a
+place can only reduce the unsearched area, and a view of a glass can only reduce
+the doubt about that glass. So the learned score has to predict a drop in a list
+whose entries are not interchangeable, and the honest way to handle that is to
+let the score decide the order *within* each kind of request and let a written
+rule decide how the budget is split *between* them. A model is a poor place to
+put a judgement about which kind of failure matters more, because that judgement
+belongs to whoever reads the report.
 
 ### What the model is trained on, and where that comes from
 
@@ -322,7 +355,7 @@ only ever runs on objects the survey could not settle.
 flowchart TD
     E1["survey from the top: cover the zone, assume nothing"] --> E2["mask, then points in the room, then flattened onto the table"]
     E2 --> E3["group the dots, fit a circle to each group"]
-    E3 --> N1["build the doubt list: the model's entropy, the fit, the arc, the two views"]
+    E3 --> N1["build the doubt list: the entropy, the fit, the arc, the two views, the unsearched area"]
     N1 --> D{"is anything doubtful, and is there budget left?"}
     D -->|"no"| E5["report each glass, and whatever stayed doubtful"]
     D -->|"yes"| N3["list a fine ring of candidate poses round the worst one"]
