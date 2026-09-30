@@ -1,2 +1,5 @@
 # Retrained in about a minute with `make train`.
 weights/
+
+# Drawn again in a few seconds with `make show`.
+saved/

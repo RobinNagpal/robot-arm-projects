@@ -61,6 +61,12 @@ def top_input(picture: Picture) -> np.ndarray:
     return np.stack([near, rows / SMALL[0] * 2 - 1, columns / SMALL[1] * 2 - 1]).astype(np.float32)
 
 
+def rim_middle(picture: Picture, glass) -> tuple[float, float]:
+    """(column, row) of the middle of a glass's rim, in the half-size picture."""
+    column, row = project(picture.camera_to_world, [glass.x, glass.y, TABLE_TOP_Z + glass.total_height])
+    return column / SHRINK, row / SHRINK
+
+
 def top_target(picture: Picture, glasses) -> np.ndarray:
     """Per pixel: glass or not, and the offset to its rim's middle."""
     ids = picture.ids[::SHRINK, ::SHRINK]
@@ -68,10 +74,10 @@ def top_target(picture: Picture, glasses) -> np.ndarray:
     target[0] = ids > 0
     rows, columns = np.indices(SMALL)
     for index, glass in enumerate(glasses):
-        column, row = project(picture.camera_to_world, [glass.x, glass.y, TABLE_TOP_Z + glass.total_height])
+        column, row = rim_middle(picture, glass)
         mine = ids == index + 1
-        target[1][mine] = (column / SHRINK - columns[mine]) / VOTE_SCALE
-        target[2][mine] = (row / SHRINK - rows[mine]) / VOTE_SCALE
+        target[1][mine] = (column - columns[mine]) / VOTE_SCALE
+        target[2][mine] = (row - rows[mine]) / VOTE_SCALE
     return target
 
 

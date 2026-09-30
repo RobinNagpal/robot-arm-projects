@@ -44,29 +44,51 @@ class Found:
     pixels: np.ndarray  # (row, column) at full size, one per half-size pixel
 
 
-def find_glasses(picture: Picture, top_net) -> list[Found]:
-    """TopNet's votes, gathered into one glass per middle."""
+@dataclass(frozen=True)
+class Votes:
+    """TopNet's answer for one picture, and where its votes landed.
+
+    Kept apart from the glasses made out of it, so that show.py can draw it.
+    """
+
+    out: np.ndarray  # three half-size pictures: glass score, offset across, offset down
+    rows: np.ndarray  # the pixels TopNet called glass
+    columns: np.ndarray
+    landed: np.ndarray  # the (row, column) each of those pixels votes for
+    tally: np.ndarray  # votes landing near each pixel
+    middles: list[tuple[int, int]]  # (row, column), most votes first
+
+
+def cast_votes(picture: Picture, top_net) -> Votes:
+    """Run TopNet, let each glass pixel vote for a middle, and pick the middles."""
     out = models.predict(top_net, models.top_input(picture)[None])[0]
     rows, columns = np.nonzero(out[0] > 0)
-    votes = np.stack(
+    landed = np.stack(
         [rows + out[2][rows, columns] * VOTE_SCALE, columns + out[1][rows, columns] * VOTE_SCALE], 1
     )
 
     tally = np.zeros(SMALL, dtype=np.float32)
-    landed = np.round(votes).astype(int)
-    inside = (landed[:, 0] >= 0) & (landed[:, 0] < SMALL[0]) & (landed[:, 1] >= 0) & (landed[:, 1] < SMALL[1])
-    np.add.at(tally, (landed[inside, 0], landed[inside, 1]), 1.0)
+    whole = np.round(landed).astype(int)
+    inside = (whole[:, 0] >= 0) & (whole[:, 0] < SMALL[0]) & (whole[:, 1] >= 0) & (whole[:, 1] < SMALL[1])
+    np.add.at(tally, (whole[inside, 0], whole[inside, 1]), 1.0)
     tally = cv2.boxFilter(tally, -1, (5, 5), normalize=False)
 
-    middles = []
-    while tally.max() >= MIN_VOTES:
-        row, column = np.unravel_index(int(tally.argmax()), SMALL)
-        middles.append((row, column))
-        cv2.circle(tally, (int(column), int(row)), 2 * MIDDLE_RADIUS, 0.0, -1)
+    # Picking a middle rubs out the votes round it, so that is done on a copy
+    # and the tally is kept as it was counted.
+    middles, left = [], tally.copy()
+    while left.max() >= MIN_VOTES:
+        row, column = np.unravel_index(int(left.argmax()), SMALL)
+        middles.append((int(row), int(column)))
+        cv2.circle(left, (int(column), int(row)), 2 * MIDDLE_RADIUS, 0.0, -1)
+    return Votes(out, rows, columns, landed, tally, middles)
 
+
+def gather(picture: Picture, votes: Votes) -> list[Found]:
+    """One glass per middle, from the pixels that voted for it."""
+    rows, columns = votes.rows, votes.columns
     found = []
-    for middle in middles:
-        mine = np.linalg.norm(votes - middle, axis=1) < MIDDLE_RADIUS
+    for middle in votes.middles:
+        mine = np.linalg.norm(votes.landed - middle, axis=1) < MIDDLE_RADIUS
         if mine.sum() < MIN_VOTES:
             continue
         pixels = np.stack([rows[mine], columns[mine]], 1) * SHRINK
@@ -77,6 +99,11 @@ def find_glasses(picture: Picture, top_net) -> list[Found]:
         radius = float(np.percentile(np.linalg.norm(points[:, :2] - [x, y], axis=1), 95))
         found.append(Found(Seen(float(x), float(y), radius), pixels))
     return found
+
+
+def find_glasses(picture: Picture, top_net) -> list[Found]:
+    """TopNet's votes, gathered into one glass per middle."""
+    return gather(picture, cast_votes(picture, top_net))
 
 
 def rank_views(target: Seen, others: list[Seen], ranker) -> list[tuple[float, float]]:

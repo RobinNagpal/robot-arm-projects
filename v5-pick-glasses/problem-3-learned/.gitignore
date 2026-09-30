@@ -6,3 +6,5 @@ weights/
 tuning.json
 partial.json
 videos/
+# One table written out step by step: `make trace`.
+traces/
