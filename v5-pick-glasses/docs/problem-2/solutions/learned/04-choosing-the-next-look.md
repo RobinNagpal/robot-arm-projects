@@ -61,7 +61,7 @@ an oversight by whoever wrote it. **It is a symmetry.**
 
 ### The symmetry a reach-based rule cannot see
 
-![Two candidate looks a least-reach rule cannot tell apart](../../../../images/problem-2/06-the-rule-cannot-tell-them-apart.png)
+![Two candidate looks a least-reach rule cannot tell apart](../../../../images/problem-2/04-the-rule-cannot-tell-them-apart.png)
 
 Here is the geometry. How far the camera ends up from the arm's base depends
 only on the angle between the direction it stands off in and the line running
@@ -98,7 +98,7 @@ exact answer. Better still, the simulator can simply look that answer up,
 because it renders the view from any pose it is asked for, and it knows exactly
 what it spawned.
 
-![Three ways to score the same eight viewpoints](../../../../images/problem-2/06-three-scorers.png)
+![Three ways to score the same eight viewpoints](../../../../images/problem-2/04-three-scorers.png)
 
 Those three panels show one arrangement and a set of candidates, scored three
 ways, where green in the rows at the bottom means the pair really does come
@@ -161,7 +161,7 @@ turn, then the loop they both drive and the case that defeats both.
 
 ## The arithmetic comes first
 
-![The geometry vetoes, and the model only orders](../../../../images/problem-2/06-veto-then-ordering.png)
+![The geometry vetoes, and the model only orders](../../../../images/problem-2/04-veto-then-ordering.png)
 
 Before the model is consulted at all, the candidates pass through the same three
 vetoes [solution 3](../programmed/03-move-the-camera.md) uses, in the same
@@ -458,7 +458,7 @@ are where those come from and what the model is shown.
 
 ### Where the training data comes from
 
-![One row of training data, start to finish](../../../../images/problem-2/06-one-training-example.png)
+![One row of training data, start to finish](../../../../images/problem-2/04-one-training-example.png)
 
 The training data comes from a sweep that needs neither a person nor an arm. It
 runs entirely inside the simulator and appends one row each pass, in five steps.
@@ -522,7 +522,7 @@ hidden](#when-the-glasses-are-completely-hidden) works that case through.
 
 ### What the model is shown
 
-![Everything the model is given, drawn where it lives](../../../../images/problem-2/06-the-features.png)
+![Everything the model is given, drawn where it lives](../../../../images/problem-2/04-the-features.png)
 
 Every measurement handed to the model is a length, an angle or a count, and
 **never a pixel value**. There is a hard reason for that rather than a stylistic
@@ -1206,7 +1206,7 @@ measuring what it gained.
 
 ### Why this is not reinforcement learning
 
-![The same question asked two ways](../../../../images/problem-2/06-supervised-against-reinforcement.png)
+![The same question asked two ways](../../../../images/problem-2/04-supervised-against-reinforcement.png)
 
 The comparison worth having in mind is against the heavier alternative, which is
 a policy trained by reinforcement learning, written up as [an active-vision

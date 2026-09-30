@@ -82,7 +82,7 @@ those two limits and the choice barely matters. As the glasses close up, the
 window narrows. And when two glasses touch, **the window shuts completely**: no
 grouping distance keeps them apart while also keeping each of them whole.
 
-![Two glasses standing close come back as one region](../../../../images/problem-2/08-one-region-not-two.png)
+![Two glasses standing close come back as one region](../../../../images/problem-2/06-one-region-not-two.png)
 
 The middle panel of that picture has no seam between the two outlines for
 anything to find. The right panel shows what the next step is handed, which is
@@ -122,7 +122,7 @@ the variety a general-purpose model is built to absorb simply does not occur, so
 the network can be small — and a small network with an endless supply of exactly
 labelled pictures is something you can train from nothing in an afternoon.
 
-![A picture goes in, one probability per pixel comes out](../../../../images/problem-2/07-what-is-asked-for.png)
+![A picture goes in, one probability per pixel comes out](../../../../images/problem-2/06-what-is-asked-for.png)
 
 Look at the right-hand panel of that picture. It is the same width and height as
 the picture on the left, but every pixel holds one number between zero and one,
@@ -141,7 +141,7 @@ Add the arrow to the pixel's own position, and what you have is a **vote** for
 where that glass's centre is. One glass then makes one pile of votes. Two
 glasses make two piles. Counting glasses becomes counting piles.
 
-![Picture, mask, table, votes, peaks](../../../../images/problem-2/08-the-five-stages.png)
+![Picture, mask, table, votes, peaks](../../../../images/problem-2/06-the-five-stages.png)
 
 Read those five panels left to right. The network is involved in one stage only,
 and everything before and after it is arithmetic the project already has.
@@ -174,7 +174,7 @@ network cuts the number of labels you need by a large factor.
 
 ## Why train from scratch rather than borrow
 
-![Two ways to start a network, and why only one of them is open here](../../../../images/problem-2/07-scratch-or-fine-tune.png)
+![Two ways to start a network, and why only one of them is open here](../../../../images/problem-2/06-scratch-or-fine-tune.png)
 
 Two things make the usual argument for fine-tuning collapse in this cell, and it
 is worth being clear that only one of them is about this project's rules.
@@ -207,7 +207,7 @@ be a bad idea. Training from scratch on an endless supply of exact ones is not.
 
 ## The shape of the network
 
-![The U-Net shape, and the size of the block of numbers at each level](../../../../images/problem-2/07-the-u-net-shape.png)
+![The U-Net shape, and the size of the block of numbers at each level](../../../../images/problem-2/06-the-u-net-shape.png)
 
 The shape used here is called a **U-Net**, and the picture explains the name:
 follow the left column down, then the right column up, and the dashed lines
@@ -308,7 +308,7 @@ is a network that quietly never separates anything.
 
 ## Where the weights sit
 
-![Where the weights sit, and what a fourth halving would cost](../../../../images/problem-2/07-where-the-weights-are.png)
+![Where the weights sit, and what a fourth halving would cost](../../../../images/problem-2/06-where-the-weights-are.png)
 
 One fact about convolutions decides the shape of the whole weight budget, and it
 is worth understanding rather than looking up.
@@ -349,7 +349,7 @@ being enough.
 Training needs a **loss**, which is one number saying how wrong an answer was,
 and which the nudging then tries to reduce.
 
-![The class imbalance, and what it does to a score](../../../../images/problem-2/07-most-pixels-are-table.png)
+![The class imbalance, and what it does to a score](../../../../images/problem-2/06-most-pixels-are-table.png)
 
 The obvious loss is called **binary cross entropy**. For a pixel that really is
 glass, the penalty is smaller the higher the probability the network gave it, so
@@ -433,7 +433,7 @@ hollow.
 
 ### Which pixels are glass, but not which glass
 
-![A per-pixel class map cannot say which glass](../../../../images/problem-2/07-semantic-against-instance.png)
+![A per-pixel class map cannot say which glass](../../../../images/problem-2/06-semantic-against-instance.png)
 
 This is the limitation named in the introduction, and it is structural rather
 than a matter of training harder.
@@ -496,7 +496,7 @@ never spends any capacity on the easy question.
 This is the decision the whole solution rests on, so it is worth going through
 slowly.
 
-![Voting in pixels against voting in table millimetres](../../../../images/problem-2/08-image-space-against-table-space.png)
+![Voting in pixels against voting in table millimetres](../../../../images/problem-2/06-image-space-against-table-space.png)
 
 The left panel shows the trouble with arrows measured in **pixels**. The same
 glass, with the same real displacement, photographed from twice as far away, is
@@ -522,7 +522,7 @@ one.**
 
 ### What the votes look like, and why no boundary is needed
 
-![Arrows from the pixels of one object, then of two](../../../../images/problem-2/08-the-voting-idea.png)
+![Arrows from the pixels of one object, then of two](../../../../images/problem-2/06-the-voting-idea.png)
 
 The right-hand panel of that picture is the whole argument, and it is worth
 looking at carefully.
@@ -562,7 +562,7 @@ until it stops moving. Each move is a step uphill towards thicker votes. Run it
 from every vote, and the votes whose windows stop in the same place belong to
 one pile.
 
-![Vote clouds, and windows sliding to their peaks](../../../../images/problem-2/08-vote-cloud-and-mean-shift.png)
+![Vote clouds, and windows sliding to their peaks](../../../../images/problem-2/06-vote-cloud-and-mean-shift.png)
 
 The left two panels of that picture are the raw signal: one thick patch of votes
 for one glass, and two patches for two. The right panel shows several windows
@@ -686,7 +686,7 @@ lighting and table will change during the project's life.
 
 ## Domain randomisation
 
-![One scene rendered many ways, and what stays fixed](../../../../images/problem-2/07-domain-randomisation.png)
+![One scene rendered many ways, and what stays fixed](../../../../images/problem-2/06-domain-randomisation.png)
 
 Those are six renders of the same arrangement. Look at what changes between
 them, and then at the two lines underneath saying what is deliberately held
@@ -792,7 +792,7 @@ A per-pixel model has a measure of doubt built into its output, which most
 methods do not. It does not return a mask. It returns a **confidence map**, with
 a probability at every pixel.
 
-![Interior doubt marks the region to photograph again](../../../../images/problem-2/07-confidence-map.png)
+![Interior doubt marks the region to photograph again](../../../../images/problem-2/06-confidence-map.png)
 
 Thresholding that map gives a mask and throws the doubt away. Keeping the map
 gives the loop something to run on. Call a pixel **doubtful** when its
@@ -847,7 +847,7 @@ the truth is known, and record what that spread looks like when the answer is
 right. Every threshold below is then a multiple of that measured figure, rather
 than a constant somebody chose.
 
-![Three shapes of vote cloud and what each one should make the arm do](../../../../images/problem-2/08-spread-as-confidence.png)
+![Three shapes of vote cloud and what each one should make the arm do](../../../../images/problem-2/06-spread-as-confidence.png)
 
 There are three shapes of cloud and three actions, and the important point is
 that the shape says not only *whether* to look again but *where*.
@@ -875,7 +875,7 @@ pose.
 
 ### Too few votes, whatever the spread
 
-![Votes and vote spread against how much of a glass is visible](../../../../images/problem-2/08-too-few-votes.png)
+![Votes and vote spread against how much of a glass is visible](../../../../images/problem-2/06-too-few-votes.png)
 
 There is a fourth case, checked separately, because the spread does not catch
 it.
@@ -1081,7 +1081,7 @@ A pair lying along that line hides. The same pair lying across it does not hide
 at all. And the change between the two is quick: the short glass goes from
 invisible at eight degrees to keeping nearly half of itself at thirty.
 
-![The short glass under the tall one's splayed outline, and the same pair swung twelve degrees](../../../../images/problem-2/08-hidden-from-above.png)
+![The short glass under the tall one's splayed outline, and the same pair swung twelve degrees](../../../../images/problem-2/06-hidden-from-above.png)
 
 The second panel is the case this section is about. One peak, where two glasses
 are standing, and the peak that is there is in exactly the right place with an
@@ -1122,7 +1122,7 @@ round and the magnification works the same way. The near short glass is 61
 pixels wide in the picture against the far tall glass's 42, so it covers 26 per
 cent of that glass: the lower part of it, up to about the height of its own rim.
 
-![The far glass straight behind the near one, and the same pair with it stepped 30 mm aside](../../../../images/problem-2/08-hidden-from-the-side.png)
+![The far glass straight behind the near one, and the same pair with it stepped 30 mm aside](../../../../images/problem-2/06-hidden-from-the-side.png)
 
 Again the second panel has one peak where two glasses stand, and again there is
 nothing wrong with it: 8,628 votes, a fitted footprint 102 mm across, a tight

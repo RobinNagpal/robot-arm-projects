@@ -277,7 +277,7 @@ def the_rule_cannot_tell_them_apart() -> None:
             ha="center", fontsize=NOTE_SIZE - 0.4, color=MUTED,
         )
 
-    save(figure, "06-the-rule-cannot-tell-them-apart.png")
+    save(figure, "04-the-rule-cannot-tell-them-apart.png")
 
 
 
@@ -428,7 +428,7 @@ def three_scorers() -> None:
     figure.suptitle(
         "Three ways to score the same eight viewpoints", fontsize=TITLE_SIZE + 1, color=INK, y=0.99,
     )
-    save(figure, "06-three-scorers.png")
+    save(figure, "04-three-scorers.png")
 
 
 
@@ -559,7 +559,7 @@ def one_training_example() -> None:
     figure.suptitle(
         "One row of training data, start to finish", fontsize=TITLE_SIZE + 1, color=INK, y=1.03,
     )
-    save(figure, "06-one-training-example.png")
+    save(figure, "04-one-training-example.png")
 
 
 
@@ -701,7 +701,7 @@ def the_features() -> None:
         "Not in the list: the picture.\nWhen the score is wanted, it does not exist yet.",
         fontsize=NOTE_SIZE + 0.3, color=WARN, va="top",
     )
-    save(figure, "06-the-features.png")
+    save(figure, "04-the-features.png")
 
 
 
@@ -785,7 +785,7 @@ def veto_then_ordering() -> None:
         "24 directions in, 8 scored: the geometry vetoes, the model only orders",
         fontsize=TITLE_SIZE + 1, color=INK, pad=14,
     )
-    save(figure, "06-veto-then-ordering.png")
+    save(figure, "04-veto-then-ordering.png")
 
 
 
@@ -857,7 +857,7 @@ def supervised_against_reinforcement() -> None:
     axis.set_title(
         "The same question asked two ways", fontsize=TITLE_SIZE + 1, color=INK, pad=14,
     )
-    save(figure, "06-supervised-against-reinforcement.png")
+    save(figure, "04-supervised-against-reinforcement.png")
 
 
 # --------------------------------------------- 7. the loop, and what it buys

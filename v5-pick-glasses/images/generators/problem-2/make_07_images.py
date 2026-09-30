@@ -2,14 +2,14 @@
 
 Eight figures, each carrying one point of the document:
 
-    07-what-is-asked-for.png          picture in, one probability per pixel out
-    07-scratch-or-fine-tune.png       two ways to start, and why one is barred here
-    07-the-u-net-shape.png            the down path, the bottleneck, the up path, the skips
-    07-where-the-weights-are.png      the parameter arithmetic, and what a fourth level costs
-    07-most-pixels-are-table.png      the class imbalance, and what it does to a score
-    07-domain-randomisation.png       one scene many ways, and what stays fixed
-    07-semantic-against-instance.png  what a per-pixel class map cannot say
-    07-confidence-map.png             doubt, and the picture it asks for
+    06-what-is-asked-for.png          picture in, one probability per pixel out
+    06-scratch-or-fine-tune.png       two ways to start, and why one is barred here
+    06-the-u-net-shape.png            the down path, the bottleneck, the up path, the skips
+    06-where-the-weights-are.png      the parameter arithmetic, and what a fourth level costs
+    06-most-pixels-are-table.png      the class imbalance, and what it does to a score
+    06-domain-randomisation.png       one scene many ways, and what stays fixed
+    06-semantic-against-instance.png  what a per-pixel class map cannot say
+    06-confidence-map.png             doubt, and the picture it asks for
     07-hidden-from-above.png          a glass with no pixels, from 450 mm up
     07-hidden-from-the-side.png       a glass with no pixels, from the level view
 
@@ -549,7 +549,7 @@ def figure_what_is_asked_for() -> None:
         color=INK,
         y=0.98,
     )
-    save(figure, "07-what-is-asked-for.png")
+    save(figure, "06-what-is-asked-for.png")
 
 
 # --------------------------------------------------------------------------- #
@@ -646,7 +646,7 @@ def figure_scratch_or_fine_tune() -> None:
         color=INK,
         pad=12,
     )
-    save(figure, "07-scratch-or-fine-tune.png")
+    save(figure, "06-scratch-or-fine-tune.png")
 
 
 # --------------------------------------------------------------------------- #
@@ -727,7 +727,7 @@ def figure_u_net_shape() -> None:
         color=INK,
         pad=12,
     )
-    save(figure, "07-the-u-net-shape.png")
+    save(figure, "06-the-u-net-shape.png")
 
 
 # --------------------------------------------------------------------------- #
@@ -821,7 +821,7 @@ def figure_where_the_weights_are() -> None:
         color=INK,
         y=1.0,
     )
-    save(figure, "07-where-the-weights-are.png")
+    save(figure, "06-where-the-weights-are.png")
 
 
 # --------------------------------------------------------------------------- #
@@ -912,7 +912,7 @@ def figure_most_pixels_are_table() -> None:
         color=INK,
         y=1.06,
     )
-    save(figure, "07-most-pixels-are-table.png")
+    save(figure, "06-most-pixels-are-table.png")
 
 
 # --------------------------------------------------------------------------- #
@@ -996,7 +996,7 @@ def figure_domain_randomisation() -> None:
         color=WARN,
     )
     figure.subplots_adjust(hspace=0.22, wspace=0.08, bottom=0.14)
-    save(figure, "07-domain-randomisation.png")
+    save(figure, "06-domain-randomisation.png")
 
 
 # --------------------------------------------------------------------------- #
@@ -1046,7 +1046,7 @@ def figure_semantic_against_instance() -> None:
         color=INK,
         y=0.98,
     )
-    save(figure, "07-semantic-against-instance.png")
+    save(figure, "06-semantic-against-instance.png")
 
 
 # --------------------------------------------------------------------------- #
@@ -1151,7 +1151,7 @@ def figure_confidence_map():
         color=INK,
         y=0.96,
     )
-    save(figure, "07-confidence-map.png")
+    save(figure, "06-confidence-map.png")
     return whole_scores, inner_scores, sizes
 
 

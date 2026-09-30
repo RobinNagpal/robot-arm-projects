@@ -232,7 +232,7 @@ def one_region_not_two() -> None:
     )
 
     figure.tight_layout()
-    save(figure, "08-one-region-not-two.png")
+    save(figure, "06-one-region-not-two.png")
 
 
 # --------------------------------------------------------------------------- 2. the idea
@@ -272,7 +272,7 @@ def the_voting_idea() -> None:
     right.text(0, -52, seam_note, ha="center", fontsize=LABEL_SIZE, color=INK)
 
     figure.tight_layout()
-    save(figure, "08-the-voting-idea.png")
+    save(figure, "06-the-voting-idea.png")
 
 
 # --------------------------------------------------------------------------- 3. where to vote
@@ -331,7 +331,7 @@ def image_space_against_table_space() -> None:
     )
 
     figure.tight_layout()
-    save(figure, "08-image-space-against-table-space.png")
+    save(figure, "06-image-space-against-table-space.png")
 
 
 # --------------------------------------------------------------------------- 4. the stages
@@ -401,7 +401,7 @@ def the_five_stages() -> None:
     axes[4].text(0, -94, "76 mm and 73 mm — both in range", ha="center", fontsize=NOTE_SIZE, color=GOOD)
 
     figure.tight_layout()
-    save(figure, "08-the-five-stages.png")
+    save(figure, "06-the-five-stages.png")
 
 
 # --------------------------------------------------------------------------- 5. votes to objects
@@ -449,7 +449,7 @@ def vote_cloud_and_mean_shift() -> None:
     axes[2].text(0, -46, shift_note, ha="center", fontsize=NOTE_SIZE, color=INK, va="top")
 
     figure.tight_layout()
-    save(figure, "08-vote-cloud-and-mean-shift.png")
+    save(figure, "06-vote-cloud-and-mean-shift.png")
 
 
 # --------------------------------------------------------------------------- 6. spread as confidence
@@ -498,7 +498,7 @@ def spread_as_confidence() -> None:
     axes[2].text(5, 45, "look across it,\nfrom 380 mm back", fontsize=NOTE_SIZE, color=WARN, va="center")
 
     figure.tight_layout()
-    save(figure, "08-spread-as-confidence.png")
+    save(figure, "06-spread-as-confidence.png")
 
 
 # --------------------------------------------------------------------------- 7. the limit
@@ -564,7 +564,7 @@ def too_few_votes() -> None:
         color=MUTED,
     )
     figure.tight_layout()
-    save(figure, "08-too-few-votes.png")
+    save(figure, "06-too-few-votes.png")
 
 
 # --------------------------------------------------------------------------- 8. hidden completely
@@ -901,7 +901,7 @@ def hidden_from_above() -> dict:
         f"{SURVEY_H / (SURVEY_H - profile(SHORT)[0].max()):.2f}, which is the whole of the effect.",
         ha="center", fontsize=NOTE_SIZE, color=MUTED,
     )
-    save(figure, "08-hidden-from-above.png")
+    save(figure, "06-hidden-from-above.png")
     return cases
 
 
@@ -1027,7 +1027,7 @@ def hidden_from_the_side() -> dict:
         f"{FX * 2 * rim_radius(SHORT) / (STANDOFF + apart):.0f}.",
         ha="center", fontsize=NOTE_SIZE, color=MUTED,
     )
-    save(figure, "08-hidden-from-the-side.png")
+    save(figure, "06-hidden-from-the-side.png")
     return cases
 
 
