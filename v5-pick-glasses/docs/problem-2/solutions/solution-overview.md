@@ -3,13 +3,13 @@
 ## Introduction
 
 [The problem](../problem.md) says what is asked for and why it is hard. This
-document is the way into the seven solutions. It covers what they share: what
+document is the way into the ten solutions. It covers what they share: what
 each does about a glass nobody saw, the few words they use, where a learned part
 can sit, what it means to choose the next measurement, and the rule every one of
 them had to pass. It ends with what was built, and where that can fail.
 
 Each solution has a full document of its own, and this one does not repeat them.
-The table of [the seven](#the-seven-in-two-folders) says in one line what each
+The table of [the ten](#the-ten-in-two-folders) says in one line what each
 is and which difficulty it attacks.
 
 > **The cell is described once, in [the cell](../../the-cell.md)** — the layout,
@@ -75,11 +75,14 @@ completely hidden". They do not agree, and the disagreement is the useful part.
 | [5](learned/05-is-anything-hiding-there.md#when-the-glasses-are-completely-hidden) | yes, as far as ranking goes: the blind wedge has a measurable reach and area | barely: the strip is computed from what was already known, so nothing varies |
 | [6](learned/06-a-network-trained-from-scratch.md#when-the-glasses-are-completely-hidden) | no, and this is the cleanest no here: zero pixels cast zero votes | no: the two scenes produce the same picture pixel for pixel, though a sliver of a glass is worth more here than anywhere else |
 | [7](learned/07-self-supervised-from-the-arms-own-movement.md#when-the-glasses-are-completely-hidden) | no: hands it to solution 2 and the overlapping stations | yes: the revealing pictures are already being taken |
+| [8](learned/08-segment-anything-then-keep-the-glasses.md#when-the-glasses-are-completely-hidden) | no: a prompt point can only land on something the picture shows, so a covered glass is never proposed and the keeper is never offered it | no: the picture is the same as if the further glass were not on the table, so the set of proposals is the same too |
+| [9](learned/09-a-fine-tuned-instance-segmenter.md#when-the-glasses-are-completely-hidden) | no: a region is proposed only where something in the picture suggests one, and a covered glass suggests nothing | no: nothing in the picture tells the two scenes apart, so the same regions come back with the same scores |
+| [10](learned/10-amodal-masks-for-the-hidden-part.md#when-the-glasses-are-completely-hidden) | no: completion extends the evidence a glass leaves, and a glass that left none has nothing to extend | no: the whole silhouette of the near glass says nothing about whether a second one stands behind it |
 
 ## The words
 
 **Mask**, **patch** and **cluster** mean what [the
-cell](../../the-cell.md#the-words) says. Three more run through all nine.
+cell](../../the-cell.md#the-words) says. Three more run through all ten.
 
 **Connected components**, also called a flood fill, turns a mask into separate
 objects: take a glass pixel nobody has visited, spread to every glass pixel
@@ -175,10 +178,15 @@ of these models costs milliseconds.
 ## The rule every solution passed
 
 A solution is listed here only if **everything it needs can be produced by the
-simulator on the machine this project runs on**: no graphics card, no robot on a
-bench, no real-world data. The four conditions that follow, and the good answers
-that fail them, are in [the ones that need more than a
-simulator](learned/learned-with-hardware.md).
+simulator on the machine this project runs on**: no NVIDIA card and therefore no
+CUDA, no robot on a bench, no real-world data. The machine does have a graphics
+processor, built into its main chip and sharing one pool of memory with the
+processor beside it, and PyTorch reaches that graphics processor through its MPS
+backend, which is why a model of moderate size both trains and runs here. So
+what is ruled out is anything that needs code compiled for NVIDIA's cards,
+rather than anything that needs a graphics processor at all. The four conditions
+this comes to, and the good answers that fail them, are in [the ones that need
+more than a simulator](learned/learned-with-hardware.md).
 
 Two consequences are worth seeing coming. The rule pushes the learned solutions
 towards **small models trained from scratch on synthetic data**, away from the
@@ -188,13 +196,26 @@ the first three solutions need nothing added to the environment, while
 everything from the fourth on begins by adding a dependency, and the learned
 ones add a large one.
 
-## The seven, in two folders
+**One of those conditions has an exception, and it is worth naming rather than
+stepping round.** The condition is that nothing an approach needs may come from
+outside the simulator, and solutions 8, 9 and 10 each download a file of weights
+fitted elsewhere, so they do not meet it. They are listed because everything
+else about them runs on this machine, and because a large model fitted elsewhere
+is the first thing a team with a real camera would reach for, so leaving it out
+would hide a real option. The exception has a price. Those weights were fitted
+on photographs, while the cell renders a grey picture shaded from depth, so the
+model is asked about pictures unlike the ones it learned from; and reproducing a
+result means fetching the same file rather than running the training again from
+a random start, so the file has to stay available and stay the same. The three
+documents say what that costs in their own terms.
+
+## The ten, in two folders
 
 The solutions are split by whether they contain a trained model. The three in
-[`programmed/`](programmed/) are rules somebody wrote down; the four in
+[`programmed/`](programmed/) are rules somebody wrote down; the seven in
 [`learned/`](learned/) all have numbers fitted to examples somewhere inside
-them, whether the fitted part decides the answer or only puts candidates in
-order.
+them, whether those numbers were fitted here or somewhere else, and whether the
+fitted part decides the answer or only puts candidates in order.
 
 | # | Solution | Family | Where the model sits | The idea | What it attacks |
 |---|---|---|---|---|---|
@@ -205,6 +226,9 @@ order.
 | 5 | [Is anything hiding there?](learned/05-is-anything-hiding-there.md) | hybrid | verifier | weigh several weak clues, the glass count among them, to say which unsearched patch probably holds a glass | which unsearched place is likely occupied |
 | 6 | [A network trained from scratch](learned/06-a-network-trained-from-scratch.md) | learned | decider | one small network, two heads: which pixels are glass, and which way each glass pixel's own centre lies | finding glasses with no depth, and separating glasses that touch |
 | 7 | [Self-supervised from the arm's own movement](learned/07-self-supervised-from-the-arms-own-movement.md) | learned | decider | points on one glass shift together when the arm moves the camera, and that is the label | separating glasses with no labels |
+| 8 | [Segment anything, then keep the glasses](learned/08-segment-anything-then-keep-the-glasses.md) | learned | decider | prompt a borrowed segmentation model with a grid of points and it proposes a mask for everything in the scene; a small learned keeper then says which proposals are glasses, so the part that finds the objects is borrowed whole rather than fitted here | finding glasses with almost nothing trained here |
+| 9 | [A fine-tuned instance segmenter](learned/09-a-fine-tuned-instance-segmenter.md) | learned | decider | continue a large instance segmenter's training on this cell's pictures with one class, and take the masks it returns as the answer | the merge, with no grouping rule to write down |
+| 10 | [Amodal masks for the hidden part](learned/10-amodal-masks-for-the-hidden-part.md) | learned | decider | the same segmenter, with each mask trained against the glass's whole silhouette instead of only the pixels the camera can see | a partly hidden glass read as a smaller glass in the wrong place |
 
 Two of those entries are documents that were written separately and then joined,
 because in each pair the second was not a different method but the same method
@@ -222,6 +246,20 @@ document describing a ladder with two rungs.
 recipe and the same source of labels produce a class map when the last layer has
 one output channel, and one mask per glass when it has two. Describing them
 apart meant writing the same network down twice.
+
+The last three sit apart from the other two solutions that let a model decide
+the answer. Solutions 6 and 7 fit every number they use inside this cell, on
+pictures the simulator drew, so the model is small and there is nothing else to
+it. Solutions 8, 9 and 10 start instead from a large model fitted somewhere
+else, and they keep the written-down part as small as it will go: the finding is
+done by borrowed weights, and what is fitted here is either a small keeper over
+what that model proposes or a short continuation of its training. This is a
+different trade rather than a better one. Weights fitted inside this cell
+describe exactly the pictures the cell produces, while these were fitted on
+photographs and the cell can only render a grey picture shaded from depth, so
+the last three carry a **domain gap**, a difference between the pictures a model
+learned from and the pictures it is asked about, which a network trained here
+from scratch does not have.
 
 ## The decision: what was built
 
@@ -263,7 +301,7 @@ that is checked and tried from up to three places.
 The learned pipeline finds glasses as well as the rules do and measures them
 worse. Its README says why.
 
-**What is not built.** Neither pipeline has these parts of the seven:
+**What is not built.** Neither pipeline has these parts of the ten:
 
 - solution 2's second half, the blind-region arithmetic that says where nobody
   could have seen a glass;
@@ -273,6 +311,9 @@ worse. Its README says why.
 
 No test scene needed them to find every glass. They are what to add first when
 the cell changes, for the reasons below.
+
+Nothing from solutions 8, 9 and 10 is in either pipeline, because each of those
+is a whole alternative to the find step rather than a part missing from it.
 
 ## Where what was built can fail
 

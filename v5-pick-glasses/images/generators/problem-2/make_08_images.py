@@ -1,37 +1,62 @@
-"""Diagrams for solution 8 — per-pixel votes for the centre.
+"""Diagrams for solution 8 — segment anything, then keep the glasses.
+
+Seven pictures, each carrying one point of the document:
+
+    08-what-promptable-means.png     a fixed class list against a prompt, and
+                                     the same picture prompted at two points
+    08-the-prompt-grid.png           a regular grid of prompt points over the
+                                     top view, and what each point returns
+    08-everything-is-proposed.png    the pile that comes back: glasses, table,
+                                     a rim on its own, two glasses as one
+    08-the-keeper.png                the keeper as a funnel, as boosted trees,
+                                     and as three answers with a doubtful band
+    08-the-domain-gap.png            photographs against a grey picture shaded
+                                     from depth, which is the honest risk
+    08-borrowed-against-trained.png  what SAM brings against what is fitted here,
+                                     and against solution 6, which fits it all
+    08-where-it-stops.png            a glass covered completely: no pixels, so
+                                     no prompt point, so no proposal
 
 Run from the project root:
 
     pixi run python images/generators/problem-2/make_08_images.py
 
-Every number drawn here comes from the cell: fx = fy = 277.1 pixels, survey
-height 450 mm, footprints 45 to 105 mm across, and the worked example's pair of
-glasses 90 mm apart with footprints of 76 and 73 mm.
+Every number that appears as a label is computed from the constants at the top
+of this file, so none of it can drift. The scenes are built from the shared cast
+in ``diagram_style``, and their silhouettes come from ``splay_circles``, so the
+geometry is the cell's own: which glass covers which is decided by
+``splay_covers`` and checked before anything is drawn, and every arrangement is
+asserted to be a legal one, with centres at least the guaranteed gap apart.
 
-The two hidden-glass pictures at the end go further than the rest. Their
-silhouettes are real projections of the project's own glass outlines, taken from
-``work_cell.glasses.shapes`` through the cell's own camera, and their vote maps
-are computed from the pixels those projections leave visible. Nothing in them is
-drawn to look convincing.
+The two weight counts in the borrowed-against-fitted picture are arithmetic on
+the published widths and depths of the models, not measurements of a file on
+disk. They are the right size and within a few percent of it. The keeper's own
+size is counted in its own terms, because it is boosted decision trees and a
+tree has no weights: what is fitted there is a threshold per split and a value
+per leaf.
 """
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-
-import cv2
 import numpy as np
 from diagram_style import (
     FX,
     GLASS,
     GOOD,
     INK,
+    KIND_NARROWEST,
+    KIND_SHORTEST,
+    KIND_TALLEST,
+    KIND_WIDEST,
     LABEL_SIZE,
     MUTED,
     NOTE_SIZE,
     PAPER,
+    SHORT_A,
+    SHORT_B,
     SURVEY_H,
+    TALL_A,
+    TALL_B,
     TITLE_SIZE,
     WARN,
     bare,
@@ -39,1102 +64,1238 @@ from diagram_style import (
     save,
     splay_circles,
     splay_covers,
+    splay_patch,
     splay_width,
 )
-from matplotlib.colors import to_rgba
-from matplotlib.patches import Circle, Polygon, Rectangle
+from matplotlib.colors import LinearSegmentedColormap, to_rgba
+from matplotlib.patches import Circle, FancyBboxPatch, Polygon
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src" / "work_cell"))
+RNG = np.random.default_rng(20250930)
 
-from work_cell.glasses.shapes import family  # noqa: E402
+# --------------------------------------------------------------------------- #
+# the cell's own numbers
+# --------------------------------------------------------------------------- #
 
-RNG = np.random.default_rng(8)
+MIN_APART = 150.0        # mm centre to centre, the closest two glasses ever stand
+MM_PER_PIXEL = SURVEY_H / FX
 
-MM_PER_PIXEL = SURVEY_H / FX  # 1.624 mm on the table, one pixel wide, at survey height
+# The prompt grid. SAM is prompted with points laid out regularly in the
+# picture; the table is flat and square to the camera, so a regular grid of
+# pixels is a regular grid of millimetres on the table plane as well.
+GRID_PIXELS = 24.0
+GRID_MM = GRID_PIXELS * MM_PER_PIXEL
 
-# The rest of the cell, for the two views the hidden-glass pictures are about.
-VIEW_HEIGHT = 120.0   # mm above the table, looking level (arm/dimensions MEASURE_VIEW_HEIGHT)
-STANDOFF = 380.0      # mm from the near glass, the measuring standoff derived in solution 3
-MIN_SEP = 150.0       # mm centre to centre, the closest two glasses ever stand (glasses/spawn)
-HELD_OUT_RMS = 6.0    # mm, what a pile's spread comes to when the answer is right
-WINDOW = 18.0         # mm, the mean-shift window radius this solution chose
-SEEDS = 300           # how many votes the windows are started from
-FAR = 1.0e9           # a depth no surface is at
+# SAM answers one point with more than one mask, at more than one scale, and the
+# same object is therefore proposed several times over.
+MASKS_PER_POINT = 3
 
-# One kind, drawn from the project's own range. The tall member is near the top of
-# tapered_glass's height range and the short one near the bottom, which is the pair
-# the wide range exists to allow.
-TALL = family("tapered_glass", 8, 2)[0][0]
-SHORT = family("tapered_glass", 8, 2)[7][0]
+SLICES = 40               # slices per silhouette, as splay_circles uses
+
+# The keeper: boosted decision trees over each proposal, which is the shape a
+# short table of widths, errors, heights, ratios and counts asks for. Boosting
+# fits a weak tree, then fits the next one to what the ones before it got wrong,
+# and adds them up; for three answers it fits one set of trees per answer. This
+# is the only thing fitted in the whole solution.
+ANSWERS = ("keep", "more than one glass", "drop")
+ROUNDS = 60             # boosting rounds
+TREE_DEPTH = 3          # threshold questions asked on the way to a leaf
+
+# The borrowed model, by its published shape.
+VIT_LAYERS, VIT_WIDTH, VIT_PATCH, VIT_MLP = 12, 768, 16, 4
+VIT_INPUT, VIT_CHANNELS = 1024, 3
+NECK_WIDTH = 256
+DECODER_LAYERS, DECODER_WIDTH, DECODER_MLP = 2, 256, 2048
+DECODER_MASKS = 4
+
+# Solution 6's network, for the comparison: a small U-Net with two heads, one
+# per-pixel class map and two channels of votes for the centre.
+UNET_WIDTHS = (16, 32, 64, 128)
+UNET_INPUT_CHANNELS = 4
 
 
-# --------------------------------------------------------------------------- helpers
+# --------------------------------------------------------------------------- #
+# drawing helpers, in the style the other generators in this folder use
+# --------------------------------------------------------------------------- #
+
+def tint(colour: str, amount: float) -> tuple[float, float, float, float]:
+    """A pale version of a palette colour: 1.0 is the colour, 0.0 is paper."""
+    near = np.array(to_rgba(colour))
+    far = np.array(to_rgba(PAPER))
+    return tuple(far + (near - far) * amount)
 
 
-def tumbler(centre_x: float, base: float, height: float, bottom_r: float, top_r: float) -> np.ndarray:
-    """The silhouette of an upright glass, as polygon points."""
-    t = np.linspace(0.0, 1.0, 48)
-    radius = bottom_r + (top_r - bottom_r) * t**0.6
-    y = base + height * t
-    right = np.column_stack([centre_x + radius, y])
-    left = np.column_stack([centre_x - radius[::-1], y[::-1]])
-    return np.vstack([right, left])
+GREY_PICTURE = LinearSegmentedColormap.from_list("depth", [INK, PAPER])
+HALO = {"facecolor": PAPER, "edgecolor": "none", "alpha": 0.88, "pad": 2.4}
 
 
-def frame(axis, x_limits: tuple[float, float], y_limits: tuple[float, float]) -> None:
-    """A bare, square-scaled panel with fixed limits."""
+def note(axis, x, y, text, colour=MUTED, size=NOTE_SIZE, ha="left", va="top", weight="normal",
+         halo=False):
+    axis.text(x, y, text, fontsize=size, color=colour, ha=ha, va=va, zorder=8, weight=weight,
+              bbox=HALO if halo else None)
+
+
+def panel_title(axis, text, colour=INK, size=LABEL_SIZE + 0.6):
+    axis.set_title(text, fontsize=size, color=colour, pad=8)
+
+
+def box(axis, x, y, width, height, text, face, edge=MUTED, size=NOTE_SIZE, colour=INK, weight="normal"):
+    """A rounded box with centred text, in axis fractions."""
+    axis.add_patch(
+        FancyBboxPatch(
+            (x - width / 2.0, y - height / 2.0), width, height,
+            boxstyle="round,pad=0.006,rounding_size=0.012",
+            facecolor=face, edgecolor=edge, lw=1.0, zorder=4,
+        )
+    )
+    axis.text(x, y, text, ha="center", va="center", fontsize=size, color=colour, zorder=6, weight=weight)
+
+
+def arrow(axis, start, end, colour=INK, lw=1.3, style="->"):
+    axis.annotate(
+        "", xy=end, xytext=start,
+        arrowprops={"arrowstyle": style, "color": colour, "lw": lw, "shrinkA": 2, "shrinkB": 2},
+        zorder=7,
+    )
+
+
+# --------------------------------------------------------------------------- #
+# the geometry: silhouettes, rasters and prompt points
+# --------------------------------------------------------------------------- #
+
+NADIR = np.array([0.0, 0.0])
+
+
+def stack(centre, size, slices: int = SLICES):
+    """The silhouette of one standing glass in the top view, as its circles."""
+    return splay_circles(NADIR, np.asarray(centre, dtype=float), *size, slices=slices)
+
+
+def stack_with_height(centre, size, slices: int = SLICES):
+    """The same circles, each with the height of the slice that drew it."""
+    height = size[0]
+    return [
+        (circle_centre, radius, height * index / (slices - 1))
+        for index, (circle_centre, radius) in enumerate(stack(centre, size, slices))
+    ]
+
+
+def build(scene):
+    """A name-to-silhouette map for a scene, checked for legality as it goes."""
+    names = [name for name, _, _ in scene]
+    for index, (name, centre, _) in enumerate(scene):
+        for other_name, other_centre, _ in scene[index + 1:]:
+            apart = float(np.hypot(*(np.asarray(centre) - np.asarray(other_centre))))
+            assert apart >= MIN_APART - 1e-6, f"{name} and {other_name} stand {apart:.0f} mm apart"
+    for _, _, size in scene:
+        assert KIND_SHORTEST <= size[0] <= KIND_TALLEST, "a height outside this kind's range"
+        assert KIND_NARROWEST <= size[1] <= KIND_WIDEST, "a width outside this kind's range"
+    return names, {name: stack(centre, size) for name, centre, size in scene}
+
+
+def extent_of(shapes, pad: float = 55.0, with_nadir: bool = True):
+    """The drawn region a set of silhouettes needs, in millimetres."""
+    xs, ys = ([0.0], [0.0]) if with_nadir else ([], [])
+    for circles in shapes.values():
+        for centre, radius in circles:
+            xs += [centre[0] - radius, centre[0] + radius]
+            ys += [centre[1] - radius, centre[1] + radius]
+    return (min(xs) - pad, max(xs) + pad, min(ys) - pad, max(ys) + pad)
+
+
+def topmost(point, scene):
+    """Which glass a prompt point lands on, or None for bare table.
+
+    The glass whose slice is highest at that point is the one nearest the lens,
+    so that is the surface the point is on and the mask that comes back.
+    """
+    best_name, best_height = None, -1.0
+    for name, centre, size in scene:
+        for circle_centre, radius, height in stack_with_height(centre, size):
+            if height > best_height and np.hypot(*(np.asarray(point) - circle_centre)) <= radius:
+                best_name, best_height = name, height
+    return best_name
+
+
+def prompt_grid(extent, spacing: float = GRID_MM):
+    """Prompt points, regular in the picture and so regular on the table."""
+    x0, x1, y0, y1 = extent
+    xs = np.arange(np.ceil(x0 / spacing) * spacing, x1 + 1e-9, spacing)
+    ys = np.arange(np.ceil(y0 / spacing) * spacing, y1 + 1e-9, spacing)
+    return [(float(x), float(y)) for y in ys for x in xs]
+
+
+def height_raster(scene, extent, step: float = 3.0):
+    """The height of the nearest surface at every cell of the drawn region.
+
+    This is what the cell's renderer hands over, one number per pixel, and it is
+    what the grey picture in the domain-gap figure is shaded from.
+    """
+    x0, x1, y0, y1 = extent
+    xs = np.arange(x0, x1, step)
+    ys = np.arange(y0, y1, step)
+    grid_x, grid_y = np.meshgrid(xs, ys)
+    heights = np.zeros(grid_x.shape)
+    for _, centre, size in scene:
+        for circle_centre, radius, height in stack_with_height(centre, size):
+            inside = (grid_x - circle_centre[0]) ** 2 + (grid_y - circle_centre[1]) ** 2 <= radius ** 2
+            heights = np.where(inside & (height > heights), height, heights)
+    return xs, ys, heights
+
+
+def merged(first, second) -> bool:
+    """Do two silhouettes touch in the picture, so that they form one patch?"""
+    for centre_a, radius_a in first:
+        for centre_b, radius_b in second:
+            if np.hypot(*(centre_a - centre_b)) <= radius_a + radius_b:
+                return True
+    return False
+
+
+def label_spot(shapes, name, out: float = 30.0):
+    """Just outside the far tip of a silhouette, where a name can be read."""
+    centre, radius = shapes[name][-1]
+    reach = float(np.hypot(*centre)) or 1.0
+    return tuple(centre + centre / reach * (radius + out))
+
+
+def middle_spot(shapes, name):
+    """A point squarely inside a silhouette, for a prompt mark to sit on."""
+    return tuple(shapes[name][len(shapes[name]) // 2][0])
+
+
+def draw_glasses(axis, shapes, scene, strong=(), dim=0.13, lit=0.40):
+    """Every silhouette in a scene, shortest first so the nearest paints last."""
+    order = sorted(scene, key=lambda entry: entry[2][0])
+    for name, _, _ in order:
+        chosen = name in strong
+        splay_patch(
+            axis, shapes[name],
+            colour=GOOD if chosen else GLASS,
+            alpha=lit if chosen else dim,
+            zorder=4 if chosen else 3,
+        )
+
+
+def name_the_glasses(axis, shapes, colour=INK, strong=()):
+    for name in shapes:
+        spot = label_spot(shapes, name)
+        note(axis, spot[0], spot[1], name,
+             colour=colour if not strong or name in strong else MUTED,
+             size=LABEL_SIZE, ha="center", va="center",
+             weight="bold" if name in strong else "normal")
+
+
+def plan_axis(axis, extent, mark_nadir: bool = True, label_nadir: bool = True):
+    """A top view in millimetres of table, measured from below the camera."""
     bare(axis)
-    axis.set_xlim(*x_limits)
-    axis.set_ylim(*y_limits)
+    axis.set_xlim(extent[0], extent[1])
+    axis.set_ylim(extent[2], extent[3])
     axis.set_aspect("equal")
+    if mark_nadir:
+        axis.scatter([0], [0], s=34, color=WARN, marker="x", zorder=9, linewidths=1.6)
+        if label_nadir:
+            note(axis, 14, -8, "below the camera", colour=WARN, va="top", size=NOTE_SIZE - 0.6)
 
 
-def cloud(centre: tuple[float, float], spread: float, count: int) -> np.ndarray:
-    """A round blob of votes about a centre, in millimetres."""
-    return RNG.normal(loc=centre, scale=spread, size=(count, 2))
+# --------------------------------------------------------------------------- #
+# the scene the first five pictures share
+# --------------------------------------------------------------------------- #
+
+# Four glasses of one kind, two near the top of its range of sizes and two near
+# the bottom, every pair of centres at least the guaranteed gap apart. B stands
+# directly out from A along the line away from the camera, which is what makes
+# their two silhouettes run into one patch in the picture.
+SCENE = (
+    ("A", (-150.0, -60.0), TALL_A),
+    ("B", (-272.0, -182.0), SHORT_A),
+    ("C", (130.0, 120.0), TALL_B),
+    ("D", (25.0, -175.0), SHORT_B),
+)
+NAMES, SHAPES = build(SCENE)
+EXTENT = extent_of(SHAPES)
+GRID = prompt_grid(EXTENT)
+HITS = [topmost(point, SCENE) for point in GRID]
+ON_GLASS = {name: HITS.count(name) for name in NAMES}
+ON_TABLE = HITS.count(None)
+SMALLEST_PATCH = min(splay_width(SHAPES[name]) for name in NAMES)
+A_AND_B_MERGE = merged(SHAPES["A"], SHAPES["B"])
+NONE_COVERED = not any(
+    splay_covers(SHAPES[big], SHAPES[small])
+    for big in NAMES for small in NAMES if big != small
+)
+assert A_AND_B_MERGE, "the shared scene is meant to have one patch holding two glasses"
+assert NONE_COVERED, "no glass in the shared scene may be hidden completely"
+assert all(count > 0 for count in ON_GLASS.values()), "every glass needs at least one prompt point"
+
+# Two patches of bare table, for the proposal pile. Both sit clear of every
+# silhouette, which is checked rather than eyeballed.
+TABLE_PATCHES = (
+    ((-100.0, 20.0), (90.0, 62.0), (62.0, -110.0), (-92.0, -70.0)),
+    ((252.0, -206.0), (332.0, -206.0), (332.0, 58.0), (252.0, 58.0)),
+)
+for patch in TABLE_PATCHES:
+    for corner in patch:
+        assert topmost(corner, SCENE) is None, "a table patch is standing on a glass"
+
+# What SAM hands back for this scene, and which of it is a glass. The pile is
+# what the model proposes, not what anybody asked for.
+PROPOSALS = (
+    ("glass A,\nwhole", ("glass", "A"), "keep"),
+    ("glass C,\nwhole", ("glass", "C"), "keep"),
+    ("glass D,\nwhole", ("glass", "D"), "keep"),
+    ("glass B, the part\nof it in view", ("glass", "B"), "keep"),
+    ("A and B as\none object", ("pair", ("A", "B")), "more than one glass"),
+    ("the rim of A,\nwithout the glass", ("rim", "A"), "drop"),
+    ("a patch of\nbare table", ("table", 0), "drop"),
+    ("the strip of table\nat the edge", ("table", 1), "drop"),
+)
+ANSWERED = {answer: [label for label, _, given in PROPOSALS if given == answer]
+            for answer in ANSWERS}
+KEPT = len(ANSWERED["keep"])
+RAW_MASKS = sum(1 for hit in HITS if hit is not None) * MASKS_PER_POINT
+
+# The features the keeper is shown. Everything about the keeper's size is
+# derived from this list, so adding a feature changes the arithmetic too.
+FEATURES = (
+    "how wide the circle fitted to it is, against the range this kind allows",
+    "how round it is: its area against the area its outline could enclose",
+    "how far its surface stands above the table, from the depth reading",
+    "how far it sits from the point directly below the camera",
+    "how many prompt points returned this same mask",
+    "whether another proposal contains it, or it contains one",
+    "how much of its outline is a step in depth rather than a smooth run",
+    "its area on the table, in square millimetres",
+)
 
 
-def disc(centre: tuple[float, float], radius: float, count: int) -> np.ndarray:
-    """Points spread evenly over a footprint, in millimetres."""
-    angle = RNG.uniform(0.0, 2.0 * np.pi, count)
-    spread = radius * np.sqrt(RNG.uniform(0.0, 1.0, count))
-    return np.column_stack([centre[0] + spread * np.cos(angle), centre[1] + spread * np.sin(angle)])
+# --------------------------------------------------------------------------- #
+# weight arithmetic for the borrowed-against-fitted picture
+# --------------------------------------------------------------------------- #
+
+def dense_weights(count_in: int, count_out: int) -> int:
+    return count_in * count_out + count_out
 
 
-def density(points: np.ndarray, grid_x: np.ndarray, grid_y: np.ndarray, bandwidth: float) -> np.ndarray:
-    """How thick the votes are at every point of a grid. A sum of soft bumps, nothing more."""
-    mesh_x, mesh_y = np.meshgrid(grid_x, grid_y)
-    total = np.zeros_like(mesh_x)
-    for chunk in np.array_split(points, 8):
-        dx = mesh_x[:, :, None] - chunk[:, 0]
-        dy = mesh_y[:, :, None] - chunk[:, 1]
-        total += np.exp(-(dx**2 + dy**2) / (2 * bandwidth**2)).sum(axis=2)
-    return total / total.max()
+def mlp_weights(sizes) -> int:
+    return sum(dense_weights(a, b) for a, b in zip(sizes[:-1], sizes[1:], strict=False))
 
 
-def mean_shift_path(points: np.ndarray, start: tuple[float, float], radius: float) -> np.ndarray:
-    """Slide a circular window to the average of the votes inside it, until it stops moving."""
-    here = np.array(start, dtype=float)
-    path = [here.copy()]
-    for _ in range(60):
-        inside = points[np.linalg.norm(points - here, axis=1) <= radius]
-        if len(inside) == 0:
-            break
-        moved = inside.mean(axis=0)
-        path.append(moved.copy())
-        if np.linalg.norm(moved - here) < 0.05:
-            here = moved
-            break
-        here = moved
-    return np.array(path)
+def conv_weights(kernel: int, count_in: int, count_out: int) -> int:
+    return kernel * kernel * count_in * count_out + count_out
 
 
-def votes_to(points: np.ndarray, target: tuple[float, float], keep: int) -> np.ndarray:
-    """A thinned selection of arrow tails, so the arrows stay countable."""
-    index = RNG.choice(len(points), size=min(keep, len(points)), replace=False)
-    picked = points[index]
-    return np.column_stack([picked, np.full(len(picked), target[0]), np.full(len(picked), target[1])])
+def attention_weights(width: int, rate: int = 1) -> int:
+    """One attention block: three projections in, one out, biases included."""
+    inner = width // rate
+    return 3 * dense_weights(width, inner) + dense_weights(inner, width)
 
 
-def arrows(axis, tails: np.ndarray, colour: str, width: float = 0.9) -> None:
-    for x, y, target_x, target_y in tails:
-        axis.annotate(
-            "",
-            xy=(target_x, target_y),
-            xytext=(x, y),
-            arrowprops={"arrowstyle": "-|>", "color": colour, "lw": width, "shrinkA": 0, "shrinkB": 7},
+def norm_weights(width: int) -> int:
+    return 2 * width
+
+
+def image_encoder_weights() -> int:
+    """A ViT-B image encoder plus the neck that narrows it, from its shape."""
+    tokens = (VIT_INPUT // VIT_PATCH) ** 2
+    patch_embedding = conv_weights(VIT_PATCH, VIT_CHANNELS, VIT_WIDTH)
+    position = tokens * VIT_WIDTH
+    per_layer = (
+        attention_weights(VIT_WIDTH)
+        + mlp_weights((VIT_WIDTH, VIT_WIDTH * VIT_MLP, VIT_WIDTH))
+        + 2 * norm_weights(VIT_WIDTH)
+    )
+    neck = (
+        conv_weights(1, VIT_WIDTH, NECK_WIDTH)
+        + conv_weights(3, NECK_WIDTH, NECK_WIDTH)
+        + 2 * norm_weights(NECK_WIDTH)
+    )
+    return patch_embedding + position + VIT_LAYERS * per_layer + neck
+
+
+def promptable_head_weights() -> int:
+    """The prompt encoder and the mask decoder, from their shape."""
+    width, hidden = DECODER_WIDTH, DECODER_MLP
+    per_layer = (
+        attention_weights(width)                 # the tokens attend to each other
+        + attention_weights(width, rate=2)       # the tokens attend to the picture
+        + mlp_weights((width, hidden, width))
+        + attention_weights(width, rate=2)       # the picture attends to the tokens
+        + 4 * norm_weights(width)
+    )
+    final = attention_weights(width, rate=2) + norm_weights(width)
+    upscale = conv_weights(2, width, width // 4) + conv_weights(2, width // 4, width // 8)
+    mask_heads = DECODER_MASKS * mlp_weights((width, width, width // 8))
+    quality_head = mlp_weights((width, width, DECODER_MASKS))
+    tokens = (4 + 1 + DECODER_MASKS + 1 + 1) * width      # point types, masks, quality
+    coarse_mask = (
+        conv_weights(2, 1, DECODER_MASKS)
+        + conv_weights(2, DECODER_MASKS, DECODER_MASKS * 4)
+        + conv_weights(1, DECODER_MASKS * 4, width)
+    )
+    return DECODER_LAYERS * per_layer + final + upscale + mask_heads + quality_head + tokens + coarse_mask
+
+
+def unet_weights(widths=UNET_WIDTHS, channels_in: int = UNET_INPUT_CHANNELS) -> int:
+    """Solution 6's network: a U-Net down and up, with two heads on the end."""
+    total, previous = 0, channels_in
+    for width in widths:
+        total += conv_weights(3, previous, width) + conv_weights(3, width, width)
+        previous = width
+    for index in range(len(widths) - 2, -1, -1):
+        width = widths[index]
+        total += conv_weights(2, previous, width)
+        total += conv_weights(3, width * 2, width) + conv_weights(3, width, width)
+        previous = width
+    total += conv_weights(1, widths[0], 1)      # the class map
+    total += conv_weights(1, widths[0], 2)      # the two channels of votes
+    return total
+
+
+ENCODER = image_encoder_weights()
+HEAD = promptable_head_weights()
+BORROWED = ENCODER + HEAD
+SOLUTION_SIX = unet_weights()
+
+# The keeper's size, in the only terms a tree has. A tree of this depth ends in
+# 2**depth leaves and reaches them through one fewer split, and one number is
+# fitted at each: a threshold at a split, a value at a leaf.
+LEAVES_PER_TREE = 2 ** TREE_DEPTH
+SPLITS_PER_TREE = LEAVES_PER_TREE - 1
+TREES = ROUNDS * len(ANSWERS)
+FITTED_THRESHOLDS = TREES * SPLITS_PER_TREE
+FITTED_LEAVES = TREES * LEAVES_PER_TREE
+FITTED_NUMBERS = FITTED_THRESHOLDS + FITTED_LEAVES
+BORROWED_PER_FITTED = BORROWED / FITTED_NUMBERS
+
+
+# --------------------------------------------------------------------------- #
+# 1. what promptable means
+# --------------------------------------------------------------------------- #
+
+def figure_what_promptable_means() -> None:
+    """A fixed class list answers a question chosen in advance; a prompt does not."""
+    figure, (left, middle, right) = new(15.4, 6.0, columns=3)
+
+    # ---- a model with a fixed list of classes ----------------------------
+    bare(left)
+    left.set_xlim(0, 1)
+    left.set_ylim(0, 1)
+    panel_title(left, "A model with a fixed list of classes", colour=WARN)
+
+    box(left, 0.24, 0.80, 0.34, 0.13, "the picture", tint(GLASS, 0.14), edge=GLASS, size=LABEL_SIZE)
+    box(left, 0.24, 0.58, 0.34, 0.13, "weights, as fitted", tint(MUTED, 0.18), edge=MUTED, size=LABEL_SIZE)
+    arrow(left, (0.24, 0.735), (0.24, 0.648), colour=INK)
+    arrow(left, (0.42, 0.58), (0.58, 0.58), colour=INK)
+
+    listed = ("person", "chair", "dining table", "cup", "bowl", "bottle", "wine glass", "...")
+    left.add_patch(
+        FancyBboxPatch(
+            (0.60, 0.20), 0.38, 0.55,
+            boxstyle="round,pad=0.008,rounding_size=0.014",
+            facecolor=tint(WARN, 0.07), edgecolor=WARN, lw=1.1, zorder=3,
         )
-
-
-# --------------------------------------------------------------------------- 1. the problem
-
-
-def one_region_not_two() -> None:
-    figure, axes = new(14.6, 5.0, columns=3)
-    left, middle, right = axes
-    limits = ((-130, 130), (-108, 95))
-    white = {"facecolor": PAPER, "edgecolor": "none", "pad": 1.5}
-
-    # On the table the two glasses are plainly separate.
-    left.set_title("On the table: two glasses, 15 mm apart", fontsize=TITLE_SIZE, color=INK)
-    frame(left, *limits)
-    for centre_x, radius, name in ((-45, 38, "76 mm"), (45, 36.5, "73 mm")):
-        left.add_patch(Circle((centre_x, 0), radius, facecolor=GLASS, alpha=0.30, edgecolor=GLASS, lw=1.6))
-        left.add_patch(Circle((centre_x, 0), radius + 25, facecolor="none", edgecolor=MUTED, lw=1.0, ls=":"))
-        left.plot([centre_x], [0], marker="x", color=INK, ms=6, mew=1.6)
-        left.text(centre_x, -radius - 13, name, ha="center", fontsize=NOTE_SIZE, color=INK, bbox=white)
-    left.annotate(
-        "",
-        xy=(8.5, 0),
-        xytext=(-7, 0),
-        arrowprops={"arrowstyle": "<|-|>", "color": WARN, "lw": 1.4},
     )
-    left.text(0, 15, "15 mm", ha="center", fontsize=NOTE_SIZE, color=WARN, bbox=white)
-    left.text(
-        0,
-        -88,
-        "dotted rings: the 25 mm grouping distance.\nThey touch, so clustering makes one group.",
-        ha="center",
-        fontsize=NOTE_SIZE,
-        color=MUTED,
+    note(left, 0.79, 0.80, "one answer per name,\non a list decided in advance",
+         colour=WARN, ha="center", va="bottom", size=NOTE_SIZE)
+    for index, name in enumerate(listed):
+        note(left, 0.67, 0.685 - index * 0.062, name, colour=INK, size=NOTE_SIZE, va="center")
+    note(
+        left, 0.02, 0.12,
+        "The question was chosen when the weights were fitted, so the answer is\n"
+        "a score for each of those names and nothing else. To ask about\n"
+        "something the list does not hold, the weights have to be changed.",
+        colour=INK, va="top",
     )
 
-    # In the picture the class map has no room to say which glass.
-    middle.set_title('In the picture: every pixel says "glass"', fontsize=TITLE_SIZE, color=INK)
-    frame(middle, *limits)
-    middle.plot([-118, -6], [-58, -58], color=MUTED, lw=1.2)
-    middle.plot([2, 118], [-44, -44], color=MUTED, lw=1.2, alpha=0.6)
-    for centre_x, base, bottom_r, top_r, height in ((22, -44, 27, 34, 74), (-24, -58, 30, 38, 90)):
-        middle.add_patch(
-            Polygon(tumbler(centre_x, base, height, bottom_r, top_r), closed=True, facecolor=GLASS, lw=0)
-        )
-    merged_note = (
-        "the near glass covers part of the far one.\n"
-        "One region, and a class label has no field\n"
-        "for which glass it belongs to."
-    )
-    middle.text(
-        0,
-        -88,
-        merged_note,
-        ha="center",
-        fontsize=NOTE_SIZE,
-        color=MUTED,
-    )
+    # ---- the same picture, prompted twice --------------------------------
+    for axis, target, ordinal in ((middle, "C", "first"), (right, "D", "second")):
+        plan_axis(axis, EXTENT)
+        draw_glasses(axis, SHAPES, SCENE, strong=(target,))
+        point = middle_spot(SHAPES, target)
+        axis.scatter([point[0]], [point[1]], s=130, color=WARN, marker="+", zorder=10, linewidths=2.2)
+        panel_title(axis, f"A promptable model: the {ordinal} point", colour=GOOD)
+        name_the_glasses(axis, SHAPES, strong=(target,))
+        note(axis, EXTENT[0] + 14, EXTENT[3] - 14,
+             f"prompt: this one point\nanswer: the mask of glass {target},\nand nothing about the rest",
+             colour=GOOD, va="top")
 
-    # What the next step in the pipeline is handed.
-    right.set_title("What downstream is handed: one object", fontsize=TITLE_SIZE, color=INK)
-    frame(right, *limits)
-
-    def at(millimetres: float) -> float:
-        """Place a width, in millimetres, on the panel's own scale."""
-        return -110.0 + millimetres * (220.0 / 180.0)
-
-    axis_arrow = {"arrowstyle": "-|>", "color": INK, "lw": 1.2}
-    right.annotate("", xy=(118, 45), xytext=(-115, 45), arrowprops=axis_arrow)
-    right.add_patch(
-        Rectangle((at(60), 38), at(90) - at(60), 14, facecolor=GOOD, alpha=0.35, edgecolor=GOOD, lw=1.4)
+    note(
+        middle, EXTENT[0] + 14, EXTENT[3] - 120,
+        "The picture goes through the large part of the\nmodel once. The prompt goes through a small part.",
+        colour=INK, va="top",
     )
-    right.text(at(75), 60, "60 to 90 mm", ha="center", fontsize=NOTE_SIZE, color=INK)
-    right.text(at(75), 22, "what this kind of\nglass can be", ha="center", fontsize=NOTE_SIZE, color=MUTED)
-    right.plot([at(165)], [45], marker="v", color=WARN, ms=12)
-    right.text(at(165), 60, "164.5 mm", ha="center", fontsize=NOTE_SIZE, color=WARN)
-    right.text(at(165), 22, "what the one\nregion measures", ha="center", fontsize=NOTE_SIZE, color=WARN)
-    sum_line = "90 + 76/2 + 73/2 = 164.5 mm, or 101 pixels"
-    right.text(0, -18, sum_line, ha="center", fontsize=NOTE_SIZE, color=INK)
-    right.text(
-        0,
-        -60,
-        "The check notices. It cannot fix it:\nnothing in a class map says where to cut.",
-        ha="center",
-        fontsize=LABEL_SIZE,
-        color=WARN,
+    note(
+        right, EXTENT[0] + 14, EXTENT[3] - 120,
+        "So a second point costs almost nothing, and it asks\na different question, not a retrained model.",
+        colour=INK, va="top",
     )
 
+    figure.suptitle(
+        "Promptable means the question is asked when the picture arrives, not when the weights were fitted.",
+        fontsize=TITLE_SIZE, color=INK, y=1.02,
+    )
     figure.tight_layout()
-    save(figure, "06-one-region-not-two.png")
-
-
-# --------------------------------------------------------------------------- 2. the idea
-
-
-def the_voting_idea() -> None:
-    figure, axes = new(12.6, 4.4, columns=2)
-    left, right = axes
-    limits = ((-92, 92), (-64, 48))
-
-    def pixels_of(centre_x: float, radius: float) -> np.ndarray:
-        blob = cloud((centre_x, 0.0), 16.0, 900)
-        return blob[np.linalg.norm(blob - (centre_x, 0.0), axis=1) < radius]
-
-    left.set_title("One glass: every arrow ends in the same place", fontsize=TITLE_SIZE, color=INK)
-    frame(left, *limits)
-    disc = pixels_of(0.0, 36.0)
-    left.scatter(disc[:, 0], disc[:, 1], s=4, color=GLASS, alpha=0.30, lw=0)
-    far = disc[np.linalg.norm(disc, axis=1) > 20]
-    arrows(left, votes_to(far, (0.0, 0.0), 16), GLASS, width=1.1)
-    left.plot([0], [0], marker="*", color=GOOD, ms=14, zorder=5)
-    left.text(0, -50, "one peak = one glass", ha="center", fontsize=LABEL_SIZE, color=GOOD)
-
-    right.set_title("Two touching glasses: two places", fontsize=TITLE_SIZE, color=INK)
-    frame(right, *limits)
-    for centre_x, colour in ((-36.0, GLASS), (36.0, WARN)):
-        blob = pixels_of(centre_x, 36.0)
-        right.scatter(blob[:, 0], blob[:, 1], s=4, color=colour, alpha=0.30, lw=0)
-        outer = blob[np.linalg.norm(blob - (centre_x, 0.0), axis=1) > 20]
-        arrows(right, votes_to(outer, (centre_x, 0.0), 16), colour, width=1.1)
-        right.plot([centre_x], [0], marker="*", color=GOOD, ms=14, zorder=5)
-    right.plot([0, 0], [-36, 36], color=INK, lw=1.0, ls="--")
-    seam_note = (
-        "the seam is not a gap. It is a change of direction,\n"
-        "and direction is what the network predicts."
-    )
-    right.text(0, -52, seam_note, ha="center", fontsize=LABEL_SIZE, color=INK)
-
-    figure.tight_layout()
-    save(figure, "06-the-voting-idea.png")
-
-
-# --------------------------------------------------------------------------- 3. where to vote
-
-
-def image_space_against_table_space() -> None:
-    figure, axes = new(13.2, 5.2, columns=2)
-    left, right = axes
-
-    left.set_title("Voting in the picture: the answer moves with range", fontsize=TITLE_SIZE, color=WARN)
-    frame(left, (-100, 100), (-70, 70))
-    near_far = ((-50, 34.6, "300 mm away", "35 px"), (50, 17.3, "600 mm away", "17 px"))
-    for centre_x, radius, depth, offset in near_far:
-        left.add_patch(Circle((centre_x, 8), radius, facecolor=GLASS, alpha=0.28, edgecolor=GLASS, lw=1.5))
-        left.annotate(
-            "",
-            xy=(centre_x, 8),
-            xytext=(centre_x + radius, 8),
-            arrowprops={"arrowstyle": "-|>", "color": WARN, "lw": 1.8},
-        )
-        label_y = 8 + radius * 0.25 + 5
-        left.text(centre_x + radius / 2, label_y, offset, ha="center", fontsize=NOTE_SIZE, color=WARN)
-        left.text(centre_x, -48, depth, ha="center", fontsize=NOTE_SIZE, color=INK)
-    left.text(
-        0,
-        -62,
-        "the same glass, the same 37.5 mm of real offset.\nTo predict pixels, learn the camera too.",
-        ha="center",
-        fontsize=LABEL_SIZE,
-        color=WARN,
-    )
-
-    right.set_title("Voting on the table: one number at every range", fontsize=TITLE_SIZE, color=GOOD)
-    frame(right, (-100, 100), (-70, 70))
-    for centre_x, depth in ((-50, "seen from 300 mm"), (50, "seen from 600 mm")):
-        right.add_patch(Circle((centre_x, 8), 26, facecolor=GLASS, alpha=0.28, edgecolor=GLASS, lw=1.5))
-        right.annotate(
-            "",
-            xy=(centre_x, 8),
-            xytext=(centre_x + 26, 8),
-            arrowprops={"arrowstyle": "-|>", "color": GOOD, "lw": 1.8},
-        )
-        right.text(centre_x + 13, 20, "37.5 mm", ha="center", fontsize=NOTE_SIZE, color=GOOD)
-        right.text(centre_x, -48, depth, ha="center", fontsize=NOTE_SIZE, color=INK)
-    table_note = (
-        "depth and the known table height put each pixel on the\n"
-        "table first. Scale is gone before it starts."
-    )
-    right.text(
-        0,
-        -62,
-        table_note,
-        ha="center",
-        fontsize=LABEL_SIZE,
-        color=GOOD,
-    )
-
-    figure.tight_layout()
-    save(figure, "06-image-space-against-table-space.png")
-
-
-# --------------------------------------------------------------------------- 4. the stages
-
-
-def the_five_stages() -> None:
-    figure, axes = new(17.0, 4.2, columns=5)
-    near = disc((-45.0, 0.0), 38.0, 620)
-    far = disc((45.0, 0.0), 36.5, 560)
-    both = np.vstack([near, far])
-    glasses = ((22, -44, 27, 34, 74), (-24, -58, 30, 38, 90))
-
-    # 1. the picture
-    axes[0].set_title("1. the picture", fontsize=TITLE_SIZE, color=INK)
-    frame(axes[0], (-100, 100), (-108, 92))
-    axes[0].add_patch(Rectangle((-92, -74), 184, 150, facecolor="#eef2f6", edgecolor=MUTED, lw=1.0))
-    for centre_x, base, bottom_r, top_r, height in glasses:
-        axes[0].add_patch(
-            Polygon(tumbler(centre_x, base, height, bottom_r, top_r), closed=True, facecolor=GLASS, lw=0)
-        )
-    axes[0].text(0, -94, "RGB and depth, 320 x 240", ha="center", fontsize=NOTE_SIZE, color=MUTED)
-
-    # 2. the mask, from the table height alone
-    axes[1].set_title("2. the mask — no network", fontsize=TITLE_SIZE, color=GOOD)
-    frame(axes[1], (-100, 100), (-108, 92))
-    axes[1].add_patch(Rectangle((-92, -74), 184, 150, facecolor="#f6f6f6", edgecolor=MUTED, lw=1.0))
-    for centre_x, base, bottom_r, top_r, height in glasses:
-        axes[1].add_patch(
-            Polygon(tumbler(centre_x, base, height, bottom_r, top_r), closed=True, facecolor=GOOD)
-        )
-    axes[1].text(0, -94, "5 to 260 mm above the table top", ha="center", fontsize=NOTE_SIZE, color=GOOD)
-
-    # 3. every mask pixel dropped onto the table
-    axes[2].set_title("3. on the table, in mm", fontsize=TITLE_SIZE, color=INK)
-    frame(axes[2], (-100, 100), (-108, 92))
-    axes[2].scatter(both[:, 0], both[:, 1], s=3.5, color=MUTED, alpha=0.7, lw=0)
-    axes[2].annotate(
-        "",
-        xy=(8.5, 0),
-        xytext=(-7, 0),
-        arrowprops={"arrowstyle": "<|-|>", "color": WARN, "lw": 1.3},
-    )
-    axes[2].text(
-        0, 14, "15 mm", ha="center", fontsize=NOTE_SIZE, color=WARN,
-        bbox={"facecolor": PAPER, "edgecolor": "none", "pad": 1.5},
-    )
-    axes[2].text(0, -94, "one group at 25 mm — merged", ha="center", fontsize=NOTE_SIZE, color=WARN)
-
-    # 4. the network moves each point by its predicted offset
-    axes[3].set_title("4. each point votes", fontsize=TITLE_SIZE, color=INK)
-    frame(axes[3], (-100, 100), (-108, 92))
-    axes[3].scatter(both[:, 0], both[:, 1], s=3.5, color="#dfe4e9", lw=0)
-    for blob, centre_x in ((near, -45.0), (far, 45.0)):
-        landed = cloud((centre_x, 0.0), 6.5, len(blob))
-        axes[3].scatter(landed[:, 0], landed[:, 1], s=3.5, color=GLASS, alpha=0.55, lw=0, zorder=4)
-        outer = blob[np.linalg.norm(blob - (centre_x, 0.0), axis=1) > 22]
-        arrows(axes[3], votes_to(outer, (centre_x, 0.0), 9), GLASS, width=0.8)
-    axes[3].text(0, -94, "dx, dy in millimetres", ha="center", fontsize=NOTE_SIZE, color=GLASS)
-
-    # 5. peaks, and the masks that follow
-    axes[4].set_title("5. two peaks, two masks", fontsize=TITLE_SIZE, color=GOOD)
-    frame(axes[4], (-100, 100), (-108, 92))
-    axes[4].scatter(near[:, 0], near[:, 1], s=3.5, color=GLASS, alpha=0.6, lw=0)
-    axes[4].scatter(far[:, 0], far[:, 1], s=3.5, color=WARN, alpha=0.6, lw=0)
-    for centre_x in (-45.0, 45.0):
-        axes[4].plot([centre_x], [0], marker="*", color=GOOD, ms=16, zorder=5)
-    axes[4].text(0, -94, "76 mm and 73 mm — both in range", ha="center", fontsize=NOTE_SIZE, color=GOOD)
-
-    figure.tight_layout()
-    save(figure, "06-the-five-stages.png")
-
-
-# --------------------------------------------------------------------------- 5. votes to objects
-
-
-def vote_cloud_and_mean_shift() -> None:
-    figure, axes = new(14.4, 4.4, columns=3)
-    grid = np.linspace(-85, 85, 111)
-    levels = np.linspace(0.07, 1.0, 8)
-    limits = ((-85, 85), (-78, 52))
-    radius = 18.0
-
-    single = cloud((0.0, 0.0), 6.5, 1700)
-    pair = np.vstack([cloud((-45.0, 0.0), 7.0, 850), cloud((45.0, 2.0), 7.0, 820)])
-
-    panels = (
-        (axes[0], single, "One glass: one thick patch", "1,700 votes, spread 6 mm RMS"),
-        (axes[1], pair, "Two glasses: two patches", "90 mm between the peaks"),
-    )
-    for axis, points, title, note in panels:
-        axis.set_title(title, fontsize=TITLE_SIZE, color=INK)
-        frame(axis, *limits)
-        field = density(points, grid, grid, 7.0)
-        axis.contourf(grid, grid, field, levels=levels, cmap="Blues", alpha=0.9)
-        axis.scatter(points[:, 0], points[:, 1], s=2, color=INK, alpha=0.12, lw=0)
-        axis.text(0, -52, note, ha="center", fontsize=NOTE_SIZE, color=MUTED)
-
-    axes[2].set_title("The window slides uphill and stops", fontsize=TITLE_SIZE, color=GOOD)
-    frame(axes[2], *limits)
-    axes[2].scatter(pair[:, 0], pair[:, 1], s=2, color=MUTED, alpha=0.35, lw=0)
-    for centre in ((-45.0, 0.0), (45.0, 2.0)):
-        away = np.linalg.norm(pair - centre, axis=1)
-        for rank in (0, 1, 2, 3):
-            begin = pair[np.argsort(-away)[rank * 3]]
-            path = mean_shift_path(pair, tuple(begin), radius)
-            axes[2].plot(path[:, 0], path[:, 1], color=INK, lw=1.2)
-            axes[2].plot(path[0, 0], path[0, 1], marker="o", color=INK, ms=3.5)
-            axes[2].plot(path[-1, 0], path[-1, 1], marker="*", color=GOOD, ms=16, zorder=5)
-        axes[2].add_patch(Circle(path[-1], radius, facecolor="none", edgecolor=GOOD, lw=1.3, ls="--"))
-    shift_note = (
-        "every vote is a starting point; eight are drawn. Move the\n"
-        "18 mm window to the average of the votes inside it, and\n"
-        "repeat. Starts that stop together are one glass."
-    )
-    axes[2].text(0, -46, shift_note, ha="center", fontsize=NOTE_SIZE, color=INK, va="top")
-
-    figure.tight_layout()
-    save(figure, "06-vote-cloud-and-mean-shift.png")
-
-
-# --------------------------------------------------------------------------- 6. spread as confidence
-
-
-def spread_as_confidence() -> None:
-    figure, axes = new(14.4, 4.8, columns=3)
-    grid = np.linspace(-90, 90, 111)
-    levels = np.linspace(0.07, 1.0, 8)
-
-    tight = cloud((0.0, 0.0), 6.0, 1700)
-    bimodal = np.vstack([cloud((-22.0, 0.0), 5.5, 800), cloud((22.0, 0.0), 5.5, 780)])
-    smeared = RNG.normal(loc=(0.0, 0.0), scale=(18.0, 6.0), size=(340, 2))
-
-    panels = (
-        (axes[0], tight, "Tight — RMS 6 mm", GOOD, "One glass.\nAccept it, fit the circle, move on."),
-        (
-            axes[1],
-            bimodal,
-            "Two knots — RMS 23 mm",
-            GLASS,
-            "Two glasses, and it says where both are.\nSplit only if both fits land in range.",
-        ),
-        (
-            axes[2],
-            smeared,
-            "Smeared — RMS 19 mm",
-            WARN,
-            "Unsure, and re-clustering will not\ninvent an answer.\nLook again, across the smear.",
-        ),
-    )
-    for axis, points, title, colour, note in panels:
-        axis.set_title(title, fontsize=TITLE_SIZE, color=colour)
-        frame(axis, (-90, 90), (-82, 56))
-        field = density(points, grid, grid, 6.5)
-        axis.contourf(grid, grid, field, levels=levels, cmap="Blues", alpha=0.9)
-        axis.scatter(points[:, 0], points[:, 1], s=2.5, color=INK, alpha=0.18, lw=0)
-        axis.text(0, -56, note, ha="center", fontsize=LABEL_SIZE, color=colour)
-
-    axes[2].annotate(
-        "",
-        xy=(0, 42),
-        xytext=(0, 14),
-        arrowprops={"arrowstyle": "-|>", "color": WARN, "lw": 2.0},
-    )
-    axes[2].text(5, 45, "look across it,\nfrom 380 mm back", fontsize=NOTE_SIZE, color=WARN, va="center")
-
-    figure.tight_layout()
-    save(figure, "06-spread-as-confidence.png")
-
-
-# --------------------------------------------------------------------------- 7. the limit
-
-
-def too_few_votes() -> None:
-    figure, axes = new(13.0, 4.6, columns=2)
-    left, right = axes
-    visible = np.linspace(0.05, 1.0, 96)
-
-    left.set_title("How many votes a glass gets", fontsize=TITLE_SIZE, color=INK)
-    left.plot(visible * 100, 1700 * visible, color=GLASS, lw=2.0)
-    left.axhline(300, color=WARN, lw=1.4, ls="--")
-    left.text(52, 360, "below about 300 votes: doubtful on count alone", fontsize=NOTE_SIZE, color=WARN)
-    left.plot([20], [340], marker="o", color=WARN, ms=8)
-    left.annotate(
-        "80 per cent hidden:\n340 votes, one crescent",
-        xy=(20, 340),
-        xytext=(27, 900),
-        fontsize=NOTE_SIZE,
-        color=WARN,
-        arrowprops={"arrowstyle": "-|>", "color": WARN, "lw": 1.0},
-    )
-    left.set_xlabel("how much of the glass the camera can see (%)", fontsize=LABEL_SIZE, color=INK)
-    left.set_ylabel("votes", fontsize=LABEL_SIZE, color=INK)
-    left.set_xlim(0, 100)
-    left.set_ylim(0, 1900)
-    left.tick_params(labelsize=NOTE_SIZE, colors=INK)
-    for side in ("top", "right"):
-        left.spines[side].set_visible(False)
-
-    right.set_title("And how much they disagree", fontsize=TITLE_SIZE, color=INK)
-    spread = 6.0 + 25.4 * (1.0 - visible) ** 3
-    right.plot(visible * 100, spread, color=GLASS, lw=2.0)
-    right.axhline(8.0, color=GOOD, lw=1.4, ls="--")
-    right.text(38, 4.4, "spread when the answer is right (held-out)", fontsize=NOTE_SIZE, color=GOOD)
-    right.axhline(16.0, color=WARN, lw=1.4, ls="--")
-    right.text(44, 17.4, "twice that: ask for another picture", fontsize=NOTE_SIZE, color=WARN)
-    right.plot([20], [6.0 + 25.4 * 0.8**3], marker="o", color=WARN, ms=8)
-    right.annotate(
-        "19 mm, and the peak sits\n9 mm from the truth:\nthe votes agree and are\nwrong the same way",
-        xy=(20, 6.0 + 25.4 * 0.8**3),
-        xytext=(33, 24),
-        fontsize=NOTE_SIZE,
-        color=WARN,
-        arrowprops={"arrowstyle": "-|>", "color": WARN, "lw": 1.0},
-    )
-    right.set_xlabel("how much of the glass the camera can see (%)", fontsize=LABEL_SIZE, color=INK)
-    right.set_ylabel("spread of the votes (mm RMS)", fontsize=LABEL_SIZE, color=INK)
-    right.set_xlim(0, 100)
-    right.set_ylim(0, 34)
-    right.tick_params(labelsize=NOTE_SIZE, colors=INK)
-    for side in ("top", "right"):
-        right.spines[side].set_visible(False)
-
     figure.text(
-        0.5,
-        -0.04,
-        "Shapes, not measurements: only the two marked points come from the worked example. "
-        "The curves say what to expect, and the thresholds are the ones to calibrate on held-out renders.",
-        ha="center",
-        fontsize=NOTE_SIZE,
-        color=MUTED,
+        0.5, -0.03,
+        "The same picture and the same weights give two different masks, because the prompt changed and "
+        "nothing else did. That is the whole reason this\nsolution can use a model that was never shown a "
+        "drinking glass of this kind: it is not asked what the object is, only which pixels belong to "
+        "whatever\nthe point landed on. Deciding which of those masks is a glass is a separate job, and it "
+        "is the only job this solution fits any weights for.",
+        ha="center", va="top", fontsize=NOTE_SIZE, color=INK,
+    )
+    save(figure, "08-what-promptable-means.png")
+
+
+# --------------------------------------------------------------------------- #
+# 2. the prompt grid
+# --------------------------------------------------------------------------- #
+
+def figure_the_prompt_grid() -> None:
+    """A regular grid of points, and what each point returns."""
+    figure, (left, right) = new(14.6, 6.8, columns=2)
+
+    plan_axis(left, EXTENT)
+    panel_title(left, f"A prompt point every {GRID_MM:.0f} mm, laid over the top view")
+    draw_glasses(left, SHAPES, SCENE)
+    on_glass_x = [point[0] for point, hit in zip(GRID, HITS, strict=False) if hit is not None]
+    on_glass_y = [point[1] for point, hit in zip(GRID, HITS, strict=False) if hit is not None]
+    on_table_x = [point[0] for point, hit in zip(GRID, HITS, strict=False) if hit is None]
+    on_table_y = [point[1] for point, hit in zip(GRID, HITS, strict=False) if hit is None]
+    left.scatter(on_table_x, on_table_y, s=9, facecolor=PAPER, edgecolor=MUTED, linewidths=0.7, zorder=6)
+    left.scatter(on_glass_x, on_glass_y, s=16, color=GOOD, zorder=7, linewidths=0)
+    name_the_glasses(left, SHAPES)
+    note(left, EXTENT[0] + 14, EXTENT[3] - 14,
+         "filled: the point landed on a glass\nhollow: the point landed on the table",
+         colour=INK, va="top", halo=True)
+
+    # ---- what comes back -------------------------------------------------
+    bare(right)
+    right.set_xlim(0, 1)
+    right.set_ylim(0, 1)
+    panel_title(right, "What the grid gets back, counted")
+
+    note(right, 0.075, 0.905, "prompt lands on", colour=MUTED, size=NOTE_SIZE, va="center")
+    note(right, 0.475, 0.905, "points", colour=MUTED, size=NOTE_SIZE, va="center", ha="center")
+    note(right, 0.755, 0.905, "masks that come back", colour=MUTED, size=NOTE_SIZE, va="center", ha="center")
+
+    rows = [(f"glass {name}", ON_GLASS[name], "the same mask, every time") for name in NAMES]
+    rows.append(("bare table", ON_TABLE, "a mask of table, every time"))
+    top, step = 0.815, 0.108
+    for index, (label, count, answer) in enumerate(rows):
+        y = top - index * step
+        glass_row = index < len(NAMES)
+        face = tint(GOOD, 0.10) if glass_row else tint(MUTED, 0.12)
+        edge = GOOD if glass_row else MUTED
+        box(right, 0.505, y, 0.93, 0.082, "", face, edge=edge)
+        note(right, 0.075, y, label, colour=INK, size=LABEL_SIZE, va="center")
+        note(right, 0.475, y, f"{count}", colour=INK, size=LABEL_SIZE, va="center", ha="center",
+             weight="bold")
+        note(right, 0.755, y, answer, colour=INK if glass_row else MUTED, size=NOTE_SIZE,
+             va="center", ha="center")
+
+    note(
+        right, 0.045, 0.245,
+        f"The grid knows nothing about where the glasses are. It only has to be fine\n"
+        f"enough that every glass gets at least one point: the smallest patch in this\n"
+        f"scene runs {SMALLEST_PATCH:.0f} mm across, and the spacing is {GRID_MM:.0f} mm, so it cannot be "
+        f"stepped over. Even B,\nwhich stands mostly behind A, collects points of its own from the part "
+        f"of it in view.",
+        colour=INK, va="top",
+    )
+    note(
+        right, 0.045, 0.085,
+        f"{len(GRID)} points in all: {len(GRID) - ON_TABLE} on glass and {ON_TABLE} on table. Most of the "
+        f"work is wasted,\nand that is accepted, because nothing had to be told where to look.",
+        colour=GOOD, va="top",
+    )
+
+    figure.suptitle(
+        "Prompting on a grid: points on the same glass return the same mask, points on the table return table.",
+        fontsize=TITLE_SIZE, color=INK, y=1.01,
     )
     figure.tight_layout()
-    save(figure, "06-too-few-votes.png")
+    save(figure, "08-the-prompt-grid.png")
 
 
-# --------------------------------------------------------------------------- 8. hidden completely
-#
-# Everything below works from the project's own outlines rather than from drawn
-# shapes, because the whole question is which pixels a real projection leaves.
+# --------------------------------------------------------------------------- #
+# 3. everything is proposed
+# --------------------------------------------------------------------------- #
+
+def draw_proposal(axis, kind) -> None:
+    """One proposal drawn over a faint copy of the whole scene."""
+    plan_axis(axis, EXTENT, mark_nadir=False)
+    draw_glasses(axis, SHAPES, SCENE, dim=0.016)
+    what, which = kind
+    if what == "glass":
+        splay_patch(axis, SHAPES[which], colour=GOOD, alpha=0.30, zorder=6)
+    elif what == "pair":
+        for name in which:
+            splay_patch(axis, SHAPES[name], colour=WARN, alpha=0.30, zorder=6)
+    elif what == "rim":
+        centre, radius = SHAPES[which][-1]
+        axis.add_patch(Circle(tuple(centre), radius, facecolor=WARN, alpha=0.75,
+                              edgecolor=WARN, lw=1.0, zorder=6))
+    else:
+        axis.add_patch(Polygon(TABLE_PATCHES[which], closed=True, facecolor=MUTED, alpha=0.75,
+                               edgecolor=MUTED, lw=1.0, zorder=6))
 
 
-def profile(outline) -> tuple[np.ndarray, np.ndarray]:
-    """Heights and radii of one glass's outline, in millimetres."""
-    return np.asarray(outline.height) * 1000.0, np.asarray(outline.radius) * 1000.0
+def figure_everything_is_proposed() -> None:
+    """The pile of masks that comes back, and what is not in it: a name."""
+    figure, (left, right) = new(15.2, 7.4, columns=2)
+
+    plan_axis(left, EXTENT)
+    panel_title(left, "The picture SAM was given")
+    draw_glasses(left, SHAPES, SCENE)
+    name_the_glasses(left, SHAPES)
+    note(left, EXTENT[0] + 14, EXTENT[3] - 14,
+         "Four glasses stand on the table. In the picture\nA and B run together into one patch, because B\n"
+         "stands directly out from A along the line away\nfrom the camera.",
+         colour=INK, va="top", halo=True)
+    note(left, 120, -70,
+         f"{RAW_MASKS} masks come back from the {len(GRID) - ON_TABLE} points\nthat landed on something, at "
+         f"{MASKS_PER_POINT} scales each.\nNear-duplicates collapse, and {len(PROPOSALS)} distinct\nproposals "
+         "are left. They are the eight\non the right.",
+         colour=INK, va="top", halo=True)
+
+    bare(right)
+    right.set_xlim(0, 1)
+    right.set_ylim(0, 1)
+    panel_title(right, f"The {len(PROPOSALS)} proposals, and not one of them carries a name")
+
+    columns, cell_w, cell_h = 4, 0.225, 0.30
+    gap_x = (1.0 - columns * cell_w) / (columns + 1)
+    for index, (label, kind, _) in enumerate(PROPOSALS):
+        column, row = index % columns, index // columns
+        x = gap_x + column * (cell_w + gap_x)
+        y = 0.615 - row * 0.44
+        inset = right.inset_axes([x, y, cell_w, cell_h])
+        draw_proposal(inset, kind)
+        note(right, x + cell_w / 2.0, y - 0.022, label, colour=INK, size=NOTE_SIZE - 0.4,
+             ha="center", va="top")
+
+    figure.suptitle(
+        "Segment anything means exactly that: everything is proposed, and nothing is named.",
+        fontsize=TITLE_SIZE, color=INK, y=1.01,
+    )
+    figure.tight_layout()
+    figure.text(
+        0.5, -0.015,
+        "Whole glasses, patches of table, a part of one glass and a pair of glasses taken as one object all "
+        "come back on the same footing. Nothing in the pile says\nwhich proposals are glasses, which are "
+        "pieces of furniture, or which two of them are the same object proposed twice. The model was never "
+        "told what a glass is,\nso it cannot say, and that is not a fault in it: it is what a promptable "
+        "model is for. Somebody else has to do the deciding, and here that somebody is the keeper.",
+        ha="center", va="top", fontsize=NOTE_SIZE, color=INK,
+    )
+    save(figure, "08-everything-is-proposed.png")
 
 
-def rim_radius(outline) -> float:
-    return float(profile(outline)[1].max())
+# --------------------------------------------------------------------------- #
+# 4. the keeper
+# --------------------------------------------------------------------------- #
+
+def tree_glyph(axis, x, y, width, height, colour=GOOD, lw=0.9) -> None:
+    """A tiny two-level tree, for the row of weak trees."""
+    top = (x, y + height / 2.0)
+    middle = [(x - width / 4.0, y), (x + width / 4.0, y)]
+    leaves = [
+        (x - width / 2.0, y - height / 2.0), (x - width / 8.0, y - height / 2.0),
+        (x + width / 8.0, y - height / 2.0), (x + width / 2.0, y - height / 2.0),
+    ]
+    for node in middle:
+        axis.plot([top[0], node[0]], [top[1], node[1]], color=colour, lw=lw, zorder=4)
+    for index, leaf in enumerate(leaves):
+        parent = middle[index // 2]
+        axis.plot([parent[0], leaf[0]], [parent[1], leaf[1]], color=colour, lw=lw, zorder=4)
+    axis.scatter([top[0]] + [node[0] for node in middle], [top[1]] + [node[1] for node in middle],
+                 s=11, color=colour, zorder=5, linewidths=0)
+    axis.scatter([leaf[0] for leaf in leaves], [leaf[1] for leaf in leaves], s=13, color=colour,
+                 marker="s", zorder=5, linewidths=0)
 
 
-def outline_splay(centre, outline, slices: int = 60):
-    """The stack of circles a standing glass draws in an overhead picture.
+def figure_the_keeper() -> None:
+    """The one fitted part: boosted trees, three answers, and a doubtful band."""
+    figure, (left, right) = new(15.8, 9.2, columns=2)
 
-    Same arithmetic as diagram_style.splay_circles, read off the glass's own
-    outline rather than from a height and a rim diameter, so a taper the outline
-    actually has is the taper that gets drawn.
-    """
-    z, r = profile(outline)
-    heights = np.linspace(0.0, z.max(), slices)
-    radii = np.interp(heights, z, r)
-    offset = np.asarray(centre, dtype=float)
-    out = []
-    for zi, ri in zip(heights, radii, strict=True):
-        k = SURVEY_H / (SURVEY_H - zi)
-        out.append((offset * k, ri * k))
-    return out
+    # ===================================================== the funnel, left
+    bare(left)
+    left.set_xlim(0, 1)
+    left.set_ylim(0, 1)
+    panel_title(left, "Many proposals in, one of three answers out for each")
 
+    note(left, 0.145, 0.995, f"{len(PROPOSALS)} proposals in", colour=INK, size=NOTE_SIZE,
+         ha="center", va="center", weight="bold")
+    top, step = 0.945, 0.066
+    for index, (label, _, _) in enumerate(PROPOSALS):
+        y = top - index * step
+        box(left, 0.145, y, 0.25, 0.053, label.replace("\n", " "), tint(GLASS, 0.10), edge=GLASS,
+            size=NOTE_SIZE - 1.8)
+        arrow(left, (0.272, y), (0.305, 0.735 + (y - 0.714) * 0.72), colour=MUTED, lw=0.7)
 
-def top_depth(centre, outline, shape, cx, cy, slices: int = 400) -> np.ndarray:
-    """The depth picture of one solid standing glass, straight down from survey height.
-
-    The glass is drawn one horizontal slice at a time, nearest slice first, so a
-    nearer slice always wins the pixel. A horizontal slice lies at one depth, so
-    every pixel it wins has an exact depth.
-    """
-    height, width = shape
-    depth = np.full((height, width), FAR)
-    z, r = profile(outline)
-    heights = np.linspace(0.0, z.max(), slices)[::-1]
-    radii = np.interp(heights, z, r)
-    for zi, ri in zip(heights, radii, strict=True):
-        away = SURVEY_H - zi
-        disc = np.zeros((height, width), np.uint8)
-        cv2.circle(
-            disc,
-            (int(round(cx + FX * centre[0] / away)), int(round(cy + FX * centre[1] / away))),
-            max(1, int(round(FX * ri / away))),
-            1,
-            -1,
+    left.add_patch(
+        Polygon(
+            [(0.31, 0.975), (0.50, 0.805), (0.56, 0.805), (0.56, 0.665), (0.50, 0.665), (0.31, 0.495)],
+            closed=True, facecolor=tint(GOOD, 0.10), edgecolor=GOOD, lw=1.2, zorder=2,
         )
-        fresh = (disc > 0) & (depth == FAR)
-        depth[fresh] = away
-    return depth
+    )
+    note(left, 0.40, 0.820, "the keeper", colour=GOOD, size=LABEL_SIZE, ha="center", va="center",
+         weight="bold")
+    note(left, 0.40, 0.775, "boosted\ndecision trees", colour=INK, size=NOTE_SIZE - 1.0,
+         ha="center", va="top")
 
+    outcomes = (
+        (
+            "keep",
+            f"{len(ANSWERED['keep'])} of the {len(PROPOSALS)}: one glass. Its fitted\n"
+            "centre and width go into the report,\nand its pixels are that glass's mask.",
+            GOOD,
+        ),
+        (
+            "more than one glass",
+            f"{len(ANSWERED['more than one glass'])}: prompt SAM again with a grid\n"
+            "inside this proposal alone. If that still\ndoes not separate them, report the pair.",
+            WARN,
+        ),
+        (
+            "drop",
+            f"{len(ANSWERED['drop'])}: not a glass at all — table, or a\npart of a glass sitting inside a\n"
+            "proposal whose own width is legal.",
+            MUTED,
+        ),
+    )
+    for index, (heading, body, colour) in enumerate(outcomes):
+        y = 0.895 - index * 0.165
+        box(left, 0.795, y, 0.38, 0.135, "", tint(colour, 0.09), edge=colour)
+        note(left, 0.795, y + 0.045, heading, colour=colour, size=NOTE_SIZE + 0.4, ha="center",
+             va="center", weight="bold")
+        note(left, 0.795, y + 0.018, body, colour=INK, size=NOTE_SIZE - 1.4, ha="center", va="top")
+        arrow(left, (0.568, 0.735), (0.600, y), colour=colour, lw=1.0)
 
-def level_depth(centre, outline, shape, cx, horizon, slices: int = 900) -> np.ndarray:
-    """The depth picture of one solid standing glass, seen level from the measuring height.
-
-    A horizontal slice seen edge-on is a row of the picture, and the front of that
-    slice bulges towards the lens, so its depth across the row is the distance to
-    the glass's axis less the part of the slice in front of it.
-    """
-    height, width = shape
-    depth = np.full((height, width), FAR)
-    glass_x, glass_y = centre
-    z, r = profile(outline)
-    heights = np.linspace(0.0, z.max(), slices)
-    radii = np.interp(heights, z, r)
-    across = (np.arange(width) + 0.5 - cx) * glass_y / FX - glass_x
-    for zi, ri in zip(heights, radii, strict=True):
-        row = int(round(horizon - FX * (zi - VIEW_HEIGHT) / glass_y))
-        if not 0 <= row < height:
-            continue
-        on = np.abs(across) <= ri
-        if not on.any():
-            continue
-        here = glass_y - np.sqrt(np.maximum(ri**2 - across**2, 0.0))
-        nearer = on & (here < depth[row])
-        depth[row][nearer] = here[nearer]
-    if z.max() < VIEW_HEIGHT:
-        # The lens is above the rim, so the mouth of the glass is a visible disc.
-        angle = np.linspace(0.0, 2.0 * np.pi, 180, endpoint=False)
-        edge_x = glass_x + r[-1] * np.cos(angle)
-        edge_y = glass_y + r[-1] * np.sin(angle)
-        ring = np.column_stack(
-            [cx + FX * edge_x / edge_y, horizon - FX * (z.max() - VIEW_HEIGHT) / edge_y]
+    # ------------------------------------------- two thresholds, not one
+    note(left, 0.02, 0.395, "Two thresholds, not one", colour=INK, size=LABEL_SIZE, va="center",
+         weight="bold")
+    line_y, height = 0.300, 0.052
+    bands = (
+        (0.02, 0.33, "drop", WARN),
+        (0.33, 0.63, "I cannot tell:\ntake another picture", MUTED),
+        (0.63, 0.98, "keep", GOOD),
+    )
+    for x0, x1, label, colour in bands:
+        left.add_patch(
+            Polygon([(x0, line_y - height / 2.0), (x1, line_y - height / 2.0),
+                     (x1, line_y + height / 2.0), (x0, line_y + height / 2.0)],
+                    closed=True, facecolor=tint(colour, 0.16), edgecolor=colour, lw=1.0, zorder=3)
         )
-        mouth = np.zeros((height, width), np.uint8)
-        cv2.fillPoly(mouth, [np.round(ring).astype(np.int32)], 1)
-        rows, columns = np.nonzero(mouth)
-        below = rows + 0.5 - horizon
-        keep = below > 1e-6
-        here = FX * (VIEW_HEIGHT - z.max()) / below[keep]
-        rows, columns = rows[keep], columns[keep]
-        nearer = here < depth[rows, columns]
-        depth[rows[nearer], columns[nearer]] = here[nearer]
-    return depth
+        note(left, (x0 + x1) / 2.0, line_y, label, colour=INK, size=NOTE_SIZE - 0.8, ha="center",
+             va="center")
+    for x, label in ((0.33, "the lower threshold"), (0.63, "the higher threshold")):
+        left.plot([x, x], [line_y - height, line_y + height], color=INK, lw=1.2, zorder=6)
+        note(left, x, line_y + height + 0.012, label, colour=INK, size=NOTE_SIZE - 1.0,
+             ha="center", va="bottom")
+    note(left, 0.02, line_y - height / 2.0 - 0.012, "certainly not one glass", colour=MUTED,
+         size=NOTE_SIZE - 1.2, va="top")
+    note(left, 0.98, line_y - height / 2.0 - 0.012, "certainly one glass", colour=MUTED,
+         size=NOTE_SIZE - 1.2, ha="right", va="top")
+    note(left, 0.02, 0.185,
+         "The line is how sure the keeper is that a proposal is one glass. A proposal that lands in the\n"
+         "middle band is not quietly kept and not quietly dropped: it is a reason to take another picture,\n"
+         "which is cheap next to being wrong. Before any threshold is put on that number it has to be\n"
+         "calibrated, so that its claims come true about as often as it says they will.",
+         colour=INK, va="top")
+    note(left, 0.02, 0.055,
+         "The third answer is a category of its own rather than a point on this line, because more than\n"
+         "one glass is not a doubtful glass: it is a different thing to do next.",
+         colour=WARN, va="top")
 
+    # ================================================= what a tree is, right
+    bare(right)
+    right.set_xlim(0, 1)
+    right.set_ylim(0, 1)
+    panel_title(right, "What the keeper is: shallow trees, each fitted to the last one's mistakes")
 
-def owner_of(depths: list[np.ndarray]) -> tuple[np.ndarray, np.ndarray]:
-    """Which glass each pixel belongs to, and how far away it is. -1 is table."""
-    stack = np.stack(depths)
-    who = np.argmin(stack, axis=0)
-    nearest = stack.min(axis=0)
-    who[nearest >= FAR] = -1
-    return who, nearest
+    note(right, 0.02, 0.975, "1. What one tree does", colour=INK, size=LABEL_SIZE, va="center",
+         weight="bold")
 
+    root = (0.50, 0.890)
+    nodes = ((0.235, 0.762), (0.765, 0.762))
+    leaves = (
+        (0.105, 0.628, "towards\nmore than one glass", WARN),
+        (0.375, 0.628, "towards\nnot a glass", MUTED),
+        (0.625, 0.628, "towards not a glass:\nit is a part", MUTED),
+        (0.895, 0.628, "towards\none glass", GOOD),
+    )
+    box(right, root[0], root[1], 0.36, 0.070,
+        "is the fitted width inside the range this kind allows?",
+        tint(GLASS, 0.12), edge=GLASS, size=NOTE_SIZE - 1.2)
+    box(right, nodes[0][0], nodes[0][1], 0.30, 0.070,
+        "is it wider than the widest\nthe kind allows?", tint(GLASS, 0.12), edge=GLASS,
+        size=NOTE_SIZE - 1.2)
+    box(right, nodes[1][0], nodes[1][1], 0.30, 0.070,
+        "does another proposal\ncontain it?", tint(GLASS, 0.12), edge=GLASS, size=NOTE_SIZE - 1.2)
+    for (node_x, node_y), answer in zip(nodes, ("no", "yes"), strict=False):
+        right.plot([root[0], node_x], [root[1] - 0.039, node_y + 0.039], color=INK, lw=1.0, zorder=3)
+        note(right, (root[0] + node_x) / 2.0, (root[1] + node_y) / 2.0, answer, colour=INK,
+             size=NOTE_SIZE - 1.4, ha="center", va="center", halo=True)
+    for index, (leaf_x, leaf_y, text, colour) in enumerate(leaves):
+        parent_x, parent_y = nodes[index // 2]
+        right.plot([parent_x, leaf_x], [parent_y - 0.039, leaf_y + 0.042], color=INK, lw=1.0,
+                   zorder=3)
+        note(right, (parent_x + leaf_x) / 2.0, (parent_y + leaf_y) / 2.0,
+             "yes" if index % 2 == 0 else "no", colour=INK, size=NOTE_SIZE - 1.4, ha="center",
+             va="center", halo=True)
+        box(right, leaf_x, leaf_y, 0.20, 0.080, text, tint(colour, 0.13), edge=colour,
+            size=NOTE_SIZE - 1.4)
+    note(right, 0.02, 0.560,
+         f"Every question is a threshold on one of the {len(FEATURES)} features below, and every leaf holds a "
+         f"small push\ntowards one of the three answers. A tree {TREE_DEPTH} questions deep is weak on its "
+         "own, and is meant to be.",
+         colour=INK, va="top")
 
-def on_the_table(who: np.ndarray, depth: np.ndarray, label: int, view: str, cx, cy) -> np.ndarray:
-    """Every pixel of one glass, dropped onto the table. Solution 2's own arithmetic.
+    # ------------------------------------------------------ boosting
+    note(right, 0.02, 0.470, "2. Boosting: the next tree is fitted to what the ones before it got wrong",
+         colour=INK, size=LABEL_SIZE, va="center", weight="bold")
+    glyph_y = 0.390
+    spots = (0.085, 0.275, 0.465, 0.700)
+    captions = (
+        "the 1st,\nfitted to the labels",
+        "the 2nd, fitted to\nwhat the 1st got wrong",
+        "the 3rd, fitted to what\nthe first two still missed",
+        f"the {TREES}th, the\nlast of the set",
+    )
+    for index, x in enumerate(spots):
+        tree_glyph(right, x, glyph_y, 0.105, 0.075)
+        note(right, x, glyph_y - 0.058, captions[index], colour=INK, size=NOTE_SIZE - 1.8,
+             ha="center", va="top")
+    for x in (0.180, 0.370):
+        note(right, x, glyph_y, "+", colour=GOOD, size=LABEL_SIZE + 2, ha="center", va="center")
+    note(right, 0.583, glyph_y, "+  ...  +", colour=GOOD, size=LABEL_SIZE, ha="center", va="center")
+    note(right, 0.790, glyph_y, "=", colour=GOOD, size=LABEL_SIZE + 2, ha="center", va="center")
+    box(right, 0.898, glyph_y, 0.185, 0.110, "one score for\neach of the\nthree answers",
+        tint(GOOD, 0.14), edge=GOOD, size=NOTE_SIZE - 1.2)
+    note(right, 0.02, 0.288,
+         f"{ROUNDS} rounds, one set of trees per answer, so {TREES} shallow trees in all. Added up, they are "
+         f"the keeper.\nThere is no gradient to follow through a picture and no graphics card in it anywhere: "
+         "a table this\nsize fits in seconds on the processor alone, and the labels are free, because the "
+         "simulator already\nknows which pixels belong to which glass.",
+         colour=INK, va="top")
 
-    A pixel is a direction, and its depth reading says how far along that direction
-    the surface is. Take the point that lands on, and throw its height away.
-    """
-    rows, columns = np.nonzero(who == label)
-    away = depth[rows, columns]
-    across = (columns + 0.5 - cx) * away / FX
-    if view == "top":
-        return np.column_stack([across, (rows + 0.5 - cy) * away / FX])
-    return np.column_stack([across, away])
-
-
-def votes_from(points: np.ndarray, centre, spread: float = HELD_OUT_RMS) -> np.ndarray:
-    """What the network turns those pixels into.
-
-    Each pixel votes at its own place on the table plus an arrow to its own glass's
-    footprint centre. A perfect arrow puts every vote on the centre, so what is left
-    is the arrow's error, and the size of that error is the held-out spread this
-    document calibrates everything else against.
-    """
-    return np.asarray(centre, dtype=float) + RNG.normal(0.0, spread / np.sqrt(2.0), size=points.shape)
-
-
-def settle(votes: np.ndarray, start, radius: float = WINDOW) -> np.ndarray:
-    """Slide the window to the average of the votes inside it, until it stops."""
-    here = np.asarray(start, dtype=float)
-    for _ in range(80):
-        inside = votes[np.linalg.norm(votes - here, axis=1) <= radius]
-        if len(inside) == 0:
-            return here
-        moved = inside.mean(axis=0)
-        if np.linalg.norm(moved - here) < 0.01:
-            return moved
-        here = moved
-    return here
-
-
-def stopping_places(votes: np.ndarray, seeds: int = SEEDS, radius: float = WINDOW) -> list[np.ndarray]:
-    """The distinct places the windows come to rest, started from votes drawn at random."""
-    picked = votes[RNG.choice(len(votes), size=min(seeds, len(votes)), replace=False)]
-    found: list[np.ndarray] = []
-    for start in picked:
-        rest = settle(votes, start, radius)
-        if not any(np.linalg.norm(rest - already) < radius for already in found):
-            found.append(rest)
-    return found
-
-
-def footprint_width(points: np.ndarray) -> float:
-    """How wide the pixels of one glass are once they are back on the table."""
-    return 2.0 * cv2.minEnclosingCircle(points.astype(np.float32))[1]
-
-
-def draw_votes(axis, votes: np.ndarray, colour: str, size: float = 1.6, alpha: float = 0.08) -> None:
-    axis.scatter(votes[:, 0], votes[:, 1], s=size, color=colour, alpha=alpha, lw=0)
-
-
-def mark_peaks(axis, places, radius: float = WINDOW) -> None:
-    for place in places:
-        axis.add_patch(Circle(tuple(place), radius, facecolor="none", edgecolor=GOOD, lw=1.2, ls="--"))
-        axis.plot([place[0]], [place[1]], marker="*", color=GOOD, ms=15, zorder=6)
-
-
-def paint_owner(axis, who: np.ndarray, colours: dict, extent=None, origin: str = "upper") -> None:
-    """Show a rendered picture as itself: one colour per glass, nothing where the table is."""
-    painted = np.zeros((*who.shape, 4))
-    for label, (colour, alpha) in colours.items():
-        painted[who == label] = (*to_rgba(colour)[:3], alpha)
-    axis.imshow(painted, extent=extent, origin=origin, interpolation="nearest", zorder=3)
-
-
-def top_extent(shape, cx, cy) -> tuple[float, float, float, float]:
-    """Where a picture taken straight down sits, in millimetres of table from the nadir."""
-    height, width = shape
-    scale = SURVEY_H / FX
-    return ((0 - cx) * scale, (width - cx) * scale, (0 - cy) * scale, (height - cy) * scale)
-
-
-def hidden_from_above() -> dict:
-    """A tall glass's splayed outline swallowing a short one, and what the votes do about it.
-
-    The pair is a legal one. They stand 150 mm apart, which is the closest two
-    glasses ever stand, and both sizes are inside the kind's own range.
-    """
-    shape = (600, 1000)
-    cx, cy = 140.0, 300.0
-    tall_at = np.array([205.0, 0.0])
-    swung = np.radians(12.0)
-    places = {
-        "inline": tall_at + np.array([MIN_SEP, 0.0]),
-        "swung": tall_at + MIN_SEP * np.array([np.cos(swung), np.sin(swung)]),
-    }
-
-    tall_depth = top_depth(tall_at, TALL, shape, cx, cy)
-    cases = {}
-    for name, short_at in places.items():
-        short_depth = top_depth(short_at, SHORT, shape, cx, cy)
-        who, depth = owner_of([tall_depth, short_depth])
-        alone, _ = owner_of([short_depth])
-        cases[name] = {
-            "at": short_at,
-            "who": who,
-            "alone": alone,
-            "tall_pixels": on_the_table(who, depth, 0, "top", cx, cy),
-            "short_pixels": on_the_table(who, depth, 1, "top", cx, cy),
-            "whole": int((alone == 0).sum()),
-            "covered": splay_covers(outline_splay(tall_at, TALL), outline_splay(short_at, SHORT)),
-        }
-
-    figure, axes = new(17.4, 5.6, columns=4)
-    extent = top_extent(shape, cx, cy)
-    picture_limits = ((150, 545), (-250, 200))
-    vote_limits = ((150, 420), (-175, 130))
-    white = {"facecolor": PAPER, "edgecolor": "none", "pad": 1.2}
-
-    def picture(axis, case, title, colour) -> None:
-        axis.set_title(title, fontsize=TITLE_SIZE, color=colour)
-        frame(axis, *picture_limits)
-        axis.plot(picture_limits[0], [0, 0], color=MUTED, lw=1.0, ls=":", zorder=2)
-        axis.annotate(
-            "", xy=(245, 178), xytext=(168, 178),
-            arrowprops={"arrowstyle": "-|>", "color": MUTED, "lw": 1.2},
+    # ------------------------------------------------------ the features
+    right.add_patch(
+        FancyBboxPatch(
+            (0.015, 0.012), 0.97, 0.175,
+            boxstyle="round,pad=0.006,rounding_size=0.010",
+            facecolor=tint(MUTED, 0.08), edgecolor=MUTED, lw=1.0, zorder=1,
         )
-        axis.text(253, 178, "outwards from the camera", fontsize=NOTE_SIZE, color=MUTED, va="center")
-        paint_owner(axis, case["who"], {0: (GLASS, 0.55), 1: (WARN, 0.9)}, extent=extent, origin="lower")
-        axis.contour(
-            (case["alone"] == 0).astype(float), [0.5], colors=[MUTED], linewidths=1.1, linestyles="--",
-            extent=extent, origin="lower", zorder=4,
+    )
+    note(right, 0.035, 0.166, "3. The eight numbers every question is asked about", colour=INK,
+         size=NOTE_SIZE, va="center", weight="bold")
+    for index, feature in enumerate(FEATURES):
+        column, row = index // 4, index % 4
+        note(right, 0.035 + column * 0.485, 0.130 - row * 0.030, "- " + feature, colour=INK,
+             size=NOTE_SIZE - 2.0, va="center")
+
+    figure.suptitle(
+        "The keeper: the only thing fitted here, and it is a short set of trees rather than a network.",
+        fontsize=TITLE_SIZE, color=INK, y=1.01,
+    )
+    figure.tight_layout()
+    figure.text(
+        0.5, -0.015,
+       "Every feature is a measurement of one proposal, so the keeper never sees the picture and never has "
+       "to learn what a glass looks like. It only has to learn which\nmeasurements go with a glass, and a "
+       "short table of widths, errors, heights, ratios and counts is the case boosted trees were made for: "
+        f"a tree asks a threshold\nquestion and lands in a leaf, and the sum of {TREES} weak ones is the "
+        "answer. What it cannot do is invent a proposal. If a glass never came back from SAM, the\nkeeper is never shown it, "
+        "and none of its three answers is about it.",
+        ha="center", va="top", fontsize=NOTE_SIZE, color=INK,
+    )
+    save(figure, "08-the-keeper.png")
+
+
+# --------------------------------------------------------------------------- #
+# 5. the domain gap
+# --------------------------------------------------------------------------- #
+
+def figure_the_domain_gap() -> None:
+    """What the weights were fitted on, beside what this cell can render."""
+    figure, (left, right) = new(14.0, 6.8, columns=2)
+
+    x0, x1, y0, y1 = EXTENT
+    span_x, span_y = x1 - x0, y1 - y0
+
+    # ---- an everyday photograph -----------------------------------------
+    bare(left)
+    left.set_xlim(x0, x1)
+    left.set_ylim(y0, y1)
+    left.set_aspect("equal")
+    panel_title(left, "What the weights were fitted on: ordinary photographs", colour=GOOD)
+
+    rows, columns = 120, 150
+    wall = np.linspace(0.0, 1.0, rows)[:, None] * np.ones((1, columns))
+    picture = np.zeros((rows, columns, 3))
+    high, low = np.array(tint(GLASS, 0.55))[:3], np.array(tint(MUTED, 0.55))[:3]
+    for channel in range(3):
+        picture[:, :, channel] = low[channel] + (high[channel] - low[channel]) * wall
+    surface = int(rows * 0.42)
+    wood = np.array(tint(WARN, 0.60))[:3]
+    grain = 0.10 * np.sin(np.linspace(0, 26, columns))[None, :]
+    for channel in range(3):
+        picture[:surface, :, channel] = wood[channel] + grain[0]
+    picture += RNG.normal(0.0, 0.035, picture.shape)
+    left.imshow(np.clip(picture, 0.0, 1.0), extent=(x0, x1, y0, y1), origin="lower",
+                interpolation="bilinear", zorder=0)
+
+    for centre, radius, colour in (
+        ((-0.26, -0.18), 0.115, GOOD),
+        ((0.06, -0.24), 0.150, WARN),
+        ((0.38, -0.14), 0.100, GLASS),
+    ):
+        middle = (x0 + span_x * (0.5 + centre[0]), y0 + span_y * (0.5 + centre[1]))
+        size = span_y * radius
+        left.add_patch(Circle(middle, size * 1.10, facecolor=INK, alpha=0.22, zorder=2))
+        left.add_patch(Circle(middle, size, facecolor=colour, edgecolor=INK, lw=0.8, alpha=0.95,
+                              zorder=3))
+        left.add_patch(Circle((middle[0] - size * 0.32, middle[1] + size * 0.34), size * 0.24,
+                              facecolor=PAPER, alpha=0.75, zorder=4))
+    for x_fraction, width, colour in ((0.06, 0.10, GOOD), (0.74, 0.13, WARN)):
+        left.add_patch(
+            Polygon(
+                [
+                    (x0 + span_x * x_fraction, y0 + span_y * 0.44),
+                    (x0 + span_x * (x_fraction + width), y0 + span_y * 0.44),
+                    (x0 + span_x * (x_fraction + width), y0 + span_y * 0.80),
+                    (x0 + span_x * x_fraction, y0 + span_y * 0.80),
+                ],
+                closed=True, facecolor=colour, alpha=0.55, edgecolor=INK, lw=0.7, zorder=2,
+            )
         )
+    note(left, x0 + span_x * 0.03, y0 + span_y * 0.96,
+         "colour that separates one object from the next,\ntexture, highlights, cast shadows, clutter behind",
+         colour=INK, va="top", halo=True)
+    note(left, x0 + span_x * 0.03, y0 + span_y * 0.04,
+         "Drawn here as a stand-in. What matters is what it has,\nand what the panel on the right does not.",
+         colour=INK, va="bottom", size=NOTE_SIZE - 0.6, halo=True)
 
-    def table(axis, title, colour) -> None:
-        axis.set_title(title, fontsize=TITLE_SIZE, color=colour)
-        frame(axis, *vote_limits)
+    # ---- what this cell renders -----------------------------------------
+    bare(right)
+    right.set_xlim(x0, x1)
+    right.set_ylim(y0, y1)
+    right.set_aspect("equal")
+    panel_title(right, "What this cell can render: grey, shaded from depth", colour=WARN)
 
-    # 1. the picture, with the short glass under the tall one's splayed outline.
-    first = cases["inline"]
-    picture(axes[0], first, "1. the overhead picture", WARN)
-    axes[0].annotate(
-        f"the short glass stands inside the dashes.\n{len(first['short_pixels'])} of its "
-        f"{first['whole']:,} pixels reach the picture.",
-        xy=(430, 46), xytext=(430, 108), ha="center", va="bottom",
-        fontsize=NOTE_SIZE, color=WARN,
+    xs, ys, heights = height_raster(SCENE, EXTENT)
+    shade = 0.30 + 0.60 * heights / KIND_TALLEST
+    right.imshow(shade, extent=(xs[0], xs[-1], ys[0], ys[-1]), origin="lower", cmap=GREY_PICTURE,
+                 vmin=0.0, vmax=1.0, interpolation="nearest", zorder=0)
+    note(right, x0 + span_x * 0.03, y0 + span_y * 0.96,
+         "one number per pixel: how far away the nearest\nsurface is. Lighter is nearer the camera.",
+         colour=INK, va="top", halo=True)
+
+    swatch = span_y * 0.050
+    base_x, base_y = x0 + span_x * 0.34, y0 + span_y * 0.08
+    for index, channel in enumerate(("red", "green", "blue")):
+        corner = base_x + index * swatch * 1.35
+        right.add_patch(
+            Polygon(
+                [(corner, base_y), (corner + swatch, base_y),
+                 (corner + swatch, base_y + swatch), (corner, base_y + swatch)],
+                closed=True, facecolor=tint(INK, 0.45), edgecolor=INK, lw=0.7, zorder=5,
+            )
+        )
+        note(right, corner + swatch / 2.0, base_y - swatch * 0.22, channel, colour=INK,
+             size=NOTE_SIZE - 1.4, ha="center", va="top", halo=True)
+    note(right, base_x, base_y + swatch * 1.30, "the same grey picture,\ncopied three times",
+         colour=INK, va="bottom", size=NOTE_SIZE - 0.6, halo=True)
+
+    figure.suptitle(
+        "The honest risk: the borrowed weights have never seen a picture like the one this cell can give them.",
+        fontsize=TITLE_SIZE, color=INK, y=1.01,
+    )
+    figure.tight_layout()
+    figure.text(
+        0.5, -0.05,
+        "The renderer gives a distance per pixel and an identity per pixel. It does not give colour, so the "
+       "code shades the depth into a grey picture and repeats it\nacross the three channels the model "
+       "expects. Every cue the weights were fitted with is then missing at once: there is no colour to "
+       "separate one object from\nthe next, no texture inside a surface, no highlight on a rim, no shadow "
+        "under a base and nothing behind the table. This is the largest risk in the solution, and it\ncannot be trained away, "
+        "because the whole point of this solution is that the borrowed part is never trained.",
+        ha="center", va="top", fontsize=NOTE_SIZE, color=INK,
+    )
+    save(figure, "08-the-domain-gap.png")
+
+
+# --------------------------------------------------------------------------- #
+# 6. borrowed against trained
+# --------------------------------------------------------------------------- #
+
+def figure_borrowed_against_trained() -> None:
+    """What SAM brings, against what is fitted here, against solution 6."""
+    figure, (left, right) = new(15.4, 7.2, columns=2)
+
+    bars = (
+        (
+            "SAM, borrowed whole and never trained here",
+            "weights in a neural network",
+            BORROWED, MUTED,
+        ),
+        (
+            "the keeper, the one thing fitted here",
+            f"thresholds and leaf values in {TREES} shallow trees",
+            FITTED_NUMBERS, GOOD,
+        ),
+        (
+            "solution 6's network, fitted here from scratch",
+            "weights in a neural network",
+            SOLUTION_SIX, GLASS,
+        ),
+    )
+
+    panel_title(left, "How much of each, on a scale where each step is ten times the last")
+    low = 1.0
+    high = 10.0 ** np.ceil(np.log10(max(value for _, _, value, _ in bars)))
+    left.set_xscale("log")
+    left.set_xlim(low, high * 4.0)
+    left.set_ylim(-2.35, len(bars) - 0.05)
+    bare(left)
+    left.tick_params(which="both", bottom=False, top=False, left=False, right=False,
+                     labelbottom=False, labelleft=False)
+
+    decade = low
+    while decade <= high:
+        left.plot([decade, decade], [-0.62, len(bars) - 0.42], color=MUTED, lw=0.6,
+                  ls=(0, (3, 4)), zorder=1)
+        note(left, decade, -0.70, f"{decade:,.0f}", colour=MUTED, size=NOTE_SIZE - 1.4,
+             ha="center", va="top")
+        decade *= 10.0
+    note(left, low, -0.94, "numbers fitted, or brought", colour=MUTED, size=NOTE_SIZE, va="top")
+
+    for index, (label, kind, value, colour) in enumerate(bars):
+        y = len(bars) - 1 - index
+        left.barh([y], [value], left=low, height=0.40, color=tint(colour, 0.55),
+                  edgecolor=colour, linewidth=1.1, zorder=3)
+        note(left, value * 1.25, y, f"{value:,}", colour=colour, size=LABEL_SIZE, va="center",
+             weight="bold")
+        note(left, low * 1.4, y + 0.42, label, colour=INK, size=NOTE_SIZE, va="bottom", halo=True)
+        note(left, low * 1.4, y + 0.24, kind, colour=MUTED, size=NOTE_SIZE - 1.2, va="bottom",
+             halo=True)
+
+    note(
+        left, low * 1.4, -1.14,
+        "The middle bar is not the same kind of number as the other two, and that is the point\n"
+        "rather than a fault in the picture. A neural network fits a weight to every connection it\n"
+        "has. A decision tree has no weights at all: what is fitted is one threshold at each split\n"
+        f"and one value at each leaf, which here is {FITTED_THRESHOLDS:,} thresholds and "
+        f"{FITTED_LEAVES:,} leaf values.\n"
+        "The bars say how much was fitted. They do not say it is the same kind of thing.",
+        colour=INK, va="top",
+    )
+
+    # ---- the two solutions side by side ---------------------------------
+    bare(right)
+    right.set_xlim(0, 1)
+    right.set_ylim(0, 1)
+    panel_title(right, "The same question asked two ways")
+
+    box(right, 0.37, 0.940, 0.36, 0.072, "solution 8\nborrow almost everything",
+        tint(GOOD, 0.14), edge=GOOD, size=NOTE_SIZE, weight="bold")
+    box(right, 0.79, 0.940, 0.36, 0.072, "solution 6\nfit everything from scratch",
+        tint(GLASS, 0.14), edge=GLASS, size=NOTE_SIZE, weight="bold")
+
+    rows = (
+        (
+            "what it brings in,\nfitted somewhere else",
+            f"{BORROWED:,} weights, used\nexactly as downloaded",
+            "nothing",
+        ),
+        (
+            "what is fitted here",
+            f"{TREES} shallow trees:\n{FITTED_NUMBERS:,} thresholds and leaf values",
+            f"{SOLUTION_SIX:,} weights,\nevery one of them",
+        ),
+        (
+            "what kind of thing\nis fitted",
+            "threshold questions and leaves,\nfitted on the processor in seconds",
+            "weights, fitted by following\na gradient through a picture",
+        ),
+        (
+            "what the fitted part\nhas to learn",
+            "which measurements of a\nproposal go with a glass",
+            "which pixels are glass, and\nwhere each centre is",
+        ),
+        (
+            "training scenes needed",
+            "a few, because so little\nis being fitted",
+            "many, because everything\nis being fitted",
+        ),
+        (
+            "what it was fitted on",
+            "everyday photographs, for\nthe part that finds objects",
+            "this cell's own pictures,\nand nothing else",
+        ),
+        (
+            "where the risk sits",
+            "the borrowed part has never\nseen a picture like this one",
+            "the fitted part has seen\nnothing but pictures like it",
+        ),
+    )
+    top, step = 0.815, 0.121
+    for index, (question, eight, six) in enumerate(rows):
+        y = top - index * step
+        note(right, 0.175, y, question, colour=INK, size=NOTE_SIZE, ha="right", va="center")
+        box(right, 0.37, y, 0.36, 0.098, eight, tint(GOOD, 0.07), edge=GOOD, size=NOTE_SIZE - 1.0)
+        box(right, 0.79, y, 0.36, 0.098, six, tint(GLASS, 0.07), edge=GLASS, size=NOTE_SIZE - 1.0)
+
+    figure.suptitle(
+        "This solution is the least trained and the most borrowed of them all.",
+        fontsize=TITLE_SIZE, color=INK, y=1.01,
+    )
+    figure.tight_layout()
+    figure.text(
+        0.5, -0.05,
+       "The borrowed count is arithmetic on the model's published widths and depths, so it is the right size "
+        " rather than a measurement of a file, and the keeper's count is\narithmetic on the shape of the set "
+        "of trees. What the picture is for is the gap between them, and the gap is not close: for every "
+        f"number fitted in this cell, about {BORROWED_PER_FITTED:,.0f} are brought in\nalready fitted from "
+       "somewhere else. That is what buys the small training set, and it is also what buys the risk, because "
+        " a borrowed weight cannot be corrected here.\nSolution 6 makes the opposite trade: nothing borrowed, "
+        "nothing unexamined, and every one of its numbers paid for with rendered scenes.",
+        ha="center", va="top", fontsize=NOTE_SIZE, color=INK,
+    )
+    save(figure, "08-borrowed-against-trained.png")
+
+
+# --------------------------------------------------------------------------- #
+# 7. where it stops
+# --------------------------------------------------------------------------- #
+
+def figure_where_it_stops() -> None:
+    """A glass covered completely: no pixels, so no prompt point, so no proposal."""
+    hidden_scene = (
+        ("the tall glass", (185.0, -40.0), TALL_A),
+        ("the short glass", (335.0, -70.0), SHORT_A),
+    )
+    names, shapes = build(hidden_scene)
+    tall, short = names
+    covered = splay_covers(shapes[tall], shapes[short])
+    assert covered, "this figure is only honest if the short glass really is covered"
+
+    apart = float(np.hypot(*(np.asarray(hidden_scene[1][1]) - np.asarray(hidden_scene[0][1]))))
+    patch_mm = splay_width(shapes[tall])
+    extent = extent_of(shapes, pad=70.0)
+    grid = prompt_grid(extent)
+    hits = [topmost(point, hidden_scene) for point in grid]
+    on_tall = hits.count(tall)
+    on_short = hits.count(short)
+    assert on_short == 0, "a covered glass must collect no prompt points at all"
+
+    figure, (left, right) = new(14.8, 7.0, columns=2)
+
+    plan_axis(left, extent)
+    panel_title(left, "The top view: one silhouette, two glasses", colour=WARN)
+    splay_patch(left, shapes[tall], colour=GLASS, alpha=0.20, zorder=3)
+    for index, (centre, radius) in enumerate(shapes[short]):
+        if index % 9 == 0 or index == len(shapes[short]) - 1:
+            left.add_patch(
+                Circle(tuple(centre), radius, facecolor="none", edgecolor=WARN, lw=1.0,
+                       ls=(0, (3, 3)), alpha=0.85, zorder=5)
+            )
+    for point, hit in zip(grid, hits, strict=False):
+        if hit is None:
+            left.scatter([point[0]], [point[1]], s=8, facecolor=PAPER, edgecolor=MUTED,
+                         linewidths=0.6, zorder=6)
+        else:
+            left.scatter([point[0]], [point[1]], s=15, color=GOOD, zorder=7, linewidths=0)
+    short_tip = shapes[short][-1][0]
+    left.annotate(
+        f"the short glass is in here,\ndrawn dashed. Not one pixel\nof it reaches the picture, so\n"
+        f"not one of the {len(grid)} prompt points\ncan land on it.",
+        xy=tuple(short_tip), xytext=(extent[0] + (extent[1] - extent[0]) * 0.30, extent[3] - 24),
+        fontsize=NOTE_SIZE, color=WARN, ha="left", va="top", zorder=9,
+        bbox=dict(HALO, pad=4.0),
         arrowprops={"arrowstyle": "->", "color": WARN, "lw": 1.0},
     )
-    axes[0].text(
-        350, -245,
-        f"one patch, {len(first['tall_pixels']):,} pixels, and it back-projects\n"
-        f"to a footprint {footprint_width(first['tall_pixels']):.0f} mm across — a legal width.",
-        ha="center", va="bottom", fontsize=NOTE_SIZE, color=INK,
-    )
+    note(left, extent[0] + 14, extent[2] + 14,
+         f"{on_tall} points landed on the tall glass and every one of them\nreturned the same mask. "
+         f"{on_short} landed on the short glass.",
+         colour=INK, va="bottom", halo=True)
 
-    # 2. the votes that picture yields.
-    tall_votes = votes_from(first["tall_pixels"], tall_at)
-    table(axes[1], "2. every vote in it", WARN)
-    draw_votes(axes[1], tall_votes, GLASS)
-    mark_peaks(axes[1], stopping_places(tall_votes))
-    axes[1].plot([first["at"][0]], [first["at"][1]], marker="x", color=WARN, ms=11, mew=2.0)
-    axes[1].text(
-        first["at"][0], first["at"][1] + 22, "a glass stands here.\nNo vote mentions it.",
-        ha="center", fontsize=NOTE_SIZE, color=WARN, bbox=white,
-    )
-    axes[1].text(
-        285, -170,
-        "one peak, where two glasses stand.\nNothing in the vote map is wrong;\n"
-        "the second glass is simply not in it.",
-        ha="center", va="bottom", fontsize=NOTE_SIZE, color=WARN,
-    )
+    bare(right)
+    right.set_xlim(0, 1)
+    right.set_ylim(0, 1)
+    panel_title(right, "Why nothing in this solution can catch it")
 
-    # 3. the same pair, swung off the line out from the camera.
-    second = cases["swung"]
-    picture(axes[2], second, "3. the pair swung 12 degrees", GOOD)
-    axes[2].annotate(
-        f"{len(second['short_pixels'])} pixels of the short glass",
-        xy=(455, 78), xytext=(330, 150), ha="center", va="bottom",
-        fontsize=NOTE_SIZE, color=GOOD,
-        arrowprops={"arrowstyle": "->", "color": GOOD, "lw": 1.0},
+    chain = (
+        ("the geometry", f"the tall glass stands {apart:.0f} mm from the short one,\n"
+                         f"and its silhouette runs {patch_mm:.0f} mm across the table", MUTED),
+        ("the picture", "every pixel of the short glass is a pixel\nof the tall one instead", MUTED),
+        ("the prompt", "a prompt point is a pixel, so no prompt\nexists that reaches the short glass", WARN),
+        ("the proposal", "SAM returns a mask for whatever the point\nlanded on, so no mask contains it", WARN),
+        ("the keeper", "the keeper only ever sorts proposals,\nso it is never shown this glass at all", WARN),
     )
-    axes[2].text(
-        350, -245,
-        f"still {MIN_SEP:.0f} mm apart, still the same two glasses.\n"
-        f"Splay runs outwards from the camera, so across\n"
-        f"that direction the short glass keeps {len(second['short_pixels'])} pixels.",
-        ha="center", va="bottom", fontsize=NOTE_SIZE, color=GOOD,
-    )
+    top, step = 0.855, 0.153
+    for index, (stage, text, colour) in enumerate(chain):
+        y = top - index * step
+        note(right, 0.075, y, stage, colour=colour, size=NOTE_SIZE, ha="right", va="center",
+             weight="bold")
+        box(right, 0.535, y, 0.86, 0.113, text, tint(colour, 0.09), edge=colour, size=NOTE_SIZE)
+        if index < len(chain) - 1:
+            arrow(right, (0.535, y - 0.058), (0.535, y - step + 0.058), colour=colour, lw=1.1)
 
-    # 4. what that handful of pixels is worth.
-    crescent = votes_from(second["short_pixels"], second["at"])
-    both = np.vstack([votes_from(second["tall_pixels"], tall_at), crescent])
-    table(axes[3], "4. and what they are worth", GOOD)
-    draw_votes(axes[3], both, GLASS)
-    axes[3].scatter(crescent[:, 0], crescent[:, 1], s=4, color=WARN, alpha=0.8, lw=0)
-    peak = settle(both, crescent.mean(axis=0))
-    mark_peaks(axes[3], [settle(both, tall_at), peak])
-    axes[3].text(
-        285, -170,
-        f"{len(crescent)} votes — {100 * len(crescent) / second['whole']:.0f} per cent of the glass —\n"
-        f"put the peak {np.linalg.norm(peak - second['at']):.1f} mm from where the\n"
-        "glass really stands. Two peaks, two glasses.",
-        ha="center", va="bottom", fontsize=NOTE_SIZE, color=GOOD,
+    note(
+        right, 0.075, 0.115,
+        "So the glass is not reported wrongly. It is not reported at all, and there is no\n"
+        "low score to notice, because a check in this solution is a check on a proposal.",
+        colour=WARN, va="top", size=LABEL_SIZE - 0.4,
+    )
+    note(
+        right, 0.075, 0.035,
+        "Nothing about the borrowed weights or the keeper changes this. Only another\nlook, from somewhere "
+        "the short glass is not behind the tall one, changes it.",
+        colour=INK, va="top",
     )
 
     figure.suptitle(
-        "Looking straight down: a few pixels of a glass are worth a great deal, and no pixels are "
-        "worth nothing.",
-        fontsize=TITLE_SIZE, color=INK, y=1.02,
+        "Where this solution stops: a prompt is a pixel, and a glass with no pixels cannot be prompted.",
+        fontsize=TITLE_SIZE, color=INK, y=1.01,
     )
     figure.tight_layout()
     figure.text(
         0.5, -0.03,
-        f"Panels 1 and 3 are the picture itself, in millimetres of table measured out from the point "
-        f"directly below the camera; the dashes are where the short glass would have been on its own.\n"
-        f"Panels 2 and 4 are the votes, in millimetres on the table, with the dashed rings marking the "
-        f"{WINDOW:.0f} mm mean-shift window where it came to rest. The glass "
-        f"{profile(TALL)[0].max():.0f} mm tall has its rim scaled by "
-        f"{SURVEY_H / (SURVEY_H - profile(TALL)[0].max()):.2f} and the glass "
-        f"{profile(SHORT)[0].max():.0f} mm tall by "
-        f"{SURVEY_H / (SURVEY_H - profile(SHORT)[0].max()):.2f}, which is the whole of the effect.",
-        ha="center", fontsize=NOTE_SIZE, color=MUTED,
-    )
-    save(figure, "06-hidden-from-above.png")
-    return cases
-
-
-def hidden_from_the_side() -> dict:
-    """Plain line of sight at the measuring standoff, and what the votes do about it."""
-    shape = (240, 320)
-    cx, horizon = 160.0, 150.0
-    apart = 300.0
-    near_at = np.array([0.0, STANDOFF])
-    places = {"behind": np.array([0.0, STANDOFF + apart]), "beside": np.array([30.0, STANDOFF + apart])}
-
-    near_depth = level_depth(near_at, TALL, shape, cx, horizon)
-    cases = {}
-    for name, far_at in places.items():
-        far_depth = level_depth(far_at, SHORT, shape, cx, horizon)
-        who, depth = owner_of([near_depth, far_depth])
-        alone, _ = owner_of([far_depth])
-        cases[name] = {
-            "at": far_at,
-            "who": who,
-            "alone": alone,
-            "near_pixels": on_the_table(who, depth, 0, "level", cx, horizon),
-            "far_pixels": on_the_table(who, depth, 1, "level", cx, horizon),
-            "whole": int((alone == 0).sum()),
-        }
-
-    figure, axes = new(17.4, 5.6, columns=4)
-    crop = ((98, 222), (252, 46))
-    vote_limits = ((-150, 150), (290, 780))
-    white = {"facecolor": PAPER, "edgecolor": "none", "pad": 1.2}
-
-    def picture(axis, case, title, colour) -> None:
-        axis.set_title(title, fontsize=TITLE_SIZE, color=colour)
-        bare(axis)
-        axis.set_aspect("equal")
-        paint_owner(axis, case["who"], {0: (GLASS, 0.55), 1: (WARN, 0.95)})
-        axis.contour(
-            (case["alone"] == 0).astype(float), [0.5], colors=[MUTED], linewidths=1.1, linestyles="--"
-        )
-        axis.set_xlim(*crop[0])
-        axis.set_ylim(*crop[1])
-
-    def table(axis, title, colour) -> None:
-        axis.set_title(title, fontsize=TITLE_SIZE, color=colour)
-        frame(axis, *vote_limits)
-        axis.annotate(
-            "", xy=(-118, 362), xytext=(-118, 300),
-            arrowprops={"arrowstyle": "-|>", "color": MUTED, "lw": 1.2},
-        )
-        axis.text(-108, 320, "the camera\nlooks this way", fontsize=NOTE_SIZE, color=MUTED, va="center")
-
-    # 1. the picture: the near glass's outline straight over the far one.
-    first = cases["behind"]
-    picture(axes[0], first, "1. the picture, looking level", WARN)
-    axes[0].text(
-        160, 64,
-        f"dashed: where the far glass is.\n{len(first['far_pixels'])} of its "
-        f"{first['whole']:,} pixels survive.",
-        ha="center", fontsize=NOTE_SIZE, color=WARN,
-    )
-    axes[0].text(
-        160, 248, f"{apart:.0f} mm between them, and it buys nothing.",
+        f"Both glasses here are of the one kind on the table, one near the tall end of its range of sizes and "
+        f"one near the short end, standing {apart:.0f} mm apart, "
+        f"which is further\napart than the guaranteed gap of {MIN_APART:.0f} mm. The arrangement "
+        "is an ordinary one, and the project's own coverage test confirms that every point of the short glass's\noutline falls inside the tall one's. This is the same "
+        "limit every solution in this problem meets, and it is geometry, not a weakness of any model.",
         ha="center", va="top", fontsize=NOTE_SIZE, color=INK,
     )
+    save(figure, "08-where-it-stops.png")
+    print(f"  hidden pair: {apart:.0f} mm apart, tall patch {patch_mm:.0f} mm across, "
+          f"{on_tall} prompt points on the tall glass, {on_short} on the short one")
 
-    # 2. the votes that picture yields.
-    near_votes = votes_from(first["near_pixels"], near_at)
-    table(axes[1], "2. every vote in it", WARN)
-    draw_votes(axes[1], near_votes, GLASS)
-    mark_peaks(axes[1], stopping_places(near_votes))
-    axes[1].plot([first["at"][0]], [first["at"][1]], marker="x", color=WARN, ms=11, mew=2.0)
-    axes[1].text(
-        first["at"][0] + 16, first["at"][1], "a glass stands here.\nNo vote mentions it.",
-        ha="left", va="center", fontsize=NOTE_SIZE, color=WARN, bbox=white,
+
+def main() -> None:
+    print(
+        f"scene: {len(SCENE)} glasses from the shared cast, {len(GRID)} prompt points, "
+        f"{len(GRID) - ON_TABLE} on glass, {ON_TABLE} on table"
     )
-    axes[1].text(
-        0, 560,
-        f"one peak, {len(near_votes):,} votes, and a fitted\nfootprint "
-        f"{footprint_width(first['near_pixels']):.0f} mm across.\nNothing about it looks wrong.",
-        ha="center", va="center", fontsize=NOTE_SIZE, color=WARN,
+    print(
+        f"borrowed: {BORROWED:,} weights ({ENCODER:,} encoder + {HEAD:,} head)"
     )
-
-    # 3. step the far glass to one side.
-    second = cases["beside"]
-    picture(axes[2], second, "3. the far glass 30 mm to one side", GOOD)
-    axes[2].text(
-        160, 64,
-        f"{len(second['far_pixels'])} pixels survive, in a strip\ndown the edge of the near outline.",
-        ha="center", fontsize=NOTE_SIZE, color=GOOD,
+    print(
+        f"fitted here: {TREES} trees, {FITTED_THRESHOLDS:,} thresholds + {FITTED_LEAVES:,} leaves "
+        f"= {FITTED_NUMBERS:,} numbers; solution 6 fits {SOLUTION_SIX:,} weights"
     )
-    axes[2].text(
-        160, 248, "The near glass did not move. The line of sight did.",
-        ha="center", va="top", fontsize=NOTE_SIZE, color=INK,
-    )
-
-    # 4. what the strip is worth.
-    strip = votes_from(second["far_pixels"], second["at"])
-    both = np.vstack([votes_from(second["near_pixels"], near_at), strip])
-    table(axes[3], "4. and what they are worth", GOOD)
-    draw_votes(axes[3], both, GLASS)
-    axes[3].scatter(strip[:, 0], strip[:, 1], s=4, color=WARN, alpha=0.8, lw=0)
-    peak = settle(both, strip.mean(axis=0))
-    mark_peaks(axes[3], [settle(both, near_at), peak])
-    axes[3].text(
-        0, 560,
-        f"{len(strip)} votes — {100 * len(strip) / second['whole']:.0f} per cent of the glass —\n"
-        f"put the peak {np.linalg.norm(peak - second['at']):.1f} mm from where\nit really stands.",
-        ha="center", va="center", fontsize=NOTE_SIZE, color=GOOD,
-    )
-
-    figure.suptitle(
-        "Looking level: no splay is needed. The near outline simply covers the far one.",
-        fontsize=TITLE_SIZE, color=INK, y=1.02,
-    )
-    figure.tight_layout()
-    figure.text(
-        0.5, -0.03,
-        f"Panels 1 and 3 are the picture, {shape[1]} by {shape[0]} pixels, cropped; the dashes are where "
-        f"the far glass would have been on its own. Panels 2 and 4 are the votes, in millimetres on the "
-        f"table, with the lens at the bottom.\nThe near glass stands at the {STANDOFF:.0f} mm measuring "
-        f"standoff and the lens {VIEW_HEIGHT:.0f} mm above the table top, so the near glass is "
-        f"{FX * 2 * rim_radius(TALL) / STANDOFF:.0f} pixels across in the picture and the far one "
-        f"{FX * 2 * rim_radius(SHORT) / (STANDOFF + apart):.0f}.",
-        ha="center", fontsize=NOTE_SIZE, color=MUTED,
-    )
-    save(figure, "06-hidden-from-the-side.png")
-    return cases
-
-
-def hidden_case_numbers() -> None:
-    """Print every figure the document's hidden-glass section quotes.
-
-    The pictures only draw two arrangements. The section also states what happens
-    at other separations, for the other order of the two glasses, and how few votes
-    a pile needs, so those are worked out here rather than asserted.
-    """
-    tall_h, tall_r = profile(TALL)
-    short_h, short_r = profile(SHORT)
-    print("\n--- the two glasses, drawn from tapered_glass ---")
-    for name, z, r in (("tall", tall_h, short_r * 0 + tall_r), ("short", short_h, short_r)):
-        print(f"  {name:5s} {z.max():5.1f} mm tall, rim {2 * r.max():5.1f} mm across, "
-              f"scaled by {SURVEY_H / (SURVEY_H - z.max()):.2f} at the rim")
-    check = splay_circles((0.0, 0.0), (0.0, 120.0), 225.0, 100.0)
-    print(f"  a rim exactly 225 mm up is scaled by {check[-1][1] / 50.0:.2f}")
-
-    shape, cx, cy = (600, 1000), 140.0, 300.0
-    tall_at = np.array([205.0, 0.0])
-    tall_depth = top_depth(tall_at, TALL, shape, cx, cy)
-    print(f"\n  the tall glass's outline in the picture spans "
-          f"{splay_width(outline_splay(tall_at, TALL)):.0f} mm of table measured from the point below "
-          f"the camera")
-    print("\n--- looking straight down, the pair 150 mm apart ---")
-    for degrees in (0, 8, 12, 16, 20, 30, 90):
-        turn = np.radians(degrees)
-        short_at = tall_at + MIN_SEP * np.array([np.cos(turn), np.sin(turn)])
-        who, depth = owner_of([tall_depth, top_depth(short_at, SHORT, shape, cx, cy)])
-        alone, _ = owner_of([top_depth(short_at, SHORT, shape, cx, cy)])
-        seen = on_the_table(who, depth, 1, "top", cx, cy)
-        whole = int((alone == 0).sum())
-        print(f"  {degrees:3d} deg off the line out from the camera: covered="
-              f"{splay_covers(outline_splay(tall_at, TALL), outline_splay(short_at, SHORT))!s:5s} "
-              f"{len(seen):5d} of {whole:5d} pixels ({100 * len(seen) / whole:5.1f} per cent)")
-
-    shape, cx, horizon = (240, 320), 160.0, 150.0
-    near_at = np.array([0.0, STANDOFF])
-    near_depth = level_depth(near_at, TALL, shape, cx, horizon)
-    print("\n--- looking level, the far glass straight behind the near one ---")
-    for apart in (150.0, 300.0, 600.0):
-        far_at = np.array([0.0, STANDOFF + apart])
-        who, depth = owner_of([near_depth, level_depth(far_at, SHORT, shape, cx, horizon)])
-        alone, _ = owner_of([level_depth(far_at, SHORT, shape, cx, horizon)])
-        seen = on_the_table(who, depth, 1, "level", cx, horizon)
-        print(f"  {apart:5.0f} mm apart: {len(seen):4d} of {int((alone == 0).sum()):5d} pixels")
-    swapped_near = level_depth(near_at, SHORT, shape, cx, horizon)
-    far_at = np.array([0.0, STANDOFF + 300.0])
-    who, depth = owner_of([swapped_near, level_depth(far_at, TALL, shape, cx, horizon)])
-    alone, _ = owner_of([level_depth(far_at, TALL, shape, cx, horizon)])
-    seen = on_the_table(who, depth, 1, "level", cx, horizon)
-    whole = int((alone == 0).sum())
-    print(f"  the short glass in front of the tall one instead: {len(seen)} of {whole} pixels survive, "
-          f"so {100 * (1 - len(seen) / whole):.0f} per cent of it is covered")
-    print(f"  in the picture the near short glass is {FX * 2 * rim_radius(SHORT) / STANDOFF:.0f} pixels "
-          f"across and the far tall one {FX * 2 * rim_radius(TALL) / (STANDOFF + 300.0):.0f}")
-
-    print("\n--- which pixels survive, and how far out on the glass they sit ---")
-    shape, cx, cy = (600, 1000), 140.0, 300.0
-    turn = np.radians(12.0)
-    short_at = tall_at + MIN_SEP * np.array([np.cos(turn), np.sin(turn)])
-    who, depth = owner_of(
-        [top_depth(tall_at, TALL, shape, cx, cy), top_depth(short_at, SHORT, shape, cx, cy)]
-    )
-    alone, whole_depth = owner_of([top_depth(short_at, SHORT, shape, cx, cy)])
-    seen = on_the_table(who, depth, 1, "top", cx, cy)
-    every = on_the_table(alone, whole_depth, 0, "top", cx, cy)
-    print(f"  from the top, rim radius {rim_radius(SHORT):.1f} mm: the survivors sit "
-          f"{np.linalg.norm(seen - short_at, axis=1).mean():.1f} mm out from their own centre, "
-          f"against {np.linalg.norm(every - short_at, axis=1).mean():.1f} mm over the whole glass")
-    shape, cx, horizon = (240, 320), 160.0, 150.0
-    far_at = np.array([30.0, STANDOFF + 300.0])
-    who, depth = owner_of([level_depth(near_at, TALL, shape, cx, horizon),
-                           level_depth(far_at, SHORT, shape, cx, horizon)])
-    alone, whole_depth = owner_of([level_depth(far_at, SHORT, shape, cx, horizon)])
-    seen = on_the_table(who, depth, 1, "level", cx, horizon)
-    every = on_the_table(alone, whole_depth, 0, "level", cx, horizon)
-    print(f"  from the side, rim radius {rim_radius(SHORT):.1f} mm: the survivors sit "
-          f"{np.linalg.norm(seen - far_at, axis=1).mean():.1f} mm out from their own centre, "
-          f"against {np.linalg.norm(every - far_at, axis=1).mean():.1f} mm over the whole glass")
-
-    print("\n--- how few votes still place a centre ---")
-    for count in (1, 2, 5, 10, 20, 50):
-        errors = [
-            np.linalg.norm(votes_from(np.zeros((count, 2)), (0.0, 0.0)).mean(axis=0))
-            for _ in range(4000)
-        ]
-        print(f"  {count:3d} votes: the peak lands {np.median(errors):4.1f} mm from the centre, "
-              f"and within {np.percentile(errors, 95):4.1f} mm nineteen times in twenty")
-    print(f"\n--- and whether {SEEDS} windows started at random land in a pile that small ---")
-    crowd = 16781
-    for count in (20, 50, 100, 300, 850):
-        chance = 1.0 - (1.0 - count / (crowd + count)) ** SEEDS
-        print(f"  {count:4d} votes among {crowd + count:,}: {100 * count / (crowd + count):5.2f} per cent "
-              f"of the picture's votes, found {100 * chance:5.1f} per cent of the time")
+    figure_what_promptable_means()
+    figure_the_prompt_grid()
+    figure_everything_is_proposed()
+    figure_the_keeper()
+    figure_the_domain_gap()
+    figure_borrowed_against_trained()
+    figure_where_it_stops()
 
 
 if __name__ == "__main__":
-    print(f"one pixel covers {MM_PER_PIXEL:.3f} mm at survey height")
-    one_region_not_two()
-    the_voting_idea()
-    image_space_against_table_space()
-    the_five_stages()
-    vote_cloud_and_mean_shift()
-    spread_as_confidence()
-    too_few_votes()
-    hidden_from_above()
-    hidden_from_the_side()
-    hidden_case_numbers()
+    main()

@@ -12,20 +12,26 @@ sensors and the vocabulary — is described once in [the cell](../the-cell.md).
 
 - [**The problem**](problem.md) — what is on the table, what is asked for, the
   three difficulties, and what "done" means.
-- [**Solution overview**](solutions/solution-overview.md) — the way into the
-  seven solutions. It covers what they share: what each does about a glass
-  nobody saw, the vocabulary, where a learned part can sit in a pipeline, and
-  what it means for a machine to choose its own next measurement instead of
-  taking a fixed number of pictures. Then a one-line table of the seven, what
-  was built, and where that can fail.
-- **The seven solutions in full**, one document each, split by whether they
+- [**Solution overview**](solutions/solution-overview.md) — the way into the ten
+  solutions. It covers what they share: what each does about a glass nobody saw,
+  the vocabulary, where a learned part can sit in a pipeline, and what it means
+  for a machine to choose its own next measurement instead of taking a fixed
+  number of pictures. Then a one-line table of the ten, what was built, and
+  where that can fail.
+- **The ten solutions in full**, one document each, split by whether they
   contain a trained model. The three in [`solutions/programmed/`](solutions/programmed/)
-  are rules somebody wrote down. The four in [`solutions/learned/`](solutions/learned/)
+  are rules somebody wrote down. The seven in [`solutions/learned/`](solutions/learned/)
   all have numbers fitted to examples somewhere inside them, whether the fitted
-  part decides the answer or only puts candidates in order. Each document is
-  written from the beginning, with diagrams, and each ends with **the general
-  methods behind it** — the named, published techniques it is built from, with an
-  honest note on where each one is normally the right tool and where it is not.
+  part decides the answer or only puts candidates in order. Those seven divide
+  again by where their numbers come from. Some are fitted from nothing on this
+  cell's own pictures, so everything they know comes from the table in front of
+  them. The others begin from a large model already fitted elsewhere on ordinary
+  photographs, and what that trades is knowledge of a world this cell is not:
+  the cell can only render a grey picture shaded from depth, and such a model
+  has to accept that in place of a photograph. Each document is written from the
+  beginning, with diagrams, and each ends with **the general methods behind
+  it** — the named, published techniques it is built from, with an honest note
+  on where each one is normally the right tool and where it is not.
 
   | | Solution | Family | Built |
   |---|---|---|---|
@@ -36,18 +42,27 @@ sensors and the vocabulary — is described once in [the cell](../the-cell.md).
   | 5 | [Is anything hiding there?](solutions/learned/05-is-anything-hiding-there.md) | hybrid | |
   | 6 | [A network trained from scratch](solutions/learned/06-a-network-trained-from-scratch.md) | learned | the finding step of [`problem-2-learned`](../../problem-2-learned/README.md), the pipeline taken forward |
   | 7 | [Self-supervised from the arm's own movement](solutions/learned/07-self-supervised-from-the-arms-own-movement.md) | learned | |
+  | 8 | [Segment anything, then keep the glasses](solutions/learned/08-segment-anything-then-keep-the-glasses.md) | learned | [`problem-2-pretrained`](../../problem-2-pretrained/README.md) |
+  | 9 | [A fine-tuned instance segmenter](solutions/learned/09-a-fine-tuned-instance-segmenter.md) | learned | [`problem-2-pretrained`](../../problem-2-pretrained/README.md) |
+  | 10 | [Amodal masks for the hidden part](solutions/learned/10-amodal-masks-for-the-hidden-part.md) | learned | [`problem-2-pretrained`](../../problem-2-pretrained/README.md) |
 
 Two of these were written as two documents each and then joined, because in both
 cases the second was not a different method but the same method with one part
 changed. Solution 4 was two ways of ordering the same candidates, and solution 6
 was two output heads on one network.
 
-- [**The ones that need more than a
-  simulator**](solutions/learned/learned-with-hardware.md) — four good answers
-  that were moved out, each with the condition it fails: a promptable foundation
-  model, a fine-tuned instance segmenter, amodal masks with learned association,
-  and an active-vision policy. None of them needs a different algorithm to
-  become usable. They need a graphics card, or a real camera.
+- [**The one that needs more than a
+  simulator**](solutions/learned/learned-with-hardware.md) — a good answer that
+  sits outside the ten, with the condition it fails: an active-vision policy,
+  which learns for itself where to point the camera next rather than being told
+  how to rank the choices. Nothing about it needs a different algorithm, and
+  nothing it needs is missing from the cell. What it needs is throughput,
+  because learning a policy means resetting the table and starting again over
+  and over, and the usual way out of that is a simulator running many worlds at
+  once on a graphics card. [Solution
+  4](solutions/learned/04-choosing-the-next-look.md) is the same idea with the
+  learning done by supervision instead, asking only whether a viewpoint will be
+  worth taking, and that one fits the machine as it is.
 
 ## The short version
 
