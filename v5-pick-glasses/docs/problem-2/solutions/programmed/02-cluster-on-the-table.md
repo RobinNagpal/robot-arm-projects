@@ -428,13 +428,20 @@ but because it has been seen once.
 
 That third rule is **the load-bearing part of the whole method**, and the
 measurements in [when the glasses are completely
-hidden](#when-the-glasses-are-completely-hidden) are what make it so. A
-sizeable share of glasses are invisible from at least one of the three
-stations, so a single station's view of the table is routinely incomplete — and
-a smaller share are seen from only one station, which means the position comes
-from an arc rather than from a whole footprint. Those are precisely the glasses
-whose fitted circle is wrong in a way that looks plausible, so the flag that
-marks them is the difference between an honest answer and a confident one.
+hidden](#when-the-glasses-are-completely-hidden) are what make it so, though not
+for the reason a reader would guess. A glass is rarely lost from a station
+altogether. What happens instead is that nearly every glass is cut by the edge
+of the frame at one station or another, and most glasses have no station at all
+that returns a whole footprint. So a circle fitted at one station usually rests
+on an arc rather than on a complete disc, and an arc fits a circle that is too
+small and in the wrong place. **Agreement between the stations is the cure for
+that, not for glasses vanishing.** Each station cuts a given glass along a
+different line, so two stations that put the centre in the same place have
+fitted it to the glass rather than to the edge of a picture, and two that
+disagree have said so out loud. A group only one station found has nothing to
+check against, and it is precisely those glasses whose fitted circle is wrong in
+a way that looks plausible, so the flag that marks them is the difference
+between an honest answer and a confident one.
 
 ## How the concepts fit together
 
@@ -713,31 +720,44 @@ the blind region is a bounded shape with room inside it for a bounded number of
 glasses.
 
 What all that is worth in this cell has a measured answer, and it is worth
-having, because this is an easy thing to oversell and the honest number is more
+having, because this is an easy thing to oversell and the honest answer is more
 interesting.
 
 We swept several hundred legal arrangements of four to six glasses of the
-widened kind, at the guaranteed gap, and asked of every glass how many of the
-survey's three stations could see it at all. Three results came back.
+widened kind, at the guaranteed gap, and asked of every glass what each of the
+survey's three stations returned of it: a whole footprint, part of one, or
+nothing at all. Three results came back.
 
-**About two glasses in five are invisible from at least one station.** That is
-far more often than anybody would guess, and it settles one thing immediately:
-**a single station's count is worthless.** Nothing in the run may ever conclude
-"there are four glasses here" from one picture.
-
-**No glass was invisible from all three stations.** Not one, in any arrangement,
+**A glass is lost from a station altogether only rarely.** A small share of
+glasses produce no pixels at all at one of the three stations, and every one of
+those was covered by a taller neighbour rather than standing outside the frame.
+No glass was lost at two stations, let alone at all three, in any arrangement,
 even with several taller glasses contributing wedges at once. The reason is the
 one the picture above shows: the stations stand well apart, moving the camera
 moves the point below it, and every wedge swings when it does. So the union of
 the survey does find every glass, and the wide size range does not lose glasses
-outright in this cell.
+outright in this cell. A count from one picture still cannot be trusted, because
+a glass does occasionally produce nothing at one station — but that rarity is
+not what makes a single station's answer thin, and the next two results are.
 
-**About one glass in twenty-five is seen from only one station**, and almost all
-of those are the shorter glass of a pair. Those are the dangerous ones, and they
-are dangerous for a reason the earlier sections already documented: a glass seen
-from one viewpoint only is fitted from an arc rather than a whole footprint, and
-an arc fits a circle that is too small and in the wrong place, with a plausible
-width and a small residual.
+**Being seen in part is the ordinary case.** Nearly every glass is cut by the
+edge of the picture at one station or another, and two things do it together.
+The stations are spread along the zone, so each one's frame is offset from the
+zone and part of the zone lies at or past that frame's edge; and splay throws
+the rim of a glass standing near that edge further out still, over it. What
+comes back from such a station is the near part of the footprint and nothing of
+the rest, which is a crescent rather than a disc.
+
+**Most glasses have no station at all that returns a whole footprint**, and
+roughly one in six have exactly one. The overlap between the stations is meant
+to leave every glass well inside some picture, and for a minority of glasses it
+does; for the rest, every station cuts something off. This is the result worth
+carrying away, because it is the opposite of an unlucky case: **fitting a circle
+to an arc rather than to a whole footprint is what this method does most of the
+time**, and an arc fits a circle that is too small and in the wrong place, with
+a plausible width and a small residual. Nothing in the arithmetic of one picture
+objects to any of that, which is why [asking the stations to
+agree](#asking-the-stations-to-agree) is a step and not a formality.
 
 So the honest summary for this view is that the method handles the hidden case
 **in part**. It never finds the hidden glass, because there is nothing of it to

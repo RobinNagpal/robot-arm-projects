@@ -21,12 +21,12 @@ segmenter](09-a-fine-tuned-instance-segmenter.md), and what differs is only the
 answer each mask is scored against during training.
 
 That small change is worth a document because it repairs a failure the rest of
-the project cannot detect. When something stands in front of a glass, the mask
-of that glass stops where the thing in front of it begins, and the footprint
-worked out from a mask that stops early is wrong in the one way that gets past
-every check this project has: it looks like the footprint of a smaller glass
-standing somewhere slightly different. A mask that includes the hidden part
-gives the right footprint back.
+the project cannot detect. When something stands in front of a glass, or when
+the edge of the picture falls across it, the mask of that glass stops early, and
+the footprint worked out from a mask that stops early is wrong in the one way
+that gets past every check this project has: it looks like the footprint of a
+smaller glass standing somewhere slightly different. A mask that includes the
+missing part gives the right footprint back.
 
 By the end you will understand what the words modal and amodal mean, why the
 label needed to train the amodal version costs nothing in a simulator when it is
@@ -122,11 +122,15 @@ failure is loud. **This one is quiet**, and a quiet failure is worse in a cell
 where the next step is an arm moving towards where the answer said the glass
 was.
 
-### Partly hidden is the normal case here
+### How a glass comes to be partly hidden
 
-It would be fair to set this aside as a rare accident if glasses were rarely
-hidden, and in this cell they are not. Two facts about the kind on the table
-make partial hiding ordinary.
+A mask comes back cut short for two quite different reasons. They appear on
+different tables and only one of them needs a crowded one, so they are worth
+separating before either is answered.
+
+**One is a neighbour standing in the way.** Two facts about the kind on the
+table are what make that possible at all, and they are worth setting out,
+because between them they decide which tables it appears on.
 
 The first is **splay**. Seen from the top, a glass's outline is thrown outwards
 away from the point directly below the camera, and the taller the glass the
@@ -141,11 +145,88 @@ splayed by very different amounts. It is that difference which lets one outline
 sweep across the other.
 
 Put the two together and a tall glass standing between the camera and a short
-one takes a large bite out of the short one, at separations the cell not only
-allows but guarantees. Nothing has to be contrived. So in a scene of four to six
-glasses of this kind, seen from the top, **some glass being partly covered is
-the expected state of affairs rather than the exception**, and the quiet failure
-above is a common outcome rather than an exotic one.
+one takes a bite out of the short one, and it does so at the gap the cell
+guarantees rather than needing the glasses closer than the cell allows. Nothing
+has to be contrived. But the arrangement has to line up for it: the two glasses
+have to lie along one line running out from the point below the camera, close
+together along that line, and differ a great deal in height. Swing the pair
+across that line instead, or space it further out, or make both glasses the same
+height, and the bite goes.
+
+**The other is the edge of the picture**, and no neighbour takes part in it. The
+survey does not photograph the zone from one place. It works from three stations
+spread along the zone, so each station's frame is offset from the zone and part
+of the zone lies at or past that frame's edge. Splay then works exactly as it
+does against a neighbour — the further a glass stands from the point below the
+camera, the further out its rim is thrown — so a glass standing well inside the
+zone can still have its rim thrown over the edge of the frame. What the station
+returns is the near part of the footprint and nothing of the rest.
+
+**Downstream the two are one failure.** Whichever of them cut the mask, what is
+left is a crescent of a disc, and every word of [a mask cut short passes the
+check](#a-mask-cut-short-passes-the-check) applies to it unchanged: the fitted
+circle is too small and displaced, the width is one the kind allows, and the fit
+error is the fit error of a clean patch of a clean disc.
+
+### How often each happens, and why it matters anyway
+
+Both are measured with the project's own renderer, at the cell's own survey
+height and from the three stations the cell computes, and they come out very
+differently.
+
+**A neighbour in the way is uncommon rather than the normal case.** Across
+spawned scenes of this kind, only a small share of glasses lose any pixels at
+all to a neighbour, and a smaller share again lose every pixel at one station,
+though none loses them at more than one. Complete covering is **possible at the
+guaranteed gap between centres**, and an arrangement that produces it can be
+written down, but the cell's placement rule puts glasses where it rarely
+happens.
+
+**The edge of the picture is the ordinary case.** Nearly every glass is cut by
+it at one station or another, most glasses have no station at all that returns a
+whole footprint, and roughly one in six have exactly one. So the crescent this
+document is about is not a rare arrangement waiting on a crowded table. It is
+the usual shape of what one station hands the arithmetic, and [cluster on the
+table](../programmed/02-cluster-on-the-table.md#asking-the-stations-to-agree)
+records the same measurement, where it is the reason the stations are asked to
+agree.
+
+That is worth saying plainly, because it changes what this solution is worth.
+The quiet failure described above — a footprint too small and displaced, with a
+width the kind allows and a fit error a genuine glass would give — is not a rare
+failure kept on the books for safety's sake. It is what one picture ordinarily
+returns. So the argument for this solution rests on two legs rather than one:
+the failure is **ordinary**, and **nothing in the run says when it happens**,
+because both checks pass and a position where no glass stands is acted on.
+
+**What has not been shown is that completion reaches the second cause.**
+Completing behind a near glass and completing past the edge of the picture are
+different problems. The first asserts pixels inside the frame, where a mask has
+room to hold them; the second asserts glass in a place the mask has no pixels
+for at all, so the training target and the way a mask is represented both have
+to change before a model can be asked for it. The geometric check survives
+either way, because the ring outside the frame is already part of the blind
+region [cluster on the table](../programmed/02-cluster-on-the-table.md)
+computes. What this document claims is the diagnosis, which is measured; whether
+a model trained this way completes a glass the frame cut is for the code to
+answer.
+
+**And neither cause appears in the harness as it stands.**
+[`problem-2-sim`](../../../../problem-2-sim/README.md) renders its top view from
+higher than the cell's own survey height and takes one picture rather than
+three: the higher the camera the less splay throws each outline, and one frame
+from that height holds the whole zone with room around it. So a run of the
+existing pipelines meets neither the neighbour nor the frame edge, and both have
+to be argued from the cell's own geometry rather than from a failure somebody
+has watched happen.
+
+A neighbour in the way needs the **crowded layout**: glasses lining up along one
+line out from the point below the camera, close together along it, with the tall
+ones in front of the short ones. The frame edge needs nothing of the sort, only
+a glass near the edge of a station's picture, which is where most glasses are at
+some station. So the amodal target and the visible one come apart on ordinary
+tables and not only on crowded ones, which is a larger claim for this solution
+than crowding alone would support, and it is bounded by the open question above.
 
 ## The main idea
 
@@ -737,8 +818,11 @@ is not a result.
 the solution, and it repairs the one failure in this project that is quiet. A
 truncated mask gives a footprint too small and displaced, with a plausible width
 and a small fit error, so every check passes. A completed mask gives the right
-footprint, and because partial hiding is the normal case for this kind, that is
-a common failure repaired rather than a rare one.
+footprint. A neighbour in the way is uncommon; the edge of the picture is not,
+and most glasses have no station that returns a whole footprint, so the failure
+being repaired is ordinary rather than rare. What is not yet shown is that
+completion reaches the second of those causes, because a mask has no room for
+the part of a glass that fell outside the frame.
 
 **It costs almost nothing over solution 9.** The architecture, the starting
 weights, the training pictures and the arithmetic downstream are all the same;
@@ -897,8 +981,11 @@ down to a single trade.
 covered. Solution 9's masks are modal, so a partly covered glass gives it a
 crescent, and the circle fitted to a crescent is too small and in the wrong
 place with a plausible width and a small fit error. That is the quiet failure
-this document is about, and because partial covering is the normal case for this
-kind, solution 9 meets it often while this solution does not.
+this document is about. Covering by a neighbour is uncommon, so solution 9 meets
+that on crowded layouts rather than on every table; truncation by the edge of
+the picture it meets on nearly every table, because most glasses have no station
+that returns a whole footprint. Nothing in its output says which of the two it
+has just handed on.
 
 **What the change costs** is four things, and solution 9 pays none of them. The
 reported footprint is partly a prediction, so it may aim a camera and not set a

@@ -661,18 +661,20 @@ contributes the masks those three argue from, and none of the argument.
 ### The partly hidden case, which is different
 
 Complete hiding is the extreme of a range, and the rest of that range is
-ordinary rather than rare, because the kind here runs from a small tapered glass
-to a much larger one. A crescent of a glass is a region, so SAM may well propose
-it, and the proposal will be a good outline of exactly the crescent. The keeper
-then sees a footprint fitted to a sliver: a width smaller than the kind allows,
-or a fit error larger than a round footprint gives, or both. So its answer is
-neither keep nor drop but the middle band, which means take another picture: the
-arm looks from the side, across the line joining the crescent to the glass in
-front of it, and from there the glass is not hidden. That is workable and it is
-not the best answer available in this project. [Solution
-10](10-amodal-masks-for-the-hidden-part.md) is built for exactly this case,
-because it predicts a glass's whole footprint rather than the part the camera
-can see, and [solution
+reached at the gap the cell guarantees, because the kind here runs from a small
+tapered glass to a much larger one. It is uncommon rather than ordinary, and it
+wants a crowded line of glasses rather than any table of this kind.
+
+A crescent of a glass is a region, so SAM may well propose it, and the proposal
+will be a good outline of exactly the crescent. The keeper then sees a footprint
+fitted to a sliver: a width smaller than the kind allows, or a fit error larger
+than a round footprint gives, or both. So its answer is neither keep nor drop
+but the middle band, which means take another picture: the arm looks from the
+side, across the line joining the crescent to the glass in front of it, and from
+there the glass is not hidden. That is workable and it is not the best answer
+available in this project. [Solution 10](10-amodal-masks-for-the-hidden-part.md)
+is built for exactly this case, because it predicts a glass's whole footprint
+rather than the part the camera can see, and [solution
 6](06-a-network-trained-from-scratch.md#when-the-glasses-are-completely-hidden)
 handles it by having every surviving pixel vote for its own glass's centre. This
 solution notices a crescent and asks for another look, which costs arm time that

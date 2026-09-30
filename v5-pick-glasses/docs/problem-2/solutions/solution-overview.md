@@ -63,6 +63,36 @@ of them produces it in this cell.
   apart hide each other as completely as two 150 mm apart, and the one that goes
   is the further one, whatever its height.
 
+How often that happens has a measured answer, and it is worth recording, because
+it is an easy thing to overstate. Complete covering is **possible at the
+guaranteed gap between centres**, and an arrangement that produces it can be
+written down. It is **uncommon in the layouts the cell spawns** rather than the
+normal case: across a sweep of spawned scenes of the tapered kind, surveyed at
+the cell's own height from the three stations the cell computes, only a small
+share of glasses lose any pixels at all to a neighbour, a smaller share again
+lose every pixel at one station, and none loses them at more than one. And none
+of it arises at the height
+[`problem-2-sim`](../../../problem-2-sim/README.md) renders its top view from,
+which is higher than the cell's own survey height and holds the whole zone in
+one frame, because the higher the camera the less splay throws each outline.
+That is why a run of either pipeline below never meets this case, and why the
+answer to it has to be argued from the geometry rather than from a failure
+somebody has watched happen. It stays the worst of the three difficulties
+because nothing in the data can flag it.
+
+Being seen in *part* is a different matter, and the same sweep settles it the
+other way about. **Nearly every glass is cut by the edge of the picture at one
+station or another, and most glasses have no station at all that returns a whole
+footprint**; roughly one in six have exactly one. So a circle fitted at a single
+station usually rests on an arc rather than on a whole disc, and an arc gives a
+footprint too small and displaced, with a width the kind allows and a small
+residual, which nothing in one picture objects to. That is why [asking the
+stations to
+agree](programmed/02-cluster-on-the-table.md#asking-the-stations-to-agree) is
+load-bearing, and why [amodal masks for the hidden
+part](learned/10-amodal-masks-for-the-hidden-part.md) repairs an ordinary
+failure rather than a rare one.
+
 Every solution document ends with a section called "when the glasses are
 completely hidden". They do not agree, and the disagreement is the useful part.
 

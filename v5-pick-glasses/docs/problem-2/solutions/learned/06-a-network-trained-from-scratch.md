@@ -927,8 +927,10 @@ and they do not have to be joined to each other, or to make a recognisable
 shape, or to lie on any particular part of the glass.
 
 A large glass standing in front of a small one hides much more of it than a
-glass of its own size would, so partly hidden glasses are the normal case here
-rather than the exception. That is the case voting is unusually good at, and it
+glass of its own size would, so a glass can be left with only a crescent of
+itself in the picture, at the gap the cell guarantees. That is uncommon rather
+than the normal case — it wants a crowded line of glasses running out from the
+point below the camera — and it is the case voting is unusually good at, so it
 is worth putting a number on how good.
 
 **The arithmetic needs very few votes.** A vote is the pixel's own place on the
@@ -1245,8 +1247,9 @@ does not care.
 **It is unusually good at partly hidden glasses.** A crescent of surviving
 pixels still votes towards the right centre, and the votes do not have to be
 joined to each other or to make a recognisable shape. Because one kind spans a
-small tapered glass to a large one, partly hidden glasses are the normal case
-here rather than the exception, which is exactly the case voting handles best.
+small tapered glass to a large one, a glass can be left with only a crescent of
+itself even at the gap the cell guarantees, which is uncommon rather than the
+normal case and is exactly the case voting handles best.
 
 **It is blind to a glass that is hidden completely.** No pixels means no votes,
 which means no pile, no spread and no short count. This is a fact about the

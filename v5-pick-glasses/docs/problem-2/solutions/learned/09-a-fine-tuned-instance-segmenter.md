@@ -739,14 +739,16 @@ handles both views with one model, because the feature pyramid lets the same
 weights describe a glass that is small from the top and large from the side.
 
 **Its masks stop where the visible pixels stop.** A glass partly covered by
-another gets a mask of only the part the camera can see, and this is the
-weakness that matters most in practice, because one kind spans a small tapered
-glass to a large one and partly hidden glasses are therefore the normal case. A
-mask cut short back-projects to an arc rather than a full footprint, so the
-fitted circle comes out too small and in the wrong place — and it can still be a
-width this kind allows, with a small fit error, so the check meant to catch a
-bad measurement passes it. That is a quiet failure, and it is what [amodal masks
-for the hidden part](10-amodal-masks-for-the-hidden-part.md) exists to fix.
+another gets a mask of only the part the camera can see. Because one kind spans
+a small tapered glass to a large one, a tall glass's splayed outline can take a
+bite out of a short one at the gap the cell guarantees, which is uncommon rather
+than the normal case and wants a crowded line of glasses. It is still the
+weakness that matters most, because of what the run does with it. A mask cut
+short back-projects to an arc rather than a full footprint, so the fitted circle
+comes out too small and in the wrong place — and it can still be a width this
+kind allows, with a small fit error, so the check meant to catch a bad
+measurement passes it. That is a quiet failure, and it is what [amodal masks for
+the hidden part](10-amodal-masks-for-the-hidden-part.md) exists to fix.
 
 **It is blind to a glass hidden completely.** No pixels means no proposal, which
 means no entry, no low score and nothing to check. That is a fact about the
