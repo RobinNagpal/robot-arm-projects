@@ -4,7 +4,7 @@
 
 This document collects four learned approaches to problem 2 that were considered
 and then set aside, and it explains what each one is and why it was set aside.
-They were originally part of [`solution-overview.md`](solution-overview.md) and
+They were originally part of [`solution-overview.md`](../solution-overview.md) and
 were moved here because none of them can be built and trained inside this
 project's simulation alone. By the end you will understand what each approach
 does, the idea behind it that is worth knowing even if it is never built, and
@@ -233,7 +233,7 @@ Until then, the gate should stay shut.
 > real photographs. And on this machine, a fine-tune that takes an hour on a
 > rented graphics card takes most of a day. *A version trained from a random
 > start on renders alone does fit the budget, and it is in the main overview as
-> [solution 7](07-a-segmenter-trained-from-scratch.md).*
+> [solution 6](06-a-network-trained-from-scratch.md).*
 
 *Learned, as the decider. Show a network a few thousand labelled pictures and
 let it learn to outline each object separately.*
@@ -603,7 +603,7 @@ a small one completely, there are no visible pixels of the small glass, so there
 is no partial evidence to extend and nothing for the model to work from.
 Complete occlusion is not an amodal problem; it is a geometry problem, and the
 argument about where an object could have been hiding — in [solution
-2](02-cluster-on-the-table.md) — is what answers it. Predicting hidden extents
+2](../programmed/02-cluster-on-the-table.md) — is what answers it. Predicting hidden extents
 handles the large middle ground between fully visible and entirely absent, which
 is exactly where most of this problem now lives.
 
@@ -617,7 +617,7 @@ is exactly where most of this problem now lives.
 > on a graphics card with thousands of worlds at once — is exactly what this
 > machine cannot do. *A supervised version of the same idea, which predicts
 > whether a viewpoint will pay off rather than learning a policy, does fit, and it
-> is in the main overview as [solution 6](06-learn-which-viewpoints-pay-off.md).*
+> is in the main overview as [solution 4](04-choosing-the-next-look.md).*
 
 *Learned, as the decider, and a closed loop by construction. A policy takes the
 current belief about the table and outputs where to point the camera next.*

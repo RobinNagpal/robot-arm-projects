@@ -4,7 +4,7 @@
 could be hiding. It cannot say whether one probably is. Learn that one decision,
 from numbers the geometry has already worked out.*
 
-> **The cell is described once, in [the cell](../../the-cell.md)** — the layout,
+> **The cell is described once, in [the cell](../../../the-cell.md)** — the layout,
 > the two places the camera works from, from the top and from the side, all four
 > sensors, and the words this project uses them with. What follows is only what
 > is specific to this solution.
@@ -34,7 +34,7 @@ matters.
 Start from what the programmed side produces, because this solution takes its
 input from there and adds nothing to the perception.
 
-[Solution 2](02-cluster-on-the-table.md) places every object the pictures
+[Solution 2](../programmed/02-cluster-on-the-table.md) places every object the pictures
 contain, and then does something less obvious: it works out which parts of the
 table **could not have been seen**. Because the objects that were found have
 known positions, widths and heights, the region each one hides is computable.
@@ -298,7 +298,7 @@ The objects in this cell are drinking glasses, and this section says glass
 rather than object throughout, because every number in it was measured on one of
 the project's own glass shapes rather than reasoned about in the abstract.
 
-The two places are set out in full in [the cell](../../the-cell.md). The survey
+The two places are set out in full in [the cell](../../../the-cell.md). The survey
 view is the camera 450 mm above the table looking straight down, which is what
 finds the glasses in the first place. The level view is the camera 120 mm above
 the table, standing 380 mm back from one glass and looking level at it, which is
@@ -320,7 +320,7 @@ about the nadir by a factor
 and both the slice's distance from the nadir and its radius are multiplied by
 it. At H = 450 mm a slice 225 mm up has k = 2.0, so it appears twice as far from
 the nadir as it really is and twice as wide. This project calls that outward
-throw splay, and [solution 2](02-cluster-on-the-table.md) works through its
+throw splay, and [solution 2](../programmed/02-cluster-on-the-table.md) works through its
 consequences for the geometry.
 
 Splay is what lets one glass reach over another, and the reaching is worth
@@ -388,7 +388,7 @@ case does not have it.
 ![Looking straight down: the tall glass swallows the short one, the survey hands
 back one group of one legal width, and the patch left over has a wedge, a reach
 and an area that were all read off the
-picture](../../../images/problem-2/05-hidden-from-above.png)
+picture](../../../../images/problem-2/05-hidden-from-above.png)
 
 ### When the camera is looking level
 
@@ -474,7 +474,7 @@ whole are the ones that must not be dropped for looking weak on average.
 ![Looking level: the picture with both glasses standing and the picture with the
 far one taken away are the same picture, and the strip of table the verifier is
 handed was computed entirely from what was already
-known](../../../images/problem-2/05-hidden-from-the-side.png)
+known](../../../../images/problem-2/05-hidden-from-the-side.png)
 
 ## A worked example
 

@@ -3,7 +3,7 @@
 *Programmed, and a loop. Instead of working harder on the pictures you happen to
 have, go and take better ones. Choose where to stand with a rule you can print.*
 
-> **The cell is described once, in [the cell](../../the-cell.md)** — the layout,
+> **The cell is described once, in [the cell](../../../the-cell.md)** — the layout,
 > the two places the camera works from, from the top and from the side, all four
 > sensors, and the words this project uses them with. What follows is only what
 > is specific to this solution.
@@ -38,7 +38,7 @@ table for each of them, and an honest list of the ones that could not be
 separated. It names two difficulties, and the point worth pressing is that these
 really are **two** difficulties, and not one problem wearing two hats.
 
-![The two difficulties](../../../images/problem-2/03-two-difficulties.png)
+![The two difficulties](../../../../images/problem-2/03-two-difficulties.png)
 
 ### The first difficulty is the merge
 
@@ -156,7 +156,7 @@ coarse map of what is standing where. This solution then runs only on the
 doubtful entries in that map. So it is the tail of the survey rather than a
 replacement for it.
 
-![The fixed sweep](../../../images/problem-2/03-the-fixed-sweep.png)
+![The fixed sweep](../../../../images/problem-2/03-the-fixed-sweep.png)
 
 The survey works from the top. The camera works out from its own lens how much
 table one picture covers at the height it is flying at, and then as few stations
@@ -258,7 +258,7 @@ This is the test people expect to be difficult, and it is not, because of one
 gift this problem hands over free: **every object's footprint is a circle of
 known size, standing on a known plane.**
 
-![Occlusion as geometry](../../../images/problem-2/03-occlusion-as-geometry.png)
+![Occlusion as geometry](../../../../images/problem-2/03-occlusion-as-geometry.png)
 
 From a camera at a given place, each object fills a certain angle of the frame,
 and that angle grows with the object's width and shrinks with its distance. Two
@@ -326,7 +326,7 @@ can fail for reasons no formula predicts, which is why it goes last.
 The order of those three tests is not a detail of the implementation. It is the
 design.
 
-![Bound, then score](../../../images/problem-2/03-bound-then-score.png)
+![Bound, then score](../../../../images/problem-2/03-bound-then-score.png)
 
 On the left of that picture is the order this solution uses. List every
 candidate, drop the ones out of reach, drop the ones whose view is blocked, sort
@@ -553,7 +553,7 @@ provides. It needs somewhere to go that might help, which the filtered candidate
 directions provide — and if the filter returns nothing at all, then that fact is
 itself the answer. And it needs a **budget**, because otherwise it never stops.
 
-![The budget](../../../images/problem-2/03-the-budget.png)
+![The budget](../../../../images/problem-2/03-the-budget.png)
 
 The budget is easier to reason about with the right unit, and the natural unit
 here is one **station-equivalent**: one plan, one move, one settle, and the pair
@@ -635,7 +635,7 @@ Noticing that one might be there belongs to solution 2, whose arithmetic is the
 only thing in the project that can make a claim about a glass that produced no
 pixels. Going to look belongs here, through the covering step. And a patch that
 no reachable viewpoint covers is reported rather than guessed at, which is the
-same handover to [problem 3](../../problem-3/problem.md) that the rest of this
+same handover to [problem 3](../../../problem-3/problem.md) that the rest of this
 document ends in.
 
 The two places the camera works from produce complete hiding in two quite
@@ -673,7 +673,7 @@ all, and that is the lever this solution pulls.
 
 ![The same two glasses from each of the three survey stations: swallowed whole
 from the first nadir, a crescent from the second, nearly all of it from the
-third](../../../images/problem-2/03-hidden-from-above.png)
+third](../../../../images/problem-2/03-hidden-from-above.png)
 
 Every silhouette in that picture is a real projection of one of the project's
 own glass outlines through the cell's own camera, so the pixel counts on it are
@@ -741,7 +741,7 @@ of it.
 
 ![A glass hidden behind another in the measuring view, the step round that
 brings it back, and what a short glass in front still costs a tall one
-behind](../../../images/problem-2/03-hidden-from-the-side.png)
+behind](../../../../images/problem-2/03-hidden-from-the-side.png)
 
 The first two pictures are the same two glasses as before, 300 mm apart, with
 the camera at its standoff from the near one. In line with the pair, the far
@@ -799,7 +799,7 @@ which again is the hardest case.
 
 ### Object A, which has a viewpoint
 
-![The three tests on one plan view](../../../images/problem-2/03-three-tests.png)
+![The three tests on one plan view](../../../../images/problem-2/03-three-tests.png)
 
 The ring in the left panel is every direction round A, each one a place the
 camera could stand at the standoff, coloured by what it fails. Grey marks the
@@ -846,7 +846,7 @@ not the geometry, that decided the outcome.
 
 ### Object E, which has none
 
-![No usable viewpoint](../../../images/problem-2/03-no-viewpoint.png)
+![No usable viewpoint](../../../../images/problem-2/03-no-viewpoint.png)
 
 The left panel is object E. Some of its directions fall outside the arm's reach,
 the rest are blocked by neighbours, and none survives. So on the coarse ring the
@@ -883,7 +883,7 @@ the base with four neighbours round it, and its ring has **no clear direction at
 all**, at any fineness whatsoever. No ring helps, because the wedges its
 neighbours cast cover the whole circle between them. Something has to move.
 
-That is the handover to [problem 3](../../problem-3/problem.md), and it is a
+That is the handover to [problem 3](../../../problem-3/problem.md), and it is a
 result rather than an error. The right output is the object, the reason, and a
 stop, and never an attempt made anyway. This is the rule the whole project runs
 on: a refused object is a result, and a fallback that has the arm try regardless
@@ -1032,7 +1032,7 @@ an error.
 
 This method is the right choice when a viewpoint is cheap to score and expensive
 to visit, and when the doubt has a name you can state. Both of those stop being
-true at [problem 4](../../problem-4/problem.md), where a score based on unknown
+true at [problem 4](../../../problem-4/problem.md), where a score based on unknown
 volume starts to earn its weight. The order to build it in is the filter first,
 with a fine ring, because that is a page of arithmetic and it captures most of
 the benefit, and then the loop afterwards.

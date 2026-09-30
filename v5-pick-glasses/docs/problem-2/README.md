@@ -13,35 +13,41 @@ sensors and the vocabulary — is described once in [the cell](../the-cell.md).
 - [**The problem**](problem.md) — what is on the table, what is asked for, the
   three difficulties, and what "done" means.
 - [**Solution overview**](solutions/solution-overview.md) — the way into the
-  nine solutions. It covers what they share: what each does about a glass
+  seven solutions. It covers what they share: what each does about a glass
   nobody saw, the vocabulary, where a learned part can sit in a pipeline, and
   what it means for a machine to choose its own next measurement instead of
-  taking a fixed number of pictures. Then a one-line table of the nine, what
+  taking a fixed number of pictures. Then a one-line table of the seven, what
   was built, and where that can fail.
-- **The nine solutions in full**, one document each in
-  [`solutions/`](solutions/). Each is written from the beginning, with diagrams,
-  and each ends with **the general methods behind it** — the named, published
-  techniques it is built from, with an honest note on where each one is normally
-  the right tool and where it is not.
+- **The seven solutions in full**, one document each, split by whether they
+  contain a trained model. The three in [`solutions/programmed/`](solutions/programmed/)
+  are rules somebody wrote down. The four in [`solutions/learned/`](solutions/learned/)
+  all have numbers fitted to examples somewhere inside them, whether the fitted
+  part decides the answer or only puts candidates in order. Each document is
+  written from the beginning, with diagrams, and each ends with **the general
+  methods behind it** — the named, published techniques it is built from, with an
+  honest note on where each one is normally the right tool and where it is not.
 
   | | Solution | Family | Built |
   |---|---|---|---|
-  | 1 | [Split the blob in the picture](solutions/01-split-the-blob-in-the-picture.md) | programmed | |
-  | 2 | [Cluster on the table](solutions/02-cluster-on-the-table.md) | programmed | the finding step of [`problem-2-programmed`](../../problem-2-programmed/README.md) |
-  | 3 | [Move the camera](solutions/03-move-the-camera.md) | programmed | its veto tests, in both pipelines |
-  | 4 | [Learned doubt steers the next picture](solutions/04-learned-doubt-steers-the-next-picture.md) | hybrid | |
-  | 5 | [Is anything hiding there?](solutions/05-is-anything-hiding-there.md) | hybrid | |
-  | 6 | [Learn which viewpoints pay off](solutions/06-learn-which-viewpoints-pay-off.md) | hybrid | |
-  | 7 | [A segmenter trained from scratch](solutions/07-a-segmenter-trained-from-scratch.md) | learned | |
-  | 8 | [Per-pixel votes for the centre](solutions/08-per-pixel-votes-for-the-centre.md) | learned | the finding step of [`problem-2-learned`](../../problem-2-learned/README.md), the pipeline taken forward |
-  | 9 | [Self-supervised from the arm's own movement](solutions/09-self-supervised-from-the-arms-own-movement.md) | learned | |
+  | 1 | [Split the blob in the picture](solutions/programmed/01-split-the-blob-in-the-picture.md) | programmed | |
+  | 2 | [Cluster on the table](solutions/programmed/02-cluster-on-the-table.md) | programmed | the finding step of [`problem-2-programmed`](../../problem-2-programmed/README.md) |
+  | 3 | [Move the camera](solutions/programmed/03-move-the-camera.md) | programmed | its veto tests, in both pipelines |
+  | 4 | [Choosing the next look](solutions/learned/04-choosing-the-next-look.md) | hybrid | the Ranker in [`problem-2-learned`](../../problem-2-learned/README.md) |
+  | 5 | [Is anything hiding there?](solutions/learned/05-is-anything-hiding-there.md) | hybrid | |
+  | 6 | [A network trained from scratch](solutions/learned/06-a-network-trained-from-scratch.md) | learned | the finding step of [`problem-2-learned`](../../problem-2-learned/README.md), the pipeline taken forward |
+  | 7 | [Self-supervised from the arm's own movement](solutions/learned/07-self-supervised-from-the-arms-own-movement.md) | learned | |
+
+Two of these were written as two documents each and then joined, because in both
+cases the second was not a different method but the same method with one part
+changed. Solution 4 was two ways of ordering the same candidates, and solution 6
+was two output heads on one network.
 
 - [**The ones that need more than a
-  simulator**](solutions/learned-with-hardware.md) — four good answers that were
-  moved out, each with the condition it fails: a promptable foundation model, a
-  fine-tuned instance segmenter, amodal masks with learned association, and an
-  active-vision policy. None of them needs a different algorithm to become
-  usable. They need a graphics card, or a real camera.
+  simulator**](solutions/learned/learned-with-hardware.md) — four good answers
+  that were moved out, each with the condition it fails: a promptable foundation
+  model, a fine-tuned instance segmenter, amodal masks with learned association,
+  and an active-vision policy. None of them needs a different algorithm to
+  become usable. They need a graphics card, or a real camera.
 
 ## The short version
 
@@ -79,8 +85,8 @@ it.
 not from the geometry. The clear arcs around a typical glass are mostly narrower
 than the step between two directions the arm currently tries, so refining that
 step turns a large share of those reports back into ordinary viewpoints, and it
-costs arithmetic and nothing else. [Solution 3](solutions/03-move-the-camera.md)
-has the working.
+costs arithmetic and nothing else. [Solution
+3](solutions/programmed/03-move-the-camera.md) has the working.
 
 **And a second finding, from the other end.** Because the outline of a found
 glass is thrown outwards by an amount that can be computed exactly, the region
@@ -88,12 +94,12 @@ of table it could have been hiding can be computed too. So the question that
 looks unanswerable — *is a glass missing?* — becomes one that is answerable:
 *where could a glass have been hiding, and is that region big enough to hold the
 smallest glass of the kind?* That turns silence into a finite list of places to
-go and look at, and it is the second half of
-[solution 2](solutions/02-cluster-on-the-table.md).
+go and look at, and it is the second half of [solution
+2](solutions/programmed/02-cluster-on-the-table.md).
 
 ## Where it sits
 
-← [Problem 1 — one glass, start to finish](../problem-1)
-→ [Problem 3 — glasses standing too close](../problem-3)
+← [Problem 1 — one glass, start to finish](../problem-1) → [Problem 3 — glasses
+standing too close](../problem-3)
 
 [The five problems](../README.md) has the map.

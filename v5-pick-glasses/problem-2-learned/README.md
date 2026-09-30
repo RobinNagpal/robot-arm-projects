@@ -20,7 +20,7 @@ picture-to-shape step from examples, and nobody wrote a correction.
 Each glass pixel points at the middle of its own glass, and the votes are
 counted. No boundary has to be found, so no boundary can be got wrong. A glass
 that is partly hidden still votes for the right middle from what shows of it.
-This is [solution 8](../docs/problem-2/solutions/08-per-pixel-votes-for-the-centre.md),
+This is [solution 6](../docs/problem-2/solutions/learned/06-a-network-trained-from-scratch.md),
 the one the solution overview names for the day glasses are allowed to touch.
 
 **The learned parts sit where a mistake is cheap.**

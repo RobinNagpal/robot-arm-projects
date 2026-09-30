@@ -58,7 +58,7 @@ afterwards can only be wrong about a thing that has already happened. The worst
 a wrong verdict costs here is a few seconds of arm movement, or a run stopped
 when it need not have been.
 
-[Problem 2's solution 5](../../problem-2/solutions/05-is-anything-hiding-there.md)
+[Problem 2's solution 5](../../problem-2/solutions/learned/05-is-anything-hiding-there.md)
 uses the same pattern on a different question, and the two documents mean the
 same thing by the word. There the geometry works out where an object could be
 hiding and the verifier says whether one probably is. Here the geometry works
@@ -466,7 +466,7 @@ The fourth answer is the one this solution is really for. The verdict is
 **uncertain** when the largest of the three probabilities falls below a bar, or
 when the top two are close together. The model is then saying **"I cannot tell"**,
 and that means exactly what it means in [problem 2's
-verifier](../../problem-2/solutions/05-is-anything-hiding-there.md): the evidence
+verifier](../../problem-2/solutions/learned/05-is-anything-hiding-there.md): the evidence
 available does not settle the question, and another measurement is the only way
 forward.
 
@@ -531,7 +531,7 @@ background rather than against the table.
 **The direction.** The arm can stand anywhere on a circle round the glass. Score
 the poses at working range by how many other glasses lie in the line of sight,
 and take the clearest one the arm can comfortably reach. This is the same choice
-[solution 3 of problem 2](../../problem-2/solutions/03-move-the-camera.md) makes
+[solution 3 of problem 2](../../problem-2/solutions/programmed/03-move-the-camera.md) makes
 for measuring a glass, and the same arithmetic serves.
 
 **A second direction, if needed.** A glass that fell straight towards the camera

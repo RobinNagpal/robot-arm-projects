@@ -3,7 +3,7 @@
 *Programmed. Use the picture the camera already took. When one group of pixels
 is too wide to be a single glass, cut it into two.*
 
-> **The cell is described once, in [the cell](../../the-cell.md)** — the layout,
+> **The cell is described once, in [the cell](../../../the-cell.md)** — the layout,
 > the two places the camera works from, from the top and from the side, all four
 > sensors, and the words this project uses them with. What follows is only what
 > is specific to this solution.
@@ -57,7 +57,7 @@ The next question is *when* two glasses overlap in a photograph, and the first
 answer most people give is wrong. It matters a great deal, because the answer
 tells us which camera position this method belongs to.
 
-![Where the overlap actually is](../../../images/problem-2/01-where-the-overlap-is.png)
+![Where the overlap actually is](../../../../images/problem-2/01-where-the-overlap-is.png)
 
 The camera in this cell works from two quite different positions, and this
 project names them **from the top** and **from the side**. From the top, the arm
@@ -78,7 +78,7 @@ them, and seen from straight above that strip must be visible.
 The hidden assumption in it is that the glasses are all of a similar size.
 Inside this kind they are not, and here is what that does.
 
-![Where the overlap actually is](../../../images/problem-2/01-where-the-overlap-is.png)
+![Where the overlap actually is](../../../../images/problem-2/01-where-the-overlap-is.png)
 
 From the top, a glass's outline is not drawn over the glass. The rim is nearer
 the lens than the table is, so it is drawn larger and further out from the
@@ -93,7 +93,7 @@ that does to this method is different in kind from a merge, and it is the
 subject of [when the glasses are completely
 hidden](#when-the-glasses-are-completely-hidden) below.
 
-![Why the survey cannot produce the case](../../../images/problem-2/01-the-survey-cannot-see-it.png)
+![Why the survey cannot produce the case](../../../../images/problem-2/01-the-survey-cannot-see-it.png)
 
 There is a second effect with the same cause, and in practice the two arrive
 together. The camera sees through a cone spreading out from the lens, so the
@@ -140,7 +140,7 @@ reasoning about this problem is built on it. The picture shows two round
 footprints overlapping each other. No camera in this cell ever sees such a
 thing.
 
-![A standing glass is not a circle](../../../images/problem-2/01-a-glass-is-not-a-circle.png)
+![A standing glass is not a circle](../../../../images/problem-2/01-a-glass-is-not-a-circle.png)
 
 A glass is a circle only when you look straight at the ring it makes on the
 table, and no camera here ever gets that view. From the top, the rim is already
@@ -173,7 +173,7 @@ step, so it is worth saying slowly: how far below the horizon a base is drawn
 depends on one thing only, which is how far away that glass is. Nothing else
 enters into it.
 
-![Further away means higher up](../../../images/problem-2/01-bases-sit-higher.png)
+![Further away means higher up](../../../../images/problem-2/01-bases-sit-higher.png)
 
 You already know this effect from photographs of roads. The near edge of a road
 sits low in the picture and the far edge sits higher up, closer to the horizon,
@@ -210,7 +210,7 @@ ideas used in order, and each one depends on the one before it.
 
 The first idea is the cheapest, and its only job is to notice trouble.
 
-![The blob, and what flags it](../../../images/problem-2/01-the-blob.png)
+![The blob, and what flags it](../../../../images/problem-2/01-the-blob.png)
 
 Because this problem tells us which kind of glass is on the table, we know
 before the run even starts the widest that any single glass of that kind can
@@ -268,7 +268,7 @@ the same, give or take a pixel. Each such flat stretch is a place where
 something is standing on the table, because contact with a flat table at a fixed
 distance draws a flat line at a fixed height in the picture.
 
-![The test itself](../../../images/problem-2/01-contact-runs.png)
+![The test itself](../../../../images/problem-2/01-contact-runs.png)
 
 Short stretches are thrown away. They are the steep sides of a glass, where the
 lowest yes pixel is really a piece of the side wall rather than the place where
@@ -348,7 +348,7 @@ jumps up suddenly, call that jump the place where the near glass ends and the
 far one begins. On merged pairs this works nearly every time, which is exactly
 why it is tempting.
 
-![The control](../../../images/problem-2/01-the-control.png)
+![The control](../../../../images/problem-2/01-the-control.png)
 
 Then run the same test on one glass standing entirely alone. Take a wine glass,
 whose bowl is wider than its foot, so the bowl hangs out over the foot on both
@@ -447,7 +447,7 @@ the factor is
 
 > *k* = *H* / (*H* − *z*)
 
-which is the ratio [the cell](../../the-cell.md) derives for how far out a glass
+which is the ratio [the cell](../../../the-cell.md) derives for how far out a glass
 is reported to be, applied here one slice at a time. The scaling moves the
 slice's centre away from the point under the camera and makes its radius larger,
 both by the same *k*. At the rim of a 225 mm glass, *k* is 450 / (450 − 225),
@@ -460,7 +460,7 @@ When the splayed outline of a tall glass contains the whole splayed outline of a
 shorter one, the shorter one contributes no pixels at all. What comes back is
 one patch, belonging to the tall glass, of an entirely legal width.
 
-![A tall glass covering a short one in the survey picture, and the same two glasses turned a quarter turn, where it does not](../../../images/problem-2/01-hidden-from-above.png)
+![A tall glass covering a short one in the survey picture, and the same two glasses turned a quarter turn, where it does not](../../../../images/problem-2/01-hidden-from-above.png)
 
 Here is one arrangement that does it. Both glasses are of the same tapered kind
 and both sizes are inside the range that kind allows. The tall one is 225 mm
@@ -523,7 +523,7 @@ disappears is settled by which one is nearer, and not by which one is taller.
 And because the near glass is nearer, it is drawn larger, so a short glass in
 front can cover the lower part of a tall glass behind it.
 
-![Two glasses in line with the level camera: the near one's outline covers the far one whatever their heights](../../../images/problem-2/01-hidden-from-the-side.png)
+![Two glasses in line with the level camera: the near one's outline covers the far one whatever their heights](../../../../images/problem-2/01-hidden-from-the-side.png)
 
 Take the first case. A 225 mm glass stands 380 mm from the camera, and another
 of the same height stands 300 mm behind it, directly in line. None of the far
@@ -614,7 +614,7 @@ or coins on a scanner, this is the right answer.
 Here it is the wrong answer, and it fails for a structural reason rather than
 because some number needs adjusting.
 
-![Why the distance transform cannot help](../../../images/problem-2/01-the-distance-transform-fails.png)
+![Why the distance transform cannot help](../../../../images/problem-2/01-the-distance-transform-fails.png)
 
 In a short, round object, the deepest point is a single peak in the middle. Two
 such objects give two peaks, and the wall lands neatly between them. A standing
@@ -684,7 +684,7 @@ because the beam passes through the glass instead of bouncing back, so every
 method that groups points in three dimensions stops working while this one
 carries on.
 
-![Where it works and where it cannot](../../../images/problem-2/01-where-it-works.png)
+![Where it works and where it cannot](../../../../images/problem-2/01-where-it-works.png)
 
 The weaknesses divide into one real limit and several assumptions.
 
@@ -697,7 +697,7 @@ nothing in the middle to tune, because the underlying question is not a matter
 of degree: either some part of the far glass's base is visible, or none of it
 is.
 
-![What a split does not buy](../../../images/problem-2/01-what-it-does-not-buy.png)
+![What a split does not buy](../../../../images/problem-2/01-what-it-does-not-buy.png)
 
 That limit cannot be closed by better processing. When the far glass stands
 almost exactly behind the near one, its base is hidden, and no amount of work on
@@ -761,5 +761,5 @@ in different situations from the methods that reason about distance, and two
 methods that fail differently agreeing with each other is worth more than either
 of them alone.
 
-← [Solution overview](solution-overview.md) ·
+← [Solution overview](../solution-overview.md) ·
 → [Solution 2 — cluster on the table](02-cluster-on-the-table.md)

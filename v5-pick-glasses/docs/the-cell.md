@@ -119,7 +119,7 @@ that shapes most of these solutions. It means the arm chooses its own
 viewpoints. It means moving the camera costs seconds of arm time. And it means
 the camera's pose is known exactly, from the joint encoders — which is what
 makes [solution
-9](problem-2/solutions/09-self-supervised-from-the-arms-own-movement.md)
+7](problem-2/solutions/learned/07-self-supervised-from-the-arms-own-movement.md)
 possible at all.
 
 ## Where the camera stands, and what each place is called
@@ -158,7 +158,7 @@ middle of the rack.
 
 **The level view.** The camera comes down to 120 mm above the table, points
 level, and stands 380 mm back from the glass. This is the view that measures a
-glass, and the view [solution 3](problem-2/solutions/03-move-the-camera.md)
+glass, and the view [solution 3](problem-2/solutions/programmed/03-move-the-camera.md)
 sends the camera to.
 
 The 380 mm is worked out, not stored. The frame has to reach from the table at
@@ -298,9 +298,9 @@ Two different quantities get called by the same name:
   45–105 mm across.
 
 Most of these documents mean the second, because that is what
-[clustering on the table](problem-2/solutions/02-cluster-on-the-table.md) groups
+[clustering on the table](problem-2/solutions/programmed/02-cluster-on-the-table.md) groups
 and what a circle is fitted to, and it is also what limits how close two glasses
-can stand. [Solution 1](problem-2/solutions/01-split-the-blob-in-the-picture.md)
+can stand. [Solution 1](problem-2/solutions/programmed/01-split-the-blob-in-the-picture.md)
 is the exception: its contact runs read the first. Where a number matters, the
 documents say which they mean.
 

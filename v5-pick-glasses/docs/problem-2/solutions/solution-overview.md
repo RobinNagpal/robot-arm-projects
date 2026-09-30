@@ -3,14 +3,14 @@
 ## Introduction
 
 [The problem](../problem.md) says what is asked for and why it is hard. This
-document is the way into the nine solutions. It covers what they share: what
+document is the way into the seven solutions. It covers what they share: what
 each does about a glass nobody saw, the few words they use, where a learned part
 can sit, what it means to choose the next measurement, and the rule every one of
 them had to pass. It ends with what was built, and where that can fail.
 
-Each solution has a full document of its own, and this one does not repeat
-them. The table of [the nine](#the-nine) says in one line what each is and which
-difficulty it attacks.
+Each solution has a full document of its own, and this one does not repeat them.
+The table of [the seven](#the-seven-in-two-folders) says in one line what each
+is and which difficulty it attacks.
 
 > **The cell is described once, in [the cell](../../the-cell.md)** — the layout,
 > the two places the camera works from, from the top and from the side, all four
@@ -21,10 +21,10 @@ difficulty it attacks.
 Four to six opaque glasses of one kind stand on the table. The kind is tapered
 and its range of sizes is wide, and the glasses stand at least 150 mm apart
 between centres, which leaves a narrow strip of bare table between any two rims.
-The arm has to produce a set of pixels, a place and a rough width for each glass,
-and two honest statements: which glasses it could not separate, and where it
-could not have seen a glass at all. It does not pick anything up and it does not
-measure a shape.
+The arm has to produce a set of pixels, a place and a rough width for each
+glass, and two honest statements: which glasses it could not separate, and where
+it could not have seen a glass at all. It does not pick anything up and it does
+not measure a shape.
 
 [The problem](../problem.md#the-three-difficulties) sets out the three
 difficulties: a glass can be missing from a picture altogether, glasses merge in
@@ -42,21 +42,22 @@ can describe into things you can compute.
 ## When a glass is completely hidden
 
 This is the worst of the three difficulties, because **every check in this
-project is a check on something that was found**. A width can be compared against
-what the kind allows, a fitted circle has a residual, and a group can be asked
-how many stations saw it. A glass that produced no pixels gives none of them
-anything to fire on.
+project is a check on something that was found**. A width can be compared
+against what the kind allows, a fitted circle has a residual, and a group can be
+asked how many stations saw it. A glass that produced no pixels gives none of
+them anything to fire on.
 
 The two places the camera works from produce it in different ways, and only one
 of them produces it in this cell.
 
-- **Looking straight down**, a tall glass's outline would have to sweep over a
-  short one. The arithmetic says it does not get the chance: covering needs the
-  two closer than the 150 mm guaranteed between centres, and every arrangement
-  that would manage it puts the covering glass past the edge of the frame. So
-  from the top a glass goes missing because the survey never looked at that
-  piece of table, and the signal worth having is *unsearched area* rather than
-  *hidden glass*.
+- **Looking straight down**, a tall glass's outline sweeps over a short one. The
+  range of sizes inside this kind is wide enough for that to happen at the
+  guaranteed gap between centres rather than needing the glasses closer than the
+  cell allows, with the covering glass comfortably inside the frame. So from the
+  top a glass can go missing either because something covered it or because the
+  survey never looked at that piece of table, the two are indistinguishable from
+  the picture, and the signal worth having is therefore *unsearched area* rather
+  than *hidden glass*.
 - **Looking level**, no sweep is involved. One glass stands in front of another,
   which needs neither a height difference nor closeness: two glasses 600 mm
   apart hide each other as completely as two 150 mm apart, and the one that goes
@@ -67,15 +68,13 @@ completely hidden". They do not agree, and the disagreement is the useful part.
 
 | # | Looking straight down | Looking level |
 |---|---|---|
-| [1](01-split-the-blob-in-the-picture.md#when-the-glasses-are-completely-hidden) | never asked: the method reads a bottom edge against a horizon, and there is none | answers "one glass" confidently and is not wrong about anything it was asked |
-| [2](02-cluster-on-the-table.md#when-the-glasses-are-completely-hidden) | partly: it cannot find the glass but it can bound where one could be, and the stations then look | no: the blocked strip never closes, so it cannot be bounded |
-| [3](03-move-the-camera.md#when-the-glasses-are-completely-hidden) | no: the cure is the station layout, not anything the loop decides | partly: it refuses poses that would hide one *known* glass behind another |
-| [4](04-learned-doubt-steers-the-next-picture.md#when-the-glasses-are-completely-hidden) | partly: doubt attaches to a place rather than a glass | no: two pictures differing by zero pixels cannot carry different doubt |
-| [5](05-is-anything-hiding-there.md#when-the-glasses-are-completely-hidden) | yes, as far as ranking goes: the blind wedge has a measurable reach and area | barely: the strip is computed from what was already known, so nothing varies |
-| [6](06-learn-which-viewpoints-pay-off.md#when-the-glasses-are-completely-hidden) | no: the candidate poses are one ring at one height | partly: it can learn which way round to step, but is never told to |
-| [7](07-a-segmenter-trained-from-scratch.md#when-the-glasses-are-completely-hidden) | no, and this is the cleanest no of the nine | no: the two scenes produce the same picture pixel for pixel |
-| [8](08-per-pixel-votes-for-the-centre.md#when-the-glasses-are-completely-hidden) | no: zero pixels cast zero votes | no, though a sliver of a glass is worth more here than anywhere else |
-| [9](09-self-supervised-from-the-arms-own-movement.md#when-the-glasses-are-completely-hidden) | no: hands it to solution 2 and the overlapping stations | yes: the revealing pictures are already being taken |
+| [1](programmed/01-split-the-blob-in-the-picture.md#when-the-glasses-are-completely-hidden) | never asked: the method reads a bottom edge against a horizon, and there is none | answers "one glass" confidently and is not wrong about anything it was asked |
+| [2](programmed/02-cluster-on-the-table.md#when-the-glasses-are-completely-hidden) | partly: it cannot find the glass but it can bound where one could be, and the stations then look | no: the blocked strip never closes, so it cannot be bounded |
+| [3](programmed/03-move-the-camera.md#when-the-glasses-are-completely-hidden) | no: the cure is the station layout, not anything the loop decides | partly: it refuses poses that would hide one *known* glass behind another |
+| [4](learned/04-choosing-the-next-look.md#when-the-glasses-are-completely-hidden) | partly: doubt attaches to a place rather than a glass, though the candidate poses are one ring at one height | no: two pictures differing by zero pixels cannot carry different doubt |
+| [5](learned/05-is-anything-hiding-there.md#when-the-glasses-are-completely-hidden) | yes, as far as ranking goes: the blind wedge has a measurable reach and area | barely: the strip is computed from what was already known, so nothing varies |
+| [6](learned/06-a-network-trained-from-scratch.md#when-the-glasses-are-completely-hidden) | no, and this is the cleanest no here: zero pixels cast zero votes | no: the two scenes produce the same picture pixel for pixel, though a sliver of a glass is worth more here than anywhere else |
+| [7](learned/07-self-supervised-from-the-arms-own-movement.md#when-the-glasses-are-completely-hidden) | no: hands it to solution 2 and the overlapping stations | yes: the revealing pictures are already being taken |
 
 ## The words
 
@@ -100,17 +99,17 @@ this problem.
 **Detection** puts a rectangle round each object, so pixels where two overlap
 belong to both. **Semantic segmentation** labels every pixel "glass" or not, and
 nothing says which glass, so two overlapping glasses become one region.
-**Instance segmentation** labels every pixel with a class *and* with which object
-it belongs to, so five glasses come back as five masks. This problem asks for
-instance segmentation, and anything less has not answered it.
+**Instance segmentation** labels every pixel with a class *and* with which
+object it belongs to, so five glasses come back as five masks. This problem asks
+for instance segmentation, and anything less has not answered it.
 
 ## Three families, and what "hybrid" means
 
 **Programmed.** You state the rule and the computer applies it. No training
-data, no weights file, no graphics card. It runs in about a millisecond, works on
-an object it has never seen, and when it fails you can usually find out why by
-printing one number. Its limit is that somebody has to be able to write the rule
-down.
+data, no weights file, no graphics card. It runs in about a millisecond, works
+on an object it has never seen, and when it fails you can usually find out why
+by printing one number. Its limit is that somebody has to be able to write the
+rule down.
 
 **Learned.** The behaviour comes from numbers fitted to examples, so it can do
 things nobody knows how to state. It pays with a training set, a weights file
@@ -144,9 +143,9 @@ does not need the model to be right**. A better model makes failures rarer; only
 the arrangement puts a ceiling on how bad they get.
 
 A hybrid is usually *cheaper* than a fully learned solution, not dearer, because
-the learned piece has one narrow job. Learning "is this one object or two?" needs
-a small fraction of the data that "find all the objects" needs, and trains on an
-ordinary laptop.
+the learned piece has one narrow job. Learning "is this one object or two?"
+needs a small fraction of the data that "find all the objects" needs, and trains
+on an ordinary laptop.
 
 ## Feedback: choosing what to measure next
 
@@ -155,10 +154,10 @@ ordinary laptop.
 ![Deciding what to measure next, rather than measuring once](../../../images/open-and-closed-loop.png)
 
 An open-loop pipeline takes a fixed number of pictures, works everything out and
-acts, so an object that turns out unclear stays unclear and everything downstream
-inherits the doubt without being told. A closed loop takes a picture, works out
-what is not settled, asks *where would I have to look for this to become
-clear?*, goes and looks, and repeats.
+acts, so an object that turns out unclear stays unclear and everything
+downstream inherits the doubt without being told. A closed loop takes a picture,
+works out what is not settled, asks *where would I have to look for this to
+become clear?*, goes and looks, and repeats.
 
 It needs three things, and with only two it is not really a loop:
 
@@ -170,8 +169,8 @@ It needs three things, and with only two it is not really a loop:
   rather than guessing.
 
 That reverses the usual instinct. **The thing to save here is not computation.
-It is the number of times the arm has to move**: a move costs seconds, and any of
-these models costs milliseconds.
+It is the number of times the arm has to move**: a move costs seconds, and any
+of these models costs milliseconds.
 
 ## The rule every solution passed
 
@@ -179,7 +178,7 @@ A solution is listed here only if **everything it needs can be produced by the
 simulator on the machine this project runs on**: no graphics card, no robot on a
 bench, no real-world data. The four conditions that follow, and the good answers
 that fail them, are in [the ones that need more than a
-simulator](learned-with-hardware.md).
+simulator](learned/learned-with-hardware.md).
 
 Two consequences are worth seeing coming. The rule pushes the learned solutions
 towards **small models trained from scratch on synthetic data**, away from the
@@ -189,19 +188,40 @@ the first three solutions need nothing added to the environment, while
 everything from the fourth on begins by adding a dependency, and the learned
 ones add a large one.
 
-## The nine
+## The seven, in two folders
+
+The solutions are split by whether they contain a trained model. The three in
+[`programmed/`](programmed/) are rules somebody wrote down; the four in
+[`learned/`](learned/) all have numbers fitted to examples somewhere inside
+them, whether the fitted part decides the answer or only puts candidates in
+order.
 
 | # | Solution | Family | Where the model sits | The idea | What it attacks |
 |---|---|---|---|---|---|
-| 1 | [Split the blob in the picture](01-split-the-blob-in-the-picture.md) | programmed | — | each flat stretch along a patch's bottom edge is one glass standing on the table; needs no depth readings | the merge, mainly from the side |
-| 2 | [Cluster on the table](02-cluster-on-the-table.md) | programmed | — | drop the depth points onto the table and group them by distance; then compute which parts of the table nobody could have seen | the merge, **and where nobody could have seen** |
-| 3 | [Move the camera](03-move-the-camera.md) | programmed | — | walk round, testing reach, then line of sight, then the planner; cover the unsearched patches with the fewest positions | no usable viewpoint, and unsearched places |
-| 4 | [Learned doubt steers the next picture](04-learned-doubt-steers-the-next-picture.md) | hybrid | ranker | solution 3, with the candidates ordered by a learned guess of how much doubt each look removes | which look to spend the budget on |
-| 5 | [Is anything hiding there?](05-is-anything-hiding-there.md) | hybrid | verifier | weigh several weak clues, the glass count among them, to say which unsearched patch probably holds a glass | which unsearched place is likely occupied |
-| 6 | [Learn which viewpoints pay off](06-learn-which-viewpoints-pay-off.md) | hybrid | ranker | learn the chance a viewpoint changes the answer; the simulator gives the labels free | which look to spend the budget on |
-| 7 | [A segmenter trained from scratch](07-a-segmenter-trained-from-scratch.md) | learned | decider | a small network from a random start says, pixel by pixel, whether it is glass | finding glasses with no depth readings |
-| 8 | [Per-pixel votes for the centre](08-per-pixel-votes-for-the-centre.md) | learned | decider | each glass pixel points at the middle of its own glass, and the votes are counted | separating glasses that touch |
-| 9 | [Self-supervised from the arm's own movement](09-self-supervised-from-the-arms-own-movement.md) | learned | decider | points on one glass shift together when the arm moves the camera, and that is the label | separating glasses with no labels |
+| 1 | [Split the blob in the picture](programmed/01-split-the-blob-in-the-picture.md) | programmed | — | each flat stretch along a patch's bottom edge is one glass standing on the table; needs no depth readings | the merge, mainly from the side |
+| 2 | [Cluster on the table](programmed/02-cluster-on-the-table.md) | programmed | — | drop the depth points onto the table and group them by distance; then compute which parts of the table nobody could have seen | the merge, **and where nobody could have seen** |
+| 3 | [Move the camera](programmed/03-move-the-camera.md) | programmed | — | walk round, testing reach, then line of sight, then the planner; cover the unsearched patches with the fewest positions | no usable viewpoint, and unsearched places |
+| 4 | [Choosing the next look](learned/04-choosing-the-next-look.md) | hybrid | ranker | keep solution 3's candidates and vetoes, and order the survivors by a learned score: either how much doubt a look removes, or the chance it changes the answer | which look to spend the budget on |
+| 5 | [Is anything hiding there?](learned/05-is-anything-hiding-there.md) | hybrid | verifier | weigh several weak clues, the glass count among them, to say which unsearched patch probably holds a glass | which unsearched place is likely occupied |
+| 6 | [A network trained from scratch](learned/06-a-network-trained-from-scratch.md) | learned | decider | one small network, two heads: which pixels are glass, and which way each glass pixel's own centre lies | finding glasses with no depth, and separating glasses that touch |
+| 7 | [Self-supervised from the arm's own movement](learned/07-self-supervised-from-the-arms-own-movement.md) | learned | decider | points on one glass shift together when the arm moves the camera, and that is the label | separating glasses with no labels |
+
+Two of those entries are documents that were written separately and then joined,
+because in each pair the second was not a different method but the same method
+with one part changed.
+
+**Solution 4** was two ways of ordering the same candidates. Both keep [move the
+camera](programmed/03-move-the-camera.md)'s candidate generation and all of its
+vetoes, and both replace only the rule that sorts the survivors — one with a
+learned estimate of how much doubt a look would remove, the other with a learned
+estimate of whether the answer would change. They agree completely about what is
+*allowed* and differ only about what is *preferred*, so they are now one
+document describing a ladder with two rungs.
+
+**Solution 6** was two heads on one network. The same shape, the same training
+recipe and the same source of labels produce a class map when the last layer has
+one output channel, and one mask per glass when it has two. Describing them
+apart meant writing the same network down twice.
 
 ## The decision: what was built
 
@@ -213,26 +233,26 @@ train it, and how to look at what each model is taught and answers.
 
 **The learned pipeline** has three steps.
 
-1. **Find.** TopNet does [solution 8](08-per-pixel-votes-for-the-centre.md): each
+1. **Find.** TopNet does [solution 6](learned/06-a-network-trained-from-scratch.md): each
    glass pixel votes for the middle of its own glass, and the votes are
    counted. The place and width of each glass then come from the voting
    pixels' depth readings, by arithmetic.
 2. **Choose where to look from the side.** 24 places round each glass. Geometry
    vetoes the places out of reach, the places where the camera would stand in
    another glass, and the places with a glass squarely in the way: the
-   arithmetic tests of [solution 3](03-move-the-camera.md), without asking the
+   arithmetic tests of [solution 3](programmed/03-move-the-camera.md), without asking the
    motion planner. A learned Ranker orders what is left. It sits in the ranker
-   position of [solutions 4](04-learned-doubt-steers-the-next-picture.md) and
-   [6](06-learn-which-viewpoints-pay-off.md), so a wrong order wastes a look and
-   nothing more. A best score under 0.5 hands the glass to problem 3.
+   position of [choosing the next look](learned/04-choosing-the-next-look.md), so
+   a wrong order wastes a look and nothing more. A best score under 0.5 hands the glass to problem 3.
 3. **Measure.** SideNet reads the height and 16 widths straight off the side
    picture. This is problem 1's job, done here by a model.
 
-**The programmed twin**, [`problem-2-programmed`](../../../problem-2-programmed/README.md),
-takes the same three steps with rules: [solution
-2](02-cluster-on-the-table.md)'s clustering on the table to find, the same veto
-with a written rule to order the places, and a silhouette measurement that is
-checked and tried from up to three places.
+**The programmed twin**,
+[`problem-2-programmed`](../../../problem-2-programmed/README.md), takes the
+same three steps with rules: [solution
+2](programmed/02-cluster-on-the-table.md)'s clustering on the table to find, the
+same veto with a written rule to order the places, and a silhouette measurement
+that is checked and tried from up to three places.
 
 | Step | Learned | Programmed |
 |---|---|---|
@@ -243,7 +263,7 @@ checked and tried from up to three places.
 The learned pipeline finds glasses as well as the rules do and measures them
 worse. Its README says why.
 
-**What is not built.** Neither pipeline has these parts of the nine:
+**What is not built.** Neither pipeline has these parts of the seven:
 
 - solution 2's second half, the blind-region arithmetic that says where nobody
   could have seen a glass;
@@ -295,5 +315,5 @@ separate them, but no test scene has glasses touching.
 ## How it would be solved
 
 ← [The problem](../problem.md) · [The ones that need more than a
-simulator](learned-with-hardware.md) · [Problem 3 — moving them
+simulator](learned/learned-with-hardware.md) · [Problem 3 — moving them
 apart](../../problem-3/problem.md) →

@@ -1,9 +1,9 @@
-# Solution 9 — self-supervised from the arm's own movement
+# Solution 7 — self-supervised from the arm's own movement
 
 *Learned, as the decider. The arm knows exactly how it moved the camera, so the
 geometry between two pictures of a still scene is a free training signal.*
 
-> **The cell is described once, in [the cell](../../the-cell.md)** — the layout,
+> **The cell is described once, in [the cell](../../../the-cell.md)** — the layout,
 > the two places the camera works from, from the top and from the side, all four
 > sensors, and the words this project uses them with. What follows is only what
 > is specific to this solution.
@@ -40,7 +40,7 @@ But it has to be trained, and training needs the right answer written beside
 each example. Those right answers are called the **labels**, and getting them is
 where most of the cost of a learned method lives.
 
-![Three ways to get the right answer written beside each picture](../../../images/problem-2/09-where-the-labels-come-from.png)
+![Three ways to get the right answer written beside each picture](../../../../images/problem-2/09-where-the-labels-come-from.png)
 
 There are three ways to obtain labels, and that picture puts them side by side.
 
@@ -89,7 +89,7 @@ shape than as arithmetic: **the shift goes as one divided by the depth**. Near
 things move a lot, far things move a little, and things at infinity do not move
 at all.
 
-![Apparent shift against depth, and separation against slide](../../../images/problem-2/09-depth-against-shift.png)
+![Apparent shift against depth, and separation against slide](../../../../images/problem-2/09-depth-against-shift.png)
 
 The left-hand plot is that formula drawn. Because it is one over the depth, the
 curve is **steep close up and nearly flat far away**. So the same small
@@ -131,7 +131,7 @@ merged.
 station is the same one the shape measurement uses: from the side, low down,
 standing back at the measuring standoff.
 
-![The scene stands still; only the camera moves](../../../images/problem-2/09-two-views-parallax.png)
+![The scene stands still; only the camera moves](../../../../images/problem-2/09-two-views-parallax.png)
 
 Now look at what changed. A second glass standing in line behind the first is a
 long way further back, much further than the width of either glass. So the gap
@@ -220,7 +220,7 @@ pixel, take its positive partner and a handful of negatives, and the loss is low
 only when the partner is closer than every one of the negatives. So it **pulls**
 a pixel and its partner together, and **pushes** it and its negatives apart.
 
-![An embedding: every pixel becomes a point](../../../images/problem-2/09-embedding-space.png)
+![An embedding: every pixel becomes a point](../../../../images/problem-2/09-embedding-space.png)
 
 In the right-hand panel of that picture, every pixel has become one point, and
 the pixels of the two glasses have landed in two clumps.
@@ -237,7 +237,7 @@ region.
 ## The arithmetic still decides
 
 Every candidate region then goes through the ordinary arithmetic, unchanged from
-[solution 2](02-cluster-on-the-table.md). Its pixels become points on the table
+[solution 2](../programmed/02-cluster-on-the-table.md). Its pixels become points on the table
 using the depth frame, a circle is fitted to them, and the region is kept only
 if its width is one this kind of glass could have.
 
@@ -297,7 +297,7 @@ number attached**: how wide the clear air is between the two groups of shifts.
 Wide, and the answer is settled. Narrower than the noise in the matching, and it
 is not — and the method can say so rather than guessing.
 
-![The deliberate-motion loop, and how the next slide is worked out](../../../images/problem-2/09-deliberate-motion-loop.png)
+![The deliberate-motion loop, and how the next slide is worked out](../../../../images/problem-2/09-deliberate-motion-loop.png)
 
 That doubt is unusually actionable, because of the dial described earlier. The
 arm can divide the separation it needs by the separation one millimetre of slide
@@ -386,7 +386,7 @@ is what decides whether it hides. A pair lying along a radius from the nadir
 hides. The same pair turned across a radius does not. Sliding the camera
 sideways moves the nadir, which swings the splay, which ends the hiding.
 
-![Two glasses of the kind's extreme sizes, projected through the overhead camera at four positions along one slide, with the frame the picture actually covers drawn as a dashed rectangle](../../../images/problem-2/09-hidden-from-above.png)
+![Two glasses of the kind's extreme sizes, projected through the overhead camera at four positions along one slide, with the frame the picture actually covers drawn as a dashed rectangle](../../../../images/problem-2/09-hidden-from-above.png)
 
 That picture stands the tallest glass the kind allows, 230 mm, 200 mm out from
 the nadir, and the shortest it allows, 90 mm, a further 150 mm out along the
@@ -410,7 +410,7 @@ So this kind of hiding never happens to a glass that was in the picture to begin
 with. It is a question of survey coverage rather than of occlusion, and the cell
 answers it with the three overlapping stations the survey already runs. Where a
 glass is genuinely missing from a survey picture, the case is handed to the
-geometric argument in [solution 2](02-cluster-on-the-table.md), which reasons
+geometric argument in [solution 2](../programmed/02-cluster-on-the-table.md), which reasons
 about where a glass could be standing unseen instead of waiting for its pixels.
 This solution hands that case on and does not pretend to it.
 
@@ -429,7 +429,7 @@ as fast as it moves out of line. The second is that the hidden one is the
 further one whatever its height. The near glass is nearer, so it is magnified in
 the picture, and a short glass in front can cover a taller glass behind.
 
-![Four real level-view frames along one 120 mm slide, and the count of the far glass's pixels that reach the picture at every slide in between](../../../images/problem-2/09-hidden-from-the-side.png)
+![Four real level-view frames along one 120 mm slide, and the count of the far glass's pixels that reach the picture at every slide in between](../../../../images/problem-2/09-hidden-from-the-side.png)
 
 The pair in that picture is an ordinary one, drawn by the project's own spawner.
 The near glass is 181 mm tall and the far one 216 mm, so the taller of the two
@@ -488,10 +488,10 @@ So the plain verdict is that this solution handles the hidden case **only
 partly**. Where the camera looks level, which is where the method works, it
 handles the case genuinely and cheaply, and the evidence is already in the
 pictures it took to train on. Where the camera looks straight down it handles
-nothing, and hands the case to [solution 2](02-cluster-on-the-table.md) and to
+nothing, and hands the case to [solution 2](../programmed/02-cluster-on-the-table.md) and to
 the survey's overlapping stations. And in neither view can it promise that a
 glass it has not seen will be revealed by a slide it chose for another reason,
-which is the case [move the camera](03-move-the-camera.md) exists to take on,
+which is the case [move the camera](../programmed/03-move-the-camera.md) exists to take on,
 because that solution reasons about viewpoints before it spends them.
 
 ## A worked example
@@ -603,7 +603,7 @@ loss has the same shape, and it is a dozen lines of code rather than a library.
 
 ## Where it is strong and where it breaks
 
-![Where the signal runs out](../../../images/problem-2/09-the-limit.png)
+![Where the signal runs out](../../../../images/problem-2/09-the-limit.png)
 
 The strengths come from where the supervision comes from.
 
@@ -645,7 +645,7 @@ that no longer exists.
 Why it is not the thing to build here comes third, and it is the honest
 conclusion. **The cell already has a depth camera**, which measures directly
 what parallax is being trained to infer. So this solution does not earn its
-place in this problem. It earns it at [problem 4](../../problem-4/problem.md),
+place in this problem. It earns it at [problem 4](../../../problem-4/problem.md),
 where the kinds of glass are open, or on the day depth readings fail on real
 glassware.
 
@@ -728,8 +728,8 @@ at the same distance from the camera have no relative motion to group by.
 ## Where it sits among the other solutions
 
 This solution competes with the other two learned deciders, leans on [cluster on
-the table](02-cluster-on-the-table.md) for the arithmetic that checks its
-answers, and loops the way [move the camera](03-move-the-camera.md) does.
+the table](../programmed/02-cluster-on-the-table.md) for the arithmetic that checks its
+answers, and loops the way [move the camera](../programmed/03-move-the-camera.md) does.
 
 What separates it from all of them is one property, and it is worth being clear
 that the property is about the *future* rather than about this problem. Every
