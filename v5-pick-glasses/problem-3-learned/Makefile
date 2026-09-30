@@ -3,8 +3,9 @@
 .DEFAULT_GOAL := help
 TABLES ?= 4000
 FILM ?= 3
+TABLE ?= 10000
 
-.PHONY: help setup collect collect-planned train run film test
+.PHONY: help setup collect collect-planned train run film trace examples test
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*##"} /^[a-z-]+:.*##/ { printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
@@ -26,6 +27,12 @@ run: setup ## Clear the 50 held-out tables and score it
 
 film: setup ## Film the first FILM held-out tables into videos/
 	pixi run python run.py --tables $(FILM) --film $(FILM)
+
+trace: setup ## Write down and draw every step of table TABLE: what the model was given, what it said, what happened
+	pixi run python trace_table.py --table $(TABLE)
+
+examples: setup ## Write the first 20 collected pushes out as JSON, to see what the model is trained on
+	pixi run python examples.py
 
 test: setup ## The quick checks
 	pixi run pytest -q . ../problem-3-sim

@@ -10,16 +10,12 @@ This folder holds the problem; [`solutions/`](solutions/) holds the answers.
 - [**The problem**](problem.md) — why dragging rather than lifting, the three
   distances that matter, how low a push has to be and why that is a property of
   the glass, and what "done" means.
-- [**Solution overview**](solutions/solution-overview.md) — **eleven solutions in full**:
-  four programmed, four hybrid, three learned, and every one of them buildable
-  inside the simulator. It opens with the vocabulary and the
-  mechanics of a push, because a push is less simple than it looks. Then it
-  covers two ideas the rest depends on: where a learned part can sit in a
-  pipeline, and what it means for a machine to choose its own next
-  measurement. Every solution is written to the same plan. What it is. Why
-  anyone does it that way. How it would work here. Its feedback loop, if it has
-  one. A worked example with real numbers. What it needs. What it is good and
-  bad at. How it fails. And when it would be the right choice.
+- [**Solution overview**](solutions/solution-overview.md) — the way into the
+  eleven: four programmed, four hybrid, three learned, every one buildable
+  inside the simulator. It gives the words they share, where a learned part
+  can sit in a pipeline, what it means for a machine to choose its own next
+  measurement, a table of all eleven with their verdicts, and the combination
+  recommended and built.
 - [**The eleven solutions in full**](solutions/) — one document each, with its
   own diagrams and its own measurements. Four programmed:
   [1 do not drag at all](solutions/01-do-not-drag-at-all.md),

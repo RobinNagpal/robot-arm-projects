@@ -13,35 +13,28 @@ sensors and the vocabulary — is described once in [the cell](../the-cell.md).
 - [**The problem**](problem.md) — what is on the table, what is asked for, the
   three difficulties, and what "done" means.
 - [**Solution overview**](solutions/solution-overview.md) — the way into the
-  nine solutions. It opens with the vocabulary, because three of the words this
-  subject uses mean different things to different people. Then it covers two
-  ideas the rest depends on: where a learned part can sit in a pipeline, and
+  nine solutions. It covers what they share: what each does about a glass
+  nobody saw, the vocabulary, where a learned part can sit in a pipeline, and
   what it means for a machine to choose its own next measurement instead of
-  taking a fixed number of pictures. After that it gives a short paragraph on
-  each of the nine and ends with the recommendation, which is a combination of
-  methods rather than a single choice.
+  taking a fixed number of pictures. Then a one-line table of the nine, what
+  was built, and where that can fail.
 - **The nine solutions in full**, one document each in
   [`solutions/`](solutions/). Each is written from the beginning, with diagrams,
   and each ends with **the general methods behind it** — the named, published
   techniques it is built from, with an honest note on where each one is normally
   the right tool and where it is not.
 
-  | | Solution | Family | |---|---|---| | 1 | [Split the blob in the
-  picture](solutions/01-split-the-blob-in-the-picture.md) | programmed | | 2 |
-  [Cluster on the table](solutions/02-cluster-on-the-table.md) | programmed —
-  **chosen** | | 3 | [Move the camera](solutions/03-move-the-camera.md) |
-  programmed — **chosen** | | 4 | [Learned doubt steers the next
-  picture](solutions/04-learned-doubt-steers-the-next-picture.md) | hybrid | | 5
-  | [Is anything hiding there?](solutions/05-is-anything-hiding-there.md) |
-  hybrid | | 6 | [Learn which viewpoints pay
-  off](solutions/06-learn-which-viewpoints-pay-off.md) | hybrid | | 7 | [A
-  segmenter trained from
-  scratch](solutions/07-a-segmenter-trained-from-scratch.md) | learned | | 8 |
-  [Per-pixel votes for the
-  centre](solutions/08-per-pixel-votes-for-the-centre.md) | learned | | 9 |
-  [Self-supervised from the arm's own
-  movement](solutions/09-self-supervised-from-the-arms-own-movement.md) |
-  learned |
+  | | Solution | Family | Built |
+  |---|---|---|---|
+  | 1 | [Split the blob in the picture](solutions/01-split-the-blob-in-the-picture.md) | programmed | |
+  | 2 | [Cluster on the table](solutions/02-cluster-on-the-table.md) | programmed | the finding step of [`problem-2-programmed`](../../problem-2-programmed/README.md) |
+  | 3 | [Move the camera](solutions/03-move-the-camera.md) | programmed | its veto tests, in both pipelines |
+  | 4 | [Learned doubt steers the next picture](solutions/04-learned-doubt-steers-the-next-picture.md) | hybrid | |
+  | 5 | [Is anything hiding there?](solutions/05-is-anything-hiding-there.md) | hybrid | |
+  | 6 | [Learn which viewpoints pay off](solutions/06-learn-which-viewpoints-pay-off.md) | hybrid | |
+  | 7 | [A segmenter trained from scratch](solutions/07-a-segmenter-trained-from-scratch.md) | learned | |
+  | 8 | [Per-pixel votes for the centre](solutions/08-per-pixel-votes-for-the-centre.md) | learned | the finding step of [`problem-2-learned`](../../problem-2-learned/README.md), the pipeline taken forward |
+  | 9 | [Self-supervised from the arm's own movement](solutions/09-self-supervised-from-the-arms-own-movement.md) | learned | |
 
 - [**The ones that need more than a
   simulator**](solutions/learned-with-hardware.md) — four good answers that were

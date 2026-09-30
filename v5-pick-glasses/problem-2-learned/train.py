@@ -26,6 +26,29 @@ import viewpoints
 WEIGHTS = Path(__file__).parent / "weights"
 
 
+def pick_view(glasses, seed: int, rng: random.Random):
+    """The glass and the place one training scene's side picture is taken of.
+
+    (index, target, others, angle), or None when no place round the glass is
+    allowed. ``rng`` has to be the one generator carried from scene to scene,
+    which is what lets show_ranker.py draw the same examples again.
+    """
+    seen = [viewpoints.seen(g) for g in glasses]
+    index = rng.randrange(len(glasses))
+    target, others = seen[index], seen[:index] + seen[index + 1 :]
+    options = [a for a in viewpoints.angles() if viewpoints.allowed(target, others, a)]
+    if not options:
+        return None
+    # Half the time the most crowded place rather than a random one.
+    # Spoiled views are rare, about one in eight, and a ranker that sees
+    # twenty of them learns nothing from them.
+    if seed % 2:
+        angle = min(options, key=lambda a: viewpoints.features(target, others, a)[2])
+    else:
+        angle = rng.choice(options)
+    return index, target, others, angle
+
+
 def examples(count: int):
     rng = random.Random(0)
     top_x, top_y, rank_x, rank_y, side_x, side_y = [], [], [], [], [], []
@@ -35,19 +58,10 @@ def examples(count: int):
         top_x.append(models.top_input(picture))
         top_y.append(models.top_target(picture, glasses))
 
-        seen = [viewpoints.seen(g) for g in glasses]
-        index = rng.randrange(len(glasses))
-        target, others = seen[index], seen[:index] + seen[index + 1 :]
-        options = [a for a in viewpoints.angles() if viewpoints.allowed(target, others, a)]
-        if not options:
+        picked = pick_view(glasses, seed, rng)
+        if picked is None:
             continue
-        # Half the time the most crowded place rather than a random one.
-        # Spoiled views are rare, about one in eight, and a ranker that sees
-        # twenty of them learns nothing from them.
-        if seed % 2:
-            angle = min(options, key=lambda a: viewpoints.features(target, others, a)[2])
-        else:
-            angle = rng.choice(options)
+        index, target, others, angle = picked
         pose = render.side_pose(target.x, target.y, angle)
         side = render.render(glasses, pose)
         alone = render.render([glasses[index]], pose)

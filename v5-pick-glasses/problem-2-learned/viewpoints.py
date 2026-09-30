@@ -58,30 +58,36 @@ def angles() -> np.ndarray:
     return np.arange(DIRECTIONS) * (2 * math.pi / DIRECTIONS)
 
 
-def _eye(target: Seen, angle: float) -> np.ndarray:
+def camera_place(target: Seen, angle: float) -> np.ndarray:
+    """Where on the table's plan the camera stands for the place at ``angle``."""
     return np.array([target.x, target.y]) + STANDOFF * np.array([math.cos(angle), math.sin(angle)])
 
 
-def allowed(target: Seen, others: list[Seen], angle: float) -> bool:
-    """The veto: reachable, and no glass squarely between camera and target."""
-    eye = _eye(target, angle)
+def veto(target: Seen, others: list[Seen], angle: float) -> str | None:
+    """Why the camera may not stand here, or None if it may."""
+    eye = camera_place(target, angle)
     if not COMFORTABLE_REACH[0] <= np.linalg.norm(eye - ROBOT_BASE[:2]) <= COMFORTABLE_REACH[1]:
-        return False
+        return "out of reach"
     toward = -np.array([math.cos(angle), math.sin(angle)])
     for other in others:
         offset = np.array([other.x, other.y]) - eye
         if np.linalg.norm(offset) < other.radius + CAMERA_CLEARANCE:
-            return False
+            return "camera too close to a glass"
         along = offset @ toward
         across = abs(offset[0] * toward[1] - offset[1] * toward[0])
         if 0.0 < along < STANDOFF and across < other.radius:
-            return False
-    return True
+            return "a glass in the way"
+    return None
+
+
+def allowed(target: Seen, others: list[Seen], angle: float) -> bool:
+    """The veto: reachable, and no glass squarely between camera and target."""
+    return veto(target, others, angle) is None
 
 
 def features(target: Seen, others: list[Seen], angle: float) -> np.ndarray:
     """What the ranker is shown about one candidate place. See FEATURES."""
-    eye = _eye(target, angle)
+    eye = camera_place(target, angle)
     toward = -np.array([math.cos(angle), math.sin(angle)])
     out_from_base = np.array([target.x, target.y]) - ROBOT_BASE[:2]
 
