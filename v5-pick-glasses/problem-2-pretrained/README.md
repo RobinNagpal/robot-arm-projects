@@ -1,15 +1,16 @@
 # Problem 2 — the pre-trained way
 
 Several glasses of one kind stand on the table, and the first job of problem 2
-is to find each one in a picture taken from the top. This folder answers that
+is to find each one in the pictures taken from the top. This folder answers that
 job three times, and each time it leans on a model that somebody else has
 already trained on a large collection of photographs. Very little here is
 written down as a rule, and very little is trained from nothing; the work is in
 joining a borrowed model to this cell. By the end of this page you will know
 what the three solutions are, how to run each of them, what the machine
-underneath can and cannot do, how a depth picture is turned into something
-these models will accept, and how the three are scored against each other and
-against the two folders that already do the same job.
+underneath can and cannot do, where the camera stands and why a survey is three
+pictures, how a depth picture is turned into something these models will accept,
+and how the three are scored against each other and against the two folders that
+already do the same job.
 
 Those two folders are the ones to compare against. `../problem-2-programmed`
 does the job with geometry and written rules only, and `../problem-2-learned`
@@ -44,9 +45,10 @@ Everything runs from this folder. Setup happens once and is shared by all
 three; training and testing are done one solution at a time.
 
 ```
-make setup                      # once: install the environment, fetch weights
-make train SOLUTION=sam         # sam | maskrcnn | amodal
+make setup                          # once: install the environment, fetch weights
+make train SOLUTION=sam             # sam | maskrcnn | amodal
 make test  SOLUTION=sam
+make test-crowded SOLUTION=sam      # the same, on layouts where one glass hides another
 ```
 
 `SOLUTION` says which of the three to work on. `sam` is solution 8,
@@ -77,9 +79,24 @@ weights, so testing can pick it up.
 
 **`make test SOLUTION=...`** runs the solution you have trained over the
 held-out scenes, which no training ever sees, scores it with the shared
-scorecard, and writes the numbers and the pictures. It is much quicker than
-training, because each scene is read once and nothing is fitted. The weights
-are not committed, so train a solution before testing it.
+scorecard, and writes the numbers. Nothing is fitted, and every scene is three
+pictures. For `maskrcnn` and `amodal` that is a couple of minutes. For `sam` it
+is the longest command on this page, longer than its own training: every picture
+goes through SAM once for the grid of prompts, and again inside every proposal
+the keeper calls more than one glass, so the work per scene depends on what the
+keeper says. The weights are not committed, so train a solution before testing
+it.
+
+**`make test-crowded SOLUTION=...`** scores the same solution on the crowded
+layouts instead, where glasses stand closer than the layout rule allows and one
+really does hide part of another. It is the only place solution 10 can differ
+from solution 9, so the two runs are reported apart rather than averaged into
+one number.
+
+How many scenes each command uses has a default per solution rather than one
+default for all three, because the work per scene is not the same: running SAM
+over a picture costs several seconds and one training step costs under two. Pass
+`SCENES=n` to `make train` or `TEST_SCENES=n` to `make test` to change it.
 
 `make check` runs the quick checks that need no weights, as in the other
 folders.
@@ -111,6 +128,35 @@ the GPU can use nearly all the memory in the machine, where a laptop with a
 separate graphics card would give its GPU a small slice of dedicated memory.
 Models of this size fit because of the unified memory, not because they are
 small.
+
+## Where the camera stands
+
+Before the pictures themselves, where they are taken from, because all three
+solutions are handed the same ones and none of them chooses. `data.py` owns the
+camera for that reason.
+
+The camera stands at the cell's own `SURVEY_HEIGHT`, 450 mm above the table, and
+not at the 750 mm `../problem-2-sim` uses for its one overhead picture. The arm
+works from 450 mm, so that is the height a claim about this cell has to be made
+at. What follows from it is measured and costs something. Seen from above an
+outline leans away from the point below the camera, and the higher the glass the
+further it leans, so from 450 mm **one picture does not hold the glass zone**: a
+tall glass at the far side of the zone is cut off at the frame edge although the
+table under it is in shot, and a cut silhouette has its middle in the wrong
+place. So the cell does not take one picture from that height. It takes
+**three**, at the stations `survey_stations` works out from how much table one
+picture covers less what a survey loses off it, which is exactly the arithmetic
+`work_cell/task.py` uses. Each solution is asked about each picture on its own,
+and `run.py` brings the three answers together and counts each glass once,
+keeping the report from the station the glass stood nearest the middle of,
+because that is the view of it with the least splay and no cut.
+
+Three stations are not a cure, only the cell's own arrangement. With exact masks
+straight from the simulator and no model involved at all, one picture from 450 mm
+places a glass 15 mm from where it stands on the median; three stations bring
+that to 6 mm; the 750 mm picture gives 0.3 mm. The remainder is the frame edge,
+it is the same for all three solutions, and it is the floor every number in this
+folder sits on.
 
 ## Where the pictures come from
 
@@ -150,7 +196,7 @@ the gap but does not close it.
 SAM is a promptable model, which means it is given a picture and a prompt and
 returns a mask: the prompt says where to look, and the mask says which pixels
 belong to the thing found there. Prompt it with a grid of points spread over
-the picture taken from the top and it proposes masks for everything in the
+a picture taken from the top and it proposes masks for everything in the
 scene, glasses and table alike, knowing nothing about what a glass is. SAM's
 weights are used exactly as they are downloaded, and nothing here changes them.
 
@@ -192,41 +238,68 @@ be if nothing stood in front of it. A mask like that is called amodal. The
 label costs nothing, because the simulator can render each glass on its own and
 take the outline from that.
 
-This matters here because of what the scene is like. One kind of glass spans
-sizes from small and tapered to large, and seen from the top a taller glass's
-outline reaches further out from the point below the camera, so glasses that
-are partly hidden behind another are the normal case rather than the exception.
-A mask that stops where the hidden part begins gives a glass whose place on the
-table is wrong and whose width is too small, and the damage is that both look
-reasonable: the width is one a glass of this kind could have, and the outline
-fits what was seen with little error, so the check meant to catch a bad find
-passes it instead. An amodal mask gives the whole footprint back, and the place
-and width computed from it are the glass's own.
+What a truncated mask costs is real. A mask that stops where the hidden part
+begins gives a glass whose place on the table is wrong and whose width is too
+small, and the damage is that both look reasonable: the width is one a glass of
+this kind could have, and the outline fits what was seen with little error, so
+the check meant to catch a bad find passes it instead. An amodal mask gives the
+whole footprint back.
 
-The limit has to be stated with it. Amodal completion extends the evidence it
+**How often that happens here was measured, and it is not the normal case.** The
+solution's document says partly hidden glasses are what this scene is like, and
+for this cell that is false. A spawned layout keeps 150 mm between glasses. At
+the simulator's 750 mm not one glass in five hundred is hidden by another, even
+by a single pixel. At the cell's own 450 mm it is 0.6 per cent of them, and the
+worst of those is 4 per cent covered. So solution 10 is built and scored here, because
+the case it was built for does occur and complete covering is possible at the
+guaranteed gap, but on the layouts the cell really produces the amodal target is
+nearly always the visible one and the two solutions answer alike. The difference
+only appears on the crowded layouts, which is why `make test-crowded` exists and
+why training draws crowded scenes as well as spawned ones: over 99 per cent of
+the hidden pixels a run has to learn from come from the crowded half.
+
+Two limits have to be stated with it. Amodal completion extends the evidence it
 is given, so it needs some of the glass to be visible to extend from. A glass
 that a taller one covers completely leaves nothing to extend, and no amount of
 training changes that.
 
+The second limit is about what a completed mask may then be used for, and it is
+where solution 10 can poison its own answer. The place and the width are read off
+the depth reading under each pixel of the mask, and an amodal mask claims pixels
+where the camera saw the glass in *front*. Those pixels back-project onto that
+nearer glass, so handing the whole silhouette to the shared arithmetic drags the
+answer onto the wrong glass: with exact masks and no model at all, the whole
+silhouette places a hidden glass 45 mm out where its visible pixels place it
+11 mm out. The solution's own document prescribes the repair, which is to keep
+the **observed** part and the **asserted** part apart and fit on the observed
+one, and that is what the code does. Where two reported outlines overlap the
+nearer of the two is what the camera saw there, so the split is read off the
+answer itself and needs no truth. What the completion supplies is that split and a
+glass reported at all where a truncated mask would have been too small to fit; it
+supplies no depth reading, because it has none to supply.
+
 ## What comes out
 
-Each run writes its numbers and its pictures into this folder, and the numbers
-are made to sit beside the other two folders' numbers. Before anything can be
-scored, each mask has to become a place on the table and a width, because that
-is what problem 2's later steps are given. The masks are turned into those two
-numbers by arithmetic over the depth readings of the pixels inside each mask,
-which is the same arithmetic the other folders use, so no part of the
-comparison depends on which approach drew the mask.
+Each run writes its numbers into this folder, and the numbers are made to sit
+beside the other two folders' numbers. Before anything can be scored, each mask
+has to become a place on the table and a width, because that is what problem 2's
+later steps are given. The masks are turned into those two numbers by arithmetic
+over the depth readings of the pixels inside each mask, which is the same
+arithmetic the other folders use, so no part of the comparison depends on which
+approach drew the mask.
 
 `make test SOLUTION=sam` writes `results-sam.json`, and the other two write
-`results-maskrcnn.json` and `results-amodal.json`. The pictures of what each
-solution was given and what it answered go under `saved/`, one folder per
-solution, so that a wrong answer can be looked at rather than guessed at. The
-scoring itself is `../problem-2-sim/scoring.py`, shared by every approach to
-this problem: it counts the glasses found, missed, merged and split, and
-measures how far each found place is from the true place and each width from
-the true width. `../problem-2-results` explains what each of those numbers
-means and why a merge is the dangerous one.
+`results-maskrcnn.json` and `results-amodal.json`; `make test-crowded` writes the
+same names with `-crowded` on the end. The scoring itself is
+`../problem-2-sim/scoring.py`, shared by every approach to this problem: it
+counts the glasses found, missed, merged and split, and measures how far each
+found place is from the true place. A found glass is matched to a true one by the
+glass identities under its pixels, so the scorecard needs one picture holding
+every glass with none hiding another, which is what the 750 mm overhead view is.
+That picture is used for scoring and is never handed to a solution; it is also
+the picture the other two folders are scored in, so the find counts here mean the
+same as theirs. `../problem-2-results` explains what each of those numbers means
+and why a merge is the dangerous one.
 
 That gives three comparisons. The first is between these three solutions, and
 it is the cleanest, because they read the same pictures and differ only in how
@@ -254,9 +327,10 @@ These are the files the folder holds and what each one is for.
 - `device.py` — chooses MPS when it is available and the CPU otherwise.
 - `pictures.py` — shades a depth reading into a grey picture and repeats it
   across three channels.
-- `data.py` — builds the training and held-out examples from
-  `../problem-2-sim`: one picture per scene, and either the visible masks or
-  the whole-glass masks.
+- `data.py` — owns the camera, and builds the training and held-out examples
+  from `../problem-2-sim`: the three survey pictures per scene, and either the
+  visible masks or the whole-glass masks. Also the crowded layouts, and the
+  limits on a kind of glass that the cell is told.
 - `sam_keeper.py` — solution 8: the grid of prompts, SAM's proposals, and the
   small keeper that decides which of them are glasses.
 - `segmenter.py` — solutions 9 and 10: the Mask R-CNN model, built the same
@@ -264,11 +338,26 @@ These are the files the folder holds and what each one is for.
 - `masks_to_glasses.py` — turns instance masks and the depth reading into each
   glass's place on the table and its width.
 - `train.py` — behind `make train`: fits what the chosen solution fits and
-  saves it.
-- `run.py` — behind `make test`: runs the held-out scenes, scores them and
-  writes `results-<solution>.json`.
-- `drawing.py` — saves the pictures under `saved/`.
+  saves it. Its table is the only place in the folder that knows the three
+  solutions apart.
+- `run.py` — behind `make test`: asks the solution about each station's picture,
+  brings the three answers together, scores them and writes
+  `results-<solution>.json`.
 - `test_pretrained.py` — behind `make check`: the quick checks, which need no
   weights.
 - `weights/` — the fetched weights and the fitted ones. Not committed.
-- `saved/` — the pictures a test run writes. Not committed.
+
+All three solutions are reached through the same three calls, and nothing outside
+`train.py`'s table knows which of them is running:
+
+```
+fit(examples, *, amodal, save)   # fit what this solution fits, and save it
+load(save)                       # the fitted thing, ready to be asked
+Finder.find(picture, kind)       # the glasses in one picture, and the doubts
+```
+
+A solution is handed a picture and the kind of glass on the table, which the
+problem statement says the cell is told, and never the list of glasses behind the
+picture. That is what stops a solution reaching the truth at test time. `find`
+hands back one `Found` per glass and one short reason per proposal it could
+neither keep nor drop, which the scorecard counts as handed over.

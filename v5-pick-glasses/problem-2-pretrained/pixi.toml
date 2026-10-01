@@ -1,0 +1,28 @@
+[workspace]
+name = "pick-glasses-pretrained"
+version = "0.1.0"
+description = "Problem 2 with borrowed weights: SAM plus a learned keeper, and Mask R-CNN fine-tuned on visible and on whole-glass masks"
+channels = ["conda-forge"]
+platforms = ["osx-arm64", "linux-64"]
+
+# Its own environment, apart from the ROS one, as in problem-2-learned.
+# PyTorch beside RoboStack's libraries is a conflict not worth having.
+[dependencies]
+python = "3.12.*"
+numpy = ">=1.26,<3"
+pytorch = ">=2.3"
+# Mask R-CNN and its COCO weights come from torchvision; SAM from transformers.
+torchvision = ">=0.18"
+transformers = ">=4.40"
+# The keeper is gradient-boosted trees, which is what sklearn is here for.
+scikit-learn = ">=1.4"
+# rack/layout.py imports OpenCV, and the glass zone is read from there.
+py-opencv = ">=4.9"
+pytest = ">=7"
+
+[activation.env]
+# The project's own modules (shapes, spawn, profile, perception, dimensions),
+# and the scenes and scoring shared with the other problem-2 folders.
+PYTHONPATH = "$PIXI_PROJECT_ROOT/../src/work_cell:$PIXI_PROJECT_ROOT/../problem-2-sim"
+# Some operations have no MPS kernel and silently need the CPU instead.
+PYTORCH_ENABLE_MPS_FALLBACK = "1"
