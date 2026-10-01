@@ -1,0 +1,55 @@
+{
+  "ways": [
+    {
+      "solution": "exact visible masks",
+      "scenes": 20,
+      "layouts": "spawned",
+      "stations": 3,
+      "glasses": 100,
+      "find": {
+        "found": 100,
+        "missed": 0,
+        "merged": 0,
+        "split": 0,
+        "false": 0,
+        "position_mm_median": 6.3,
+        "position_mm_worst": 46.5
+      },
+      "handed over": {}
+    },
+    {
+      "solution": "exact whole masks",
+      "scenes": 20,
+      "layouts": "spawned",
+      "stations": 3,
+      "glasses": 100,
+      "find": {
+        "found": 100,
+        "missed": 0,
+        "merged": 0,
+        "split": 0,
+        "false": 0,
+        "position_mm_median": 6.3,
+        "position_mm_worst": 46.5
+      },
+      "handed over": {}
+    },
+    {
+      "solution": "exact poisoned masks",
+      "scenes": 20,
+      "layouts": "spawned",
+      "stations": 3,
+      "glasses": 100,
+      "find": {
+        "found": 100,
+        "missed": 0,
+        "merged": 0,
+        "split": 0,
+        "false": 0,
+        "position_mm_median": 6.3,
+        "position_mm_worst": 46.5
+      },
+      "handed over": {}
+    }
+  ]
+}

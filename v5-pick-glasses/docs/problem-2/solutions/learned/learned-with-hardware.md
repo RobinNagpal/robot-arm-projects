@@ -53,6 +53,14 @@ glasses](08-segment-anything-then-keep-the-glasses.md), [a fine-tuned instance
 segmenter](09-a-fine-tuned-instance-segmenter.md), and [amodal masks for the
 hidden part](10-amodal-masks-for-the-hidden-part.md).
 
+All three of those run on this machine as it stands, through the same MPS
+backend, and
+[`problem-2-pretrained`](../../../../problem-2-pretrained/README.md) holds their
+code beside what each of them scored. So the claim that a borrowed model is
+usable here is a measured one rather than an expectation, and the condition that
+matters for such a model is the second one above: it has to run without CUDA,
+and it has to fit in memory the rest of the machine is also using.
+
 One note about tooling is worth knowing before depending on any borrowed model,
 including those three. **The licence terms across model families differ
 sharply**, and some of them are copyleft in a way that reaches software you only

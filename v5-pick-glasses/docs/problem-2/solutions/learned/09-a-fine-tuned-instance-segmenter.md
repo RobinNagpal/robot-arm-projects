@@ -41,6 +41,13 @@ What it costs is that the answer rests on a file of weights rather than on
 arithmetic anyone can read, and that most of those weights were fitted to
 photographs of a world this cell does not contain.
 
+What running it settles is where that leaves the answer, and the answer divides
+by layout. On the layouts the cell's own placement rule produces, the model
+finds every glass and is not what limits how well a glass is placed. On layouts
+crowded on purpose, so that one glass really stands in front of another, it
+loses about a quarter of them. [What running it shows](#what-running-it-shows)
+is the whole of that measurement.
+
 By the end you will understand what instance segmentation is and why a map of
 classes cannot do its job, how Mask R-CNN splits the work into proposing regions
 and then examining each one, what a backbone is and what it means for one to
@@ -332,6 +339,10 @@ before it can learn anything about glasses, while fine-tuning begins with those
 already in place and only has to learn what a glass looks
 like](../../../../images/problem-2/09-fine-tune-against-scratch.png)
 
+That picture explains the idea rather than reporting a result. Nothing in this
+folder fits this model from a random start, so its two sides are an expectation
+about how training behaves and not two measurements set beside each other.
+
 ### Why it needs far less data
 
 The reason is best stated in terms of what the data has to pay for. Every weight
@@ -378,13 +389,17 @@ cup", learned from colour and texture as much as from shape, and a shaded depth
 picture has neither. So they arrive describing properties the new pictures
 largely do not have, and fine-tuning has to move them far.
 
-That gives an honest summary. **The borrowing is worth having and it is worth
-less here than the usual advice implies.** What is genuinely inherited is the
+That gives an honest summary, and it has to be labelled for what it is. **The
+borrowing is worth having, and the expectation is that it is worth less here
+than the usual advice implies.** The second half of that is reasoning about what
+each level holds, and nothing in this folder tests it, because no run here fits
+this model from a random start and there is therefore no measured comparison
+between the two starts to appeal to. What the reasoning says is inherited is the
 machinery of turning a picture into useful local descriptions, which is the
 expensive and boring part, and what has to be earned is everything above it. One
-consequence is practical: because the deep levels have to move and the early
-ones do not, it is reasonable to nudge the early levels gently or not at all
-while letting the later parts change freely.
+consequence is practical: because the deep levels are the ones expected to move
+and the early ones are not, it is reasonable to nudge the early levels gently or
+not at all while letting the later parts change freely.
 
 ### What the labels here are, and why they cost nothing
 
@@ -508,16 +523,35 @@ be caught after the fact. Nor is there a separate stage turning a mask into
 objects, which solution 6 needs because its first head returns a class map.
 
 **There is no rule about how close two points may be.** Nothing here compares
-two positions and decides whether they are near enough to belong together. The
-only overlap comparison anywhere is non-maximum suppression, and that compares
-two *claims about one object*, not two pieces of evidence that might be one
-object.
+two pieces of evidence and decides whether they are near enough to be one glass.
+Two comparisons of place do happen, and both compare *claims about one object*
+rather than evidence. One is non-maximum suppression, which reduces the
+proposals covering one glass to a single answer. The other brings the stations
+of a survey together: two reports standing closer than the narrowest glass this
+kind allows are one glass reported twice, because two glasses of one kind cannot
+stand that close. Neither is a length anybody chose, and the second is a limit
+on the kind.
 
-The circle fit is worth keeping for a different purpose. Each reported mask's
-pixels back-project to points on the table, and a circle fitted to them gives a
-centre, a width and a fit error, so a glass whose fitted width falls outside the
-range this kind can be is not believed, whatever its score: **the model proposes
-and the geometry disposes.**
+A measurement on the table is worth keeping for a different purpose, and this is
+a rule this document asks for rather than a step the code beside it carries out.
+Each reported mask's pixels back-project to points on the table, and the
+arithmetic shared by every solution in this folder turns them into a place and a
+width: the axis comes from the points at the rim, and the width from how far the
+cloud reaches out from that axis. What that arithmetic should be asked next is
+whether the width falls inside the range this kind of glass can have, and a
+glass whose width falls outside it should not be believed whatever its score:
+**the model proposes and the geometry disposes.** This document calls that the
+**range check**, and in this folder nothing applies it to this solution's
+reports. Of the three solutions here only [segment anything, then keep the
+glasses](08-segment-anything-then-keep-the-glasses.md) refuses a report on its
+width, because only its keeper was given that job.
+
+One part of the prescription is not available from the shared arithmetic at all.
+A circle fitted to a footprint also says how badly it fitted, and that residual
+is a second check on top of the width. Nothing in this folder fits a circle, so
+nothing here returns such a residual; [cluster on the
+table](../programmed/02-cluster-on-the-table.md) is the solution whose
+arithmetic fits one and reports how well it fitted.
 
 ## How the concepts fit together
 
@@ -536,20 +570,24 @@ might hold an object, and **non-maximum suppression** reduces the clusters
 describing one glass to one each. The **second stage** takes each survivor,
 decides glass or background, tightens the rectangle and paints a **mask** inside
 it. What comes out is a list in which each entry is one glass with a box, a
-score and a mask. Each mask's pixels are then back-projected onto the table, a
-**circle** is fitted to them for a centre and a width, and an entry whose width
-is impossible for this kind is refused.
+score and a mask. Each mask's pixels are then back-projected onto the table and
+the shared arithmetic turns them into a **place** and a **width**, and the
+**range check** this document prescribes refuses an entry whose width is
+impossible for this kind.
 
 Three things are worth holding on to. The **two-stage shape** is what makes the
 output hold separate objects, because a mask predicted inside its own rectangle
 cannot be confused with a neighbour's, so the hardest part of problem 2 is
 answered by the shape of the output rather than by a step that had to be got
 right. The **borrowed weights** are what make a model this size trainable here,
-and they are worth less than usual because the pictures this cell renders are
-not photographs, so fine-tuning has to close most of the gap and what survives
-it is the early, general part of the borrowing. And the **arithmetic check**
-keeps the whole thing honest: nothing about the model's confidence may overrule
-a measured footprint that no glass of this kind could have.
+and they are expected to be worth less than usual, because the pictures this
+cell renders are not photographs, so fine-tuning has to close most of the gap
+and what survives it is the early, general part of the borrowing; that
+expectation is reasoning about what each level of the backbone holds rather than
+anything this folder measured. And the **range check** is what has to keep the
+whole thing honest: nothing about the model's confidence may overrule a measured
+footprint that no glass of this kind could have, which is a rule to apply and
+not something the run already does.
 
 ## When the glasses are completely hidden
 
@@ -578,11 +616,11 @@ calls it a glass, and paints a correct mask over the tall glass's pixels.
 
 **Nothing in the output is wrong.** There is no low score, because the one glass
 found really is a glass and the model is right to be sure. There is no
-impossible fitted width, because the surviving pixels back-project to the tall
+impossible width either, because the surviving pixels back-project to the tall
 glass's own real footprint: splay decides which pixels exist and not where they
 land, so every pixel returns to its own true place on the table. Every check
-this solution has is a check on something that was found, and there is nothing
-to check.
+this solution prescribes is a check on something that was found, and there is
+nothing to check.
 
 ![A glass covered completely produces no pixels, so no anchor sees it, so no
 proposal is made and no amount of fine-tuning can create
@@ -651,9 +689,12 @@ where the taller glass covers the shorter one, and that is allowed.
 worth taking away. There was never a joined region for anything to divide,
 because the two glasses were separate proposals before either had a mask.
 
-**The check.** Each mask's pixels are back-projected onto the table and a circle
-is fitted to them. All five widths fall inside the range this kind allows, so
-five glasses are reported, each with a centre, a width and a fit error.
+**The check.** Each mask's pixels are back-projected onto the table and the
+shared arithmetic turns them into a place and a width. All five widths fall
+inside the range this kind allows, so the range check would pass all five, and
+five glasses are reported, each with a place and a width. The run reports them
+without asking the question: nothing in this folder compares this solution's
+widths against the kind's range, so an impossible width would be reported too.
 
 **Now the case this solution cannot answer.** Add a sixth glass, at the short
 end of the kind's range, standing beyond the tallest glass along the line
@@ -673,6 +714,73 @@ arm can reach with a clear line of sight into it, and the arm takes one more
 picture. In that picture the sixth glass has pixels, so it has anchors, so it
 has a proposal.
 
+## What running it shows
+
+The worked example says what should happen, and this section says what does
+happen when the fine-tuned model is run on scenes no part of its training ever
+saw. Two kinds of layout are scored and they have to be kept apart, because the
+answer is not the same on each. The **spawned** layouts are the ones the cell's
+own placement rule produces, with the separation that rule guarantees between
+glasses. The **crowded** layouts are built on purpose to put one glass in front
+of another: the glasses stand along a line running out from the point below the
+camera, closer together along that line than the rule allows and at the tightest
+close enough for two bodies to meet, with the tall ones in front of the short
+ones. Every scene is surveyed from all three stations, as the cell surveys it.
+
+What comes back is judged by the same scorecard the project's other pipelines
+are judged by, and four of its words are used below. A glass is **found** when
+one report covers it and **missed** when none does, two glasses are **merged**
+when one report covers both, and one glass is **split** when two reports share
+it. The scorecard also measures how far each reported place sits from where the
+glass really stands, which this section calls the **place error**.
+
+**On the spawned layouts the model finds every glass.** Not one is missed,
+nothing that is not a glass is reported, no two glasses arrive as one report and
+no glass arrives as two. The proposals it cannot call either way are
+handed on rather than guessed at, and none of them costs a glass, because every
+glass is found anyway.
+
+### The model is not what limits the answer
+
+A result that clean invites a question: how much of the place error that remains
+is the model's doing? That can be settled rather than argued, because the
+renderer's own exact masks can be handed to the same arithmetic with no model in
+the way at all.
+
+Doing that barely improves the answer. The median place error moves by a
+fraction of a millimetre and the worst case does not move at all. So **what
+remains of the error belongs to the arithmetic and to the geometry of looking
+from the top, and not to the segmenter**, and no better model can take it away.
+
+The cause is the one this document already gives for a mask that stops early,
+with the edge of the picture doing the cutting rather than another glass. Most
+glasses are cut by the frame's edge at one station or another, because the
+stations are spread along the zone, so part of the zone lies at or past each
+frame's edge, and splay throws the rim of a glass standing near that edge
+further out still, over it. A footprint cut short back-projects to an arc rather
+than to a whole disc, and the middle of an arc is not the middle of the glass.
+[Cluster on the table](../programmed/02-cluster-on-the-table.md) runs into the
+same limit with no model anywhere near it and works the geometry out in full,
+which is the plainest sign that this is a fact about the view rather than about
+the weights.
+
+### What crowding costs
+
+Crowding the glasses is a different matter, and it is where this solution's
+limit shows. **It finds about three quarters of the glasses**, merges a couple
+of pairs into one report, and its worst place error is close to twice its worst
+on a spawned layout. Nothing it reports is invented: no report lands where no
+glass stands, and what it cannot settle it hands on, so the glasses it loses are
+lost by silence rather than by a wrong answer.
+
+**A perfect segmenter would not repair most of that.** The renderer's own exact
+masks on the same crowded scenes find about four glasses in five, because a
+glass with no pixels at a station leaves nothing for any method to propose from.
+So the gap between this solution and perfection on a crowded line is real, and
+it is much smaller than the gap between a crowded line and an ordinary table.
+Crowding is what costs the glasses, and the segmenter is what costs the smaller
+part of them.
+
 ## Running it yourself
 
 The code for this solution lives with the other two borrowed-model solutions, in
@@ -687,6 +795,21 @@ Then fine-tuning and testing are each one command, with the solution named:
 
     make train SOLUTION=maskrcnn
     make test  SOLUTION=maskrcnn
+    make test-crowded SOLUTION=maskrcnn
+
+`make test` scores the model on held-out layouts of the kind the cell's own
+placement rule produces, and `make test-crowded` scores it on the crowded ones,
+where glasses stand along a line out from under the camera and really do stand
+in front of each other. The second is what every claim in this document about a
+partly hidden glass rests on.
+
+One more command needs no solution, because it runs no model:
+
+    make floor
+
+It hands the renderer's own masks to the same arithmetic and the same survey,
+which is the floor [the model is not what limits the
+answer](#the-model-is-not-what-limits-the-answer) reads this solution against.
 
 The machine is an Apple M4 with a ten-core integrated graphics processor and
 memory shared between it and the main processor. PyTorch reaches that graphics
@@ -738,27 +861,36 @@ length that has to be justified against the geometry of the cell. It also
 handles both views with one model, because the feature pyramid lets the same
 weights describe a glass that is small from the top and large from the side.
 
-**Its masks stop where the visible pixels stop.** A glass partly covered by
-another gets a mask of only the part the camera can see. Because one kind spans
-a small tapered glass to a large one, a tall glass's splayed outline can take a
-bite out of a short one at the gap the cell guarantees, which is uncommon rather
-than the normal case and wants a crowded line of glasses. It is still the
-weakness that matters most, because of what the run does with it. A mask cut
-short back-projects to an arc rather than a full footprint, so the fitted circle
-comes out too small and in the wrong place — and it can still be a width this
-kind allows, with a small fit error, so the check meant to catch a bad
-measurement passes it. That is a quiet failure, and it is what [amodal masks for
-the hidden part](10-amodal-masks-for-the-hidden-part.md) exists to fix.
+**Its masks stop where the visible pixels stop,** and what that costs has been
+measured. A glass partly covered by another gets a mask of only the part the
+camera can see. On the layouts the cell's own rule produces that costs nothing
+beyond what the view itself costs: every glass is found, and placed as well as
+the renderer's own exact masks place it. On a crowded line it costs a great
+deal: about a quarter of the glasses are not reported, and although some of
+those produced no pixels at any station and could not have been reported by
+anything, the model loses more of them than exact masks lose, and its worst
+place error is close to twice its worst on an ordinary table. Why a mask cut
+short does that much damage is unchanged and still worth knowing. Such a mask
+back-projects to an arc rather than a whole footprint, so the width comes out
+too small and the place comes out beside the glass rather than under it — and
+the width can still be one this kind allows, so even the range check this
+document prescribes would pass it. In this folder there is no such check on this
+solution's reports to pass, which makes the failure quieter still. It is a quiet
+failure either way, and [amodal masks for the hidden
+part](10-amodal-masks-for-the-hidden-part.md) recovers most of what it costs: on
+crowded layouts it finds about one glass in ten more than this solution does and
+cuts the worst place error by about a quarter, while on ordinary layouts the two
+score alike.
 
 **It is blind to a glass hidden completely.** No pixels means no proposal, which
 means no entry, no low score and nothing to check. That is a fact about the
 input rather than about the model, and the section above works it out in full.
 
-**Its answer cannot explain itself.** When a fitted circle is wrong you can
-print one number and see why; when this model is wrong you can look at the
-picture and guess. Every quantity inside it is a block of numbers with no
+**Its answer cannot explain itself.** When solution 2's fitted circle is wrong
+you can print one number and see why; when this model is wrong you can look at
+the picture and guess. Every quantity inside it is a block of numbers with no
 meaning anybody assigned, so debugging is a matter of examples rather than of
-reasoning, and the arithmetic check wrapped round it is what makes that
+reasoning, and the range check this document prescribes is what has to make that
 tolerable.
 
 **Its weights are a second copy of the world, and most of them came from
@@ -770,9 +902,12 @@ regenerated here at all.
 
 **The domain gap is real and it is not removed.** Fine-tuning does fit the model
 to shaded depth pictures, so it runs on the pictures it was fitted on, which is
-the important thing. What remains is that the borrowing was worth less than the
-usual advice implies, because the deep levels arrived describing a world of
-texture and colour this cell does not have.
+the important thing. What remains is an expectation rather than a result: the
+borrowing is thought to be worth less than the usual advice implies, because the
+deep levels arrive describing a world of texture and colour this cell does not
+have. Nothing here measures it, because measuring it would mean fitting the same
+model from a random start and comparing the two, and that run does not exist in
+this folder.
 
 ## The general ideas behind this
 
@@ -913,9 +1048,11 @@ separating stage. In exchange, solution 6 is a few hundred thousand weights that
 can be committed alongside the code and regenerated without thinking about it,
 while this is a large downloaded file that cannot be regenerated here. Solution
 6's arrows are also a different mechanism, and one that works when two glasses
-actually touch, which is the case this solution has not been shown to handle. So
-the choice is not "borrowed is better"; it is capability now against a model the
-project fully owns.
+actually touch. That case is not untested here: the crowded layouts stand
+glasses so close along one line that their bodies meet, and this solution is
+scored on them, where it finds about three quarters of the glasses and merges a
+couple of pairs into one report. So the choice is not "borrowed is better"; it
+is capability now against a model the project fully owns.
 
 Against [segment anything, then keep the
 glasses](08-segment-anything-then-keep-the-glasses.md), the trade runs the other
@@ -928,6 +1065,17 @@ fits its weights to the actual input, which is why its domain gap costs accuracy
 rather than correctness. If the question is how little training one can get away
 with, solution 8 wins; if it is which of these has actually seen this cell's
 pictures, this one does.
+
+Against [amodal masks for the hidden
+part](10-amodal-masks-for-the-hidden-part.md), the difference is one target and
+nothing else: the same architecture, asked to mark each glass's whole silhouette
+rather than only the part the camera can see. Measured, that buys something in
+exactly one place. On crowded layouts solution 10 finds about one glass in ten
+more than this solution and cuts the worst place error by about a quarter. On
+the layouts the cell really produces the two score identically, down to the same
+worst case, which says that completion buys nothing when nothing stands in
+front. So this solution is the simpler of the two and gives up nothing on an
+ordinary table, and solution 10 is what a crowded table asks for.
 
 Against [cluster on the table](../programmed/02-cluster-on-the-table.md), the
 comparison is the one every learned solution here faces. On any day the depth

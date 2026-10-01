@@ -1,0 +1,20 @@
+{
+  "solution": "amodal",
+  "scenes": 20,
+  "layouts": "spawned",
+  "stations": 3,
+  "glasses": 100,
+  "find": {
+    "found": 100,
+    "missed": 0,
+    "merged": 0,
+    "split": 0,
+    "false": 0,
+    "position_mm_median": 6.8,
+    "position_mm_worst": 46.5
+  },
+  "handed over": {
+    "an outline with too little seen inside it to place": 88,
+    "cannot tell whether this is a glass": 121
+  }
+}

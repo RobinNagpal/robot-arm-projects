@@ -1,9 +1,6 @@
 # Fetched again with `make setup`, and refitted in minutes with `make train`.
 weights/
 
-# Written by `make test` and `make test-crowded`, one per solution.
-results-*.json
-
 # Built from pixi.toml and pixi.lock by `make setup`.
 .pixi/
 __pycache__/

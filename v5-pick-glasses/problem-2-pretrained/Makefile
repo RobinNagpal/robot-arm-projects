@@ -4,7 +4,7 @@
 TEST_SCENES ?= 20
 SOLUTIONS := sam maskrcnn amodal
 
-.PHONY: help install setup train test test-crowded train-all test-all check solution
+.PHONY: help install setup train test test-crowded floor by-kind train-all test-all check solution
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*##"} /^[a-z-]+:.*##/ { printf "  \033[36m%-13s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
@@ -38,6 +38,13 @@ test: solution install ## Run SOLUTION on TEST_SCENES held-out spawned scenes an
 
 test-crowded: solution install ## The same on crowded layouts, where one glass really hides another
 	pixi run python run.py --solution $(SOLUTION) --scenes $(TEST_SCENES) --crowded
+
+floor: install ## Score the renderer's own masks, the floor every solution is read against
+	pixi run python floor.py --scenes $(TEST_SCENES)
+	pixi run python floor.py --scenes $(TEST_SCENES) --crowded
+
+by-kind: install ## Ask the borrowed model what it outlines well, one kind of glass at a time
+	pixi run python proposals_by_kind.py
 
 train-all: ## Train all three, one after the other (very slow)
 	@for s in $(SOLUTIONS); do $(MAKE) train SOLUTION=$$s || exit 1; done

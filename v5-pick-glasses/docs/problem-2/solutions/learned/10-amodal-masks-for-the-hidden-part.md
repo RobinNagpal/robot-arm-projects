@@ -20,13 +20,14 @@ the same as in [a fine-tuned instance
 segmenter](09-a-fine-tuned-instance-segmenter.md), and what differs is only the
 answer each mask is scored against during training.
 
-That small change is worth a document because it repairs a failure the rest of
-the project cannot detect. When something stands in front of a glass, or when
+That small change is worth a document because of a failure the rest of the
+project cannot detect. When something stands in front of a glass, or when
 the edge of the picture falls across it, the mask of that glass stops early, and
 the footprint worked out from a mask that stops early is wrong in the one way
 that gets past every check this project has: it looks like the footprint of a
 smaller glass standing somewhere slightly different. A mask that includes the
-missing part gives the right footprint back.
+missing part hands the glass on as a glass of its own, with the part nobody saw
+marked as asserted rather than measured.
 
 By the end you will understand what the words modal and amodal mean, why the
 label needed to train the amodal version costs nothing in a simulator when it is
@@ -34,8 +35,10 @@ expensive and arguable on real photographs, what changes in the model and what
 does not, why a mask claiming pixels nobody saw is a prediction rather than a
 measurement and how far it should then be trusted, how to tell whether the
 completion works when the usual measure of a segmenter gives the wrong answer
-here, what stops such a model from inventing glass where there is none, and why
-the whole idea stops dead at the one case the problem says to watch hardest.
+here, what running it shows and the one way of using the completion that ruins
+the answer while every check still passes, what stops such a model from
+inventing glass where there is none, and why the whole idea stops dead at the
+one case the problem says to watch hardest.
 
 ## The problem this solves
 
@@ -73,6 +76,14 @@ acted on. A large fit error means the points are not disc-shaped, which again
 means the group is not one glass. The check is arithmetic rather than judgement,
 and it is what makes a learned component tolerable anywhere in this project:
 **the model proposes and the geometry disposes.**
+
+Two of those three numbers are what the code beside this document computes, and
+the third is not. That code takes the axis from the points at the top of the
+glass and the width from how far the cloud spreads around that axis, so a centre
+and a width come out of it and no fit error does. The fit error belongs to the
+circle fit [cluster on the
+table](../programmed/02-cluster-on-the-table.md) describes, so every mention of
+one from here on is a number that solution has and a run of this one does not.
 
 ### A mask cut short passes the check
 
@@ -113,7 +124,9 @@ a small tapered glass to a large one has room for the shrunken figure — a shor
 measurement does not look like an error, it looks like a shorter glass. The fit
 error is small. Both checks pass. So the pipeline reports a glass with a
 believable width at a position where no glass is standing, and nothing anywhere
-in the run contradicts it.
+in the run contradicts it. In a run with no fit error in it, which is the run
+beside this document, the failure is quieter still, because the one number that
+might have objected is never computed at all.
 
 Compare that with the failure these checks were designed for. When two glasses
 merge into one region the fitted width comes out far wider than any glass of
@@ -195,63 +208,80 @@ That is worth saying plainly, because it changes what this solution is worth.
 The quiet failure described above — a footprint too small and displaced, with a
 width the kind allows and a fit error a genuine glass would give — is not a rare
 failure kept on the books for safety's sake. It is what one picture ordinarily
-returns. So the argument for this solution rests on two legs rather than one:
-the failure is **ordinary**, and **nothing in the run says when it happens**,
-because both checks pass and a position where no glass stands is acted on.
+returns. So the truncated footprint is worth taking seriously on two counts
+rather than one: the failure is **ordinary**, and **nothing in the run says when
+it happens**, because both checks pass and a position where no glass stands is
+acted on. Which of its two causes a completion reaches is the next question.
 
-**What has not been shown is that completion reaches the second cause.**
+**Completion reaches the first cause and not the second, and that is measured.**
 Completing behind a near glass and completing past the edge of the picture are
 different problems. The first asserts pixels inside the frame, where a mask has
-room to hold them; the second asserts glass in a place the mask has no pixels
-for at all, so the training target and the way a mask is represented both have
-to change before a model can be asked for it. The geometric check survives
-either way, because the ring outside the frame is already part of the blind
-region [cluster on the table](../programmed/02-cluster-on-the-table.md)
-computes. What this document claims is the diagnosis, which is measured; whether
-a model trained this way completes a glass the frame cut is for the code to
-answer.
+room to hold them; the second would have to assert glass where the mask has no
+pixels at all, and a mask cannot hold a pixel the picture does not have. So the
+whole silhouette of a glass the frame cut is the visible mask of that glass,
+because a silhouette rendered from that same station stops at that same edge,
+and a run bears it out: on the layouts the cell spawns for itself this solution
+and [solution 9](09-a-fine-tuned-instance-segmenter.md) score alike, and the
+renderer's own exact silhouettes, handed to the shared arithmetic with no model
+anywhere in the chain, score no better there than its exact visible masks. The
+geometric check survives either way, because the ring outside the frame is
+already part of the blind region [cluster on the
+table](../programmed/02-cluster-on-the-table.md) computes, and what the cell
+does about the frame edge is to survey from three stations and ask them to
+agree.
 
-**And neither cause appears in the harness as it stands.**
-[`problem-2-sim`](../../../../problem-2-sim/README.md) renders its top view from
-higher than the cell's own survey height and takes one picture rather than
+**Both causes appear in the harness**, which is what lets either of them be
+measured rather than argued.
+[`problem-2-sim`](../../../../problem-2-sim/README.md) renders its own top view
+from higher than the cell's survey height and takes one picture rather than
 three: the higher the camera the less splay throws each outline, and one frame
-from that height holds the whole zone with room around it. So a run of the
-existing pipelines meets neither the neighbour nor the frame edge, and both have
-to be argued from the cell's own geometry rather than from a failure somebody
-has watched happen.
+from that height holds the whole zone with room around it. The code for this
+solution does not use that view. It stands the camera at the cell's own survey
+height and takes the three pictures a survey there needs, so the frame edge cuts
+masks in every run of it. The neighbour needs more than the height, because the
+cell's placement rule spaces glasses too well for it, so the harness builds
+**crowded layouts** on purpose and the test command asks for them by name.
+Neither cause has to be argued from geometry rather than watched.
 
 A neighbour in the way needs the **crowded layout**: glasses lining up along one
 line out from the point below the camera, close together along it, with the tall
 ones in front of the short ones. The frame edge needs nothing of the sort, only
 a glass near the edge of a station's picture, which is where most glasses are at
-some station. So the amodal target and the visible one come apart on ordinary
-tables and not only on crowded ones, which is a larger claim for this solution
-than crowding alone would support, and it is bounded by the open question above.
+some station. The frame edge is also the cause a whole silhouette cannot
+describe, so the amodal target and the visible one are the same mask wherever
+the frame edge alone did the cutting, and they come apart only where a neighbour
+is in the way. That is why this solution is scored on the crowded layouts as
+well as on the spawned ones, and the two scorecards are read apart rather than
+averaged into one number.
 
 ## The main idea
 
 The idea follows from the diagnosis and it is one sentence long: **ask the model
 for the whole silhouette of each glass, not just the visible part of it.**
 
-If the mask covers the whole silhouette, the points it back-projects fill the
-whole disc, so the fitted circle has the right centre and the right width. The
-failure above disappears, because what caused it was a missing piece of the disc
-and there is no longer a missing piece. Nothing downstream changes, because what
-comes out is still a mask per glass and what the arithmetic does with a mask is
-unchanged.
+If the mask covers the whole silhouette, the glass is a region of its own, with
+its outline where the glass's outline really runs. The region is drawn round the
+whole shape rather than round the sliver the camera saw, so the sliver is
+attributed to the glass it came off instead of being swallowed into the region
+of the glass in front, and a sliver too thin to be worth proposing on its own is
+proposed as part of something whole. Nothing downstream changes, because what
+comes out is still a mask per glass.
 
-The price is as simple. Some pixels in such a mask are pixels where the camera
-saw another object's surface, so the model is asserting that glass continues
-underneath what is in front of it, and an assertion is not an observation. The
-circle fitted to such a mask is **a prediction of a footprint rather than a
-measurement of one**, and everything that consumes it has to know which of the
-two it is holding.
+The price is as simple, and it decides what the completion may be used for. Some
+pixels in such a mask are pixels where the camera saw another object's surface,
+so the model is asserting that glass continues underneath what is in front of
+it, and an assertion is not an observation. Worse, the depth reading at such a
+pixel is the other object's reading, so it says how far away that object is and
+nothing about this glass. **The whole silhouette says how far a glass reaches,
+never how far away it is**, and everything that consumes it has to know which of
+its pixels are which.
 
 The rest of this document works through that trade: the two words the idea needs
 and the everyday version that makes them intuitive, why the training label is
 free here, what changes in the model and what does not, what follows from part
-of the mask being asserted, how to measure whether the completion works, what
-bounds the risk of the model inventing glass, and the case none of it reaches.
+of the mask being asserted, how to measure whether the completion works and what
+running it shows, what bounds the risk of the model inventing glass, and the
+case none of it reaches.
 
 ## What modal and amodal mean
 
@@ -402,9 +432,11 @@ clearly worse than the score over the visible part.
 An amodal mask claims pixels whose evidence is some other object's surface. The
 camera looked at those pixels and the near glass came back, so for every pixel
 of the hidden part the model is not reporting what it saw but what it believes
-is behind what it saw. **The circle fitted to an amodal mask is therefore a
-prediction rather than a measurement**, and how much of one it is varies from
-glass to glass within the same picture.
+is behind what it saw. **A footprint fitted to such a mask as it stands is
+therefore a prediction rather than a measurement**, and how much of one it is
+varies from glass to glass within the same picture. The rest of this section is
+about how not to fit one that way, and about what the completion is worth once
+the two kinds of pixel are kept apart.
 
 ![One reported answer split into its observed part and its asserted part, with
 the fit error computed over the observed part only and the visible fraction
@@ -422,6 +454,64 @@ a second branch the observed part is recoverable, because the depth reading at a
 pixel says whether the surface there is at the far glass's distance or at the
 near object's.
 
+The arithmetic is the first consumer of that split and the strictest. The
+asserted pixels are named and left out of it, so the place and the width come
+from the pixels the camera saw and from nothing else, and nothing is inferred in
+their place: what an asserted pixel would be worth is a question about geometry,
+and a guess at it here would be arithmetic nobody asked for. Which pixels are
+asserted is read off the answer itself rather than off any truth, because where
+two reported outlines overlap both glasses lie along those rays and the camera
+saw the nearer of them.
+
+### Feeding the asserted pixels in is the mistake that passes every check
+
+Leaving them out has to be done on purpose, because a silhouette arrives as one
+mask and the arithmetic will take any mask it is given. An asserted pixel's
+depth reading belongs to whatever stood in front of the glass, so the point it
+gives sits on that other object, somewhere between the camera and the glass
+being reported, and a patch of such points drags the answer across the gap
+between the two. That makes it the one implementation mistake worth stating on
+its own.
+
+What that costs is measured, with the renderer's own exact masks and no model
+anywhere in the chain, over the partly hidden glasses of the crowded layouts.
+Naming the asserted pixels and leaving them out places a glass close to where it
+stands. Feeding them in instead puts the place about four times further out and
+makes the fitted footprint roughly twice as wide as it should be. Through the
+whole scorecard it multiplies the number of pairs merged into one report by more
+than ten.
+
+Nothing complains while it happens. The mask looks like a better mask, the
+footprint stays round, and the width stays inside the range the kind allows, so
+what comes out is a plausible wrong answer of exactly the sort the first half of
+this document is about, reached by the repair rather than by the failure the
+repair is for.
+
+### What the completion buys is attribution rather than measurement
+
+Put the split and the exclusion together and the value of the whole silhouette
+sits where a reader does not first look for it. The asserted pixels are left
+out, so they contribute nothing to the place and nothing to the width: the
+measurement is the one the observed pixels alone would have given, and the
+completion supplies no measurement at all, because it has no reading to supply.
+What it supplies comes earlier than the measurement and is worth more. The model
+proposes **one region per glass**, drawn round the shape the glass really has,
+so the visible part of a hidden glass is attributed to the glass it belongs to
+instead of being swallowed into the region of the glass in front, and the
+rectangle has room to hold the whole shape instead of stopping where the
+evidence stops. A glass a modal segmenter leaves out of its report altogether is
+reported here as itself, and that is where the gain measured further down comes
+from.
+
+The other side of it is reported rather than hidden. Where the completion covers
+a glass the camera barely saw, what arrives is an outline with too little seen
+inside it to place, and such an outline is handed on as doubtful rather than
+placed from nothing. This solution raises that doubt far more often than
+[solution 9](09-a-fine-tuned-instance-segmenter.md) does, and that is the
+completion working rather than failing: the glass is proposed, and the
+arithmetic says plainly that what was seen of it will not place it. A glass
+reported as doubtful is a result in this project and not a failure.
+
 ### The visible fraction is a free confidence
 
 Once the two parts are separate their ratio is available, and it is the
@@ -436,18 +526,22 @@ expected error rather than an uninterpreted number.
 
 ### Trust it for a position, never for a measurement
 
-A **position to go and look at** can come from a completed circle without
-hesitation. A slightly wrong position costs a picture, and the completed circle
-is better than the truncated one in every case and worse in none.
+A **position to go and look at** can come from such an answer without
+hesitation, and that is what the completion is for. A slightly wrong position
+costs a picture, and a glass reported in a slightly wrong place is better than a
+glass not reported at all.
 
-A **measurement that decides a grip** may not come from asserted pixels at all.
-This project's rule is that the last millimetres are felt rather than driven:
-the fingers close until they touch and then check the width, and the glass comes
-down until the rim touches and then checks the weight transferred. A width
-derived partly from pixels nobody saw is exactly what that rule keeps away from
-the gripper. So the width reported here is a rough figure for planning and for
-the range check, and the real measurement still comes from the look from the
-side and from the fingers.
+A **measurement that decides a grip** may not come from it, and the reason can
+be given exactly. The asserted pixels supply no reading, so what the width is
+fitted to is the part the camera saw, which for a mostly hidden glass is a
+crescent, and a crescent gives a width under the truth. The completion neither
+invents that width nor repairs it. This project's rule is that the last
+millimetres are felt rather than driven: the fingers close until they touch and
+then check the width, and the glass comes down until the rim touches and then
+checks the weight transferred. A width fitted to part of a glass is exactly what
+that rule keeps away from the gripper. So the width reported here is a rough
+figure for planning and for the range check, and the real measurement still
+comes from the look from the side and from the fingers.
 
 ### The fit error stops being a check over the whole mask
 
@@ -461,9 +555,11 @@ is, and a check that always passes is not a check.
 
 The repair must not be skipped. **Compute the fit error over the observed part
 only.** Those points are measurements, they scatter like measurements, and
-asking whether they lie on the circle the completion implies is a genuine test:
-a crescent completed into the wrong circle leaves its own points sitting off
-that circle.
+asking whether they lie on one disc is a genuine test of the group they came
+from: a region that has swallowed a neighbour, or a strip of table, answers no.
+What it cannot test is the completion, which supplies no point on the table to
+be tested, and the check that does test the completion is the last of the three
+below.
 
 ## Measuring whether it works
 
@@ -514,21 +610,61 @@ about the completion itself, and it is the one to watch during training.
 ### The measure that actually matters is the footprint error
 
 Both measures above score masks, and a mask is not what this solution is for.
-What the pipeline consumes is a centre and a width, so the error in those
-decides whether this solution earns its place. Run the trained model over
-held-out renders, fit the circle to each reported mask, and compare the centre
-and the width with the truth. Then report the result **as a curve against
-visible fraction rather than as one average**, because a single average is where
-this failure hides: the well-seen glasses are numerous and nearly perfect, and
-averaging them with the badly hidden ones gives a comfortable figure describing
-no case in particular.
+What the pipeline consumes is a centre and a width, so the error in those is
+most of what decides whether this solution earns its place. Run the trained
+model over held-out renders, fit the footprint to each reported glass, and
+compare the centre and the width with the truth. Then report the result **as a
+curve against visible fraction rather than as one average**, because a single
+average is where this failure hides: the well-seen glasses are numerous and
+nearly perfect, and averaging them with the badly hidden ones gives a
+comfortable figure describing no case in particular.
+
+And count the glasses found, missed and merged beside it, because what this
+solution changes shows up in those counts before it shows up in any footprint. A
+completion that attributes a crescent to the glass it came off adds a glass to
+the answer; it does not improve the footprint of a glass that was already there.
+
+## What running it shows
+
+Those measures have been taken, over held-out scenes no training ever saw, at
+the cell's own survey height and from its three stations, on both kinds of
+layout, and scored by the scorecard every pipeline in this project shares. What
+comes out falls into three findings, and they are worth taking in order: the
+first says the idea works, the second says how much room is left above it, and
+the third says where it buys nothing at all.
+
+**On a crowded layout the idea works.** Against [solution
+9](09-a-fine-tuned-instance-segmenter.md), from the same architecture, the same
+borrowed weights and the same scenes, this solution finds about one glass in ten
+more of them, and the worst place error among the glasses it reports comes down
+by about a quarter. The reason is the [attribution rather than the
+measurement](#what-the-completion-buys-is-attribution-rather-than-measurement):
+what it adds are hidden glasses whose visible part is attributed to them, rather
+than better measurements of the glasses solution 9 already had.
+
+**On a crowded layout it is also at the ceiling.** Hand the renderer's own exact
+silhouettes to the same arithmetic, with no model anywhere in the chain, and no
+more glasses are found than this solution finds. So what it still misses is not
+missed for want of a better segmenter. It is missed because a glass with no
+pixels at a station has nothing to extend, which is the limit [a glass hidden
+completely](#when-the-glasses-are-completely-hidden) sets and the one no
+training moves.
+
+**On a spawned layout the completion buys nothing, and that is the honest half
+of the result.** This solution and solution 9 score identically there, down to
+the same worst place error, and exact whole silhouettes score the same as exact
+visible masks. What cuts a mask on a table the cell lays out for itself is the
+edge of the picture, and a silhouette rendered from that station is cut off at
+that same edge, so the amodal target is the visible target and the completion
+has nothing to add. That is why the two kinds of layout are scored apart from
+each other: one number averaged over both would hide the whole result.
 
 ## The risk of inventing glass where there is none
 
 A model trained to extend evidence has an obvious failure direction, and it is
-the mirror image of the one this solution repairs: it can extend evidence that
-did not need extending, or extend a scrap of evidence into a whole object that
-is not there.
+the mirror image of the failure this solution is for: it can extend evidence
+that did not need extending, or extend a scrap of evidence into a whole object
+that is not there.
 
 Two facts about this cell make that concrete. A narrow strip of glass pixels
 looks much the same whether it is the visible sliver of a mostly hidden glass or
@@ -538,27 +674,44 @@ the top outwards, so an outline's far edge can look cut off when the glass
 merely ends. This failure is loud where the one it replaces is quiet, and three
 cheap checks bound it.
 
+**Those three checks are work still to do rather than work already done**, and
+saying so is worth more to a reader than letting them be taken for granted. The
+code beside this document splits every reported mask into its observed and
+asserted parts and keeps the asserted pixels out of the arithmetic, which is
+what [report the two parts separately](#report-the-two-parts-separately) asks
+for. On the strength of what it then finds it refuses nothing: no width is
+tested against the range the kind allows, no asserted part is intersected with
+the blind region, and the arithmetic it shares computes no fit error for
+anything to be tested against. The **visible fraction** is the plainest gap of
+the lot, because the split that would give it is computed for every reported
+mask and the ratio costs one division, and still no such number travels with the
+answer. So what the completion earns on its own is a position good enough to
+look from; the three checks below are what a cell has to wrap round this model
+before a completed mask may be acted on.
+
 ### The kind's own range of widths
 
-A completion implies a footprint, and a footprint has a width, so the range
-check from the start of this document now does real work again. If the implied
-width falls outside the range this kind allows, the completion is rejected and
-the glass is reported as doubtful rather than believed. Notice what has changed:
-against a truncated modal mask the check was useless, because the truncated
-width looked like a legal smaller glass, while against a completion it catches
-the invention directly, since inventing glass means claiming a footprint and a
-claimed footprint either fits the kind or does not.
+Inventing glass means reporting a glass where none stands, and every report
+carries a width, so the range check from the start of this document has real
+work to do again here. The pixels of an invented region are pixels the camera
+saw something at, bare table or the edge of a glass that ends there, so they
+give points on the table and a width of their own, and a width outside the range
+this kind allows is reason enough to refuse the report and hand it on as
+doubtful. Notice what has changed: against a truncated modal mask the check was
+useless, because the truncated width looked like a legal smaller glass, while
+against an invention it catches the thing directly, since claiming a glass means
+claiming a footprint and a claimed footprint either fits the kind or does not.
 
-### The observed points must lie on the completed circle
+### The observed points must sit on one disc
 
-The second check is the one recovered at the end of the last section. Fit the
-circle to the whole amodal mask, then ask how far the **observed** points sit
-from it. A crescent completed into the right circle leaves its points lying
-along that circle's edge, because they came off the real glass; a crescent
-completed into a circle too large, or centred wrongly, leaves them off it. The
-two parts have different origins: the asserted pixels agree with the fitted
-circle whatever happens, and the observed ones agree only if the completion was
-right.
+The second check is the one recovered at the end of the last section, and what
+it tests is the group of pixels rather than the completion. Fit a circle to the
+**observed** points and to nothing else, because an asserted pixel carries no
+reading to make a point from, and then ask how far those points sit from it:
+that asks whether what the camera saw is a patch of one glass's disc. A
+region that has swallowed a neighbour, or a strip of table, or two glasses at
+once, answers no. The completion itself is left to the third check, which is the
+one that looks at the asserted pixels directly.
 
 ### The assertion has to lie somewhere the camera could not see
 
@@ -599,12 +752,15 @@ the part of it nothing shows, and for each rectangle it keeps it predicts an
 **amodal mask** covering that glass's whole silhouette, with a score. The mask
 is split into its **observed part**, where the depth reading agrees that the
 surface seen there belongs to this glass, and its **asserted part**, which is
-the rest. Every pixel of the whole mask becomes a **point on the table**, and a
-**circle** fitted to those points gives a centre, a width, and a fit error
-computed over the observed points only.
+the rest. Every pixel of the observed part becomes a **point on the table**, and
+an asserted pixel becomes no point at all, because the reading under it belongs
+to whatever stood in front. The place and the width come from those points, and
+so does a **fit error** wherever the arithmetic computes one, every one of them
+a measurement of the part that was seen; the silhouette has already done its
+work, in deciding which pixels are this glass's.
 
-Then three checks run, and each can only reject. The width must lie inside the
-range the kind allows. The observed points must lie on the fitted circle. The
+Then three checks have to run, and each can only reject. The width must lie
+inside the range the kind allows. The observed points must sit on one disc. The
 asserted part must lie inside the **blind region** the geometry says this camera
 pose could not see. A glass passing all three is reported with its centre, its
 width and its **visible fraction**; a glass failing any of them is reported as
@@ -613,10 +769,11 @@ camera](../programmed/03-move-the-camera.md).
 
 Three things are worth holding on to. The **target** decision is the whole
 solution, since everything else is solution 9 unchanged. The **separation**
-decision is what keeps it honest, because every surviving check needs observed
-and asserted pixels kept apart. And the **arithmetic** decision is unchanged
-from every other solution here: the model proposes a silhouette, and the kind's
-range of widths, the observed points and the blind region dispose.
+decision is what keeps it honest, because the arithmetic and every surviving
+check need observed and asserted pixels kept apart. And the **arithmetic**
+decision is unchanged from every other solution here: the model proposes a
+silhouette, and the kind's range of widths, the observed points and the blind
+region dispose.
 
 ## When the glasses are completely hidden
 
@@ -682,9 +839,10 @@ at into a pose the arm can reach.
 One thing this solution does contribute there. Completion needs less of a glass
 than any other method here, so the point at which hiding becomes complete is
 further away with this model than without it, and glasses that would have gone
-missing entirely under a modal segmenter are found and placed. **The boundary
-moves; it does not disappear.** Beyond wherever it now sits, this solution has
-nothing to say, and says so.
+missing entirely under a modal segmenter are found and placed from the sliver
+that is left, which is what the crowded layouts measure. **The boundary moves;
+it does not disappear.** Beyond wherever it now sits, this solution has nothing
+to say, and says so.
 
 ## A worked example
 
@@ -706,17 +864,23 @@ the truth, and the fit error is small because a patch of a disc is well
 explained by a smaller disc. The width lands inside the range the kind allows,
 because a kind spanning a small tapered glass to a large one has room for a
 short measurement. So two glasses are reported with believable widths, one of
-them standing where no glass is standing, and the arm goes where it was told.
+them standing where no glass is standing, and the arm goes where it was told. Or
+the crescent is never proposed as a region of its own, and one glass is reported
+where two stand.
 
 **What this solution reports.** The short glass's mask includes the part behind
-the tall glass, so its points fill the whole disc and the fitted circle has the
-right centre and the right width. The observed part is the crescent and the
-asserted part is the rest, so the visible fraction is low and travels with the
-answer. The fit error over the observed points is small, which says the crescent
-really does lie on the completed circle. The asserted part lies in the tall
+the tall glass, so the short glass is a region of its own and the crescent is
+attributed to it rather than swallowed into the tall glass's region. The
+observed part is the crescent and the asserted part is the rest, so the visible
+fraction is low and travels with the answer. The asserted pixels carry the tall
+glass's depth readings, so they are left out, and the place and the width come
+from the crescent: the place is good enough to send a camera to, and the width
+is under the truth. The crescent is a patch of one glass's disc, so a fit error
+over the observed points is small. The asserted part lies in the tall
 glass's own shadow, inside the blind region, so nothing is claimed where the
-camera had a clear view. All three checks pass and the glass is reported,
-correctly placed and flagged as mostly inferred.
+camera had a clear view. None of the three checks has anything to object to, so
+the glass is reported, placed well enough to look at again and flagged as mostly
+inferred.
 
 **What the flag then buys.** Because the visible fraction is low, the reported
 width plans and does not grip. The arm goes to the side, stands back at the
@@ -751,11 +915,25 @@ Then training and testing take the name of the solution, and this one is
     make train SOLUTION=amodal
     make test  SOLUTION=amodal
 
+That test scores the layouts the cell spawns for itself. The layouts where one
+glass really does stand in front of another are asked for by name, and they are
+the only ones on which this solution can differ from solution 9 at all:
+
+    make test-crowded SOLUTION=amodal
+
+One more command runs the same scenes with no model in them at all. It hands the
+renderer's own masks to the same arithmetic, over both kinds of layout, which is
+the floor every number here is read against and where the cost of feeding the
+asserted pixels in was measured:
+
+    make floor
+
 Running `make train SOLUTION=maskrcnn` instead trains [solution
 9](09-a-fine-tuned-instance-segmenter.md) from the same architecture on the same
-scenes with the visible masks as targets. Training both and comparing their
-footprint error against visible fraction is the only way to find out what the
-completion is buying.
+scenes with the visible masks as targets, and putting both solutions through
+both test commands is how [what running it shows](#what-running-it-shows) was
+arrived at: the completion pays on the crowded layouts, and on the spawned ones
+the two solutions cannot be told apart.
 
 ## What it needs
 
@@ -786,7 +964,8 @@ well-seen glasses, and a model trained on that mixture meets the hard case
 rarely and optimises for the easy one. So scenes have to be spawned with glasses
 far more heavily covered than the rule would ordinarily produce, while keeping
 the easy scenes too, in proportion, so the model does not learn that something
-is always hidden.
+is always hidden. The training set is built that way, with the crowded layouts
+standing beside the spawned ones.
 
 ### The pictures are not photographs
 
@@ -814,26 +993,37 @@ is not a result.
 
 ## Where it is strong and where it breaks
 
-**It gives the right footprint for a partly hidden glass.** This is the point of
-the solution, and it repairs the one failure in this project that is quiet. A
-truncated mask gives a footprint too small and displaced, with a plausible width
-and a small fit error, so every check passes. A completed mask gives the right
-footprint. A neighbour in the way is uncommon; the edge of the picture is not,
-and most glasses have no station that returns a whole footprint, so the failure
-being repaired is ordinary rather than rare. What is not yet shown is that
-completion reaches the second of those causes, because a mask has no room for
-the part of a glass that fell outside the frame.
+**It reports a partly hidden glass as a glass of its own.** This is the point of
+the solution. A modal segmenter swallows the crescent of a hidden glass into the
+region of the glass in front, or leaves it out for being too thin to propose,
+and this one hands it on attributed to the glass it came off, which on a crowded
+layout finds about one glass in ten more and brings the worst place error down
+by about a quarter. What it does not do is measure the part nobody saw: those
+pixels carry another object's depth readings and are left out, so the footprint
+is still the footprint of the part that was seen, too small and displaced in the
+quiet way the first half of this document describes.
+
+**It does nothing about the edge of the picture**, which is the commoner of the
+two causes, and that is measured rather than guessed at. A glass whose outline
+the frame cut is cut in its whole silhouette too, because a silhouette rendered
+from that station stops at that same edge, so there is nothing to assert and
+this solution and solution 9 answer alike on every layout the cell spawns for
+itself. What the cell does about the frame edge is to survey from three stations
+and ask them to agree.
 
 **It costs almost nothing over solution 9.** The architecture, the starting
 weights, the training pictures and the arithmetic downstream are all the same;
 the change is the target each mask is scored against, and the simulator supplies
 the label for it.
 
-**Its answer is partly asserted, and it cannot explain itself.** Asserted pixels
-make the footprint a prediction, which is fine for deciding where to look and
-unacceptable for deciding how to grip, and a model that extends evidence can
+**Part of its answer is asserted, and it cannot explain itself.** The asserted
+pixels are kept out of the arithmetic, so what they cost is not a wrong
+measurement but the standing invitation to use them as one: a run that hands the
+whole silhouette on instead places a glass several times further from where it
+stands, with every check still passing. And a model that extends evidence can
 extend evidence that did not need extending. The three checks wrapped round it
-are what make that tolerable.
+are what make that tolerable, and in the code beside this document they are
+still to be built.
 
 **It is blind to a glass hidden completely.** No pixels means nothing to extend.
 That is a fact about the input, it is shared with every method here that works
@@ -977,29 +1167,31 @@ This solution is [solution 9](09-a-fine-tuned-instance-segmenter.md) with one
 change, so the comparison with it is the only one needing care, and it comes
 down to a single trade.
 
-**What the change buys** is a correct footprint whenever a glass is partly
-covered. Solution 9's masks are modal, so a partly covered glass gives it a
-crescent, and the circle fitted to a crescent is too small and in the wrong
-place with a plausible width and a small fit error. That is the quiet failure
-this document is about. Covering by a neighbour is uncommon, so solution 9 meets
-that on crowded layouts rather than on every table; truncation by the edge of
-the picture it meets on nearly every table, because most glasses have no station
-that returns a whole footprint. Nothing in its output says which of the two it
-has just handed on.
+**What the change buys** is that a partly covered glass is reported as itself,
+which a crowded layout measures as about one glass in ten more found and a worst
+place error about a quarter lower. Solution 9's masks are modal, so a partly
+covered glass gives it a crescent, and a crescent is swallowed into the region
+of the glass in front or left out for being too thin to propose. What the change
+does not buy is the footprint of the part nobody saw, because the completion
+supplies no depth reading, and it does not reach the edge of the picture at all:
+covering by a neighbour is the one cause the two solutions differ on, and on
+every layout the cell spawns for itself they score alike.
 
 **What the change costs** is four things, and solution 9 pays none of them. The
-reported footprint is partly a prediction, so it may aim a camera and not set a
-grip. The fit error is no longer a check over the whole mask, because the
-asserted pixels lie on the fitted circle by construction, so it has to be
-computed over the observed pixels only. The rectangles have to be proposed
-around whole silhouettes, which is a harder detection task. And there is a new
-failure direction, inventing glass where there is none, bounded by the kind's
-range of widths, by the observed points and by the blind region, but not
-removed.
+glasses it reports that solution 9 would have left out are the mostly hidden
+ones, so the widths it adds are the widths of crescents and have to travel with
+the visible fraction that says so. The asserted pixels have to be named and kept
+out of the arithmetic before anything is fitted, and a run that hands the whole
+silhouette on instead places a glass several times further from where it stands
+than solution 9 would, with every check still passing. The rectangles have to be
+proposed around whole silhouettes, which is a harder detection task. And there
+is a new failure direction, inventing glass where there is none, bounded by the
+kind's range of widths, by the observed points and by the blind region once a
+cell runs those checks, but not removed.
 
 Solution 9 is therefore the thing to build first, because it is the same code
-without the extra label and the extra risk, and this is the change to make once
-the footprint error against visible fraction has been measured.
+without the extra label and the extra risk, and this change earns its place
+where glasses stand in front of one another and nowhere else.
 
 Against [cluster on the table](../programmed/02-cluster-on-the-table.md) the
 comparison is more interesting, because that solution attacks the same
@@ -1016,15 +1208,16 @@ Those are complements rather than alternatives. This solution shrinks the set of
 glasses that go missing, by needing less of a glass to be visible; the
 blind-region arithmetic bounds what is left, by naming the places a missing
 glass could still be standing. Neither can do the other's job: no completion
-finds a glass with no pixels, and no geometry gives the footprint of a glass you
-can see half of.
+finds a glass with no pixels, and no geometry says which glass a sliver of
+pixels came off.
 
 The rest of the folder fits around those two. [Split the blob in the
 picture](../programmed/01-split-the-blob-in-the-picture.md) and [a network
 trained from scratch](06-a-network-trained-from-scratch.md) work from visible
 pixels only, so both inherit the truncated-footprint failure, and the second
-names amodal segmentation as the repair without performing it — this is that
-repair. [Segment anything, then keep the
+names amodal segmentation as the repair without performing it — this performs
+it, and the part of the failure it reaches is which glass a truncated mask
+belongs to. [Segment anything, then keep the
 glasses](08-segment-anything-then-keep-the-glasses.md) has the same gap and
 cannot close it this way, because its masks come from a model used as
 downloaded.

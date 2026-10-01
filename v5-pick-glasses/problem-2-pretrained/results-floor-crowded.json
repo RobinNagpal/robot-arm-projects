@@ -1,0 +1,70 @@
+{
+  "ways": [
+    {
+      "solution": "exact visible masks",
+      "scenes": 20,
+      "layouts": "crowded",
+      "stations": 3,
+      "glasses": 101,
+      "find": {
+        "found": 83,
+        "missed": 18,
+        "merged": 1,
+        "split": 1,
+        "false": 0,
+        "position_mm_median": 0.4,
+        "position_mm_worst": 50.0
+      },
+      "handed over": {}
+    },
+    {
+      "solution": "exact whole masks",
+      "scenes": 20,
+      "layouts": "crowded",
+      "stations": 3,
+      "glasses": 101,
+      "find": {
+        "found": 83,
+        "missed": 18,
+        "merged": 1,
+        "split": 1,
+        "false": 0,
+        "position_mm_median": 0.4,
+        "position_mm_worst": 50.0
+      },
+      "handed over": {}
+    },
+    {
+      "solution": "exact poisoned masks",
+      "scenes": 20,
+      "layouts": "crowded",
+      "stations": 3,
+      "glasses": 101,
+      "find": {
+        "found": 69,
+        "missed": 32,
+        "merged": 14,
+        "split": 2,
+        "false": 0,
+        "position_mm_median": 0.1,
+        "position_mm_worst": 72.7
+      },
+      "handed over": {}
+    }
+  ],
+  "one glass at a time": {
+    "partly hidden glasses": 133,
+    "asserted pixels": {
+      "named": {
+        "position_mm_median": 12.2,
+        "position_mm_worst": 51.3,
+        "width_mm_median": 69.6
+      },
+      "fed in": {
+        "position_mm_median": 46.1,
+        "position_mm_worst": 130.5,
+        "width_mm_median": 126.4
+      }
+    }
+  }
+}

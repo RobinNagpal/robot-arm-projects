@@ -342,8 +342,41 @@ worse. Its README says why.
 No test scene needed them to find every glass. They are what to add first when
 the cell changes, for the reasons below.
 
-Nothing from solutions 8, 9 and 10 is in either pipeline, because each of those
-is a whole alternative to the find step rather than a part missing from it.
+**A third folder holds the three that borrow weights.** Nothing from solutions
+8, 9 and 10 is in either pipeline, because each of those is a whole alternative
+to the find step rather than a part missing from it, so the three are built and
+scored on their own in
+[`problem-2-pretrained`](../../../problem-2-pretrained/README.md). That folder
+surveys from the cell's own height, from the three stations the cell computes,
+which is what makes its numbers different in kind from the two pipelines above.
+It scores each solution twice: once on the layouts the cell's placement rule
+produces, and once on layouts built on purpose to put one glass in front of
+another.
+
+The row that makes the rest of the table readable is the first one, which is not
+a solution at all. It is the renderer's own exact masks, handed to the same
+arithmetic and judged by the same scorecard, so it says what any segmenter here
+could manage at best.
+
+| Find, from the top | The rule's own layouts | One glass in front of another |
+|---|---|---|
+| exact masks, no model | 100 of 100; 6.3 mm median, 46.5 worst | 83 of 101; 0.4 mm median, 50.0 worst |
+| 8, segment anything | 74 of 100; 2.7 mm median, 43.1 worst | 75 of 101; 0.8 mm median, 31.1 worst |
+| 9, fine-tuned | 100 of 100; 6.8 mm median, 46.5 worst | 75 of 101; 0.5 mm median, 86.2 worst |
+| 10, amodal | 100 of 100; 6.8 mm median, 46.5 worst | 84 of 101; 1.2 mm median, 62.9 worst |
+
+Three things follow from it. **On the layouts the cell's own rule produces, the
+model is not what limits the answer**, because the fine-tuned segmenter sits
+within half a millimetre of what exact masks give and shares their worst case
+exactly, so what is left of the error belongs to the arithmetic and to the
+geometry of looking from the top. **Completing the hidden part earns its place
+only where something really stands in front**, since solutions 9 and 10 are
+indistinguishable on ordinary layouts, while on crowded ones solution 10 finds
+about one glass in ten more, which is as many as the renderer's own exact masks
+find. And **a borrowed
+model with almost nothing fitted behind it finds the fewest glasses on an
+ordinary table, and is the only row here that never merges two of them**, which
+is a trade worth seeing stated in one line.
 
 ## Where what was built can fail
 
@@ -352,6 +385,17 @@ holds the whole zone, and no test scene lost a glass. But the problem asks for
 the places that could not have been seen, and the pipeline has no such list. The
 day the zone widens or the glasses get taller, a missing glass will leave no
 trace. Solution 2's second half is the fix.
+
+**The one high picture hides what a survey is for.** The reason no scene lost a
+glass is that both pipelines take a single overhead picture from high enough
+that the whole glass zone is in frame and nothing there covers anything.
+Surveyed instead from the cell's own height, where three stations are needed to
+hold the zone between them, most glasses are cut by the edge of some station's
+picture, and a footprint cut by the frame back-projects to an arc rather than to
+a whole circle. [Cluster on the table](programmed/02-cluster-on-the-table.md)
+measures how often that happens, and the third folder shows what it costs: on an
+ordinary table it is the edge of the picture rather than a neighbouring glass
+that sets how far a found place sits from the true one.
 
 **Glasses that could not be separated are not reported.** The problem asks for
 that list too. The votes either split two glasses or they do not, and nothing

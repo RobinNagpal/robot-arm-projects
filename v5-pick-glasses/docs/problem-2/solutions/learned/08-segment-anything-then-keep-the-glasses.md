@@ -41,11 +41,14 @@ solutions in this problem.** It needs the least data of any of them and brings
 the largest gap between what its weights were fitted on and what it is shown,
 and those two facts are the same fact seen from two sides.
 
-That gap does not fall evenly on the kinds of glass, and the difference is
-sharp. Shown a grey picture shaded from depth, the borrowed model outlines a
-straight glass or a tapered one almost exactly, and it cuts into a stemmed one
-badly enough that barely half of them are proposed at all. That is the worst
-result anywhere in this solution and the strongest argument against it, and it
+That gap does not fall evenly on the four kinds of glass this cell knows, and it
+falls in the same order every time. Shown a grey picture shaded from depth, the
+borrowed model outlines a straight glass or a tapered one almost exactly, it
+cuts into the bowl of a short stemmed one, and it cuts worst of all into the
+stemmed kind, where the best proposal for a glass typically holds about four
+fifths of it and a minority of glasses are cut badly. What it loses there is the
+accuracy of the outline rather than the glass itself, and that is still the
+worst result anywhere in this solution and the strongest argument against it. It
 is worked through in [the domain
 gap](#the-domain-gap-which-is-the-largest-risk-here).
 
@@ -107,8 +110,8 @@ used here is **SAM**, the Segment Anything Model, in its smallest released size,
 a **proposal** from here on, and the **keeper** is a small classifier that is
 shown a handful of measurements about a proposal and returns how likely that
 proposal is exactly one glass. The keeper is the only fitted thing in this
-solution, it fits in well under a second, and it learns from scenes where the
-simulator knows which pixels belong to which glass.
+solution, it fits in seconds, and it learns from scenes where the simulator
+knows which pixels belong to which glass.
 
 So, in the plainest terms: **everything that finds objects is borrowed whole,
 and everything fitted here is one small decision at the end.** Beside the
@@ -223,6 +226,12 @@ chosen amount. The **overlap** of two masks means the area both claim divided by
 the area either claims, which is one for identical masks and zero when they
 share nothing.
 
+The quality estimate and the stability earn their keep here and nowhere else.
+They are a **gate** rather than evidence: they cut the heap down to a shortlist
+before anything else looks at it, and the keeper further on is never shown
+either of them, because what it has to decide is what a region is rather than
+how sure the borrowed model was about drawing it.
+
 ![The proposals that survive the cleanup, drawn over one scene: the table, each
 glass, two rims, one mouth, and a pair of glasses as a single
 region](../../../../images/problem-2/08-everything-is-proposed.png)
@@ -288,57 +297,95 @@ on the table, and the project already has the arithmetic that works that out.
 
 Every proposal's pixels have depth readings, because the glasses here are solid,
 so each proposal becomes a set of points in the room the same way [cluster on
-the table](../programmed/02-cluster-on-the-table.md) makes them. Dropping those
-points onto the table and fitting a circle gives a centre, a width and a fit
-error, and the heights of the same points give the rest. Every input the keeper
-has comes from those, or from SAM's own output, and they fall into four groups.
+the table](../programmed/02-cluster-on-the-table.md) makes them. The points at
+the top of the proposal give its middle, because seen from the top a rim leans
+outwards while its own middle stays over the glass, and how far the cloud of
+points reaches from that middle gives a width. The heights of the same points
+say how far the proposal's surface stands above the table. The rest come from
+the shape of its outline, from the depth readings along that outline, and from
+the other proposals beside it. **The keeper is shown eight measurements of one
+proposal**, and they are worth walking through in the order it reads them.
 
-**About the footprint on the table**: the fitted width, how far that width sits
-inside or outside the range this kind of glass allows, and the fit error, which
-says whether the points form a round footprint at all. The width is the
-strongest single input, because the kind is known and its range of widths is
-known with it.
+**Where the measured width falls inside the range this kind of glass allows** is
+the strongest single input, because the kind is known and its range of widths is
+known with it. A footprint narrower than the narrowest glass of this kind can be
+is a part of something rather than a glass, and one wider than the widest is
+more than one thing.
 
-**About height**: how far the proposal's points stand clear of the table, and
-**how much that height varies across the proposal**. Table lies at the table's
-own height everywhere, a whole glass has points at every height from the table
-to its rim, and a mouth has all of its points at one height. The second of those
-two is what separates a mouth from the glass it belongs to, and the first cannot
-do it, because from above a glass is mostly its own mouth and the two sit at the
-same rim height. Leave the spread out and mouths are kept as glasses beside
-their own glasses, every one of them a legal width, so the width check cannot
-catch them and the report holds more glasses than the table does.
+**How round the proposal is**, meaning its own area against the area its outline
+could enclose, is the next. A filled disc is as round as a region can be, while
+a ring, a crescent, and two footprints joined by a strip of table are all well
+short of that. **How far its surface stands above the table** follows from the
+same points, and it is what tells the table from everything standing on it: bare
+table lies at the table's own height, and a glass stands clear of it.
 
-**About the proposal in the picture**: how much of the frame it covers, how
-elongated it is, and SAM's own quality estimate and stability figure, both free
-because the cleanup already computed them.
+**How far it sits from the point directly below the camera** is about the
+viewpoint rather than about the glass. A glass directly below the camera is seen
+straight down and shows almost none of its wall, while one far out from that
+point leans away and shows a great deal of it, so the same glass gives a
+differently shaped proposal at the two places and the keeper is told which of
+the two it is looking at. **How many prompt points returned this same mask** is
+counted by the duplicate removal and costs nothing to keep: a region that many
+points of the grid agreed on is a firmer thing than one a single prompt found.
 
-**About how it sits among the others**: how many surviving proposals contain it,
-how many it contains, and how much of it is shared with its most-overlapping
-neighbour. This is the group a hand-written rule always forgets, and it is how a
-part declares itself, because a rim is a proposal sitting entirely inside a
-larger proposal whose own width is perfectly legal.
+**Whether another proposal contains it, or it contains one**, which is called
+the **containment** measurement from here on, is the one a hand-written rule
+always forgets, and it is how a part declares itself. A rim is a proposal
+sitting entirely inside a larger proposal whose own width is perfectly legal,
+and that larger proposal is one holding a smaller one, so a single count read
+both ways separates a part from the whole it belongs to.
 
-![The keeper as a small box taking a short table of measurements about one
-proposal and returning one probability, with the four groups of inputs drawn
-beside their sources](../../../../images/problem-2/08-the-keeper.png)
+**How much of its outline is a step in depth rather than a smooth run** is the
+last thing the picture itself can offer. Where a glass ends, the depth reading
+jumps from its wall to the table behind it, and an outline made of such jumps is
+the outline of a thing standing on the table, while an outline running smoothly
+across one surface is a boundary the cut-off drew rather than one the room
+holds. **Its area on the table** closes the list, and it is how much table the
+proposal stands over rather than how many pixels it has, which is what separates
+the table from anything that could be a glass of this kind.
+
+![The keeper as a funnel taking many proposals and answering one of three things
+about each, with its two thresholds and the eight measurements it reads set out
+beside them](../../../../images/problem-2/08-the-keeper.png)
 
 | What the measurement says | Why it bears on the question |
 | --- | --- |
-| the fitted footprint width | the kind's range of widths is known, so a width outside it is not one glass of this kind |
-| the circle fit error | a round footprint fits a circle well; two footprints and a strip of table between them do not |
-| how far the points stand clear of the table | a proposal at the table's own height is the table |
-| how much the height varies across it | one whole glass spans table to rim; a mouth is all at one height, and no other measurement here separates the two |
-| how much of the frame it covers, and how elongated it is | the table covers most of the frame, and a glass from the top is roughly round whatever the splay |
-| SAM's quality estimate and stability | free, and they say whether the region was a confident one |
-| how many proposals contain it, and what it shares with its nearest neighbour | a proposal inside a legal glass is a part of that glass, and near-duplicates show up the same way |
+| where the measured width falls in the range this kind allows | the kind's range of widths is known, so a width outside it is not one glass of this kind |
+| how round it is, its area against the area its outline could enclose | a glass from the top is a filled disc whatever the splay, while a rim is a ring and a joined pair has a waist |
+| how far its surface stands above the table | a proposal at the table's own height is the table |
+| how far it sits from the point directly below the camera | splay grows with that distance, so the same glass gives a different proposal near the camera and far from it |
+| how many prompt points returned this same mask | a region the grid agreed on many times over is firmer than one a single prompt found |
+| whether another proposal contains it, or it contains one | a proposal inside a legal glass is a part of that glass, and the glass is the proposal that holds it |
+| how much of its outline is a step in depth rather than a smooth run | a thing standing on the table ends where the depth jumps to the table behind it |
+| its area on the table | the table stands over far more of itself than any glass of this kind can cover |
 
-Every one of those is a length, a count or a ratio, and none of them changes
-when the arm stands somewhere else, because they are computed on the table
-rather than in the picture. That is the property [solution
+Every one of those is a length, a count or a ratio, and not one of them is an
+address in the picture, so a proposal means the same thing to the keeper
+wherever in the frame it landed. That is the property [solution
 5](05-is-anything-hiding-there.md) requires of its own inputs, and for the same
 reason: an input measured in pixels means something different from every place
-the camera can stand.
+the camera can stand. The one input that does speak about the camera speaks
+about it deliberately, because how far a proposal sits from the point below the
+camera is how much splay to expect in it.
+
+One worry about that list is worth settling before the list is used, because the
+list invites it. Seen from the top, the **mouth** of a glass is a filled disc
+whose footprint is the footprint of the glass it belongs to: a width the kind
+allows, as round as a footprint gets, and standing well clear of the table. On
+every measurement taken from the footprint a mouth therefore looks exactly like
+one glass, and the worry is that the keeper holds the mouth as a glass of its
+own beside its own glass, so that the report names more glasses than the table
+holds.
+
+It does not, and the reason is where a mouth lands rather than what it measures.
+A mouth's footprint is its own glass's footprint, so a mouth kept as a glass is
+reported at the place that glass already stands, and the rule that keeps **one
+report per place on the table** collapses the two into one. Two glasses of one
+kind standing side by side are at least the narrowest width that kind allows
+apart, so a second report nearer than that is the same glass arriving twice
+rather than another glass. The keeper has its own way of noticing a part inside
+a whole, which is the containment measurement, and where that is not enough the
+geometry still holds the count. Nothing in the run invented a glass.
 
 ### Why the keeper is learned rather than written
 
@@ -348,11 +395,11 @@ them has to be made rather than assumed, and there are three parts to it.
 The first is the argument [solution
 5](05-is-anything-hiding-there.md#what-the-rules-cannot-do-with-it) makes for
 its verifier, unchanged. **The evidence is several weak pieces at once and none
-of them is decisive.** A proposal roughly one glass wide, roughly round,
-standing clear of the table, with a middling score: is that one glass, the near
-part of two, or a mouth? A proposal slightly wider than the kind allows: two
-glasses, or one whose mask leaked onto the table? Combining several weak pieces
-of evidence is what a threshold does worst and a fitted model does best.
+of them is decisive.** A proposal roughly one glass wide, roughly round and
+standing clear of the table: is that one glass, the near part of two, or a
+mouth? A proposal slightly wider than the kind allows: two glasses, or one whose
+mask leaked onto the table? Combining several weak pieces of evidence is what a
+threshold does worst and a fitted model does best.
 
 The second is this solution's own purpose. A page of thresholds over regions is
 a programmed solution, and problem 2 already has two of those. The question here
@@ -376,8 +423,9 @@ glass. **More than one glass** is handled rather than discarded: prompt SAM
 again with a fresh grid of points placed only inside that proposal, which
 sometimes returns the two glasses separately, because the near glass's rim
 stands much closer to the camera than the far glass's wall and that step is
-something SAM can find. If both new widths land inside the kind's range, the
-pair is reported as two glasses.
+something SAM can find. If at least two of the new regions stand at different
+places with widths inside the kind's range, the pair is reported as those
+glasses.
 
 If they do not, the pair is **reported as an unseparated pair**, with its place
 and its reason, and handed to [problem 3](../../../problem-3/problem.md). That
@@ -387,10 +435,10 @@ rather than a failure: anything doubtful is reported, and never guessed.
 ### What kind of classifier it is, and one property it must have
 
 The keeper's input is a short table of numbers of different kinds — widths,
-errors, heights, ratios and counts — and its answer is one of three categories.
-That is the case **decision-tree boosting** was made for (Friedman, *Greedy
-Function Approximation: A Gradient Boosting Machine*, Annals of Statistics,
-2001), and it is the same choice [solution
+heights, distances, ratios and counts — and its answer is one of three
+categories. That is the case **decision-tree boosting** was made for (Friedman,
+*Greedy Function Approximation: A Gradient Boosting Machine*, Annals of
+Statistics, 2001), and it is the same choice [solution
 4](04-choosing-the-next-look.md#why-trees-rather-than-a-network) makes for the
 same reason. A tree asks threshold questions and lands in a leaf holding a
 prediction; boosting fits a weak tree, then fits the next one to whatever the
@@ -408,24 +456,29 @@ with the band between them meaning "I cannot tell". A proposal in that band is
 not silently kept or dropped; it is a reason to take another picture, which is
 cheap compared with being wrong.
 
-On proposals it was never fitted on, the keeper is right about nine times in
-ten, and it gets every "more than one glass" right, which is the answer it can
-least afford to miss. Both thresholds do what they were put there for: what it
-keeps is almost always really one glass, what it drops is almost always really
-not a glass, and the band between them really is the coin-toss region, where the
-proposals it calls doubtful come out at close to even odds. So the keeper is not
-where this solution loses glasses. What it can do is limited by what it is
-handed, and what it is handed for a stemmed glass is [the domain
+On scenes it was never fitted on, the two thresholds do what they were put there
+for. What the keeper keeps is almost always really one glass: nothing it
+kept was reported as a glass that was not there, and no report of one covered
+two glasses at once. The price of that is paid in the middle band, which is
+wide. The keeper hands over far more proposals than it keeps, and nearly every
+one of them carries the doubt that it cannot tell whether the proposal is one
+glass. A doubtful report is a result rather than a failure in this project, so
+that is the solution behaving as it was designed to, but a keeper this unsure is
+a keeper that leaves work for the arm, which has to move and look again. [What
+running it shows](#what-running-it-shows-and-what-can-be-done-about-it) says how
+far each of those two halves goes. What the keeper can do at all is limited by
+what it is handed, and what it is handed for a stemmed glass is [the domain
 gap](#the-domain-gap-which-is-the-largest-risk-here).
 
 ### The arithmetic still decides
 
 One thing has not changed from the programmed solutions, and it is what keeps
 this solution inside the same safety argument as the rest of the project. A
-proposal the keeper wants to keep is still fitted with a circle, and if that
-width falls outside the range this kind of glass can be, or the fit error is far
-larger than a round footprint gives, the proposal is **not reported as a
-glass**, whatever the keeper said.
+proposal the keeper wants to keep still has its width measured against the kind,
+and if that width falls outside the range this kind of glass can be, the
+proposal is **not reported as a glass**, whatever the keeper said. It becomes a
+doubtful report carrying its reason instead, which is one of the things handed
+on at the end of a run.
 
 A second piece of arithmetic settles what the width check cannot. **Two reports
 at one place on the table are one glass reported twice.** Two glasses of one
@@ -499,9 +552,48 @@ check follows from the kind's range, the keeper's inputs can be printed, and the
 second round of prompting either splits a region or does not. **This one is
 settled only by running it**, because how a model fitted on photographs behaves
 on a shaded depth picture follows neither from the paper that describes it nor
-from this document. Running it, with the weights exactly as downloaded, gives
-two answers rather than one: the gap is **barely a gap on two of the kinds and
-close to fatal on the third.**
+from this document. Running it, with the weights exactly as downloaded, settles
+more than the gap, so the whole of what came back is worth taking first, over
+twenty held-out scenes surveyed from three stations each and holding about a
+hundred glasses between them.
+
+**It never merged two glasses into one report, and it never invented a glass.**
+That holds on both kinds of layout, and no other solution in this folder can say
+the first half of it. The width check after the keeper and the one report per
+place on the table are what earn it: a footprint wider than the kind allows is
+refused rather than reported, and a second report at a place already taken is
+the same glass arriving twice. **It finds about three quarters of the glasses
+and misses about a quarter.** Where it does report a glass the place is good: on
+the ordinary layouts its centres sit closer to the true ones than the fine-tuned
+segmenter of [solution 9](09-a-fine-tuned-instance-segmenter.md) manages on the
+same scenes. That is worth one sentence and no more, because it reports far
+fewer glasses than that solution does and the ones it reports are the easy ones.
+
+The other half of what came back is the doubt. **It hands over far more
+proposals than it keeps**, and nearly all of them carry the one reason that it
+cannot tell whether the proposal is one glass. A few dozen more are proposals it
+read as more than one glass where the second round of prompting did not separate
+them, and a handful are proposals it wanted to keep whose width the kind does
+not allow. None of that is a malfunction, because a refused glass is a result
+here and every one of those proposals is reported rather than guessed at, but it
+is the honest measure of what the solution costs: every doubt is work handed to
+the arm.
+
+Crowded layouts, where glasses really do stand in front of one another, change
+less than might be expected. The share of glasses found is about the same as on
+the ordinary layouts, and still nothing was merged and nothing invented. What
+crowding does instead is fill the doubts: more pairs arrive that the second
+round of prompting cannot take apart, so crowding shows up as more work handed
+on rather than as a wrong count.
+
+Those are the shape of the whole solution, and the gap this section is about
+lives inside them. The gap itself is measured on its own, by asking the proposal
+stage alone, with no keeper and no scorecard, how much of each glass the best
+proposal for it holds. That is a handful of scenes of each kind rather than the
+whole held-out set, so what comes out of it is a **ranking across the four
+kinds** rather than an exact figure for any of them: almost exact on the
+straight and the tapered kinds, worse on the two stemmed kinds, and worst on the
+stemmed kind, which is the taller of those two.
 
 **On straight and tapered glasses the borrowed model is very nearly right.** The
 best proposal it returns for a glass of those kinds matches that glass's true
@@ -510,14 +602,26 @@ silhouette is the kind of boundary shaded depth shows most strongly, and a glass
 whose outline runs as one wall from the table to the rim is almost all
 silhouette, so the picture holds exactly the evidence the model leans on.
 
-**On stemmed glasses it is the worst result in this solution.** A wine glass
-seen from above is a wide bowl over a thin stem and a foot, so the silhouette
-the shading can offer is a broad disc joined to almost nothing, and SAM cuts
-into the bowl rather than round it. The best proposal for such a glass can cover
-well under half of it, and barely half of the stemmed glasses in a scene are
-proposed at all. Nothing later in the chain repairs that: the keeper is never
-offered a proposal for a glass SAM did not propose, and a proposal that cuts
-into the bowl gives a footprint the width check is right to refuse. This is
+**On the stemmed kind it is the worst result in this solution, and it is a
+worse outline rather than a missing glass.** A wine glass seen from above is a
+wide bowl over a thin stem and a foot, so the silhouette the shading can offer
+is a broad disc joined to almost nothing, and SAM cuts into the bowl rather than
+round it. Nearly every such glass still comes back with a proposal. What the
+cutting costs is how much of the glass that proposal holds: typically about four
+fifths of it, with only about one glass in five held almost entirely and about
+one in eight cut badly enough to lose more than half. **The short stemmed kind
+sits between that and the two good kinds, and much nearer the good ones**,
+because every glass of it keeps at least half of its pixels and about two in
+five are held almost entirely.
+
+What a cut proposal costs further down the chain is mostly the footprint rather
+than the glass. One that cuts into the bowl gives a footprint narrower than the
+glass really has, so the place and the width reported are less accurate, and
+where the cut is bad enough the width falls outside what the kind allows and the
+proposal becomes a doubtful report instead of a glass. Nothing later in the
+chain repairs either of those, because the keeper reads the footprint it is
+given and the width check is right to refuse one no glass of this kind could
+have. This is
 SAM's proposals failing rather than the keeper failing, and it is the strongest
 argument anywhere in this document for [solution
 9](09-a-fine-tuned-instance-segmenter.md), where the weights are allowed to move
@@ -538,12 +642,12 @@ here and is available precisely because the shading is a choice rather than a
 measurement. Render a set of scenes, shade each one several ways, run the whole
 chain, and compare the results against the truth the simulator already holds.
 That is a search over a handful of options rather than a training run, and the
-stemmed glasses are where it has the most to gain, because theirs is the
-silhouette the shading serves worst.
+two stemmed kinds are where it has the most to gain, the tall one most of all,
+because theirs is the silhouette the shading serves worst.
 
 None of that closes the gap; it makes the picture more like the pictures the
 weights were fitted on, which is a more modest claim. On the kinds that already
-work it is enough. On a stemmed kind the honest remedy is [solution
+work it is enough. On the stemmed kind the honest remedy is [solution
 9](09-a-fine-tuned-instance-segmenter.md), where the weights are allowed to
 move, because moving them towards the pictures you have is what fine-tuning is
 for.
@@ -558,12 +662,12 @@ them is dangerous in a way the other two are not.
 
 Bare table is one large region with a clear outline, so a grid of prompts
 proposes it several times and the cleanup keeps one. Turned into points it gives
-a width vastly greater than any glass of this kind can be, a fit error to match,
-and points lying at the table's own height rather than standing clear of it, so
-the keeper drops it on any one of those and the width check would drop it
-anyway. One by-product is worth passing on rather than dropping: a mask of bare
-table says which part of the table has nothing standing on it, which is what the
-blind-region arithmetic in [cluster on the
+a width vastly greater than any glass of this kind can be, an area on the table
+to match, and a surface lying at the table's own height rather than standing
+clear of it, so the keeper drops it on any one of those and the width check
+would drop it anyway. One by-product is worth passing on rather than dropping:
+a mask of bare table says which part of the table has nothing standing on it,
+which is what the blind-region arithmetic in [cluster on the
 table](../programmed/02-cluster-on-the-table.md) reasons about.
 
 ### A rim without its glass
@@ -574,28 +678,31 @@ glass is a thing, and both answer "what is here?". SAM returns both rather than
 guessing, so **part proposals are the model declining to guess**, and they
 arrive for every glass in the picture.
 
-Most of them are easy: a rim is an annulus rather than a disc, so its circle fit
-is poor, and it sits inside a larger proposal whose own width is legal.
+Most of them are easy: a rim is a ring rather than a filled disc, so it is far
+from round, and it sits inside a larger proposal whose own width is legal, which
+is exactly what the containment measurement is for.
 
-One of them is not easy, and it is the most instructive failure in this
-solution. Seen from the top, the **mouth** of a glass is a filled disc whose
-width is the glass's own rim width. Its footprint is round, its fit error is
-small, and its width sits comfortably inside the kind's range. On every input
-taken from the footprint it looks exactly like one glass, because in footprint
-terms it *is* the glass.
+One of them is not easy, and it is the most instructive case in this solution.
+Seen from the top, the **mouth** of a glass is a filled disc whose width is the
+glass's own rim width. Its footprint is round, it stands clear of the table, and
+its width sits comfortably inside the kind's range. On every measurement taken
+from the footprint it looks exactly like one glass, because in footprint terms
+it *is* the glass.
 
 So the dangerous proposal is not the one that looks wrong. **It is the one that
-looks right.** Exactly one input separates the two: a mouth's points all lie at
-the rim's height, while a whole glass's points run from the table up to the rim.
-That is why the keeper is shown how much the height varies across a proposal,
-and it is the general lesson of giving a model measurements rather than pixels —
-somebody has to know in advance which measurement carries each distinction.
+looks right.** The keeper's own way of catching it is the containment
+measurement, because a mouth is a proposal sitting inside its own glass's
+proposal, and that is the general lesson of giving a model measurements rather
+than pixels — somebody has to know in advance which measurement carries each
+distinction.
 
-Two things catch a mouth, and neither of them is the width check, because a
-mouth's width is legal. The first is that one input: a mouth's height does not
-vary across it and a whole glass's does. The second is arithmetic on the places
-reported, because a mouth kept as a glass stands at its own glass's place, and
-two reports at one place are one glass reported twice.
+What settles the case even when the keeper holds the mouth is arithmetic on the
+places reported rather than any measurement, and it is the arithmetic set out
+with [the keeper's inputs](#what-the-keeper-is-shown). A mouth kept as a glass
+stands at its own glass's place, two reports at one place are one glass reported
+twice, and only one of them survives. The width check cannot help here, because
+a mouth's width is legal; the geometry can, and it is what keeps the count
+honest.
 
 ### Two glasses at once
 
@@ -612,13 +719,13 @@ which [solution 1](../programmed/01-split-the-blob-in-the-picture.md) and
 work through. Borrowing a very large model does not change the nature of the
 evidence in the picture.
 
-What is available is the fitted width, which is far wider than the kind allows,
-so the pair is caught. Catching it is not separating it, and the separating is
-the second round of prompting described above, which has real evidence to work
-with when one glass stands in front of the other, because the near rim and the
-far wall sit at different distances and the shading shows the step. When it
-works, two legal widths come back. When it does not, the pair is reported as one
-unseparated pair and handed on.
+What is available is the measured width, which is far wider than the kind
+allows, so the pair is caught. Catching it is not separating it, and the
+separating is the second round of prompting described above, which has real
+evidence to work with when one glass stands in front of the other, because the
+near rim and the far wall sit at different distances and the shading shows the
+step. When it works, two legal widths come back. When it does not, the pair is
+reported as one unseparated pair and handed on.
 
 The general shape of that limitation is worth being blunt about, because it is
 the honest comparison with solution 6. **Every part of this solution works by
@@ -635,7 +742,8 @@ readings are **shaded** into a grey picture. The picture encoder runs **once**
 over it. A **grid of point prompts** then goes through the mask decoder, one
 cheap pass each, and scoring, stability and duplicate removal reduce what comes
 back to a shortlist of **proposals**. Each proposal's pixels become **points on
-the table**, and a fitted circle and a spread of heights come out of them. The
+the table**, and a place, a width, a height above the table and the rest of the
+**eight measurements** come out of them and of the proposals beside them. The
 **keeper** reads those and answers one of three things. A proposal it keeps must
 still pass the **width check** before it is reported with a mask, a place and a
 width, and where two reports land at **one place on the table** only the surer
@@ -690,11 +798,12 @@ is no proposal for this glass; all three of its answers are about a region that
 exists.
 
 **No check can fire.** Every check here is a check on a proposal: the fitted
-width, the fit error, the height spread, the score, the stability, the relations
-to other proposals. What comes back for the covering glass is one proposal with
-a legal width, a small fit error, a proper spread of heights and a high score.
-**Nothing about it is wrong.** The picture is one believable glass where two are
-standing, which is the shape this difficulty always takes.
+width, how round it is, how far it stands above the table, how many prompts
+agreed on it, how it sits among the other proposals. What comes back for the
+covering glass is one proposal with a legal width, a round footprint, a proper
+height above the table and the agreement of many prompts. **Nothing about it is
+wrong.** The picture is one believable glass where two are standing, which is
+the shape this difficulty always takes.
 
 **And more model does not help either.** The scene with the hidden glass and the
 same scene with that glass removed produce the same picture, pixel for pixel. No
@@ -729,8 +838,8 @@ wants a crowded line of glasses rather than any table of this kind.
 
 A crescent of a glass is a region, so SAM may well propose it, and the proposal
 will be a good outline of exactly the crescent. The keeper then sees a footprint
-fitted to a sliver: a width smaller than the kind allows, or a fit error larger
-than a round footprint gives, or both. So its answer is neither keep nor drop
+fitted to a sliver: a width smaller than the kind allows, or a footprint less
+round than a whole one is, or both. So its answer is neither keep nor drop
 but the middle band, which means take another picture: the arm looks from the
 side, across the line joining the crescent to the glass in front of it, and from
 there the glass is not hidden. That is workable and it is not the best answer
@@ -744,10 +853,10 @@ the other two do not spend.
 
 The middle band earns its place, and not by catching crescents. On an ordinary
 layout almost nothing is actually hidden, so crescents are rare, and what fills
-the band instead is stemmed and short-stemmed glasses whose proposals SAM cut
-into. They arrive in the band for the same reason a crescent would — a footprint
-fitted to part of a glass is the wrong width or the wrong shape — but the cause
-is the borrowed model's outline rather than another glass standing in the way. A
+the band instead is the two stemmed kinds, whose proposals SAM cut into. They
+arrive in the band for the same reason a crescent would — a footprint fitted to
+part of a glass is the wrong width or the wrong shape — but the cause is the
+borrowed model's outline rather than another glass standing in the way. A
 doubtful report is the right answer either way; what is worth knowing is that on
 this cell's ordinary tables the band is reporting on the kind of glass rather
 than on the layout.
@@ -767,19 +876,24 @@ each about one glass wide, one region far wider than the kind allows, three rims
 and two mouths.
 
 **The keeper.** The table drops, on its width and on standing at the table's own
-height. The rims drop, on their fit error and on sitting inside legal proposals.
-The mouths are the interesting drop, because their footprints are perfectly
-legal and what condemns them is that all of their points lie at one height. Four
-proposals are kept as one glass each, and the wide one is answered "more than
-one glass".
+height. The rims drop, on being rings rather than filled discs and on sitting
+inside legal proposals. The mouths are the interesting case, because their
+footprints are perfectly legal, so the keeper may well hold one of them as a
+glass and nothing it is shown says otherwise. Four proposals are kept as one
+glass each, and the wide one is answered "more than one glass".
 
-**The width check and the second round.** All four kept proposals fit circles
+**The width check and the second round.** All four kept proposals have a width
 inside the kind's range, so all four are reported with a mask, a place and a
 width, and the wide one fails the check as it should. A fresh grid of points
 inside that wide region returns two masks, split along the step between the near
 glass's rim and the far glass's wall, and both widths land inside the kind's
 range, so the pair is reported as two glasses rather than as an unseparated
 pair.
+
+**One report per place.** The near glass of that pair was also proposed on its
+own, so it now arrives twice, and a mouth the keeper held stands at the place
+its own glass already occupies. Both are second reports at a place already
+taken, so both are dropped, and five glasses are reported where five stand.
 
 **Where it fails.** Behind the tallest glass in the scene a sixth glass is
 standing that nothing in this run has any opinion about. It cast no pixels, so
@@ -802,13 +916,27 @@ README](../../../../problem-2-pretrained/README.md).
     make setup                      # once: install the environment, fetch weights
     make train SOLUTION=sam
     make test  SOLUTION=sam
+    make test-crowded SOLUTION=sam
 
 `make setup` builds the environment and fetches `facebook/sam-vit-base` once.
 `make train SOLUTION=sam` fits **only the keeper** — nothing in it touches SAM's
 weights, and the word train is kept because the other two solutions in the
 folder use the same command. `make test SOLUTION=sam` runs the whole chain over
-held-out scenes and scores what comes out against the truth the simulator holds,
-which is also where the choice of shading is settled.
+held-out scenes of the kind the cell's own placement rule produces and scores
+what comes out against the truth the simulator holds, which is also where the
+choice of shading is settled. `make test-crowded SOLUTION=sam` does the same on
+layouts built to stand one glass in front of another, which is where the claims
+above about crowding come from.
+
+One more command answers the question this document treats as the largest risk,
+and it is worth running before the others:
+
+    make by-kind
+
+It asks what the borrowed model outlines well, one kind of glass at a time, with
+no keeper and no scorecard after it: for every glass it reports how much of that
+glass the best proposal holds. That is the measurement the ranking across the
+four kinds comes from, and it is cheap because it needs no fitting at all.
 
 The machine is an Apple M4 with a ten-core integrated GPU and memory shared with
 the processor, which PyTorch reaches through its MPS backend, falling back to
@@ -830,8 +958,8 @@ can find them.
 It needs **scenes for the keeper**, which the simulator renders and labels for
 nothing, and far fewer of them than a network fitted from scratch needs, because
 the keeper learns from a short table of numbers rather than from pictures.
-Fitting it takes **well under a second** once the proposals are in hand, with no
-graphics card; what takes the time is running SAM over those scenes to get the
+Fitting it takes **seconds** once the proposals are in hand, with no graphics
+card; what takes the time is running SAM over those scenes to get the
 proposals, which is where nearly all of this solution's cost sits, at fitting
 time and at run time both. At run time it needs one pass of the picture encoder
 per picture, which is the largest single cost here and still small beside one
@@ -840,6 +968,18 @@ shading got right**, which is the only part where a careless choice degrades
 everything downstream without anything complaining.
 
 ## Where it is strong and where it breaks
+
+**Nothing it reported was two glasses, and nothing it reported was a glass that
+was not there.** Over the held-out scenes, on ordinary layouts and on crowded
+ones alike, it never merged two glasses into one report and it never invented
+one, and no other solution in this folder can say the first half of that. It is
+the strength to lead with, because it is earned rather than lucky: a kept
+proposal still has to have a width inside the range this kind of glass can be,
+and two reports at one place on the table are one glass reported twice. What it
+costs is on the other side of the ledger. **It finds about three quarters of the
+glasses** and hands over far more proposals than it keeps, nearly all of them
+with the doubt that it cannot tell whether the proposal is one glass, so the
+report it writes is cautious and short rather than complete.
 
 **Almost nothing is fitted here.** Everything that finds objects is borrowed
 whole, and the borrowed part cannot go out of date with this cell because it
@@ -852,21 +992,23 @@ scene, so a spoon left on the table arrives as a proposal and is answered "not a
 glass" rather than ignored. Every other solution here is blind to whatever falls
 outside its one class.
 
-**The domain gap is measured, and it divides by kind.** The weights were fitted
-on photographs and are being shown depth dressed up as a grey picture. On
+**The domain gap is measured, and it ranks the four kinds.** The weights were
+fitted on photographs and are being shown depth dressed up as a grey picture. On
 straight and tapered glasses that costs almost nothing: the best proposal for a
-glass matches the real glass almost exactly. **On stemmed glasses it is the
-worst result here.** SAM cuts into the bowl of a wine glass seen from above, the
-best proposal for one can cover well under half of it, and barely half of them
-are proposed at all, which is reason enough not to choose this solution for a
-stemmed kind. The gap cannot be removed by training, because nothing here is
-trained, and the only levers are the shading and the prompt grid.
+glass matches the real glass almost exactly. **On the stemmed kind it is
+the worst result here.** SAM cuts into the bowl of a wine glass seen from above,
+so the glass is still proposed but the proposal typically holds about four
+fifths of it and a minority are cut badly, which costs the accuracy of the
+footprint and, for that minority, the glass. The short stemmed kind sits between
+the two and much nearer the good ones. The gap cannot be removed by training,
+because nothing here is trained, and the only levers are the shading and the
+prompt grid.
 
 **It depends on depth twice over.** The keeper's best inputs, the fitted
-footprint width and the spread of heights, come from depth readings, and so does
-the picture itself, because the picture *is* shaded depth. So on the day the
-glasses become real glass and the depth camera stops returning anything through
-them, this solution has no input at all, not even a picture; [solution
+footprint width and the height above the table, come from depth readings, and so
+does the picture itself, because the picture *is* shaded depth. So on the day
+the glasses become real glass and the depth camera stops returning anything
+through them, this solution has no input at all, not even a picture; [solution
 6](06-a-network-trained-from-scratch.md) is the one that survives that day.
 
 **It is blind to a glass hidden completely**, for the reasons worked out above,
@@ -875,8 +1017,8 @@ and that is a fact about the input rather than about the model.
 **It cannot be improved by teaching it**, so if SAM proposes badly the only move
 is to solution 9. And **its answer cannot fully explain itself**, though it is
 better off than most learned methods here, because every kept proposal arrives
-with a footprint, a width and a fit error, so the *check* explains itself even
-when the model does not.
+with a footprint, a place and a width, so the *check* explains itself even when
+the model does not.
 
 ## The general ideas behind this
 
@@ -1002,10 +1144,21 @@ hard cases and this one cannot.** Pairs standing much closer than the cell's
 rule allows, pairs actually touching, crescents behind another glass: all of
 those go into solution 6's training set, and none can be communicated to SAM.
 Solution 6 also separates objects with no boundary between them, which is the
-case that matters most here, and on a stemmed kind it is simply the better tool,
+case that matters most here, and on the stemmed kind it is the better tool,
 because what defeats this one there is the borrowed model's own outline and
 nothing behind that model can mend it. Against that, this solution notices
 objects nobody described, needs far less data, and has nothing that goes stale.
+
+The comparison against [solution
+9](09-a-fine-tuned-instance-segmenter.md) is the one the scorecards settle,
+because the two were run on the same scenes and both turn a mask into a place
+with the same arithmetic. Solution 9 finds every glass on an ordinary layout
+and this solution finds about three quarters of them, which is the whole of
+solution 9's case. Against that, this solution never merged two glasses into one
+report on either kind of layout and solution 9 did merge on the crowded ones,
+and on ordinary layouts the places it reports sit closer to the truth. Both of
+those are the dividend of reporting less: what it keeps, it keeps only when a
+borrowed model outlined the glass cleanly and the arithmetic agreed afterwards.
 
 The comparison against [cluster on the
 table](../programmed/02-cluster-on-the-table.md) is shorter and less flattering.
@@ -1024,13 +1177,15 @@ solution that survives real glassware. It is the learned solution that survives
 having almost no training data, which is a different and narrower virtue.
 
 What this solution is genuinely for is to find out how far borrowed weights get
-in this cell with nothing fitted behind them, and the answer is in hand: far on
-straight and tapered glasses, and not far at all on stemmed ones. That splits
-the next step by kind. For a stemmed kind it is [solution
-9](09-a-fine-tuned-instance-segmenter.md), which lets those weights move towards
-the pictures this cell produces; for a glass standing behind another glass it is
-[solution 10](10-amodal-masks-for-the-hidden-part.md), which changes what each
-mask is fitted against.
+in this cell with nothing fitted behind them, and the answer is in hand: almost
+all the way on straight and tapered glasses, most of the way on the short
+stemmed kind, and least far on the stemmed one, whose outlines come back
+cut into the bowl. That splits the next step by kind. For a stemmed kind it is
+[solution 9](09-a-fine-tuned-instance-segmenter.md), which lets those weights
+move towards the pictures this cell produces; for a glass standing behind
+another glass it is [solution
+10](10-amodal-masks-for-the-hidden-part.md), which changes what each mask is
+fitted against.
 
 ← [Self-supervised from the arm's own
 movement](07-self-supervised-from-the-arms-own-movement.md) · [A fine-tuned
