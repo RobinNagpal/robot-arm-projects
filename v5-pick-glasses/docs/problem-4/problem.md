@@ -1,123 +1,163 @@
 # Problem 4 — several kinds at once
 
-A few kinds of glass stand on the table together. The arm has to measure each
-one, decide which kind it is, pick it up, turn it over, and stand it on the
-rack — one at a time, until the table is clear.
+A few glasses of **different kinds** stand on the table together. The arm has
+to measure each one, decide which kind it is, pick it up, turn it over, and
+stand it on the rack. One at a time, until the table is clear.
 
-This is problems 1, 2 and 3 joined up, plus one thing none of them has: **the
-rule changes per glass.**
+In one sentence: **this is problems 1, 2 and 3 joined up, plus one thing none
+of them has — the rule changes from one glass to the next.**
+
+## What is already done
+
+Problem 4 starts with most of its pieces in hand. Each earlier problem solved
+one part of it.
+
+| Problem | What it solved | What problem 4 takes from it |
+| --- | --- | --- |
+| [1](../problem-1/README.md) | One glass, start to finish: find it, measure it, name its kind, choose the grip, squeeze, turn it over. Built, and runs in Gazebo. | The six steps, done on each glass in turn. |
+| [2](../problem-2/problem.md) | Several glasses of **one** kind. Tell them apart and choose where to stand the camera for each. | Finding every glass on the table, and choosing a clear side view of each. |
+| [3](../problem-3/problem.md) | Glasses standing too close to grip. Push them apart along the table. | Moving a crowded glass until the gripper can get round it. |
+
+So most of a problem 4 run is old work done in the right order. The question
+this document answers is: **what breaks when the glasses are not all the same
+kind?**
 
 ## What is on the table
 
-Four to six glasses, drawn from more than one of the four kinds — straight,
-tapered, stemmed, short-stemmed — at proportions picked at random inside each
-kind's plausible range. Upright, opaque, at least 150 mm apart to begin with.
+- **Four to six glasses**, of more than one of the four kinds: straight,
+  tapered, stemmed, short-stemmed.
+- Each glass's proportions are drawn at random from inside its kind's range.
+- All upright and opaque.
+- Some may stand too close together to be gripped, as in problem 3.
+- **The rack** is where it always is: six slots, found from its marker.
 
-The rack is where it always is: six slots, position found from its marker.
+## What is new: three things
 
-## What is new
+In every earlier problem, one fact held: either there was one glass, or every
+glass was the same kind. Take that away and three things change.
 
-### Naming the kind becomes load-bearing
+| | Before | Now |
+| --- | --- | --- |
+| **1. Naming the kind** | A wrong name was cheap. The glass was refused. | A wrong name can look right, and the arm acts on it. |
+| **2. Sharing the rack** | One glass, any free slot. | Several glasses of different widths. Slots can run out. |
+| **3. Telling glasses apart** | Every glass had the same width range. | The range is four kinds wide, so width says much less. |
+
+Each one is explained below.
+
+### 1. Naming the kind becomes load-bearing
 
 ![With several kinds, naming becomes load-bearing](../../images/problem-4-one-wrong-name.png)
 
-In problem 1 the classifier has to be right, but a wrong answer is cheap. There
-is one glass, and a rule applied to the wrong kind of glass almost always fails
-its own checks. The opening comes out impossible, or the band is too short. So
-the glass is refused and the run says so.
+**Why the name matters.** Each kind has its own rule for where to hold the
+glass and how hard to squeeze. The name picks the rule. Nothing after that
+looks at the name again.
 
-With several kinds on the table, two things change. The classifier runs several
-times per run, so an error rate that was invisible at one glass a run becomes
-visible. And a wrong name can be **wrong and plausible**. Calling a tapered glass with a
-very shallow wall "straight" is fine. Calling a tumbler with a notch in its
-outline "stemmed" is not: the rule for a stemmed glass will happily return a
-grip at a stem that does not exist.
+**Before, in problem 1.** There is one glass. If the classifier gets the kind
+wrong, the wrong rule almost always fails its own checks: the opening comes
+out impossible, or the band to hold is too short. So the glass is refused, and
+the run says why. A wrong name costs a glass, never a breakage.
 
-Nothing downstream re-checks the name, because nothing downstream can. The
-first thing that notices is the width at first contact in step 5, by which time
-the arm has already travelled to the glass and closed on it.
+**Now, with several kinds,** two things change:
 
-### The rack has to be shared out
+- **Errors show up more.** The classifier runs four to six times per run, not
+  once. An error rate nobody noticed at one glass per run becomes visible.
+- **A wrong name can be wrong *and* plausible.** Some mistakes are harmless.
+  Calling a tapered glass with a very shallow wall "straight" changes little.
+  Others are not. Call a tumbler "stemmed" because a notch in its outline
+  looks like a stem, and the stemmed rule will happily return a grip at a stem
+  that does not exist.
 
-Six slots, several glasses, and glasses of different widths. A wide glass needs
-its neighbouring slot left empty; a narrow one does not. Which glass goes in
-which slot stops being "the next free one" and becomes a decision that can run
-out of room — and the order the glasses are handled in decides whether it does.
+**Why this is dangerous.** Nothing downstream re-checks the name, because
+nothing downstream can. The first thing that notices is the width the fingers
+meet in step 5. By then the arm has already travelled to the glass and closed
+on it.
 
-Problem 1 has this arithmetic already, in the tilt budget. What it does not have
-is the case where taking the wrong slot early leaves a later glass with nowhere
-to go.
+### 2. The rack has to be shared out
 
-### Problem 2's strongest tool is taken away
+**Before.** One glass, six slots. Take the next free one.
 
-Problem 2 separates glasses partly by fitting a circle to each footprint and
-checking it against the one known kind's diameter range. With several kinds the
-range is the union of four ranges, which is wide enough to be much weaker: a
-footprint that is too wide for a tumbler is a perfectly ordinary wine glass
-foot.
+**Now.** Several glasses, and they are different widths. A wide glass needs
+the slots beside it left empty; a narrow one does not. So where a glass goes
+is a real decision:
 
-So the separation has to lean harder on clustering by distance and on agreement
-between stations, and the merged-pair check gets less reliable exactly when
-there are more glasses to merge.
+- Put an early glass in the wrong slot, and a later glass can find nowhere to
+  go.
+- The **order** the glasses are handled in decides whether that happens.
 
-## The six steps, and what changes at each
+Problem 1 already has the arithmetic for "does this glass need an empty
+neighbour" — the tilt budget in `rack/layout.py`. What it has never faced is a
+choice made for one glass that leaves no room for the next.
 
-The pipeline is problem 1's. What follows is what each step has to do
-differently, and nothing else.
+### 3. Telling glasses apart from above gets harder
 
-**Step 1 — find the glasses.** Problem 2's separation, with the weaker
-footprint check above. Output is a position and a rough width per glass, as
-before.
+**Before.** In problem 2 every glass is one kind, with one known range of
+widths. A footprint far outside that range is a warning sign: maybe two glasses
+merged into one blob.
 
-**Step 2 — measure one.** Unchanged in what it does, harder in where it can be
-done from: problem 2's viewpoint search decides which glasses can be measured at
-all, and problem 3 moves the ones that cannot.
+**Now.** The allowed range is the four kinds' ranges joined together. That is
+wide. A footprint too wide for a tumbler is an ordinary wine glass foot. So
+width is a much weaker check. The separation has to lean on clustering by
+distance, and on the camera's different stations agreeing.
 
-**Step 3 — name the kind.** Unchanged in method and much more important. This is
-the step that needs a confidence, which it does not currently have: the answer
-is a name or nothing, and a glass that only just cleared a threshold is treated
-exactly like one well clear of it.
+This matters less than it sounds. Neither of problem 2's built pipelines uses
+the width check, so neither loses it.
 
-**Step 4 — choose where to hold it.** Unchanged. It already switches rule by
-kind; that is what `spec.py` is for. The rules themselves need no new work.
+## A run, step by step
 
-**Step 5 — how hard to squeeze.** Unchanged per glass, and now the force cap
-varies between glasses in one run, because the cap belongs to the kind. A run
-that racks a thick tumbler at 12 N and then a thin flute at 6 N is working
-correctly.
+The pipeline is problem 1's six steps, run once per glass, with problem 2's
+finding before them and problem 3's pushing where a glass is crowded. This
+table shows which steps carry over as they are and which have to change.
 
-**Step 6 — turn it over and stand it down.** The slot choice is the part that
-changes, for the reason above: it has to be made with the glasses still to come
-in mind, not just the one in hand.
+| Step | Comes from | In problem 4 |
+| --- | --- | --- |
+| **Find** every glass from above | problem 2 | **Weaker.** Width says less (new thing 3). Output is still a position and a rough width per glass. |
+| **Push** a crowded glass apart | problem 3 | **Harder.** Its kind decides its foot, and its foot decides whether it can be pushed without tipping. The kind may not be known yet. |
+| 1. **Find** this glass | problem 1 | Unchanged. |
+| 2. **Measure** its profile | problems 1, 2 | Unchanged in what it does. Where it can be done from is problem 2's job; problem 3 moves glasses that block the view. |
+| 3. **Name** the kind | problem 1 | **Same method, far more important** (new thing 1). Today the answer is a name or nothing. A glass that only just cleared a line is treated like one far from it. |
+| 4. **Choose** where to hold it | problem 1 | Unchanged. It already switches rule by kind; that is what `spec.py` is for. |
+| 5. **Squeeze** | problem 1 | Unchanged per glass. The force cap now varies within one run, because it belongs to the kind. Racking a thick tumbler at 12 N and then a thin flute at 6 N is correct. |
+| 6. **Turn it over** and stand it down | problem 1 | **The slot choice changes** (new thing 2). It has to keep room for the glasses still on the table. |
 
-## What is deliberately not in this problem
+Four of the six steps carry over untouched. The work is in **naming**,
+**pushing** and **racking**.
 
-**Unknown proportions.** The kinds are the four known ones and the proportions
-are drawn from ranges the project holds. Taking those away is
-[problem 5](../problem-5/problem.md).
+## What is deliberately left out
 
-**New kinds.** A shape that is none of the four is refused, as in problem 1.
+- **Unknown proportions.** The kinds are the four known ones, and each glass's
+  proportions come from ranges the project holds. Taking those away is
+  [problem 5](../problem-5/problem.md).
+- **New kinds.** A shape that is none of the four is refused, as in problem 1.
 
 ## What "done" means
 
-A run is **done** when every glass on the table is standing mouth-down over a
-slot peg, or has been left standing with a sentence saying which step gave up
-and why.
+A run is **done** when every glass on the table either:
 
-The numbers worth watching are problem 1's, plus three this problem adds:
+- stands mouth-down over a slot peg, or
+- is left standing, with a sentence saying which step gave up and why.
 
-- how many glasses were named correctly, against what was spawned;
-- how many were named *incorrectly but plausibly* — the dangerous case, where
-  the error survived until the fingers closed;
-- how many were refused for want of a slot rather than for want of a grip,
-  which is a sign the slot choice needs to look further ahead.
+The numbers to watch are problem 1's, plus three new ones:
 
-## Where the work would start
+| Number | What it shows |
+| --- | --- |
+| glasses named correctly, against what was spawned | how good the naming is |
+| glasses named **wrongly but plausibly** | the dangerous case: the error survived until the fingers closed. Should be zero. |
+| glasses refused for want of a **slot**, not a grip | the slot choice is not looking far enough ahead |
 
-Nothing here needs a new technique. Problem 4 is problems 1 to 3 with the
-pieces joined and two decisions made better: a classifier that reports how close
-the call was, and a slot choice that plans for the glasses still on the table.
+## Where the work starts
 
-Both are written up as open items in
+No new technique is needed. Problem 4 is problems 1 to 3 joined, with two
+decisions made better:
+
+- a classifier that reports **how close the call was**, not just a name;
+- a slot choice that **plans for the glasses still on the table**.
+
+Both are already noted as open items in
 [problem 1's step 3](../problem-1/step3-what-kind-of-glass.md) and
-[step 6](../problem-1/step6-turning-it-over.md).
+[step 6](../problem-1/step6-turning-it-over.md). Writing the solutions found
+two more — measuring a crowded glass before it is pushed, and telling the push
+model each glass's kind.
+
+## How it would be solved
+
+→ [Solution overview](solutions/solution-overview.md)

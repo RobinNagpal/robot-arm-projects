@@ -1,0 +1,78 @@
+{
+  "tables": 50,
+  "glasses": 251,
+  "racked": 40,
+  "refused": {
+    "GripNet says it cannot be held": 146,
+    "no push the model expects to make room": 38,
+    "stopped: a glass on the table has fallen over": 12,
+    "no clean side view, and no push expected to make one": 11,
+    "every push the model was asked about might tip something over": 1,
+    "left without room": 1,
+    "never found from above": 1,
+    "SideNet is unsure of the kind": 1
+  },
+  "pushes": 83,
+  "tables_with_a_topple": 4,
+  "racked_without_room": 1,
+  "view": {
+    "judged": 229,
+    "clean": 152
+  },
+  "measure": {
+    "measured": 229,
+    "height_mm_median": 4.3,
+    "width_mm_median": 1.4
+  },
+  "name": {
+    "named_right": 229,
+    "of": 229,
+    "confusion_rows_made_as_columns_named": {
+      "straight_glass": {
+        "straight_glass": 48,
+        "tapered_glass": 0,
+        "stemmed_glass": 0,
+        "short_stemmed_glass": 0
+      },
+      "tapered_glass": {
+        "straight_glass": 0,
+        "tapered_glass": 59,
+        "stemmed_glass": 0,
+        "short_stemmed_glass": 0
+      },
+      "stemmed_glass": {
+        "straight_glass": 0,
+        "tapered_glass": 0,
+        "stemmed_glass": 57,
+        "short_stemmed_glass": 0
+      },
+      "short_stemmed_glass": {
+        "straight_glass": 0,
+        "tapered_glass": 0,
+        "stemmed_glass": 0,
+        "short_stemmed_glass": 65
+      }
+    }
+  },
+  "grip": {
+    "gripnet_vs_rule": {
+      "GripNet holdable False, rule False": 144,
+      "GripNet holdable True, rule True": 82,
+      "GripNet holdable True, rule False": 1,
+      "GripNet holdable False, rule True": 2
+    },
+    "height_mm_median": 0.3,
+    "height_mm_worst": 7.6,
+    "opening_mm_median": 1.2,
+    "on_the_band": 39,
+    "fingers_meet_it_on_the_way_in": 0
+  },
+  "dangerous": {
+    "racked_named_wrongly": 0,
+    "squeezed_harder_than_its_kind_allows": 0,
+    "racked_though_the_rule_finds_no_grip": 0
+  },
+  "refused_though_the_rule_could_hold_it": 53,
+  "holdable_by_the_rule": 93,
+  "seconds": 76
+}
