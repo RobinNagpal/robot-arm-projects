@@ -1,0 +1,8 @@
+# Retrained in a few minutes with `make train` and `make push`.
+weights/
+# Pushes: redrawn with `make collect`.
+data/
+# Drawn again with `make show`.
+saved/
+# Runs that are not the held-out tables.
+partial.json

@@ -15,7 +15,7 @@ to know, and what counts as done. Everything here follows from it.
 | **1** | [One glass, start to finish](problem-1) | the glass is on the rack | **built** |
 | **2** | [Many glasses of one kind](problem-2) | a set of pixels per glass | designed, not built |
 | **3** | [Glasses standing too close](problem-3) | the glasses are far enough apart to grip | designed, not built |
-| **4** | [Several kinds at once](problem-4) | the table is clear | stated |
+| **4** | [Several kinds at once](problem-4) | the table is clear | learned version built |
 | **5** | [Kinds whose proportions are unknown](problem-5) | the table is clear | stated |
 
 ## Why they are in this order
@@ -71,6 +71,12 @@ means. After that they differ, because the problems do:
   folder also has a `learned-with-hardware.md` holding the answers that cannot
   — a foundation model, a fine-tune, a reinforcement-learning policy — beside
   the condition each one fails.
+- **Problem 4** has both: the six steps in `problem.md`, and a `solutions/`
+  folder with a `solution-overview.md` and nine solutions, split into
+  `programmed/` and `learned/` as problem 2's are. Most of them are
+  combinations of problem 1, 2 and 3 pieces, and the overview says which piece
+  sits at which stage of a run. The learned one is built, in
+  [`problem-4-learned`](../problem-4-learned/README.md).
 
 ## What does not work yet
 

@@ -1,0 +1,27 @@
+[workspace]
+name = "pick-glasses-mixed-learned"
+version = "0.1.0"
+description = "Problem 4 learned: find, view, measure, name and grip mixed glasses with small models, and push them apart with a forward model"
+channels = ["conda-forge"]
+platforms = ["osx-arm64", "linux-64"]
+
+# Its own environment, apart from the ROS one, as in problem-2-learned and
+# problem-3-learned.
+[dependencies]
+python = "3.12.*"
+numpy = ">=1.26,<3"
+pytorch = ">=2.3"
+# rack/layout.py imports OpenCV, and the pictures are drawn with it.
+py-opencv = ">=4.9"
+pytest = ">=7"
+
+# The physics engine the pushes happen in, as in problem-3-learned.
+[pypi-dependencies]
+mujoco = ">=3.3"
+
+[activation.env]
+# The project's own modules; problem 2's renderer, scoring and view geometry;
+# problem 3's physics bench. problem-2-sim comes before problem-3-sim, because
+# both have a scoring.py and the one used here is problem 2's.
+PYTHONPATH = "$PIXI_PROJECT_ROOT/../src/work_cell:$PIXI_PROJECT_ROOT/../problem-2-sim:$PIXI_PROJECT_ROOT/../problem-3-sim:$PIXI_PROJECT_ROOT/../problem-2-learned"
+PYTORCH_ENABLE_MPS_FALLBACK = "1"

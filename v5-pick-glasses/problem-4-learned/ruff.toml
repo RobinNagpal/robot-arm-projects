@@ -1,0 +1,10 @@
+extend = "../ruff.toml"
+
+[lint.isort]
+# The modules in this folder, and the ones borrowed from problems 2 and 3, are
+# imported by bare name.
+known-first-party = [
+    "bench", "drawing", "nets", "pipeline", "push_features", "push_model", "push_plan", "rack_plan",
+    "render", "scoring", "tables", "train", "viewpoints",
+]
+known-third-party = ["work_cell"]
