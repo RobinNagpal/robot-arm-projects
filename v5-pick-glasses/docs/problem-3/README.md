@@ -75,7 +75,7 @@ decides — the same structure as the squeeze in problem 1.
 
 ## Where it sits
 
-← [Problem 2 — many glasses of one kind](../02-segment-glasses)
+← [Problem 2 — segment the glasses](../02-segment-glasses)
 → [Problem 4 — several kinds at once](../problem-4)
 
 [The five problems](../README.md) has the map.

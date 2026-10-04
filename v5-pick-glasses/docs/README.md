@@ -13,7 +13,7 @@ to know, and what counts as done. Everything here follows from it.
 | | Problem | Where it stops | State |
 | --- | --- | --- | --- |
 | **1** | [One glass, start to finish](problem-1) | the glass is on the rack | **built** |
-| **2** | [Many glasses of one kind](02-segment-glasses) | a set of pixels per glass | designed, not built |
+| **2** | [Segment the glasses](02-segment-glasses) | a set of pixels per glass | designed, not built |
 | **3** | [Glasses standing too close](problem-3) | the glasses are far enough apart to grip | designed, not built |
 | **4** | [Several kinds at once](problem-4) | the table is clear | learned version built |
 | **5** | [Kinds whose proportions are unknown](problem-5) | the table is clear | stated |

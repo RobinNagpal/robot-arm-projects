@@ -341,4 +341,4 @@ Two useful numbers are **derived**, not stored, and are recomputed every run:
 
 - [The five problems](README.md) — the map.
 - [Problem 1](problem-1/) — one glass, start to finish.
-- [Problem 2](02-segment-glasses/) — many glasses of one kind.
+- [Problem 2](02-segment-glasses/) — segment the glasses.
