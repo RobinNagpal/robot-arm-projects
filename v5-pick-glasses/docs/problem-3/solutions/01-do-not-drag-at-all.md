@@ -486,7 +486,7 @@ Two conclusions follow, and the first is about the test rather than the cell.
 crude, which treats any glass near the sight line as fatal and ignores that
 problem 2 can stand further back, move to a different station, or separate two
 glasses that share a frame, cannot be right about a cell where problem 2 works.
-[Moving the camera](../../02-segment-glasses/solutions/programmed/03-move-the-camera.md) is the real
+[Moving the camera](../../02-segment-glasses/hidden-glasses.md) is the real
 version of this test, and it is a good deal more careful. The bench sidesteps
 the question entirely: its `look()` hands over a position, a height and two
 widths for every standing glass, with problem 2's measured error on them, and

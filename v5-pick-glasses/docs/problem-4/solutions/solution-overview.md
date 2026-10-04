@@ -47,9 +47,9 @@ changes.
 
 | Stage | Comes from | What exists | What several kinds change |
 | --- | --- | --- | --- |
-| **Find** every glass from above | problem 2 | [clustering on the table](../../02-segment-glasses/solutions/programmed/02-cluster-on-the-table.md) (programmed); [votes for the centre](../../02-segment-glasses/solutions/learned/06-a-network-trained-from-scratch.md) (learned) | the learned one was trained one kind per table; the width check is weaker, but neither built pipeline uses it |
+| **Find** every glass from above | problem 2 | [clustering on the table](../../02-segment-glasses/solutions/01-rules-on-the-table.md) (programmed); [votes for the centre](../../02-segment-glasses/solutions/02-train-from-scratch.md) (learned) | the learned one was trained one kind per table; the width check is weaker, but neither built pipeline uses it |
 | **Rack** every glass that already has room | problem 3 | [do not drag at all](../../problem-3/solutions/01-do-not-drag-at-all.md) | nothing |
-| **Choose** where to stand the camera | problem 2 | [the veto and a written order](../../02-segment-glasses/solutions/programmed/03-move-the-camera.md); a learned ranker | nothing |
+| **Choose** where to stand the camera | problem 2 | [the veto and a written order](../../02-segment-glasses/hidden-glasses.md); a learned ranker | nothing |
 | **Measure** the profile | problems 1 and 2 | the silhouette (programmed); SideNet (learned) | the profile now has to carry the *name*, not only the grip |
 | **Name** the kind | problem 1 | `classify()` in `glasses/detect.py` | load-bearing; see below |
 | **Grip** and **squeeze** | problem 1 | `find_grip()`, `force.py` | the force cap changes glass to glass |
