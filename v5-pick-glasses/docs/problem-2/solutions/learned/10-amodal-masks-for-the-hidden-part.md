@@ -828,9 +828,10 @@ table](../programmed/02-cluster-on-the-table.md), which takes the glasses that
 pieces of table no ray from the lens reached, and keeps the ones large enough to
 hold the smallest footprint this kind allows.
 
-**Which of those patches is worth spending a picture on** is decided by [is
-anything hiding there](05-is-anything-hiding-there.md), because moving the arm
-is the expensive resource here and most blind patches are empty.
+**Which of those patches is worth spending a picture on** is settled by nothing
+in this folder, so they are covered in whatever order the geometry suggests.
+That is worth knowing, because moving the arm is the expensive resource here
+and most blind patches are empty.
 
 **Taking the picture** belongs to [move the
 camera](../programmed/03-move-the-camera.md), which turns a place worth looking

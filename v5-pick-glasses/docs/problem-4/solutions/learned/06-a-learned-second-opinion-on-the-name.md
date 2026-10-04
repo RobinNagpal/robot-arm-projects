@@ -154,10 +154,8 @@ this list that could catch an artefact nobody has described.
 ## Where the idea comes from
 
 **Verifiers and cascades.** A cheap check that runs after an answer is produced
-and can only stop it, not change it. [Problem 2's solution
-5](../../../problem-2/solutions/learned/05-is-anything-hiding-there.md#verifiers-and-cascades--a-cheap-exact-test-first)
-and [problem 3's solution
-7](../../../problem-3/solutions/07-a-learned-change-verifier.md) use the same
+and can only stop it, not change it. [Problem 3's solution
+7](../../../problem-3/solutions/07-a-learned-change-verifier.md) uses the same
 position.
 
 **Out-of-distribution detection.** Training a model to say "this is not like

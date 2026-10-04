@@ -853,11 +853,10 @@ is closed by any station far enough round from the one that cast it, and the
 three stations the survey already visits do it without being asked. A strip left
 by a level picture cannot be closed from anywhere along the line it lies on, at
 any distance, so the request is specifically for a pose off that line — which is
-the arithmetic solution 3 spends its own wedge section on. And because every
-look costs seconds and the run has a budget, [is anything hiding
-there](../learned/05-is-anything-hiding-there.md) takes the list of patches and asks the
-one question this method refuses to answer: which of them is *likely* to have a
-glass in it.
+the arithmetic solution 3 spends its own wedge section on. And because every look costs seconds and the run has a budget, the one question
+this method refuses to answer is the one that would be worth most: which of the
+patches is *likely* to have a glass in it. Nothing in this folder answers it,
+so the patches are covered in whatever order the geometry suggests.
 
 ## A worked example
 

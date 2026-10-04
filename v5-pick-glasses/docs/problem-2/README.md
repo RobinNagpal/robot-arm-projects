@@ -39,7 +39,7 @@ sensors and the vocabulary — is described once in [the cell](../the-cell.md).
   | 2 | [Cluster on the table](solutions/programmed/02-cluster-on-the-table.md) | programmed | the finding step of [`problem-2-programmed`](../../problem-2-programmed/README.md) |
   | 3 | [Move the camera](solutions/programmed/03-move-the-camera.md) | programmed | its veto tests, in both pipelines |
   | 4 | [Choosing the next look](solutions/learned/04-choosing-the-next-look.md) | hybrid | the Ranker in [`problem-2-learned`](../../problem-2-learned/README.md) |
-  | 5 | [Is anything hiding there?](solutions/learned/05-is-anything-hiding-there.md) | hybrid | |
+  | 5 | [A model that already knows what a glass is](solutions/learned/05-a-model-that-already-knows-a-glass.md) | learned | |
   | 6 | [A network trained from scratch](solutions/learned/06-a-network-trained-from-scratch.md) | learned | the finding step of [`problem-2-learned`](../../problem-2-learned/README.md), the pipeline taken forward |
   | 7 | [Self-supervised from the arm's own movement](solutions/learned/07-self-supervised-from-the-arms-own-movement.md) | learned | |
   | 8 | [Segment anything, then keep the glasses](solutions/learned/08-segment-anything-then-keep-the-glasses.md) | learned | [`problem-2-pretrained`](../../problem-2-pretrained/README.md) |

@@ -58,14 +58,13 @@ afterwards can only be wrong about a thing that has already happened. The worst
 a wrong verdict costs here is a few seconds of arm movement, or a run stopped
 when it need not have been.
 
-[Problem 2's solution 5](../../problem-2/solutions/learned/05-is-anything-hiding-there.md)
-uses the same pattern on a different question, and the two documents mean the
-same thing by the word. There the geometry works out where an object could be
-hiding and the verifier says whether one probably is. Here the geometry works
-out where a glass should have ended up and the verifier says whether it did.
-Both return a third answer as well as yes and no, both mean the same thing by
-it, and the section on the feedback loop below says what that third answer is
-for.
+That arrangement has a name worth learning, because it recurs wherever a
+learned part is added to a machine that moves. The rules act, and the model
+checks what happened afterwards, so the model's mistakes are limited by
+something that does not need the model to be right. Here the geometry works out
+where a glass should have ended up and the verifier says whether it did. It
+returns a third answer as well as yes and no, and the section on the feedback
+loop below says what that third answer is for.
 
 ## The three questions a push leaves behind
 
@@ -407,11 +406,10 @@ a small model fitted on a few thousand examples should not be spending its
 capacity learning arithmetic that is exactly known.
 
 That last group is what "the before and after evidence, not raw pixels alone"
-means. Problem 2's solution 5 could not show its verifier any pixels at all,
-because the thing it asks about was never photographed. Here the pixels exist and
-they are worth having. They are just not sufficient, and the reason is the whole
-of the section above: the difference between a standing glass and a toppled one,
-seen from above, is sometimes 9 millimetres in one direction.
+means. Here the pixels exist and they are worth having. They are just not
+sufficient, and the reason is the whole of the section above: the difference
+between a standing glass and a toppled one, seen from above, is sometimes 9
+millimetres in one direction.
 
 ### The model, and why a twin
 
@@ -465,10 +463,9 @@ be taught what a topple looks like. Gazebo will make topples all day.
 The fourth answer is the one this solution is really for. The verdict is
 **uncertain** when the largest of the three probabilities falls below a bar, or
 when the top two are close together. The model is then saying **"I cannot tell"**,
-and that means exactly what it means in [problem 2's
-verifier](../../problem-2/solutions/learned/05-is-anything-hiding-there.md): the evidence
-available does not settle the question, and another measurement is the only way
-forward.
+and that means what it always means when a model is allowed to decline: the
+evidence available does not settle the question, and another measurement is the
+only way forward.
 
 It is worth seeing why that answer is worth more here than a forced guess. The
 arm has an action that produces the missing evidence, it knows which action, and

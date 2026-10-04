@@ -971,10 +971,10 @@ that works from pixels runs into. This solution cannot handle the completely
 hidden case and must hand it on. What it hands on is not a glass but a region:
 the part of the table it could not have seen. Working out that region is
 arithmetic on splay and on the glasses that *were* found, and it belongs to
-[cluster on the table](../programmed/02-cluster-on-the-table.md). Deciding which
-of those places is worth spending a picture on belongs to [is anything hiding
-there](05-is-anything-hiding-there.md). Moving the camera and taking that
-picture belongs to [move the camera](../programmed/03-move-the-camera.md).
+[cluster on the table](../programmed/02-cluster-on-the-table.md). Moving the
+camera and taking that picture belongs to [move the
+camera](../programmed/03-move-the-camera.md), which also settles the order
+those places are covered in.
 
 ### Why more training cannot fix it
 
@@ -1432,13 +1432,12 @@ since that is the case no gap-finding method can answer at all.
 
 What it cannot do, on any day, is notice a glass that is absent from the
 picture. That failure is answered by geometry rather than by appearance:
-[cluster on the table](../programmed/02-cluster-on-the-table.md) works out where
-a glass could have been hiding, [move the
+[cluster on the table](../programmed/02-cluster-on-the-table.md) works out
+where a glass could have been hiding, and [move the
 camera](../programmed/03-move-the-camera.md) acts on that argument by choosing
-somewhere else to stand, and [is anything hiding
-there](05-is-anything-hiding-there.md) is the learned version of deciding which
-hiding place is worth the trip. This solution contributes the masks those three
-argue from, and none of the argument.
+somewhere else to stand. This solution contributes the masks those two argue
+from, and none of the argument.
 
-← [Is anything hiding there?](05-is-anything-hiding-there.md) · [Self-supervised
-from the arm's own movement](07-self-supervised-from-the-arms-own-movement.md) →
+← [A model that already knows what a glass
+is](05-a-model-that-already-knows-a-glass.md) · [Self-supervised from the arm's
+own movement](07-self-supervised-from-the-arms-own-movement.md) →

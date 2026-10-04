@@ -819,11 +819,11 @@ about which kind of failure matters more, because that judgement belongs to
 whoever reads the report.
 
 What the arithmetic cannot do is say whether a patch is worth the seconds. It
-reports possibility and the loop needs likelihood, and every scene produces some
-unsearched patches because every glass hides something behind it. Deciding which
-of them probably has a glass in it is a different job, and it is the one [a
-learned verifier over the places nobody could
-see](05-is-anything-hiding-there.md) exists to do.
+reports possibility and the loop needs likelihood, and every scene produces
+some unsearched patches because every glass hides something behind it. Deciding
+which of them probably has a glass in it is a different job, and nothing in
+this folder takes it on, so the patches are covered in whatever order the
+geometry suggests.
 
 ### When the camera is looking level
 
@@ -895,7 +895,7 @@ each row asks one question of both cases.
 | which glass goes missing | the shorter one, every time | the further one, whatever its height |
 | does one picture carry a hint | **yes** — splay is exact, so the table behind each found glass is computable | **no** — the mask is identical to a mask of one glass |
 | what this solution does | counts the unsearched patches as the fifth doubt entry, and can send a look to a place | nothing during the run; the geometric veto has to prevent it beforehand |
-| what it hands on | which patch is likely to hold a glass, to [solution 5](05-is-anything-hiding-there.md) | an unresolved object, to the report and to [problem 3](../../../problem-3/problem.md) |
+| what it hands on | an unsearched patch, to [move the camera](../programmed/03-move-the-camera.md) | an unresolved object, to the report and to [problem 3](../../../problem-3/problem.md) |
 
 So the honest summary is this. **This solution handles the overhead case only
 partly, and the level case not at all.** It handles the overhead case to the
@@ -1367,5 +1367,5 @@ about what is *preferred*. That is not an accident of how they were written; it
 is the property that makes a learned component safe to add to a machine that
 moves, and it is the single idea most worth carrying out of this folder.
 
-← [Move the camera](../programmed/03-move-the-camera.md) · [Is anything hiding
-there?](05-is-anything-hiding-there.md) →
+← [Move the camera](../programmed/03-move-the-camera.md) · [A model that already
+knows what a glass is](05-a-model-that-already-knows-a-glass.md) →

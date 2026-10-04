@@ -361,10 +361,9 @@ beside them](../../../../images/problem-2/08-the-keeper.png)
 
 Every one of those is a length, a count or a ratio, and not one of them is an
 address in the picture, so a proposal means the same thing to the keeper
-wherever in the frame it landed. That is the property [solution
-5](05-is-anything-hiding-there.md) requires of its own inputs, and for the same
-reason: an input measured in pixels means something different from every place
-the camera can stand. The one input that does speak about the camera speaks
+wherever in the frame it landed. That property is required of any model fed
+numbers rather than pixels, and for a plain reason: an input measured in pixels
+means something different from every place the camera can stand. The one input that does speak about the camera speaks
 about it deliberately, because how far a proposal sits from the point below the
 camera is how much splay to expect in it.
 
@@ -392,10 +391,8 @@ geometry still holds the count. Nothing in the run invented a glass.
 Every one of those inputs could be a threshold instead, so the case for fitting
 them has to be made rather than assumed, and there are three parts to it.
 
-The first is the argument [solution
-5](05-is-anything-hiding-there.md#what-the-rules-cannot-do-with-it) makes for
-its verifier, unchanged. **The evidence is several weak pieces at once and none
-of them is decisive.** A proposal roughly one glass wide, roughly round and
+The first is the nature of the evidence. **It is several weak pieces at once,
+and not one of them is decisive.** A proposal roughly one glass wide, roughly round and
 standing clear of the table: is that one glass, the near part of two, or a
 mouth? A proposal slightly wider than the kind allows: two glasses, or one whose
 mask leaked onto the table? Combining several weak pieces of evidence is what a
@@ -449,7 +446,7 @@ front of it.
 Before any threshold is put on its output, the probability has to be
 **calibrated**, meaning its claims come true about as often as it says they
 will. [Solution
-5](05-is-anything-hiding-there.md#calibration-which-is-what-makes-the-number-mean-anything)
+5](05-a-model-that-already-knows-a-glass.md#the-number-beside-each-outline-and-why-it-is-not-a-probability)
 sets out what that means and how it is repaired, and none of it differs here.
 What is worth adding is that the keeper has **two thresholds rather than one**,
 with the band between them meaning "I cannot tell". A proposal in that band is
@@ -823,11 +820,10 @@ So this solution cannot handle the completely hidden case and has to hand it on,
 and what it hands on is not a glass but a **region**: the part of the table it
 could not have seen. Working out that region is arithmetic on splay and on the
 glasses that *were* found, and it belongs to [cluster on the
-table](../programmed/02-cluster-on-the-table.md); deciding which of those places
-is worth a picture belongs to [is anything hiding
-there](05-is-anything-hiding-there.md); moving the camera and taking the picture
-belongs to [move the camera](../programmed/03-move-the-camera.md). This solution
-contributes the masks those three argue from, and none of the argument.
+table](../programmed/02-cluster-on-the-table.md); moving the camera and taking
+the picture belongs to [move the camera](../programmed/03-move-the-camera.md).
+This solution contributes the masks those two argue from, and none of the
+argument.
 
 ### The partly hidden case, which is different
 

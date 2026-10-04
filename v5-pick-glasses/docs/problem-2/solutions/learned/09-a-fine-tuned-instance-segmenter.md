@@ -651,14 +651,11 @@ have seen. Three solutions share that work. Working out the region is arithmetic
 on splay and on the glasses that *were* found, and it belongs to [cluster on the
 table](../programmed/02-cluster-on-the-table.md), which computes the blind
 region for a camera position and reports each part of it large enough to hold a
-glass as an unsearched patch. Deciding which of those patches is worth spending
-a picture on belongs to [is anything hiding
-there](05-is-anything-hiding-there.md), which learns that one judgement from
-numbers the geometry has already produced. Moving the camera and taking the
-picture belongs to [move the camera](../programmed/03-move-the-camera.md), which
-turns a request for a different view into a pose the arm can reach.
+glass as an unsearched patch. Moving the camera and taking the picture belongs
+to [move the camera](../programmed/03-move-the-camera.md), which turns a request
+for a different view into a pose the arm can reach.
 
-This solution contributes the masks those three argue from, and none of the
+This solution contributes the masks those two argue from, and none of the
 argument.
 
 ## A worked example
@@ -709,9 +706,8 @@ question, so the question has to come from elsewhere. The blind-region
 arithmetic in solution 2 takes the five reported glasses, works out for each the
 wedge of table its own outline could have hidden, and reports any part of that
 region large enough to hold the smallest glass of this kind as an unsearched
-patch. Solution 5 judges that patch worth a look, solution 3 finds a pose the
-arm can reach with a clear line of sight into it, and the arm takes one more
-picture. In that picture the sixth glass has pixels, so it has anchors, so it
+patch. Solution 3 then finds a pose the arm can reach with a clear line of
+sight into that patch, and the arm takes one more picture. In that picture the sixth glass has pixels, so it has anchors, so it
 has a proposal.
 
 ## What running it shows
@@ -1089,11 +1085,9 @@ that no length has to be chosen and no merge has to be caught after the fact.
 And what none of them can do is notice a glass absent from the picture. That
 failure is answered by geometry rather than by appearance: [cluster on the
 table](../programmed/02-cluster-on-the-table.md) works out where a glass could
-have been hiding, [is anything hiding there](05-is-anything-hiding-there.md)
-decides which hiding place is worth the trip, and [move the
-camera](../programmed/03-move-the-camera.md) turns that into a pose the arm can
-reach. This solution supplies the masks those three argue from, and none of the
-argument.
+have been hiding, and [move the camera](../programmed/03-move-the-camera.md)
+turns that into a pose the arm can reach. This solution supplies the masks
+those two argue from, and none of the argument.
 
 ← [Segment anything, then keep the
 glasses](08-segment-anything-then-keep-the-glasses.md) · [Amodal masks for the
