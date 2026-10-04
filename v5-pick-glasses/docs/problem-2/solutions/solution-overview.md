@@ -229,15 +229,16 @@ ones add a large one.
 **One of those conditions has an exception, and it is worth naming rather than
 stepping round.** The condition is that nothing an approach needs may come from
 outside the simulator, and solutions 5, 8, 9 and 10 each download a file of
-weights fitted elsewhere, so they do not meet it. They are listed because everything
-else about them runs on this machine, and because a large model fitted elsewhere
-is the first thing a team with a real camera would reach for, so leaving it out
-would hide a real option. The exception has a price. Those weights were fitted
-on photographs, while the cell renders a grey picture shaded from depth, so the
-model is asked about pictures unlike the ones it learned from; and reproducing a
-result means fetching the same file rather than running the training again from
-a random start, so the file has to stay available and stay the same. The three
-documents say what that costs in their own terms.
+weights fitted elsewhere, so they do not meet it. They are listed because
+everything else about them runs on this machine, and because a large model
+fitted elsewhere is the first thing a team with a real camera would reach for,
+so leaving it out would hide a real option. The exception has a price. Those
+weights were fitted on photographs, while the cell renders a grey picture
+shaded from depth, so the model is asked about pictures unlike the ones it
+learned from; and reproducing a result means fetching the same file rather than
+running the training again from a random start, so the file has to stay
+available and stay the same. The three documents say what that costs in their
+own terms.
 
 ## The ten, in two folders
 
@@ -346,9 +347,9 @@ No test scene needed them to find every glass. They are what to add first when
 the cell changes, for the reasons below.
 
 **A third folder holds the borrowed-weight solutions that were built.** Nothing
-from solutions 8, 9 and 10 is in either pipeline, because each of those is a whole alternative
-to the find step rather than a part missing from it, so the three are built and
-scored on their own in
+from solutions 8, 9 and 10 is in either pipeline, because each of those is a
+whole alternative to the find step rather than a part missing from it, so the
+three are built and scored on their own in
 [`problem-2-pretrained`](../../../problem-2-pretrained/README.md). That folder
 surveys from the cell's own height, from the three stations the cell computes,
 which is what makes its numbers different in kind from the two pipelines above.
