@@ -7,7 +7,7 @@ circle only in its footprint, which no camera in this cell ever sees straight
 on, and drawing it as one is what the first version of these pictures got
 wrong.
 
-    pixi run python images/generators/problem-2/make_01_images.py
+    pixi run python images/generators/02-segment-glasses/make_01_images.py
 """
 
 from __future__ import annotations

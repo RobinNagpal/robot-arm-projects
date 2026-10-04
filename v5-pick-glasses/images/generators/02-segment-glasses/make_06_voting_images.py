@@ -2,7 +2,7 @@
 
 Run from the project root:
 
-    pixi run python images/generators/problem-2/make_08_images.py
+    pixi run python images/generators/02-segment-glasses/make_08_images.py
 
 Every number drawn here comes from the cell: fx = fy = 277.1 pixels, survey
 height 450 mm, footprints 45 to 105 mm across, and the worked example's pair of

@@ -13,7 +13,7 @@ to know, and what counts as done. Everything here follows from it.
 | | Problem | Where it stops | State |
 | --- | --- | --- | --- |
 | **1** | [One glass, start to finish](problem-1) | the glass is on the rack | **built** |
-| **2** | [Many glasses of one kind](problem-2) | a set of pixels per glass | designed, not built |
+| **2** | [Many glasses of one kind](02-segment-glasses) | a set of pixels per glass | designed, not built |
 | **3** | [Glasses standing too close](problem-3) | the glasses are far enough apart to grip | designed, not built |
 | **4** | [Several kinds at once](problem-4) | the table is clear | learned version built |
 | **5** | [Kinds whose proportions are unknown](problem-5) | the table is clear | stated |
@@ -111,9 +111,9 @@ the diagrams in the problem documents. Those describe problems that are not
 built, so there is no function to plot. They are drawn from the geometry
 written beside them, and the two have to be kept in step by hand.
 
-[`generators/problem-2/`](../images/generators/problem-2/) holds one script per
+[`generators/02-segment-glasses/`](../images/generators/02-segment-glasses/) holds one script per
 solution — `make_01_images.py` to `make_09_images.py` — plus
-[`diagram_style.py`](../images/generators/problem-2/diagram_style.py), the
+[`diagram_style.py`](../images/generators/02-segment-glasses/diagram_style.py), the
 shared palette and page setup that keeps sixty-seven diagrams by nine different
 hands looking like one document. These compute their own geometry, so the
 arithmetic in a picture and the arithmetic in the prose beside it come from the

@@ -156,7 +156,7 @@ as a network that takes a picture and returns an answer.
 
 ![A single picture with three different point prompts on it, and the three
 different masks that come back from the same unchanged
-weights](../../../../images/problem-2/08-what-promptable-means.png)
+weights](../../../../images/02-segment-glasses/08-what-promptable-means.png)
 
 A **prompt** is a small extra input that says *which* thing in the picture you
 mean: for SAM a point, meaning "the thing here", a box, meaning "the thing
@@ -190,7 +190,7 @@ into something that finds the objects by itself.
 
 ![A regular grid of prompt points laid over the picture from the top, with the
 points landing on the table, on glass walls, on rims and on
-mouths](../../../../images/problem-2/08-the-prompt-grid.png)
+mouths](../../../../images/02-segment-glasses/08-the-prompt-grid.png)
 
 Lay a regular grid of points over the picture taken from the top and prompt once
 at every point. The grid does not aim at anything, which is the point of it:
@@ -234,7 +234,7 @@ how sure the borrowed model was about drawing it.
 
 ![The proposals that survive the cleanup, drawn over one scene: the table, each
 glass, two rims, one mouth, and a pair of glasses as a single
-region](../../../../images/problem-2/08-everything-is-proposed.png)
+region](../../../../images/02-segment-glasses/08-everything-is-proposed.png)
 
 After the cleanup there is a shortlist of regions, each with an outline and a
 score, and **not one of them has a name**. The regions are there and they are
@@ -258,7 +258,7 @@ this cell reaches its numbers. Running it here is a forward pass.
 the weights and none of the knowledge of this cell; on the other the keeper,
 fitted here on simulator scenes, with a handful of numbers and all of the
 knowledge of this
-cell](../../../../images/problem-2/08-borrowed-against-trained.png)
+cell](../../../../images/02-segment-glasses/08-borrowed-against-trained.png)
 
 Four things follow, and together they are the case for this solution. **There is
 no training set for the part that finds objects**: scenes are still rendered,
@@ -346,7 +346,7 @@ the table from anything that could be a glass of this kind.
 
 ![The keeper as a funnel taking many proposals and answering one of three things
 about each, with its two thresholds and the eight measurements it reads set out
-beside them](../../../../images/problem-2/08-the-keeper.png)
+beside them](../../../../images/02-segment-glasses/08-the-keeper.png)
 
 | What the measurement says | Why it bears on the question |
 | --- | --- |
@@ -505,7 +505,7 @@ dressed up as a photograph.
 
 ![A photograph of the kind SAM's weights were fitted on beside a grey picture
 shaded from depth, with the boundaries each one carries marked
-underneath](../../../../images/problem-2/08-the-domain-gap.png)
+underneath](../../../../images/02-segment-glasses/08-the-domain-gap.png)
 
 A **domain gap** is the difference between the examples a model was fitted on
 and the examples it is used on. The physics comparison is exact and worth
@@ -771,7 +771,7 @@ solution's answer is a clean and complete no.
 ![A prompt point placed over the hidden glass's part of the table, the mask that
 comes back being the covering glass, and the keeper never being consulted
 because no proposal for the hidden glass
-exists](../../../../images/problem-2/08-where-it-stops.png)
+exists](../../../../images/02-segment-glasses/08-where-it-stops.png)
 
 Being exact about why takes five steps, and each one closes a different escape
 route.

@@ -2,10 +2,10 @@
 
 Run from the project root:
 
-    pixi run python images/generators/problem-2/make_06_images.py
+    pixi run python images/generators/02-segment-glasses/make_06_images.py
 
 Every picture here is drawn from the numbers in
-``docs/problem-2/06-learn-which-viewpoints-pay-off.md``. Nothing is measured
+``docs/02-segment-glasses/06-learn-which-viewpoints-pay-off.md``. Nothing is measured
 from a run, and the accuracy panel is marked illustrative on the picture
 itself, because it is the shape of an argument rather than a result.
 

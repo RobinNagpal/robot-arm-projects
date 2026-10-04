@@ -62,7 +62,7 @@ spreads out to every neighbouring pixel that is also yes, and calls everything
 it reached one object. With one glass on an empty table that is enough, because
 whatever is joined together is the glass. With five glasses it is not enough.
 
-![Merged in the picture, plainly apart on the table](../../../../images/problem-2/02-merged-in-the-picture.png)
+![Merged in the picture, plainly apart on the table](../../../../images/02-segment-glasses/02-merged-in-the-picture.png)
 
 On the left of that picture, two outlines touch each other, so the flood fill
 hands back one patch. On the right, the same two glasses are drawn where they
@@ -135,7 +135,7 @@ the photograph could not show us, is simply there once the points are in the
 room. Two glasses that touch each other in a photograph are still standing well
 apart on the table, and on the table is where we do the deciding.
 
-![The whole method in four pictures](../../../../images/problem-2/02-four-steps.png)
+![The whole method in four pictures](../../../../images/02-segment-glasses/02-four-steps.png)
 
 Those four panels are the whole method in order: the depth picture, then the
 points that stand above the table, then those points flattened onto the table
@@ -148,7 +148,7 @@ The first concept is the one everything else is built on, and it has a name:
 **back-projection**. Projection is what a camera does when it turns a place in
 the room into a place in a picture. Back-projection is that step run in reverse.
 
-![One pixel becomes a direction, then a point](../../../../images/problem-2/02-pixel-to-point.png)
+![One pixel becomes a direction, then a point](../../../../images/02-segment-glasses/02-pixel-to-point.png)
 
 On the left of that picture is what the camera actually hands over, which is a
 grid of numbers. On the right is what one of those numbers means in the room.
@@ -204,7 +204,7 @@ The second concept is the one that surprises people, because it throws
 information away on purpose. Every point is dropped straight down onto the
 table, so a point in three dimensions becomes a dot in two.
 
-![Why flattening comes before grouping](../../../../images/problem-2/02-why-flatten.png)
+![Why flattening comes before grouping](../../../../images/02-segment-glasses/02-why-flatten.png)
 
 To see why that helps, first look at what the cloud of points actually looks
 like. On the left of that picture are two glasses as points in full three
@@ -282,7 +282,7 @@ placed in the gap between them. This is the same reasoning used when choosing a
 measurement tolerance, which must be larger than the instrument's noise and
 smaller than the smallest real difference that must not be missed.
 
-![Choosing the one parameter](../../../../images/problem-2/02-grouping-distance.png)
+![Choosing the one parameter](../../../../images/02-segment-glasses/02-grouping-distance.png)
 
 The **lower limit** is set by how far apart the dots on one glass are.
 Neighbouring pixels land on neighbouring pieces of table, so the dots arrive in
@@ -357,7 +357,7 @@ about noise rather than elegance. A bounding box is decided by exactly two dots,
 the two extreme ones, and those are precisely the two dots most likely to be
 noise. A fit uses every dot, so the many ordinary dots outvote the few odd ones.
 
-![The circle fit is the safety net](../../../../images/problem-2/02-circle-fit-decides.png)
+![The circle fit is the safety net](../../../../images/02-segment-glasses/02-circle-fit-decides.png)
 
 Now the check. On the left of that picture, one circle fitted to a merged group
 comes out several times wider than any glass of this kind can be, so it is
@@ -406,7 +406,7 @@ fingers, opened wide, eat into the edges of the frame. Held against the shape of
 the glass zone, what remains works out to a single column of three stations, one
 behind the other, marching away from the arm.
 
-![Two stations, and why they are asked to agree](../../../../images/problem-2/02-two-stations-agree.png)
+![Two stations, and why they are asked to agree](../../../../images/02-segment-glasses/02-two-stations-agree.png)
 
 The grey patches in that picture are the pieces of table each glass hides from
 that station. In the left panel, one glass sits well out towards the corner of
@@ -666,7 +666,7 @@ is radial, which means it acts along the line running out from the point below
 the camera and not across that line.
 
 ![The same pair hides along a radius and does not across
-one](../../../../images/problem-2/02-hidden-from-above.png)
+one](../../../../images/02-segment-glasses/02-hidden-from-above.png)
 
 On the left of that picture is the pair just described, lying along one radius,
 with the short glass's outline drawn as a dashed line inside the tall glass's.
@@ -784,7 +784,7 @@ From the side, one glass simply stands in front of another and its outline
 covers it. That is all there is to the mechanism.
 
 ![In line with the camera, the near glass covers the far one
-completely](../../../../images/problem-2/02-hidden-from-the-side.png)
+completely](../../../../images/02-segment-glasses/02-hidden-from-the-side.png)
 
 On the left of that picture is what the camera returns with a 230 mm glass
 380 mm in front of it and a 93 mm glass 230 mm behind that, the two of them in
@@ -1016,7 +1016,7 @@ The cell's scene generator will never produce the next case, because it always
 keeps the glasses a legal distance apart. The method still has to behave
 sensibly in it, because problem 3 is about exactly this.
 
-![Where the method stops working](../../../../images/problem-2/02-touching-is-the-limit.png)
+![Where the method stops working](../../../../images/02-segment-glasses/02-touching-is-the-limit.png)
 
 There are three scenes in that picture, in order of difficulty. The first is the
 case above. The second is recoverable, but not by distance. The third is not

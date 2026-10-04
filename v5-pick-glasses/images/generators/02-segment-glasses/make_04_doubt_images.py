@@ -22,7 +22,7 @@ version of these two pictures got wrong.
 
 Run from the project root:
 
-    pixi run python images/generators/problem-2/make_04_images.py
+    pixi run python images/generators/02-segment-glasses/make_04_images.py
 """
 
 from __future__ import annotations

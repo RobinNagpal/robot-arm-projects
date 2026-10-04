@@ -63,7 +63,7 @@ and what the same repository shows is worth building instead.
 There is one general lesson worth carrying away even if you never build this.
 **A ranker earns its place only when the thing that separates a good candidate
 from a bad one cannot be computed from what you already know.** In
-[problem 2](../../problem-2/solutions/learned/04-choosing-the-next-look.md) it
+[problem 2](../../02-segment-glasses/solutions/learned/04-choosing-the-next-look.md) it
 could not be: whether a photograph would split an ambiguous pair depended on the
 photograph, which did not exist yet. Here it can be, because the value of a push
 is decided by where the glass ends up, and the geometry computes that before the
@@ -463,7 +463,7 @@ the quantity the geometry already computes exactly.
 
 ## The same pattern as problem 2, and why it pays less here
 
-[Problem 2's solution 4](../../problem-2/solutions/learned/04-choosing-the-next-look.md)
+[Problem 2's solution 4](../../02-segment-glasses/solutions/learned/04-choosing-the-next-look.md)
 is the same pattern applied to a different action. There the candidates are
 places to stand the camera, the geometry vetoes the ones that are unreachable or
 blocked, and a model orders the survivors by the chance that a picture from

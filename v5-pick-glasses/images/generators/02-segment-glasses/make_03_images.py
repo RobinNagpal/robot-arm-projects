@@ -18,7 +18,7 @@ footprint, which neither of the two views ever sees straight on.
 
 Run from the project root:
 
-    pixi run python images/generators/problem-2/make_03_images.py
+    pixi run python images/generators/02-segment-glasses/make_03_images.py
 """
 
 from __future__ import annotations

@@ -1,6 +1,6 @@
 # Problem 3 — glasses too close together, moved apart by dragging
 
-[Problem 2](../problem-2/problem.md) has ended. The arm knows which pixels are
+[Problem 2](../02-segment-glasses/problem.md) has ended. The arm knows which pixels are
 which glass and where each one stands. Some of them are standing too close
 together for the gripper to get round one without fouling its neighbour.
 

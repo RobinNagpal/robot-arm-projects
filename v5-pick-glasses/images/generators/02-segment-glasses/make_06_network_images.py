@@ -15,7 +15,7 @@ Eight figures, each carrying one point of the document:
 
 Run from the project root:
 
-    pixi run python images/generators/problem-2/make_07_images.py
+    pixi run python images/generators/02-segment-glasses/make_07_images.py
 
 Every number here is arithmetic on channel widths, on image sizes, or on the
 discs in these drawings. None of it is a measurement of a trained network, and

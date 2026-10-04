@@ -194,7 +194,7 @@ step.
 - **The view check does not ask the motion planner.** `views.py` checks reach,
   standing clear and line of sight. It does not check that the arm can get the
   camera there without crossing another glass. [Problem
-  2](../../../problem-2/solutions/solution-overview.md#where-what-was-built-can-fail)
+  2](../../../02-segment-glasses/solutions/solution-overview.md#where-what-was-built-can-fail)
   says the same of both its pipelines. Near a crowd, that check matters more,
   so the real share of crowded glasses that can be measured is likely lower
   than 58%.
@@ -215,7 +215,7 @@ step.
 **Acting to see.** Choosing actions for what they let the robot measure next is
 called active perception. Here the action that pays is not a push but a look
 taken earlier than it would have been. [Problem 2's
-overview](../../../problem-2/solutions/solution-overview.md#feedback-choosing-what-to-measure-next)
+overview](../../../02-segment-glasses/solutions/solution-overview.md#feedback-choosing-what-to-measure-next)
 sets out what it takes for a machine to choose its next measurement.
 
 **Resolving uncertainty before committing.** When a decision depends on an

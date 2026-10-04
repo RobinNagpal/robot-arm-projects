@@ -12,7 +12,7 @@ Seven figures, each carrying one point of the document:
 
 Run from the project root:
 
-    pixi run python images/generators/problem-2/make_09_images.py
+    pixi run python images/generators/02-segment-glasses/make_09_images.py
 
 Every scene here is a legal arrangement of the shared cast of glasses: a couple
 of large ones and a couple of the smallest this kind allows, with every pair of

@@ -137,7 +137,7 @@ or measures after it. This is the only one that acts inside it.
 ## The main idea
 
 The arm pushes as it would anyway, from the position and footprint that
-[problem 2](../../problem-2/problem.md) produced. A separate piece of code, a
+[problem 2](../../02-segment-glasses/problem.md) produced. A separate piece of code, a
 **monitor**, sits beside the controller and reads the wrist force-torque sensor
 at its full rate. Its only power is to zero the arm's velocity command. It
 cannot steer, it cannot choose a target, and it cannot approve anything. It can

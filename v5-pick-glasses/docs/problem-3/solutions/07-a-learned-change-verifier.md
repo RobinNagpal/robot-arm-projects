@@ -528,7 +528,7 @@ background rather than against the table.
 **The direction.** The arm can stand anywhere on a circle round the glass. Score
 the poses at working range by how many other glasses lie in the line of sight,
 and take the clearest one the arm can comfortably reach. This is the same choice
-[solution 3 of problem 2](../../problem-2/solutions/programmed/03-move-the-camera.md) makes
+[solution 3 of problem 2](../../02-segment-glasses/solutions/programmed/03-move-the-camera.md) makes
 for measuring a glass, and the same arithmetic serves.
 
 **A second direction, if needed.** A glass that fell straight towards the camera

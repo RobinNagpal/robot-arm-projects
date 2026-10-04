@@ -1,4 +1,4 @@
-"""Shared look for the problem-2 diagrams.
+"""Shared look for the 02-segment-glasses diagrams.
 
 One module so that nine separately written scripts produce pictures that sit
 beside each other without looking like nine different documents. Import it,
@@ -6,10 +6,10 @@ call ``new``/``save``, and use the colour names rather than literals.
 
     from diagram_style import GLASS, GOOD, INK, MUTED, WARN, bare, new, save
 
-Every script in this folder writes into ``images/problem-2/`` and is run from
+Every script in this folder writes into ``images/02-segment-glasses/`` and is run from
 the project root:
 
-    pixi run python images/generators/problem-2/make_01_images.py
+    pixi run python images/generators/02-segment-glasses/make_01_images.py
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ import numpy as np
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
-IMAGES = Path(__file__).resolve().parents[3] / "images" / "problem-2"
+IMAGES = Path(__file__).resolve().parents[3] / "images" / "02-segment-glasses"
 
 # The palette the rest of the project's diagrams use.
 INK = "#22272e"      # text, and anything structural
@@ -81,12 +81,12 @@ def bare(axis) -> None:
 
 
 def save(figure, name: str) -> Path:
-    """Write into images/problem-2/ and say where it went."""
+    """Write into images/02-segment-glasses/ and say where it went."""
     IMAGES.mkdir(parents=True, exist_ok=True)
     path = IMAGES / name
     figure.savefig(path, dpi=150, bbox_inches="tight", facecolor=PAPER)
     plt.close(figure)
-    print(f"wrote images/problem-2/{name}")
+    print(f"wrote images/02-segment-glasses/{name}")
     return path
 
 

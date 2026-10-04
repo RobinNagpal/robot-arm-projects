@@ -14,7 +14,7 @@ this cell ever sees straight on, so nothing here is drawn as one.
 
 Run from the project root:
 
-    pixi run python images/generators/problem-2/make_02_images.py
+    pixi run python images/generators/02-segment-glasses/make_02_images.py
 """
 
 from __future__ import annotations

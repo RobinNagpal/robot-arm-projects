@@ -1007,6 +1007,6 @@ number that was tuned rather than derived.
 ---
 
 ← [The problem](../problem.md) ·
-[Problem 2, where the crowding was first seen](../../problem-2/problem.md) ·
+[Problem 2, where the crowding was first seen](../../02-segment-glasses/problem.md) ·
 [All eleven solutions](solution-overview.md) ·
 [Solution 4 — predict the slide](04-predict-the-slide.md) →

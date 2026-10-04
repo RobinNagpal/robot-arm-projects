@@ -40,7 +40,7 @@ But it has to be trained, and training needs the right answer written beside
 each example. Those right answers are called the **labels**, and getting them is
 where most of the cost of a learned method lives.
 
-![Three ways to get the right answer written beside each picture](../../../../images/problem-2/07-where-the-labels-come-from.png)
+![Three ways to get the right answer written beside each picture](../../../../images/02-segment-glasses/07-where-the-labels-come-from.png)
 
 There are three ways to obtain labels, and that picture puts them side by side.
 
@@ -89,7 +89,7 @@ shape than as arithmetic: **the shift goes as one divided by the depth**. Near
 things move a lot, far things move a little, and things at infinity do not move
 at all.
 
-![Apparent shift against depth, and separation against slide](../../../../images/problem-2/07-depth-against-shift.png)
+![Apparent shift against depth, and separation against slide](../../../../images/02-segment-glasses/07-depth-against-shift.png)
 
 The left-hand plot is that formula drawn. Because it is one over the depth, the
 curve is **steep close up and nearly flat far away**. So the same small
@@ -131,7 +131,7 @@ merged.
 station is the same one the shape measurement uses: from the side, low down,
 standing back at the measuring standoff.
 
-![The scene stands still; only the camera moves](../../../../images/problem-2/07-two-views-parallax.png)
+![The scene stands still; only the camera moves](../../../../images/02-segment-glasses/07-two-views-parallax.png)
 
 Now look at what changed. A second glass standing in line behind the first is a
 long way further back, much further than the width of either glass. So the gap
@@ -220,7 +220,7 @@ pixel, take its positive partner and a handful of negatives, and the loss is low
 only when the partner is closer than every one of the negatives. So it **pulls**
 a pixel and its partner together, and **pushes** it and its negatives apart.
 
-![An embedding: every pixel becomes a point](../../../../images/problem-2/07-embedding-space.png)
+![An embedding: every pixel becomes a point](../../../../images/02-segment-glasses/07-embedding-space.png)
 
 In the right-hand panel of that picture, every pixel has become one point, and
 the pixels of the two glasses have landed in two clumps.
@@ -297,7 +297,7 @@ number attached**: how wide the clear air is between the two groups of shifts.
 Wide, and the answer is settled. Narrower than the noise in the matching, and it
 is not — and the method can say so rather than guessing.
 
-![The deliberate-motion loop, and how the next slide is worked out](../../../../images/problem-2/07-deliberate-motion-loop.png)
+![The deliberate-motion loop, and how the next slide is worked out](../../../../images/02-segment-glasses/07-deliberate-motion-loop.png)
 
 That doubt is unusually actionable, because of the dial described earlier. The
 arm can divide the separation it needs by the separation one millimetre of slide
@@ -386,7 +386,7 @@ is what decides whether it hides. A pair lying along a radius from the nadir
 hides. The same pair turned across a radius does not. Sliding the camera
 sideways moves the nadir, which swings the splay, which ends the hiding.
 
-![Two glasses of the kind's extreme sizes, projected through the overhead camera at four positions along one slide, with the frame the picture actually covers drawn as a dashed rectangle](../../../../images/problem-2/07-hidden-from-above.png)
+![Two glasses of the kind's extreme sizes, projected through the overhead camera at four positions along one slide, with the frame the picture actually covers drawn as a dashed rectangle](../../../../images/02-segment-glasses/07-hidden-from-above.png)
 
 That picture stands the tallest glass the kind allows, 230 mm, 200 mm out from
 the nadir, and the shortest it allows, 90 mm, a further 150 mm out along the
@@ -429,7 +429,7 @@ as fast as it moves out of line. The second is that the hidden one is the
 further one whatever its height. The near glass is nearer, so it is magnified in
 the picture, and a short glass in front can cover a taller glass behind.
 
-![Four real level-view frames along one 120 mm slide, and the count of the far glass's pixels that reach the picture at every slide in between](../../../../images/problem-2/07-hidden-from-the-side.png)
+![Four real level-view frames along one 120 mm slide, and the count of the far glass's pixels that reach the picture at every slide in between](../../../../images/02-segment-glasses/07-hidden-from-the-side.png)
 
 The pair in that picture is an ordinary one, drawn by the project's own spawner.
 The near glass is 181 mm tall and the far one 216 mm, so the taller of the two
@@ -603,7 +603,7 @@ loss has the same shape, and it is a dozen lines of code rather than a library.
 
 ## Where it is strong and where it breaks
 
-![Where the signal runs out](../../../../images/problem-2/07-the-limit.png)
+![Where the signal runs out](../../../../images/02-segment-glasses/07-the-limit.png)
 
 The strengths come from where the supervision comes from.
 

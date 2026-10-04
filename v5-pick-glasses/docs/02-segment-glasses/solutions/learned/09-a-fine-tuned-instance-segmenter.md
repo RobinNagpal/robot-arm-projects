@@ -139,7 +139,7 @@ being confused.
 
 ![A class map labels every pixel glass or table and merges two joined glasses
 into one region, while an instance segmenter returns one separate mask per
-glass](../../../../images/problem-2/09-class-map-against-instances.png)
+glass](../../../../images/02-segment-glasses/09-class-map-against-instances.png)
 
 The left panel of that picture is what a class map returns for two glasses whose
 outlines meet, which is one region, and the right panel is what this solution
@@ -204,7 +204,7 @@ of models is built around.
 
 ![Stage one slides over the picture and proposes many rectangles that might hold
 an object, and stage two cuts each rectangle out, classifies it, tightens it and
-paints a mask inside it](../../../../images/problem-2/09-the-two-stages.png)
+paints a mask inside it](../../../../images/02-segment-glasses/09-the-two-stages.png)
 
 ### The first stage: proposing regions
 
@@ -289,7 +289,7 @@ photographs.
 ![The backbone turns a picture into feature maps holding edges, corners,
 textures and object-like parts, and those maps arrive already fitted from a
 large collection of
-photographs](../../../../images/problem-2/09-what-a-backbone-brings.png)
+photographs](../../../../images/02-segment-glasses/09-what-a-backbone-brings.png)
 
 Read that picture from left to right: small local things such as edges and
 corners first, then larger composed things built out of the level below, and
@@ -337,7 +337,7 @@ useful, so the nudges have much less to do.
 ![Training from a random start has to discover edges, corners and textures
 before it can learn anything about glasses, while fine-tuning begins with those
 already in place and only has to learn what a glass looks
-like](../../../../images/problem-2/09-fine-tune-against-scratch.png)
+like](../../../../images/02-segment-glasses/09-fine-tune-against-scratch.png)
 
 That picture explains the idea rather than reporting a result. Nothing in this
 folder fits this model from a random start, so its two sides are an expectation
@@ -437,7 +437,7 @@ from the same second stage, on the same proposal.
 
 ![One glass produces a box, a score and a mask together, and the same three come
 out once per object with the masks allowed to
-overlap](../../../../images/problem-2/09-boxes-scores-masks.png)
+overlap](../../../../images/02-segment-glasses/09-boxes-scores-masks.png)
 
 The masks in that picture overlap, and that is not an error. In a class map,
 overlapping would be a contradiction, because a pixel can hold only one label.
@@ -485,7 +485,7 @@ other.
 
 ![Several proposals land on one glass, they are sorted by score, and each one
 overlapping the best by more than the allowed amount is
-discarded](../../../../images/problem-2/09-overlapping-proposals.png)
+discarded](../../../../images/02-segment-glasses/09-overlapping-proposals.png)
 
 The standard fix is **non-maximum suppression**, and it is one of the few parts
 of this model that is plain arithmetic rather than learned. Sort every surviving
@@ -624,7 +624,7 @@ nothing to check.
 
 ![A glass covered completely produces no pixels, so no anchor sees it, so no
 proposal is made and no amount of fine-tuning can create
-one](../../../../images/problem-2/09-where-it-stops.png)
+one](../../../../images/02-segment-glasses/09-where-it-stops.png)
 
 **No amount of fine-tuning helps.** This is worth settling exactly, because more
 training is the first thing anyone suggests. Take the scene with the hidden

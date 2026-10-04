@@ -50,7 +50,7 @@ be a deliberate piece of the project's design rather than an accident.
 
 ## The problem this solves
 
-[Problem 2](../../problem-2/problem.md) has finished. The arm knows where every
+[Problem 2](../../02-segment-glasses/problem.md) has finished. The arm knows where every
 glass stands and how wide each one is across its widest part. Some of the
 glasses stand too close together for the gripper to get round one of them
 without fouling the one beside it.
@@ -486,7 +486,7 @@ Two conclusions follow, and the first is about the test rather than the cell.
 crude, which treats any glass near the sight line as fatal and ignores that
 problem 2 can stand further back, move to a different station, or separate two
 glasses that share a frame, cannot be right about a cell where problem 2 works.
-[Moving the camera](../../problem-2/solutions/programmed/03-move-the-camera.md) is the real
+[Moving the camera](../../02-segment-glasses/solutions/programmed/03-move-the-camera.md) is the real
 version of this test, and it is a good deal more careful. The bench sidesteps
 the question entirely: its `look()` hands over a position, a height and two
 widths for every standing glass, with problem 2's measured error on them, and

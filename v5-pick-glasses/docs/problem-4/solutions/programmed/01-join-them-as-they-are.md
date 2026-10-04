@@ -51,7 +51,7 @@ The [problem](../../problem.md#problem-2s-strongest-tool-is-taken-away) warns th
 the footprint check gets weaker with four kinds. That is true, and it does not
 matter here, because neither of problem 2's built pipelines uses a footprint
 check. [Problem 2's
-overview](../../../problem-2/solutions/solution-overview.md#where-what-was-built-can-fail)
+overview](../../../02-segment-glasses/solutions/solution-overview.md#where-what-was-built-can-fail)
 lists it as missing.
 
 **Choosing a view, measuring, gripping, squeezing.** None of these is about a

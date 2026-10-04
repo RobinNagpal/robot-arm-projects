@@ -16,7 +16,7 @@ this script runs.
 
 Run from the project root:
 
-    pixi run python images/generators/problem-2/make_10_images.py
+    pixi run python images/generators/02-segment-glasses/make_10_images.py
 """
 
 from __future__ import annotations

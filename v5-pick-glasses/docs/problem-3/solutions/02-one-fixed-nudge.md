@@ -813,6 +813,6 @@ population is most of the time.
 
 ← [The solution overview](solution-overview.md) ·
 [Problem 3](../problem.md) ·
-[Problem 2, where this begins](../../problem-2/problem.md) ·
+[Problem 2, where this begins](../../02-segment-glasses/problem.md) ·
 → [Solution 3 — plan the destination, feel for the glass, look
 again](03-plan-feel-look-again.md)

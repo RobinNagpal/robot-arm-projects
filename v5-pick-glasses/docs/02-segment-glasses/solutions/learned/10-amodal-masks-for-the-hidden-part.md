@@ -96,7 +96,7 @@ towards the side the camera could still see.
 ![A mask cut short by an object in front of it, the crescent of points it leaves
 on the table, and the small displaced circle fitted to that crescent shown
 against the true
-footprint](../../../../images/problem-2/10-the-truncated-footprint.png)
+footprint](../../../../images/02-segment-glasses/10-the-truncated-footprint.png)
 
 Follow what the circle fit does with that crescent, because each of the three
 numbers goes wrong differently and only one of them goes wrong loudly.
@@ -305,7 +305,7 @@ between them is the **hidden part**.
 ![A glass with another in front of it shown three ways: the modal mask covering
 only visible pixels, the amodal mask covering the whole silhouette, and the
 hidden part that is the difference between
-them](../../../../images/problem-2/10-modal-against-amodal.png)
+them](../../../../images/02-segment-glasses/10-modal-against-amodal.png)
 
 The everyday version is worth stating, because it shows that the amodal answer
 is the normal one and the modal answer is the odd one. Look at a cat sitting
@@ -345,7 +345,7 @@ in it.
 
 ![The full scene render beside one render per glass with the other glasses
 removed, and the exact masks each one yields, including the hidden part obtained
-by subtraction](../../../../images/problem-2/10-labels-for-free.png)
+by subtraction](../../../../images/02-segment-glasses/10-labels-for-free.png)
 
 Three things follow, and each is worth having. The label is **exact rather than
 agreed**, because the boundary of the hidden part is where the simulator's
@@ -376,7 +376,7 @@ pictures.
 ![The same architecture drawn twice with the same weights and the same input,
 differing only in the target the mask branch is scored against: visible pixels
 on one side, whole silhouette on the
-other](../../../../images/problem-2/10-only-the-target-changes.png)
+other](../../../../images/02-segment-glasses/10-only-the-target-changes.png)
 
 That is the lesson [a network trained from
 scratch](06-a-network-trained-from-scratch.md) draws from its two heads, and it
@@ -441,7 +441,7 @@ the two kinds of pixel are kept apart.
 ![One reported answer split into its observed part and its asserted part, with
 the fit error computed over the observed part only and the visible fraction
 carried alongside as a
-confidence](../../../../images/problem-2/10-prediction-not-measurement.png)
+confidence](../../../../images/02-segment-glasses/10-prediction-not-measurement.png)
 
 ### Report the two parts separately
 
@@ -576,7 +576,7 @@ two share nothing.
 ![Three ways of scoring the same amodal prediction: overlap against the visible
 truth, overlap against the whole silhouette, and overlap over the hidden part
 alone, with the footprint error curve against visible fraction
-underneath](../../../../images/problem-2/10-measuring-whether-it-works.png)
+underneath](../../../../images/02-segment-glasses/10-measuring-whether-it-works.png)
 
 ### Overlap against the visible truth punishes the model for working
 
@@ -796,7 +796,7 @@ extend, and a model that extends nothing produces nothing.
 ![A glass with a sliver visible being completed correctly, beside the same pair
 arranged so that nothing of the far glass reaches the picture, leaving the
 completion no evidence to start
-from](../../../../images/problem-2/10-where-it-stops.png)
+from](../../../../images/02-segment-glasses/10-where-it-stops.png)
 
 The argument can be put more strongly than "it does not work", and it is worth
 putting that way because more training is the first thing anybody proposes. Take

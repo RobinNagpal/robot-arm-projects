@@ -38,7 +38,7 @@ table for each of them, and an honest list of the ones that could not be
 separated. It names two difficulties, and the point worth pressing is that these
 really are **two** difficulties, and not one problem wearing two hats.
 
-![The two difficulties](../../../../images/problem-2/03-two-difficulties.png)
+![The two difficulties](../../../../images/02-segment-glasses/03-two-difficulties.png)
 
 ### The first difficulty is the merge
 
@@ -156,7 +156,7 @@ coarse map of what is standing where. This solution then runs only on the
 doubtful entries in that map. So it is the tail of the survey rather than a
 replacement for it.
 
-![The fixed sweep](../../../../images/problem-2/03-the-fixed-sweep.png)
+![The fixed sweep](../../../../images/02-segment-glasses/03-the-fixed-sweep.png)
 
 The survey works from the top. The camera works out from its own lens how much
 table one picture covers at the height it is flying at, and then as few stations
@@ -258,7 +258,7 @@ This is the test people expect to be difficult, and it is not, because of one
 gift this problem hands over free: **every object's footprint is a circle of
 known size, standing on a known plane.**
 
-![Occlusion as geometry](../../../../images/problem-2/03-occlusion-as-geometry.png)
+![Occlusion as geometry](../../../../images/02-segment-glasses/03-occlusion-as-geometry.png)
 
 From a camera at a given place, each object fills a certain angle of the frame,
 and that angle grows with the object's width and shrinks with its distance. Two
@@ -326,7 +326,7 @@ can fail for reasons no formula predicts, which is why it goes last.
 The order of those three tests is not a detail of the implementation. It is the
 design.
 
-![Bound, then score](../../../../images/problem-2/03-bound-then-score.png)
+![Bound, then score](../../../../images/02-segment-glasses/03-bound-then-score.png)
 
 On the left of that picture is the order this solution uses. List every
 candidate, drop the ones out of reach, drop the ones whose view is blocked, sort
@@ -553,7 +553,7 @@ provides. It needs somewhere to go that might help, which the filtered candidate
 directions provide — and if the filter returns nothing at all, then that fact is
 itself the answer. And it needs a **budget**, because otherwise it never stops.
 
-![The budget](../../../../images/problem-2/03-the-budget.png)
+![The budget](../../../../images/02-segment-glasses/03-the-budget.png)
 
 The budget is easier to reason about with the right unit, and the natural unit
 here is one **station-equivalent**: one plan, one move, one settle, and the pair
@@ -673,7 +673,7 @@ all, and that is the lever this solution pulls.
 
 ![The same two glasses from each of the three survey stations: swallowed whole
 from the first nadir, a crescent from the second, nearly all of it from the
-third](../../../../images/problem-2/03-hidden-from-above.png)
+third](../../../../images/02-segment-glasses/03-hidden-from-above.png)
 
 Every silhouette in that picture is a real projection of one of the project's
 own glass outlines through the cell's own camera, so the pixel counts on it are
@@ -741,7 +741,7 @@ of it.
 
 ![A glass hidden behind another in the measuring view, the step round that
 brings it back, and what a short glass in front still costs a tall one
-behind](../../../../images/problem-2/03-hidden-from-the-side.png)
+behind](../../../../images/02-segment-glasses/03-hidden-from-the-side.png)
 
 The first two pictures are the same two glasses as before, 300 mm apart, with
 the camera at its standoff from the near one. In line with the pair, the far
@@ -799,7 +799,7 @@ which again is the hardest case.
 
 ### Object A, which has a viewpoint
 
-![The three tests on one plan view](../../../../images/problem-2/03-three-tests.png)
+![The three tests on one plan view](../../../../images/02-segment-glasses/03-three-tests.png)
 
 The ring in the left panel is every direction round A, each one a place the
 camera could stand at the standoff, coloured by what it fails. Grey marks the
@@ -846,7 +846,7 @@ not the geometry, that decided the outcome.
 
 ### Object E, which has none
 
-![No usable viewpoint](../../../../images/problem-2/03-no-viewpoint.png)
+![No usable viewpoint](../../../../images/02-segment-glasses/03-no-viewpoint.png)
 
 The left panel is object E. Some of its directions fall outside the arm's reach,
 the rest are blocked by neighbours, and none survives. So on the coarse ring the

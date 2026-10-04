@@ -19,7 +19,7 @@ Seven pictures, each carrying one point of the document:
 
 Run from the project root:
 
-    pixi run python images/generators/problem-2/make_08_images.py
+    pixi run python images/generators/02-segment-glasses/make_08_images.py
 
 Every number that appears as a label is computed from the constants at the top
 of this file, so none of it can drift. The scenes are built from the shared cast

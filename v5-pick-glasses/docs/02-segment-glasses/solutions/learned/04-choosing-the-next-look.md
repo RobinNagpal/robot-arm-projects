@@ -61,7 +61,7 @@ an oversight by whoever wrote it. **It is a symmetry.**
 
 ### The symmetry a reach-based rule cannot see
 
-![Two candidate looks a least-reach rule cannot tell apart](../../../../images/problem-2/04-the-rule-cannot-tell-them-apart.png)
+![Two candidate looks a least-reach rule cannot tell apart](../../../../images/02-segment-glasses/04-the-rule-cannot-tell-them-apart.png)
 
 Here is the geometry. How far the camera ends up from the arm's base depends
 only on the angle between the direction it stands off in and the line running
@@ -98,7 +98,7 @@ exact answer. Better still, the simulator can simply look that answer up,
 because it renders the view from any pose it is asked for, and it knows exactly
 what it spawned.
 
-![Three ways to score the same eight viewpoints](../../../../images/problem-2/04-three-scorers.png)
+![Three ways to score the same eight viewpoints](../../../../images/02-segment-glasses/04-three-scorers.png)
 
 Those three panels show one arrangement and a set of candidates, scored three
 ways, where green in the rows at the bottom means the pair really does come
@@ -130,7 +130,7 @@ A learned number then does the smaller job of saying which of the survivors is
 worth the seconds. It can never let in a pose the arithmetic rejected, and it
 can never declare a glass settled.
 
-![The geometry generates and vetoes; the model only sorts](../../../../images/problem-2/04-geometry-then-model.png)
+![The geometry generates and vetoes; the model only sorts](../../../../images/02-segment-glasses/04-geometry-then-model.png)
 
 Notice in that picture that the count of candidates only ever falls. The learned
 stage takes the survivors and hands back the same survivors in a different
@@ -161,7 +161,7 @@ turn, then the loop they both drive and the case that defeats both.
 
 ## The arithmetic comes first
 
-![The geometry vetoes, and the model only orders](../../../../images/problem-2/04-veto-then-ordering.png)
+![The geometry vetoes, and the model only orders](../../../../images/02-segment-glasses/04-veto-then-ordering.png)
 
 Before the model is consulted at all, the candidates pass through the same three
 vetoes [solution 3](../programmed/03-move-the-camera.md) uses, in the same
@@ -215,7 +215,7 @@ arm time, and the next three sections are those questions.
 
 #### The one case it has to catch
 
-![Three cases a doubt number has to tell apart](../../../../images/problem-2/04-three-cases-of-doubt.png)
+![Three cases a doubt number has to tell apart](../../../../images/02-segment-glasses/04-three-cases-of-doubt.png)
 
 There are three cases, and they are not equally important.
 
@@ -251,7 +251,7 @@ the footprint, and how much of that circle the points actually cover.
 
 #### Wrong is not the same as unusual
 
-![Being wrong and being unusual are different things](../../../../images/problem-2/04-wrong-or-unusual.png)
+![Being wrong and being unusual are different things](../../../../images/02-segment-glasses/04-wrong-or-unusual.png)
 
 The second question separates two ideas that are constantly confused, and the
 confusion matters because one of them is much easier to get than the other.
@@ -296,7 +296,7 @@ Having established what the number has to do, here are the practical ways to
 obtain one. They differ far more in what they cost to train than in what they
 cost to run.
 
-![Five sources of a doubt number, and what each costs](../../../../images/problem-2/04-five-sources-of-doubt.png)
+![Five sources of a doubt number, and what each costs](../../../../images/02-segment-glasses/04-five-sources-of-doubt.png)
 
 The first is **predictive entropy**, which measures how spread out the model's
 per-pixel probability is. Entropy is worth reading as a shape rather than as a
@@ -357,7 +357,7 @@ says they will. If it says it is sure, it should usually be right. If it says it
 is unsure, it should be wrong a fair share of the time. Anything else, and a
 threshold placed on that number is a threshold on nothing in particular.
 
-![What a calibration check looks like](../../../../images/problem-2/04-calibration.png)
+![What a calibration check looks like](../../../../images/02-segment-glasses/04-calibration.png)
 
 The gap between the curve and the dashed diagonal is the thing to look at. Where
 the model claims to be almost certain and is in fact right only about two thirds
@@ -458,7 +458,7 @@ are where those come from and what the model is shown.
 
 ### Where the training data comes from
 
-![One row of training data, start to finish](../../../../images/problem-2/04-one-training-example.png)
+![One row of training data, start to finish](../../../../images/02-segment-glasses/04-one-training-example.png)
 
 The training data comes from a sweep that needs neither a person nor an arm. It
 runs entirely inside the simulator and appends one row each pass, in five steps.
@@ -522,7 +522,7 @@ hidden](#when-the-glasses-are-completely-hidden) works that case through.
 
 ### What the model is shown
 
-![Everything the model is given, drawn where it lives](../../../../images/problem-2/04-the-features.png)
+![Everything the model is given, drawn where it lives](../../../../images/02-segment-glasses/04-the-features.png)
 
 Every measurement handed to the model is a length, an angle or a count, and
 **never a pixel value**. There is a hard reason for that rather than a stylistic
@@ -630,7 +630,7 @@ spend the whole of it on one glass.
 
 ## The loop, and why it must have a budget
 
-![The loop, with the budget as the way out](../../../../images/problem-2/04-the-loop.png)
+![The loop, with the budget as the way out](../../../../images/02-segment-glasses/04-the-loop.png)
 
 Follow the right-hand edge of that picture. There are three ways out of the
 loop, and one of them is simply running out of time.
@@ -670,7 +670,7 @@ by the doubt it would remove.
 
 ### The budget, which is the exit condition
 
-![Where the seconds go, and what the cap is for](../../../../images/problem-2/04-budget-and-the-cap.png)
+![Where the seconds go, and what the cap is for](../../../../images/02-segment-glasses/04-budget-and-the-cap.png)
 
 The budget is easiest to reason about in the right unit, and the natural unit is
 one station's worth of arm motion: one plan, one movement, one settle. That
@@ -784,7 +784,7 @@ ordered pairs that twelve glasses drawn from this kind's range make, twenty can
 swallow the other whole at the guaranteed 150 mm gap, and in every one of the
 twenty the hidden glass is the shorter one.
 
-![A tall glass's outline swallowing a short one in a picture taken straight down, and the patch of table the arithmetic can still report as unsearched](../../../../images/problem-2/04-hidden-from-above.png)
+![A tall glass's outline swallowing a short one in a picture taken straight down, and the patch of table the arithmetic can still report as unsearched](../../../../images/02-segment-glasses/04-hidden-from-above.png)
 
 There is a measured limit to this, and it changes the question worth asking. The
 nearest-in pair of the twenty still needs the hider to stand 290 mm from the
@@ -842,7 +842,7 @@ guaranteed 150 mm gap fifty of its pixels survive, at 200 mm four survive, and
 from about 250 mm apart none do. Of the same 132 ordered pairs, 77 leave the far
 glass with no pixels at all at this spacing.
 
-![A far glass standing behind a near one in a level picture, and the two identical masks that result](../../../../images/problem-2/04-hidden-from-the-side.png)
+![A far glass standing behind a near one in a level picture, and the two identical masks that result](../../../../images/02-segment-glasses/04-hidden-from-the-side.png)
 
 Height decides much less here than it does from above. The hidden glass is the
 further one whatever its height, because the near glass is the magnified one: at
@@ -986,7 +986,7 @@ stage is handed a short list.
 
 ### The ordering, which is where the model earns its place
 
-![The rule's order and the model's order, over the same seven](../../../../images/problem-2/04-rule-and-model-orders.png)
+![The rule's order and the model's order, over the same seven](../../../../images/02-segment-glasses/04-rule-and-model-orders.png)
 
 The bar chart is ordered the way the printed rule takes the candidates, and the
 very first bar it takes is zero. That is the case this whole solution exists to
@@ -1206,7 +1206,7 @@ measuring what it gained.
 
 ### Why this is not reinforcement learning
 
-![The same question asked two ways](../../../../images/problem-2/04-supervised-against-reinforcement.png)
+![The same question asked two ways](../../../../images/02-segment-glasses/04-supervised-against-reinforcement.png)
 
 The comparison worth having in mind is against the heavier alternative, which is
 a policy trained by reinforcement learning, written up as [an active-vision
