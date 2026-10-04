@@ -104,7 +104,7 @@ it.
 This is the one piece of arithmetic every solution in problem 3 shares, so it is
 worth deriving rather than quoting.
 
-![The moment balance that gives h < a over mu](../../../images/problem-3/04-the-moment-balance.png)
+![The moment balance that gives h < a over mu](../../../images/03-push-glasses-apart/04-the-moment-balance.png)
 
 The glass in that picture is not a rectangle standing in for a glass. It is
 built by the project's own builder from proportions inside the tapered kind's
@@ -194,7 +194,7 @@ puts numbers on it.
 The rule is a statement about one glass. To see what it means for the cell, run
 it over the whole kind.
 
-![How many glasses may be pushed at all](../../../images/problem-3/04-who-can-be-pushed.png)
+![How many glasses may be pushed at all](../../../images/03-push-glasses-apart/04-who-can-be-pushed.png)
 
 The left panel is the feet of four hundred tapered glasses drawn by the
 project's own spawner. They run from **25.5 to 59.1 mm across, with a median of
@@ -261,7 +261,7 @@ that solution matters more than its modest description suggests.
 
 ## The friction cone, and what it buys
 
-![The friction cone at the pad, and Mason's vote](../../../images/problem-3/04-the-friction-cone-and-the-vote.png)
+![The friction cone at the pad, and Mason's vote](../../../images/03-push-glasses-apart/04-the-friction-cone-and-the-vote.png)
 
 The left panel is the cone at the pad, drawn on a cut across the glass at the
 height the push is made. Anything the pad can push along lies inside it, with a
@@ -349,7 +349,7 @@ The vote gives a sign. To get a magnitude you need the limit surface, which is
 the part of the theory that does the real work and the part that needs the real
 numbers.
 
-![The limit surface, and the one number it needs about the base](../../../images/problem-3/04-the-limit-surface.png)
+![The limit surface, and the one number it needs about the base](../../../images/03-push-glasses-apart/04-the-limit-surface.png)
 
 Take a space with three axes: the two components of horizontal force on the
 glass, and the twisting moment about its centre of friction. Some combinations
@@ -495,7 +495,7 @@ its share — and not a measurement, and this document does not pretend otherwis
 
 ### The sweep
 
-![Every path the model predicts, over the unknowns](../../../images/problem-3/04-the-spread-of-predictions.png)
+![Every path the model predicts, over the unknowns](../../../images/03-push-glasses-apart/04-the-spread-of-predictions.png)
 
 Twelve of the thirty-six guesses say the glass topples rather than slides. The
 other twenty-four are drawn, and the results are these.
@@ -556,7 +556,7 @@ The most useful evidence about what you do when the limit surface needs numbers
 nobody has is not an argument. It is the fact that somebody on this project
 already had to answer it, in code that runs.
 
-![How the bench models a glass](../../../images/problem-3/04-the-model-that-was-built.png)
+![How the bench models a glass](../../../images/03-push-glasses-apart/04-the-model-that-was-built.png)
 
 `problem-3-sim/bench.py` is a working MuJoCo model of exactly this push, and its
 choices are worth reading as answers.

@@ -6,7 +6,7 @@ pictures was chosen to make a picture work. The mechanics is computed rather
 than sketched: the load under the foot is solved for, the limit surface is the
 real ellipse, and each push is integrated rather than drawn as an arc.
 
-    pixi run python images/generators/problem-3/make_04_images.py
+    pixi run python images/generators/03-push-glasses-apart/make_04_images.py
 
 Everything the document quotes is printed by ``report()`` at the end, so a
 number in the prose can be checked against a number on the terminal.

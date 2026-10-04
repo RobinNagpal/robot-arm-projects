@@ -296,7 +296,7 @@ search is the right thing to run first.
 This is the section the solution stands or falls on, so every number in it is
 either measured on this machine or marked as quoted.
 
-![What one episode costs in this project's own simulator, and what each method's episode count comes to at that cost](../../../images/problem-3/11-the-sample-budget.png)
+![What one episode costs in this project's own simulator, and what each method's episode count comes to at that cost](../../../images/03-push-glasses-apart/11-the-sample-budget.png)
 
 ### What one push costs, measured
 
@@ -401,7 +401,7 @@ and a well-resourced team would simply run it.
 The argument above is about counting. This section is about what is being
 counted.
 
-![What a policy takes in and what it puts out, on one real crowded table](../../../images/problem-3/11-what-the-policy-maps.png)
+![What a policy takes in and what it puts out, on one real crowded table](../../../images/03-push-glasses-apart/11-what-the-policy-maps.png)
 
 On the left is a real table: seed 10157 of the bench's own scene generator, six
 tapered glasses, each drawn at its own size and standing in the real glass zone.
@@ -493,7 +493,7 @@ it nothing about which of fifteen pushes helped.
 So you shape it: pay a little for progress at every step. The obvious progress
 measure is separation — the glasses are getting further apart, so pay for that.
 
-![Four pushes that raise a shaped score without doing any of the job](../../../images/problem-3/11-the-shaping-trap.png)
+![Four pushes that raise a shaped score without doing any of the job](../../../images/03-push-glasses-apart/11-the-shaping-trap.png)
 
 That picture is an illustration rather than a result. No policy has been trained
 here. The table is seed 10085 of the bench's own scene generator, every width in
@@ -721,7 +721,7 @@ next improvement has to come from somewhere else.
 This is the cross-cutting fact of problem 3, and it bites this solution in a
 particular way.
 
-![Whether a glass can be pushed at all, decided at the height the jaw really touches it, at three values of a coefficient nothing in the cell measures](../../../images/problem-3/11-the-friction-it-learned.png)
+![Whether a glass can be pushed at all, decided at the height the jaw really touches it, at three values of a coefficient nothing in the cell measures](../../../images/03-push-glasses-apart/11-the-friction-it-learned.png)
 
 A pushed object slides while the push height `h` is below `a / μ`, where `a` is
 half the base width and `μ` is the friction between the glass and the table.

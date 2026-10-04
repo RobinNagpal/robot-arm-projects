@@ -152,7 +152,7 @@ solved at any moment.
 | --- | --- | --- | --- |
 | **1** | One glass on the table | everything, from an empty start | [`docs/problem-1/`](docs/problem-1/) — **built** |
 | **2** | Segment the glasses | telling them apart, from few viewpoints | [`docs/02-segment-glasses/`](docs/02-segment-glasses/) — designed |
-| **3** | Glasses standing too close | moving one without lifting it | [`docs/problem-3/`](docs/problem-3/) — designed |
+| **3** | Glasses standing too close | moving one without lifting it | [`docs/03-push-glasses-apart/`](docs/03-push-glasses-apart/) — designed |
 | **4** | Several kinds at once | a different rule per glass, in one run | [`docs/problem-4/`](docs/problem-4/) — stated |
 | **5** | Kinds whose proportions are unknown | a rule that has never seen this glass | [`docs/problem-5/`](docs/problem-5/) — stated |
 

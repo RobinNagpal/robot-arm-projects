@@ -16,7 +16,7 @@ one part of it.
 | --- | --- | --- |
 | [1](../problem-1/README.md) | One glass, start to finish: find it, measure it, name its kind, choose the grip, squeeze, turn it over. Built, and runs in Gazebo. | The six steps, done on each glass in turn. |
 | [2](../02-segment-glasses/problem.md) | Several glasses of **one** kind. Tell them apart and choose where to stand the camera for each. | Finding every glass on the table, and choosing a clear side view of each. |
-| [3](../problem-3/problem.md) | Glasses standing too close to grip. Push them apart along the table. | Moving a crowded glass until the gripper can get round it. |
+| [3](../03-push-glasses-apart/problem.md) | Glasses standing too close to grip. Push them apart along the table. | Moving a crowded glass until the gripper can get round it. |
 
 So most of a problem 4 run is old work done in the right order. The question
 this document answers is: **what breaks when the glasses are not all the same

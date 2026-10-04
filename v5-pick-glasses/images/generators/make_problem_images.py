@@ -283,7 +283,7 @@ def problem_2_where_can_the_camera_stand() -> None:
 
 # The room a two-finger gripper needs round a glass, as a radius from the
 # glass's middle: half the open jaw, plus the finger, plus a little. Kept here
-# beside the picture it is drawn in, and stated in problem-3/problem.md.
+# beside the picture it is drawn in, and stated in 03-push-glasses-apart/problem.md.
 CLEARANCE_MM = 70.0
 GLASS_MM = 75.0
 

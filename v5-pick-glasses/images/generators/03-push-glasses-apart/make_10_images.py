@@ -37,7 +37,7 @@ caption: the glass slides the full length of the push along the push, and the
 error between prediction and outcome is the 4.5 mm median that
 ``problem-3-learned``'s README records for its own model on unseen tables.
 
-    pixi run python images/generators/problem-3/make_10_images.py
+    pixi run python images/generators/03-push-glasses-apart/make_10_images.py
 """
 
 from __future__ import annotations

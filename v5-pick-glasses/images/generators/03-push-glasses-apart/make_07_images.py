@@ -13,7 +13,7 @@ the bench's own STANDING_TILT_DEG, and a glass flat on its wall. A tapered glass
 lying down rests on one slant line of its own wall, so its axis is tilted, and
 the tilt changes both the length it covers on the table and how tall it stands.
 
-    pixi run python images/generators/problem-3/make_07_images.py
+    pixi run python images/generators/03-push-glasses-apart/make_07_images.py
 """
 
 from __future__ import annotations

@@ -72,7 +72,7 @@ built pipelines uses one.
 
 ## Where it sits
 
-← [Problem 3 — glasses standing too close](../problem-3)
+← [Problem 3 — glasses standing too close](../03-push-glasses-apart)
 → [Problem 5 — kinds whose proportions are unknown](../problem-5)
 
 [The five problems](../README.md) has the map.

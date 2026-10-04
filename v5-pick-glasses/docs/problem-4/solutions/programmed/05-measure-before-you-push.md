@@ -24,7 +24,7 @@ important, because it is what gives the push its most important input.
 
 A pushed glass slides while the push is lower than `a / μ` — half its foot
 width over the friction with the table — and tips above it. [Problem
-3](../../../problem-3/problem.md#how-low-the-push-has-to-be-and-why-it-is-a-property-of-the-glass)
+3](../../../03-push-glasses-apart/problem.md#how-low-the-push-has-to-be-and-why-it-is-a-property-of-the-glass)
 explains why the height to check is 65 mm, the top edge of the jaw.
 
 So the foot decides whether a glass may be pushed at all. And the foot, as a
@@ -136,7 +136,7 @@ stops if it starts to tip. Or it refuses the glass.
 
 Problem 3's results say the probe is not enough on its own. One tapered glass
 passed its probe and tipped later in the push. [Problem 3's solution
-8](../../../problem-3/solutions/08-a-learned-early-abort.md), which watches the
+8](../../../03-push-glasses-apart/solutions/08-a-learned-early-abort.md), which watches the
 wrist force during the whole push, is the answer to that, and it is not built.
 
 ## What it costs

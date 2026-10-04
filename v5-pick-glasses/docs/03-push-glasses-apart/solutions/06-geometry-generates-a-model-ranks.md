@@ -95,7 +95,7 @@ of a glass it had already moved once.
 
 ### The room test is not symmetric, and this matters
 
-![The room test on a real table, and the fan of pushes that satisfies it](../../../images/problem-3/06-the-room-test-and-the-fan.png)
+![The room test on a real table, and the fan of pushes that satisfies it](../../../images/03-push-glasses-apart/06-the-room-test-and-the-fan.png)
 
 The left-hand panel above is the test everything else here depends on, drawn on
 a table `bench.scene` produced. It is worth reading slowly, because the obvious
@@ -125,7 +125,7 @@ stands 57 mm apart.
 
 ## The main idea: generate, veto, then order
 
-![The pattern, with this cell's numbers in it](../../../images/problem-3/06-generate-veto-then-rank.png)
+![The pattern, with this cell's numbers in it](../../../images/03-push-glasses-apart/06-generate-veto-then-rank.png)
 
 The two columns above are the same job done two ways, and the difference is
 which component holds the power to choose an unsafe action.
@@ -196,7 +196,7 @@ held-out tables, a crowded glass has a **median of 193 safe pushes**, a mean of
 
 ## What the filter removes before the model is asked
 
-![The tipping check, and where the refusals really come from](../../../images/problem-3/06-where-the-refusals-come-from.png)
+![The tipping check, and where the refusals really come from](../../../images/03-push-glasses-apart/06-where-the-refusals-come-from.png)
 
 One of those tests deserves its own section, because it is the one that can
 cause the unrecoverable failure, and because the height it is evaluated at is
@@ -322,7 +322,7 @@ on Apple Silicon if the network is wanted instead.
 
 ## The measurement that decides this
 
-![How large the candidate sets are, and how alike their members are](../../../images/problem-3/06-how-alike-the-survivors-are.png)
+![How large the candidate sets are, and how alike their members are](../../../images/03-push-glasses-apart/06-how-alike-the-survivors-are.png)
 
 Everything above is the design. This section is the measurement. It runs
 `plan.py`'s own enumerator over `bench.scene`'s fifty held-out tables — test
@@ -398,7 +398,7 @@ arithmetic already knows, and predicting it worse.
 
 ## Does the order matter?
 
-![Reordering the same candidates, and where the learning actually paid](../../../images/problem-3/06-does-the-order-matter.png)
+![Reordering the same candidates, and where the learning actually paid](../../../images/03-push-glasses-apart/06-does-the-order-matter.png)
 
 This is the experiment the verdict rests on, and it is cheap because the
 enumerator already exists.

@@ -36,7 +36,7 @@ this file. ``check_the_example`` re-runs the room test on what it redrew and
 prints the result, so a silent drift between this file and the bench shows up
 as a failed check rather than as a wrong picture.
 
-    pixi run python images/generators/problem-3/make_06_images.py
+    pixi run python images/generators/03-push-glasses-apart/make_06_images.py
 """
 
 from __future__ import annotations

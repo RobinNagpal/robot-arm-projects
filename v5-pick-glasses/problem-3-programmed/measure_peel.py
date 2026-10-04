@@ -1,10 +1,10 @@
 """Measure what solution 1's peel is worth on the bench's own crowded tables.
 
-Throwaway, and kept here rather than in images/generators/problem-3/ because it
+Throwaway, and kept here rather than in images/generators/03-push-glasses-apart/ because it
 imports ``bench``, which imports MuJoCo, which the root environment does not
 have. The numbers it prints are quoted in
-docs/problem-3/solutions/01-do-not-drag-at-all.md and held as literals in
-images/generators/problem-3/make_01_images.py.
+docs/03-push-glasses-apart/solutions/01-do-not-drag-at-all.md and held as literals in
+images/generators/03-push-glasses-apart/make_01_images.py.
 
     cd problem-3-programmed && pixi run python measure_peel.py
 """

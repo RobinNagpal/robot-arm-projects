@@ -3,7 +3,7 @@
 Four pictures, and the numbers under all four are printed as the script runs, so
 that the document can be checked against them rather than trusted.
 
-    pixi run python images/generators/problem-3/make_11_images.py
+    pixi run python images/generators/03-push-glasses-apart/make_11_images.py
 
 Three of the four are arithmetic on measurements. The friction picture is
 computed over four hundred glasses the project's own spawner drew. The
@@ -36,7 +36,7 @@ Running this from the root environment
 Every generator in this repository runs from the project root under the root
 pixi environment, and this one does too:
 
-    pixi run python images/generators/problem-3/make_11_images.py
+    pixi run python images/generators/03-push-glasses-apart/make_11_images.py
 
 ``problem-3-sim/bench.py`` imports MuJoCo for its physics, and the root
 environment has no MuJoCo. Its scene generator needs no physics at all — it

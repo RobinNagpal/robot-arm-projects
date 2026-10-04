@@ -159,7 +159,7 @@ left, one crowded table of five drawn tapered glasses, laid out by the rule
 the circle where the prediction puts it. At that scale the prediction and the
 outcome are the same circle. On the right, the same landing spot magnified: the
 average gap measured over 248 real pushes, and the scatter around that
-average.](../../../images/problem-3/05-what-a-residual-is.png)
+average.](../../../images/03-push-glasses-apart/05-what-a-residual-is.png)
 
 The left panel of that picture is a real table at true scale, and the right
 panel is the same landing spot magnified about forty times. That difference in
@@ -262,7 +262,7 @@ still.
 the average shortfall per kind of glass over the same 248 measured pushes, with
 one standard deviation as whiskers. On the right, that fixed loss expressed as a
 share of the push it was taken from, against how far the push was commanded to
-go.](../../../images/problem-3/05-the-loss-is-a-fixed-cost.png)
+go.](../../../images/03-push-glasses-apart/05-the-loss-is-a-fixed-cost.png)
 
 **The loss does not grow with the push.** Over the 248 pushes the correlation
 between the shortfall and the commanded distance is −0.021, which is nothing.
@@ -369,7 +369,7 @@ the residual was fitted on, measured over 124 held-out pushes and 40 shuffles.
 The upper dashed line is the prediction with no model at all; the lower one is
 the floor this fit reaches. The top axis converts training pushes into runs of
 the arm at the 4.24 pushes a run really
-makes.](../../../images/problem-3/05-what-the-examples-buy.png)
+makes.](../../../images/03-push-glasses-apart/05-what-the-examples-buy.png)
 
 Three things in that curve are worth naming.
 
@@ -676,7 +676,7 @@ the band below the jaw's top edge in which no safe push exists. On the right,
 the share of 400 drawn tapered glasses that can be pushed at all, against
 friction, drawn twice: against the jaw's top edge at 65 mm, which is where a
 tapered glass is really met, and against its middle at 50 mm, which is not. The
-marked 0.35 is the simulator's own table, which the arm is never told.](../../../images/problem-3/05-the-line-the-residual-may-not-move.png)
+marked 0.35 is the simulator's own table, which the arm is never told.](../../../images/03-push-glasses-apart/05-the-line-the-residual-may-not-move.png)
 
 The right-hand panel is the reason this section exists, and the numbers in it
 were measured with the project's own spawner: 400 tapered glasses drawn by

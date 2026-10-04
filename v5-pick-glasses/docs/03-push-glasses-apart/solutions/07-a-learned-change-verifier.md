@@ -35,7 +35,7 @@ computed from a number nobody in this cell measures, and this is the component
 that catches the consequence when that guess was wrong.
 
 Every number below was measured by
-[`make_07_images.py`](../../../images/generators/problem-3/make_07_images.py),
+[`make_07_images.py`](../../../images/generators/03-push-glasses-apart/make_07_images.py),
 which prints what it finds. It reads from two places and nowhere else. For
 anything about the kind's range it draws four hundred glasses with
 `family("tapered_glass", 400, 0)` from `work_cell.glasses.shapes`. For anything
@@ -136,7 +136,7 @@ with, and for this kind it is allowed to be close to one.
 ![The same glass standing and toppled, seen from straight above, for the glass
 of the kind where the two are hardest to tell apart, for a middling one, and for
 the one where they are
-easiest](../../../images/problem-3/07-the-same-glass-twice.png)
+easiest](../../../images/03-push-glasses-apart/07-the-same-glass-twice.png)
 
 The three glasses in that picture are all from the same family of four hundred,
 picked out by how much the blob changes. The hardest is 90 mm tall with a 98 mm
@@ -195,7 +195,7 @@ exactly backwards.
 
 ![Where in the kind's declared range the overhead reading fails: which glasses
 produce a toppled blob still inside the legal width, and which ones get taller
-when they fall over](../../../images/problem-3/07-where-the-confusion-is-real.png)
+when they fall over](../../../images/03-push-glasses-apart/07-where-the-confusion-is-real.png)
 
 Put the two readings together and the picture is a little better and not much.
 Sixteen of the four hundred — one glass in twenty-five — have both readings fail
@@ -248,7 +248,7 @@ correction is what turns a 5 mm margin into a comfortable one.
 
 ![The three outcomes as the overhead pipeline reports them, on one of the
 bench's own crowded
-tables](../../../images/problem-3/07-what-the-overhead-view-reports.png)
+tables](../../../images/03-push-glasses-apart/07-what-the-overhead-view-reports.png)
 
 That picture is the summary of this whole section, drawn on table 11117 from the
 bench's own generator. The pushed glass is 92 mm tall and 104 mm across; its
@@ -296,7 +296,7 @@ circle makes it project as a slightly narrower ellipse before the glass has
 leaned far enough for the foot end to reach out the other way.
 
 ![What the overhead view sees at the lean where the project starts calling a
-glass fallen](../../../images/problem-3/07-the-twenty-degree-line.png)
+glass fallen](../../../images/03-push-glasses-apart/07-the-twenty-degree-line.png)
 
 The practical consequence is that "has it fallen?" is a question about an angle,
 and the overhead view cannot measure that angle while it is small. The next
@@ -513,7 +513,7 @@ glass that has only just crossed the line.
 
 ![What a low, level view settles: the same glass standing and toppled, and the
 ratio that separates the two over every glass of the
-kind](../../../images/problem-3/07-the-side-on-look-settles-it.png)
+kind](../../../images/03-push-glasses-apart/07-the-side-on-look-settles-it.png)
 
 ### Where the camera goes
 
@@ -626,7 +626,7 @@ allows for the jaw's top edge correctly, and still guesses 0.3, declares 223
 safe and loses 123 of them.
 
 ![What the friction guess declares safe, and what the table really
-does](../../../images/problem-3/07-the-safety-net.png)
+does](../../../images/03-push-glasses-apart/07-the-safety-net.png)
 
 That is this solution's argument in one number. The geometry cannot do better,
 because the input it would need is deliberately withheld.

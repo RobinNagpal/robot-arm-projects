@@ -809,7 +809,7 @@ The first of those is wrong and silent. The second is incomplete and says so.
 
 The bench never draws the next case, because it always keeps the glasses a legal
 distance apart. The rule still has to behave sensibly in it, because [problem
-3](../../problem-3/problem.md) is about exactly this.
+3](../../03-push-glasses-apart/problem.md) is about exactly this.
 
 If two glasses stood closer together than the cell allows, the strip of bare
 table between them would be narrower than the grouping distance, the chain would
@@ -827,7 +827,7 @@ be one group, always. The width check could still *suspect* two, because the
 group is too wide to be one glass, but suspecting is all it could do, since
 there is no gap to measure and no distance reasoning left. With three glasses in
 a row the fit could not even say how many there were, only that there were too
-many. That case is the handover to [problem 3](../../problem-3/problem.md), and
+many. That case is the handover to [problem 3](../../03-push-glasses-apart/problem.md), and
 it is the honest edge of this method.
 
 ![Two glasses are brought closer together in three steps: while the strip of bare table between them is wider than the grouping distance, distance alone separates them; once the strip is narrower than that, only the check on the width recovers them; and when they touch there is no strip left for either to work on.](../../../images/02-segment-glasses/02-touching-is-the-limit.png)
@@ -920,7 +920,7 @@ This method works here because the problem hands it a rule that can be written
 down: glasses stand further apart than a known distance, so distance separates
 them. The moment that promise goes, the rule goes with it. Two glasses that
 touch leave no strip of bare table at any grouping distance, which is why
-[problem 3](../../problem-3/problem.md) exists; two glasses one behind the other
+[problem 3](../../03-push-glasses-apart/problem.md) exists; two glasses one behind the other
 at the same distance from the camera stay one group, because distance cannot
 separate things that are not apart in the direction being measured. And allowing
 all four kinds on the table at once widens the acceptable range of widths and

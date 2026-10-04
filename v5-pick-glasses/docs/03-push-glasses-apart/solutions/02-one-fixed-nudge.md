@@ -58,7 +58,7 @@ threshold in problem 3, so no table it draws has a glass without room, and the
 problem never starts. Problem 3's tables are the same glasses stood closer.
 
 The measurements are made by
-[`images/generators/problem-3/make_02_images.py`](../../../images/generators/problem-3/make_02_images.py),
+[`images/generators/03-push-glasses-apart/make_02_images.py`](../../../images/generators/03-push-glasses-apart/make_02_images.py),
 which draws the pictures below and prints every number this document quotes. It
 carries its own copy of `bench.scene`, because `bench.py` imports MuJoCo and the
 environment the diagram generators run in does not have it. The copy was checked
@@ -123,7 +123,7 @@ the real test.
 Here is that asymmetry on a real table, together with what the nudge does about
 it.
 
-![The room test and the nudge, on one real table](../../../images/problem-3/02-the-nudge-on-a-real-table.png)
+![The room test and the nudge, on one real table](../../../images/03-push-glasses-apart/02-the-nudge-on-a-real-table.png)
 
 Table 23841 holds four tapered glasses. P is 67.0 mm across and Q is 97.9 mm
 across, and they stand 104.2 mm apart. P has no room, because Q's rim reaches
@@ -212,7 +212,7 @@ a glass slides only if its foot is wider than `2 · h · μ`. At 50 mm and a
 friction of 0.3 that is a 30 mm foot; at 65 mm it is a 39 mm foot; at 65 mm and
 a friction of 0.5 it is a 65 mm foot.
 
-![What the push height costs](../../../images/problem-3/02-the-friction-ceiling.png)
+![What the push height costs](../../../images/03-push-glasses-apart/02-the-friction-ceiling.png)
 
 The tapered kind draws feet from 25.5 to 59.1 mm across. The table below gives
 the share of 400 drawn glasses of that kind that can be pushed at all, at each
@@ -285,7 +285,7 @@ nearest a glass can start. No push of any length this method makes gets near it.
 Every distance from 2 to 160 mm was applied to all 7233 crowded glasses, in
 steps of 2 mm and then 1 mm around the best.
 
-![The nudge distance sweep](../../../images/problem-3/02-the-nudge-distance-sweep.png)
+![The nudge distance sweep](../../../images/03-push-glasses-apart/02-the-nudge-distance-sweep.png)
 
 The table below gives the sweep at nine distances. The first column is the share
 of crowded glasses where at least one of the seven complaints applies; the rest
@@ -366,7 +366,7 @@ A fixed nudge can push a glass into a third glass. That single failure is what
 separates this solution from [solution 3](03-plan-feel-look-again.md), and it
 is not rare.
 
-![Both directions drive the glass into a glass](../../../images/problem-3/02-into-another-glass.png)
+![Both directions drive the glass into a glass](../../../images/03-push-glasses-apart/02-into-another-glass.png)
 
 Table 11229 is an ordinary four-glass scene from the same spawner. P stands
 104.2 mm from Q on one side and 97.3 mm from R on the other, and both of them
@@ -398,7 +398,7 @@ There is a region of the table where the glass could legally go, and the fixed
 nudge never computes it. Drawing it is the quickest way to see what the method
 is missing.
 
-![The legal landing region, on two real tables](../../../images/problem-3/02-where-a-glass-may-land.png)
+![The legal landing region, on two real tables](../../../images/03-push-glasses-apart/02-where-a-glass-may-land.png)
 
 The green in that picture is every spot where all seven complaints come back
 clear: the crowded glass ends with the room the jaw needs, no glass that had

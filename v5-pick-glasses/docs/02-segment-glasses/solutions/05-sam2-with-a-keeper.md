@@ -541,7 +541,7 @@ two of the regions which come back stand at different places on the table with
 widths inside the kind's range, the pair is reported as those two glasses.
 
 If they do not, the pair is **reported as an unseparated pair**, with its place
-and its reason, and handed to [problem 3](../../problem-3/problem.md). That is
+and its reason, and handed to [problem 3](../../03-push-glasses-apart/problem.md). That is
 not a failure. This project's rule is that anything doubtful is reported and
 never guessed, and a pair the arm cannot tell apart is stated as the input to
 the next problem rather than turned into one wide glass that everything

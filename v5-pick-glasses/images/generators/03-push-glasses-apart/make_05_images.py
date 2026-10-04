@@ -16,7 +16,7 @@ the glass landed against where the push aimed it. 248 of those tables yielded
 a push that touched the glass. The document says the same numbers in prose, and
 says how to reproduce them.
 
-    pixi run python images/generators/problem-3/make_05_images.py
+    pixi run python images/generators/03-push-glasses-apart/make_05_images.py
 """
 
 from __future__ import annotations

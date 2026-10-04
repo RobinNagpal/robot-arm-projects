@@ -48,12 +48,12 @@ changes.
 | Stage | Comes from | What exists | What several kinds change |
 | --- | --- | --- | --- |
 | **Find** every glass from above | problem 2 | [clustering on the table](../../02-segment-glasses/solutions/01-rules-on-the-table.md) (programmed); [votes for the centre](../../02-segment-glasses/solutions/02-train-from-scratch.md) (learned) | the learned one was trained one kind per table; the width check is weaker, but neither built pipeline uses it |
-| **Rack** every glass that already has room | problem 3 | [do not drag at all](../../problem-3/solutions/01-do-not-drag-at-all.md) | nothing |
+| **Rack** every glass that already has room | problem 3 | [do not drag at all](../../03-push-glasses-apart/solutions/01-do-not-drag-at-all.md) | nothing |
 | **Choose** where to stand the camera | problem 2 | [the veto and a written order](../../02-segment-glasses/hidden-glasses.md); a learned ranker | nothing |
 | **Measure** the profile | problems 1 and 2 | the silhouette (programmed); SideNet (learned) | the profile now has to carry the *name*, not only the grip |
 | **Name** the kind | problem 1 | `classify()` in `glasses/detect.py` | load-bearing; see below |
 | **Grip** and **squeeze** | problem 1 | `find_grip()`, `force.py` | the force cap changes glass to glass |
-| **Push** a crowded glass | problem 3 | [plan, feel, look again](../../problem-3/solutions/03-plan-feel-look-again.md); [the learned forward model](../../problem-3/solutions/10-learn-a-forward-model-then-plan.md) | the kind, and so the foot, is not known yet |
+| **Push** a crowded glass | problem 3 | [plan, feel, look again](../../03-push-glasses-apart/solutions/03-plan-feel-look-again.md); [the learned forward model](../../03-push-glasses-apart/solutions/10-learn-a-forward-model-then-plan.md) | the kind, and so the foot, is not known yet |
 | **Rack** it | problem 1 | the tilt budget, then the next free slot | slots run out, and the order decides who is left |
 | **Order** the whole run | `task.py` | nearest glass first | it now has to plan for the rack and for the pushes |
 
@@ -140,7 +140,7 @@ beside it left empty. A **narrow** one does not. Which one a glass is depends on
 its width and its height, and has nothing to do with its kind.
 
 **Room**, **push**, **topple** and **probe** mean what the [problem 3
-overview](../../problem-3/solutions/solution-overview.md#the-words) says.
+overview](../../03-push-glasses-apart/solutions/solution-overview.md#the-words) says.
 
 ## Three families, and where the learned part sits
 
@@ -153,7 +153,7 @@ happens when it is wrong. As a **decider**, its answer is acted on. As a
 **proposer**, its suggestion is checked by rules. As a **ranker**, it only
 orders what rules already allowed. As a **verifier**, it checks what the rules
 did. The [problem 3
-overview](../../problem-3/solutions/solution-overview.md#three-families-and-what-hybrid-means)
+overview](../../03-push-glasses-apart/solutions/solution-overview.md#three-families-and-what-hybrid-means)
 draws this.
 
 For naming, this is sharper than anywhere else in the project. The name picks

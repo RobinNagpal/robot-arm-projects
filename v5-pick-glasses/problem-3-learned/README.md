@@ -3,17 +3,17 @@
 Glasses stand too close together to be picked up. Push them apart, then pick
 each one up. Here a model learns what a push will do from pushes made in a
 physics engine, and a search picks the next push using that model. This is
-solution 10 in [the overview](../docs/problem-3/solutions/solution-overview.md),
+solution 10 in [the overview](../docs/03-push-glasses-apart/solutions/solution-overview.md),
 and it is the approach this project uses for problem 3.
 
 ## Why this approach
 
 It was built beside the programmed approach (`../problem-3-programmed`,
 solutions 1 and 3), and the two were run on the same 50 held-out tables. The
-[solution overview](../docs/problem-3/solutions/solution-overview.md) records
-this as [the decision](../docs/problem-3/solutions/solution-overview.md#the-decision),
+[solution overview](../docs/03-push-glasses-apart/solutions/solution-overview.md) records
+this as [the decision](../docs/03-push-glasses-apart/solutions/solution-overview.md#the-decision),
 with what would be added next, and lists
-[where it can fail](../docs/problem-3/solutions/solution-overview.md#where-the-chosen-solution-can-fail).
+[where it can fail](../docs/03-push-glasses-apart/solutions/solution-overview.md#where-the-chosen-solution-can-fail).
 
 | | Learned (this folder) | Programmed |
 |---|---|---|
@@ -58,7 +58,7 @@ again.
 - **The comparison is not fully controlled.** The two approaches differ in
   their search and in how they check the jaw's path, not only in the model. So
   not all of the gain can be charged to the model.
-  [Solution 10](../docs/problem-3/solutions/10-learn-a-forward-model-then-plan.md)
+  [Solution 10](../docs/03-push-glasses-apart/solutions/10-learn-a-forward-model-then-plan.md)
   has the full comparison.
 
 ## How it works

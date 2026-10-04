@@ -71,7 +71,7 @@ derived.
 Here the state is the table as problem 2 measured it, the action is a push, and
 the state afterwards is where every glass has ended up.
 
-![What a forward model takes in, and what it gives back](../../../images/problem-3/10-what-a-forward-model-predicts.png)
+![What a forward model takes in, and what it gives back](../../../images/03-push-glasses-apart/10-what-a-forward-model-predicts.png)
 
 That picture is one table, one push and the table afterwards. The arrangement is
 real: the positions come from the project's own spawner and every glass's
@@ -225,7 +225,7 @@ are far cheaper than one round of tens of thousands. What it costs is a
 tendency to collapse onto the first decent region it finds, which on a problem
 with several separate good answers can leave the best one unvisited.
 
-![Planning against the model, and how far out each kind of prediction is](../../../images/problem-3/10-planning-against-the-model.png)
+![Planning against the model, and how far out each kind of prediction is](../../../images/03-push-glasses-apart/10-planning-against-the-model.png)
 
 The first two panels of that picture are the real search on the real
 arrangement, with the same settings the implementation uses: 300 draws a round,
@@ -294,7 +294,7 @@ claim: the loop bounds the damage a wrong prediction can do to one wasted push.
 
 This example follows one crowded pair through the method. Every number in it is
 printed by
-[`make_10_images.py`](../../../images/generators/problem-3/make_10_images.py)
+[`make_10_images.py`](../../../images/generators/03-push-glasses-apart/make_10_images.py)
 when it runs, so it can be checked rather than believed.
 
 The table is a five-glass layout from the project's own spawner, seed 4, with
@@ -376,7 +376,7 @@ actually pushed at.** The simulator gets this right, and says so in a comment.
 A push model written from the gripper's specification will get it wrong until
 somebody notices.
 
-![The two heights, and the friction a learned model absorbs rather than measures](../../../images/problem-3/10-the-friction-it-absorbs.png)
+![The two heights, and the friction a learned model absorbs rather than measures](../../../images/03-push-glasses-apart/10-the-friction-it-absorbs.png)
 
 Fifteen millimetres is not a detail. Read the table below as one population of
 glasses — 400 drawn from the tapered kind's own range, with feet from 26.3 mm to
@@ -457,7 +457,7 @@ says so.
 
 ### How many pushes a run yields
 
-![What the data costs, and where it has to be collected](../../../images/problem-3/10-the-data-it-takes.png)
+![What the data costs, and where it has to be collected](../../../images/03-push-glasses-apart/10-the-data-it-takes.png)
 
 A **training** table is cheap, and the reason is in the left panel. The table is
 built and settled once, and the state after one push is the start of the next,
@@ -881,7 +881,7 @@ one push on 4 of them, two pushes on 32, three or more on 137, and refused
 outright on 27. On the four-glass table below it takes four pushes where the
 best pair of pushes takes two.
 
-![Where planning a sequence beats pushing one at a time](../../../images/problem-3/10-when-a-sequence-beats-one-at-a-time.png)
+![Where planning a sequence beats pushing one at a time](../../../images/03-push-glasses-apart/10-when-a-sequence-beats-one-at-a-time.png)
 
 Look at what the difference actually is. The rule on the left has to leave every
 glass it moves with full room by itself, so it never makes a push whose only

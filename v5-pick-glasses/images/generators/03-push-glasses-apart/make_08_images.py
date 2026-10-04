@@ -21,7 +21,7 @@ help. A sliding glass instead needs ``mu m g``, which does not change.
 
 Run from the project root:
 
-    pixi run python images/generators/problem-3/make_08_images.py
+    pixi run python images/generators/03-push-glasses-apart/make_08_images.py
 """
 
 from __future__ import annotations

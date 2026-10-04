@@ -10,7 +10,7 @@ answer.
 The script also prints every number the document quotes. Run it from the project
 root:
 
-    pixi run python images/generators/problem-3/make_01_images.py
+    pixi run python images/generators/03-push-glasses-apart/make_01_images.py
 """
 
 from __future__ import annotations

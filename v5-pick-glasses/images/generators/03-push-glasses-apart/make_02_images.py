@@ -30,7 +30,7 @@ down in those terms.
 
 Every number this script prints is a number the document quotes.
 
-    pixi run python images/generators/problem-3/make_02_images.py
+    pixi run python images/generators/03-push-glasses-apart/make_02_images.py
 """
 
 from __future__ import annotations

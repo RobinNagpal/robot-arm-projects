@@ -22,7 +22,7 @@ No glass size is written down here. Every outline comes from
 ``work_cell.glasses.shapes.draw`` inside its kind's declared range, which is
 what ``bench.scene`` calls.
 
-    pixi run python images/generators/problem-3/make_03_images.py
+    pixi run python images/generators/03-push-glasses-apart/make_03_images.py
 """
 
 from __future__ import annotations
@@ -1540,7 +1540,7 @@ def picture_room_on_the_table() -> None:
 # --------------------------------------------------------------------------- #
 
 def main() -> None:
-    print("Measurements for docs/problem-3/solutions/03-plan-feel-look-again.md")
+    print("Measurements for docs/03-push-glasses-apart/solutions/03-plan-feel-look-again.md")
     print("Tables and planner mirrored from problem-3-sim/bench.py and "
           "problem-3-programmed/plan.py")
     study_the_tables()

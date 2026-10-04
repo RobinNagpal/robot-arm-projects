@@ -1,4 +1,4 @@
-"""Shared look and shared arithmetic for the problem-3 diagrams.
+"""Shared look and shared arithmetic for the 03-push-glasses-apart diagrams.
 
 One module so that eleven separately written scripts produce pictures that sit
 beside each other without looking like eleven different documents. Import it,
@@ -6,10 +6,10 @@ call ``new``/``save``, and use the colour names rather than literals.
 
     from diagram_style import GLASS, GOOD, INK, MUTED, WARN, bare, new, save
 
-Every script in this folder writes into ``images/problem-3/`` and is run from
+Every script in this folder writes into ``images/03-push-glasses-apart/`` and is run from
 the project root:
 
-    pixi run python images/generators/problem-3/make_01_images.py
+    pixi run python images/generators/03-push-glasses-apart/make_01_images.py
 
 The second half of this module is the arithmetic problem 3 turns on: whether a
 pushed glass slides or tips, how much clear room a gripper needs round a glass,
@@ -32,7 +32,7 @@ import numpy as np
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
-IMAGES = Path(__file__).resolve().parents[3] / "images" / "problem-3"
+IMAGES = Path(__file__).resolve().parents[3] / "images" / "03-push-glasses-apart"
 
 # The palette the rest of the project's diagrams use.
 INK = "#22272e"      # text, and anything structural
@@ -270,12 +270,12 @@ def bare(axis) -> None:
 
 
 def save(figure, name: str) -> Path:
-    """Write into images/problem-3/ and say where it went."""
+    """Write into images/03-push-glasses-apart/ and say where it went."""
     IMAGES.mkdir(parents=True, exist_ok=True)
     path = IMAGES / name
     figure.savefig(path, dpi=150, bbox_inches="tight", facecolor=PAPER)
     plt.close(figure)
-    print(f"wrote images/problem-3/{name}")
+    print(f"wrote images/03-push-glasses-apart/{name}")
     return path
 
 

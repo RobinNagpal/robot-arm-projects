@@ -35,7 +35,7 @@ not the one the [solution overview](solution-overview.md) gives.
 says which.
 
 - **The geometry** is computed by
-  [`images/generators/problem-3/make_03_images.py`](../../../images/generators/problem-3/make_03_images.py),
+  [`images/generators/03-push-glasses-apart/make_03_images.py`](../../../images/generators/03-push-glasses-apart/make_03_images.py),
   which draws the pictures below. It contains a copy of the table generator in
   `problem-3-sim/bench.py` and of the planner in `problem-3-programmed/plan.py`,
   written in millimetres instead of metres. The copy exists because `bench.py`
@@ -165,7 +165,7 @@ computed beforehand, and all four are obvious in the next photograph.
 
 ## Step one: planning the destination
 
-![The four tests a destination has to pass, and the fan of candidates the search tries](../../../images/problem-3/03-the-four-tests.png)
+![The four tests a destination has to pass, and the fan of candidates the search tries](../../../images/03-push-glasses-apart/03-the-four-tests.png)
 
 The left half of that picture is the world the tests describe. The right half is
 the search running on one real table.
@@ -229,7 +229,7 @@ ring can still ask the arm to put its wrist outside it.
 
 ### Why the obvious direction is the one direction that never works
 
-![Why the arm cannot push a glass straight away from its neighbour](../../../images/problem-3/03-where-the-tool-fits.png)
+![Why the arm cannot push a glass straight away from its neighbour](../../../images/03-push-glasses-apart/03-where-the-tool-fits.png)
 
 Take a pair of glasses that are too close, and ask which way to push one of
 them. The answer everybody gives, and the answer
@@ -401,7 +401,7 @@ room test is asymmetric those are different questions. A glass that lands 100 mm
 from a narrow neighbour has room from it; the narrow neighbour, which has to
 clear a wider obstacle, may not.
 
-![The fixed nudge takes the room away from a third glass; the planned push does not](../../../images/problem-3/03-the-nudge-and-the-plan.png)
+![The fixed nudge takes the room away from a third glass; the planned push does not](../../../images/03-push-glasses-apart/03-the-nudge-and-the-plan.png)
 
 Measured over the forty tapered tables, with the push assumed to land where it
 was aimed, **11 of 84 pushes — 13.1 per cent — took the room away from a glass
@@ -423,7 +423,7 @@ scored.
 
 ## Step two: feeling for the glass
 
-![Driving to the wall the camera reported, against creeping in until the force reads](../../../images/problem-3/03-feel-do-not-drive.png)
+![Driving to the wall the camera reported, against creeping in until the force reads](../../../images/03-push-glasses-apart/03-feel-do-not-drive.png)
 
 ### Why the camera's wall is both uncertain and the wrong wall
 
@@ -480,7 +480,7 @@ is a real one.
 
 ## Step three: looking again
 
-![One real run of the loop on table 10001](../../../images/problem-3/03-look-again.png)
+![One real run of the loop on table 10001](../../../images/03-push-glasses-apart/03-look-again.png)
 
 ### Why planar pushing is genuinely unpredictable
 
@@ -575,7 +575,7 @@ of 2, and never more than 4.
 
 ## The check that gates every push
 
-![The tipping check, and the one number nothing in the cell measures](../../../images/problem-3/03-the-gate-on-every-push.png)
+![The tipping check, and the one number nothing in the cell measures](../../../images/03-push-glasses-apart/03-the-gate-on-every-push.png)
 
 ### The arithmetic, and the number nobody has
 
@@ -705,7 +705,7 @@ deciding things again.
 
 ## Running out of table, and what a refusal means
 
-![The zone holds nine glasses, and the loop can still be stuck on five](../../../images/problem-3/03-room-on-the-table.png)
+![The zone holds nine glasses, and the loop can still be stuck on five](../../../images/03-push-glasses-apart/03-room-on-the-table.png)
 
 It would be natural to think that five glasses each needing 140 mm of
 separation in a zone 320 by 360 mm is close to what fits, and that six may not

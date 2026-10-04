@@ -101,7 +101,7 @@ declared range. For each one, the question asked is the only one that matters
 before a push: is `a / μ` above the jaw's top edge at 65 mm? The share that
 answers yes is plotted against `μ`.
 
-![What knowing the friction is worth, over four hundred drawn glasses](../../../images/problem-3/09-what-knowing-mu-is-worth.png)
+![What knowing the friction is worth, over four hundred drawn glasses](../../../images/03-push-glasses-apart/09-what-knowing-mu-is-worth.png)
 
 The left panel has two curves. The solid one is the real question, at the 65 mm
 the glass is really pushed at. The dashed one is the same arithmetic at 50 mm,
@@ -285,7 +285,7 @@ at 100 readings a second. The question is what those can be read for.
 Three quantities are candidates, and they are not equally available. The
 difference between them is the most useful part of this document.
 
-![What a push on one real glass can and cannot be read for](../../../images/problem-3/09-what-a-push-measures.png)
+![What a push on one real glass can and cannot be read for](../../../images/03-push-glasses-apart/09-what-a-push-measures.png)
 
 The glass in that picture is a real one, drawn by the spawner: a foot 55.1 mm
 across, 119.5 mm tall, a rim 97.0 mm across, weighing 229 g with its weight
@@ -441,7 +441,7 @@ The left panel below is that table as a curve, so the shape of the trade is
 visible: the error falls away steeply at first and then flattens, so there is
 little reward for pushing harder than about 1 m/s².
 
-![How accurate the estimate would actually be](../../../images/problem-3/09-how-wide-the-estimate-is.png)
+![How accurate the estimate would actually be](../../../images/03-push-glasses-apart/09-how-wide-the-estimate-is.png)
 
 Two costs are real and one that looks real is not.
 
@@ -659,7 +659,7 @@ assumption is worth its own section, because it decides whether this is a
 per-glass experiment or a once-per-run one, and the difference is most of the
 cost.
 
-![Why one estimate can serve a whole table, and what breaks that](../../../images/problem-3/09-per-object-or-per-table.png)
+![Why one estimate can serve a whole table, and what breaks that](../../../images/03-push-glasses-apart/09-per-object-or-per-table.png)
 
 ### In the simulated cell, per table is the right answer and the only answer
 
@@ -902,7 +902,7 @@ The point of the whole exercise is what happens to individual glasses, so here
 are five real ones, chosen at the 5th, 25th, 50th, 75th and 95th percentiles of
 the kind's foot width.
 
-![How the verdict on five real glasses changes as the friction is pinned down](../../../images/problem-3/09-the-verdict-as-mu-is-pinned-down.png)
+![How the verdict on five real glasses changes as the friction is pinned down](../../../images/03-push-glasses-apart/09-the-verdict-as-mu-is-pinned-down.png)
 
 Each bar is the range of tipping ceilings consistent with the current interval
 for `μ`, and the vertical line is the jaw's top edge at 65 mm. A bar entirely to

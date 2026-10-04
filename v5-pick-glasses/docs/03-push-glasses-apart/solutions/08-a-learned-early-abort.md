@@ -208,7 +208,7 @@ those two is, for some glass in the range, an ordinary slide, and for some other
 glass, a topple starting. A threshold placed anywhere in that band is wrong
 about one of them, and the band covers the whole useful range of forces.
 
-![400 drawn tapered glasses pushed at 65 mm, and no force level that tells a slide from a tip](../../../images/problem-3/08-no-threshold-separates.png)
+![400 drawn tapered glasses pushed at 65 mm, and no force level that tells a slide from a tip](../../../images/03-push-glasses-apart/08-no-threshold-separates.png)
 
 There is a tempting escape that does not work. Per glass, the tip force and the
 slide force do separate: a glass tips at 65 mm exactly when its tip force is
@@ -260,7 +260,7 @@ pad is 14 mm tall, so the line along which the force enters the wrist moves by
 up to that much. The wrist reads a torque that is no longer explained by the
 horizontal force alone.
 
-![What the force and the contact angle do during a slide and during a tip, at a push height of 65 mm](../../../images/problem-3/08-slide-against-tip.png)
+![What the force and the contact angle do during a slide and during a tip, at a push height of 65 mm](../../../images/03-push-glasses-apart/08-slide-against-tip.png)
 
 **Both curves in that picture are computed from the model stated here, not
 recorded from a run.** The left panel comes from one line of mechanics: a
@@ -294,7 +294,7 @@ To put a number on the deadline, the tip has to be treated as the mechanical
 event it is. A glass being pushed over is a rigid body turning on one edge of
 its foot, which is a pendulum standing on its point.
 
-![A tipping glass turns on one edge of its foot, pushed at 65 mm, and the window closes before it balances](../../../images/problem-3/08-over-the-leading-edge.png)
+![A tipping glass turns on one edge of its foot, pushed at 65 mm, and the window closes before it balances](../../../images/03-push-glasses-apart/08-over-the-leading-edge.png)
 
 Every glass in that picture is one drawn tapered glass, outline and all, rotated
 about the real edge of its real foot. It is 142 mm tall, its foot is 35 mm
@@ -479,7 +479,7 @@ travel at 20 mm/s.
 
 ### The answer, in samples
 
-![The budget: how long the arm has, against how long it takes to stop](../../../images/problem-3/08-the-timing-budget.png)
+![The budget: how long the arm has, against how long it takes to stop](../../../images/03-push-glasses-apart/08-the-timing-budget.png)
 
 Put the two sides together and the verdict is comfortable:
 
@@ -506,7 +506,7 @@ The protection holds all the way to 30 mm/s, starts to fray at 40, and is gone
 by 60. The columns are identical whether the deadline is the point of no return
 or the 20-degree line, for the reason given above.
 
-![How many wrist samples arrive before the deadline, for every push that topples](../../../images/problem-3/08-how-many-samples.png)
+![How many wrist samples arrive before the deadline, for every push that topples](../../../images/03-push-glasses-apart/08-how-many-samples.png)
 
 So the design decision this analysis forces is not about the model at all.
 **It is that the push speed is part of the safety argument**, and has to be

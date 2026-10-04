@@ -42,7 +42,7 @@ against, which come from
 [`problem-3-sim/bench.py`](../../../problem-3-sim/bench.py), by
 [`problem-3-programmed/measure_peel.py`](../../../problem-3-programmed/measure_peel.py).
 The pictures, and the tables walked through beside them, are drawn by
-[`images/generators/problem-3/make_01_images.py`](../../../images/generators/problem-3/make_01_images.py),
+[`images/generators/03-push-glasses-apart/make_01_images.py`](../../../images/generators/03-push-glasses-apart/make_01_images.py),
 which measures every glass off the outline the spawner built rather than
 quoting a size. [Two spawners, and why there are
 two](#two-spawners-and-why-there-are-two) explains the split, which turns out to
@@ -150,7 +150,7 @@ program. The [next section](#two-spawners-and-why-there-are-two) shows that the
 project's own implementation of this test agrees exactly, down to the
 inequality.
 
-![One real pair of glasses at the distances that matter to it](../../../images/problem-3/01-four-distances-one-pair.png)
+![One real pair of glasses at the distances that matter to it](../../../images/03-push-glasses-apart/01-four-distances-one-pair.png)
 
 The picture uses one real pair, drawn by the project's spawner: a wide glass
 96.3 mm across and a narrow one 76.4 mm across. Three distances mean something
@@ -285,7 +285,7 @@ which has to live beside the bench because the bench imports a physics engine
 the documentation environment does not have. The diagram script holds them as
 literals and names that script.
 
-![What racking the free glasses first is worth](../../../images/problem-3/01-what-the-peel-is-worth.png)
+![What racking the free glasses first is worth](../../../images/03-push-glasses-apart/01-what-the-peel-is-worth.png)
 
 Read the table below as one row per outcome, over the 1000 scenes.
 
@@ -333,7 +333,7 @@ have had at the start. It is a smaller share than a loosely crowded table would
 give, and the reason is visible in the residue sizes below: when a glass has
 three blockers rather than one, racking any single neighbour does not free it.
 
-![Peeling one real table](../../../images/problem-3/01-the-peel-in-rounds.png)
+![Peeling one real table](../../../images/03-push-glasses-apart/01-the-peel-in-rounds.png)
 
 The picture walks a table through both rounds. It is not a bench scene, and the
 reason is worth one sentence: every glass in these pictures has to be a real
@@ -447,7 +447,7 @@ share of the residue that has no safe push height at all, at each guess:
 table. It is where the unknown lands, and the peel has concentrated the problem
 into it.
 
-![What the residue inherits](../../../images/problem-3/01-what-the-residue-inherits.png)
+![What the residue inherits](../../../images/03-push-glasses-apart/01-what-the-residue-inherits.png)
 
 The left panel is the residue of one drawn table, two tapered glasses. One of
 them stands on a 55.3 mm foot and tips above 55.3 mm at μ = 0.5, which leaves

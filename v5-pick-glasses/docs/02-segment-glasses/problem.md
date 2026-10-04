@@ -32,7 +32,7 @@ thing a rough outline loses.
 **The glasses stand apart.** There is a guaranteed smallest gap between any two
 centres, wide enough that even the two widest glasses of a kind leave bare table
 between their rims, so no two glasses ever touch. Separating glasses that touch
-is [problem 3](../problem-3/problem.md).
+is [problem 3](../03-push-glasses-apart/problem.md).
 
 **One kind's range of sizes is deliberately very wide.** The tapered kind runs
 from a small glass to one more than twice its height, which is the widest range
@@ -77,7 +77,7 @@ way a glass is turned, because a glass is the same shape from every side.
 
 - **which glasses could not be separated, and why.** A pair the arm cannot tell
   apart is a result, not a failure, and it is the input to [problem
-  3](../problem-3/problem.md).
+  3](../03-push-glasses-apart/problem.md).
 - **where a glass could not have been seen at all.** This is the one that
   follows from the first difficulty below, and it is not the same as saying
   which glasses were found.
@@ -153,7 +153,7 @@ said which glasses can be seen from where, problem 1 measures them unchanged.
 
 **Moving anything.** If two glasses cannot be separated from any reachable
 viewpoint, this problem reports that and stops. Moving them apart is [problem
-3](../problem-3/problem.md).
+3](../03-push-glasses-apart/problem.md).
 
 ## What "done" means
 
