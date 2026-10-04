@@ -30,10 +30,15 @@ sits between the input and the output, and that is exactly the part we want to
 compare.
 
 The comparison that follows from this is sharper than it sounds. Two of the six
-solutions use the same model from the same library, and differ only in whether
-it was trained on this cell's pictures. Because the bench holds everything else
-still, the gap between those two is a measurement of what training bought, and
-nothing else.
+solutions use the same model from the same library, starting from the same
+downloaded weights, and one of them has had its training continued on this
+cell's pictures. That training also cuts the borrowed list of everyday
+categories down to a single class, because a model cannot be trained towards
+this cell's labels while still being asked which household object it is looking
+at — so the two changes cannot be had separately. Because the bench holds
+everything else still, nothing varies between those two that the training did
+not bring, which makes the gap between them a measurement of what training
+bought.
 
 ## What the bench draws
 
@@ -94,7 +99,11 @@ be answering this problem.
 ## What must come back
 
 One record per glass, holding its mask pixels, its place on the table and a
-rough width of its footprint.
+rough width of its footprint. Beside those records come the two honest
+statements [the problem](problem.md) asks for: which glasses could not be
+separated and why, and which parts of the table could not have been seen at
+all. Neither is a list of glasses, and the bench counts both rather than
+treating a reported doubt as a missing answer.
 
 **The step that turns a mask into a place and a width is the bench's, not the
 solution's.** This is the single most important decision in the whole
@@ -162,10 +171,11 @@ from the true one, and reports the middle value and the worst.
 that turns a mask into a place is deliberately forgiving, because it takes the
 axis from the rim and the width from a percentile precisely so that a ragged
 mask edge cannot move the answer. The consequence is that two quite different
-masks can produce almost the same place. Methods have already been measured
-sitting within a fraction of a millimetre of the best any method could possibly
-reach, and sharing its worst case exactly. When two answers both match the
-theoretical best that closely, this number can no longer tell them apart.
+masks can produce almost the same place — close enough to the floor of error
+described below that the difference between the two masks disappears into it.
+When two answers both sit that near the best the shared step can give, this
+number can no longer tell them apart, which is why the mask itself has to be
+measured as well.
 
 ### How good was the mask?
 
@@ -181,8 +191,8 @@ catches an outline that leaked onto the table or swallowed a neighbour.
 Both are then **broken down by kind of glass**, because the four kinds are not
 equally hard and an average over all four hides the interesting part. The two
 kinds without a stem are outlined almost exactly by anything that tries; the
-stemmed kinds are where methods differ, and the taller stemmed kind is the
-hardest of all.
+stemmed kinds are where methods differ, and the stemmed glass is the hardest of
+the four.
 
 ### The ceiling: what the best possible answer would be
 

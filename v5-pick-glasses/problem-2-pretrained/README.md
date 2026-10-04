@@ -27,15 +27,15 @@ makes. The code for all three lives here, in one folder and one environment,
 because they read the same scenes and are judged by the same scorecard.
 
 - Solution 8,
-  [segment anything, then keep the glasses](../docs/problem-2/solutions/learned/08-segment-anything-then-keep-the-glasses.md),
+  [segment anything, then keep the glasses](../docs/02-segment-glasses/solutions/05-sam2-with-a-keeper.md),
   uses SAM exactly as it is downloaded and fits only a small keeper that
   decides which of SAM's proposals are glasses.
 - Solution 9,
-  [a fine-tuned instance segmenter](../docs/problem-2/solutions/learned/09-a-fine-tuned-instance-segmenter.md),
+  [a fine-tuned instance segmenter](../docs/02-segment-glasses/solutions/06-rf-detr-fine-tuned.md),
   continues the training of Mask R-CNN, which arrives with weights fitted to
   photographs, on this cell's pictures with one class.
 - Solution 10,
-  [amodal masks for the hidden part](../docs/problem-2/solutions/learned/10-amodal-masks-for-the-hidden-part.md),
+  [amodal masks for the hidden part](../docs/02-segment-glasses/solutions/06-rf-detr-fine-tuned.md),
   keeps solution 9's model and changes only what its masks are trained
   against: each glass's whole outline instead of the part of it the camera can
   see.
@@ -286,7 +286,7 @@ fitting a circle that could be residual-checked; and neither `segmenter.py` nor
 those checks do exist, they exist elsewhere: the width range is in solution 8's
 keeper, which hands over a proposal whose width no glass of the kind could have,
 and the fit error belongs to the circle fit in
-[cluster on the table](../docs/problem-2/solutions/programmed/02-cluster-on-the-table.md).
+[cluster on the table](../docs/02-segment-glasses/solutions/01-rules-on-the-table.md).
 So the quiet failure is quieter here than where it is first described: there is
 no check to pass.
 
@@ -450,7 +450,7 @@ arithmetic and to the geometry of looking from the top, and not to the model.
 The cause is the edge of the picture: a footprint cut short by the frame
 back-projects to an arc rather than to a whole disc, and an arc fits a circle
 that is too small and in the wrong place.
-[Cluster on the table](../docs/problem-2/solutions/programmed/02-cluster-on-the-table.md)
+[Cluster on the table](../docs/02-segment-glasses/solutions/01-rules-on-the-table.md)
 measures how often the frame does that, and the answer is that it is the
 ordinary case rather than an unlucky one. The crowded rows are the same fact
 from the other side: those glasses stand near the point below a camera, where

@@ -92,7 +92,7 @@ ranker. Unchanged in approach. All six point at it.
 |---|---|
 | Does a model beat rules? | 1 against the rest |
 | Fit here, or borrow? | 2 against 3–6 |
-| **What does training buy?** | **3 against 4 — same model, same library** |
+| **What does training buy?** | **3 against 4 — same model, same library, same starting weights. Training also cuts the category list to one class, which cannot be had separately, so nothing varies that the training did not bring.** |
 | Small head, or whole model? | 5 against 4 and 6 |
 | Does architecture matter once trained? | 4 against 6 |
 | Does predicting the hidden part help? | inside 6 |
@@ -164,6 +164,30 @@ in the bench; only the cars go.
 - Old measurements belong to SAM 1 and Mask R-CNN. Not reusable for the new
   cars. The exact-mask floor survives: it measures the arithmetic, not a model.
 
+## Diagrams: reuse, do not rewrite
+
+The six writers asked for 79 pictures between them. 95 already exist, drawn for
+the old solutions, and most depict ideas that survive. Each generator runs to
+well over a thousand lines, so writing 79 fresh ones is the wrong move.
+
+| Existing generator | Where its pictures go now |
+|---|---|
+| cluster on the table | solution 1 |
+| the network, and the voting | solution 2 |
+| self-supervised from movement | solution 2, second rung |
+| segment anything | solution 5 |
+| the fine-tuned segmenter | solutions 4 and 6 |
+| amodal masks | solution 6, second rung |
+| move the camera, choosing the next look | the shared look-again document |
+| split the blob | mostly stale; its splay and merge panels suit `problem.md` |
+
+New pictures are needed only where the material is new:
+
+- how a borrowed model builds a coarse outline, and its fixed category list;
+- a transformer segmenter's queries, and set prediction against pruning;
+- the untrained-against-trained pair, side by side;
+- the ladder of how much is fitted, as one picture.
+
 ## Milestones
 
 1. Plan, naming, deletion scope. **Check:** dependencies proven.
@@ -173,7 +197,8 @@ in the bench; only the cars go.
    against the other five.
 5. `hidden-glasses.md`, `overview.md`, `README.md`, by hand. **Check:** the
    comparison table agrees with all six.
-6. Diagrams. **Check:** no document points at a picture that contradicts it.
+6. Diagrams: remap and renumber what exists, then draw only the gaps.
+   **Check:** no document points at a picture that contradicts it.
 7. Move the shared pieces into the bench. **Check:** the floor still runs.
 8. Delete the car code, rename the folders. **Check:** problem 4 still runs.
 

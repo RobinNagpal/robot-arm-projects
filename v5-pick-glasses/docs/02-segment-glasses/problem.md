@@ -2,15 +2,16 @@
 
 ## Introduction
 
-Several glasses stand on the table. The arm photographs them from above and has
-to work out **which pixels belong to which glass**, and where each glass stands.
-That is the whole problem: it picks nothing up and it measures no shape. By the
-end of this document you will understand exactly what goes in and exactly what
-must come out, because this problem is answered six different ways and the only
-way to compare six answers is to give them all the same question. You will also
-understand the three difficulties that make this harder than photographing one
-glass, and why the hardest of the three is not that two glasses run together in
-a picture but that **one of them can be absent from the picture altogether**.
+Several glasses stand on the table. The arm photographs them from the top and
+has to work out **which pixels belong to which glass**, and where each glass
+stands. That is the whole problem: it picks nothing up and it measures no
+shape. By the end of this document you will understand exactly what goes in and
+exactly what must come out, because this problem is answered six different ways
+and the only way to compare six answers is to give them all the same question.
+You will also understand the three difficulties that make this harder than
+photographing one glass, and why the hardest of the three is not that two
+glasses run together in a picture but that **one of them can be absent from the
+picture altogether**.
 
 ## What is on the table
 
@@ -24,9 +25,9 @@ from one arrangement to the next.** The cell has four kinds, described in [the
 cell](../the-cell.md), and the arrangements cycle through them, so a run meets
 all four in turn. That matters for comparing answers, because the four kinds are
 not equally hard. The two kinds with no stem are outlined almost exactly by
-anything that tries. The two with a stem are harder, and the taller stemmed kind
-is the hardest of all, because a stem is thin and a thin part is the first thing
-a rough outline loses.
+anything that tries. The two with a stem are harder, and the stemmed glass is
+the hardest of the four, because a stem is thin and a thin part is the first
+thing a rough outline loses.
 
 **The glasses stand apart.** There is a guaranteed smallest gap between any two
 centres, wide enough that even the two widest glasses of a kind leave bare table
@@ -164,11 +165,10 @@ and it describes each measurement in full. Two of them are worth naming here,
 because they are what the six answers are compared on.
 
 **How many glasses were found, missed, merged or split** says whether the method
-separated the glasses at all. Of these, **missed** is the one to watch hardest,
-and it has taken that place from *merged*. A split glass announces itself,
-because both halves are too small to be a glass. A merged pair looks like one
-large glass, which is worse, because everything downstream believes it. A missed
-glass leaves nothing at all.
+separated the glasses at all. Of these, **missed** is the one to watch hardest.
+A split glass announces itself, because both halves are too small to be a
+glass. A merged pair looks like one large glass, which is worse, because
+everything downstream believes it. A missed glass leaves nothing at all.
 
 **How much of each glass the mask actually covered** says how good the outline
 was, and it is the measurement that separates methods which the others cannot.
