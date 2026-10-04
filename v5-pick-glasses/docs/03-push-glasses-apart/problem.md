@@ -1,8 +1,8 @@
 # Problem 3 — push the glasses apart
 
-[Problem 2](../02-segment-glasses/problem.md) has ended. The arm knows which pixels are
-which glass and where each one stands. Some of them are standing too close
-together for the gripper to get round one without fouling its neighbour.
+[Problem 2](../02-segment-glasses/problem.md) has ended. The arm knows which
+pixels are which glass and where each one stands. Some of them are standing too
+close together for the gripper to get round one without fouling its neighbour.
 
 The arm has to **move them apart by dragging them across the table**. Not by
 lifting them. Dragging is the whole point of the problem.
@@ -75,9 +75,9 @@ refusal is a result.
 
 ![The room a gripper needs round a glass](../../images/problem-3-the-room-a-gripper-needs.png)
 
-Two glasses 105 mm apart are not touching. A person would call them separate.
-The gripper cannot pick up either of them, and the reason is that the gripper is
-not a point.
+Two glasses with a centimetre of daylight between them are not touching. A
+person would call them separate. The gripper cannot pick up either of them, and
+the reason is that the gripper is not a point.
 
 To close on a glass, the open jaw has to be **around** it: a finger either side,
 each finger a little thicker than nothing, with the jaw opened wider than the

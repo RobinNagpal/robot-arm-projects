@@ -1,6 +1,7 @@
 """Which glass to push, from where, which way and how far. Geometry only.
 
-Solution 3 of the overview. Every landing spot is checked against the whole
+This is the candidate geometry solution 2 ranks. Every landing spot is
+checked against the whole
 table before anything is scored: room from every other glass, inside the
 zone, inside the reach, and a clear path for both the glass and the jaw. Of
 what survives, the shortest push wins, because every millimetre pushed is a

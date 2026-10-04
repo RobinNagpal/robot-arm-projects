@@ -136,6 +136,15 @@ working beside it. The project takes the same line wherever contact is
 involved: anything doubtful ends with the glass untouched and a line in the
 report, and no solution may add a fallback that tries anyway.
 
+**How a solution reaches that refusal is not the same for all six.** Five of
+them evaluate the rule above from the measured foot width before any model is
+consulted, which is what puts a ceiling on how badly a model can fail. The
+solution that learns what a push does holds no friction value to put in the
+rule, so it refuses instead when every push its search examined was turned down
+by its own learned model. That refusal rests on more evidence, and its ceiling
+comes from the model rather than from the arrangement. The limit is the same
+either way; what differs is what is trusted to apply it.
+
 ## The number nobody has
 
 Everything above rests on `μ`, so it is time to be plain about where that

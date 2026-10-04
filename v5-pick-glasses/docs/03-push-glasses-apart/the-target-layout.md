@@ -39,12 +39,12 @@ distance between their middles has to be at least 70 mm plus half the
 neighbour's width at its widest. Because both of them have to be grippable, the
 pair needs 70 mm plus half the **wider** of the two, which means a wide glass
 crowds a narrow neighbour before the narrow one crowds it. [The
-problem](problem.md) gives the round figure of about 140 mm between middles for
-a crowded pair, which is the same rule stated cautiously, with the clear room
-counted from each middle outwards rather than in to the nearer edge. The layout
-has to use the edge version, because a condition that only looks at the distance
-between two middles misses exactly the case where a narrow glass is crowded by a
-wide neighbour that is not crowded itself.
+problem](problem.md) is explicit that the room is counted in to the neighbour's
+**edge** rather than out from each middle, and that this is what makes the test
+on a pair asymmetric. The layout has to use that edge version, because a
+condition that only looks at the distance between two middles misses exactly the
+case where a narrow glass is crowded by a wide neighbour that is not crowded
+itself.
 
 **Every glass stands inside the glass zone**, the 320 by 360 mm rectangle of
 table where glasses are allowed to be, and **outside the rack**, the 60 by
@@ -241,9 +241,12 @@ difference in targets masquerading as a difference in skill, and the comparison
 would be worthless.
 
 One layout, computed once from the same measurements, handed to all six, removes
-that completely. Every solution is then aiming at the same places, so the only
-thing that can differ between their scores is how well they get the glasses
-there — which is the thing problem 3 exists to compare.
+that completely. Every solution that aims at a destination is then aiming at the
+same places, so the only thing that can differ between their scores is how well
+it gets the glasses there — which is the thing problem 3 exists to compare. A
+solution is free to decline the layout and push a glass away from its neighbour
+rather than towards a place, and one of the six does; what that costs it is
+visible on the same scale, as travel against the floor described below.
 
 This is precisely the argument problem 2 makes about its own shared step. There,
 the step that turns a mask into a place and a width belongs to the bench rather

@@ -4,9 +4,11 @@ Some glasses stand too close together for the gripper to get round them. The
 arm pushes them apart across the table, then picks them up. Everything here is
 geometry and simple physics: no training, no model.
 
-It follows solutions 1 and 3 of
-[the solution overview](../docs/03-push-glasses-apart/solutions/overview.md), with two
-changes explained at the end.
+It holds the candidate geometry that [one fixed
+nudge](../docs/03-push-glasses-apart/solutions/01-one-fixed-nudge.md) and
+[geometry generates, a model
+ranks](../docs/03-push-glasses-apart/solutions/02-geometry-ranked.md) both use,
+with two changes explained at the end.
 
 ## Words used below
 

@@ -44,7 +44,7 @@ def clear(table: bench.Bench, show: bool = False) -> dict[int, str]:
             # not touch anything near one lying on the table.
             return {glass.id: "stopped: a glass fell over" for glass in seen if glass.standing}
 
-        # Solution 1: every glass racked leaves more room for the rest.
+        # Every glass racked leaves more room for the rest.
         ready = [glass for glass in seen if room(glass, seen, TAKE_MARGIN)]
         if ready:
             for glass in ready:

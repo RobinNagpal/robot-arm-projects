@@ -1,81 +1,67 @@
-# Problem 3 — glasses standing too close
+# Problem 3 — push the glasses apart
 
-Problem 2 has said which pixels are which glass. Some of those glasses are
-standing too close together for the gripper to get round one without fouling
-its neighbour. The arm has to move them apart by **dragging them across the
-table**, not by lifting them.
+Problem 2 has ended. The arm knows which pixels are which glass and where each
+one stands. Some of them are standing too close together for the gripper to get
+round one without fouling its neighbour.
 
-This folder holds the problem; [`solutions/`](solutions/) holds the answers.
+The arm has to **move them apart by dragging them across the table**, not by
+lifting them. It does not pick anything up and it does not measure a shape.
 
-- [**The problem**](problem.md) — why dragging rather than lifting, the three
-  distances that matter, how low a push has to be and why that is a property of
-  the glass, and what "done" means.
-- [**Solution overview**](solutions/solution-overview.md) — the way into the
-  eleven: four programmed, four hybrid, three learned, every one buildable
-  inside the simulator. It gives the words they share, where a learned part
-  can sit in a pipeline, what it means for a machine to choose its own next
-  measurement, a table of all eleven with their verdicts, and the combination
-  recommended and built.
-- [**The eleven solutions in full**](solutions/) — one document each, with its
-  own diagrams and its own measurements. Four programmed:
-  [1 do not drag at all](solutions/01-do-not-drag-at-all.md),
-  [2 one fixed nudge](solutions/02-one-fixed-nudge.md),
-  [3 plan, feel, look again](solutions/03-plan-feel-look-again.md),
-  [4 predict the slide](solutions/04-predict-the-slide.md). Four hybrid:
-  [5 a learned residual](solutions/05-a-learned-residual-on-the-push-model.md),
-  [6 geometry generates, a model ranks](solutions/06-geometry-generates-a-model-ranks.md),
-  [7 a learned change-verifier](solutions/07-a-learned-change-verifier.md),
-  [8 a learned early-abort](solutions/08-a-learned-early-abort.md). Three learned:
-  [9 identify the contact parameters](solutions/09-identify-the-contact-parameters.md),
-  [10 learn a forward model](solutions/10-learn-a-forward-model-then-plan.md),
-  [11 search a push strategy](solutions/11-search-a-push-strategy.md).
-- [**The ones that need more than a simulator**](solutions/learned-with-hardware.md) —
-  two good answers that were moved out. One is model-free reinforcement
-  learning, which wanted about eleven days of continuous simulation when that
-  was worked out for Gazebo; the cell has since been rebuilt in MuJoCo, where
-  the measured figure is about 29 core-hours for one reward function. The other
-  is imitation from a scripted expert, which wants a large model trained on a
-  machine with a graphics card.
+This problem is answered **six different ways**, and that is the point of the
+folder. Six methods, from a fixed nudge to a fine-tuned robot foundation model,
+are given the same readings and marked by the same examiner, so that they can be
+compared and one of them chosen knowing what the choice costs. The cell they all
+share is described once in [the cell](../the-cell.md).
 
-## The short version
+## Read in this order
 
-**Lifting is not available, and the reason is circular.** To lift a glass the
-fingers have to close somewhere chosen; to choose it the arm needs the profile;
-to measure the profile it needs a side-on photograph; and a photograph is what
-the crowding has taken away. A push breaks the circle because it needs only a
-contact and a direction — a position and a base width, both of which problem 2
-already produced.
+1. [**The problem**](problem.md) — what is on the table, what goes in and what
+   must come out, the height limit that decides whether a glass slides or tips,
+   and what "done" means.
+2. [**The test bench**](the-bench.md) — the crowded tables, what a solution is
+   given and never given, and how a run is marked. **Every solution document
+   assumes this one.**
+3. [**The target layout**](the-target-layout.md) — where the glasses should end
+   up, which turns out to be geometry rather than a learning problem, and the
+   least movement the task can need.
+4. [**Pushing without toppling**](pushing-without-toppling.md) — the refusal
+   rule, and the loop of plan, feel and look again, shared by all six.
+5. [**The six solutions**](solutions/overview.md) — what they share, what each
+   changes, and which pair to compare first.
 
-**The gap that matters is not between the glasses.** It is between one glass
-and everything the gripper has to put somewhere. Two glasses 105 mm apart are
-not touching and neither can be picked up, because the open jaw needs about
-70 mm of clear room in every direction from a glass's middle.
+## The six
 
-**Where to push is decided by the glass, not by preference.** A pushed object
-slides while the contact is below `a / μ` — half its base width over the
-friction with the table — and tips above it. A 60 mm base at μ = 0.3 leaves
-100 mm to work in. A 45 mm base at μ = 0.5 leaves 45 mm, which is lower than the
-gripper can reach, so that glass is refused rather than pushed.
+| # | Solution | Model and framework | What is learned |
+|---|---|---|---|
+| 1 | [One fixed nudge](solutions/01-one-fixed-nudge.md) | NumPy, MoveIt | nothing |
+| 2 | [Geometry generates, a model ranks](solutions/02-geometry-ranked.md) | gradient-boosted trees, scikit-learn | a preference |
+| 3 | [Imitation from demonstrations](solutions/03-imitation-from-demonstrations.md) | ACT, LeRobot | the push, by copying |
+| 4 | [A world model, then plan with it](solutions/04-a-world-model.md) | an ensemble, then TD-MPC2; PyTorch, LeRobot | what a push does |
+| 5 | [A foundation model as it downloads](solutions/05-smolvla-as-it-downloads.md) | SmolVLA, LeRobot | nothing |
+| 6 | [The same model, fine-tuned here](solutions/06-smolvla-fine-tuned.md) | SmolVLA with LoRA, LeRobot | all of it |
 
-**And the height to check against is not the one you would guess.** The middle
-of the jaw rides as low as the gripper goes, 50 mm, but the jaw is 30 mm tall,
-so its top edge is at 65 mm — and a glass that is wider higher up meets that
-top edge first. Every tapered glass is wider higher up. Checking the rule at
-50 mm rather than 65 reports about three quarters of this kind as safe to push
-when the true figure is about a quarter, and every one of those mistakes is in
-the direction that topples a glass. That error is larger than the one made by
-guessing the friction, which is the more famous unknown.
-[Solution 9](solutions/09-identify-the-contact-parameters.md) has the
-arithmetic and the comparison.
+Each document opens with a block saying what it uses, how the output is
+produced, how it differs from the other five, and what it costs — so the six can
+be read side by side without reading any of them in full.
 
-**And the push is not predicted, it is watched.** Friction under a glass is not
-uniform and μ is not measured anywhere in this cell, so the arm pushes once,
-looks again, and compares. Cheap guess, checked by a measurement, measurement
-decides — the same structure as the squeeze in problem 1.
+**Solutions 5 and 6 are the pair to look at first.** Same library, same model,
+same downloaded weights; one has had its training continued on this cell's own
+pushes. The gap between them measures what fine-tuning buys on a robot
+foundation model.
 
-## Where it sits
+## What is built, and what it costs to run
 
-← [Problem 2 — segment the glasses](../02-segment-glasses)
-→ [Problem 4 — several kinds at once](../problem-4)
+The bench is built, the geometry that chooses a push is built, and so is a
+world model of the kind solution 4 describes first. **The six are otherwise
+designs**, and each says which of its parts is which.
 
-[The five problems](../README.md) has the map.
+Unlike the rest of this project, problem 3 does not require everything to run
+on one laptop with no graphics card. Each solution states what it needs and
+roughly what renting it costs, the way a licence is stated — so a reader knows
+the price of reproducing it. Solutions 1 and 2 need nothing rented at all.
+
+## The plan behind the six
+
+[The plan](solutions-plan.md) records the decisions in short form: the contract
+all six share, why these six and not others, what the bench still has to grow,
+and what the scorecard needs that problem 2's did not.

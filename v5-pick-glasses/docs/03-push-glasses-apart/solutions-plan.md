@@ -137,6 +137,19 @@ so the deletions are documents and any diagram left without a home.
 | `images/03-push-glasses-apart/` | `images/03-push-glasses-apart/` |
 | `images/generators/03-push-glasses-apart/` | `images/generators/03-push-glasses-apart/` |
 
+## One measurement nobody can settle from the repository
+
+The two results documents disagree about the tuning sweep. One says the
+learned side toppled a single glass on those hundred tables and then lists
+three distinct causes; the other says it knocked over two. Nothing settles it:
+the committed scorecards cover only the fifty held-out tables, where nothing
+toppled at all, and re-running the sweep needs a trained model that is not in
+git.
+
+So no document here quotes a count for it. What all of them may say, because
+it is the load-bearing part and both sources agree on it, is that **the model
+had rated every topple it missed as safe**.
+
 ## Milestones
 
 1. Plan, naming, dependencies. **Check:** problem 4 still imports the bench.

@@ -2,18 +2,20 @@
 
 Glasses stand too close together to be picked up. Push them apart, then pick
 each one up. Here a model learns what a push will do from pushes made in a
-physics engine, and a search picks the next push using that model. This is
-solution 10 in [the overview](../docs/03-push-glasses-apart/solutions/overview.md),
-and it is the approach this project uses for problem 3.
+physics engine, and a search picks the next push using that model. This is the
+first rung of [a world
+model](../docs/03-push-glasses-apart/solutions/04-a-world-model.md), solution 4
+in [the overview](../docs/03-push-glasses-apart/solutions/overview.md), and it
+is the approach this project uses for problem 3.
 
 ## Why this approach
 
-It was built beside the programmed approach (`../problem-3-programmed`,
-solutions 1 and 3), and the two were run on the same 50 held-out tables. The
-[solution overview](../docs/03-push-glasses-apart/solutions/overview.md) records
-this as [the decision](../docs/03-push-glasses-apart/solutions/overview.md#the-decision),
-with what would be added next, and lists
-[where it can fail](../docs/03-push-glasses-apart/solutions/overview.md#where-the-chosen-solution-can-fail).
+It was built beside the programmed approach (`../problem-3-programmed`, which
+holds the candidate geometry solutions 1 and 2 use), and the two were run on
+the same 50 held-out tables. [The six
+solutions](../docs/03-push-glasses-apart/solutions/overview.md) sets out what
+each one changes and [what is
+built](../docs/03-push-glasses-apart/solutions/overview.md#what-is-built).
 
 | | Learned (this folder) | Programmed |
 |---|---|---|

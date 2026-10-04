@@ -1,4 +1,4 @@
-"""Measure what solution 1's peel is worth on the bench's own crowded tables.
+"""Measure what racking first is worth on the bench's own crowded tables.
 
 Throwaway, and kept here rather than in images/generators/03-push-glasses-apart/ because it
 imports ``bench``, which imports MuJoCo, which the root environment does not
