@@ -83,6 +83,23 @@ beyond being a baseline.
   again, with the learned change verifier and the learned early abort inside
   it.
 
+## The bench has to grow before cars 3 to 6 can run
+
+An audit of `bench.py` found that two parts of the contract above do not exist
+yet, and they are the gate on every solution that reads pictures or emits
+waypoints.
+
+| Needed | What is there now |
+|---|---|
+| a straight-down rendered view | only numeric readings; `film.py` renders, but from the arm's side |
+| a waypoint action path | `push()` takes a parameterised push and **is** the macro |
+| one shared push budget | the budget lives in each runner, not the bench |
+| repeats and a compute column | neither is in the scorecard |
+
+None of this is hard, and the first two are the real cost of going off the
+shelf: every LeRobot policy expects pictures and a control-rate action space.
+Cars 1 and 2 need none of it, which is another reason to build them first.
+
 ## The scorecard needs two things problem 2's did not
 
 **Repeats.** These policies are stochastic and training varies by seed, so one

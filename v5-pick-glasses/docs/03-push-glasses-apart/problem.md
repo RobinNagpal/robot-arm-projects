@@ -1,4 +1,4 @@
-# Problem 3 — glasses too close together, moved apart by dragging
+# Problem 3 — push the glasses apart
 
 [Problem 2](../02-segment-glasses/problem.md) has ended. The arm knows which pixels are
 which glass and where each one stands. Some of them are standing too close
@@ -29,6 +29,48 @@ The same glasses as problem 2 — four to six, one known kind, upright and opaqu
 — except that some of them are close together. Close enough that the numbers in
 the next section bite.
 
+## What goes in
+
+Every answer to this problem is given exactly this and nothing more.
+
+**What the camera work hands over.** For each standing glass: where it stands,
+how tall it is, how wide it is at its widest and at its foot. Every reading
+carries problem 2's measured error, so nothing here is exact.
+
+**A view of the table from the top**, for the answers that read pictures rather
+than readings.
+
+**What the jaw felt on the last push.** The jaw comes down behind a glass,
+feels forward until it touches, pushes, and backs off, and it reports what it
+felt on the way. That force reading matters more than it looks, and the section
+on friction below says why.
+
+**Nothing else.** In particular, no answer may read the simulator's record of
+what it placed, or the friction it is using. Both exist, and both are how the
+run is marked afterwards.
+
+This matters more here than in the other problems, because six quite different
+methods are compared on this question, and a comparison only means something
+when the question was identical. The [test bench](the-bench.md) hands exactly
+this to every one of them.
+
+## What must come out
+
+**A jaw trajectory**, and then another, until the table is done or the budget
+is spent.
+
+Some answers think in whole pushes — a contact, a direction, a distance — and
+the bench expands one of those into a trajectory through a macro it owns. Other
+answers produce the trajectory directly, a short run of waypoints at a time.
+Both are allowed, and the bench treats them alike, because **what is scored is
+the table afterwards rather than the push that changed it**. That is the only
+way a push described by three numbers and a push described by fifty waypoints
+can be compared at all.
+
+**And a refusal, where one is honest.** A glass that tips before it slides, or
+has nowhere clear to go, is reported with the reason rather than attempted. A
+refusal is a result.
+
 ## The gap that matters is not the gap between the glasses
 
 ![The room a gripper needs round a glass](../../images/problem-3-the-room-a-gripper-needs.png)
@@ -40,16 +82,20 @@ not a point.
 To close on a glass, the open jaw has to be **around** it: a finger either side,
 each finger a little thicker than nothing, with the jaw opened wider than the
 glass before it closes. Add that up from the glass's middle outwards and it
-comes to about **70 mm of clear room in every direction**. Two glasses need
-140 mm between their middles before either can be gripped, and more if the
-approach has to come in from the side they face each other on.
+comes to about **70 mm of clear room in every direction**.
+
+That room is measured to the **neighbour's edge**, not to its middle, and the
+consequence is easy to miss: the test is **not symmetric**. A narrow glass
+standing beside a wide one is crowded before the wide one is, because the wide
+one's rim reaches further into the gap. So a method that compares distances
+between middles will call a pair fine when one of them cannot be gripped.
 
 So there are three different distances in play and they are easy to confuse:
 
 | | What it is | Roughly |
 | --- | --- | --- |
-| glasses touching | the failure problem 2 could not even see | 75 mm between middles |
-| glasses grippable | the jaw fits round one of them | 140 mm between middles |
+| glasses touching | the failure problem 2 could not even see | the two rims meet |
+| glasses grippable | the jaw fits round one of them | 70 mm clear of the neighbour's **edge** |
 | glasses measurable | a clear line of sight from 380 mm back | depends on the angle |
 
 Problem 3's job is to get every glass over the second line. The third is
@@ -79,9 +125,12 @@ The middle of the jaw rides as low as the gripper goes, 50 mm, but the jaw is
 30 mm tall, so its top edge is at 65 mm. A glass that is wider higher up meets
 that top edge before anything else touches it, and the tapered kind is wider
 higher up by definition. So `h` in the rule above is 65 mm for these glasses,
-not 50. The difference is not a detail: checked at 50 mm about three quarters
-of the kind look safe to push, and checked at 65 mm about a quarter are, with
-every one of the mistakes in the direction that topples a glass.
+not 50. The difference is not a detail, and it bites hardest on exactly the
+kind that flares most: measured across the tapered kind at the friction this
+cell's bench actually uses, checking at the jaw's middle calls about seven
+glasses in ten safe to push, while checking at its top edge calls only about a
+quarter safe. The three kinds that flare less barely move. Every one of the
+mistakes is in the direction that topples a glass.
 
 Three things follow, and they are the shape of the problem:
 
@@ -148,6 +197,19 @@ Scored against the simulator's record, the numbers worth watching are: how many
 glasses ended up grippable, how many pushes it took, how far each glass ended
 up from where the push aimed it, and how many were refused.
 
-## How it would be solved
+## Where to go next
 
-→ [Solution overview](solutions/solution-overview.md)
+Three documents describe what every answer shares, and they are worth reading
+before any of the six.
+
+- [The test bench](the-bench.md) — the crowded tables, what an answer is
+  given, and how a run is marked.
+- [The target layout](the-target-layout.md) — where the glasses should end up,
+  which is computed rather than learned, and the least movement the task needs.
+- [Pushing without toppling](pushing-without-toppling.md) — the height limit
+  that decides whether a glass slides or tips, and the loop of plan, feel and
+  look again.
+
+Then the six answers themselves:
+
+→ [The six solutions](solutions/overview.md)
