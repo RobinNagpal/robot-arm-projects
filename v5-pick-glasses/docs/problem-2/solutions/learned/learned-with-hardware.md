@@ -51,7 +51,9 @@ else. A downloaded model is usable here as long as it runs here, and three
 solutions in this folder are built that way — [segment anything, then keep the
 glasses](08-segment-anything-then-keep-the-glasses.md), [a fine-tuned instance
 segmenter](09-a-fine-tuned-instance-segmenter.md), and [amodal masks for the
-hidden part](10-amodal-masks-for-the-hidden-part.md).
+hidden part](10-amodal-masks-for-the-hidden-part.md). [A model that already
+knows what a glass is](05-a-model-that-already-knows-a-glass.md) borrows weights
+too, and is a design rather than something built.
 
 All three of those run on this machine as it stands, through the same MPS
 backend, and
@@ -67,7 +69,11 @@ sharply**, and some of them are copyleft in a way that reaches software you only
 ever run as a service and never distribute. At least one popular family states
 one licence in its documentation and a different, stricter one in its licence
 file, and the licence file is what counts. So for anything that might ship,
-reading the licence file is a decision rather than a detail. The specific terms
+reading the licence file is a decision rather than a detail. [A model that
+already knows what a glass
+is](05-a-model-that-already-knows-a-glass.md#the-licence-which-is-a-real-cost-here)
+is where that choice is faced squarely, because the model it borrows carries
+exactly this kind of term. The specific terms
 are not listed in this document, because they change.
 
 ---

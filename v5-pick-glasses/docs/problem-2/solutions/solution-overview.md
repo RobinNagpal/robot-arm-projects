@@ -228,8 +228,8 @@ ones add a large one.
 
 **One of those conditions has an exception, and it is worth naming rather than
 stepping round.** The condition is that nothing an approach needs may come from
-outside the simulator, and solutions 8, 9 and 10 each download a file of weights
-fitted elsewhere, so they do not meet it. They are listed because everything
+outside the simulator, and solutions 5, 8, 9 and 10 each download a file of
+weights fitted elsewhere, so they do not meet it. They are listed because everything
 else about them runs on this machine, and because a large model fitted elsewhere
 is the first thing a team with a real camera would reach for, so leaving it out
 would hide a real option. The exception has a price. Those weights were fitted
@@ -277,17 +277,20 @@ recipe and the same source of labels produce a class map when the last layer has
 one output channel, and one mask per glass when it has two. Describing them
 apart meant writing the same network down twice.
 
-The last three sit apart from the other two solutions that let a model decide
-the answer. Solutions 6 and 7 fit every number they use inside this cell, on
+Four of the solutions that let a model decide the answer sit apart from the
+other two. Solutions 6 and 7 fit every number they use inside this cell, on
 pictures the simulator drew, so the model is small and there is nothing else to
-it. Solutions 8, 9 and 10 start instead from a large model fitted somewhere
-else, and they keep the written-down part as small as it will go: the finding is
-done by borrowed weights, and what is fitted here is either a small keeper over
-what that model proposes or a short continuation of its training. This is a
-different trade rather than a better one. Weights fitted inside this cell
-describe exactly the pictures the cell produces, while these were fitted on
-photographs and the cell can only render a grey picture shaded from depth, so
-the last three carry a **domain gap**, a difference between the pictures a model
+it. Solutions 5, 8, 9 and 10 start instead from a large model fitted somewhere
+else, and they keep the written-down part as small as it will go. They form a
+ladder in how much is fitted here: solution 5 fits nothing at all and leans on
+the borrowed model's own list of categories, solution 8 fits a small keeper
+over what the borrowed model proposes, and solutions 9 and 10 continue its
+training briefly on this cell's pictures.
+
+This is a different trade rather than a better one. Weights fitted inside this
+cell describe exactly the pictures the cell produces, while these were fitted
+on photographs and the cell can only render a grey picture shaded from depth,
+so all four carry a **domain gap**, a difference between the pictures a model
 learned from and the pictures it is asked about, which a network trained here
 from scratch does not have.
 
@@ -342,8 +345,8 @@ worse. Its README says why.
 No test scene needed them to find every glass. They are what to add first when
 the cell changes, for the reasons below.
 
-**A third folder holds the three that borrow weights.** Nothing from solutions
-8, 9 and 10 is in either pipeline, because each of those is a whole alternative
+**A third folder holds the borrowed-weight solutions that were built.** Nothing
+from solutions 8, 9 and 10 is in either pipeline, because each of those is a whole alternative
 to the find step rather than a part missing from it, so the three are built and
 scored on their own in
 [`problem-2-pretrained`](../../../problem-2-pretrained/README.md). That folder
