@@ -139,6 +139,24 @@ which is the one thing the plan holds fixed.
 `problem-2-sim` and `problem-2-learned` on its path. Deleting either breaks
 problem 4's code, which was merged last week.
 
+### Move into the bench before deleting `problem-2-pretrained`
+
+That folder holds the shared pieces as well as the cars. The shared ones belong
+in the bench; only the cars go.
+
+| Move to the bench | Why |
+|---|---|
+| the mask-to-place arithmetic | the shared final step; a difference must belong to the mask |
+| the station layout and picture assembly | the shared input |
+| the exact-mask floor | the yardstick every car is read against |
+| the per-kind mask measurement | the number that separates cars when place cannot |
+
+| Delete | Why |
+|---|---|
+| the SAM 1 keeper | replaced by car 5 on SAM 2 |
+| the Mask R-CNN segmenter, modal and amodal | replaced by car 6 on RF-DETR |
+| its training and weights helpers | belong to the deleted cars |
+
 ## Not in this pass
 
 - Four of the six cars are not built. Documents say so, and quote no
@@ -156,7 +174,8 @@ problem 4's code, which was merged last week.
 5. `hidden-glasses.md`, `overview.md`, `README.md`, by hand. **Check:** the
    comparison table agrees with all six.
 6. Diagrams. **Check:** no document points at a picture that contradicts it.
-7. Code deletion and renaming. **Check:** problem 4 still runs.
+7. Move the shared pieces into the bench. **Check:** the floor still runs.
+8. Delete the car code, rename the folders. **Check:** problem 4 still runs.
 
 ## How the documents get written
 
