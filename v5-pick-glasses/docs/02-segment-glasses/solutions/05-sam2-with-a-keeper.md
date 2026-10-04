@@ -199,6 +199,8 @@ picture alone gives a different mask from exactly the same weights. In
 programming terms the model is a function of two arguments rather than one,
 which is why one picture has as many answers as you care to ask for.
 
+![The same picture and the same unchanged weights return a different mask for each point prompt, because the prompt is a second argument and nothing else about the model changed.](../../../images/02-segment-glasses/08-what-promptable-means.png)
+
 There is a second part of promptability, and it is the more useful part here.
 **Ambiguity is returned rather than resolved.** A point on the wall of a glass
 genuinely could mean three different things: that patch of wall, the whole
@@ -228,6 +230,8 @@ found. Each point lands on whatever is under it — bare table returns the table
 a glass wall returns that wall and that glass and something larger, a mouth
 returns the mouth — and a grid fine enough to put several points on the
 narrowest glass the kind allows touches everything in the scene at least once.
+
+![A regular grid of prompt points laid over the picture from the top, with the points landing on a glass marked apart from the points landing on bare table, and the many points that returned the same mask counted up beside it.](../../../images/02-segment-glasses/08-the-prompt-grid.png)
 
 What makes this affordable is the three-part split named above. The expensive
 picture encoder runs **once**, and every prompt after it is one pass through the
@@ -266,6 +270,8 @@ score, and **not one of them has a name**. The regions are there and they are
 good regions, but nothing says which of them are glasses, nothing says the
 largest one is the table, and nothing says that the pair which ran together into
 one shape is two glasses rather than one very wide one.
+
+![The shortlist that comes back over one scene holds the table, each glass on its own, a rim without the glass it belongs to and a pair of glasses taken as one shape, all of them on the same footing and not one of them carrying a name.](../../../images/02-segment-glasses/08-everything-is-proposed.png)
 
 So the borrowed model has answered a different question from the one the problem
 asks. It says *where the regions are*, and the problem asks *which regions are
@@ -315,6 +321,8 @@ model of its kind, was fitted on ordinary colour photographs. So what it is
 shown here is a picture of distances dressed up as a photograph, and the single
 grey channel has to be repeated across all three colour channels to be a legal
 input at all.
+
+![An ordinary colour photograph of the kind the borrowed weights were fitted on beside the grey picture shaded from depth that this cell renders, with the colour, texture, highlight and shadow boundaries the first carries and the second does not, and the single grey channel repeated across all three colour channels.](../../../images/02-segment-glasses/08-the-domain-gap.png)
 
 A **domain gap** is the difference between the examples a model was fitted on
 and the examples it is used on. The physics comparison is exact and worth
@@ -595,6 +603,8 @@ with being wrong. That band is also where a glass half hidden behind another one
 should land, because a footprint fitted to a sliver of a glass is either
 narrower than the kind allows or less round than a whole one, or both.
 
+![The keeper gathered into one picture: each proposal is read as eight measurements by a short set of boosted trees, which answers keep, more than one glass, or drop, and the band between the two thresholds on its calibrated probability means take another picture.](../../../images/02-segment-glasses/08-the-keeper.png)
+
 ### The arithmetic still decides
 
 One thing does not change from solution 1, and it is what keeps this solution
@@ -772,6 +782,8 @@ covering glass is one proposal with a legal width, a round footprint, a proper
 height above the table and the agreement of many prompts. **Nothing about it is
 wrong.** The picture is one believable glass where two are standing, which is
 the shape this difficulty always takes.
+
+![A prompt point over the piece of table where the hidden glass stands lands on the covering glass, so the mask that comes back is the covering glass's, no proposal for the hidden glass ever exists, and the keeper is never consulted about it.](../../../images/02-segment-glasses/08-where-it-stops.png)
 
 **And more model does not help either.** The arrangement with the hidden glass
 and the same arrangement with that glass removed produce the same picture, pixel
@@ -1113,6 +1125,8 @@ by somebody else, and know nothing about this cell to be out of step with. They
 cost hours of rendering and fitting; this costs a download and minutes. And the
 honest half of that comparison is that they can be taught this cell's hard cases
 and this one cannot.
+
+![Beside the borrowed weights, which arrive already fitted and never move again, the numbers fitted in this cell are a rounding error, where solution 2 brings nothing in and fits every number it uses on this cell's own pictures.](../../../images/02-segment-glasses/08-borrowed-against-trained.png)
 
 Against **solution 1** the comparison is the least flattering, and it should be
 stated plainly. Solution 1 is a page of arithmetic: no training set, no weights,

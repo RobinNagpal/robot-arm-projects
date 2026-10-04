@@ -121,6 +121,8 @@ another, or put a third squarely in the line of sight. So choosing where to look
 stops being free and becomes its own small problem, described in [looking again
 at what was hidden](hidden-glasses.md).
 
+![From the top, every other glass on the table blocks out a wedge of the places the camera could have stood to see the glass in question, and the camera has to be put down in what is left inside the arm's reach.](../../images/problem-2-where-can-the-camera-stand.png)
+
 ## Why one method is not enough
 
 The three difficulties are not independent, and the connection between them is

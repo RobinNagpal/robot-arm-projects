@@ -30,6 +30,8 @@ near one and one with the far glass taken away, produce the same picture pixel
 for pixel, so any method that reads only the picture must answer both the same
 way.
 
+![Seen from the side, a far glass standing behind a near one leaves exactly the mask the near glass leaves on its own, so the picture carries no trace of what it failed to show.](../../images/02-segment-glasses/04-hidden-from-the-side.png)
+
 So the answer has to come from somewhere that does not depend on the picture at
 all, and that somewhere is **geometry**. The arm knows where its camera was,
 what its lens does, and where the glasses it *did* find are standing. From those
@@ -61,6 +63,8 @@ from all the stations together, and subtract them from the glass zone. Whatever
 remains is table that nobody saw. Each remaining piece large enough to hold the
 smallest footprint a glass of this kind can have is reported as an **unsearched
 patch**.
+
+![From the top, a tall glass's outline is thrown outwards far enough to swallow a shorter neighbour whole, and the same arithmetic marks out the table that went unsearched.](../../images/02-segment-glasses/04-hidden-from-above.png)
 
 That word "unsearched" is doing careful work, so it is worth being plain about
 it. **An unsearched patch is not a glass, and it is not a guess that a glass is
@@ -108,6 +112,8 @@ Putting the cheap arithmetic first is not a detail. A planner query that was
 never going to be used is seconds spent for nothing, and this loop runs inside a
 budget.
 
+![Candidate camera positions are cut first by reach and then by whether something else would share the frame, and only the survivors are put to the motion planner.](../../images/02-segment-glasses/03-three-tests.png)
+
 ### Which makes it a covering problem
 
 Each surviving camera position sees some subset of the unsearched patches. The
@@ -144,6 +150,8 @@ something has actually looked at it, and it cannot cause a collision, because
 the vetoes do not consult it. A better model makes wasted looks rarer; only the
 arrangement puts a ceiling on how bad things can get.
 
+![Reach, line of sight and whether the arm can get there remove candidates outright, and the learned score is only allowed to reorder what they leave behind.](../../images/02-segment-glasses/04-veto-then-ordering.png)
+
 **And it degrades to nothing.** With no model at all, the patches are covered in
 whatever order the geometry suggests, and the run is slower rather than wrong.
 
@@ -174,6 +182,8 @@ stations of the survey already provide — so in practice the survey closes this
 case before the side views begin. What nothing closes is the general statement:
 two arrangements that produce identical pictures cannot be told apart by
 anything that reads those pictures.
+
+![Looking from the side along the line the two glasses stand on, the far one is gone from the picture; a position off that line brings it back, while standing further away does not.](../../images/02-segment-glasses/03-hidden-from-the-side.png)
 
 ## Where to go next
 

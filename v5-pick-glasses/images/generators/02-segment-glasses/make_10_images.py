@@ -28,8 +28,8 @@ from diagram_style import (
     GLASS,
     GOOD,
     INK,
-    KIND_NARROWEST,
-    KIND_WIDEST,
+    KIND_SHORTEST,
+    KIND_TALLEST,
     LABEL_SIZE,
     MUTED,
     NOTE_SIZE,
@@ -48,7 +48,7 @@ from diagram_style import (
     splay_width,
 )
 from matplotlib.colors import to_rgba
-from matplotlib.patches import Circle, FancyArrowPatch, FancyBboxPatch, Rectangle
+from matplotlib.patches import FancyArrowPatch, FancyBboxPatch, Rectangle
 
 RNG = np.random.default_rng(20250930)
 
@@ -371,7 +371,7 @@ def figure_modal_against_amodal() -> None:
     """One partly covered glass, shown as the pixels it gives and as its whole shape."""
     tightest = check_legal(SCENE)
     grid_x, grid_y, extent, masks, step = scene_masks(1.2)
-    name, _, size = BITTEN
+    name, _, _ = BITTEN
     amodal, modal = masks[name]
     hidden = amodal & ~modal
     whole_area, seen_area, hidden_area = (area_of(m, step) for m in (amodal, modal, hidden))
@@ -387,11 +387,16 @@ def figure_modal_against_amodal() -> None:
     paint(scene, hidden, WARN, extent, alpha=0.40, zorder=3)
     # each label above or below its own silhouette, so that no two of them meet
     above = {"T1": True, "S1": False, "T2": False, "S2": True}
+    # A glass is named by which end of its kind's range it is drawn from rather
+    # than by a measurement, because the mixture is what the picture is about
+    # and no glass's size is written down anywhere in this project.
+    middle = (KIND_SHORTEST + KIND_TALLEST) / 2.0
     for other, _, other_size in SCENE:
         tip = mask_window(masks[other][0], grid_x, grid_y, pad=0.0)
         over = above[other]
+        end = "tall" if other_size[0] >= middle else "short"
         note(scene, (tip[0] + tip[1]) / 2.0, tip[3] + 46 if over else tip[2] - 16,
-             f"{other}: {other_size[0]:.0f} mm tall, {other_size[1]:.0f} mm across",
+             f"{other}: near the {end} end of the kind",
              colour=INK, ha="center", va="bottom" if over else "top")
     scene.add_patch(Rectangle((window[0], window[2]), window[1] - window[0], window[3] - window[2],
                               facecolor="none", edgecolor=MUTED, lw=0.9, ls=(0, (4, 3)), zorder=7))
@@ -435,10 +440,11 @@ def figure_modal_against_amodal() -> None:
     figure.tight_layout()
     figure.text(
         0.5, -0.03,
-        f"All three panels hold the same scene. {name} is {size[0]:.0f} mm tall and "
-        f"{size[1]:.0f} mm across the rim; {OCCLUDER_FAR[0]} is {OCCLUDER_FAR[2][0]:.0f} mm tall, "
-        f"stands {np.hypot(*(BITTEN[1] - OCCLUDER_FAR[1])):.0f} mm away from it, and is thrown "
-        f"outwards far enough by splay to cover part of it.\nEvery pixel here was assigned by "
+        f"All three panels hold the same scene. {name} is drawn from the short end of this kind's "
+        f"range and {OCCLUDER_FAR[0]} from its tall end, more than twice the height, so splay "
+        f"throws {OCCLUDER_FAR[0]}'s outline far enough out to cover part of {name}, which stands "
+        f"{np.hypot(*(BITTEN[1] - OCCLUDER_FAR[1])):.0f} mm away.\nEvery pixel here was assigned "
+        "by "
         "comparing heights along the ray, so a glass hides another only where its own surface is "
         f"nearer the lens. Of {name}'s silhouette, {100.0 * seen_area / whole_area:.0f}% survives "
         f"in the picture and {100.0 * hidden_area / whole_area:.0f}% does not.",
@@ -451,214 +457,6 @@ def figure_modal_against_amodal() -> None:
 
 # --------------------------------------------------------------------------- #
 # 2. the truncated footprint
-# --------------------------------------------------------------------------- #
-
-def figure_the_truncated_footprint() -> None:
-    """The heart of it: the circle fitted to what is left, measured against the truth."""
-    check_legal(SCENE)
-    name, centre, size = QUIET
-    occluders = [g for g in SCENE if g[0] != name]
-
-    grid_x, grid_y, extent, masks, step = scene_masks(0.8, window=(120.0, 500.0, -300.0, 60.0))
-    amodal, modal = masks[name]
-    hidden = amodal & ~modal
-
-    table_x, table_y, whole, visible, fine = footprint_masks(QUIET, occluders)
-    true_centre, true_radius, true_error = moment_fit(table_x, table_y, whole, fine)
-    fit_centre, fit_radius, fit_error = moment_fit(table_x, table_y, visible, fine)
-    kept = area_of(visible, fine) / area_of(whole, fine)
-    displaced = float(np.hypot(*(fit_centre - centre)))
-    in_range = KIND_NARROWEST <= 2.0 * fit_radius <= KIND_WIDEST
-
-    # The same glass, turned about the camera so that more and more of it is
-    # covered. Every one of these places is a legal one, and the fitted width is
-    # measured at each, which is what the last panel plots.
-    ring = float(np.hypot(*centre))
-    start = float(np.degrees(np.arctan2(centre[1], centre[0])))
-    sweep = []
-    for angle in np.arange(start, start + 8.0, 0.8):
-        radians = np.radians(angle)
-        place = ring * np.array([np.cos(radians), np.sin(radians)])
-        if np.hypot(*(place - OCCLUDER_NEAR[1])) < MIN_APART:
-            continue
-        moved_x, moved_y, this_whole, this_visible, this_step = footprint_masks(
-            (name, place, size), occluders)
-        _, radius, error = moment_fit(moved_x, moved_y, this_visible, this_step)
-        sweep.append((area_of(this_visible, this_step) / area_of(this_whole, this_step),
-                      2.0 * radius, error))
-    sweep.sort()
-    fractions = np.array([f for f, _, _ in sweep])
-    widths = np.array([w for _, w, _ in sweep])
-
-    figure, (picture, table, checks, window_panel) = new(18.2, 5.2, columns=4)
-
-    # ---- 1. the picture ---------------------------------------------------
-    plan_panel(picture, mask_window(amodal, grid_x, grid_y, pad=34.0))
-    panel_title(picture, f"1. {name} is cut short in the picture", colour=WARN)
-    paint(picture, masks[OCCLUDER_NEAR[0]][1], MUTED, extent, alpha=0.30)
-    paint(picture, modal, GLASS, extent, alpha=0.60, zorder=3)
-    paint(picture, hidden, WARN, extent, alpha=0.55, zorder=4)
-    outline(picture, amodal, grid_x, grid_y, MUTED, ls="dashed")
-    bite = mask_window(hidden, grid_x, grid_y, pad=0.0)
-    picture.annotate(f"{OCCLUDER_NEAR[0]} is nearer the lens here,\nso these pixels are its surface",
-                     xy=((bite[0] + bite[1]) / 2.0, (bite[2] + bite[3]) / 2.0),
-                     xytext=(210.0, -272.0), fontsize=NOTE_SIZE, color=WARN, ha="left", va="bottom",
-                     arrowprops={"arrowstyle": "->", "color": WARN, "lw": 1.0}, zorder=8)
-
-    # ---- 2. the table -----------------------------------------------------
-    table_extent = (table_x.min(), table_x.max(), table_y.min(), table_y.max())
-    plan_panel(table, (centre[0] - 78.0, centre[0] + 78.0, centre[1] - 84.0, centre[1] + 70.0))
-    panel_title(table, "2. The circle fitted to what is left", colour=WARN)
-    paint(table, whole & ~visible, WARN, table_extent, alpha=0.40)
-    dots_in(table, visible, table_x, table_y, GLASS, count=460, size=2.0)
-    table.add_patch(Circle(tuple(centre), true_radius, facecolor="none", edgecolor=GOOD, lw=1.6,
-                           ls=(0, (5, 3)), zorder=6))
-    table.add_patch(Circle(tuple(fit_centre), fit_radius, facecolor="none", edgecolor=WARN, lw=2.2,
-                           zorder=7))
-    for point, colour in ((centre, GOOD), (fit_centre, WARN)):
-        table.scatter([point[0]], [point[1]], s=34, color=colour, marker="+", zorder=8)
-    table.annotate("", xy=tuple(fit_centre), xytext=tuple(centre),
-                   arrowprops={"arrowstyle": "->", "color": INK, "lw": 1.4}, zorder=9)
-    note(table, centre[0], centre[1] + true_radius + 9.0,
-         f"true footprint, {2.0 * true_radius:.0f} mm across", colour=GOOD, ha="center", va="bottom")
-    note(table, centre[0], centre[1] - true_radius - 9.0,
-         f"fitted to the points that are left: {2.0 * fit_radius:.1f} mm across,\n"
-         f"its centre {displaced:.1f} mm from where the glass stands",
-         colour=WARN, ha="center", va="top")
-    bite_centre = np.array([table_x[whole & ~visible].mean(), table_y[whole & ~visible].mean()])
-    table.annotate(f"no points here:\n{100.0 * (1.0 - kept):.0f}% of the footprint\n"
-                   "lost its pixels",
-                   xy=tuple(bite_centre), xytext=(centre[0] + 40.0, centre[1] + 30.0),
-                   fontsize=NOTE_SIZE, color=WARN, ha="left", va="center",
-                   arrowprops={"arrowstyle": "->", "color": WARN, "lw": 1.0}, zorder=9)
-
-    # ---- 3. the checks ----------------------------------------------------
-    bare(checks)
-    checks.set_xlim(-20, 300)
-    checks.set_ylim(-3.6, 2.6)
-    panel_title(checks, "3. Both checks pass anyway", colour=WARN)
-    checks.add_patch(Rectangle((KIND_NARROWEST, 0), KIND_WIDEST - KIND_NARROWEST, 0.30,
-                               facecolor=GOOD, alpha=0.45, edgecolor=GOOD, lw=1.0))
-    checks.add_patch(Rectangle((0, 0), 280, 0.30, facecolor="none", edgecolor=INK, lw=1.0))
-    for tick in range(0, 281, 40):
-        checks.plot([tick, tick], [-0.06, 0], color=INK, lw=0.9)
-        checks.text(tick, -0.14, str(tick), ha="center", va="top", fontsize=NOTE_SIZE, color=INK)
-    checks.text(140, -0.42, "fitted footprint width, mm", ha="center", va="top",
-                fontsize=LABEL_SIZE, color=INK)
-    checks.text(KIND_NARROWEST - 5, 0.36,
-                f"{KIND_NARROWEST:.0f} to {KIND_WIDEST:.0f} mm:\nwhat this kind is allowed to be",
-                ha="right", va="bottom", fontsize=NOTE_SIZE, color=GOOD)
-    checks.plot([2.0 * true_radius] * 2, [0, 0.30], color=GOOD, lw=1.6)
-    checks.plot([2.0 * fit_radius] * 2, [0, 0.30], color=WARN, lw=1.6)
-    merged = 2.0 * float(np.sqrt((TALL_B[1] / 2.0) ** 2 + (SHORT_A[1] / 2.0) ** 2))
-    checks.plot([merged] * 2, [0, 0.30], color=INK, lw=1.6)
-    checks.annotate(f"fitted {2.0 * fit_radius:.1f} mm and true {2.0 * true_radius:.0f} mm:\n"
-                    "both inside, so the width check\nlets the answer through",
-                    xy=(2.0 * fit_radius, 0.30), xytext=(88, 2.42),
-                    ha="center", va="top", fontsize=NOTE_SIZE, color=WARN,
-                    arrowprops={"arrowstyle": "->", "color": WARN, "lw": 1.0})
-    checks.annotate(f"two glasses read as one:\n{merged:.0f} mm, outside — the loud failure",
-                    xy=(merged, 0.30), xytext=(212, 1.10), ha="center", va="center",
-                    fontsize=NOTE_SIZE, color=INK,
-                    arrowprops={"arrowstyle": "->", "color": INK, "lw": 1.0})
-    verdict(checks, -18, -0.86,
-            f"width {2.0 * fit_radius:.1f} mm, inside the kind's range: passes", in_range)
-    verdict(checks, -18, -1.22,
-            f"fit error {fit_error:.1f} mm, under the {TOLERANCE:.0f} mm the cell\n"
-            f"   treats as agreement: passes", fit_error <= TOLERANCE)
-    verdict(checks, -18, -1.86,
-            f"centre {displaced:.1f} mm from where the glass stands,\n"
-            f"   width {2.0 * (true_radius - fit_radius):.1f} mm short: nothing checks either",
-            False)
-    checks.text(-18, -2.62,
-                "The points that are left are a clean patch of a clean disc,\n"
-                "and a clean patch of a disc is well explained by a smaller\n"
-                "disc. So the number whose job is to say \"not a glass\" says\n"
-                "nothing, and the arm is sent to a place no glass stands.",
-                ha="left", va="top", fontsize=NOTE_SIZE, color=INK)
-
-    # ---- 4. the window it stays quiet in ----------------------------------
-    bare(window_panel)
-    panel_title(window_panel, "4. The band it stays quiet in", colour=WARN)
-    lowest = float(fractions.min())
-    window_panel.set_xlim(1.19, lowest - 0.03)
-    window_panel.set_ylim(-26.0, KIND_WIDEST * 1.12)
-    quiet = fractions[widths >= KIND_NARROWEST]
-    if len(quiet):
-        window_panel.axvspan(float(quiet.min()), 1.0, color=GOOD, alpha=0.10, zorder=1)
-        window_panel.text((1.0 + float(quiet.min())) / 2.0, KIND_WIDEST * 1.06,
-                          "wrong, and legal", ha="center", va="top", fontsize=NOTE_SIZE,
-                          color=WARN)
-        window_panel.text((float(quiet.min()) + lowest) / 2.0, KIND_WIDEST * 1.06,
-                          "wrong, and reported\nas doubtful", ha="center", va="top",
-                          fontsize=NOTE_SIZE, color=GOOD)
-    window_panel.plot([1.09, lowest - 0.03], [KIND_NARROWEST] * 2, color=INK, lw=1.2, zorder=4)
-    window_panel.plot([1.09, lowest - 0.03], [2.0 * true_radius] * 2, color=GOOD, lw=1.2,
-                      ls=(0, (5, 3)), zorder=4)
-    window_panel.plot(fractions, widths, color=WARN, lw=1.8, marker="o", ms=3.0, zorder=5)
-    window_panel.scatter([kept], [2.0 * fit_radius], s=52, color=WARN, edgecolors=INK,
-                         linewidths=0.8, zorder=7)
-    window_panel.annotate("the case in panels 1 to 3",
-                          xy=(kept, 2.0 * fit_radius), xytext=(0.86, 26.0), ha="center",
-                          va="top", fontsize=NOTE_SIZE, color=WARN,
-                          arrowprops={"arrowstyle": "->", "color": WARN, "lw": 1.0})
-    right_end = (float(quiet.min()) + lowest) / 2.0 if len(quiet) else lowest
-    window_panel.text(right_end, 2.0 * true_radius + 2.5,
-                      f"true width, {2.0 * true_radius:.0f} mm", ha="center", va="bottom",
-                      fontsize=NOTE_SIZE, color=GOOD)
-    window_panel.text(right_end, KIND_NARROWEST - 3.0,
-                      f"the kind's narrowest, {KIND_NARROWEST:.0f} mm", ha="center", va="top",
-                      fontsize=NOTE_SIZE, color=INK)
-    for value in range(0, int(KIND_WIDEST) + 1, 20):
-        window_panel.plot([1.09, 1.082], [value, value], color=INK, lw=0.9)
-        window_panel.text(1.088, value, str(value), ha="right", va="center", fontsize=NOTE_SIZE,
-                          color=INK)
-    window_panel.text(1.17, KIND_WIDEST / 2.0, "fitted width, mm", rotation=90, ha="center",
-                      va="center", fontsize=LABEL_SIZE, color=INK)
-    for step_index, tick in enumerate(np.arange(1.0, lowest - 0.001, -0.10)):
-        window_panel.plot([tick, tick], [0.0, -3.0], color=INK, lw=0.9)
-        if step_index % 2 == 0:
-            window_panel.text(tick, -5.0, f"{100 * tick:.0f}%", ha="center", va="top",
-                              fontsize=NOTE_SIZE, color=INK)
-    window_panel.plot([1.0, lowest], [0.0, 0.0], color=INK, lw=0.9)
-    window_panel.text((1.0 + lowest) / 2.0, -17.0,
-                      "how much of the footprint still has points on it", ha="center", va="top",
-                      fontsize=LABEL_SIZE, color=INK)
-
-    figure.suptitle(
-        "A footprint fitted to a mask that stops early is too small and in the wrong place, and "
-        "every check accepts it.",
-        fontsize=TITLE_SIZE, color=INK, y=1.02,
-    )
-    figure.tight_layout()
-    figure.text(
-        0.5, -0.04,
-        f"{name} is {size[1]:.0f} mm across the rim and stands "
-        f"{np.hypot(*(QUIET[1] - OCCLUDER_NEAR[1])):.0f} mm from {OCCLUDER_NEAR[0]}, which is more "
-        f"than the {MIN_APART:.0f} mm the cell guarantees, so nothing here is contrived. The circle "
-        "is fitted the way a circle is fitted to a group of flattened points: its centre is where "
-        "the points balance and its\nwidth is the width of the disc with the same area. Fitted to "
-        f"the whole footprint that returns {2.0 * true_radius:.0f} mm with an error of "
-        f"{true_error:.1f} mm. Fitted to the {100.0 * kept:.0f}% that survives it returns "
-        f"{2.0 * fit_radius:.1f} mm, {displaced:.1f} mm away from the truth, with an error of "
-        f"{fit_error:.1f} mm.\nThe last panel turns the same glass about the camera so that more "
-        "and more of it is covered, and fits a circle at every step. Above the kind's narrowest "
-        "width the wrong answer is a legal one and nothing warns anybody; below it the check fires "
-        f"and the glass is reported as doubtful.\nThis glass stands near the narrow end of its "
-        f"kind, so its quiet band is short. A glass at the wide end of the same kind keeps a legal "
-        f"width until {100.0 * (1.0 - (KIND_NARROWEST / KIND_WIDEST) ** 2):.0f}% of its footprint "
-        "is gone, which is why a kind with a wide range of sizes is what makes this failure "
-        "possible at all.",
-        ha="center", va="top", fontsize=NOTE_SIZE, color=INK,
-    )
-    print(f"  truncated: kept {kept:.3f}, fitted {2.0 * fit_radius:.2f} mm "
-          f"(true {2.0 * true_radius:.2f}), centre out by {displaced:.2f} mm, "
-          f"error {fit_error:.2f} mm, width in range={in_range}")
-    save(figure, "10-the-truncated-footprint.png")
-
-
-# --------------------------------------------------------------------------- #
-# 3. where the label comes from
 # --------------------------------------------------------------------------- #
 
 def figure_labels_for_free() -> None:
@@ -703,7 +501,8 @@ def figure_labels_for_free() -> None:
     outline(seen, amodal, grid_x, grid_y, MUTED, ls="dashed")
     note(seen, window[0] + 8, window[2] + 8,
          f"The pixels the scene render gives to {name}:\n{area_of(modal, step):.0f} mm². This is "
-         "the modal mask, and\nit is the target solution 9 trains against.", colour=INK, va="bottom")
+         "the modal mask, and\nit is the target the first rung trains against.", colour=INK,
+         va="bottom")
 
     plan_panel(difference, window)
     panel_title(difference, "4. Panel 2 minus panel 3 is the hidden part", colour=WARN)
@@ -740,183 +539,17 @@ def figure_labels_for_free() -> None:
 # 4. only the target changes
 # --------------------------------------------------------------------------- #
 
-def figure_only_the_target_changes() -> None:
-    """The same network twice, with one box different."""
-    grid_x, grid_y, extent, masks, step = scene_masks(1.2)
-    name, _, _ = BITTEN
-    amodal, modal = masks[name]
-    hidden = amodal & ~modal
-    share = 100.0 * area_of(hidden, step) / area_of(amodal, step)
-
-    stages = (
-        "the picture from the top\n(depth shaded into grey)",
-        "backbone and feature pyramid\nResNet-50, COCO weights",
-        "region proposals:\nwhere might an object be?",
-        "per instance: a class, a box,\nand a mask inside the box",
-    )
-    figure, axes = new(13.2, 6.4, columns=2)
-    cases = (
-        ("Solution 9: the mask is scored against the visible pixels", GLASS, modal,
-         "the modal target:\nthe pixels the camera saw", "mask loss"),
-        ("Solution 10: the mask is scored against the whole silhouette", GOOD, amodal,
-         "the amodal target:\nthe whole silhouette", "mask loss"),
-    )
-    for axis, (title, colour, target, target_text, loss) in zip(axes, cases, strict=True):
-        bare(axis)
-        axis.set_aspect("equal")
-        axis.set_xlim(0, 120)
-        axis.set_ylim(-16, 178)
-        panel_title(axis, title, colour=colour)
-        y = 168.0
-        for stage in stages:
-            box(axis, 60, y, 96, 17, stage, edge=MUTED, colour=INK)
-            arrow(axis, (60, y - 8.5), (60, y - 17.0), colour=MUTED)
-            y -= 25.5
-        box(axis, 60, y, 96, 17, f"{loss}: compare that mask with\n{target_text}", edge=colour,
-            face=to_rgba(colour, 0.10), colour=INK, weight="bold")
-        note(axis, 60, y - 12.0, "what the mask is compared with:", colour=INK, ha="center",
-             va="top")
-        # the target itself, drawn to scale inside the panel
-        low_x, high_x, low_y, high_y = mask_window(amodal, grid_x, grid_y, pad=6.0)
-        wide = 54.0
-        tall = wide * (high_y - low_y) / (high_x - low_x)
-        left = 60 - wide / 2.0
-        bottom = y - 20.0 - tall
-        rows = (grid_y[:, 0] >= low_y) & (grid_y[:, 0] <= high_y)
-        columns = (grid_x[0] >= low_x) & (grid_x[0] <= high_x)
-        crop = np.ix_(rows, columns)
-        paint(axis, target[crop], colour, (left, left + wide, bottom, bottom + tall), alpha=0.65)
-        paint(axis, (amodal & ~target)[crop], MUTED,
-              (left, left + wide, bottom, bottom + tall), alpha=0.22, zorder=1)
-        axis.add_patch(Rectangle((left, bottom), wide, tall, facecolor="none", edgecolor=MUTED,
-                                 lw=0.8, zorder=5))
-
-    figure.suptitle(
-        "Nothing about the model changes. The answer it is scored against does.",
-        fontsize=TITLE_SIZE, color=INK, y=1.00,
-    )
-    figure.tight_layout()
-    figure.text(
-        0.5, -0.02,
-        "The architecture is the same, the weights it starts from are the same, the pictures it is "
-        "trained on are the same, the loss is the same function of two masks, and the code that "
-        "consumes the answer is the same.\nThe only difference is which mask sits on the right-hand "
-        f"side of that comparison, and for the glass drawn here the two differ by "
-        f"{area_of(hidden, step):.0f} mm² of table, which is {share:.0f}% of the whole silhouette. "
-        "On a glass with a clear view they do not differ at all, so training this way costs nothing "
-        "on the easy scenes.",
-        ha="center", va="top", fontsize=NOTE_SIZE, color=INK,
-    )
-    print(f"  targets differ by {area_of(hidden, step):.0f} mm2, {share:.0f}% of the silhouette")
-    save(figure, "10-only-the-target-changes.png")
-
-
-# --------------------------------------------------------------------------- #
-# 5. a prediction, not a measurement
-# --------------------------------------------------------------------------- #
-
-def figure_prediction_not_measurement() -> None:
-    """Which part of the answer rests on evidence, and which part is asserted."""
-    check_legal(SCENE)
-    name, centre, size = BITTEN
-    occluders = [g for g in SCENE if g[0] != name]
-    grid_x, grid_y, extent, masks, step = scene_masks(1.0,
-                                                      window=(-420.0, -120.0, 120.0, 400.0))
-    amodal, modal = masks[name]
-    hidden = amodal & ~modal
-    window = mask_window(amodal, grid_x, grid_y, pad=26.0)
-
-    table_x, table_y, whole, visible, fine = footprint_masks(BITTEN, occluders)
-    fit_centre, fit_radius, _ = moment_fit(table_x, table_y, whole, fine)
-    angles, rim_seen = rim_visibility(BITTEN, occluders)
-    seen_share = float(rim_seen.mean())
-
-    figure, (left, right) = new(13.6, 6.0, columns=2)
-
-    plan_panel(left, window)
-    panel_title(left, f"The amodal mask of {name}, by where its evidence comes from")
-    paint(left, masks[OCCLUDER_FAR[0]][1], MUTED, extent, alpha=0.30)
-    paint(left, modal, GLASS, extent, alpha=0.60, zorder=3)
-    paint(left, hidden, WARN, extent, alpha=0.50, zorder=4)
-    outline(left, amodal, grid_x, grid_y, GOOD, ls="solid", lw=1.3)
-    heart = mask_window(modal, grid_x, grid_y, pad=0.0)
-    left.annotate("the depth reading here is this glass's\nown surface: an observation",
-                  xy=((heart[0] + heart[1]) / 2.0, (heart[2] + heart[3]) / 2.0),
-                  xytext=(window[0] + 8, window[3] - 8), fontsize=NOTE_SIZE, color=GLASS,
-                  ha="left", va="top",
-                  arrowprops={"arrowstyle": "->", "color": GLASS, "lw": 1.0}, zorder=8)
-    spot = mask_window(hidden, grid_x, grid_y, pad=0.0)
-    left.annotate(f"here it is {OCCLUDER_FAR[0]}'s surface. The model is\nasserting that glass "
-                  "carries on underneath,\nand nothing in the picture says it does",
-                  xy=((spot[0] + spot[1]) / 2.0, (spot[2] + spot[3]) / 2.0),
-                  xytext=(window[0] + 8, window[2] + 8), fontsize=NOTE_SIZE, color=WARN,
-                  ha="left", va="bottom",
-                  arrowprops={"arrowstyle": "->", "color": WARN, "lw": 1.0}, zorder=8)
-
-    seen_points = area_of(visible, fine) / area_of(whole, fine)
-    pad = size[1] * 1.05
-    plan_panel(right, (centre[0] - pad, centre[0] + pad, centre[1] - pad * 1.5, centre[1] + pad))
-    panel_title(right, "The footprint that comes out of it, point by point")
-    dots_in(right, visible, table_x, table_y, GLASS, count=300, size=2.0)
-    dots_in(right, whole & ~visible, table_x, table_y, WARN, count=300, size=2.0)
-    for start, stop in runs_of(rim_seen):
-        arc = angles[np.arange(start, stop) % len(angles)]
-        right.plot(centre[0] + fit_radius * np.cos(arc), centre[1] + fit_radius * np.sin(arc),
-                   color=GOOD, lw=3.0, solid_capstyle="butt", zorder=6)
-    for start, stop in runs_of(~rim_seen):
-        arc = angles[np.arange(start, stop) % len(angles)]
-        right.plot(centre[0] + fit_radius * np.cos(arc), centre[1] + fit_radius * np.sin(arc),
-                   color=WARN, lw=3.0, ls=(0, (2, 2)), solid_capstyle="butt", zorder=6)
-    right.scatter([fit_centre[0]], [fit_centre[1]], s=34, color=INK, marker="+", zorder=8)
-    note(right, centre[0] + pad * 0.98, centre[1] + pad * 0.96,
-         f"rim: {360.0 * seen_share:.0f}° seen, solid green", colour=GOOD, ha="right")
-    note(right, centre[0] + pad * 0.98, centre[1] + pad * 0.82,
-         f"rim: {360.0 * (1.0 - seen_share):.0f}° asserted, dashed orange", colour=WARN, ha="right")
-    note(right, centre[0] - pad * 0.98, centre[1] + pad * 0.96,
-         f"points the camera gave: {100.0 * seen_points:.0f}%", colour=GLASS)
-    note(right, centre[0] - pad * 0.98, centre[1] + pad * 0.82,
-         f"points the model asserted: {100.0 * (1.0 - seen_points):.0f}%", colour=WARN)
-    note(right, centre[0] - pad * 0.98, centre[1] - pad * 0.86,
-         f"The circle is {2.0 * fit_radius:.0f} mm across and its centre is where the glass\n"
-         f"stands, which is the whole point of completing the mask. But the\n"
-         f"bite took the low part of the glass, which flattens into the middle\n"
-         f"of the disc, so {100.0 * (1.0 - seen_points):.0f}% of the points the circle was fitted "
-         "to are asserted.\nThe width rests mostly on evidence; the centre rests partly on a guess.",
-         colour=INK, va="top")
-
-    figure.suptitle(
-        "An amodal mask claims pixels whose evidence belongs to another object, so its footprint "
-        "is a prediction.",
-        fontsize=TITLE_SIZE, color=INK, y=1.00,
-    )
-    figure.tight_layout()
-    figure.text(
-        0.5, -0.03,
-        f"The completed mask gives the right footprint back, and that is the point of it. What it "
-        f"cannot give back is evidence: {100.0 * area_of(hidden, step) / area_of(amodal, step):.0f}%"
-        f" of this mask sits where the camera saw {OCCLUDER_FAR[0]}, and the depth readings there "
-        f"measure {OCCLUDER_FAR[0]}'s surface.\nSo the circle fitted to it is a prediction of a "
-        "footprint rather than a measurement of one. The width check still applies, because a "
-        "predicted width outside the kind's range is still impossible. What no longer applies is "
-        "the assumption that\nthe centre was observed, which is why the arm approaches such a glass "
-        "expecting to be wrong: the fingers close until they touch and then the width is read off "
-        "them, and the same is true of every glass whose rim was completed.",
-        ha="center", va="top", fontsize=NOTE_SIZE, color=INK,
-    )
-    print(f"  prediction: rim seen {100.0 * seen_share:.0f}%, asserted "
-          f"{100.0 * (1.0 - seen_share):.0f}%, fitted width {2.0 * fit_radius:.1f} mm")
-    save(figure, "10-prediction-not-measurement.png")
-
-
-# --------------------------------------------------------------------------- #
-# 6. measuring whether it works
-# --------------------------------------------------------------------------- #
-
 def figure_measuring_whether_it_works() -> None:
-    """Two ways of scoring one answer: the usual one, and the one that sees the point."""
+    """Two ways of scoring one answer: the usual one, and the one that sees the point.
+
+    Both numbers are counted over pixels, and deliberately so. No footprint is
+    fitted to the prediction anywhere here, because the asserted pixels carry
+    the near glass's depth readings and are excluded before any footprint is
+    fitted, so a completion is scored on the masks it produces and not on a
+    place it never supplied.
+    """
     check_legal(SCENE)
-    name, centre, size = BITTEN
-    occluders = [g for g in SCENE if g[0] != name]
+    name, _, _ = BITTEN
     grid_x, grid_y, extent, masks, step = scene_masks(1.0, window=(-420.0, -120.0, 120.0, 400.0))
     amodal, modal = masks[name]
     hidden = amodal & ~modal
@@ -931,17 +564,7 @@ def figure_measuring_whether_it_works() -> None:
     visible_iou = (predicted & modal).sum() / ((predicted & modal) | modal).sum()
     hidden_iou = (predicted & hidden).sum() / ((predicted & hidden) | hidden).sum()
 
-    table_x, table_y, whole, seen_patch, fine = footprint_masks(BITTEN, occluders)
-    true_centre, true_radius, _ = moment_fit(table_x, table_y, whole, fine)
-    # the same shortfall, applied to the footprint the prediction would give
-    hidden_patch = whole & ~seen_patch
-    predicted_patch = (erode_mm(seen_patch, VISIBLE_SLACK, fine)
-                       | (erode_mm(whole, HIDDEN_SHORTFALL, fine) & hidden_patch))
-    fit_centre, fit_radius, fit_error = moment_fit(table_x, table_y, predicted_patch, fine)
-    centre_error = float(np.hypot(*(fit_centre - centre)))
-    width_error = abs(2.0 * fit_radius - size[1])
-
-    figure, (picture, scores, errors) = new(16.0, 5.4, columns=3)
+    figure, (picture, scores) = new(11.0, 5.4, columns=2)
 
     plan_panel(picture, window)
     panel_title(picture, "One prediction against the truth")
@@ -959,7 +582,7 @@ def figure_measuring_whether_it_works() -> None:
     scores.set_ylim(-1.5, 2.3)
     panel_title(scores, "The same answer, scored two ways")
     for index, (label, value, colour, verdict_text) in enumerate((
-            ("overlap over the visible pixels\n(the ordinary measure)", visible_iou, MUTED,
+            ("overlap over the visible pixels\n(the part never in doubt)", visible_iou, MUTED,
              "looks like a good mask"),
             ("overlap over the hidden part\n(the part that was the point)", hidden_iou, WARN,
              "most of the completion is missing"))):
@@ -980,38 +603,6 @@ def figure_measuring_whether_it_works() -> None:
          "completion is wrong. Counted over the hidden part alone,\n"
          "the same answer scores what it deserves.", colour=INK, va="top")
 
-    bare(errors)
-    errors.set_xlim(-1.5, 22)
-    errors.set_ylim(-2.4, 2.4)
-    panel_title(errors, "And the two numbers the arm actually uses")
-    for index, (label, value) in enumerate((("error in the fitted centre", centre_error),
-                                            ("error in the fitted width", width_error))):
-        y = 1.7 - index * 0.85
-        errors.add_patch(Rectangle((0, y - 0.16), TOLERANCE, 0.32, facecolor=GOOD, alpha=0.20,
-                                   edgecolor=GOOD, lw=0.9))
-        errors.add_patch(Rectangle((0, y - 0.16), value, 0.32,
-                                   facecolor=GOOD if value <= TOLERANCE else WARN, alpha=0.60,
-                                   edgecolor=GOOD if value <= TOLERANCE else WARN, lw=1.2))
-        errors.text(value + 0.4, y, f"{value:.1f} mm", ha="left", va="center",
-                    fontsize=LABEL_SIZE, color=GOOD if value <= TOLERANCE else WARN, weight="bold")
-        note(errors, 0, y + 0.22, label, colour=INK, va="bottom")
-    errors.plot([TOLERANCE, TOLERANCE], [-0.06, 0.02], color=GOOD, lw=1.2)
-    for tick in range(0, 21, 5):
-        errors.plot([tick, tick], [-0.06, 0.02], color=INK, lw=0.8)
-        errors.text(tick, -0.12, str(tick), ha="center", va="top", fontsize=NOTE_SIZE, color=INK)
-    note(errors, 0, -0.40,
-         f"The scale is millimetres, and the pale band runs to {TOLERANCE:.0f} mm,\n"
-         "which is what the cell treats as agreement between two\nmeasurements of the same glass.",
-         colour=GOOD, va="top")
-    note(errors, 0, -1.06,
-         "These two come from fitting a circle to the predicted\n"
-         "footprint and comparing it with the true one, and they\n"
-         "are the measure that matters, because they are what\n"
-         "the next step of the run is handed. A completion that\n"
-         "brings both inside the width the cell treats as\n"
-         "agreement has done its job, whatever its overlap says.",
-         colour=INK, va="top")
-
     figure.suptitle(
         "The ordinary measure of a segmenter is the wrong measure here: it scores the part that was "
         "never in doubt.",
@@ -1022,15 +613,14 @@ def figure_measuring_whether_it_works() -> None:
         0.5, -0.03,
         f"The prediction drawn here is a stand-in with a deliberate fault: it pulls back "
         f"{VISIBLE_SLACK:.1f} mm from the edge it can see and stops {HIDDEN_SHORTFALL:.0f} mm short "
-        f"of the far edge of the hidden part. Scored over the pixels the camera saw it looks "
-        f"{visible_iou:.2f} good;\nscored over the hidden part it is {hidden_iou:.2f}. The same "
-        f"answer carried through to the table puts the footprint's centre {centre_error:.1f} mm and "
-        f"its width {width_error:.1f} mm from the truth. Those last two are what the arm is sent "
-        "with, so those last two are what to watch.",
+        "of the far edge of the hidden part.\nScored over the pixels the camera saw it looks "
+        f"{visible_iou:.2f} good; scored over the hidden part alone it is {hidden_iou:.2f}, and "
+        "that second number is the one that says what the completion is worth.\nBeside it belong "
+        "the counts of glasses found, missed and merged, because a completion that credits a slice "
+        "to the glass it came off adds a glass to the answer.",
         ha="center", va="top", fontsize=NOTE_SIZE, color=INK,
     )
-    print(f"  scoring: visible overlap {visible_iou:.3f}, hidden overlap {hidden_iou:.3f}, "
-          f"centre error {centre_error:.2f} mm, width error {width_error:.2f} mm")
+    print(f"  scoring: visible overlap {visible_iou:.3f}, hidden overlap {hidden_iou:.3f}")
     save(figure, "10-measuring-whether-it-works.png")
 
 
@@ -1071,8 +661,8 @@ def figure_where_it_stops() -> None:
     paint(works, amodal & ~modal, WARN, near_extent, alpha=0.45, zorder=4)
     outline(works, amodal, near_x, near_y, GOOD, ls="solid", lw=1.3)
     note(works, window[0] + 8, window[2] + 8,
-         f"{100.0 * kept:.0f}% of {BITTEN[0]} reaches the picture. Those\npixels are a region to "
-         "propose, a box to fit\nand an edge to carry on, so the covered part\ncan be completed.",
+         f"{100.0 * kept:.0f}% of {BITTEN[0]} reaches the picture. Those\npixels fill a slot of "
+         "their own and leave an\nedge to carry on, so the covered part can\nbe completed.",
          colour=INK, va="bottom")
 
     far_window = mask_window(far_masks[HIDING_TALL[0]][0], far_x, far_y, pad=26.0)
@@ -1088,8 +678,8 @@ def figure_where_it_stops() -> None:
                    fontsize=NOTE_SIZE, color=WARN, ha="left", va="bottom",
                    arrowprops={"arrowstyle": "->", "color": WARN, "lw": 1.0}, zorder=8)
     note(stops, far_window[0] + 12, far_window[3] - 8,
-         f"{HIDING_TALL[0]} is {HIDING_TALL[2][0]:.0f} mm tall and stands nearer the\ncamera, so "
-         f"splay throws its outline across\n{patch_mm:.0f} mm of table — far enough to swallow\n"
+         f"{HIDING_TALL[0]} is more than twice the height of\n{HIDING_SHORT[0]} and stands nearer "
+         "the camera, so splay\nthrows its outline far enough across the\ntable to swallow "
          f"{HIDING_SHORT[0]}, which stands "
          f"{np.hypot(*(HIDING_SHORT[1] - HIDING_TALL[1])):.0f} mm away.", colour=INK)
 
@@ -1099,9 +689,9 @@ def figure_where_it_stops() -> None:
     panel_title(ladder, "What each case gives the model to work with")
     rungs = (
         ("pixels in the picture", f"{100.0 * kept:.0f}% of the glass", "none at all"),
-        ("a region proposed", "yes", "nothing to propose"),
+        ("a slot filled by it", "yes", "nothing fills a slot"),
         ("a mask to complete", "yes", "no mask to extend"),
-        ("a footprint on the table", "predicted, and right", "no glass is reported"),
+        ("a place on the table", "from the pixels seen", "no glass is reported"),
     )
     ladder.text(46, 99, "partly covered", ha="center", va="bottom", fontsize=NOTE_SIZE, color=GOOD,
                 weight="bold")
@@ -1141,10 +731,9 @@ def figure_where_it_stops() -> None:
         f"guarantees at least {MIN_APART:.0f} mm. Whether one silhouette covers another is decided "
         "by the same test the rest of these\ndiagrams use, which walks the boundary of the covered "
         "glass's silhouette and asks whether every point of it lies inside the covering one. On the "
-        "right that test is true, so the short glass contributes no pixels, no instance is "
-        "proposed, and there is\nno mask for the amodal head to extend. The group that does come "
-        f"back is the tall glass's own footprint, {HIDING_TALL[2][1]:.0f} mm across, which is an "
-        f"ordinary width for a kind whose glasses run {KIND_NARROWEST:.0f} to {KIND_WIDEST:.0f} mm, "
+        "right that test is true, so the short glass contributes no pixels, no slot is filled with "
+        "it, and there is\nno mask to extend. The one glass that does come back is the tall glass "
+        "itself, with a correct mask over its own pixels and a width this kind is allowed to have, "
         "so nothing anywhere says a glass is missing.",
         ha="center", va="top", fontsize=NOTE_SIZE, color=INK,
     )
@@ -1156,10 +745,7 @@ def figure_where_it_stops() -> None:
 
 def main() -> None:
     figure_modal_against_amodal()
-    figure_the_truncated_footprint()
     figure_labels_for_free()
-    figure_only_the_target_changes()
-    figure_prediction_not_measurement()
     figure_measuring_whether_it_works()
     figure_where_it_stops()
 

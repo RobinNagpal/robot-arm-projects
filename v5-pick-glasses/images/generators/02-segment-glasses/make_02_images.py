@@ -45,7 +45,6 @@ from diagram_style import (
     splay_circles,
     splay_covers,
     splay_patch,
-    splay_width,
 )
 from matplotlib.colors import to_rgba
 from matplotlib.patches import Circle, FancyArrowPatch, Polygon, Rectangle
@@ -315,11 +314,9 @@ def figure_picture_versus_table() -> None:
         ("S2", np.array([-215.0, 275.0]), SHORT_B),    # T2's outline reaches this one
     )
     place = {name: pos for name, pos, _ in scene}
-    size_of = {name: size for name, _, size in scene}
     shapes = {name: splay_circles(nadir, pos, *size) for name, pos, size in scene}
 
     covered = splay_covers(shapes["T1"], shapes["S1"])
-    patch_mm = splay_width(shapes["T1"])
     limits = ((-400, 520), (-190, 430))
 
     for axis in (left, right):
@@ -352,20 +349,19 @@ def figure_picture_versus_table() -> None:
         colour = GOOD if name.startswith("T") else GLASS
         footprint(right, tuple(pos), size[1], colour=colour, dots=120)
     note(right, 14, -14, "camera", colour=WARN, va="top")
-    for name, dx, dy, ha, va in (("T1", 0, -62, "center", "top"),
-                                 ("S1", 46, 30, "left", "bottom"),
-                                 ("T2", -66, 0, "right", "center"),
-                                 ("S2", 0, 46, "center", "bottom")):
-        pos, size = place[name], size_of[name]
-        note(right, pos[0] + dx, pos[1] + dy,
-             f"{name}\n{size[0]:.0f} mm tall, {size[1]:.0f} mm across",
-             colour=INK, ha=ha, va=va)
+    for name, dx, dy, ha, va, how in (
+            ("T1", 0, -62, "center", "top", "tall and wide for this kind"),
+            ("S1", 46, 30, "left", "bottom", "the kind's smallest"),
+            ("T2", -66, 0, "right", "center", "tall and wide for this kind"),
+            ("S2", 0, 46, "center", "bottom", "the kind's smallest")):
+        pos = place[name]
+        note(right, pos[0] + dx, pos[1] + dy, f"{name}\n{how}", colour=INK, ha=ha, va=va)
+    # The pairs are joined but not labelled with a distance: the footnote below
+    # states the only thing about them that matters, which is that both pairs
+    # stand further apart than the guaranteed gap.
     for a, b in (("T1", "S1"), ("T2", "S2")):
         right.annotate("", xy=tuple(place[b]), xytext=tuple(place[a]),
                        arrowprops={"arrowstyle": "<->", "color": GOOD, "lw": 1.5}, zorder=6)
-        mid = (place[a] + place[b]) / 2.0
-        note(right, mid[0] + 26, mid[1] + 8, f"{np.hypot(*(place[b] - place[a])):.0f} mm",
-             colour=GOOD, size=LABEL_SIZE, weight="bold", ha="left", va="bottom")
 
     figure.suptitle(
         "One kind, a wide range of sizes: a tall glass's outline can cover a short one completely.",
@@ -376,12 +372,12 @@ def figure_picture_versus_table() -> None:
         0.06, -0.14,
         "Every pair of centres here is at least the guaranteed gap apart, and every size is inside "
         "the kind's range, so the arrangement is an ordinary one.\n"
-        f"T1 is tall and close to the camera, so its outline is thrown a long way outwards — far "
-        f"enough to cover S1 entirely. That outline runs across about {patch_mm:.0f} mm of table, but "
-        "every dot under it back-projects to\nT1's own footprint, "
-        f"{FOOTPRINT_A:.0f} mm across, which is an ordinary width for this kind, so the group that "
-        "comes back looks perfectly normal. The merge of T2 and S2 is at least\nloud, because that "
-        "group is wider than any one glass can be. The missing glass is silent.",
+        "T1 is tall and close to the camera, so its outline is thrown a long way outwards — far "
+        "enough to cover S1 entirely. That outline runs across more table than any\nglass of this "
+        "kind can cover, but every dot under it back-projects to T1's own footprint, which is an "
+        "ordinary width for this kind, so the group that comes\nback looks perfectly normal. The "
+        "merge of T2 and S2 is at least loud, because that group is wider than any one glass can "
+        "be. The missing glass is silent.",
         fontsize=NOTE_SIZE, color=INK, ha="left", va="top",
     )
     save(figure, "02-merged-in-the-picture.png")
@@ -389,88 +385,6 @@ def figure_picture_versus_table() -> None:
 
 # --------------------------------------------------------------------------- #
 # 3. the four steps
-# --------------------------------------------------------------------------- #
-
-def figure_four_steps() -> None:
-    figure, axes = new(15.0, 4.6, columns=4)
-    one, two, three, four = axes
-
-    # ---- step 1: the depth picture ---------------------------------------
-    bare(one)
-    one.set_xlim(-20, 340)
-    one.set_ylim(-150, 264)
-    one.set_aspect("equal")
-    panel_title(one, "1. A depth picture")
-    one.add_patch(Rectangle((0, 0), 320, 240, facecolor=MUTED, alpha=0.06, edgecolor=INK, lw=1.1))
-    for poly, shade in (([(96, 20), (104, 150), (168, 150), (160, 20)], 0.42),
-                        ([(150, 52), (162, 196), (236, 196), (222, 52)], 0.22)):
-        one.add_patch(Polygon(poly, closed=True, facecolor=GLASS, alpha=shade, edgecolor="none"))
-    note(one, 0, -16, "Every pixel with a reading, turned into\na point in the room. Darker is nearer.",
-         colour=INK)
-
-    # ---- step 2: points above the table ----------------------------------
-    bare(two)
-    two.set_xlim(-60, 300)
-    two.set_ylim(-150, 340)
-    panel_title(two, "2. Keep what stands on the table")
-    two.plot([-50, 290], [0, 0], color=INK, lw=1.8)
-    two.plot([-50, 290], [5, 5], color=GOOD, lw=0.9, ls=(0, (4, 3)))
-    two.plot([-50, 290], [260, 260], color=GOOD, lw=0.9, ls=(0, (4, 3)))
-    note(two, 288, 264, "260 mm above the table", colour=GOOD, ha="right", va="bottom")
-    note(two, -58, 12, "5 mm above the table", colour=GOOD, va="bottom")
-    for centre_x, width in ((40.0, FOOTPRINT_A), (217.0, FOOTPRINT_B)):
-        glass_side(two, centre_x, 0.0, OBJECT_HEIGHT, width, alpha=0.14)
-        x = centre_x + (RNG.random(90) - 0.5) * width
-        y = OBJECT_HEIGHT - np.abs(RNG.normal(0, 46, 90))
-        two.scatter(x, np.clip(y, 6, OBJECT_HEIGHT), s=2.2, color=GLASS, zorder=5, linewidths=0)
-    x = -40 + RNG.random(70) * 330
-    two.scatter(x, RNG.normal(0, 1.4, 70), s=2.2, color=MUTED, zorder=4, linewidths=0)
-    note(two, -58, -16, "Points on the table plane are dropped: the\nplane's height was measured at"
-         " startup, so\nthis is a comparison, not a search.", colour=INK)
-
-    # ---- step 3: flatten and group ---------------------------------------
-    panel_title(three, "3. Flatten, then group by distance")
-    plan_axis(three)
-    centre_a = (420.0, -310.0)
-    centre_b = (550.0, -190.0)
-    footprint(three, centre_a, FOOTPRINT_A, colour=GOOD)
-    footprint(three, centre_b, FOOTPRINT_B, colour=GLASS)
-    three.add_patch(
-        Circle(centre_a, FOOTPRINT_A / 2.0 + 25.0, facecolor="none", edgecolor=GOOD, lw=1.0,
-               ls=(0, (3, 3)), zorder=4)
-    )
-    note(three, 336, -240, "25 mm", colour=GOOD, va="bottom")
-    note(three, 336, -424,
-         "Start at one point, take everything within\n25 mm, then everything within 25 mm of\nthose."
-         " Two groups, not one.", colour=INK, va="bottom")
-
-    # ---- step 4: fit a circle --------------------------------------------
-    panel_title(four, "4. Fit a circle to each group")
-    plan_axis(four)
-    for centre, width in ((centre_a, FOOTPRINT_A), (centre_b, FOOTPRINT_B)):
-        x, y = disc_dots(centre, width, 150)
-        four.scatter(x, y, s=1.8, color=MUTED, zorder=2, linewidths=0)
-        four.add_patch(
-            Circle(centre, width / 2.0, facecolor="none", edgecolor=GOOD, lw=2.0, zorder=5)
-        )
-        four.scatter([centre[0]], [centre[1]], s=22, color=GOOD, marker="+", zorder=6)
-    note(four, centre_a[0], centre_a[1] + 48, f"{FOOTPRINT_A:.0f} mm\n(0.420, -0.310)", colour=GOOD, ha="center",
-         va="bottom")
-    note(four, centre_b[0], centre_b[1] + 48, f"{FOOTPRINT_B:.0f} mm\n(0.550, -0.190)", colour=GOOD, ha="center",
-         va="bottom")
-    note(four, 336, -424, "A fit uses every dot, where a bounding box\nuses the two extreme ones."
-         " The diameter is\nthen checked against what this kind can be.", colour=INK, va="bottom")
-
-    figure.suptitle(
-        "The whole method: points, then heights, then distance on the table, then one circle each.",
-        fontsize=TITLE_SIZE, color=INK, y=1.04,
-    )
-    figure.tight_layout()
-    save(figure, "02-four-steps.png")
-
-
-# --------------------------------------------------------------------------- #
-# 4. why flatten first
 # --------------------------------------------------------------------------- #
 
 def figure_why_flatten() -> None:
@@ -504,22 +418,21 @@ def figure_why_flatten() -> None:
          " camera, so nothing lands on it", colour=WARN)
 
     span(left, (272, 26), (272, heights[0] - 6), "", colour=WARN)
-    left.text(282, heights[0] / 2.0, f"{heights[0]:.0f} mm\nthe tall glass,\ntop to base",
+    left.text(282, heights[0] / 2.0, "the tall glass,\ntop to base:\nthe gap inside\none glass",
               ha="left", va="center", fontsize=NOTE_SIZE, color=WARN)
 
     # the gap between the two glasses at the height of the shorter one's rim
     gap_start = (centres[0] + widths[0] / 2.0, heights[1])
     gap_end = (centres[1] - widths[1] / 2.0, heights[1])
-    apart = gap_end[0] - gap_start[0]
     left.annotate("", xy=gap_end, xytext=gap_start,
                   arrowprops={"arrowstyle": "<->", "color": GOOD, "lw": 1.4}, zorder=6)
     note(left, (gap_start[0] + gap_end[0]) / 2.0, heights[1] + 10,
-         f"{apart:.0f} mm: different glasses", colour=GOOD, ha="center", va="bottom")
+         "the strip between two glasses", colour=GOOD, ha="center", va="bottom")
     note(
         left, -244, -32,
-        f"Under {apart:.0f} mm and one glass breaks into a cap and a skirt.\n"
-        f"Over {heights[0]:.0f} mm and the two glasses become one group.\n"
-        f"{heights[0]:.0f} mm is more than {apart:.0f} mm, so there is no number that does both.",
+        "Hold one glass together and the distance has to reach its own height.\n"
+        "Keep two glasses apart and it has to stay inside the strip between them.\n"
+        "The height is the larger of the two, so no number does both jobs.",
         colour=INK,
     )
 
@@ -533,26 +446,27 @@ def figure_why_flatten() -> None:
     unit = direction / np.hypot(*direction)
     start_pt = np.array(centre_a) + unit * (FOOTPRINT_A / 2.0)
     end_pt = np.array(centre_b) - unit * (FOOTPRINT_B / 2.0)
-    clear = float(np.hypot(*(end_pt - start_pt)))
     right.annotate("", xy=tuple(end_pt), xytext=tuple(start_pt),
                    arrowprops={"arrowstyle": "<->", "color": GOOD, "lw": 1.6}, zorder=6)
-    note(right, 446, -244, f"{clear:.0f} mm of bare table", colour=GOOD, size=LABEL_SIZE,
-         weight="bold", ha="right", va="center")
-    for centre, width in ((centre_a, FOOTPRINT_A), (centre_b, FOOTPRINT_B)):
+    note(right, 446, -244, "the strip of bare table,\nas wide as it ever was", colour=GOOD,
+         size=LABEL_SIZE, weight="bold", ha="right", va="center")
+    for centre, width, which in ((centre_a, FOOTPRINT_A, "the wider footprint"),
+                                 (centre_b, FOOTPRINT_B, "the narrower footprint")):
         span(right, (centre[0] - width / 2.0, centre[1] - 54),
              (centre[0] + width / 2.0, centre[1] - 54),
-             f"{int(width)} mm wide", colour=INK, above=False, pad=5)
+             which, colour=INK, above=False, pad=5)
     note(
         right, 336, -440,
-        f"The height is gone: it was the one dimension that did not help.\n"
-        f"Anything from about 10 mm up to {clear:.0f} mm now holds one footprint\n"
-        "together and keeps two apart. 25 mm is the choice.",
+        "The height is gone: it was the one dimension that did not help.\n"
+        "Anything from the scatter within one footprint up to the width of that\n"
+        "strip holds one footprint together and keeps two apart. The run computes\n"
+        "the value from the two ends rather than taking one that was typed in.",
         colour=INK, va="bottom",
     )
 
     figure.suptitle(
-        f"One kind, two very different glasses: {heights[0]:.0f} mm tall and {widths[0]:.0f} mm "
-        f"wide beside {heights[1]:.0f} mm tall and {widths[1]:.0f} mm wide.",
+        "One kind, two very different glasses: one more than twice the height of the other, and "
+        "wider across the rim as well.",
         fontsize=TITLE_SIZE, color=INK, y=1.03,
     )
     figure.tight_layout()
@@ -589,7 +503,7 @@ def figure_grouping_distance() -> None:
               color=INK)
 
     axis.annotate(
-        "25 mm: the choice",
+        "computed from the two ends,\nand placed low in the window",
         xy=(25, bar_high),
         xytext=(25, 1.02),
         ha="center",
@@ -628,10 +542,10 @@ def figure_grouping_distance() -> None:
         88, -0.62,
         "Upper end, set by the smallest clear gap between two footprints:\n"
         f"  the glasses stand at least {MIN_APART:.0f} mm apart, but that is centre\n"
-        f"  to centre. Clustering sees edge to edge, which is {MIN_APART:.0f} mm less the\n"
-        f"  two radii. The worst case is two glasses of this kind's widest,\n"
-        f"  {KIND_WIDEST:.0f} mm: {MIN_APART:.0f} - {KIND_WIDEST / 2:.0f} - {KIND_WIDEST / 2:.0f} "
-        f"= {worst_gap:.0f} mm. Above that the gap can be crossed.",
+        "  to centre. Clustering sees edge to edge, which is that distance\n"
+        "  less the two radii. The worst case is the two widest glasses the\n"
+        "  kind allows, standing at the guaranteed gap: what is left is the\n"
+        "  narrowest strip the method is ever shown. Above that it is crossed.",
         ha="left", va="top", fontsize=NOTE_SIZE, color=INK,
     )
 
@@ -644,8 +558,8 @@ def figure_grouping_distance() -> None:
     axis.text(75, 1.25, "150 mm: the closest two objects ever stand, measured centre to centre",
               ha="center", va="bottom", fontsize=NOTE_SIZE, color=MUTED)
 
-    figure.suptitle("One parameter, and a wide window to put it in", fontsize=TITLE_SIZE, color=INK,
-                    y=1.0)
+    figure.suptitle("One setting, computed from two known limits, and a wide window to put it in",
+                    fontsize=TITLE_SIZE, color=INK, y=1.0)
     figure.tight_layout()
     save(figure, "02-grouping-distance.png")
 
@@ -670,25 +584,25 @@ def figure_circle_fit() -> None:
             x, y = disc_dots(centre, width, 150)
             axis.scatter(x, y, s=2.0, color=MUTED, zorder=2, linewidths=0)
 
-    panel_title(left, f"One circle: {whole:.0f} mm across", colour=WARN)
+    panel_title(left, "One circle: too wide to be one glass", colour=WARN)
     left.add_patch(Circle((0.5, 0), whole / 2.0, facecolor=WARN, alpha=0.10, edgecolor=WARN, lw=2.0))
-    span(left, (-whole / 2.0, -136), (whole / 2.0, -136), f"{whole:.0f} mm", colour=WARN,
+    span(left, (-whole / 2.0, -136), (whole / 2.0, -136), "wider than this kind goes", colour=WARN,
          above=False, pad=4)
-    note(left, 0, -178, f"Fitted to the whole group, the one circle is\n{whole:.0f} mm across. Too wide "
-         "to be one glass\nof this kind, so it is rejected.", colour=INK, ha="center", va="top")
+    note(left, 0, -178, "Fitted to the whole group, the one circle is wider\nthan any glass of this "
+         "kind can be, so the group\nis rejected as one glass.", colour=INK, ha="center", va="top")
 
-    panel_title(middle, f"Two circles: {FOOTPRINT_A:.0f} and {FOOTPRINT_B:.0f} mm", colour=GOOD)
+    panel_title(middle, "Two circles: each a width this kind allows", colour=GOOD)
     for centre, width in ((blob_a, FOOTPRINT_A), (blob_b, FOOTPRINT_B)):
         middle.add_patch(
             Circle(centre, width / 2.0, facecolor=GOOD, alpha=0.12, edgecolor=GOOD, lw=2.0)
         )
         middle.scatter([centre[0]], [centre[1]], s=24, color=GOOD, marker="+", zorder=6)
-    note(middle, blob_a[0], -46, f"{FOOTPRINT_A:.0f} mm", colour=GOOD, ha="center", va="top",
+    note(middle, blob_a[0], -46, "in range", colour=GOOD, ha="center", va="top",
          size=LABEL_SIZE)
-    note(middle, blob_b[0], -46, f"{FOOTPRINT_B:.0f} mm", colour=GOOD, ha="center", va="top",
+    note(middle, blob_b[0], -46, "in range", colour=GOOD, ha="center", va="top",
          size=LABEL_SIZE)
     note(middle, 0, -178, "Two circles are tried instead. Both are inside\nthe range, and together they"
-         " explain every\ndot, so the group was two glasses.", colour=INK, ha="center", va="top")
+         " explain every\ndot, so the group is split in two.", colour=INK, ha="center", va="top")
 
     # the ruler the decision is made against
     bare(right)
@@ -700,16 +614,15 @@ def figure_circle_fit() -> None:
     right.add_patch(Rectangle((0, 0), 280, 0.34, facecolor="none", edgecolor=INK, lw=1.0))
     for tick in range(0, 281, 40):
         right.plot([tick, tick], [-0.07, 0], color=INK, lw=0.9)
-        right.text(tick, -0.15, str(tick), ha="center", va="top", fontsize=NOTE_SIZE, color=INK)
-    right.text(140, -0.45, "footprint diameter, mm", ha="center", va="top", fontsize=LABEL_SIZE,
-               color=INK)
-    right.text(KIND_NARROWEST - 6, 0.40, f"{KIND_NARROWEST:.0f} to {KIND_WIDEST:.0f} mm:\nthis kind",
+    right.text(140, -0.45, "footprint diameter, narrowest on the left", ha="center", va="top",
+               fontsize=LABEL_SIZE, color=INK)
+    right.text(KIND_NARROWEST - 6, 0.40, "this kind's widths",
                ha="right", va="bottom", fontsize=NOTE_SIZE, color=GOOD)
     for value in (FOOTPRINT_B, FOOTPRINT_A):
         right.plot([value, value], [0, 0.34], color=GOOD, lw=1.4)
     right.plot([whole, whole], [0, 0.34], color=WARN, lw=1.4)
     right.annotate(
-        f"{FOOTPRINT_A:.0f} mm and {FOOTPRINT_B:.0f} mm:\nboth inside",
+        "both fitted widths:\ninside the range",
         xy=(FOOTPRINT_A, 0.34),
         xytext=(112, 0.98),
         ha="right",
@@ -719,7 +632,7 @@ def figure_circle_fit() -> None:
         arrowprops={"arrowstyle": "->", "color": GOOD, "lw": 1.0},
     )
     right.annotate(
-        f"{whole:.0f} mm: nothing\nof this kind",
+        "the one circle: nothing\nof this kind is that wide",
         xy=(whole, 0.34),
         xytext=(whole - 8, 1.34),
         ha="right",
@@ -734,8 +647,11 @@ def figure_circle_fit() -> None:
         "  one circle in range: one object.\n"
         "  out of range, but two circles in range: two objects.\n"
         "  still out of range: reported doubtful, never guessed at.\n\n"
+        "The fitted width decides only how a group is split. The\n"
+        "width that goes into the record is measured by the bench,\n"
+        "from the mask, so this circle never leaves the solution.\n\n"
         "This check exists only because every object here is one\n"
-        "known kind, so the range is a number the project holds.\n"
+        "known kind, so the range is one the project holds.\n"
         "Problem 4, with four kinds on the table, takes it back.",
         ha="left", va="top", fontsize=NOTE_SIZE, color=INK,
     )
@@ -821,94 +737,29 @@ def _half_footprint(axis, centre, camera, diameter, dots=110):
     )
 
 
-def figure_two_stations() -> None:
-    figure, (left, right) = new(12.6, 5.8, columns=2)
-
-    stations = (
-        (left, (380.0, -190.0), "Station A", WARN, OBJECTS[3],
-         "From A, this one is 254 mm off to the side. Its top is\n"
-         "thrown so far outwards that it leaves the picture, and\n"
-         "only the near half of its footprint comes back. A circle\n"
-         "fitted to half a disc sits on the half you have."),
-        (right, (540.0, -310.0), "Station B, 200 mm away", GOOD, OBJECTS[0],
-         "From B the same glass is much nearer to straight down,\n"
-         "so the whole footprint comes back and the fit is\n"
-         "clean. Now it is the top left one that is seen\n"
-         "edge-on."),
-    )
-
-    for axis, camera, title, colour, awkward, body in stations:
-        panel_title(axis, title, colour=colour)
-        plan_axis(axis, pad=26.0)
-        axis.set_ylim(-580, -54)
-        x0, x1, y0, y1 = ZONE
-        clip = Rectangle((x0, y0), x1 - x0, y1 - y0, transform=axis.transData, facecolor="none",
-                         edgecolor="none")
-        axis.add_patch(clip)
-        for centre, size in zip(OBJECTS, SIZES, strict=True):
-            _shadow(axis, camera, centre, size[1] / 2.0, clip=clip, reach=lift(size[0]))
-        axis.add_patch(
-            Circle(camera, 150.0, facecolor="none", edgecolor=colour, lw=1.0, ls=(0, (4, 3)),
-                   zorder=2)
-        )
-        axis.scatter([camera[0]], [camera[1]], s=46, color=colour, marker="x", zorder=7)
-        note(axis, camera[0] + 10, camera[1] + 6, "camera, straight\nabove here", colour=colour,
-             va="bottom")
-        for centre, size in zip(OBJECTS, SIZES, strict=True):
-            if centre == awkward:
-                _half_footprint(axis, centre, camera, size[1])
-            else:
-                footprint(axis, centre, size[1], dots=110)
-        axis.annotate(
-            "",
-            xy=(awkward[0], awkward[1] - 44),
-            xytext=(awkward[0] - 40, awkward[1] - 96),
-            arrowprops={"arrowstyle": "->", "color": WARN, "lw": 1.1},
-        )
-        note(axis, 300, -462, body, colour=INK, va="top")
-
-    figure.suptitle(
-        "Every object is seen well from somewhere and badly from somewhere else, so the stations "
-        "are asked to agree.",
-        fontsize=TITLE_SIZE, color=INK, y=1.0,
-    )
-    figure.text(
-        0.5, -0.02,
-        "The grey patches are the table each object hides; the dashed circle is 150 mm from straight "
-        "below the camera.\nThe rule: a group found in the same place from more than one station is a "
-        "real object, and its width is taken from the station\nthat saw it nearest to straight down. A "
-        "group found from one station only is reported as doubtful, not as an object.",
-        ha="center", va="top", fontsize=LABEL_SIZE, color=INK,
-    )
-    figure.tight_layout()
-    save(figure, "02-two-stations-agree.png")
-
-
-# --------------------------------------------------------------------------- #
-# 8. the limit: objects that touch
-# --------------------------------------------------------------------------- #
-
 def figure_the_limit() -> None:
     figure, axes = new(13.8, 4.6, columns=3)
     radii = FOOTPRINT_A / 2.0 + FOOTPRINT_B / 2.0
     settled, squeezed, touching = MIN_APART + 27.0, radii + 16.0, radii
     cases = (
-        (settled, f"centres {settled:.0f} mm apart",
-         f"{settled - radii:.0f} mm of clear table between\nthe two footprints. Two groups\n"
-         "at a 25 mm grouping distance.\nDistance decides it, and nothing\nelse has to.",
-         GOOD, "settled"),
-        (squeezed, f"centres {squeezed:.0f} mm apart",
-         f"{squeezed - radii:.0f} mm of clear table, which is\nless than 25 mm, so it comes back"
-         f"\nas one group. The footprint is\n{squeezed + radii:.0f} mm, out of range, so two\n"
-         f"circles are tried: {FOOTPRINT_A:.0f} and {FOOTPRINT_B:.0f} mm.\nRight answer — but "
-         "from shape,\nnot from distance.", GLASS, "recovered by the circle fit"),
+        (settled, "centres further apart than the guaranteed gap",
+         "A strip of clear table between the\ntwo footprints, far wider than the\n"
+         "grouping distance, so two groups\ncome back. Distance decides it, and\n"
+         "nothing else has to.",
+         GOOD, "settled", "a strip wider than the grouping distance"),
+        (squeezed, "centres closer than the cell ever allows",
+         "A strip narrower than the grouping\ndistance, so it comes back as one\n"
+         "group. The footprint is too wide to\nbe one glass of this kind, so two\n"
+         "circles are tried, and each one is a\nwidth the kind allows. Right answer —\n"
+         "but from shape, not from distance.", GLASS, "recovered by the circle fit",
+         "a strip narrower than the grouping distance"),
         (touching, "touching",
          "No gap at all, at any grouping\ndistance. The fit can suspect two\nfrom the width, but"
          " there is\nnothing left to measure, and with\nthree in a row it cannot say how\nmany."
          " Moving one of them is the\nonly way out, and that is\nproblem 3's job.", WARN,
-         "not separable from here"),
+         "not separable from here", "no strip at all"),
     )
-    for axis, (spacing, heading, body, colour, verdict) in zip(axes, cases, strict=True):
+    for axis, (spacing, heading, body, colour, verdict, strip) in zip(axes, cases, strict=True):
         bare(axis)
         axis.set_xlim(-135, 135)
         axis.set_ylim(-245, 140)
@@ -928,11 +779,11 @@ def figure_the_limit() -> None:
                     arrowprops={"arrowstyle": "<->", "color": INK, "lw": 1.3},
                     zorder=7,
                 )
-            note(axis, 0, 52, f"{gap:.0f} mm of clear table", colour=INK, ha="center", va="bottom",
+            note(axis, 0, 52, strip, colour=INK, ha="center", va="bottom",
                  size=LABEL_SIZE)
         else:
-            note(axis, 0, 52, "0 mm: no gap", colour=WARN, ha="center", va="bottom", size=LABEL_SIZE,
-                 weight="bold")
+            note(axis, 0, 52, "no gap at all", colour=WARN, ha="center", va="bottom",
+                 size=LABEL_SIZE, weight="bold")
         axis.add_patch(
             Rectangle((-130, 90), 260, 36, facecolor=colour, alpha=0.16, edgecolor="none")
         )
@@ -1122,8 +973,8 @@ def figure_hidden_from_above() -> None:
         note(axis, 0, -34, "camera, straight\nabove here", colour=INK, ha="center", va="top")
 
         for text, place, head, colour in (
-                (f"the tall glass, {TALL_HEIGHT:.0f} mm tall", tall_text, tall_head, INK),
-                (f"the short glass, {SHORT_HEIGHT:.0f} mm tall", short_text, short_head,
+                ("the tall end of the kind", tall_text, tall_head, INK),
+                ("the short end of the kind", short_text, short_head,
                  WARN if covered else GOOD)):
             axis.annotate(text, xy=head, xytext=place, fontsize=NOTE_SIZE, color=colour,
                           ha="center", va="center", zorder=8,
@@ -1132,13 +983,12 @@ def figure_hidden_from_above() -> None:
             note(axis, 300, 300,
                  "Every point of the short glass's silhouette, dashed, is inside the\n"
                  "tall glass's. It contributes no pixels at all, and the group that\n"
-                 f"comes back is the tall glass's own footprint, {TALL_RIM:.0f} mm across — "
-                 "an\nordinary width for a kind whose glasses run "
-                 f"{KIND_NARROWEST:.0f} to {KIND_WIDEST:.0f} mm.",
+                 "comes back is the tall glass's own footprint — an ordinary width\n"
+                 "for this kind, with nothing about it to object to.",
                  colour=INK, ha="center", va="top")
         else:
             note(axis, 300, 300,
-                 f"The two silhouettes share {shared:.0f} mm² of table, so the picture holds\n"
+                 "The two silhouettes stay clear of each other, so the picture holds\n"
                  "two patches and both glasses are found. Nothing about the pair\n"
                  "changed except the direction it lies in.",
                  colour=INK, ha="center", va="top")
@@ -1150,15 +1000,14 @@ def figure_hidden_from_above() -> None:
     figure.tight_layout()
     figure.text(
         0.5, -0.02,
-        f"Both panels hold the same two glasses of one kind, {TALL_HEIGHT:.0f} mm and "
-        f"{SHORT_HEIGHT:.0f} mm tall, with their centres {MIN_APART:.0f} mm apart, which is the "
-        "closest this problem ever puts two glasses. The rings and dots are where they "
-        "really stand.\nThe pale "
-        f"shapes are what the camera draws from {SURVEY_HEIGHT:.0f} mm up: a slice at height z is "
-        "moved out to H / (H - z) times its own distance from the point below the camera, so the tall "
-        f"glass's rim goes out by {TALL_LIFT:.2f}\nand the short one's by {SHORT_LIFT:.2f}. Turning "
-        "the pair about the camera, without moving either glass relative to the other, is enough to "
-        "undo the hiding.",
+        "Both panels hold the same two glasses of one kind, one from the tall end of its range and "
+        f"one from the short end, with their centres {MIN_APART:.0f} mm apart, which is the "
+        "closest this problem ever puts two glasses.\nThe rings and dots are where they really "
+        f"stand. The pale shapes are what the camera draws from {SURVEY_HEIGHT:.0f} mm up: a slice "
+        "at height z is moved out to H / (H - z) times its own distance from the point below the "
+        "camera,\nso the tall glass's rim is thrown out to about twice its own distance from that "
+        "point while the short one's barely moves. Turning the pair about the camera, without "
+        "moving either glass\nrelative to the other, is enough to undo the hiding.",
         ha="center", va="top", fontsize=NOTE_SIZE, color=INK,
     )
     straight = np.array([200.0, 0.0])
@@ -1180,126 +1029,13 @@ def figure_hidden_from_above() -> None:
     save(figure, "02-hidden-from-above.png")
 
 
-def figure_hidden_from_the_side() -> None:
-    """Line-of-sight hiding, and the strip of table it leaves behind.
-
-    From the level view there is no splay to help or hurt. The near glass stands
-    in front of the far one, and the table it blocks is a strip that widens the
-    further away it goes instead of stopping.
-    """
-    near_at, far_at = 370.0, 600.0
-    apart = far_at - near_at
-    lens = (near_at - STANDOFF, -260.0, VIEW_HEIGHT)
-
-    near_only = level_picture([(0.0, STANDOFF, TALL_GLASS)])
-    far_only = level_picture([(0.0, STANDOFF + apart, SHORT_GLASS)])
-    both = level_picture([(0.0, STANDOFF, TALL_GLASS), (0.0, STANDOFF + apart, SHORT_GLASS)])
-    left_out = int(((far_only > 0) & ~(near_only > 0)).sum())
-    patches, _ = cv2.connectedComponents((both > 0).astype(np.uint8))
-    near_px = int(cv2.boundingRect(near_only)[2])
-    far_px = int(cv2.boundingRect(far_only)[2])
-    far_rows = np.where((far_only > 0).any(axis=1))[0]
-
-    figure, (picture, plan) = new(13.4, 5.6, columns=2)
-
-    panel_title(picture, "The level picture: one patch, with two glasses in it", colour=WARN)
-    bare(picture)
-    paint_mask(picture, both > 0, GLASS, 0.40)
-    picture.contour((both > 0).astype(float), [0.5], colors=[INK], linewidths=1.3)
-    picture.contour((far_only > 0).astype(float), [0.5], colors=[WARN], linewidths=1.2,
-                    linestyles="dashed")
-    x, y, w, h = cv2.boundingRect(near_only)
-    picture.set_xlim(x - 100, x + w + 280)
-    picture.set_ylim(y + h + 52, y - 60)
-    note(picture, x + w / 2, y - 18, f"the near glass, {near_px} px across",
-         colour=INK, ha="center", va="bottom")
-    picture.annotate(
-        f"the far glass is in here, {far_px} px across,\n"
-        f"and {left_out} of those pixels are its own",
-        xy=(x + w / 2 + 16, float(far_rows.mean())), xytext=(x + w + 40, float(far_rows.mean())),
-        fontsize=NOTE_SIZE, color=WARN, ha="left", va="center",
-        arrowprops={"arrowstyle": "->", "color": WARN, "lw": 1.0},
-    )
-
-    panel_title(plan, "The table that picture could not reach", colour=WARN)
-    bare(plan)
-    plan.set_aspect("equal")
-    plan.set_xlim(-90, 1090)
-    plan.set_ylim(-660, -20)
-    step = 2.0
-    grid_x, grid_y = np.meshgrid(np.arange(-90.0, 1090.0 + step, step),
-                                 np.arange(-660.0, -20.0 + step, step))
-    blocked = hidden_table(lens, (near_at, -260.0), TALL_GLASS, grid_x, grid_y)
-    paint_mask(plan, blocked, WARN, 0.22,
-               extent=(grid_x.min(), grid_x.max(), grid_y.min(), grid_y.max()))
-    zone_x0, zone_x1, zone_y0, zone_y1 = ZONE
-    plan.add_patch(Rectangle((zone_x0, zone_y0), zone_x1 - zone_x0, zone_y1 - zone_y0,
-                             facecolor="none", edgecolor=MUTED, lw=0.9, ls=(0, (4, 3)), zorder=4))
-    note(plan, zone_x0 + 8, zone_y1 - 10, "the glass zone", colour=MUTED, va="top")
-    footprint(plan, (near_at, -260.0), TALL_RIM, colour=GLASS, dots=110)
-    footprint(plan, (far_at, -260.0), SHORT_RIM, colour=WARN, dots=70)
-    plan.scatter([lens[0]], [lens[1]], s=46, color=INK, marker="x", zorder=9)
-    note(plan, lens[0], lens[1] - 24, f"camera,\n{VIEW_HEIGHT:.0f} mm up,\nlooking level",
-         colour=INK, ha="center", va="top")
-    widths = []
-    z, radii = outline_profile(TALL_GLASS)
-    for beyond in (zone_x1 - near_at, 1020.0 - near_at):
-        reach = VIEW_HEIGHT * (1.0 - STANDOFF / (STANDOFF + beyond))
-        width = 2.0 * float(np.interp(reach, z, radii)) / (1.0 - reach / VIEW_HEIGHT)
-        widths.append((beyond, width))
-        at = near_at + beyond
-        plan.plot([at, at], [-260.0 - width / 2, -260.0 + width / 2], color=INK, lw=1.3, zorder=6)
-        note(plan, at - 10, -260.0 + width / 2 + 12, f"{width:.0f} mm",
-             colour=INK, ha="right", va="bottom")
-    note(plan, -70, -490,
-         "The blue dots are the near glass, the orange dots the far one, both where they really stand, "
-         "and the two marks are how wide\nthe blocked strip is there. The strip never closes. A ray "
-         "that clears the rim of the near glass just under the camera's own\nheight lands a long way "
-         "beyond it, so the further out the strip runs the wider it gets. Standing further back on the "
-         "same line\nchanges none of it.",
-         colour=INK, va="top")
-
-    figure.suptitle(
-        "From the side there is no splay to help: the near glass simply stands in front of the far one.",
-        fontsize=TITLE_SIZE, color=INK, y=1.00,
-    )
-    figure.tight_layout()
-    figure.text(
-        0.5, -0.02,
-        f"The near glass is {TALL_HEIGHT:.0f} mm tall and the far one {SHORT_HEIGHT:.0f} mm, standing "
-        f"{apart:.0f} mm behind it and in line with the camera. Not one pixel of the far glass is its "
-        "own, and being further back does not help it: the same\npair is covered just as completely "
-        f"at {MIN_APART:.0f} mm apart as at 600 mm apart. What the arm can report is the strip of "
-        f"table the near glass blocked, and at the far edge of the zone that strip is still "
-        f"{widths[0][1]:.0f} mm wide,\nwhich is more than the {KIND_NARROWEST:.0f} mm footprint of "
-        "the smallest glass this kind allows. So the strip stays open, and only moving the camera "
-        "off this line closes it.",
-        ha="center", va="top", fontsize=NOTE_SIZE, color=INK,
-    )
-    other_way = level_picture([(0.0, STANDOFF, SHORT_GLASS)])
-    tall_behind = level_picture([(0.0, STANDOFF + apart, TALL_GLASS)])
-    still_out = int(((tall_behind > 0) & ~(other_way > 0)).sum())
-    print(f"  side: far glass {far_px} px across, {left_out} pixels of its own, "
-          f"{patches - 1} patch; strip widths {[(int(b), round(v, 1)) for b, v in widths]}")
-    print(f"    the other way round, a short glass in front of a tall one: "
-          f"{100 * (1 - still_out / (tall_behind > 0).sum()):.0f}% of the far glass covered, "
-          f"near {int(cv2.boundingRect(other_way)[2])} px across against its "
-          f"{int(cv2.boundingRect(tall_behind)[2])} px")
-    save(figure, "02-hidden-from-the-side.png")
-
-
 def main() -> None:
     figure_pixel_to_point()
     figure_picture_versus_table()
-    figure_four_steps()
     figure_why_flatten()
     figure_grouping_distance()
     figure_circle_fit()
-    figure_two_stations()
     figure_the_limit()
     figure_hidden_from_above()
-    figure_hidden_from_the_side()
-
-
 if __name__ == "__main__":
     main()

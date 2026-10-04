@@ -39,7 +39,6 @@ from diagram_style import (
     new,
     save,
     splay_covers,
-    splay_width,
 )
 from matplotlib.colors import to_rgba
 from matplotlib.patches import Circle, FancyArrowPatch, FancyBboxPatch, Polygon, Rectangle
@@ -139,10 +138,6 @@ def profile_mm(outline) -> tuple[np.ndarray, np.ndarray]:
     return np.asarray(outline.height) * 1000.0, np.asarray(outline.radius) * 1000.0
 
 
-def rim_size(outline) -> tuple[float, float]:
-    """How tall the glass is and how wide across its rim, in millimetres."""
-    z, r = profile_mm(outline)
-    return float(z.max()), float(2.0 * r.max())
 
 
 def overhead_circles(nadir, centre, outline, slices: int = 60):
@@ -247,14 +242,14 @@ def labels_come_from() -> None:
          "glasses overlapping, the human\nis guessing at the boundary too."),
         (5.5, "Simulator labels", GLASS,
          "Gazebo already knows\nwhich mesh each\npixel came from",
-         "solutions 7 and 8",
+         "this solution's first rung",
          "Costs: nothing, in simulation.\nBut the supervision exists only\n"
          "inside Gazebo, so the network\ncannot retrain on a real cell."),
         (9.1, "No labels at all", GOOD,
          "The joint encoders say\nhow the camera moved;\ngeometry does the rest",
-         "solution 9 — this one",
-         "Costs: nothing, and it keeps\ncosting nothing on real\n"
-         "hardware, because an arm has\nencoders and a camera there too."),
+         "this solution's second rung",
+         "Costs: arm time rather than a\nperson, and no more than that\n"
+         "on real hardware, because an arm\nhas encoders and a camera too."),
     ]
 
     for x, title, colour, middle, who, note in lanes:
@@ -673,9 +668,9 @@ def deliberate_motion_loop() -> None:
          "8 px / 0.0213 px per mm\n= 375 mm of slide"),
         (7.25, "Slide 375 mm", "one arm move,\na few seconds", "separation 8.0 px", GOOD,
          "the two populations\nno longer overlap"),
-        (10.10, "Settled, or handed on", "two regions, each\nchecked against the\nkind's 45-105 mm width",
+        (10.10, "Settled, or handed on", "two regions, each\nchecked against the\nkind's own width range",
          "or: report the pair", GOOD, "past a few hundred mm,\nthe glasses leave the\nframe — that is\n"
-         "solution 3's next station"),
+         "the survey's next station"),
     ]
 
     for x, title, middle, verdict, colour, note in stations:
@@ -827,7 +822,7 @@ def the_limit() -> None:
     axis.text(
         8.40,
         0.16,
-        "That job goes to solution 2's circle fit, which checks the width.",
+        "That job goes to the circle-fit width check from rules on the table.",
         ha="center",
         va="center",
         fontsize=NOTE_SIZE,
@@ -871,13 +866,10 @@ def hidden_from_above() -> None:
             break
     slides = (0.0, 24.0, reveal, 90.0)
 
-    tall_h, tall_w = rim_size(TALLEST)
-    short_h, short_w = rim_size(SMALLEST)
     hidden = pair(0.0)[1]
     out_px = max(c[0] + r for c, r in hidden) / MM_PER_PX
     in_px = min(c[0] - r for c, r in hidden) / MM_PER_PX
     corner_px = np.hypot(FRAME_W / 2, FRAME_H / 2)
-    patch_mm = splay_width(pair(0.0)[0])
 
     figure, axes = new(15.0, 4.6, columns=4)
     half_w, half_h = FRAME_W / 2 * MM_PER_PX, FRAME_H / 2 * MM_PER_PX
@@ -938,19 +930,20 @@ def hidden_from_above() -> None:
     figure.tight_layout(rect=(0, 0.30, 1, 0.92))
     figure.text(
         0.5, 0.275,
-        f"Blue is the tallest glass the kind allows, {tall_h:.0f} mm tall and {tall_w:.0f} mm across. "
-        f"The red outline is the shortest, {short_h:.0f} mm tall and {short_w:.0f} mm across, standing "
-        f"{OVERHEAD_GAP:.0f} mm further out along the same radius. The cross is the point directly "
-        f"below the camera, and the dashed rectangle is how much table the 320 x 240 picture reaches.",
+        f"Blue is the tallest glass the kind allows and the red outline is the shortest, so the pair "
+        f"is as unequal as this kind gets. The short one stands {OVERHEAD_GAP:.0f} mm further out "
+        f"along the same radius, which is the closest two glasses ever stand. The cross is the point "
+        f"directly below the camera, and the dashed rectangle is how much table the 320 x 240 picture "
+        f"reaches.",
         fontsize=NOTE_SIZE, color=INK, ha="center", va="top", linespacing=1.8,
     )
     figure.text(
         0.5, 0.185,
         f"A slice at height z is imaged as though scaled about the point below the camera by "
-        f"450 / (450 - z), so a 225 mm rim lands at twice its real offset and twice its real radius. "
-        f"That splay is what lets the tall glass reach over the short one, and the\npatch that comes "
-        f"back is {patch_mm:.0f} mm across — exactly the patch the tall glass would make standing "
-        f"alone. Sliding the camera moves the point the splay radiates from, so {slides[2]:.1f} mm of "
+        f"450 / (450 - z), so a rim halfway up to the lens lands at twice its real offset and twice "
+        f"its real radius. That splay is what lets the tall glass reach over the short one, and\nthe "
+        f"patch that comes back is exactly the patch the tall glass would make standing alone. "
+        f"Sliding the camera moves the point the splay radiates from, so {slides[2]:.1f} mm of "
         f"slide is enough to end it.",
         fontsize=NOTE_SIZE, color=INK, ha="center", va="top", linespacing=1.8,
     )
@@ -982,8 +975,6 @@ def hidden_from_the_side() -> None:
     written on the panels are the first half-millimetre steps at which that count
     reaches one pixel, fifty pixels and half the glass.
     """
-    near_h, near_w = rim_size(NEAR_GLASS)
-    far_h, far_w = rim_size(FAR_GLASS)
 
     def frames(slide: float):
         near = level_mask([(-slide, STANDOFF, NEAR_GLASS)])
@@ -1078,18 +1069,17 @@ def hidden_from_the_side() -> None:
     figure.tight_layout(rect=(0, 0.20, 1, 0.92))
     figure.text(
         0.5, 0.175,
-        f"Blue is the near glass, {near_h:.0f} mm tall and {near_w:.0f} mm across the rim, standing "
-        f"{STANDOFF:.0f} mm from the camera. The dashed grey outline is the far glass, {far_h:.0f} mm "
-        f"tall and {far_w:.0f} mm across, {BEHIND:.0f} mm further back on the same line of sight. "
-        f"Green is whatever of it reaches the picture.",
+        f"Blue is the near glass, standing {STANDOFF:.0f} mm from the camera. The dashed grey outline "
+        f"is the far glass, {BEHIND:.0f} mm further back on the same line of "
+        f"sight. Green is whatever of it reaches the picture.",
         fontsize=NOTE_SIZE, color=INK, ha="center", va="top", linespacing=1.8,
     )
     figure.text(
         0.5, 0.085,
-        f"The near glass is {near_h:.0f} mm tall and the far one {far_h:.0f} mm, so the far glass is "
-        f"the taller of the two. It is hidden anyway, because at {STANDOFF:.0f} mm the near glass is "
-        f"magnified and at {STANDOFF + BEHIND:.0f} mm the far one is not. Standing further back buys "
-        f"the far glass nothing:\nit contributes no pixels at {BEHIND:.0f} mm behind and none at "
+        f"The far glass is the taller of the two and is hidden anyway, because at {STANDOFF:.0f} mm "
+        f"the near glass is magnified and at {STANDOFF + BEHIND:.0f} mm the far one is not. Standing "
+        f"further back buys the far glass nothing:\nit contributes no pixels at {BEHIND:.0f} mm "
+        f"behind and none at "
         f"500 mm behind either. Sliding sideways is what ends it, because the near glass's shift is "
         f"{FX * (1 / STANDOFF - 1 / (STANDOFF + BEHIND)):.2f} pixels per millimetre larger than the "
         f"far one's — the same one-over-the-depth difference this method already measures.",

@@ -154,6 +154,8 @@ back is one patch, of one perfectly ordinary width, with a clean outline, and
 nothing about it is wrong. The picture simply holds one glass fewer than the
 table does.
 
+![Four glasses of one kind stand a legal distance apart, and from the top two of their outlines run together into a single patch while a tall glass's outline covers a short one completely, although on the table all four stand clear of one another.](../../../images/02-segment-glasses/02-merged-in-the-picture.png)
+
 The second failure cannot be answered by grouping pixels better, because the
 pixels are not there to group. It is answered instead by arithmetic that never
 looks at the picture's contents, and [when the glasses are completely
@@ -195,6 +197,8 @@ travel. The camera's pose says where the ray begins and which way it faces, and
 the arm knows that pose exactly from its own joint encoders, which is why this
 step needs nothing estimated. Scaling the sideways offsets by the depth and then
 moving the result into the frame the arm works in gives one point in the room.
+
+![One pixel of the depth picture becomes one point in the room: the pixel's offsets from the middle of the picture give the direction the camera was looking, the depth reading gives how far along that direction to travel, and the camera's own pose says where the ray begins.](../../../images/02-segment-glasses/02-pixel-to-point.png)
 
 The lesson worth carrying away is that **a pixel on its own is not a thing; a
 pixel is a direction with a distance written on it.** Two details about that
@@ -299,6 +303,8 @@ zero and the gap between two objects is the whole strip, and a wide range of
 grouping distances now works. The short way to remember it is that **height is
 the dimension that varies most and tells you least**.
 
+![In three dimensions the gap inside one glass, from its top down to its base, is larger than the strip of bare table between two glasses, so no one distance holds a glass together and keeps its neighbour out; flattened onto the table each glass is a solid disc of dots and the strip is exactly as wide as it was, so a broad range of distances does both jobs.](../../../images/02-segment-glasses/02-why-flatten.png)
+
 One caveat belongs here so that nobody reads more into the disc than it holds.
 The flattened disc is not the glass's base. It is the outline of the glass's
 widest horizontal slice, because that slice is what hides everything underneath
@@ -386,6 +392,8 @@ correct the day somebody widens a kind or moves the glasses closer together; a
 value that was typed in once goes quietly wrong on that day, and takes a long
 time to find.
 
+![The grouping distance is pinned between a lower end set by how far apart the dots on one glass fall and an upper end set by the narrowest strip of bare table two glasses can leave, and the window between them is broad enough that the value can be computed from the two ends rather than tried out.](../../../images/02-segment-glasses/02-grouping-distance.png)
+
 Inside that window the design places the value deliberately **low** rather than
 in the middle, because the two mistakes are not equally bad. A glass split into
 two groups announces itself, because both halves then fail the width check
@@ -434,6 +442,8 @@ inside the range and together account for all the dots, that is two glasses and
 both masks are reported. And if the group still fails, it is reported as
 doubtful, carrying the measured width and the range it failed, rather than
 guessed at.
+
+![One circle fitted to the whole group comes out wider than any glass of this kind can be, so the group is rejected as one glass and two circles are fitted instead; both of those lie inside the widths the kind allows, so the group is split in two, and the fitted width decides only the split, because the width that goes into the record is measured by the bench.](../../../images/02-segment-glasses/02-circle-fit-decides.png)
 
 Splitting a group in two is done with a simple and well-known method called
 k-means with two centres: drop two seeds anywhere in the group, give each dot to
@@ -631,6 +641,8 @@ Moving the camera moves the point below it, and every wedge swings when it does.
 A glass hidden from one station is therefore very unlikely to be hidden from the
 next.
 
+![The same two glasses stand the same distance apart in both panels: lying along one line out from the camera, the taller one's outline is thrown far enough outwards to cover the shorter one completely, and lying across that line the two are drawn clear of each other and both are found.](../../../images/02-segment-glasses/02-hidden-from-above.png)
+
 So the list of patches is not what makes this solution work. It is what lets the
 run **prove** that its answer is complete instead of hoping so, and it is what
 would catch the problem the day somebody moves the stations, drops one of them,
@@ -817,6 +829,8 @@ there is no gap to measure and no distance reasoning left. With three glasses in
 a row the fit could not even say how many there were, only that there were too
 many. That case is the handover to [problem 3](../../problem-3/problem.md), and
 it is the honest edge of this method.
+
+![Two glasses are brought closer together in three steps: while the strip of bare table between them is wider than the grouping distance, distance alone separates them; once the strip is narrower than that, only the check on the width recovers them; and when they touch there is no strip left for either to work on.](../../../images/02-segment-glasses/02-touching-is-the-limit.png)
 
 ## What it needs
 

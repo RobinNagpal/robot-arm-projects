@@ -123,26 +123,32 @@ It is discarded. Recording it is small work.
 
 | Folder | Holds | Decision |
 |---|---|---|
-| `problem-2-programmed` | car 1, rules on the table | delete |
-| `problem-2-pretrained` | SAM 1 keeper, Mask R-CNN modal and amodal | delete |
-| `problem-2-results` | a README only | delete |
-| `problem-2-sim` | the renderer, the scenes, the scorecard | **keep, rename** |
-| `problem-2-learned` | car 2's network, and the ranker | **keep, decide** |
+| `problem-2-sim` | the renderer, the scenes, the scorecard | keep, rename |
+| `problem-2-programmed` | **solution 1 as written** | keep |
+| `problem-2-learned` | **solution 2's network**, and the ranker | keep |
+| `problem-2-results` | the two pipelines compared | keep |
+| `problem-2-pretrained` | shared pieces **and** two superseded models | split |
 
-Two reasons the last two are not deletions.
+An audit cut this list down. Only one folder holds anything dead.
 
-**The bench is not a car.** It draws the scenes and keeps the score, so it is
-the shared input and the shared yardstick. Deleting it would change the input,
-which is the one thing the plan holds fixed.
+**`problem-2-programmed` is solution 1.** Its finding step groups points where
+they stand on the table rather than where they fall in the picture, which is
+solution 1's method exactly. It is not superseded by anything.
 
-**`problem-4-learned` imports `problem-2-learned/pipeline.py`** and puts both
-`problem-2-sim` and `problem-2-learned` on its path. Deleting either breaks
-problem 4's code, which was merged last week.
+**`problem-2-learned` is solution 2.** Its network is the one solution 2
+describes as already written, and `problem-4-learned` imports it.
 
-### Move into the bench before deleting `problem-2-pretrained`
+**`problem-2-results` is cited from outside.** Problem 4's documents point at
+its comparison of the two pipelines in three places.
 
-That folder holds the shared pieces as well as the cars. The shared ones belong
-in the bench; only the cars go.
+**The bench is used by three problems**, not one: problems 2, 3 and 4 all put
+it on their path. Deleting it would change the input the six are compared on,
+which is the one thing this plan holds fixed.
+
+### Splitting `problem-2-pretrained`
+
+It holds the shared pieces as well as two superseded models. The shared ones
+belong in the bench; only the models go.
 
 | Move to the bench | Why |
 |---|---|
@@ -153,9 +159,9 @@ in the bench; only the cars go.
 
 | Delete | Why |
 |---|---|
-| the SAM 1 keeper | replaced by car 5 on SAM 2 |
-| the Mask R-CNN segmenter, modal and amodal | replaced by car 6 on RF-DETR |
-| its training and weights helpers | belong to the deleted cars |
+| the SAM 1 keeper | solution 5 uses SAM 2 |
+| the Mask R-CNN segmenter, modal and amodal | solution 6 uses RF-DETR-Seg |
+| its training and weights helpers | belong to the two deleted models |
 
 ## Not in this pass
 
@@ -180,6 +186,25 @@ well over a thousand lines, so writing 79 fresh ones is the wrong move.
 | amodal masks | solution 6, second rung |
 | move the camera, choosing the next look | the shared look-again document |
 | split the blob | mostly stale; its splay and merge panels suit `problem.md` |
+
+### Two kinds of rejection, and only one is a deletion
+
+A picture put back into a document is judged against what that document now
+says, so many were rejected. The reasons divide, and the division decides what
+happens to the file.
+
+**Rejected on substance — delete.** The picture draws a camera looking from the
+side where the survey looks from the top, or a method none of the six
+describes, or it argues the opposite of what the problem statement says. No
+amount of relabelling saves these.
+
+**Rejected on labels only — relabel and redraw.** The picture is exactly right
+and says "SAM" where the document says SAM 2, or labels itself "solution 8"
+where it is now solution 5, or carries a caption about an earlier version of a
+page. The generator that drew it still exists, so the label is a line of code
+to change and the picture can be redrawn and placed. These are the valuable
+ones: several were rejected only because a word in the image names the wrong
+generation.
 
 New pictures are needed only where the material is new:
 

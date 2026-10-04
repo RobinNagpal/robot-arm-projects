@@ -111,11 +111,12 @@ the diagrams in the problem documents. Those describe problems that are not
 built, so there is no function to plot. They are drawn from the geometry
 written beside them, and the two have to be kept in step by hand.
 
-[`generators/02-segment-glasses/`](../images/generators/02-segment-glasses/) holds one script per
-solution — `make_01_images.py` to `make_09_images.py` — plus
+[`generators/02-segment-glasses/`](../images/generators/02-segment-glasses/) holds
+the scripts that draw them, plus
 [`diagram_style.py`](../images/generators/02-segment-glasses/diagram_style.py), the
-shared palette and page setup that keeps sixty-seven diagrams by nine different
-hands looking like one document. These compute their own geometry, so the
+shared palette and page setup that keeps every diagram looking like one
+document. A script is named for the material it draws rather than for one
+document, because several documents share a subject. These compute their own geometry, so the
 arithmetic in a picture and the arithmetic in the prose beside it come from the
 same numbers.
 

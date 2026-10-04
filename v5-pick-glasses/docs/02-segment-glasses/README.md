@@ -48,6 +48,12 @@ change with it, which is that the borrowed list of everyday categories becomes a
 single class — so nothing varies between the two that the training did not
 bring, and the gap between them measures what training bought.
 
+## The plan behind the six
+
+[The plan](solutions-plan.md) records the decisions in short form: the contract
+all six share, why these six and not others, what the scorecard still needs,
+and what is deliberately left for later.
+
 ## What is built
 
 The bench is built, including the shared arithmetic and the measurement of the

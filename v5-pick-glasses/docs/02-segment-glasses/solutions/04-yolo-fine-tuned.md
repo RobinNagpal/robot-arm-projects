@@ -105,6 +105,8 @@ the answer is available without training anything. The question this solution
 exists to answer is therefore a narrower and more interesting one: **having
 borrowed the finding, what is still wrong, and does training fix it?**
 
+![One picture from the top, read two ways: a map that can only say glass or table leaves two touching glasses as a single connected shape, while a model that finds objects returns one outline per glass, each with a box of its own.](../../../images/02-segment-glasses/09-class-map-against-instances.png)
+
 Three things are still wrong in solution 3, and all three have the same cause.
 The model was fitted on photographs, and this cell renders a grey picture shaded
 from depth, in which opaque glasses stand as plain shapes with no transparency,
@@ -181,6 +183,8 @@ fits a similar curve and being asked to adjust its coefficients a little. The
 second problem needs far fewer points to be well determined, because most of the
 answer is already there.
 
+![Fine-tuning reaches a usable outline from a fraction of the labelled arrangements a random start needs, because most of its weights already sit at values that work; the figures are drawn to show the shape of that claim and nothing in them has been trained.](../../../images/02-segment-glasses/09-fine-tune-against-scratch.png)
+
 There is a second saving, about time rather than data. A model fitted on
 pictures holds, in its early layers, detectors for things common to all vision:
 an edge, a corner, a shading that runs smoothly across a curved surface. Those
@@ -198,6 +202,8 @@ model. What carries over worst is the judgement at the top, which was fitted to
 decide between everyday categories using colour and texture this cell does not
 render. So fine-tuning here has more work to do than the usual advice about
 borrowed models implies, and still far less work than a random start.
+
+![The early layers of the borrowed model answer to edges and simple texture, which a grey picture shaded from depth holds as much of as a photograph, so they transfer almost untouched; the later layers carry the judgement fitted to colour and texture this cell does not render, and those are the ones training has to re-fit.](../../../images/02-segment-glasses/09-what-a-backbone-brings.png)
 
 ## What one class does
 
@@ -376,6 +382,8 @@ so it is not an independent check on that outline. It is about whether the thing
 is a glass, not about whether its outline is right, and a glass whose mask was
 cut short by a neighbour standing in front of it can still be scored highly,
 because it plainly is a glass.
+
+![Each thing the model finds leaves a box, a confidence number and an outline, and anything scoring below the bar is dropped; the number says how sure the model is that a glass is there, not whether the outline round it is right, and it says nothing at all about a glass that produced no candidate.](../../../images/02-segment-glasses/09-boxes-scores-masks.png)
 
 ## Two ways training on one cell's pictures goes wrong
 

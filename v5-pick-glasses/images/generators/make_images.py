@@ -27,7 +27,6 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src" / "work_cell"))
 
 from work_cell.arm.dimensions import (  # noqa: E402
-    COMFORTABLE_REACH,
     FINGERTIP_OFFSET,
     GRASP_DEPTH,
     GRIPPER_MAX_OPENING,
@@ -37,7 +36,6 @@ from work_cell.arm.dimensions import (  # noqa: E402
     PLACE_CLEARANCE,
     SLIP_TEST_DEG,
     SURVEY_HEIGHT,
-    TURNING_ROOM,
 )
 from work_cell.glasses import spec  # noqa: E402
 from work_cell.glasses.detect import (  # noqa: E402
@@ -808,49 +806,6 @@ def which_way_is_down() -> None:
     _save(fig, "which-way-is-down.png")
 
 
-def the_turn_swings_the_arm() -> None:
-    """Why where a glass is turned over decides whether it can be."""
-    low, high = COMFORTABLE_REACH
-    fig, ax = plt.subplots(figsize=(6.4, 4.2))
-
-    for radius, label in ((low, "as close as it works"), (high, "as far as it reaches")):
-        circle = plt.Circle((0, 0), radius, fill=False, color=FAINT, ls="--", lw=1.0)
-        ax.add_patch(circle)
-        ax.text(radius * 0.72, -radius * 0.72, label, fontsize=7, color=FAINT)
-
-    parked = (
-        (0.45, GRIP, "tool parked at 450 mm"),
-        (TURNING_ROOM[0], GLASS, "glass parked at 500 mm"),
-    )
-    for glass_out, colour, name in parked:
-        if colour is GRIP:
-            grip_at = glass_out + FINGERTIP_OFFSET  # the old way: the tool was placed
-            before, after = glass_out, glass_out + 2 * FINGERTIP_OFFSET
-        else:
-            grip_at = glass_out
-            before, after = glass_out - FINGERTIP_OFFSET, glass_out + FINGERTIP_OFFSET
-        y = -0.06 if colour is GRIP else 0.06
-        ax.plot([before, after], [y, y], color=colour, lw=1.6)
-        ax.plot([before, after], [y, y], marker="o", color=colour, ms=5, ls="none")
-        ax.plot([grip_at], [y], marker="*", color=colour, ms=11)
-        ax.text(after + 0.02, y, f"{after * 1000:.0f} mm" + ("  — past the arm" if after > high else ""),
-                fontsize=7, color=colour, va="center")
-        ax.text(before - 0.02, y, name, fontsize=7, color=colour, va="center", ha="right")
-
-    ax.plot([0], [0], marker="s", color=INK, ms=8)
-    ax.set_xlim(-0.05, 1.05)
-    ax.set_ylim(-0.30, 0.30)
-    ax.set_aspect("equal")
-    ax.axis("off")
-    ax.set_title("A turn swings the tool a fingertip's length either side of the glass (star)",
-                 fontsize=10, color=INK)
-    _save(fig, "the-turn-swings-the-arm.png")
-
-
-# --------------------------------------------------------------------------
-# Step 6 approaches: why a held glass swings, and ways to turn it over
-
-
 def _gripped(name: str, seed: int = 4):
     """A generated glass of this kind, and where the rules would hold it."""
     outline, _ = draw(name, random.Random(seed))
@@ -1242,7 +1197,6 @@ if __name__ == "__main__":
     the_gripper_has_a_body()
     the_rack_the_planner_saw()
     which_way_is_down()
-    the_turn_swings_the_arm()
     the_hinge()
     weight_and_the_hinge()
     pad_shapes()

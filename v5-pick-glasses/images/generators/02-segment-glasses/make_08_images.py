@@ -1,4 +1,4 @@
-"""Diagrams for solution 8 — segment anything, then keep the glasses.
+"""Diagrams for solution 5 — SAM 2 with a keeper.
 
 Seven pictures, each carrying one point of the document:
 
@@ -12,8 +12,8 @@ Seven pictures, each carrying one point of the document:
                                      and as three answers with a doubtful band
     08-the-domain-gap.png            photographs against a grey picture shaded
                                      from depth, which is the honest risk
-    08-borrowed-against-trained.png  what SAM brings against what is fitted here,
-                                     and against solution 6, which fits it all
+    08-borrowed-against-trained.png  what SAM 2 brings against what is fitted here,
+                                     and against solution 2, which fits it all
     08-where-it-stops.png            a glass covered completely: no pixels, so
                                      no prompt point, so no proposal
 
@@ -79,13 +79,13 @@ RNG = np.random.default_rng(20250930)
 MIN_APART = 150.0        # mm centre to centre, the closest two glasses ever stand
 MM_PER_PIXEL = SURVEY_H / FX
 
-# The prompt grid. SAM is prompted with points laid out regularly in the
+# The prompt grid. SAM 2 is prompted with points laid out regularly in the
 # picture; the table is flat and square to the camera, so a regular grid of
 # pixels is a regular grid of millimetres on the table plane as well.
 GRID_PIXELS = 24.0
 GRID_MM = GRID_PIXELS * MM_PER_PIXEL
 
-# SAM answers one point with more than one mask, at more than one scale, and the
+# SAM 2 answers one point with more than one mask, at more than one scale, and the
 # same object is therefore proposed several times over.
 MASKS_PER_POINT = 3
 
@@ -107,7 +107,7 @@ NECK_WIDTH = 256
 DECODER_LAYERS, DECODER_WIDTH, DECODER_MLP = 2, 256, 2048
 DECODER_MASKS = 4
 
-# Solution 6's network, for the comparison: a small U-Net with two heads, one
+# Solution 2's network, for the comparison: a small U-Net with two heads, one
 # per-pixel class map and two channels of votes for the centre.
 UNET_WIDTHS = (16, 32, 64, 128)
 UNET_INPUT_CHANNELS = 4
@@ -337,7 +337,7 @@ for patch in TABLE_PATCHES:
     for corner in patch:
         assert topmost(corner, SCENE) is None, "a table patch is standing on a glass"
 
-# What SAM hands back for this scene, and which of it is a glass. The pile is
+# What SAM 2 hands back for this scene, and which of it is a glass. The pile is
 # what the model proposes, not what anybody asked for.
 PROPOSALS = (
     ("glass A,\nwhole", ("glass", "A"), "keep"),
@@ -436,7 +436,7 @@ def promptable_head_weights() -> int:
 
 
 def unet_weights(widths=UNET_WIDTHS, channels_in: int = UNET_INPUT_CHANNELS) -> int:
-    """Solution 6's network: a U-Net down and up, with two heads on the end."""
+    """Solution 2's network: a U-Net down and up, with two heads on the end."""
     total, previous = 0, channels_in
     for width in widths:
         total += conv_weights(3, previous, width) + conv_weights(3, width, width)
@@ -454,7 +454,7 @@ def unet_weights(widths=UNET_WIDTHS, channels_in: int = UNET_INPUT_CHANNELS) -> 
 ENCODER = image_encoder_weights()
 HEAD = promptable_head_weights()
 BORROWED = ENCODER + HEAD
-SOLUTION_SIX = unet_weights()
+SOLUTION_TWO = unet_weights()
 
 # The keeper's size, in the only terms a tree has. A tree of this depth ends in
 # 2**depth leaves and reaches them through one fewer split, and one number is
@@ -597,10 +597,10 @@ def figure_the_prompt_grid() -> None:
     note(
         right, 0.045, 0.245,
         f"The grid knows nothing about where the glasses are. It only has to be fine\n"
-        f"enough that every glass gets at least one point: the smallest patch in this\n"
-        f"scene runs {SMALLEST_PATCH:.0f} mm across, and the spacing is {GRID_MM:.0f} mm, so it cannot be "
-        f"stepped over. Even B,\nwhich stands mostly behind A, collects points of its own from the part "
-        f"of it in view.",
+        f"enough that every glass gets at least one point: the spacing is {GRID_MM:.0f} mm,\n"
+        f"comfortably finer than the smallest patch any glass in this scene leaves, so\n"
+        f"no glass can be stepped over. Even B, which stands mostly behind A, collects\n"
+        f"points of its own from the part of it in view.",
         colour=INK, va="top",
     )
     note(
@@ -646,7 +646,7 @@ def figure_everything_is_proposed() -> None:
     figure, (left, right) = new(15.2, 7.4, columns=2)
 
     plan_axis(left, EXTENT)
-    panel_title(left, "The picture SAM was given")
+    panel_title(left, "The picture SAM 2 was given")
     draw_glasses(left, SHAPES, SCENE)
     name_the_glasses(left, SHAPES)
     note(left, EXTENT[0] + 14, EXTENT[3] - 14,
@@ -754,7 +754,7 @@ def figure_the_keeper() -> None:
         ),
         (
             "more than one glass",
-            f"{len(ANSWERED['more than one glass'])}: prompt SAM again with a grid\n"
+            f"{len(ANSWERED['more than one glass'])}: prompt SAM 2 again with a grid\n"
             "inside this proposal alone. If that still\ndoes not separate them, report the pair.",
             WARN,
         ),
@@ -907,7 +907,7 @@ def figure_the_keeper() -> None:
        "to learn what a glass looks like. It only has to learn which\nmeasurements go with a glass, and a "
        "short table of widths, errors, heights, ratios and counts is the case boosted trees were made for: "
         f"a tree asks a threshold\nquestion and lands in a leaf, and the sum of {TREES} weak ones is the "
-        "answer. What it cannot do is invent a proposal. If a glass never came back from SAM, the\nkeeper is never shown it, "
+        "answer. What it cannot do is invent a proposal. If a glass never came back from SAM 2, the\nkeeper is never shown it, "
         "and none of its three answers is about it.",
         ha="center", va="top", fontsize=NOTE_SIZE, color=INK,
     )
@@ -1032,12 +1032,12 @@ def figure_the_domain_gap() -> None:
 # --------------------------------------------------------------------------- #
 
 def figure_borrowed_against_trained() -> None:
-    """What SAM brings, against what is fitted here, against solution 6."""
+    """What SAM 2 brings, against what is fitted here, against solution 2."""
     figure, (left, right) = new(15.4, 7.2, columns=2)
 
     bars = (
         (
-            "SAM, borrowed whole and never trained here",
+            "SAM 2, borrowed whole and never trained here",
             "weights in a neural network",
             BORROWED, MUTED,
         ),
@@ -1047,9 +1047,9 @@ def figure_borrowed_against_trained() -> None:
             FITTED_NUMBERS, GOOD,
         ),
         (
-            "solution 6's network, fitted here from scratch",
+            "solution 2's network, fitted here from scratch",
             "weights in a neural network",
-            SOLUTION_SIX, GLASS,
+            SOLUTION_TWO, GLASS,
         ),
     )
 
@@ -1099,9 +1099,9 @@ def figure_borrowed_against_trained() -> None:
     right.set_ylim(0, 1)
     panel_title(right, "The same question asked two ways")
 
-    box(right, 0.37, 0.940, 0.36, 0.072, "solution 8\nborrow almost everything",
+    box(right, 0.37, 0.940, 0.36, 0.072, "solution 5\nborrow almost everything",
         tint(GOOD, 0.14), edge=GOOD, size=NOTE_SIZE, weight="bold")
-    box(right, 0.79, 0.940, 0.36, 0.072, "solution 6\nfit everything from scratch",
+    box(right, 0.79, 0.940, 0.36, 0.072, "solution 2\nfit everything from scratch",
         tint(GLASS, 0.14), edge=GLASS, size=NOTE_SIZE, weight="bold")
 
     rows = (
@@ -1113,7 +1113,7 @@ def figure_borrowed_against_trained() -> None:
         (
             "what is fitted here",
             f"{TREES} shallow trees:\n{FITTED_NUMBERS:,} thresholds and leaf values",
-            f"{SOLUTION_SIX:,} weights,\nevery one of them",
+            f"{SOLUTION_TWO:,} weights,\nevery one of them",
         ),
         (
             "what kind of thing\nis fitted",
@@ -1142,11 +1142,13 @@ def figure_borrowed_against_trained() -> None:
         ),
     )
     top, step = 0.815, 0.121
-    for index, (question, eight, six) in enumerate(rows):
+    for index, (question, borrowing, fitting) in enumerate(rows):
         y = top - index * step
         note(right, 0.175, y, question, colour=INK, size=NOTE_SIZE, ha="right", va="center")
-        box(right, 0.37, y, 0.36, 0.098, eight, tint(GOOD, 0.07), edge=GOOD, size=NOTE_SIZE - 1.0)
-        box(right, 0.79, y, 0.36, 0.098, six, tint(GLASS, 0.07), edge=GLASS, size=NOTE_SIZE - 1.0)
+        box(right, 0.37, y, 0.36, 0.098, borrowing, tint(GOOD, 0.07), edge=GOOD,
+            size=NOTE_SIZE - 1.0)
+        box(right, 0.79, y, 0.36, 0.098, fitting, tint(GLASS, 0.07), edge=GLASS,
+            size=NOTE_SIZE - 1.0)
 
     figure.suptitle(
         "This solution is the least trained and the most borrowed of them all.",
@@ -1160,7 +1162,7 @@ def figure_borrowed_against_trained() -> None:
         "of trees. What the picture is for is the gap between them, and the gap is not close: for every "
         f"number fitted in this cell, about {BORROWED_PER_FITTED:,.0f} are brought in\nalready fitted from "
        "somewhere else. That is what buys the small training set, and it is also what buys the risk, because "
-        " a borrowed weight cannot be corrected here.\nSolution 6 makes the opposite trade: nothing borrowed, "
+        " a borrowed weight cannot be corrected here.\nSolution 2 makes the opposite trade: nothing borrowed, "
         "nothing unexamined, and every one of its numbers paid for with rendered scenes.",
         ha="center", va="top", fontsize=NOTE_SIZE, color=INK,
     )
@@ -1229,10 +1231,10 @@ def figure_where_it_stops() -> None:
 
     chain = (
         ("the geometry", f"the tall glass stands {apart:.0f} mm from the short one,\n"
-                         f"and its silhouette runs {patch_mm:.0f} mm across the table", MUTED),
+                         "and splay has thrown its outline right over it", MUTED),
         ("the picture", "every pixel of the short glass is a pixel\nof the tall one instead", MUTED),
         ("the prompt", "a prompt point is a pixel, so no prompt\nexists that reaches the short glass", WARN),
-        ("the proposal", "SAM returns a mask for whatever the point\nlanded on, so no mask contains it", WARN),
+        ("the proposal", "SAM 2 returns a mask for whatever the point\nlanded on, so no mask contains it", WARN),
         ("the keeper", "the keeper only ever sorts proposals,\nso it is never shown this glass at all", WARN),
     )
     top, step = 0.855, 0.153
@@ -1281,12 +1283,18 @@ def main() -> None:
         f"scene: {len(SCENE)} glasses from the shared cast, {len(GRID)} prompt points, "
         f"{len(GRID) - ON_TABLE} on glass, {ON_TABLE} on table"
     )
+    # Printed rather than drawn: the picture says the spacing is comfortably
+    # finer than the smallest patch, and this is the check behind that claim.
+    print(
+        f"grid: {GRID_MM:.0f} mm spacing against the smallest patch in the scene, "
+        f"{SMALLEST_PATCH:.0f} mm across"
+    )
     print(
         f"borrowed: {BORROWED:,} weights ({ENCODER:,} encoder + {HEAD:,} head)"
     )
     print(
         f"fitted here: {TREES} trees, {FITTED_THRESHOLDS:,} thresholds + {FITTED_LEAVES:,} leaves "
-        f"= {FITTED_NUMBERS:,} numbers; solution 6 fits {SOLUTION_SIX:,} weights"
+        f"= {FITTED_NUMBERS:,} numbers; solution 2 fits {SOLUTION_TWO:,} weights"
     )
     figure_what_promptable_means()
     figure_the_prompt_grid()
