@@ -358,7 +358,14 @@ rule can actually hold it** — and is both easier to pass and harder to cheat.
 
 Everything here is permissively licensed and can be used commercially: ROS 2
 (Apache-2.0), Gazebo (Apache-2.0), MoveIt 2 (BSD-3), ros2_control (Apache-2.0),
-OpenCV (Apache-2.0), NumPy (BSD-3), trimesh (MIT).
+OpenCV (Apache-2.0), NumPy (BSD-3), trimesh (MIT), PyTorch (BSD-3), MuJoCo
+(Apache-2.0), scikit-learn (BSD-3) and LeRobot (Apache-2.0).
+
+**A library's licence and a model's licence are different questions.** LeRobot
+is permissive, and so is the code of the policies it implements, but a *weights
+file* downloaded through it carries its own terms. So for anything that might
+ship, the licence to read is the one beside the checkpoint, not the one beside
+the library.
 
 One warning for anyone extending the perception step. **Ultralytics YOLO is
 AGPL-3.0.** It is the first thing most people reach for, and the AGPL's network

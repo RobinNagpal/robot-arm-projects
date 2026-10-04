@@ -136,7 +136,7 @@ stops if it starts to tip. Or it refuses the glass.
 
 Problem 3's results say the probe is not enough on its own. One tapered glass
 passed its probe and tipped later in the push. [Problem 3's solution
-8](../../../03-push-glasses-apart/solutions/08-a-learned-early-abort.md), which watches the
+8](../../../03-push-glasses-apart/pushing-without-toppling.md), which watches the
 wrist force during the whole push, is the answer to that, and it is not built.
 
 ## What it costs

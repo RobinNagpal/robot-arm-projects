@@ -15,7 +15,7 @@ slots themselves stay with the arithmetic of solution 4.*
 ## Introduction
 
 Problem 3 chose [a learned forward model and a search over
-pushes](../../../03-push-glasses-apart/solutions/10-learn-a-forward-model-then-plan.md). On 50
+pushes](../../../03-push-glasses-apart/solutions/04-a-world-model.md). On 50
 held-out tables it cleared more glasses than the programmed planner in half the
 pushes, and toppled none. Problem 4 inherits that choice. This document says
 what the model needs to become a problem 4 model, and what the search needs to
@@ -136,7 +136,7 @@ really there.
 What the look cannot undo is a topple. That is where this model is weakest in
 problem 3, and where mixing kinds makes it weaker. It is why the stricter limit
 and the preference for measured glasses are there, and why [problem 3's early
-abort](../../../03-push-glasses-apart/solutions/08-a-learned-early-abort.md), which watches the
+abort](../../../03-push-glasses-apart/pushing-without-toppling.md), which watches the
 wrist during the push, is still the next thing to add.
 
 ## The step in pseudocode
@@ -183,19 +183,19 @@ it pushing glasses that were never going to be racked.
 - **Everything problem 3's model gets wrong, it gets wrong too**, and probably
   more often: topples it rates safe, a landing tail of 25 mm, refusals that
   cannot explain themselves, and silent answers outside what it has seen. [The
-  problem 3 overview](../../../03-push-glasses-apart/solutions/solution-overview.md#where-the-chosen-solution-can-fail)
-  lists them.
+  problem 3 overview](../../../03-push-glasses-apart/solutions/overview.md) lists them.
 - **It has learned MuJoCo's friction.** A real table makes it wrong with no
-  warning but the next look. [Problem 3's solution
-  9](../../../03-push-glasses-apart/solutions/09-identify-the-contact-parameters.md) is the
-  answer to that.
+  warning but the next look. Estimating the contact's own properties from what
+  the jaw felt is the answer to that, and [pushing without
+  toppling](../../../03-push-glasses-apart/pushing-without-toppling.md) explains why nothing in
+  the cell can measure friction directly.
 
 ## Where the idea comes from
 
 **Model-based planning with a learned forward model.** Learn what an action
 does, then search actions against the model, one step at a time, re-planning
 after each real step. [Problem 3's solution
-10](../../../03-push-glasses-apart/solutions/10-learn-a-forward-model-then-plan.md#where-the-idea-comes-from)
+4](../../../03-push-glasses-apart/solutions/04-a-world-model.md#the-general-ideas-behind-this)
 has the references.
 
 **Training under hidden information.** Showing a model inputs with parts hidden,

@@ -155,7 +155,7 @@ this list that could catch an artefact nobody has described.
 
 **Verifiers and cascades.** A cheap check that runs after an answer is produced
 and can only stop it, not change it. [Problem 3's solution
-7](../../../03-push-glasses-apart/solutions/07-a-learned-change-verifier.md) uses the same
+7](../../../03-push-glasses-apart/pushing-without-toppling.md) uses the same
 position.
 
 **Out-of-distribution detection.** Training a model to say "this is not like

@@ -5,7 +5,7 @@ arm pushes them apart across the table, then picks them up. Everything here is
 geometry and simple physics: no training, no model.
 
 It follows solutions 1 and 3 of
-[the solution overview](../docs/03-push-glasses-apart/solutions/solution-overview.md), with two
+[the solution overview](../docs/03-push-glasses-apart/solutions/overview.md), with two
 changes explained at the end.
 
 ## Words used below
