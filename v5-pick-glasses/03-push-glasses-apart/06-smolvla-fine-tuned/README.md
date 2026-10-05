@@ -107,11 +107,12 @@ claim than the spread the bench wants.
 `seconds_per_push` is wall time with the bench's own share taken off, so a
 reading taken while the machine is busy measures the other work too. Timed
 while several training runs shared the laptop it read 0.82 s; timed again on
-an idle machine it reads 294 ms. That second figure is the one to use, and it
+an idle machine it reads 283 ms. That second figure is the one to use, and it
 confirms what the method guarantees rather than merely agreeing with it: a
 low-rank correction folds into the weights without adding any, so this
 solution's forward pass is the same arithmetic as solution 5's, and solution 5
-measured on the same idle machine costs 299 ms. The two are the same price per
+measured on the same idle machine costs 283 ms too, agreeing to the
+millisecond. The two are the same price per
 push, and fine-tuning changes what the model answers rather than what it costs
 to ask.
 
@@ -171,7 +172,7 @@ below is the middle with the spread across the three.
 | Pushes | 400 (±40), of which 280 repeats |
 | Pushes that went wrong, in the middle run | **247 blocked on the way down**, 45 jammed, 39 never touched, of 400 |
 | Where the glass stopped, from where the chunk ended | 60.6 mm median, 917 mm worst |
-| Thinking per push | 294 ms (±8) on an idle machine |
+| Thinking per push | 283 ms (±1) on an idle machine |
 
 **This is a bad score, and it is a bad score for one reason.** Nearly two
 thirds of its pushes — 247 of the 400 in the middle run — were **blocked on

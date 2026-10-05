@@ -417,7 +417,7 @@ solution and its partner cost the same to run**, and whatever separates their
 scores cannot be explained by one of them having been given more computation
 at run time.
 
-![Every one of the model's 453,859,552 borrowed numbers stays frozen where it is, and a correction forced through a squeeze down to sixteen numbers and back out to full width is added beside the query, key, value and output projections of every attention layer, the feed-forward tables being left alone entirely; that is 3,813,376 numbers, 0.84 per cent of the model, and because only they carry gradients and optimiser state the whole training held 1.02 GiB against the 22 GB the same trick needs on a model seven times the size — and once the two thin tables are folded back in, the fitted model costs 294 ms a push against its partner's 299 ms.](../../../images/03-push-glasses-apart/06-where-the-correction-goes.png)
+![Every one of the model's 453,859,552 borrowed numbers stays frozen where it is, and a correction forced through a squeeze down to sixteen numbers and back out to full width is added beside the query, key, value and output projections of every attention layer, the feed-forward tables being left alone entirely; that is 3,813,376 numbers, 0.84 per cent of the model, and because only they carry gradients and optimiser state the whole training held 1.02 GiB against the 22 GB the same trick needs on a model seven times the size — and once the two thin tables are folded back in, the fitted model costs 283 ms a push and so does its partner, agreeing to the millisecond.](../../../images/03-push-glasses-apart/06-where-the-correction-goes.png)
 
 ## Where the demonstrations come from, and what they cost
 

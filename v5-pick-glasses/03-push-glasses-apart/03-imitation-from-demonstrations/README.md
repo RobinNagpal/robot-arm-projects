@@ -162,7 +162,7 @@ room at the start.
 | Pushes that never touched anything | 38 +/- 7 (27 to 41) | 0 |
 | Pushes jammed | 0 | 0 |
 | Landed from its aim, median / worst | 44.9 / 113.7 mm | 1.0 / 3.9 mm |
-| Thinking per push | **12 ms** | 81 ms |
+| Thinking per push | **11 ms** | 75 ms |
 
 Of the 1,900 chunks the three runs produced, **814 had at least one waypoint
 outside what the jaw can reach** and were pulled back inside it.
@@ -205,8 +205,8 @@ front of the policy refuses the glasses that tip before they slide, and the
 budget accounts for the rest, so the counts the problem calls wrong stay near
 zero. That is the gate working, not the policy.
 
-**It is cheap to run.** 12 ms of thinking per push, which is one forward pass,
-against the teacher's 81 ms of enumerating and ranking candidates. That is
+**It is cheap to run.** 11 ms of thinking per push, which is one forward pass,
+against the teacher's 75 ms of enumerating and ranking candidates. That is
 the one column where this solution beats solution 2, and it is worth nothing
 on its own: distilling a program into a policy for speed only pays when the
 program is the bottleneck, and here the arm is.

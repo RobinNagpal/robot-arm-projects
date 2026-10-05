@@ -29,5 +29,6 @@
     "aim_mm_median": 1.6,
     "aim_mm_worst": 48.2
   },
-  "seconds_per_push": 0.4147
+  "travel_mm": 3503.2,
+  "seconds_per_push": 0.4006
 }

@@ -127,11 +127,17 @@
       "least": 234.6,
       "most": 249.9
     },
+    "travel_mm": {
+      "median": 468.9,
+      "sd": 68.462,
+      "least": 463.9,
+      "most": 584.9
+    },
     "seconds_per_push": {
-      "median": 0.299,
-      "sd": 0.005,
-      "least": 0.297,
-      "most": 0.306
+      "median": 0.283,
+      "sd": 0.001,
+      "least": 0.283,
+      "most": 0.284
     }
   },
   "each": [
@@ -166,7 +172,8 @@
         "aim_mm_median": 81.2,
         "aim_mm_worst": 234.6
       },
-      "seconds_per_push": 0.3065
+      "travel_mm": 584.9,
+      "seconds_per_push": 0.2841
     },
     {
       "scenes": 50,
@@ -199,7 +206,8 @@
         "aim_mm_median": 74.0,
         "aim_mm_worst": 249.9
       },
-      "seconds_per_push": 0.2966
+      "travel_mm": 463.9,
+      "seconds_per_push": 0.2831
     },
     {
       "scenes": 50,
@@ -231,7 +239,8 @@
         "aim_mm_median": 71.7,
         "aim_mm_worst": 239.2
       },
-      "seconds_per_push": 0.2991
+      "travel_mm": 468.9,
+      "seconds_per_push": 0.2826
     }
   ]
 }

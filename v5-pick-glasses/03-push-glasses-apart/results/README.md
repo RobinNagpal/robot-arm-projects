@@ -10,19 +10,45 @@ on this page is read from a solution's own `results.json`.
 
 ## The results
 
-| | tables done | tables wrong | glasses racked | toppled | pushes | thinking per push |
-|---|---|---|---|---|---|---|
-| [1 one fixed nudge](../01-one-fixed-nudge/) | **33** | **0** | 195 | **0** | 213 | 61 ms |
-| [2 geometry ranked](../02-geometry-ranked/) | 31 | **0** | 185 | **0** | 229 | 81 ms |
-| [3 imitation, ACT](../03-imitation-from-demonstrations/) | 3 | 1 | 68 | 1 | 643 | **12 ms** |
-| [4 a world model](../04-a-world-model/) | 31 | 1 | **202** | 1 | **114** | 415 ms |
-| [5 SmolVLA as it downloads](../05-smolvla-as-it-downloads/) | 0 | 5 | 56 | 6 | 754 | 299 ms |
-| [6 SmolVLA fine-tuned](../06-smolvla-fine-tuned/) | 4 | **38** | 77 | **46** | 400 | 294 ms |
+| | tables done | tables wrong | glasses racked | toppled | pushes | travel | thinking per push |
+|---|---|---|---|---|---|---|---|
+| [1 one fixed nudge](../01-one-fixed-nudge/) | **33** | **0** | 195 | **0** | 213 | 2.0x | 59 ms |
+| [2 geometry ranked](../02-geometry-ranked/) | 31 | **0** | 185 | **0** | 229 | 3.7x | 75 ms |
+| [3 imitation, ACT](../03-imitation-from-demonstrations/) | 3 | 1 | 68 | 1 | 643 | 0.4x | **11 ms** |
+| [4 a world model](../04-a-world-model/) | 31 | 1 | **202** | 1 | **114** | **1.4x** | 401 ms |
+| [5 SmolVLA as it downloads](../05-smolvla-as-it-downloads/) | 0 | 5 | 56 | 6 | 754 | 0.2x | 283 ms |
+| [6 SmolVLA fine-tuned](../06-smolvla-fine-tuned/) | 4 | **38** | 77 | **46** | 400 | 2.2x | 283 ms |
 
 A table is **done** when every glass on it was picked up, and **wrong** when
-the run ended in a state the cell should never reach. Solutions 3, 5 and 6 are
-run several times and the figure shown is the middle one; each folder's own
-page gives the spread between runs.
+the run ended in a state the cell should never reach.
+
+**Travel is how far the glasses were really moved, as a multiple of the least
+any legal arrangement needs.** That least is the displacement floor, which
+[the target layout](../../docs/03-push-glasses-apart/the-target-layout.md)
+computes from the geometry of each table: 2,534 mm over these fifty tables
+altogether. The floor belongs to the table rather than to any method, so no
+solution can go below it while doing the job, and a solution at twice the floor
+moved the glasses twice as far as the task demanded.
+
+**This column means nothing on its own, and has to be read beside the glasses
+racked.** A solution that never touches anything travels nothing and scores
+best on it, which is why the two worst solutions here have the two smallest
+numbers: SmolVLA as it downloads travels a fifth of the floor because its jaw
+comes down too high to reach a glass at all, and the imitation policy travels
+less than half the floor because most of its pushes are blocked before they
+start. Neither is economical; both are simply not doing the work.
+
+Among the three solutions that do finish most of the tables, the column
+separates them cleanly, and it separates them in the same order as the pushes
+do. The world model moves the glasses least, at 1.4 times the floor, and racks
+the most; the fixed nudge takes 2.0; and the ranked geometry takes 3.7, which
+is the same verdict its own page reaches from a different direction. Solution 6
+is the instructive case: it travels about as far as the fixed nudge does and
+racks a third as many glasses, because the fitting taught it to move
+decisively without teaching it where to put the jaw down.
+
+Solutions 3, 5 and 6 are run several times and the figure shown is the middle
+one; each folder's own page gives the spread between runs.
 
 The thinking column is the solution's own time, with the simulator's time
 taken off, measured on an idle machine with nothing else running. That last

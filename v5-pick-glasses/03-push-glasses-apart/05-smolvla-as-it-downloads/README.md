@@ -45,7 +45,7 @@ holds what the asking cost.
 | Pushes that never touched anything | 674 of 754 (±15.1) | 0 | 0 |
 | Pushes that jammed | 69 of the same 754 (±5.5) | 3 | **0** |
 | Landing, median / worst | 74.0 / 239 mm | 1.6 / 48.2 mm | 1.0 / 3.9 mm |
-| Thinking per push | **299 ms** | 415 ms | 61 ms |
+| Thinking per push | **283 ms** | 401 ms | 59 ms |
 
 Where this column gives a share of the pushes, both parts come from the same
 run, the middle one by push count. That is worth stating because the spread
@@ -56,7 +56,7 @@ ever happened.
 The thinking times are this solution's own, with the simulator's time taken
 off, and all three were measured on an idle machine. That condition is not a
 detail: timed while the machine was busy with other work, this solution
-reported about a second per push, which is three and a half times the truth, so
+reported about a second per push, which is nearly four times the truth, so
 a compute column measured under load compares the load rather than the methods.
 
 What the honest column says is worth saying, and it is not what the rough one

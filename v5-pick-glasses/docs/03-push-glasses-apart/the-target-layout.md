@@ -298,6 +298,11 @@ wandering. And the scale is available **before any solution exists**, because it
 comes from the measurements and the constants and nothing else — no model, no
 training, no run. It cannot flatter a solution because it never saw one.
 
+Over the fifty held-out tables the floor comes to **2,534 mm in total**, and
+that is the number the bench's travel figure is divided by. The six solutions
+land between a fifth of it and nearly four times it, which is recorded in
+[the comparison](../../03-push-glasses-apart/results/README.md).
+
 The most useful reading is at the bottom of that scale, and it needs saying
 carefully. A solution close to the floor is not thereby a *good* solution.
 What being close to the floor means is that **its remaining error is not its

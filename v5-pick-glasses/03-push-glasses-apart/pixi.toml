@@ -27,6 +27,14 @@ py-opencv = ">=4.9,<4.14"
 # measurement rather than a sketch, so they need MuJoCo and matplotlib in one
 # environment, and this is the only environment that has MuJoCo.
 matplotlib = ">=3.8"
+# LeRobot pulls PyAV in from PyPI, and the PyPI wheel carries its own copy of
+# ffmpeg's libraries. Those clash at import with the ones conda-forge already
+# installs, which prints a duplicate-class warning and threatens, in its own
+# words, mysterious crashes. Asking for av from conda-forge leaves one copy.
+# The upper bound is LeRobot's own requirement, not a choice made here: it
+# accepts only this major version, and conda-forge would otherwise resolve
+# higher and the two could not be satisfied together.
+av = ">=15,<16"
 pytest = ">=7"
 ruff = ">=0.4"
 
