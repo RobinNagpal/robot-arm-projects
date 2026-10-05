@@ -148,10 +148,12 @@ TRACE_EVERY = round(WAYPOINT_PERIOD / TIMESTEP)
 # push sampled at WAYPOINT_PERIOD is a few hundred, so this leaves room.
 MAX_WAYPOINTS = 500
 
-# One push budget for all six solutions. It used to live in each runner, so
-# the push counts were not comparable. These are 04-a-world-model's numbers;
-# 01-one-fixed-nudge was written first and spends 3 and 15, which is why its
-# committed scorecard is not reproduced by this budget.
+# One push budget for all six solutions, which every runner reads from here. It
+# used to live in each runner, and the two that existed then disagreed, so the
+# push counts were not comparable. The larger pair was taken, so that moving to
+# a shared budget could not cramp a solution that already worked: measured, the
+# solution that had the smaller pair scores the same under either, because it
+# refuses for want of room long before it runs out of tries.
 PUSHES_PER_GLASS = 4
 PUSHES_PER_TABLE = 16
 

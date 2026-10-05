@@ -33,10 +33,10 @@ share is described once in [the cell](../the-cell.md).
 
 | # | Solution | Model and framework | What is learned |
 |---|---|---|---|
-| 1 | [One fixed nudge](solutions/01-one-fixed-nudge.md) | NumPy, MoveIt | nothing |
+| 1 | [One fixed nudge](solutions/01-one-fixed-nudge.md) | NumPy | nothing |
 | 2 | [Geometry generates, a model ranks](solutions/02-geometry-ranked.md) | gradient-boosted trees, scikit-learn | a preference |
 | 3 | [Imitation from demonstrations](solutions/03-imitation-from-demonstrations.md) | ACT, LeRobot | the push, by copying |
-| 4 | [A world model, then plan with it](solutions/04-a-world-model.md) | an ensemble, then TD-MPC2; PyTorch, LeRobot | what a push does |
+| 4 | [A world model, then plan with it](solutions/04-a-world-model.md) | an ensemble in PyTorch, then TD-MPC2 | what a push does |
 | 5 | [A foundation model as it downloads](solutions/05-smolvla-as-it-downloads.md) | SmolVLA, LeRobot | nothing |
 | 6 | [The same model, fine-tuned here](solutions/06-smolvla-fine-tuned.md) | SmolVLA with LoRA, LeRobot | all of it |
 

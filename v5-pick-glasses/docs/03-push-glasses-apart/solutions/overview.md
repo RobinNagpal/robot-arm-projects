@@ -53,10 +53,10 @@ which is what decides both the work involved and what can go wrong.
 
 | # | Solution | What is learned | Model and framework | Licence |
 |---|---|---|---|---|
-| 1 | [One fixed nudge](01-one-fixed-nudge.md) | nothing | NumPy, MoveIt | — |
+| 1 | [One fixed nudge](01-one-fixed-nudge.md) | nothing | NumPy | — |
 | 2 | [Geometry generates, a model ranks](02-geometry-ranked.md) | a preference over candidates | gradient-boosted trees, scikit-learn | permissive |
 | 3 | [Imitation from demonstrations](03-imitation-from-demonstrations.md) | the push itself, by copying | ACT, LeRobot | permissive |
-| 4 | [A world model, then plan with it](04-a-world-model.md) | what a push does | an ensemble, then TD-MPC2; PyTorch, LeRobot | permissive |
+| 4 | [A world model, then plan with it](04-a-world-model.md) | what a push does | an ensemble in PyTorch, then TD-MPC2 | permissive |
 | 5 | [A foundation model as it downloads](05-smolvla-as-it-downloads.md) | nothing | SmolVLA, LeRobot | check the weights |
 | 6 | [The same model, fine-tuned here](06-smolvla-fine-tuned.md) | all of it, from a borrowed start | SmolVLA with LoRA, LeRobot | check the weights |
 

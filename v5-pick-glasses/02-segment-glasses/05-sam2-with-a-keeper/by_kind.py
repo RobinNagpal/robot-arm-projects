@@ -1,7 +1,7 @@
 """Does the borrowed model's weakness divide by kind of glass? One measurement.
 
-Solution 8 prompts a borrowed segmentation model with a grid of points and keeps
-what a small classifier calls a glass. Whether that works at all depends on
+This solution prompts a borrowed segmentation model with a grid of points and
+keeps what a small classifier calls a glass. Whether that works at all depends on
 something the solution cannot change: whether the borrowed model draws an outline
 round a glass of this kind when it is shown a grey picture shaded from depth
 instead of the photographs its weights were fitted on. A kind whose outline is
@@ -18,7 +18,7 @@ reports that match two ways, because the two answer different questions:
 ``coverage``  the share of the glass's own pixels the proposal holds, which is
               the question "how much of this glass was proposed at all".
 
-    pixi run python proposals_by_kind.py --scenes 2
+    pixi run python 05-sam2-with-a-keeper/by_kind.py --scenes 2
 
 ``--scenes`` is per kind and small on purpose: one picture through the model's
 picture encoder costs seconds, and the difference between the kinds here is far

@@ -3,9 +3,10 @@
 > **What it uses** — PyTorch, and MuJoCo through [the test
 > bench](../the-bench.md). Rung one is a small network written for this cell
 > and trained here, five copies of it, with no downloaded weights of any kind.
-> Rung two is TD-MPC2, the model-based entry in LeRobot, also trained here.
-> Neither rung borrows a model from anybody, so the only licences in play are
-> the libraries' own.
+> Rung two would be TD-MPC2, the model-based entry in LeRobot, trained here as
+> well. **Rung two is not built**, so no number anywhere in this document is
+> its. Neither rung borrows a model from anybody, so the only licences in play
+> are the libraries' own.
 > **What it does** — it learns what a push does, and then looks for a good push
 > by trying candidate pushes against that learned model instead of against the
 > table. The model takes the table as the camera measured it and one push, and
@@ -17,8 +18,9 @@
 > somewhere to go. The built planner's horizon is one push, so the sequence is
 > an extension this document designs rather than code that runs.
 > **How the output is produced** — `look()` hands over one reading per glass;
-> the shared topple limit refuses any glass that tips before it slides, before
-> the model is asked anything; the readings and a candidate push are encoded
+> the shared topple limit that refuses a glass that tips before it slides
+> belongs in front of all of this, and the built planner does not have it yet;
+> the readings and a candidate push are encoded
 > into one row of numbers in the push's own frame; the five copies of the model
 > each answer; a candidate is thrown away if any copy thinks it might topple
 > something, or if the predicted table breaks the map; the survivors are scored
@@ -86,6 +88,89 @@ Read [the test bench](../the-bench.md) first, because what `look()` hands over
 and what `push()` accepts are assumed throughout, and read [pushing without
 toppling](../pushing-without-toppling.md), because the refusal rule this
 solution adds learned evidence to is stated there.
+
+## The code at the heart of it
+
+Two pieces of rung one carry the whole idea, and they are short enough to read
+here. The first is the forward model itself: five copies of a small network
+that take a table and a candidate push and answer with what that push would do.
+The second is the arithmetic that turns those five answers into a single
+decision about one candidate — kept, or thrown away, and at what cost. They are
+the heart of this solution because nothing else in it knows anything about
+pushing: the model holds all of it, and this arithmetic is the only thing that
+reads the model's mind.
+
+The borrowed library does its work in the four `nn.Linear` lines, and
+everything around them is the ensemble, in
+[`03-push-glasses-apart/04-a-world-model/model.py`](../../../03-push-glasses-apart/04-a-world-model/model.py):
+
+```python
+ENSEMBLE = 5
+HIDDEN = 256
+
+
+class PushNet(nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(features.INPUTS, HIDDEN), nn.SiLU(),
+            nn.Linear(HIDDEN, HIDDEN), nn.SiLU(),
+            nn.Linear(HIDDEN, HIDDEN), nn.SiLU(),
+            nn.Linear(HIDDEN, features.OUTPUTS),
+        )  # fmt: skip
+...
+class Ensemble:
+    """ENSEMBLE copies, asked together."""
+    ...
+    def predict(self, x: np.ndarray) -> np.ndarray:
+        """(copies, rows, outputs), raw: movements scaled, yes-or-no as logits."""
+        with torch.no_grad():
+            x_t = torch.as_tensor(x)
+            return np.stack([net(x_t).numpy() for net in self.nets])
+```
+
+What the five answers are then used for is in
+[`03-push-glasses-apart/04-a-world-model/plan.py`](../../../03-push-glasses-apart/04-a-world-model/plan.py),
+where every candidate push is scored at once and the unacceptable ones are given
+a cost of infinity:
+
+```python
+def score(model: Ensemble, seen: list, target, kind: str, heading, offset, travel, rng: np.random.Generator):
+    """Expected crowding after each candidate push, and why any were dropped.
+    ...
+    """
+    rows = features.encode(seen, target, kind, heading, offset, travel)
+    out = model.predict(rows)
+    move = out.mean(0)
+    topple = sigmoid(out[:, :, features.TOPPLED]).max(0)
+    blocked = sigmoid(out[:, :, features.BLOCKED]).mean(0)
+    for _ in range(JITTERS):
+        shifted = jittered(seen, rng)
+        mine = next(s for s in shifted if s.id == target.id)
+        out = model.predict(features.encode(shifted, mine, kind, heading, offset, travel))
+        topple = np.maximum(topple, sigmoid(out[:, :, features.TOPPLED]).max(0))
+    ...
+    cost = blocked * here + (1 - blocked) * crowding + TRAVEL_COST * travel
+
+    dropped = {
+        "topple": ~(topple <= TOPPLE_LIMIT),
+        "map": ~(inside & reachable),
+        "unsure": moved_far,
+    }
+    cost[dropped["topple"] | dropped["map"] | dropped["unsure"]] = math.inf
+    return cost, landing, {k: int(v.sum()) for k, v in dropped.items()}
+```
+
+Those two blocks are where this solution's result comes from, in both
+directions. The displacements are **averaged** over the copies and the topple
+chance is taken as the **worst** of them, and taken again on each shifted copy
+of the table, so a push only has to look risky once to be dropped — which is
+why this solution racks more glasses than any other answer to this problem, in
+the fewest pushes, and why the glasses it gives up on are given up on with a
+reason. It is also where the one glass it topples comes from: `topple` is the
+model's opinion and nothing else's, so where all five copies are confident and
+all five are wrong, there is nothing left in the code above to disagree with
+them.
 
 ## The problem this solves
 
@@ -166,7 +251,8 @@ exists.
 
 **Rung one is built.** It lives in `03-push-glasses-apart/04-a-world-model/`, it trains on data it
 collects itself, and it has been run on the bench's held-out tables with its
-results recorded in `03-push-glasses-apart/results/`. The model is `model.py`, what it is
+results recorded in that folder's own `results.json`, and set beside the other
+five in `03-push-glasses-apart/results/README.md`. The model is `model.py`, what it is
 shown is `features.py`, and the search and the loop around it are `plan.py`.
 Everything this document says about those three files is a description of code.
 
@@ -179,11 +265,18 @@ explains how that extension works and what it would buy. But the horizon in the
 built planner is one push, and the reason it is one push is given below under
 compounding error.
 
-**Rung two is a design.** TD-MPC2 is a reference implementation in LeRobot, it
-is not wired to this bench, and the bench itself would need a straight-down
-rendered view and a path that accepts waypoints, which [the test
-bench](../the-bench.md) records as missing, before any off-the-shelf policy
-could run against it.
+**Rung two is a design, and it claims nothing.** It is not wired to this bench
+and it has not been trained or run here, so every number in this document
+belongs to rung one. One thing about it is worth settling before anybody starts:
+the library this project uses elsewhere ships **TD-MPC**, the earlier method,
+and not TD-MPC2. So rung two means fetching TD-MPC2 from its own project, and
+the convenience of everything living in one library, which solutions 3, 5 and 6
+enjoy, does not apply here. The
+two bench pieces an off-the-shelf policy needs are no longer the obstacle: the
+straight-down rendered view and the path that accepts waypoints were built for
+[imitation from demonstrations](03-imitation-from-demonstrations.md), as
+`bench/top_view.py` and `Bench.follow`. What is still missing is the wiring and
+the training.
 
 ## What a forward model is
 
@@ -566,8 +659,9 @@ Rung one is a model written for this cell. Rung two asks what a model written
 by people who do this for a living would do instead, and the comparison between
 them is the point of having both.
 
-**TD-MPC2** is the model-based entry among LeRobot's reinforcement learning
-policies. Like rung one it learns a model of how the world changes and plans
+**TD-MPC2** is the better known of the two model-based methods of this family,
+and it does not come from the library the other borrowed solutions here use;
+that library ships its predecessor. Like rung one it learns a model of how the world changes and plans
 through it at run time, rather than learning a policy that maps a situation
 straight to an action. So the overall shape — learn what happens, then search
 over actions against what was learned, then act on only the first — is the same
@@ -756,9 +850,10 @@ worst one. **The model can be confidently wrong.** The ensemble measures
 disagreement, and disagreement only appears where the training data was thin in
 a way the copies noticed. A kind of failure that is absent from the training
 data altogether can produce five copies that agree, agree confidently, and agree
-wrongly. Rung one's own results record exactly this: across a hundred tuning
-tables one glass went over, and the model had rated as safe every topple it
-missed. The three causes recorded there are instructive, because all three are
+wrongly. Rung one's own results record exactly this: one glass went over on the
+fifty held-out tables and one on a hundred tuning tables, and the model had
+rated as safe every topple it missed. The three causes recorded there are
+instructive, because all three are
 things the thirty-four numbers cannot express — the jaw meeting a stemmed glass
 at its stem and lifting under the bowl, the jaw's body clipping a neighbour
 behind the target, and a tapered glass tipping on its own.
@@ -821,11 +916,20 @@ further push survives the filters, so three glasses are reported refused with
 their reasons and the table finishes **correct but incomplete**, which [the
 problem](../problem.md) counts as a correct outcome rather than a failure.
 
-Across the fifty held-out tables as a whole, rung one's recorded results are
-two hundred and eight of two hundred and fifty-one glasses racked in a hundred
-and thirteen pushes, with **nothing toppled**, and the glasses that were left
-all reported with a reason. Those numbers are read against the other solutions
-on the shared scorecard, and against the displacement floor from [the target
+Across the fifty held-out tables as a whole, rung one's recorded results — read
+from its own `results.json` — are two hundred and two of two hundred and
+fifty-one glasses racked in a hundred and fourteen pushes, thirty-one tables
+finished, and the glasses that were left all reported with a reason. **That is
+the most glasses any of the six racks, and it is done in the fewest pushes.**
+It is also the one line where this solution is worse than the geometry it is
+measured against: **one glass went over**, which makes that table wrong and
+makes this the only one of the three push-parameter solutions to topple
+anything at all — [one fixed nudge](01-one-fixed-nudge.md) and [geometry
+generates, a model ranks](02-geometry-ranked.md) both topple none. The section
+above on refusals says why it can happen: the model can be confidently wrong,
+and the shared topple gate that would have caught the rest is not in front of
+this planner yet. Those numbers are read against the other solutions on
+the shared scorecard, and against the displacement floor from [the target
 layout](../the-target-layout.md), which says how little movement the task
 needed in the first place.
 
@@ -879,11 +983,13 @@ bench, and LeRobot for rung two. Neither rung downloads trained weights from
 anybody, so there is no model licence to meet in either — the only conditions
 are the libraries' own, and LeRobot is Apache 2.0.
 
-**Two additions to the bench.** [The test bench](../the-bench.md) lists them:
-repeats with a spread on the scorecard, because one run of a trained solution
-is not a measurement, and the time per push beside the counts. Rung one runs
-today without either, but it has been trained once and run once, so its
-recorded numbers carry no spread.
+**Two additions to the bench, both of which it now has.** [The test
+bench](../the-bench.md) listed them as missing: repeats with a spread on the
+scorecard, because one run of a trained solution is not a measurement, and the
+time per push beside the counts. Both are in `bench/scoring.py` today, as
+`Repeats` and as the seconds-per-push the scorecard records. Rung one's runner
+uses the plain scorecard, so its results carry the time per push but no spread:
+it has been trained once and run once.
 
 ## Where it is strong and where it breaks
 
@@ -894,8 +1000,10 @@ one push, so the sequence is a design and not yet a result.
 
 **Its model needs no written physics, and so no guessed friction.** There is no
 friction value, no tipping formula and no rule about where the jaw fits
-anywhere inside it, and the shared topple gate in front of it is the only
-written physics this solution carries. Whatever decides whether a push slides,
+anywhere inside it, and the only thing written down in the built planner is the
+map — where a glass may stand and where the arm can reach. The shared topple
+gate that belongs in front of it is not wired up yet, which is a gap rather
+than a virtue. Whatever decides whether a push slides,
 tips or is blocked is whatever the model saw happen, which means it also
 absorbs the things nobody thought to write down.
 

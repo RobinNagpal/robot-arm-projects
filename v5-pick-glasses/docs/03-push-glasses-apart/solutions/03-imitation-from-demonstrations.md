@@ -105,6 +105,94 @@ good; what compounding error is, why it is the characteristic failure of
 copying, and what in this problem's own loop blunts it; and the three honest
 costs this solution carries, none of which can be engineered away.
 
+## The code at the heart of it
+
+This solution lives or dies on one join. A demonstration is the path the jaw
+really followed, written down waypoint by waypoint by the bench; a policy's
+answer is an **action chunk**, a block of numbers of fixed shape. The code that
+turns the first into something the model can be fitted on, and turns the model's
+answer back into waypoints the bench will carry out, is this solution's own
+contribution, and beside it sits the single call that reaches into the borrowed
+library.
+
+The conversion is in
+[`03-push-glasses-apart/03-imitation-from-demonstrations/chunks.py`](../../../03-push-glasses-apart/03-imitation-from-demonstrations/chunks.py),
+which holds no model and no geometry of pushing. `push_segment` keeps the part
+of a recorded path at push height, from where the jaw started travelling across
+the table to the furthest point it reached, and drops the descent, the back-off
+and the lift, because the bench does all three itself. `to_action` then writes
+what is left as the five columns the policy is fitted on. The way back is the
+same file's `to_waypoints`, which turns the cosine-and-sine pair into an angle
+again and pulls every waypoint inside what the jaw can reach:
+
+```python
+def push_segment(waypoints: tuple[Waypoint, ...]) -> tuple[Waypoint, ...]:
+    """The feeling-and-pushing part of a recorded path, with the back-off and lift off.
+    ...
+    """
+    low = [i for i, point in enumerate(waypoints) if point.z <= PUSH_HEIGHT + AT_PUSH_HEIGHT]
+    ...
+    start, end = low[0], low[-1]
+    origin = waypoints[start]
+    gone = [math.dist((p.x, p.y), (origin.x, origin.y)) for p in waypoints[start : end + 1]]
+    furthest = start + int(np.argmax(gone))
+    return tuple(waypoints[start : furthest + 1]) if furthest > start else ()
+
+
+def to_action(waypoints: tuple[Waypoint, ...]) -> np.ndarray:
+    """A run of waypoints as the (n, 5) numbers a policy is fitted on."""
+    return np.array(
+        [[p.x, p.y, p.z, math.cos(p.heading), math.sin(p.heading)] for p in waypoints],
+        dtype=np.float32,
+    )
+```
+
+The borrowed model is reached in one place, in
+[`03-push-glasses-apart/03-imitation-from-demonstrations/policy.py`](../../../03-push-glasses-apart/03-imitation-from-demonstrations/policy.py):
+one call that builds LeRobot's ACT, and one that asks it for a chunk.
+
+```python
+    if kind == "act":
+        from lerobot.policies.act.configuration_act import ACTConfig
+        from lerobot.policies.act.modeling_act import ACTPolicy
+
+        return ACTPolicy(
+            ACTConfig(
+                input_features=inputs,
+                output_features=outputs,
+                chunk_size=chunk,
+                n_action_steps=chunk,
+                pretrained_backbone_weights=None,
+                normalization_mapping=_UNTOUCHED,
+                push_to_hub=False,
+            )
+        )
+...
+    def chunk(self, picture: np.ndarray) -> np.ndarray:
+        """One action chunk from one picture: (chunk, 5) in the table's own units."""
+        self.net.eval()
+        with torch.no_grad():
+            answer = self.net.predict_action_chunk(self.batch(picture))
+        return self.scale.back(answer[0].float().cpu().numpy())
+```
+
+Three of those settings are the whole of what this folder insists on against
+LeRobot's own defaults: `pretrained_backbone_weights=None`, which switches off
+the ImageNet weights ACT would otherwise download for its vision backbone and
+is what makes "fitted from random numbers" true; `normalization_mapping`, which
+hands the scaling back to this folder's own code so that the numbers reaching
+the model are only ones written here; and `n_action_steps` set to the chunk's
+full length, because one push is one chunk and nothing re-plans part way
+through. The rest of the model is LeRobot's, untouched.
+
+Reading the two blocks together says where the measured shortfall has to sit,
+and it does sit there. The first two columns of the chunk come out roughly
+right — the policy puts the fingertips down in about the neighbourhood the
+teacher used — while the heading carried in the last two comes out about thirty
+degrees away from the teacher's, which is enough that on a crowded table the
+jaw meets a neighbour while it is still coming down, and the push ends before
+any glass is touched.
+
 ## The problem this solves
 
 [The problem](../problem.md) asks for a jaw trajectory, and then another, until
@@ -640,7 +728,7 @@ solution's output is not literally the whole answer.
 the chunk was the chunk it would have chosen, or whether the waypoints were
 smooth. It looks only at the table afterwards: which glasses have room, which
 are standing, where each one ended up, and how many pushes it took. That is
-what makes a three-number push and a chunk of twenty waypoints comparable at
+what makes a three-number push and a chunk of a hundred-odd waypoints comparable at
 all, and it is the only reason this solution and its teacher can be set side by
 side.
 
@@ -927,7 +1015,7 @@ general, only about this one cell's pictures of this one task.
 dollars for a small accelerator, and that is still the right figure for
 anybody who wants one. But a network of a few tens of millions of parameters
 on a few thousand small pictures fits on the graphics processor an Apple M4
-already has, in hours per training seed, so the whole of this solution —
+already has, in about an hour per training seed, so the whole of this solution —
 demonstrations, several training seeds and the held-out run — was made on the
 machine the project is written on. For comparison, renting an accelerator for
 a weekend is of order a hundred dollars, and a small one for a month of order

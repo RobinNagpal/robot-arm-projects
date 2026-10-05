@@ -74,6 +74,74 @@ six are scored side by side, this one is the line that says whether borrowing
 weights was worth anything at all. Without it, a good score from a borrowed
 model proves only that the model is good, and not that borrowing helped.
 
+## The network, in the code
+
+The network is written in `02-segment-glasses/02-train-from-scratch/`, and the
+piece worth seeing is not its shape but what it is asked for. It answers three
+numbers at every pixel of a shrunk picture: one saying whether the pixel is
+glass, and two holding the arrow to the middle of that pixel's own glass.
+
+This is the answer it is trained towards, and the network that produces it,
+from ``02-train-from-scratch/models.py``. The first function builds the target
+out of the simulator's record of which glass each pixel shows. The second is
+where PyTorch does the work, and the two `torch.cat` lines are the copies
+carried from the way down across to the way up.
+
+```python
+def top_target(picture: Picture, glasses) -> np.ndarray:
+    """Per pixel: glass or not, and the offset to its rim's middle."""
+    ids = picture.ids[::SHRINK, ::SHRINK]
+    target = np.zeros((3, *SMALL), dtype=np.float32)
+    target[0] = ids > 0
+    rows, columns = np.indices(SMALL)
+    for index, glass in enumerate(glasses):
+        column, row = rim_middle(picture, glass)
+        mine = ids == index + 1
+        target[1][mine] = (column - columns[mine]) / VOTE_SCALE
+        target[2][mine] = (row - rows[mine]) / VOTE_SCALE
+    return target
+
+
+class TopNet(nn.Module):
+    ...
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        full = self.at_full(x)
+        half = self.at_half(full)
+        quarter = self.at_quarter(half)
+        up = nn.functional.interpolate(quarter, size=half.shape[-2:])
+        up = self.up_half(torch.cat([up, half], 1))
+        up = nn.functional.interpolate(up, size=full.shape[-2:])
+        return self.head(self.up_full(torch.cat([up, full], 1)))
+```
+
+And this is where the votes become one glass's mask, from
+``02-train-from-scratch/pipeline.py``. `SHRINK` is how much the picture was
+shrunk by, and `_BLOCK` is the offsets of one shrunk pixel's own block, so the
+mask claims the whole block each voting pixel stands for.
+
+```python
+def pile_mask(picture: Picture, votes: Votes, middle) -> np.ndarray | None:
+    """The pixels that voted for one middle, as a boolean mask, or None if too few did.
+    ...
+    """
+    mine = np.linalg.norm(votes.landed - middle, axis=1) < MIDDLE_RADIUS
+    if mine.sum() < MIN_VOTES:
+        return None
+    corners = np.stack([votes.rows[mine], votes.columns[mine]], 1) * SHRINK
+    pixels = (corners[:, None, :] + _BLOCK[None, :, :]).reshape(-1, 2)
+    pixels = np.clip(pixels, 0, np.array(picture.depth.shape) - 1)
+    mask = np.zeros(picture.depth.shape, dtype=bool)
+    mask[pixels[:, 0], pixels[:, 1]] = True
+    return mask
+```
+
+Two things are worth reading off those. The borrowed library supplies the
+layers and the training loop, while the idea — an arrow at every glass pixel
+instead of a label — lives in the twelve lines that build the target, which is
+this project's own arithmetic. And a mask here is a set of votes rather than a
+drawn outline: nothing in either piece asks where a glass ends, and the only
+line that mentions a boundary is the one that keeps a block inside the picture.
+
 ## The problem this solves
 
 The problem is the one [problem 2](../problem.md) states, and this section
@@ -163,8 +231,8 @@ among the other five.
 
 ## What exists in code, and what is a design
 
-This is the one solution of the six where part of the answer is already
-written, so it is worth separating the two plainly before going further.
+All six solutions are built, and this one is built in two layers, so it is
+worth separating them plainly before going further.
 
 **What exists.** A network of exactly the shape described below is already
 written in this project's code. It has the two heads this document describes:
@@ -177,13 +245,18 @@ simulator's own record of which glass each pixel shows. Its votes are piled up
 into a tally and the peaks of that tally are picked off one at a time, largest
 first, and the pixels that voted near a peak are that peak's glass.
 
-**What is a design.** Everything about running this network as one of the six
-cars on the shared [test bench](../the-bench.md) is written here and not built:
-the training set drawn from the bench's own arrangements, the split into a
-training half and a test half, the checks that decide whether a pile of votes
-is believable, and the whole of the second rung described below, which changes
-where the labels come from. Where this document prescribes a check or a
-threshold, it says so, and it quotes no measurement from anywhere.
+Running it as one of the six cars on the shared [test bench](../the-bench.md)
+is built too. The training set is drawn from the bench's own arrangements, half
+of them crowded and all of them below the bench's dividing line, and the
+solution is scored on held-out arrangements above that line and writes its own
+`results.json` beside itself.
+
+**What is a design.** Four things this document describes are written here and
+not built: the two fixes for the rare class in the loss, the check on a pile's
+fitted width, the second alarm on how far a pile's votes sit from their own
+peak, and the whole of the second rung described below, which changes where the
+labels come from. Where this document prescribes a check or a threshold, it
+says so, and it quotes no measurement from anywhere.
 
 ## What a network is, and what training from scratch means
 
@@ -291,7 +364,8 @@ Fischer and Brox, 2015 ([arXiv:1505.04597](https://arxiv.org/abs/1505.04597)).
 
 The network is given the depth reading turned into something like a height
 above the table, and two further channels that say where in the frame each
-pixel sits.
+pixel sits. All three go in at half size, which is four times quicker to train
+on and still leaves a glass many pixels across.
 
 The last of those needs explaining, because it looks like a strange thing to
 tell a network. A camera looking straight down throws a glass's outline
@@ -787,8 +861,8 @@ probability is thresholded into a **mask**. Every mask pixel adds its arrow to
 its own position and casts a **vote**. The votes pile up, one pile per glass,
 and the piles are counted without anything having been told how many to expect.
 A pile with too few votes is doubted; a pile whose fitted width is not one this
-kind of glass could have is rejected. What survives is one mask per glass,
-handed to the bench's shared arithmetic.
+kind of glass could have would be turned down by the check prescribed above.
+What survives is one mask per glass, handed to the bench's shared arithmetic.
 
 Three things in that chain are worth holding on to.
 
@@ -913,10 +987,12 @@ so that only a crescent down one side of it is ever visible. It contributes a
 small fraction of the votes it should, and worse, every one of them comes from
 that same crescent, so the votes agree with each other and are wrong in the
 same direction. The pile lands off the true middle and its spread comes out
-much wider than a tight pile's. Both alarms fire independently, and neither of
-them is the network's own opinion of itself: they are measurements of the
-votes. The pair is reported as one the arm could not separate, with its reason,
-which is a result this problem asks for and not a failure.
+much wider than a tight pile's. The short count is the alarm the code measures
+and it fires on its own; the wide spread is the second warning this document
+prescribes. Neither of them is the network's own opinion of itself: both are
+measurements of the votes. The pair is reported as one the arm could not
+separate, with its reason, which is a result this problem asks for and not a
+failure.
 
 ![The less of a glass reaches the picture the fewer votes it casts and the further its votes sit from their own peak, so a short count and a wide spread are two separate warnings, both of them measurements of the votes rather than the network's opinion of itself.](../../../images/02-segment-glasses/06-too-few-votes.png)
 
@@ -969,10 +1045,11 @@ cases where there is no gap anywhere to find.
 pixels still votes towards the right middle, and the votes do not have to be
 joined to each other or to make a recognisable shape.
 
-**Its doubt costs nothing.** How far a pile's votes sit from its own peak is a
-confidence per glass, and how many votes the pile holds is a second one. Both
+**Its doubt costs nothing.** How many votes a pile holds is a confidence per
+glass, and how far its votes sit from its own peak would be a second one. Both
 are measurements of the votes rather than the network's opinion of itself,
-which is a better kind of warning than most learned methods give.
+which is a better kind of warning than most learned methods give; the count is
+the one the code measures.
 
 **It is blind to a glass hidden completely.** No pixels means no votes, which
 means no pile, no spread and no short count. This is a fact about the input

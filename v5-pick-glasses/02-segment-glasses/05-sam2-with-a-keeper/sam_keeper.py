@@ -349,7 +349,8 @@ def _table_area(points: np.ndarray) -> float:
 
 
 def _measure(picture, mask, found, jumps, step, camera, widths) -> list[float]:
-    """Seven of the keeper's eight numbers; the eighth needs the other proposals."""
+    """Six of the keeper's eight numbers. The other two need the rest of the proposals:
+    how many prompt points agreed on this shape, and whether another proposal contains it."""
     rows, columns = found.pixels[:, 0], found.pixels[:, 1]
     points = render.to_world(picture, rows, columns)
 

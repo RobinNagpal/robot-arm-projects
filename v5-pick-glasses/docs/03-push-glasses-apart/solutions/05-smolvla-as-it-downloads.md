@@ -86,6 +86,79 @@ carries almost no information in this problem, why the one channel that
 observes friction cannot reach it, and why a poor result here would still be
 the most useful thing in the folder.
 
+## The code that does the work
+
+Nothing here is fitted, so the only code this project wrote is the join between
+what the borrowed model emits and what this cell's jaw is. That join turned out
+to be the whole solution, for a reason the sections below explain at length and
+which is worth having in front of the code: the released checkpoint saves its
+normalisation statistics under keys the normaliser never looks up, so both the
+normaliser and the un-normaliser pass their numbers through unchanged, and the
+actions arrive as z-scores with no units in them at all. A scale therefore had
+to be **chosen** rather than converted, and the lines that choose it are the
+lines to read.
+
+The borrowed library does its work in one call, in
+[`03-push-glasses-apart/05-smolvla-as-it-downloads/policy.py`](../../../03-push-glasses-apart/05-smolvla-as-it-downloads/policy.py).
+`predict_action_chunk` is LeRobot's; `self.pre` and `self.post` are the
+processors the checkpoint ships, which are the ones that do nothing here; and
+`to_jaw` is this project's.
+
+```python
+    def ask(self, picture: np.ndarray, jaw: Waypoint) -> np.ndarray:
+        ...
+        batch = {
+            CAMERA: torch.from_numpy(picture.copy()).permute(2, 0, 1).float() / 255.0,
+            "observation.state": torch.from_numpy(to_state(jaw, self.up)).float(),
+            "task": INSTRUCTION,
+        }
+        with torch.no_grad():
+            actions = self.policy.predict_action_chunk(self.pre(batch))
+        return to_jaw(self.post(actions)[0].numpy().astype(float), self.up)
+```
+
+The scale that `to_jaw` applies is in
+[`03-push-glasses-apart/05-smolvla-as-it-downloads/joining.py`](../../../03-push-glasses-apart/05-smolvla-as-it-downloads/joining.py),
+and the whole of the choice is one constant and the four lines that spend it.
+
+```python
+# Which of SmolVLA's six slots carries what, in the reading above.
+ACROSS, OUT, UP, TURN = 0, 1, 2, 4
+
+...
+
+# How many standard deviations of the model's own action space the picture's
+# frame covers. Two, because a z-score of two is the edge of what a normally
+# spread quantity does, so the whole frame is reachable without the great
+# majority of the model's output pinning itself against the edges.
+ACTION_SPAN = 2.0
+
+...
+
+def to_jaw(action: np.ndarray, up: float = UP_HIGHER) -> np.ndarray:
+    ...
+    unit = np.clip(action / ACTION_SPAN, -1.0, 1.0)
+    return np.stack(
+        [
+            VIEW_CENTRE[0] + unit[:, ACROSS] * TOP_VIEW_HALF_FRAME,
+            VIEW_CENTRE[1] + unit[:, OUT] * TOP_VIEW_HALF_FRAME,
+            PUSH_HEIGHT + (up * unit[:, UP] + 1.0) / 2.0 * (TRAVEL_HEIGHT - PUSH_HEIGHT),
+            unit[:, TURN] * math.pi,
+        ],
+        axis=1,
+    )
+```
+
+Two things show from that. The only object in this solution that has both a
+metric extent and is seen by the model is the frame of the straight-down
+picture, so `ACTION_SPAN = 2.0` is the decision that two standard deviations of
+the model's output span that frame exactly — which is what lets the model put
+the jaw anywhere it can see and nowhere it cannot. And because the bench
+consumes waypoints a fixed period apart, the spacing of the waypoints this
+function returns *is* the speed the jaw is asked to travel at, so the same
+constant fixes the speed as well as the reach, and the two cannot be chosen
+separately.
+
 ## The problem this solves
 
 [The problem](../problem.md) asks for a jaw trajectory, and then another, until
@@ -543,10 +616,12 @@ is reported.
 That check is **applied on the measurements, before any model is consulted.**
 A glass that fails it is removed from the task and reported, so the model is
 never asked to move it. The arithmetic is shared rather than rewritten here:
-it is solution 1's `slides`, in `01-one-fixed-nudge/plan.py`, which every
-solution in the folder imports, so all six refuse exactly the same glasses.
-It does not live in the bench, which the second half of this section
-comes back to.
+it is solution 1's `slides`, in `01-one-fixed-nudge/plan.py`, which solutions
+2, 3, 6 and this one import rather than rewrite, so those five refuse exactly
+the same glasses. [Solution 4](04-a-world-model.md) is the exception: it judges
+toppling with its own learned model and says that the shared gate in front of
+it is not there yet. It does not live in the bench, which the second half of
+this section comes back to.
 
 **That arrangement is just as well, and the reason is the point of this whole
 document.** Nothing in a borrowed model's pretraining knows this cell's jaw or
@@ -653,14 +728,18 @@ no new file to carry anything.
 so a few gigabytes while answering.
 
 **Hardware.** A laptop. There is nothing to train, so there is no accelerator
-to rent for this solution at all, which is unusual in this folder and worth
-stating plainly: solution 6 pays for the accelerator and solution 5 pays for
-nothing. The one case where renting would still be sensible is evaluation
-throughput rather than capability — the scorecard asks for several runs per
-solution, and many forward passes on a laptop take a while. For scale, renting
-an accelerator for a weekend costs of order a hundred dollars, and a small one
-for a month costs of order five hundred, so even running the evaluation on
-rented hardware is at the cheap end of this folder.
+to rent for this solution at all. This document said that solution 6 would pay
+for the accelerator while solution 5 paid for nothing, and that turned out to
+be wrong about the other half of the pair: [solution
+6](06-smolvla-fine-tuned.md)'s low-rank fine-tune of this same model held
+**1.02 GiB** while it ran, on this machine's own Metal, so neither half rented
+anything. The 22 GB and 70 GB floors quoted above belong to π0, which is
+several times larger. The one case where renting would still be sensible is
+evaluation throughput rather than capability — the scorecard asks for several
+runs per solution, and many forward passes on a laptop take a while. For
+scale, renting an accelerator for a weekend costs of order a hundred dollars,
+and a small one for a month costs of order five hundred, so even running the
+evaluation on rented hardware is at the cheap end of this folder.
 
 **Data.** None. No demonstrations, no labels, no held-out set, and nothing to
 keep in step with the cell when the cell changes.

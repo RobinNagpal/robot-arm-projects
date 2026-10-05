@@ -78,15 +78,91 @@ beat a written rule, the model has earned nothing.
 Two honest notes before the method starts, because both change how the rest
 should be read.
 
-**None of the six solutions is built.** This document describes a design. Where
-it says what a step gives back, that is what the design intends, not a result
-that has been observed, and where it prescribes a check, it says plainly that
-the check is a prescription.
+**The method is built, and the numbers quoted below were measured by running
+it.** The code is in `02-segment-glasses/01-rules-on-the-table/` and it writes
+its own `results.json` beside itself. Five things this document describes are
+still prescriptions rather than code, and each is named where it appears: the
+grouping distance is a constant rather than computed from the two limits it sits
+between, the fit returns a width and no residual, there is no
+minimum-neighbours guard, a group only one station found is not reported as
+doubtful, and the branch that works out where a glass could have been hiding is
+arithmetic set out here rather than code that runs.
 
 **Nothing here quotes a size.** The cell's rule is that no glass's size is
 written down anywhere, so this document speaks in relations — wider than any
 glass of this kind can be, narrower than the strip of bare table between two
 glasses — and never in figures.
+
+## The rule, in the code
+
+Before going into why the method is built this way, it is worth seeing it. The
+rule the introduction describes is written out in
+`02-segment-glasses/01-rules-on-the-table/`, and two short pieces of it carry
+the whole method: the circle fitted to a
+group, and the question the fit is asked again of every part a split produces.
+Everything else in the folder is the arithmetic that turns pixels into dots and
+the plumbing that hands masks to the bench.
+
+This is the fit, from ``01-rules-on-the-table/find.py``. The first function is
+the one-shot least-squares solve, which is NumPy's `lstsq` and nothing else;
+the second hands it the outside of the patch rather than all of the patch,
+which is OpenCV's `convexHull`.
+
+```python
+def circle_width(dots: np.ndarray) -> float:
+    """How wide the circle through a ring of dots is, in one solve and with no starting guess.
+    ...
+    """
+    terms = np.column_stack([dots, np.ones(len(dots))])
+    solved = np.linalg.lstsq(terms, (dots**2).sum(1), rcond=None)[0]
+    x, y = solved[0] / 2.0, solved[1] / 2.0
+    return 2.0 * float(np.sqrt(max(solved[2] + x * x + y * y, 0.0)))
+
+
+def footprint(dots: np.ndarray) -> float:
+    """How wide the circle round the patch of table a group of dots marks is.
+    ...
+    """
+    return circle_width(cv2.convexHull(dots.astype(np.float32)).reshape(-1, 2).astype(float))
+```
+
+This is the check itself, from the same file. It is the four outcomes described
+below, and the repetition is the last line of the second function asking the
+first function again.
+
+```python
+def as_glasses(picture: Picture, one: Found, widths: tuple[float, float]) -> list[Found] | None:
+    """The glasses one patch of dots holds, or None if the fitted circles cannot say.
+    ...
+    """
+    width = footprint(dots_of(picture, one.pixels))
+    if widths[0] <= width <= widths[1]:
+        return [one]
+    if width > widths[1]:
+        return come_apart(picture, one, widths)
+    return [one] if one.cut_off else None
+
+
+def come_apart(picture: Picture, one: Found, widths: tuple[float, float]) -> list[Found] | None:
+    ...
+    mine = halve(dots_of(picture, one.pixels))
+    if mine.all() or not mine.any():
+        return None
+    parts: list[Found] = []
+    for half in (~mine, mine):
+        ...
+        got = as_glasses(picture, measured, widths)
+        if got is None:
+            return None
+        parts.extend(got)
+    return parts
+```
+
+Two things are worth reading off that. The borrowed work is two library calls,
+one solve and one hull, and everything around them is this project's own; and
+the fitted width never leaves these functions, because the only thing it is
+allowed to decide is whether a patch comes apart. The width that goes into the
+record is measured by the bench, from the pixels these functions hand back.
 
 ## The problem this solves
 
@@ -342,13 +418,14 @@ one group.
 There is a practical point about running the rule, and it is a useful habit
 rather than a detail of this problem. Comparing every dot with every other dot
 means a number of comparisons that grows with the square of the number of dots,
-which becomes hopeless quickly. Sorting the dots into square bins whose side is
-the grouping distance fixes that, because two dots within the grouping distance
-of each other must lie either in the same bin or in a bin touching it, so each
-dot is only ever compared with a handful of others. Once the dots are in bins,
-joining them is the same spreading-out step that finds a patch in a picture, run
-over the bins instead of over the pixels, which is the one place in this method
-where OpenCV does the work. The same idea under a grander name is a k-d tree.
+which becomes hopeless quickly. Sorting the dots into square bins fixes that,
+because two dots within the grouping distance of each other must then lie in the
+same bin or in a bin close by, so each dot is only ever compared with a handful
+of others. The code takes that one step further and never compares two dots at
+all: it marks a grid of squares much finer than the grouping distance, grows
+every marked square outwards by that distance, and joins the squares that then
+touch, which is two OpenCV calls over a small grid. The same idea under a
+grander name is a k-d tree.
 
 ## The one setting, and where it comes from
 
@@ -413,15 +490,18 @@ The fifth concept is a check rather than a step, and it is what makes the method
 safe to trust with a moving arm.
 
 A glass seen from the top flattens to a disc, so each group of dots should be a
-filled circle. Fitting a circle to the dots of a group gives back a centre, a
-width and a third number that turns out to be very useful: the **residual**,
-which is how far the dots sit from the fitted circle on average. The fit has a
-pleasant property worth knowing. Written in the obvious way the equation of a
-circle is not linear in its centre and its radius, which would normally mean an
-iterative search with a starting guess, but if the equation is multiplied out
-and certain combinations of the unknowns are treated as the unknowns instead, it
-becomes linear. So the fit has a direct solution: no iteration, no starting
-guess, and the radius recovered at the end.
+filled circle. Fitting a circle to the dots of a group gives back a centre and a
+width, and the standard fit offers a third number as well: the **residual**,
+which is how far the dots sit from the fitted circle on average. None of the
+four outcomes below uses the residual, so the code computes only the width, and
+it fits the dots on the outside of the patch rather than all of them, because a
+circle fitted to a filled disc of dots comes back narrower than the disc. The
+fit has a pleasant property worth knowing. Written in the obvious way the
+equation of a circle is not linear in its centre and its radius, which would
+normally mean an iterative search with a starting guess, but if the equation is
+multiplied out and certain combinations of the unknowns are treated as the
+unknowns instead, it becomes linear. So the fit has a direct solution: no
+iteration, no starting guess, and the radius recovered at the end.
 
 **This fitted width is for the check only, and not for the answer.** The test
 bench computes the place and the width that go into the record, from the mask
@@ -450,17 +530,17 @@ width is **narrower** than any glass of this kind, splitting cannot help, since
 both halves of a footprint are narrower than the footprint; such a part is a
 glass the picture did not hold all of when its pixels reach the edge of the
 frame, and a refusal when they do not. And if any part cannot be settled either
-way, the whole group is reported as doubtful, carrying the measured width and
-the range it failed, rather than guessed at.
+way, the whole group is reported as doubtful, with which side of the range it
+failed, rather than guessed at.
 
 ![One circle fitted to the whole group comes out wider than any glass of this kind can be, so the group is rejected as one glass and two circles are fitted instead; both of those lie inside the widths the kind allows, so the group is split in two, and the fitted width decides only the split, because the width that goes into the record is measured by the bench.](../../../images/02-segment-glasses/02-circle-fit-decides.png)
 
 Splitting a group in two is done with a simple and well-known method called
-k-means with two centres: drop two seeds anywhere in the group, give each dot to
-whichever seed is nearer, move each seed to the middle of the dots it was given,
-and repeat until nothing moves. Then fit a circle to each half. The picture
-above is one round of that, and the rule above is that round applied again to a
-half that is still too wide.
+k-means with two centres: put one seed at each end of the group's longest
+direction, give each dot to whichever seed is nearer, move each seed to the
+middle of the dots it was given, and repeat until nothing moves. Then fit a
+circle to each half. The picture above is one round of that, and the rule above
+is that round applied again to a half that is still too wide.
 
 What makes this check worth having is that it is **arithmetic rather than
 judgement**. The statement "this group is too wide to be one glass" contains two
@@ -916,9 +996,9 @@ for this solution, which is a small extra benefit when the four fitted solutions
 can only be marked on half of them.
 
 **No training time and no weights file.** There is nothing to train and nothing
-to keep in step with the cell. A change to the cell's layout changes two
-quantities this method computes its grouping distance from, and the next run
-computes a new one.
+to keep in step with the cell. A change to the cell's layout changes the two
+quantities the grouping distance is pinned between, and the design has the next
+run compute a new one.
 
 **No graphics processor.** The work is a comparison over a grid of depth
 readings, one multiplication per kept pixel, dropping one column of numbers, a
@@ -931,10 +1011,11 @@ anybody has taken, and it is stated that way on purpose.
 
 **Two libraries, both already in the cell.** NumPy does the arithmetic over the
 depth readings. OpenCV does the picture handling the cell already does, which
-here means joining the marked bins into groups. Neither carries a licence
-condition that reaches this project, which is a difference worth noting beside
-the two solutions built on Ultralytics YOLO26-seg, where the licence is a real
-cost rather than a footnote.
+here means growing and joining the marked squares into groups, and finding the
+outside of a patch of dots before a circle is fitted to it. Neither carries a
+licence condition that reaches this project, which is a difference worth noting
+beside the two solutions built on Ultralytics YOLO26-seg, where the licence is
+a real cost rather than a footnote.
 
 **Three things from the problem rather than from the sensor.** The method needs
 the table's height, which the cell knows because the table is bolted to the
@@ -966,16 +1047,15 @@ later.
 **When it fails, printing one number usually tells you why.** Every step
 produces one quantity worth printing: how many pixels passed the
 standing-above-the-table test, how many bins were marked, how many groups came
-out, how many dots each group held, each group's fitted width and each group's
-residual. These fail in a characteristic order. A table height set slightly too
-low turns the whole table top into one enormous group, and the standing-pixel
-count says so immediately. A grouping distance set too small shows up as too
-many groups, each with too few dots. One set too large shows up as too few
-groups with one impossible width. A glass seen at a bad slant shows up as a
-large residual on an otherwise ordinary width. **A fitted model's failure has no
-equivalent, because there is no single number inside it that was wrong first.**
-That difference is the strongest practical argument for keeping this solution in
-the set, whatever its score.
+out, how many dots each group held, and each group's fitted width. These fail
+in a characteristic order. A table height set slightly too low turns the whole
+table top into one enormous group, and the standing-pixel count says so
+immediately. A grouping distance set too small shows up as too many groups,
+each with too few dots. One set too large shows up as too few groups with one
+impossible width. **A fitted model's failure has no equivalent, because there
+is no single number inside it that was wrong first.** That difference is the
+strongest practical argument for keeping this solution in the set, whatever its
+score.
 
 **It answers in real distances from the arm's base**, because it worked in the
 room the whole time rather than converting at the end. Three gifts from the cell
@@ -984,7 +1064,8 @@ flatten to neat discs, and only one kind of glass is on the table at a time.
 
 **It can say where it has not looked.** Almost no perception method can, because
 almost none of them has a way to tell "nothing there" from "could not have been
-seen". This one does, from arithmetic it was already doing.
+seen". This one can, from arithmetic it is already doing, once that branch is
+built.
 
 The weaknesses divide into one limit on the idea itself, one limit on the
 sensor, and several assumptions.
@@ -1018,18 +1099,19 @@ the cell. Methods built on the grey picture rather than on the depth reading do
 not share it, which is a real point in their favour and not a courtesy.
 
 The assumptions are worth listing because each of them is true here and is still
-an assumption. The method assumes a round footprint, and given a jug it would be
-the residual that complained. It assumes things stand apart, which the grouping
+an assumption. The method assumes a round footprint, and a jug would come back
+as a width the kind allows with nothing to object to it, because the width is
+the only number the fit keeps. It assumes things stand apart, which the grouping
 distance is derived from rather than tuned to, but derived from an assumption is
 still from an assumption. One stray dot in the wrong place chains two groups
 into one, and a table height set slightly too low turns the whole table top
-into one group; the prescribed guards against both are a minimum number of
-dots per group and the minimum-neighbours rule described in the next section,
-which discards a dot with nothing around it. Finally, points higher than the
-tallest glass the cell handles are dropped, and although nothing legal is cut,
-the design prescribes that the run report how many points were dropped at each
-end, because a sudden change there means something is wrong that nothing else
-would catch.
+into one group; the guards against both are a minimum number of dots per group,
+which the code applies, and the minimum-neighbours rule described in the next
+section, which discards a dot with nothing around it and is not built. Finally,
+points higher than the tallest glass the cell handles are dropped, and although
+nothing legal is cut, the design prescribes that the run report how many points
+were dropped at each end, because a sudden change there means something is
+wrong that nothing else would catch.
 
 ## The general ideas behind this
 

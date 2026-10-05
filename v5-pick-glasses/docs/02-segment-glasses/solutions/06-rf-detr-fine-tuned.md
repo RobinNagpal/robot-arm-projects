@@ -5,17 +5,17 @@
 > **RF-DETR-Seg**, a transformer that detects and segments in one pass. It is
 > published under the Apache 2.0 licence and it is offered in a range of sizes,
 > so the size can be chosen to suit the machine.
-> **What it does** — as designed, it takes one picture from the top and returns
-> one mask per glass, with no step in between that has to cut a joined region
-> apart. Nothing of it is built, so every line of this block describes an
-> intention rather than a run. The
-> model arrives with its weights already fitted to a large collection of
-> ordinary labelled pictures, and training then continues on this cell's own
-> pictures with the list of classes cut down to the single class "glass". The
-> model carries a fixed number of **queries**, each of which either reports one
-> glass or reports nothing, and a mask is predicted over the whole picture
-> rather than inside a rectangle. Because of that, this is also the one solution
-> of the six that can be asked for the part of a glass nobody saw.
+> **What it does** — it takes one picture from the top and returns one mask per
+> glass, with no step in between that has to cut a joined region apart. The
+> first of its two rungs is built and has been scored; the second was never
+> fitted to completion and claims no number. The model arrives with its weights
+> already fitted to a large collection of ordinary labelled pictures, and
+> training then continues on this cell's own pictures with the list of classes
+> cut down to the single class "glass". The model carries a fixed number of
+> **queries**, each of which either reports one glass or reports nothing, and a
+> mask is predicted over the whole picture rather than inside a rectangle.
+> Because of that, this is also the one solution of the six that can be asked
+> for the part of a glass nobody saw.
 > **How the output is produced** — the grey picture shaded from depth goes in;
 > the model's body turns it into a description of every part of the picture; the
 > queries read that description and each returns a class, a rectangle and a mask
@@ -71,9 +71,14 @@ of the six that can reasonably be asked to mark the part of a glass that nothing
 in the picture shows, which is the **second rung** of this solution and is
 described in full below.
 
-Nothing here is built. Everything in this document is a design and a set of
-prescriptions, and where a check is prescribed the document says so plainly. No
-measurement of this model appears anywhere, because no run of it exists.
+One thing has to be said before the rest. **The first rung is built and has
+been scored on the bench; the second rung is not.** Its fine-tune was started
+with the same settings as the first and stopped unfinished when the machine
+filled up, so no number is claimed for it anywhere. This document quotes no
+scorecard of its own either: the first rung's numbers sit beside its code, in
+[`06-rf-detr-fine-tuned/`](../../../02-segment-glasses/06-rf-detr-fine-tuned/).
+So where this document says what the second rung would do, that is the design
+speaking and not a run.
 
 By the end you will understand what a query is and why a fixed number of them is
 a different idea from a search that proposes regions, what set prediction means
@@ -82,6 +87,75 @@ class list down to one class does and does not change, why this architecture
 suits the request for a glass's whole silhouette better than a rectangle-based
 one does, and the single mistake that would do the most damage if this solution
 were built carelessly.
+
+## The code at the heart of it
+
+Two pieces of code carry this solution, and both are worth seeing before the
+document explains them. The first is the **fine-tune**, which is what turns a
+model fitted on everyday photographs into a finder of glasses in this room. The
+second is the **split**, which separates the pixels of a mask the camera really
+saw from the pixels the model only asserts, and without it the second rung
+could not be let near the arm.
+
+The fine-tune is two steps, in `06-rf-detr-fine-tuned/rf_detr_seg.py`. The
+borrowed weights are built into a model, and the package's own training loop is
+then run over the folder of pictures and labels this cell wrote for it, with the
+list of classes cut down to one entry.
+
+```python
+def fresh():
+    ...
+    weights.borrowed()
+    import rfdetr
+
+    return getattr(rfdetr, SIZE)(device=str(device.pick()))
+    ...
+    model = fresh()
+    model.train(
+        dataset_dir=str(folder / "dataset"),
+        output_dir=str(folder / "run"),
+        epochs=epochs,
+        batch_size=batch,
+        lr=LEARNING_RATE,
+        class_names=[labels.CLASS],
+        tensorboard=False,
+    )
+```
+
+The split is this project's own arithmetic, in the same file, and it asks the
+simulator nothing. A camera looking down throws every outline outwards from the
+point below it, so of two reports whose masks overlap the one standing nearer
+that point is the one in front, and every pixel the two both claim belongs to
+it. What comes back is, per report, the pixels of it some nearer report covers.
+
+```python
+def hidden_by_others(picture, masks: list[np.ndarray], nadir: tuple[float, float]) -> list[np.ndarray]:
+    ...
+    usable = [mask & np.isfinite(picture.depth) for mask in masks]
+    ...
+    contested = np.sum(np.stack(usable), axis=0) > 1
+    away = []
+    for mine in usable:
+        alone = masks_to_glasses.one_glass(picture, mine & ~contested)
+        away.append(np.inf if alone is None else float(np.hypot(alone.x - nadir[0], alone.y - nadir[1])))
+
+    behind = []
+    for index, mine in enumerate(usable):
+        theirs = np.zeros_like(mine)
+        for other, nearer in enumerate(usable):
+            if other != index and away[other] < away[index]:
+                theirs |= nearer
+        behind.append(mine & contested & theirs)
+    return behind
+```
+
+The two blocks are the two halves of what this solution costs. The first is the
+borrowed work: the `rfdetr` package with PyTorch under it, and one `train` call
+doing everything this document means by fine-tuning. The second is the part
+nobody can borrow, and what it returns is handed to
+`masks_to_glasses.one_glass` as pixels whose depth readings are to be left out
+of the measurement. A second, smaller set of asserted pixels is named by the
+check described further down, and it is left out the same way.
 
 ## The problem this solves
 
@@ -555,9 +629,8 @@ glass or simply the edge of something that ends there, and splay stretches every
 outline in a picture from the top outwards, so an outline's far edge can look
 cut off when the glass merely ends.
 
-This failure is loud where the one it replaces is quiet, and two cheap
-prescriptions bound it. Both are prescriptions and neither is anything this
-folder runs.
+This failure is loud where the one it replaces is quiet, and two cheap checks
+bound it. Both are in the code, and each of them can only refuse.
 
 **The width must lie inside the range the kind allows, unless the picture ran
 out before the glass did.** Inventing glass means reporting a glass where none
@@ -581,13 +654,17 @@ and a claimed footprint either fits the kind or does not.
 **The asserted part must lie where the camera could not see.** A model claiming
 a glass continues behind the near glass is claiming something about a part of
 the scene the camera could not see, which is allowed. A model claiming a glass
-continues across a patch the camera had a clear view of, and where bare table
-came back, is contradicting a direct observation. So the asserted part should be
-intersected with the piece of table no ray from the lens reached, and anything
-asserted outside it is wrong on arithmetic alone, with no reference to the
-model, the training set or the kind. That is the strongest of the two, because
-it is geometry rather than judgement, and it is the reason a learned completion
-can be let near the arm at all.
+continues across a patch the camera had a clear view of, where the reading comes
+back off a surface standing nowhere near this glass, is contradicting a direct
+observation. So every pixel of a mask that no nearer report accounts for is
+back-projected with its own depth reading, and one whose surface stands further
+from the report's own middle than the widest footprint the kind allows is a
+pixel the camera plainly saw something else at. Those are left out of the
+arithmetic like the rest of the asserted part, and a report holding more than a
+small share of them is refused — wrong on arithmetic alone, with no reference to
+the model, the training set or the kind. That is the strongest of the two,
+because it is geometry rather than judgement, and it is the reason a learned
+completion can be let near the arm at all.
 
 There is also a free test for the quiet version of invention, where a model
 completes a little on every glass whether or not anything is in front of it, so
@@ -655,9 +732,8 @@ claims pixels the camera never saw the glass at, it must say which ones.
 
 ## How the concepts fit together
 
-Everything above is one chain — the chain this solution is designed to run,
-since none of it is built — and it is worth reading in order, because each stage
-inherits what the one before it produced.
+Everything above is one chain, and it is worth reading in order, because each
+stage inherits what the one before it produced.
 
 A **grey picture**, shaded from the depth reading at every pixel, goes in. The
 body of the model reads it and produces a description of every part of it, using
@@ -680,13 +756,15 @@ front. Out of that come a **place** and a **rough width**, both measurements of
 the part that was seen, and the **visible fraction** this document prescribes
 carrying alongside them.
 
-Then the prescribed checks, each of which can only refuse. The width must lie
-inside the range the kind allows, unless the mask it was measured from reaches
-the edge of the frame, where the width belongs to the part of the glass the
-picture held. The asserted part must lie inside the piece of
-table the camera could not see. A glass passing both is reported with its place,
-its width and its visible fraction; a glass failing either is reported as
-doubtful, with the check it failed.
+Then the two checks, each of which can only refuse. The width must lie inside
+the range the kind allows, unless the mask it was measured from reaches the edge
+of the frame, where the width belongs to the part of the glass the picture held.
+And no part of the mask may be asserted over a patch the camera plainly saw
+something else at. A glass passing both is reported with its place, its width
+and its visible fraction; a glass failing either is reported as doubtful, with
+the check it failed. Last, where two surviving reports land at one place on the
+table only the surer of them keeps the place, which is the shared rule every
+solution in this problem ends with.
 
 Three things are worth holding on to. The **shape of the output** is what
 answers the hardest part of the problem, because a fixed set of slots filled one
@@ -774,7 +852,8 @@ none of the argument.
 ## A worked example
 
 Everything below follows from the cell's own geometry and from the design above.
-Nothing in it is a measurement, because no run of this solution exists.
+It is a walk through the design rather than a record of a run, and nothing in it
+is a measurement.
 
 **The arrangement.** Five glasses of one kind stand on the table, and the camera
 looks down from the top. Three of them stand clear of each other. The other two
@@ -835,9 +914,9 @@ worth being plain about that before anyone starts.
 
 It needs a **deep learning framework and the environment to run it in**, which
 is a large dependency for a cell whose simplest answer is a page of arithmetic.
-It needs a **downloaded file of weights**, which is large, which is not
-something to keep beside the code, and which this project cannot produce, so it
-comes from outside and is taken on trust.
+It needs a **downloaded file of weights**, which is large, which is fetched
+rather than committed with the code, and which this project cannot produce, so
+it comes from outside and is taken on trust.
 
 It needs a **training set**, which the bench renders and labels for nothing,
 including the crowded arrangements the cell's own rule would never produce. That

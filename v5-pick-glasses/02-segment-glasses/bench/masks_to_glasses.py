@@ -13,8 +13,9 @@ while the middle of the rim sits over it. The width is twice how far the cloud
 reaches from that axis, taken as a percentile so that one stray point at the
 edge cannot widen it.
 
-**A mask may claim pixels the camera did not see it at**, which is what solution
-10 does on purpose, and those pixels have to be named before the arithmetic runs
+**A mask may claim pixels the camera did not see it at**, which is what the
+amodal rung of 06-rf-detr-fine-tuned does on purpose, and those pixels have to
+be named before the arithmetic runs
 rather than after. The depth reading at such a pixel belongs to whatever stood
 in front, so the point it gives sits on that other object. Feeding them in with
 the rest drags the fitted centre onto the glass in front, and it was measured:

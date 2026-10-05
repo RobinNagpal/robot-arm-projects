@@ -12,7 +12,9 @@
 > general list, so that it stops being a general describer of photographs and
 > becomes a finder of glasses in this room. The outlines it then returns are the
 > answer to problem 2.
-> **How the output is produced** — one survey picture from the top goes in. The
+> **How the output is produced** — a survey picture from the top goes in, and a
+> survey is three of them from three overlapping stations, each asked about on
+> its own because that is the bench's arrangement for all six. The
 > fitted model returns, for each thing it believes it has found, a box, a number
 > saying how sure it is, and an outline of the pixels inside that box which
 > belong to the object. Candidates that overlap a better-scoring candidate too
@@ -50,12 +52,13 @@ model is put to work on a particular job. Nothing here is unusual, and that is
 deliberate: this is the standard move, written out in full so that what it buys
 could be measured rather than assumed.
 
-**This is a design and not a report.** None of the six solutions to problem 2 is
-built, so nothing below describes a program that has run. Where this document
-says what the method would do, that is what the design says it would do, and
-where it says a check should be applied, that is a prescription rather than a
-step something already carries out. No measurement is quoted anywhere, for the
-same reason.
+**This solution is built, and most of this document was written before it ran.**
+What it scored is recorded beside the code, in
+[`04-yolo-fine-tuned/README.md`](../../../02-segment-glasses/04-yolo-fine-tuned/README.md)
+and in that folder's `results.json`. The reasoning below is kept in the voice it
+was written in, so where it says what the method would do, read that as what the
+design expected. The few places where the marking has since answered a question
+say so.
 
 **The whole reason this solution exists is that it is one half of a matched
 pair.** [Solution 3](03-yolo-zero-shot.md) is this model with no training in
@@ -86,6 +89,75 @@ and why labelling it costs nothing here while it would be the most expensive
 part of the same work on real pictures, which of solution 3's weaknesses
 training repairs and which it cannot touch, and the two ways training on one
 cell's pictures can go wrong.
+
+## The code that does the work
+
+One thing separates this solution from [solution
+3](03-yolo-zero-shot.md), and it is the training. So the piece worth reading
+first is the fitting step: it is where the borrowed file is picked up, where the
+borrowed library is asked to continue its training, and where the result is
+written down as a file of this project's own.
+
+The fitting step is in
+[`04-yolo-fine-tuned/yolo_fine_tuned.py`](../../../02-segment-glasses/04-yolo-fine-tuned/yolo_fine_tuned.py).
+`borrowed()` is the downloaded file, the same one solution 3 runs untouched;
+`dataset.build` writes the bench's scenes out as the directory of pictures and
+label files Ultralytics reads a training set from; and `model.train` is the one
+line where the borrowed library does the work.
+
+```python
+def fit(examples: Iterable[data.Example], *, amodal: bool, save: Path, epochs: int = EPOCHS) -> Mapping:
+    ...
+    from ultralytics import YOLO
+
+    described, counts = dataset.build(fitting, checking)
+    model = YOLO(str(borrowed()), task="segment")
+    model.train(
+        data=str(described),
+        epochs=epochs,
+        imgsz=PICTURE,
+        batch=BATCH,
+        device=device.pick(),
+        ...
+        seed=FITTING_SEED,
+        deterministic=True,
+        plots=False,
+        verbose=False,
+    )
+    shutil.copy(model.trainer.best, save)
+```
+
+What the fitted model's answers then go through is in the same file, in
+`Finder.find`, and it is short for the reason the training makes it short. There
+is no filter on category names here, because there is one class, so the only
+judgement left is the width check against the kind and the exemption for a
+candidate the frame cut short.
+
+```python
+    def find(self, picture, kind: str) -> tuple[list[Found], list[str]]:
+        ...
+        narrowest, widest = data.widths(kind)
+        kept: list[Found] = []
+        doubts: list[str] = []
+        for mask in self.candidates(picture)[0]:
+            found = masks_to_glasses.one_glass(picture, mask)
+            if found is None:
+                doubts.append(TOO_LITTLE)
+            elif narrowest <= found.width <= widest or found.cut_off:
+                kept.append(found)
+            else:
+                doubts.append(NO_SUCH_WIDTH)
+        return masks_to_glasses.one_per_place(kept, narrowest), doubts
+```
+
+Read beside solution 3's own code section, those two blocks are where the pair
+differs and the rest of both folders is where it does not. Solution 3 reaches
+the library once, to ask it about a picture, and then spends its lines filtering
+borrowed category names. This one reaches the same library twice, once to
+continue its training and once to ask it about a picture, and holds no list of
+category names anywhere. The width check in the second block is the one
+difference the training did not bring, and the section on what this solution
+contributes says what it is for.
 
 ## The problem this solves
 
@@ -260,9 +332,10 @@ arrangements, so that nothing is ever tested on an arrangement it learned from.
 
 From an id image every label this model needs is a selection over an array the
 renderer produced anyway. The mask for one glass is the set of pixels carrying
-that glass's identity. The box is the smallest rectangle containing them. The
-class is always "glass". There is no person drawing outlines, no budget for that
-person, and none of the mistakes that person would make.
+that glass's identity, and the label written out for that glass is the outline
+round those pixels, under a class that is always "glass". There is no person
+drawing outlines, no budget for that person, and none of the mistakes that
+person would make.
 
 **It is worth saying plainly that this is a privilege of working in a
 simulator.** On real photographs this is the expensive part of the whole
@@ -437,6 +510,27 @@ the glass and the width from how far the points reach out from that axis. Every
 solution in this folder is given that same step, so **a difference in the score
 belongs to the mask.** This solution contributes only the masks, and so does
 solution 3, which is exactly why the gap between the two is readable.
+
+**One check stands between the model and the bench, and solution 3 deliberately
+has none.** The kind of glass is known, so the narrowest and the widest
+footprint a glass of that kind could have are known too, and a candidate whose
+footprint falls outside that range is reported as a doubt rather than kept. That
+is a limit on the kind and never the size of any one glass. It can only turn a
+reported glass into a reported doubt and never the other way round, so it cannot
+flatter this side of the comparison.
+
+**The check stands down when the frame cut the glass short.** At the cell's own
+survey height one picture does not hold the glass zone, so a candidate whose
+mask reaches the edge of the picture is kept whatever its width: the picture ran
+out before the glass did, and a width read off part of a footprint is not the
+glass's width. Two measurements said so. Handed the bench's own exact masks, one
+station at a time over 20 held-out spawned scenes, the kind's own range refuses
+66 of 297 glass sightings, and every one of those 66 reaches the frame edge; and
+of this model's own refusals over eight of those scenes, all eleven too-narrow
+ones had a mask touching that edge. So the check was refusing the view rather
+than the mask. What makes standing down safe rather than generous is the
+survey's three overlapping stations: where a glass was seen squarely from
+another station, that is the report the bench keeps.
 
 It follows that **this solution produces no pose.** Models produce masks. The
 place comes from depth and the camera's own pose, by arithmetic, and a glass

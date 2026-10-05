@@ -90,9 +90,10 @@ the physics of an arm nobody has. **Holding it there changes almost nothing**:
 the score moved by less than the spread between repeat runs, because the real
 problem is the height and not the speed. That is worth knowing, since it would
 have been easy to assume the speed was the whole story.
-When it does catch one it is moving fifteen times faster than a push macro
-would, which is where the 73 jams and the 6 toppled glasses come from, and why
-the landing error is 75.7 mm rather than a millimetre or two.
+When it does catch one it is moving as fast as the arm can go, which is ten
+times a push macro's speed, and that is where the jams and the toppled glasses
+come from and why a glass lands tens of millimetres from the aim rather than a
+millimetre or two.
 
 Part of why the trajectories come back high is in the join, under "the state"
 below: the bench parks the jaw above travel height between actions, the

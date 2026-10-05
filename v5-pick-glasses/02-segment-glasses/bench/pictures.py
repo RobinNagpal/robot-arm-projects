@@ -5,8 +5,8 @@ in this folder arrives with weights fitted to ordinary photographs, which are
 three eight-bit channels, so the distance is shaded into a grey value and that
 one channel is repeated three times.
 
-All three solutions share this assumption, so it is written once, here. That is
-the point of the module: the three scorecards are only comparable if the
+Every solution that borrows a model shares this assumption, so it is written
+once, here. That is the point of the module: the scorecards are only comparable if the
 pictures behind them are identical, and a solution with its own shading could
 beat another by shading rather than by method. It is also the largest risk in
 the folder, because what comes out has the shape of a photograph and none of

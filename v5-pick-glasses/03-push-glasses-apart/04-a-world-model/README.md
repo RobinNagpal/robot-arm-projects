@@ -57,16 +57,19 @@ again.
 
 - **Training.** 38,012 pushes in the simulator and 5 trained networks, about 31
   minutes on a laptop CPU. The programmed approach needs none.
-- **Six pushes went wrong** (4 blocked, 1 never touched, 1 jammed) where the
-  programmed approach had none. Each was caught by looking again, and none
-  toppled anything.
-- **Toppling is the weak point.** None happened on the 50 held-out tables. On
-  100 tuning tables the same settings toppled 1 glass, and the model had rated
-  every topple it missed as safe. See [the results](#results--50-held-out-tables-251-glasses).
+- **Ten pushes went wrong** (7 blocked on the way down, 3 jammed) where the
+  programmed approach had none. Each was caught by looking again.
+- **Toppling is the weak point, and it is not hypothetical.** One glass went
+  over on the 50 held-out tables, and one more on the tuning tables, and in
+  each case the model had rated the push that did it as safe. The programmed
+  approach topples nothing at all, so this is the trade this solution makes:
+  it clears more glasses with half the handling, and it is the one approach
+  here built out of push parameters that breaks something. See
+  [the results](#results--50-held-out-tables-251-glasses).
 - **The comparison is not fully controlled.** The two approaches differ in
   their search and in how they check the jaw's path, not only in the model. So
   not all of the gain can be charged to the model.
-  [Solution 10](../../docs/03-push-glasses-apart/solutions/04-a-world-model.md)
+  [Solution 4's document](../../docs/03-push-glasses-apart/solutions/04-a-world-model.md)
   has the full comparison.
 
 ## How it works
@@ -220,10 +223,10 @@ pixi run python examples.py --round validation --count 100
 
 | | Result |
 |---|---|
-| Tables | done 34, incomplete 16, wrong 0 |
-| Glasses | racked 208, refused 43, toppled 0 |
-| Pushes | 113 (15 repeats); 4 blocked on the way down, 1 never touched, 1 jammed |
-| Landing | 1.7 mm from where the model aimed it, median; 24.8 mm worst |
+| Tables | done 31, incomplete 18, wrong 1 |
+| Glasses | racked 202, refused 48, toppled 1 |
+| Pushes | 114 (14 repeats); 7 blocked on the way down, 0 never touched, 3 jammed |
+| Landing | 1.6 mm from where the model aimed it, median; 48.2 mm worst |
 | Model, on unseen tables | pushed glass lands 4.5 mm from its prediction, median; blocked guessed right 96% of the time |
 
 **Toppling is the weak point, even though none happened here.** On 100 tuning

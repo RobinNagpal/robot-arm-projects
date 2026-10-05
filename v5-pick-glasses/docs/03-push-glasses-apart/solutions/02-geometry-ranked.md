@@ -70,17 +70,23 @@ prediction can do is waste one attempt**. In a cell where a toppled glass
 cannot be stood back up by anything in this project, that property is worth a
 great deal.
 
-Half of this solution is already written and half of it is a design, and the
-line between them is worth drawing before anything else. The candidate
+All of this is now written, and the result is worth stating before anything
+else, because it is the finding rather than a footnote. The candidate
 generation exists: `03-push-glasses-apart/01-one-fixed-nudge/plan.py` sweeps the headings, steps
-the travel out, applies the tests and returns every push that survives, and it
-runs on the bench today. What it does with that set is also written, and it is
-a printed rule rather than a model: it takes the shortest push that finishes
-the job. **Everything in this document about the trees — the inputs they are
-shown, the number they predict, the training set and the labelling — is a
-design and not code that runs.** Where a number appears below it comes from
-the bench's own results file or from a constant in that code, and no
-measurement of a fitted ranker is quoted anywhere, because none has been made.
+the travel out, applies the tests and returns every push that survives. The
+printed rule that takes the shortest push which finishes the job exists beside
+it. And the trees described below — their inputs, the number they predict, the
+training set and the labelling — are built too, in
+`03-push-glasses-apart/02-geometry-ranked`, fitted, and run over the same fifty
+held-out tables as the rule, with the model deleted, so that both sides see
+exactly the same candidates and the only difference between the two runs is who
+picks. **The ranker loses that comparison.** It racked 185 of the 251 glasses
+in 229 pushes where the printed rule racked 195 in 213, finishing two fewer
+tables and toppling nothing either way. The ablation is in the folder:
+`results.json` is the ranker's run and `rule.json` is the rule's. Why it loses
+is explained in [where it is strong and where it breaks](#where-it-is-strong-and-where-it-breaks),
+and the short answer is that the model is fitted on room gained while the run
+is scored on glasses racked, and those are not the same quantity.
 
 By the end of this document you will understand what a decision tree is and
 what boosting a set of them means, why a handful of geometric quantities suits
@@ -108,6 +114,76 @@ two solutions that learn from it inherit its ceiling, and keeping only the
 demonstrations that succeeded trains them on a biased sample of what this
 solution happens to do well.
 
+## The code at the heart of it
+
+Everything this solution adds to [solution 1](01-one-fixed-nudge.md) sits in
+two places, and they are small enough to read here. The first is the model
+itself: scikit-learn's boosted trees, fitted once and then asked for one number
+per candidate so that the candidates can be sorted. The second is the number
+those trees are asked to predict, which is measured by making the push on the
+bench and reading the table afterwards. Those two are the heart of this
+solution because the candidates themselves are not its own — they come from
+solution 1's enumerator unchanged — so the choosing is the only thing that
+differs, and the label is what the choosing is taught to want.
+
+The borrowed library does its work in a constructor and one call to `fit`, and
+the sort that follows is the model's entire effect on the run. Both are in
+`03-push-glasses-apart/02-geometry-ranked/ranker.py`:
+
+```python
+from sklearn.ensemble import GradientBoostingRegressor
+...
+TREES = 200
+DEPTH = 3
+LEARNING_RATE = 0.05
+...
+    @classmethod
+    def fit(cls, rows: np.ndarray, labels: np.ndarray, seed: int = 0) -> Ranker:
+        trees = GradientBoostingRegressor(
+            n_estimators=TREES, max_depth=DEPTH, learning_rate=LEARNING_RATE, random_state=seed
+        )
+        trees.fit(rows, labels)
+        return cls(trees)
+...
+def ranked(
+    seen: list[Seen], skip: set[int], score: Scorer
+) -> tuple[list[Candidate], np.ndarray, dict[int, str]]:
+    """Every safe push on the table, best first, with its score and the refusals.
+    ...
+    """
+    kept, why = survivors(seen, skip)
+    if not kept:
+        return [], np.zeros(0), why
+    scores = np.asarray(score(features.rows(seen, kept)), dtype=np.float64)
+    order = np.argsort(-scores, kind="stable")
+    return [kept[i] for i in order], scores[order], why
+```
+
+What `labels` holds is the whole design decision, and it is produced by making
+one candidate on the bench and measuring what it did, in
+`03-push-glasses-apart/02-geometry-ranked/rollout.py`:
+
+```python
+def roll(table: Bench, before: Before, candidate: Candidate) -> Rolled:
+    """Put the table back as it was, make the push, and measure what it did."""
+    restore(table, before)
+    felt = table.push(candidate.push)
+    after = table.look()
+    gained = nudge.shortfall(before.layout) - nudge.shortfall(truth(table))
+    fell = any(table.tilt(i) >= STANDING_TILT_DEG for i in table.on_table())
+    return Rolled(
+        label=TOPPLED if fell else gained,
+        ...
+    )
+```
+
+Two things are visible in those blocks together. `survivors` is called before
+the model and `score` only reorders what it returns, which is the safety
+argument this whole document rests on. And the label is `gained`, metres of
+room the whole table gained, while the run is marked on how many glasses end up
+grippable — the mismatch that costs the ranker the comparison with the printed
+rule.
+
 ## The problem this solves
 
 [Problem 3](../problem.md) hands the arm a table with four to six glasses on
@@ -134,7 +210,7 @@ what it was chosen for, so a method that chose better among the same candidates
 would spend fewer of them. That is the gap a ranker is pointed at.
 
 It is worth naming the other number in that same results file, because this
-solution does not touch it. **52 of the 251 glasses were refused for having
+solution does not touch it. **56 of the 251 glasses were refused for having
 nowhere clear to push them to.** That is a shortage of candidates rather than a
 bad ordering of them, and a ranking over an empty set is still empty. So
 whatever this solution is worth, it is worth nothing at all against the largest
@@ -206,8 +282,9 @@ the glass still crowded, but less crowded than it was, is kept as long as it
 cuts the table's total shortfall of room by at least 10 mm. The printed rule
 uses this second kind only when there is no job-finishing push anywhere on the
 table. This set is the large one: the enumerator offers every 2 mm step along
-every heading up to the first clash, so it can run to thousands of candidates
-for a single glass.
+every heading up to the first clash. Measured over 269 groups on the training
+tables, the middle glass is offered 84 candidates and the middle whole-table
+decision 261, with `spread.json` holding the counts.
 
 The consequence of the first property is the most important thing in this
 document, and it is worth drawing out slowly rather than leaving implied.
@@ -688,8 +765,11 @@ refuses produces no candidates and the model is handed nothing.
 clashed with a neighbour, left the glass zone or left the arm's reach. The
 candidate set is empty, and **a ranking over an empty set is still empty**. This
 is the commoner refusal by a wide margin in the record this solution extends:
-all 52 of the glasses that run left on the table were refused for this reason,
-and not one for tipping.
+all 56 of the glasses that run left on the table were refused for this reason,
+and not one for tipping. This folder reports the same glasses in two groups
+rather than one, separating those that had no candidate at all from those whose
+candidates were all too slight to be worth making, so its own results file
+spells the reason differently and counts the same refusals.
 
 ![The topple limit is evaluated at the jaw's top edge across the whole believed range of friction, and on the held-out tables it refuses nothing: every refusal in the record is a glass with nowhere clear to push it to.](../../../images/03-push-glasses-apart/06-where-the-refusals-come-from.png)
 
@@ -734,8 +814,8 @@ candidate for it.
 enumerator sweeps 72 headings and steps the travel out in 2 mm to 150 mm,
 discarding every step at which the glass's path, the fingers' swept path, the
 body's swept path, the zone or the reach fails. What survives is a large set,
-running well into the hundreds for each glass, because most headings admit many
-lengths before anything clashes.
+running to dozens of pushes for each glass and to hundreds across the table,
+because most headings admit many lengths before anything clashes.
 
 **A minority of those finish the job.** For each glass the job-finishing pushes
 fall into two arcs: one pointing roughly away from the neighbour, and one
@@ -769,9 +849,10 @@ It needs **scikit-learn and NumPy**, both small, both pure software, and both
 BSD 3-clause, so there is no licence condition to carry anywhere and nothing to
 revisit if this work were taken further.
 
-It needs the **enumerator**, which exists in `03-push-glasses-apart/01-one-fixed-nudge/plan.py` and
-runs on the bench today. This is the part of the solution that is built, and it
-is also the part that decides the ceiling.
+It needs the **enumerator**, which lives in `03-push-glasses-apart/01-one-fixed-nudge/plan.py`
+and is loaded from there rather than copied, so the heading sweep, the stepped
+travel, the four tests and the tipping rule have one definition in this
+repository. It is also the part that decides the ceiling.
 
 It needs a **training set**, which is a few thousand pairs of a candidate and
 what happened to it, generated on the training half of the bench's tables and
@@ -827,16 +908,36 @@ own score is unremarkable.
 
 Against that, three kinds of weakness.
 
-**What the measurement will probably say.** The job-finishing candidates are
-tied by construction, as the section on the enumerator shows, so the ordering
-carries no information in exactly the part of the candidate set where the task
-is actually being finished. What is left for the model is the wider set of
-pushes that only ease the crowding, and there the printed rule already uses the
-quantity that matters most, which is travel. **Before building this, measure the
-spread of the label within each candidate group**, and measure how much better
-the best possible opening push would be than the printed rule's. Both are a
-line of arithmetic over an enumerator that already exists, and both are cheap
-enough that there is no excuse for fitting a model first.
+**What the measurement said, and it is the finding of this solution.** The
+job-finishing candidates are tied by construction, as the section on the
+enumerator shows, so the ordering carries no information in exactly the part of
+the candidate set where the task is actually being finished. That prediction
+was then checked rather than left as an argument. `spread.py` made 4,511 real
+pushes over 60 training tables and wrote `spread.json`: within one glass's
+job-finishing candidates the room gained ranges **0.0 mm at the median** over
+161 groups, which is an exact tie, while the pushes that only ease the crowding
+range 11.9 mm. For one glass the printed rule already matches the best
+candidate in **159 of 206 groups**, and the best possible choice beats it by
+0.0 mm at the median.
+
+**So the ranker was fitted, and it lost to the rule it was meant to improve.**
+Both ran the same loop over the same fifty held-out tables with the same budget
+and the same candidate set, the only difference being who picks: the ranker
+racked **185 of 251 glasses in 229 pushes** and finished 31 tables, where the
+printed rule racked **195 in 213 pushes** and finished 33. Neither toppled
+anything. The gap is not an unlucky fit — three rankers fitted on resamples of
+the same rows racked 180, 181 and 184 — and the reason is the label rather than
+the trees. The model is fitted on **room gained** and the run is marked on
+**glasses that end up grippable**, and a push that spreads room over three
+glasses scores higher than one that finishes a glass outright. On the
+validation tables in `training.json` the ranker's top pick takes a
+job-finishing push in **47 of the 83 decisions that offer one**, where the rule
+takes it every time; by its own label the ranker is the better chooser, giving
+up 4.4 mm of room against the best candidate where the rule gives up 18.7 mm,
+and it still clears fewer tables. What the fit says mattered points the same
+way: the topple ratio (0.43) and the foot width (0.38) came first and the push
+distance last (0.01), so the model mostly learned which glass is risky to push
+rather than which push is good. **The verdict is to keep the simpler one.**
 
 **What the design cannot do.** It cannot invent a candidate, so its quality is
 the enumerator's quality rather than the model's. It cannot express a push that
@@ -856,9 +957,10 @@ bench's private friction, which was never measured against anything real.
 
 **How it fails, when it fails, is quietly.** A badly fitted ranker orders the
 candidates roughly at random. Nothing errors, nothing topples, and the run
-simply spends more pushes and leaves more glasses behind than it needed to. The
-test is to count pushes per run against the printed rule on the held-out
-tables, and to keep the simpler one if it wins.
+simply spends more pushes and leaves more glasses behind than it needed to.
+That is exactly how it failed here, and the only reason it was caught is that
+the test was run: count pushes and glasses racked against the printed rule on
+the held-out tables, with the model deleted and everything else held the same.
 
 ## The general ideas behind this
 
@@ -1041,7 +1143,8 @@ the same large vision-language-action model, one used exactly as it downloads
 and one with its training continued here, and the only difference between them
 is that training. Both read a picture rather than a list of measurements and
 both emit waypoints rather than push parameters, and the one of them whose
-training was continued here needed a rented accelerator for it. This solution
+training was continued here was expected to need a rented accelerator, though
+in the event it trained on the same laptop as everything else. This solution
 is the other end of the ladder in every one of those respects: a few
 hundred shallow trees over eight numbers, trained on a processor, with the
 safety held by arithmetic that was written rather than fitted. If a scorecard

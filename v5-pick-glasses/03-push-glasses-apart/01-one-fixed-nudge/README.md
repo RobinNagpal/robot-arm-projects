@@ -66,7 +66,8 @@ until it feels the glass, pushes, backs off and lifts. Then go back to step 1
 and look at where the glass really went. The arm never assumes the push went
 as planned.
 
-Limits: 3 pushes per glass, 15 per table.
+Limits: the push budget belongs to the bench, and every solution reads it
+from there, so that the six are allowed the same number of tries.
 
 ## Where the code is
 
@@ -87,16 +88,16 @@ make test
 `make film FILM=10` films more. Any run shorter than the 50 test tables writes
 `partial.json`, never `results.json`.
 
-## Results — 50 tables, 251 glasses, 190 without room at the start
+## Results — 50 tables, 251 glasses, 193 without room at the start
 
 | | |
 |---|---|
-| Tables | 35 done, 15 not finished, **0 wrong** |
-| Glasses | 199 taken, 52 refused, **0 knocked over** |
-| Pushes | 212, of which 92 were 5 mm test pushes |
+| Tables | 33 done, 17 not finished, **0 wrong** |
+| Glasses | 195 taken, 56 refused, **0 knocked over** |
+| Pushes | 213, of which 90 were a second or later push of the same glass |
 | Accuracy | glasses stopped 1.0 mm from where they were aimed (median), 3.9 mm at worst |
 
-All 52 refused glasses were "nowhere clear to push it to". There was free
+All 56 refused glasses were "nowhere clear to push it to". There was free
 space on the table, but the jaw could not get behind the glass. The body
 behind the fingers is 90 mm wide, and in a tight group it would hit a
 neighbour.

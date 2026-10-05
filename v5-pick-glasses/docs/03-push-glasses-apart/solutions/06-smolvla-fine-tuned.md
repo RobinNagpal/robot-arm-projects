@@ -115,6 +115,20 @@ rather than code, and each says so where it is described: **DAgger**, the
 of which one was fitted. Everything else in this document describes a program
 that has run.
 
+**And the measured result is the uncomfortable one, so it belongs at the top
+rather than only at the end: the fitting made the score worse.** The training
+did what training is supposed to do, and the model learned the height at which
+a push happens — its chunks come down to the height the gripper pushes at,
+where the borrowed model's never came near the glasses. What it did not learn
+is where to put the jaw down. So **259 of its 400 pushes a run are blocked on
+the way down**, the jaw descending onto a glass instead of behind one, and from
+there follow **46 toppled glasses a run** and 38 of the 50 tables marked
+*wrong*, against solution 5's 6 toppled and 5 wrong. Nothing in this project
+stands a glass back up, so on this scorecard a policy that never reaches a
+glass scores better than one that reaches the wrong part of it. The last
+section of this document reads that gap in full, and nothing between here and
+there should be taken to promise otherwise.
+
 By the end you will understand what fine-tuning is and why it is far cheaper
 than fitting a model of this size from random numbers, what low-rank
 adaptation is and what it trades away to fit in the memory it has to fit in,
@@ -123,6 +137,73 @@ what this solution can ever be, which of solution 5's weaknesses the training
 repairs and which of them survive it untouched, the two ways training on one
 cell's pushes goes wrong, and why a markedly larger foundation model is a
 second rung here rather than the main line.
+
+## The code that does the work
+
+Everything this solution shares with [solution
+5](05-smolvla-as-it-downloads.md) is imported from it rather than written
+again, so what is left to read is the fitting itself. That is two pieces: which
+parts of the borrowed model the correction is allowed to touch, and how a push
+the jaw really made becomes a training example.
+
+The correction is in
+[`03-push-glasses-apart/06-smolvla-fine-tuned/correction.py`](../../../03-push-glasses-apart/06-smolvla-fine-tuned/correction.py).
+`LoraConfig` and `get_peft_model` are the borrowed library's — PEFT, which
+defines the adapters, because LeRobot trains whole policies and has no low-rank
+adaptation of its own — and the three constants above them are this project's
+choice of where the correction goes.
+
+```python
+RANK = 16
+SCALING = 32
+# The tables the correction is added to: attention's four projections.
+TABLES = ("q_proj", "k_proj", "v_proj", "o_proj")
+
+...
+
+def with_correction(policy, rank: int = RANK, scaling: int = SCALING):
+    ...
+    from peft import LoraConfig, get_peft_model
+
+    policy.model = get_peft_model(
+        policy.model,
+        LoraConfig(r=rank, lora_alpha=scaling, lora_dropout=0.0, bias="none", target_modules=list(TABLES)),
+    )
+    return policy
+```
+
+What the correction is fitted towards is built in
+[`03-push-glasses-apart/06-smolvla-fine-tuned/chunks.py`](../../../03-push-glasses-apart/06-smolvla-fine-tuned/chunks.py).
+Nothing in it invents a path: it cuts the recorded push down to the flat
+stretch the model has to produce, resamples that to the fixed number of
+waypoints the model emits, checks the result survives a round trip through
+solution 5's convention, and reads it into the units the model answers in.
+
+```python
+def demonstration(path: tuple[Waypoint, ...]) -> np.ndarray | None:
+    ...
+    part = pushing_part(path)
+    if len(part) < 2 or across(part) < LEAST_ACROSS:
+        return None
+    waypoints = resampled(part)
+    if drift(waypoints) > FAITHFUL:
+        return None
+    action = as_action(waypoints)
+    ...
+    return action
+```
+
+Two things show from that. `TABLES` names the four projections of every
+attention layer and nothing else, so the correction can change what the model
+attends to and cannot change the feed-forward tables at all, which is the trade
+the section on low-rank adaptation sets out. And the second block borrows its
+arithmetic from its partner rather than repeating it: `as_action` and `drift`
+call `to_state` and `to_jaw`, which are solution 5's own, re-exported here by
+`partners.py` along with solution 5's `clear` loop, and `correction.py`
+declares `class Fitted(Downloaded)` so that the asking is inherited too. The
+targets are therefore written in the same units the partner's answers are read
+in, by the same code, and the only difference between the two solutions is that
+one of them was fitted.
 
 ## The problem this solves
 
@@ -570,16 +651,16 @@ needs, rather than the size the borrowed recordings happened to use.
 
 **That turns out to be two claims, and only one of them held.** The *height*
 was learned, and convincingly. Solution 5 measures its own chunks and reports
-that they come no lower than 247 mm above the table: the borrowed model
+that they come no lower than 209 mm above the table: the borrowed model
 essentially never brings the jaw down to the glasses at all. The fine-tuned
 model's chunks come down to 50 mm, which is the height the gripper pushes at.
 That is the model having learned from this bench's own pushes that a push
 happens on the table rather than above it, and it is the clearest single sign
 in these measurements that the domain gap closed.
 
-The *length* was not learned. The fine-tuned chunks still cover about 310 mm
+The *length* was not learned. The fine-tuned chunks still cover about 315 mm
 of table where the teacher's covered 89, at about 90 mm/s where the teacher
-pushed at 20 — better than solution 5's 964 mm, and still three times too far.
+pushed at 20 — better than solution 5's 844 mm, and still three times too far.
 So the model learned where a push happens long before it learned how far one
 goes, and a push three times too long on a crowded table is a push into a
 neighbour. The toppled count in the folder's README is that. The honest answer
@@ -856,7 +937,9 @@ In code it is `slides` in `01-one-fixed-nudge/plan.py`, which is worth saying
 because that is not where a thing shared by six solutions would naturally sit.
 There is no shared module for it: solutions 2, 3, 5 and this one all reach into
 solution 1's folder for the same arithmetic rather than each writing it out, so
-the six do refuse the same glasses, but by borrowing rather than by sharing.
+those five do refuse the same glasses, but by borrowing rather than by sharing.
+[Solution 4](04-a-world-model.md) is the one that does not apply it, and says
+so.
 The reasons it has to sit outside the policy are worth repeating in
 one place, because they are easy to lose in the middle of a document about
 training. A policy has no field in it for a rule, so it cannot be told. Its

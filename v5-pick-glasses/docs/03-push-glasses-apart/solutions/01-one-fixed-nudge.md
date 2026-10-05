@@ -1,7 +1,9 @@
 # Solution 1 — one fixed nudge
 
 > **What it uses** — NumPy for the arithmetic over a handful of positions and
-> widths, and MoveIt to carry the jaw to the places that arithmetic names.
+> widths, and nothing else. Carrying the jaw to the places the arithmetic names
+> belongs to the cell rather than to this solution: on the test bench the
+> physics engine does it, and in the real cell MoveIt does.
 > There is no model, no weights file, no training set and no licence
 > condition, because not one number in this solution was fitted to anything.
 > **What it does** — When a glass has no clear room for the gripper to close
@@ -96,6 +98,78 @@ dimensions are written down anywhere, so this document speaks in relations —
 wider than its neighbour, standing on the narrowest foot its kind allows — and
 quotes numbers only where they belong to the gripper, to the cell, or to a
 results file in the repository.
+
+## The code at the heart of it
+
+Two pieces of this solution are written and running in the repository, and they
+belong together, so they are worth reading before the prose explains them. The
+first decides whether a glass can be pushed at all: a few lines of arithmetic
+on the glass's own foot and height that answer "yes", "no" or "not without
+trying it". The second is the one small fixed push the method makes when the
+answer is the third of those. They are the heart of this solution because the
+arithmetic is the piece [solution 2](02-geometry-ranked.md) and three of the
+others borrow rather than write again, and because the small push is the only
+place in the whole method where the arm reads the world before committing to a
+decision rather than after it.
+
+The tipping test, from
+[`03-push-glasses-apart/01-one-fixed-nudge/plan.py`](../../../03-push-glasses-apart/01-one-fixed-nudge/plan.py).
+No library decides anything in it. The whole of it is a few divisions, two
+comparisons and two arctangents from Python's own `math`, which is the plainest
+illustration of what this solution being the control means.
+
+```python
+# Glass on a dry wooden top is somewhere in here. Nothing in the cell measures
+# it, so the tipping check is made at both ends.
+MU_LOWEST = 0.2
+MU_HIGHEST = 0.5
+...
+def slides(glass: Seen) -> str:
+    """Whether a push at the jaw's top edge slides this glass: "yes", "no" or "try".
+
+    It slides while the push is lower than a / mu: half the foot, over the
+    friction. The top edge, because a glass wider higher up meets the jaw
+    there first. "try" means it depends on the friction, and a probe is safe.
+    """
+    half_foot = glass.foot / 2
+    if half_foot / MU_HIGHEST > JAW_TOP:
+        return "yes"
+    if half_foot / MU_LOWEST <= JAW_TOP:
+        return "no"
+    falls_past = math.atan2(half_foot, CENTRE_OF_MASS_SHARE * glass.height)
+    return "try" if math.atan2(PROBE, JAW_TOP) < PROBE_LEAN_SHARE * falls_past else "no"
+```
+
+A glass that comes back "try" gets the fixed nudge, which is the same file's
+`probe`: the chosen push cut down to one constant length, aimed along the same
+line, and looked at before and after. NumPy appears here, and only to turn a
+heading into a unit vector.
+
+```python
+# A glass that slides only at the low end is tried with a push this long, and
+# looked at before and after. Short pushes lose up to 2.5 mm to the contact
+# taking up and the glass settling onto its far edge, so this is well over that.
+PROBE = 0.005
+...
+def probe(push: Push) -> Push:
+    """The same push, cut down to PROBE."""
+    u = np.array([math.cos(push.heading), math.sin(push.heading)])
+    middle = np.array(push.aim) - push.travel * u
+    aim = middle + PROBE * u
+    return Push(push.glass, push.start, push.heading, push.reach, PROBE, (float(aim[0]), float(aim[1])))
+
+
+def needs_probe(glass: Seen, proven: set[int]) -> bool:
+    return slides(glass) == "try" and glass.id not in proven
+```
+
+Read together, the two blocks show the whole bargain of this solution in a
+dozen lines: where the arithmetic can answer, it answers, and where it cannot —
+because the friction is missing from it — the method spends one short push to
+find out instead of guessing. Note which fixed nudge this is. The proportional
+nudge of [the main idea](#the-main-idea) has no constant in the repository,
+while `PROBE` does, so the fixed length above is the one this code really
+commits to.
 
 ## The problem this solves
 
@@ -403,7 +477,9 @@ real code is involved and it would be easy to over-claim.
 - the four decisions of [the main idea](#the-main-idea). The planner that
   exists chooses its heading and its distance by searching many headings and
   every distance up to a limit, and keeping the shortest push that frees a
-  glass. That search is the geometry [solution
+  glass — or, when no push on the table frees one, the push that most cuts the
+  table's total shortfall of room, so that the next look starts from a looser
+  table. That search is the geometry [solution
   2](02-geometry-ranked.md) generates its candidates with. This solution
   replaces it with one heading and one multiplication, so the parts around the
   rule have been run and the rule itself is the few lines that would sit where
@@ -729,10 +805,14 @@ them to be written down, and none of them is tuned.
 **One constant of its own**, the gain, chosen by the convergence argument above
 and then frozen. That is the entire configuration of the method.
 
-**Two libraries.** NumPy for the arithmetic and MoveIt to carry the jaw to the
-places the arithmetic names. Both are already in the cell, both are
-permissively licensed, and because nothing is fitted there is no weights file to
-redistribute and no licence to inherit from somebody else's training data.
+**One library, and it is NumPy.** The arithmetic over a handful of positions
+and widths is all this solution does for itself. Carrying the jaw to the place
+that arithmetic names is not part of it, because every solution here hands the
+same kind of instruction to the same cell: the test bench carries the jaw with
+its physics engine, and the real cell carries it with MoveIt. Both libraries
+are permissively licensed, and because nothing is fitted there is no weights
+file to redistribute and no licence inherited from somebody else's training
+data.
 
 **Compute to rent: none, and the number is zero.** The room test compares a
 pair of distances for every pair of glasses, so its cost grows as the square of
@@ -953,8 +1033,10 @@ the teacher for nobody.
 everything fitted. Solution 3 fits ACT, and then Diffusion Policy, to those
 demonstrations, and emits a chunk of waypoints rather than a push. The
 demonstrations themselves are free, so what it pays is a training run with
-several seeds and an accelerator to rent for it. If it does not clear more
-tables than a fixed nudge, every one of those prices bought nothing.
+several seeds. That run was budgeted for a rented accelerator and in the event
+needed none, so the price is hours of this laptop rather than money. If it does
+not clear more tables than a fixed nudge, every one of those prices bought
+nothing.
 
 **Against [solution 4](04-a-world-model.md)** the comparison is the sharpest
 statement of what this document is about. Solution 4 learns a model of what a

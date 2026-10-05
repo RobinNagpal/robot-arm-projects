@@ -81,6 +81,77 @@ not simply that the newer one is better, because the keeper is the one place in
 this whole set of six solutions where the deciding can be explained by printing
 its inputs beside its answer.
 
+## The code at the heart of it
+
+This solution is two models meeting at one place, so that place is worth seeing
+before the rest of the document explains it. On one side a grid of point
+prompts goes into the borrowed model. On the other a short row of measurements
+comes back out of what the borrowed model returned, and that row is the only
+thing the fitted model ever reads. Everything after this section is an account
+of those two sides.
+
+Going in, in `05-sam2-with-a-keeper/sam_keeper.py`: how far apart the grid's
+points stand is taken from the narrowest glass the kind allows rather than
+chosen, the grid is then laid over the whole picture, and the borrowed model is
+called on batches of its points with the picture already encoded.
+
+```python
+def prompt_spacing(kind: str) -> int:
+    ...
+    narrowest = data.widths(kind)[0] / _metres_per_pixel()
+    return max(1, int(narrowest / POINTS_ACROSS_SMALLEST))
+
+
+def _grid(spacing: int, inside: np.ndarray | None = None) -> list[list[float]]:
+    """Prompt points (column, row) on a regular grid, optionally only where ``inside`` is true."""
+    rows = np.arange(spacing // 2, render.HEIGHT, spacing)
+    columns = np.arange(spacing // 2, render.WIDTH, spacing)
+    points = [[float(column), float(row)] for row in rows for column in columns]
+    ...
+
+    def at(self, points: list[list[float]]) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        ...
+        asked = [[[point] for point in points]]
+        prepared = self.processor(original_sizes=self.sizes, input_points=asked, return_tensors="pt")
+        all_points = _onto(prepared["input_points"], self.where)
+        ...
+            for start in range(0, all_points.shape[1], PROMPTS_AT_ONCE):
+                chunk = all_points[:, start : start + PROMPTS_AT_ONCE]
+                out = self.model(image_embeddings=self.embeddings, input_points=chunk, multimask_output=True)
+```
+
+Coming out, in the same file: every region that survived the cleanup becomes
+numbers measured on the table rather than in the picture. Six of the keeper's
+eight come from here. The other two — how many prompt points returned this same
+region, and how it nests among the regions beside it — are added by the function
+that calls this one, because neither can be known from one region on its own.
+
+```python
+def _measure(picture, mask, found, jumps, step, camera, widths) -> list[float]:
+    ...
+    rows, columns = found.pixels[:, 0], found.pixels[:, 1]
+    points = render.to_world(picture, rows, columns)
+
+    low, high = widths
+    edge = mask & ~cv2.erode(mask.astype(np.uint8), np.ones((3, 3), np.uint8)).astype(bool)
+    return [
+        (found.width - low) / (high - low),  # where its width falls in the kind's range
+        _roundness(mask),
+        float(np.median(points[:, 2]) - TABLE_TOP_Z),  # how far its surface stands off the table
+        float(math.dist((found.x, found.y), camera)),  # how far it sits from under the camera
+        float(np.mean(jumps[edge] > step)) if edge.any() else 0.0,  # how much of its edge is a step
+        _table_area(points),
+    ]
+```
+
+Two things show in those two blocks. The borrowed half is one call,
+`self.model(...)` on a `Sam2Model` loaded through Hugging Face `transformers`,
+and every line written around it belongs to this project. And the fitted half
+never sees a pixel: what reaches scikit-learn — a
+`HistGradientBoostingClassifier` wrapped in a `CalibratedClassifierCV` — is the
+list the second block returns. That is what borrowing the seeing and fitting the
+deciding looks like in code.
+
 ## The problem this solves
 
 Problem 2 puts four to six glasses on the table. They are all of one kind, the
@@ -540,11 +611,11 @@ step in depth is the kind of boundary the borrowed model can find. If at least
 two of the regions which come back stand at different places on the table with
 widths inside the kind's range, the pair is reported as those two glasses.
 
-If they do not, the pair is **reported as an unseparated pair**, with its place
-and its reason, and handed to [problem 3](../../03-push-glasses-apart/problem.md). That is
-not a failure. This project's rule is that anything doubtful is reported and
-never guessed, and a pair the arm cannot tell apart is stated as the input to
-the next problem rather than turned into one wide glass that everything
+If they do not, the pair is **reported as an unseparated pair**, carrying its
+reason, and handed to [problem 3](../../03-push-glasses-apart/problem.md).
+That is not a failure. This project's rule is that anything doubtful is reported
+and never guessed, and a pair the arm cannot tell apart is stated as the input
+to the next problem rather than turned into one wide glass that everything
 downstream would believe.
 
 ### What kind of model the keeper is
@@ -588,12 +659,25 @@ that nine proposals in ten like it are glasses.
 
 That matters here because the score is not used only to sort. It is compared
 against a threshold, and a threshold on a number whose size means nothing is a
-knob somebody turned until the result looked good. So the design is to fit a
-small correction from the raw score to an honest probability, on **held-out
-arrangements** — arrangements the keeper itself was not fitted on, because a
-correction fitted on the keeper's own training examples would learn the keeper's
-optimism rather than correct it. The correction is a handful of numbers more,
-and it is the cheapest honest thing in this solution.
+knob somebody turned until the result looked good. So a small correction from
+the raw score to an honest probability is fitted as part of the keeper's own
+fit, in **folds**: the table of proposals is cut into parts, and each part takes
+its turn at being held back while the trees are fitted on the others and the
+correction on it. No correction is therefore fitted on rows the trees behind it
+were shown, because a correction fitted on the keeper's own training rows would
+learn the keeper's optimism rather than correct it. The correction is
+a handful of numbers more, and it is the cheapest honest thing in this
+solution.
+
+**One weakness in that is worth naming, because nothing in the run will show
+it.** The folds cut the table of proposals row by row, and one arrangement
+contributes many rows, so proposals of the same glasses on the same table can
+land on both sides of a fold. Those rows are not independent of each other, so
+the correction sees something a little easier than a fresh arrangement would be,
+and the probability it produces is therefore a little kinder than the truth. The
+cure is to cut the folds by arrangement rather than by row, so that every
+proposal from one table stays together, and it is not expensive. It is simply
+not what this code does today.
 
 With a calibrated probability, the keeper can have **two thresholds rather than
 one**, and the band between them means "I cannot tell". A proposal landing in
@@ -700,12 +784,18 @@ replacing the half that does not.
 One practical note belongs here, because the licence is one of this solution's
 advantages and that advantage is not automatically inherited. The terms a newer
 generation of weights is released under have to be read for themselves rather
-than assumed to match the generation before it.
+than assumed to match the generation before it, and here that matters more than
+as a caution. **The upper rung has not been run on this machine.** The library
+holds the model and the code for this rung is written against it, but the newer
+weights are gated: the upload will not hand them over without an account that
+has been granted access. So this rung has no scorecard, and none has been
+invented for it: only the lower rung has been measured.
 
-So the recommendation is not to choose once. Fit the keeper, because it is small
-and it fits in seconds, and run both rungs on the same held-out arrangements.
-The bench makes that comparison honest, and if the text prompt wins, the keeper
-is still the thing that explains why a region was refused.
+So the recommendation is still not to choose once. Fit the keeper, because it is
+small and it fits in seconds, and run both rungs on the same held-out
+arrangements on a machine whose account has been granted the newer weights. The
+bench makes that comparison honest, and if the text prompt wins, the keeper is
+still the thing that explains why a region was refused.
 
 ## The masks are what this contributes
 
@@ -879,9 +969,9 @@ to be fetched, pinned to a version, and stored where a run can find them.
 
 It needs **arrangements for the keeper**, which the bench renders and labels for
 nothing, and far fewer of them than a network fitted from scratch needs, because
-the keeper learns from a short table of numbers rather than from pictures. It
-also needs a **second, separate set of held-out arrangements** for the
-calibration, which must not be the ones the keeper was fitted on.
+the keeper learns from a short table of numbers rather than from pictures. The
+calibration needs no arrangements beyond those, because it is fitted in folds of
+the keeper's own table rather than on a second set of its own.
 
 Fitting the keeper takes **seconds** once the proposals are in hand, with no
 graphics card. What takes the time is running the borrowed model over those

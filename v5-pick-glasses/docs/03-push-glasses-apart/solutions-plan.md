@@ -28,7 +28,7 @@ and a chunk of waypoints be compared at all.
 
 | # | Car | Model | Framework | Fitted here |
 |---|---|---|---|---|
-| 1 | One fixed nudge, then look again | none | NumPy, MoveIt | nothing |
+| 1 | One fixed nudge, then look again | none | NumPy | nothing |
 | 2 | Geometry generates, a model ranks | gradient-boosted trees | scikit-learn | the ranker only |
 | 3 | Imitation from demonstrations | ACT | LeRobot | everything |
 | 4 | A world model, then plan with it | a small ensemble, then TD-MPC2 | PyTorch, LeRobot | everything |

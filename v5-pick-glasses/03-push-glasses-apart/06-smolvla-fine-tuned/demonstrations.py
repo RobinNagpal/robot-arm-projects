@@ -56,7 +56,7 @@ REPO = "local/push-glasses-apart"
 # run over to make the set that says when to stop. Both are below TEST_SEEDS,
 # so neither overlaps the held-out tables the scorecard is read from. The
 # tuning tables are solution 4's, for the same reason it uses them.
-FITTING_FIRST, FITTING_TABLES = 0, 400
+FITTING_FIRST, FITTING_TABLES = 0, 800
 TUNING_FIRST, TUNING_TABLES = 9500, 50
 
 # One frame per decision rather than a rate: the model is asked once per push.

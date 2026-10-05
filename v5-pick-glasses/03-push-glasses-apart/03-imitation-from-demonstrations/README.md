@@ -183,7 +183,7 @@ here that can knock a glass over.
 **Almost every push ends before a glass is touched.** The policy's starting
 point lands in roughly the right neighbourhood — within a centimetre or two of
 where the teacher put the fingertips — but its heading is around 30 degrees
-out. The jaw is 240 mm long behind its fingertips and its body is 90 mm wide,
+out. The jaw is 270 mm long behind its fingertips and its body is 90 mm wide,
 so on a crowded table a heading that far off puts that body over a neighbour.
 `follow()` brings the jaw down to the chunk's first waypoint and stops if it
 touches anything on the way, which it does, and the push is reported blocked

@@ -4,9 +4,12 @@
 > integrated graphics through Apple's MPS backend, and the Ultralytics
 > YOLO26-seg instance segmentation model exactly as it downloads. The weights
 > fetch themselves the first time the model is used.
-> **What it does** — it shows the borrowed model one survey picture from the
-> top, takes the list of objects the model reports, and keeps the outlines whose
-> name is a drinking vessel while dropping everything else the model named.
+> **What it does** — it shows the borrowed model a survey picture from the top,
+> takes the list of objects the model reports, and keeps the outlines whose
+> name is a drinking vessel while dropping everything else the model named. A
+> survey is three pictures from three overlapping stations, and the model is
+> asked about each one on its own, which is the bench's arrangement rather than
+> this solution's.
 > Nothing whatsoever is fitted in this cell, so there is not a single number in
 > this solution that came from this project's own data.
 > **How the output is produced** — the grey picture shaded from depth goes into
@@ -43,9 +46,12 @@
 
 This document describes how [problem 2](../problem.md) could be answered by
 downloading a model and running it, without collecting a single label and
-without training anything at all. None of the six solutions in this folder is
-built, so what follows is a design rather than a report on something that has
-run.
+without training anything at all. The solution is built, and what it scored is
+recorded beside the code, in
+[`03-yolo-zero-shot/README.md`](../../../02-segment-glasses/03-yolo-zero-shot/README.md)
+and in that folder's `results.json`. The reasoning below was written before the
+run and is kept in the voice it was written in, so where it says what the method
+would do, read that as what the design expected rather than as a measurement.
 
 The design is worth writing down because of what it does not contain. Every
 other solution that uses a model pays something before it can answer: a set of
@@ -66,6 +72,85 @@ outline is not a probability on these pictures even though it looks like one,
 what the domain gap is and why it runs in both directions here, and what the
 licence costs, because on this solution the licence is a real cost rather than a
 footnote.
+
+## The code that does the work
+
+This solution is almost entirely somebody else's code, so the part worth reading
+is small: one call into the borrowed library, and the handful of lines that
+decide what to keep out of the answer. Those lines are the whole of what this
+project wrote, and seeing them is the quickest way to understand both what the
+solution is and how little of it is this project's.
+
+The call and the handling of its answer are in
+[`03-yolo-zero-shot/yolo_zero_shot.py`](../../../02-segment-glasses/03-yolo-zero-shot/yolo_zero_shot.py).
+The library is Ultralytics: `YOLO` is the model, `attempt_download_asset` is
+what fetches the weights, and `model.predict` is the one line where the borrowed
+model does its work. Everything around it is this project's, and it is short.
+
+```python
+@lru_cache(maxsize=1)
+def _model():
+    ...
+    from ultralytics import YOLO
+    from ultralytics.utils.downloads import attempt_download_asset
+    ...
+    return YOLO(attempt_download_asset(CACHE / MODEL)), device.pick()
+
+...
+
+def masks_from(answer, shape: tuple[int, int]) -> list[np.ndarray]:
+    ...
+    names: Mapping[int, str] = answer.names
+    confidences = np.asarray(answer.boxes.conf, dtype=float).ravel()
+    keep = drinking_vessels.are_drinking_vessels(answer.boxes.cls, names) & above_the_bar(confidences)
+    surest = sorted(range(len(confidences)), key=lambda index: -confidences[index])
+    return merge_doubles(outline_to_mask(answer.masks.xy[index], shape) for index in surest if keep[index])
+
+
+def look(picture) -> object:
+    ...
+    model, where = _model()
+    answers = model.predict(
+        pictures.shade(picture),
+        conf=CONFIDENCE_BAR_SET_BY_HAND,
+        device=where,
+        verbose=False,
+    )
+    return answers[0].cpu()
+```
+
+The filter those lines call is in
+[`03-yolo-zero-shot/drinking_vessels.py`](../../../02-segment-glasses/03-yolo-zero-shot/drinking_vessels.py),
+and it is worth showing rather than describing, because the solution's one
+promise is that nothing in it was tuned to this cell and that promise covers
+this list. Every name in it is one of the borrowed model's own categories, read
+off its fixed list, and not one was added after anybody saw what the model
+called a glass here.
+
+```python
+VESSELS = ("wine glass", "cup")
+
+...
+
+NEIGHBOURS = ("bowl", "vase", "bottle")
+
+ACCEPTED = frozenset(VESSELS + NEIGHBOURS)
+
+
+def is_drinking_vessel(name: str) -> bool:
+    """Whether one of the model's category names is kept."""
+    return name in ACCEPTED
+```
+
+Two things show from that. The borrowed library is reached in exactly one place,
+and what this project contributes is a bar on the confidence number, a filter on
+names, and the collapsing of a glass that arrived twice — after which the name
+is gone and what leaves is a list of masks carrying no claim about what was
+outlined. And nothing above reads a fitted file, because there is none: the
+folder has no training command at all, and its `fit` function exists only to
+refuse. The bar on the confidence number, the share of pixels that makes two
+outlines one, and those five names are everything this solution chose, and none
+of it came from this cell's data.
 
 ## The problem this solves
 
