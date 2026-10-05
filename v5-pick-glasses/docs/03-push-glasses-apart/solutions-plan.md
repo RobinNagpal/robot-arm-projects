@@ -83,22 +83,29 @@ beyond being a baseline.
   again, with the learned change verifier and the learned early abort inside
   it.
 
-## The bench has to grow before cars 3 to 6 can run
+## The bench had to grow before cars 3 to 6 could run
 
-An audit of `bench.py` found that two parts of the contract above do not exist
-yet, and they are the gate on every solution that reads pictures or emits
-waypoints.
+Four parts of the contract above were missing, and they were the gate on every
+solution that reads pictures or emits waypoints. All four are now built.
 
-| Needed | What is there now |
+| What was needed | What the bench has |
 |---|---|
-| a straight-down rendered view | only numeric readings; `film.py` renders, but from the arm's side |
-| a waypoint action path | `push()` takes a parameterised push and **is** the macro |
-| one shared push budget | the budget lives in each runner, not the bench |
-| repeats and a compute column | neither is in the scorecard |
+| a straight-down rendered view | a fixed camera above the middle of the glass zone, looking straight down |
+| a waypoint action path | `follow()` takes a chunk of jaw waypoints and reports what `push()` reports |
+| one shared push budget | the budget belongs to the bench, and every runner reads it from there |
+| repeats and a compute column | several evaluation runs with their spread, and the thinking time per push |
 
-None of this is hard, and the first two are the real cost of going off the
-shelf: every LeRobot policy expects pictures and a control-rate action space.
-Cars 1 and 2 need none of it, which is another reason to build them first.
+The first two were the real cost of going off the shelf, because every LeRobot
+policy expects pictures and an action space at control rate. Cars 1 and 2 need
+none of it, which is one reason they were built first.
+
+Building them also bought something that was not asked for and matters more
+than any of the four. The bench now records the path the jaw really followed on
+**every** action, including an ordinary parameterised push. So a demonstration
+is a picture together with a recorded path, and replaying a recorded path
+reproduces the push it came from. That means the solutions that learn from
+demonstrations can learn from the two that already work, rather than from paths
+invented for the purpose.
 
 ## The scorecard needs two things problem 2's did not
 

@@ -126,10 +126,11 @@ and so is a world model of the kind solution 4 describes in its first rung.
 Everything else is a design, and each document says which of its parts is
 which rather than describing code that does not exist.
 
-Two parts of the shared contract are also still to be written: a view of the
-table from the top, and a path that accepts waypoints directly. Those gate
-solutions 3, 5 and 6, which is one more reason to build solutions 1 and 2
-first.
+The two parts of the shared contract that used to gate solutions 3, 5 and 6
+are written: the view of the table from the top is `bench/top_view.py`, and
+the path that accepts waypoints directly is `Bench.follow()`. Solutions 1 and
+2 were still the right things to build first, because solution 2 is the
+teacher whose pushes solutions 3 and 6 learn from.
 
 ## Where to go next
 

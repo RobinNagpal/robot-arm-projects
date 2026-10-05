@@ -128,7 +128,7 @@ safe pushes**, which is a different question and a smaller one.
 The complaint it is aimed at is therefore not safety. The geometry already in
 this repository toppled nothing at all over the bench's fifty held-out tables,
 as its results file records. The complaint is the number of attempts: that run
-spent **212 pushes on 251 glasses, and 90 of those were repeat pushes of a
+spent **213 pushes on 251 glasses, and 90 of those were repeat pushes of a
 glass it had already moved once**. A repeat push is a push that did not achieve
 what it was chosen for, so a method that chose better among the same candidates
 would spend fewer of them. That is the gap a ranker is pointed at.
@@ -1018,13 +1018,22 @@ a push would help**, which is a quantity the geometry already computes exactly
 from the destination. Solution 4 fits a model of **what a push will actually
 do**, which is the quantity the geometry gets wrong, because predicting where a
 pushed glass ends up needs the friction and the weight distribution that nobody
-here has. The record in this repository already contains a result bearing on
-that choice: the learned approach in `03-push-glasses-apart/04-a-world-model`, which is solution 4's
-first rung, racked 208 of the 251 glasses in 113 pushes with 15 repeats, where
-the geometry alone racked 199 in 212 pushes with 90 repeats, and neither toppled
-anything. **The learning that paid in this cell attacked the quantity the
-geometry gets wrong, not the quantity it gets right.** That is the single most
-useful thing to take from placing these two side by side.
+here has. Both have now been run on the same tables, and the result bears on
+that choice directly. Solution 4's first rung racked 202 of the 251 glasses in
+114 pushes, repeating only 14 of them, where the geometry racked 195 in 213
+pushes and had to repeat 90. **The learning that paid in this cell attacked the
+quantity the geometry gets wrong, not the quantity it gets right.** That is the
+single most useful thing to take from placing these two side by side.
+
+It cost something, though, and the cost is the point of the comparison rather
+than a footnote to it. The geometry toppled nothing at all, while the learned
+approach toppled one glass and lost one table to it. That is what it means to
+replace a rule that refuses whenever the arithmetic is unsure with a model that
+predicts an outcome: the model is right more often and it is also occasionally
+confidently wrong, and a toppled glass is the one failure this cell cannot take
+back. So the two are not ordered on one number. The learned approach finishes
+more glasses in half the attempts, and the geometry is the one that never
+breaks anything.
 
 Against [solution 5](05-smolvla-as-it-downloads.md) and [solution
 6](06-smolvla-fine-tuned.md), the comparison is scale and origin. Those two are

@@ -1,11 +1,39 @@
 # Problem 2 — the shared test bench
 
-Used by `../02-segment-glasses/02-train-from-scratch` and `../02-segment-glasses/01-rules-on-the-table`, so both are
-tested on the same scenes, the same pictures and the same scorecard.
+Used by all six solutions in this folder, so that every one of them is tested on
+the same scenes, is handed the same pictures, and is judged by the same
+scorecard. That is the whole reason the bench exists: when the input and the
+marking are the same for all six, a difference between their results belongs to
+the method and to nothing else. [The bench
+document](../../docs/02-segment-glasses/the-bench.md) explains the contract;
+this page only says which file holds which part of it.
 
-- `render.py` — the numbered scenes (four to six glasses of one kind) and
-  depth pictures of them from any camera pose, drawn with the wrist camera's
-  lens. It stands in for Gazebo. Scenes from 10000 up are for testing only.
-- `scoring.py` — judges a run against what was put out: found, merged,
-  split, position error, whether a side picture was spoiled, profile error.
-  No pipeline reads it to decide anything.
+Nothing here imports a solution. A solution imports from here.
+
+- `render.py` — the numbered scenes, four to six glasses of one kind, and depth
+  pictures of them from any camera pose, drawn with the wrist camera's lens. It
+  stands in for Gazebo. Scenes from one number upwards are for testing only, and
+  no training may draw from them.
+- `data.py` — what a solution is actually handed: the three overlapping survey
+  stations, the pictures taken from them, and the training labels. It also keeps
+  the id images, which say which glass owns each pixel and which a solution
+  never sees while answering.
+- `pictures.py` — dresses a depth picture as the colour photograph a borrowed
+  model expects, because the models in solutions 3 to 6 were trained on
+  photographs and this cell has no camera that takes one.
+- `masks_to_glasses.py` — turns one mask into a place on the table and a rough
+  width. Every solution calls it, so a difference in the scorecard belongs to
+  how the mask was drawn and never to what was done with the mask afterwards.
+- `marking.py` — the survey itself: it asks a solution about each station's
+  picture, decides which station to believe where two overlap, and writes the
+  answer down in one vocabulary. Each solution's own `run.py` calls it. It is
+  not called `run.py` because every solution's runner is, and the two would
+  shadow each other.
+- `scoring.py` — the scorecard. It judges which real glass each report is, how
+  far the place sat from the truth, and how well the mask was drawn: how much of
+  the real glass it covered and how much of it was not that glass, broken down
+  by kind of glass.
+- `floor.py` — the best answer any method here could give. It runs the
+  renderer's own masks through the same arithmetic and the same marking, so
+  every result in this folder can be read against what is actually achievable.
+- `device.py` — which processor the work runs on.

@@ -55,13 +55,15 @@ collected, nothing trained and nothing fitted in this cell at all. The model is
 shown the table from the top, told in words what to do, and asked for actions.
 Whatever it returns is carried out.
 
-Nothing in this solution is built, so what follows is a design rather than a
-report on something that has run. This one goes further than that: nothing in
-this repository describes this model or has ever run it, so every statement
-here about how it would behave is written as reasoning rather than as fact.
-Where this document says what would probably happen, that is an argument from
-what the model was fitted on and what this bench would offer it, and not a
-measurement.
+**This solution is built and has run.** It lives in
+`03-push-glasses-apart/05-smolvla-as-it-downloads/`, it downloads the weights
+and makes the pushes on the same held-out tables as the rest of the folder,
+and its folder's README carries the numbers. What follows was written before
+it ran, so where this document says what would probably happen, that is an
+argument from what the model was fitted on and what this bench offers it, and
+not a measurement. The measurements are in the README, and the one thing the
+design did not foresee is how much weight the reading between the model's
+action space and this jaw would have to carry.
 
 The design is worth writing down for two quite separate reasons, and it is
 worth separating them at the start because they pull in opposite directions.
@@ -119,9 +121,9 @@ The idea has three steps, and the first two are the whole of the solution.
 is a picture of the table looking straight down, which [the test
 bench](../the-bench.md) specifies so that the solutions which read pictures get
 the same information as the solutions which read numbers. That picture is the
-model's view of the world, and it is a design rather than code: the bench
-renders the table today only for the films used to check a run by eye, and that
-camera looks from the arm's side.
+model's view of the world. The bench renders it: a fixed camera 750 mm above
+the middle of the glass zone, looking straight down, 384 by 384 pixels of
+red-green-blue, the same frame on every table.
 
 **Second, tell it in words what to do, and hand it the joint readings.** The
 instruction is one line of plain English, the same line every time, saying that
@@ -248,17 +250,18 @@ make the model look worse than it is, and the result would then be a
 measurement of the interpretation rather than of the model. So whatever
 convention is chosen has to be **chosen once and used by both solution 5 and
 solution 6**, because the pair is only clean while everything except the
-training is held still. That is a design decision recorded here, not code that
-exists.
+training is held still. That convention is now chosen and written down, in
+`05-smolvla-as-it-downloads/joining.py`, and the folder's README says what had
+to be decided in it and why. It turned out to be a larger decision than this
+section expected, because the checkpoint settles less about its own action
+space than the section assumed.
 
 It is also worth noting that this is the step the bench's own arrangement was
 designed to allow. [The test bench](../the-bench.md) accepts a run of
 waypoints directly, without the push macro, precisely so that a policy which
-thinks in movement is not squeezed into three numbers describing a push. The
-honest note is that this direct path is specified in that document and **not
-yet written**, along with the rendered view from the top that this solution
-needs as its input. Both are on the plan as work the bench requires before any
-picture-reading solution can run.
+thinks in movement is not squeezed into three numbers describing a push. Both
+that path and the rendered view from the top now exist in the bench, and this
+solution uses them as they come.
 
 ## The instruction is nearly dead weight here
 
@@ -356,20 +359,17 @@ scenes, which are cluttered: a workbench with other objects on it, a background
 that is a room, texture everywhere, and the particular visual mess that tells a
 model what is near and what is far.
 
-**What this bench offers is a rendered view from the top of grey glasses on a
-plain table.** The glasses are built as stacks of cylinders and shaded as solid
-objects, the table is a flat rectangle, there is nothing else in the frame, and
-nothing in the picture was produced by light passing through a lens. There is
-no clutter, almost no texture, and nothing of the transparency a real drinking
-glass has, which in a photograph is the strongest single clue that a glass is
-what you are looking at. And this view is not even built yet: [the test
-bench](../the-bench.md) records that the bench renders the world today only for
-the films used to check a run by eye, from the arm's side rather than straight
-down, so the input this solution needs is on the plan rather than in the
-repository.
+**What this bench offers is a rendered view from the top of pale blue glasses
+on a tan table.** The glasses are built as stacks of cylinders and shaded as
+solid objects, the table is a flat rectangle, there is nothing else in the
+frame, and nothing in the picture was produced by light passing through a
+lens. Every glass is the same colour, so nothing in the picture tells one kind
+from another. There is no clutter, almost no texture, and nothing of the
+transparency a real drinking glass has, which in a photograph is the strongest
+single clue that a glass is what you are looking at.
 
-So the model would be asked about pictures quite unlike the ones it learned
-from, with much of the evidence it learned to use simply absent.
+So the model is asked about pictures quite unlike the ones it learned from,
+with much of the evidence it learned to use simply absent.
 
 **The way models fail across such a gap is the part that matters.** They do not
 usually produce nonsense. Nonsense would be convenient, because nonsense is
@@ -513,10 +513,10 @@ and nothing about this cell. What it is denied is the force reading, because its
 three inputs do not include one for force, so the only channel through which
 friction is observable is closed to it. And what stands between its general
 competence and this particular table is a large domain gap: it learned from
-real cameras, real light and cluttered rooms, and it would be shown grey shapes
-on an empty rectangle. Across that gap it would most likely produce confident,
-plausible, wrong actions, which is the failure that is hardest to notice because
-nothing about it looks wrong until the arrangement is examined.
+real cameras, real light and cluttered rooms, and it is shown flat pale blue
+shapes on an empty rectangle. Across that gap it would most likely produce
+confident, plausible, wrong actions, which is the failure that is hardest to
+notice because nothing about it looks wrong until the arrangement is examined.
 
 Every one of those is a consequence of one decision: **fit nothing here**. That
 decision is what makes the solution free to try, and it is also what removes
@@ -540,9 +540,13 @@ arm can offer that is safe, and the only correct answer is to refuse — the run
 ends as *correct but incomplete*, the glass stays where it was, and the reason
 is reported.
 
-That check is **applied by the shared machinery on the measurements, before any
-model is consulted.** A glass that fails it is removed from the task and
-reported, so the model is never asked to move it.
+That check is **applied on the measurements, before any model is consulted.**
+A glass that fails it is removed from the task and reported, so the model is
+never asked to move it. The arithmetic is shared rather than rewritten here:
+it is solution 1's `slides`, in `01-one-fixed-nudge/plan.py`, which every
+solution in the folder imports, so all six refuse exactly the same glasses.
+It does not live in the bench, which the second half of this section
+comes back to.
 
 **That arrangement is just as well, and the reason is the point of this whole
 document.** Nothing in a borrowed model's pretraining knows this cell's jaw or
@@ -550,24 +554,28 @@ this kind's foot width. The limit depends on a foot width that problem 2
 measures here, on a jaw height that is this gripper's own number, and on a
 friction coefficient that nothing in this cell measures at all. A model fitted
 on other people's robots has met none of those three quantities, and it has no
-way to acquire them from a picture of grey shapes. Asking it to respect a limit
+way to acquire them from a picture of plain shapes. Asking it to respect a limit
 it cannot compute would be asking it to guess, and the one mistake this problem
 cannot absorb is a toppled glass. So the refusal is taken out of the model's
 hands entirely and made arithmetic that runs first.
 
-There is a second half to this, and it is a design decision rather than
-existing code. Removing a glass from the task does not remove it from the
-picture, so a model that reads the picture can still aim at a refused glass,
-and a solution that emits waypoints freely is also free to emit a contact
-higher than the lowest the gripper reaches. Nothing in the model's pretraining
-would warn it against either. Since every solution in this folder pushes as low
-as the gripper can reach, for the reason that there is nothing to gain by
-pushing higher, the same shared machinery has to read the trajectory that comes
-back rather than trust it: it refuses one that would touch a refused glass, and
-it bounds the heights in the rest. Those checks belong with the bench, beside
-the refusal, for the same reason the refusal does: they must be identical for
-all six, and they must not be something a model can argue with. Between them,
-this solution cannot topple a refused glass by choosing badly.
+There is a second half to this. Removing a glass from the task does not remove
+it from the picture, so a model that reads the picture can still aim at a
+refused glass, and a solution that emits waypoints freely is also free to emit
+a contact higher than the lowest the gripper reaches. Nothing in the model's
+pretraining would warn it against either. So the trajectory that comes back is
+read rather than trusted: one that would reach a refused glass is thrown away,
+and the heights in the rest are bounded into the range the jaw rides at.
+
+Both of those checks are built, in `05-smolvla-as-it-downloads/clear.py` and
+`joining.py`. This document expected them to sit in the bench beside the
+refusal, so that they would be identical for all six and not something a model
+can argue with. They do not: the bench grew the straight-down view and the
+waypoint path but no shared guard, and the tipping refusal lives in solution
+1's folder rather than in the bench either. So the checks are this solution's
+own, written to the same rule, and solution 6 should import them from here
+rather than write them again. Between them, this solution cannot topple a
+refused glass by choosing badly.
 
 ## A worked example
 
@@ -598,15 +606,15 @@ run of waypoints that is well formed as movement — smooth, at a sensible
 speed, descending and then travelling in one direction, which is the shape a
 push has. What is far less certain is whether it is the right push. The most
 likely mistakes, reasoning from the gap, are three. It may aim at the wrong
-glass, because the grey shapes in the picture do not tell it which pair is the
-tight one, and in a rendered view with no shadows the cue that would normally
-say how close two objects are standing is weak. It may push in a direction
-that moves the glass out of one crowd and into another, because the
-arrangement as a whole is what decides a good direction and reading an
-arrangement is the part that needs the picture to be understood. Or it may
-push much too far or much too little, because the distance a push should cover
-is a property of this table's clearances and nothing in the model's
-pretraining knows them.
+glass, because every glass in the picture is the same colour and nothing in it
+says which pair is the tight one, and in a rendered view with no shadows the
+cue that would normally say how close two objects are standing is weak. It may
+push in a direction that moves the glass out of one crowd and into another,
+because the arrangement as a whole is what decides a good direction and
+reading an arrangement is the part that needs the picture to be understood.
+Or it may push much too far or much too little, because the distance a push
+should cover is a property of this table's clearances and nothing in the
+model's pretraining knows them.
 
 **Then the arm looks again**, and this is where the loop earns its keep. The
 fresh measurements say where the glasses really are, the refused glass is still
@@ -657,13 +665,12 @@ rented hardware is at the cheap end of this folder.
 **Data.** None. No demonstrations, no labels, no held-out set, and nothing to
 keep in step with the cell when the cell changes.
 
-**What the bench still has to grow.** Two things, and both are gates rather
-than conveniences. This solution needs the rendered view of the table from the
-top, which [the test bench](../the-bench.md) specifies and does not yet
-provide, and it needs the path that accepts a run of waypoints without the push
-macro, which is likewise specified and not yet written. Neither is difficult,
-and both are shared with solutions 3 and 6, so the cost is paid once for three
-solutions rather than for this one.
+**What the bench had to grow.** Two things, and both were gates rather than
+conveniences: the rendered view of the table from the top, and the path that
+accepts a run of waypoints without the push macro. [The test
+bench](../the-bench.md) now provides both, and both are shared with solutions
+3 and 6, so the cost was paid once for three solutions rather than for this
+one.
 
 ## Where it is strong and where it breaks
 
@@ -683,7 +690,7 @@ to do.
 
 What the borrowing costs is accuracy and every lever for improving it. The
 domain gap is large, the model learned from real cameras and cluttered rooms,
-and it would be shown grey shapes on an empty rectangle, so the most likely
+and it is shown flat pale blue shapes on an empty rectangle, so the most likely
 outcome is confident, plausible, wrong actions with nothing downstream looking
 suspicious. The force reading cannot reach it, so the only channel that
 observes friction is closed. The actions arrive in somebody else's units, so an

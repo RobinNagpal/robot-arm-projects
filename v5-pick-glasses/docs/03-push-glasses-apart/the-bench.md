@@ -112,13 +112,15 @@ the look, which means the first look at a given table is identical for all six
 solutions. Nobody gets an easier first measurement than anybody else.
 
 **Solutions that read pictures also get a rendered top-down view of the same
-table.** Two of the six are vision-language models that take an image, so a
-list of numbers is not an input they can use. Giving them a picture rendered by
-the bench, of the same table at the same moment, keeps the input the same
-information in a different form. This part is a design decision rather than
-working code: the bench renders the world today only for the films used to
-check a run by eye, and that camera looks steeply down from the arm's side
-rather than straight down.
+table.** Three of the six read pictures rather than numbers — an imitation
+policy trained on images, and the two vision-language models — so a list of
+numbers is not an input they can use. Giving them a picture rendered by the
+bench, of the same table at the same moment, keeps the input the same
+information in a different form. This is now built, in `bench/top_view.py`: a
+camera fixed 750 mm above the middle of the glass zone, looking straight down,
+returning a 384 by 384 RGB picture that frames the whole zone. It is separate
+from the camera `film.py` uses, which looks steeply down from the arm's side
+and exists only for watching a run by eye.
 
 **What a solution is never given is the simulator's record.** The bench knows
 each glass's true position, its true shape and its mass, and it keeps all of
@@ -217,9 +219,13 @@ what you then measure is a damaged version of the method rather than the method
 that exists. A comparison is only worth running if each side is allowed to be
 itself.
 
-Accepting waypoints directly is a design decision. The built bench today takes
-the parameterised push and owns its expansion; the direct path for a chunk of
-waypoints is specified here and not yet written.
+Both paths are now built. `push()` takes the parameterised push and owns its
+expansion; `follow()` takes a `Chunk` of jaw waypoints and carries them out in
+the same physics, reporting the same `Felt` into the same record, so the
+scorecard cannot tell which door an action came through. The bench also writes
+down the path the jaw really followed on every action, sampled at a fixed rate,
+which is what turns a parameterised push into a demonstration a policy that
+emits waypoints can be trained on.
 
 ## The score is the outcome, not the action
 
@@ -276,10 +282,12 @@ asserted it.
 were spent in total, how many of them were repeat pushes on a glass already
 pushed, and how many went wrong in each of the ways a push can: blocked on the
 way down, never touching anything, or jamming. The budget itself — a fixed
-maximum number of pushes allowed per table, after which the remaining glasses
-must be refused — belongs to the code that drives a run rather than to the
-bench, so for the count to mean anything across the six, all six have to be
-given the same number.
+maximum per glass and per table, after which the remaining glasses must be
+refused — used to live in the code that drives each run, so the counts were not
+comparable. It now lives in the bench, as `PUSHES_PER_GLASS` and
+`PUSHES_PER_TABLE`, so all six are given the same number. One solution predates
+it: the fixed nudge spends 3 and 15 rather than 4 and 16, because its committed
+scorecard was measured at those and would change under the shared budget.
 
 **Refusals are counted with their reason, and a refusal is a result rather
 than a failure.** Some glasses cannot be pushed safely at all, because they tip
@@ -308,8 +316,9 @@ one.
 
 Problem 2's bench could run each solution once and read the result. This one
 cannot, and there are two reasons. Both are consequences of four of the six
-solutions being trained rather than written, and both are design decisions for
-how a run is reported rather than code that exists today.
+solutions being trained rather than written, and both are now in `scoring.py`:
+`Repeats` holds several evaluation runs and reports the spread across every
+number, and `Scorecard` reports the time per push beside the counts.
 
 **One run is not a measurement.** The learned policies here are stochastic:
 asked the same question twice they may act differently, because the action is

@@ -34,7 +34,7 @@ by side.
 | [2 trained from scratch](../02-train-from-scratch/) | 72 | 29 | 1 | 0 | 0 | 0.7 · 43.8 mm | 97.2% | 1.4% |
 | [3 YOLO as it downloads](../03-yolo-zero-shot/) | 4 | 97 | 0 | 0 | 0 | 36.5 · 46.6 mm | 84.5% | 3.6% |
 | [4 YOLO fine-tuned](../04-yolo-fine-tuned/) | 66 | 35 | 1 | 0 | 0 | **0.5** · 42.3 mm | **99.2%** | 3.7% |
-| [5 SAM 2 with a keeper](../05-sam2-with-a-keeper/) | 71 | 30 | 0 | 0 | 0 | 0.9 · 28.7 mm | — | — |
+| [5 SAM 2 with a keeper](../05-sam2-with-a-keeper/) | 71 | 30 | 0 | 0 | 0 | 0.9 · 28.7 mm | 98.4% | **0.0%** |
 | [6 RF-DETR fine-tuned](../06-rf-detr-fine-tuned/) | **74** | 27 | 2 | 1 | 0 | **0.5** · 58.4 mm | 97.4% | **0.0%** |
 
 Solutions 5 and 6 have more than one rung; the rows above are rung `sam2` and

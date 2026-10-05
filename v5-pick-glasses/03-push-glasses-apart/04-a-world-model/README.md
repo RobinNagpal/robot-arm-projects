@@ -19,17 +19,23 @@ built](../../docs/03-push-glasses-apart/solutions/overview.md#what-is-built).
 
 | | Learned (this folder) | Programmed |
 |---|---|---|
-| Glasses racked | **208** of 251 | 199 of 251 |
-| Glasses toppled | 0 | 0 |
-| Pushes | **113** | 212 |
-| Pushes repeated because the first fell short | **15** | 90 |
-| Tables finished | 34 of 50 | 35 of 50 |
-| Landing, median / worst | 1.7 / 24.8 mm | **1.0 / 3.9 mm** |
-| Pushes that went wrong (blocked, never touched, jammed) | 6 | **0** |
+| Glasses racked | **202** of 251 | 195 of 251 |
+| Glasses toppled | 1 | **0** |
+| Pushes | **114** | 213 |
+| Pushes repeated because the first fell short | **14** | 90 |
+| Tables finished | 31 of 50 | **33 of 50** |
+| Landing, median / worst | 1.6 / 48.2 mm | **1.0 / 3.9 mm** |
+| Pushes that went wrong (blocked, never touched, jammed) | 10 | **0** |
 
-It racks more glasses in about half the pushes, and it topples none. Fewer
-pushes matter most, because touching a glass is the only step that can topple
-one.
+It racks more glasses in about half the pushes. Fewer pushes matter most,
+because touching a glass is the only step that can topple one.
+
+It is not better on every line, and the lines it loses are worth reading. It
+toppled one glass where the programmed approach toppled none, and it finished
+two fewer tables even while racking seven more glasses, because a toppled glass
+stops the table it happens on. So the two are not ordered on one number: this
+one clears more glasses with far less handling, and the programmed one is the
+one that never breaks anything.
 
 It wins while being less accurate about where a glass lands. The reason is what
 it predicts. The programmed planner knows where the pushed glass will land, but

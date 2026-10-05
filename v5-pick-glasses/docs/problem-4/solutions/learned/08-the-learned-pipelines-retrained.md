@@ -34,10 +34,20 @@ Then the rules: `classify()` names the kind from SideNet's profile, and
 ## What carries over
 
 **Finding.** TopNet was scored on problem 2's scenes, which cycle through the
-four kinds, one kind per scene. It found all 250 glasses. A mixed scene is new
-to it, and it would be retrained on mixed scenes. `make train` in
-`02-segment-glasses/02-train-from-scratch` retrains all three of its models in about a minute. Nothing
-about voting for a centre depends on the kind.
+four kinds, one kind per scene. It finds most of the glasses and places the ones
+it finds very accurately, and the ones it misses it misses for a reason that has
+nothing to do with the kind. A vote names a place inside the picture it was cast
+in, so a glass whose middle falls outside every station's frame cannot be voted
+for at all, however well the network works. That is a limit of counting votes in
+a picture rather than a limit of training, so it carries over to mixed tables
+unchanged and is repaired the same way: by counting votes over an area larger
+than the picture.
+
+A mixed scene is new to it, and it would be retrained on mixed scenes.
+`make train` in `02-segment-glasses/02-train-from-scratch` retrains all three of
+its models in about ten minutes, because the network now learns from the bench's
+survey pictures rather than from one picture per scene. Nothing about voting for
+a centre depends on the kind.
 
 **Choosing the view.** The veto in front of the Ranker is geometry, and the
 Ranker only orders what the veto allows. A wrong order costs a spoiled picture

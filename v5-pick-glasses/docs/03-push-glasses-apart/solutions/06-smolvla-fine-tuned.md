@@ -1,7 +1,9 @@
 # Solution 6 — the same foundation model, fine-tuned here
 
-> **What it uses** — LeRobot, with PyTorch underneath, and a rented
-> accelerator for the training run. The model is SmolVLA: the same library,
+> **What it uses** — LeRobot, with PyTorch underneath, and this machine's own
+> Metal GPU for the training run, which is further than this document expected
+> a 450-million-parameter fine-tune to go. The model is SmolVLA: the same
+> library,
 > the same model and the same downloaded weights as [solution
 > 5](05-smolvla-as-it-downloads.md), with its training continued on pushes
 > made on this bench by low-rank adaptation, so that the actions it emits are
@@ -15,9 +17,11 @@
 > solution's answer to problem 3.
 > **How the output is produced** — a rendered view of the table from the top
 > goes in, together with one instruction in plain English and the arm's own
-> joint readings. The corrected model returns an **action chunk**: a short
-> run of consecutive jaw waypoints predicted together in one pass. The
-> shared topple check reads the chunk before the jaw moves and may refuse it.
+> pose, which is the same every time because the jaw is parked between
+> actions. The corrected model returns an **action chunk**: a short run of
+> consecutive jaw waypoints predicted together in one pass. The shared
+> geometry refuses the glasses that tip before they slide, and a chunk whose
+> path would reach one of those is not carried out.
 > The bench then carries the waypoints out directly, because a chunk needs no
 > expansion. The arm looks again, and the loop repeats until the table is done
 > or the push budget is spent.
@@ -38,8 +42,10 @@
 > partner.
 > **What it costs** — the demonstrations are free, because solution 2
 > generates them and the bench executes them without anybody holding a
-> controller. The training is a low-rank fine-tune on a rented accelerator for
-> hours, which is of order tens of dollars. Running it costs one large forward
+> controller. The training is a low-rank fine-tune, and it fits in 1.02 GiB on
+> a laptop, so nothing was rented; hours of a small rented accelerator, of
+> order tens of dollars, is what it would take to spend real compute on it.
+> Running it costs one large forward
 > pass per chunk, the same as its partner's, so the two cost the same to run
 > and differ only in what it cost to build them. The licence is not the
 > obstacle it was in problem 2, but a fine-tuned file inherits whatever terms
@@ -96,20 +102,22 @@ not have to agree. A model can be fitted to a cell well enough to find every
 glass in it and still be a poor chooser of pushes, because choosing a push
 needs a sense of what a push does, and nothing in a picture contains that.
 
-**This is a design and not a report.** Nothing in this solution is built, so
-nothing below describes a program that has run. The bench itself is built and
-lives in `03-push-glasses-apart/bench/`, but two parts of the shared contract this solution
-depends on do not exist in it yet, and [the plan](../solutions-plan.md) names
-them: a rendered view looking straight down, and a path by which a chunk of
-waypoints can be carried out as an action. Until both are written, this
-solution cannot run at all. Where this document says what the method would do,
-that is what the design says it would do, and where it says a check should be
-applied, that is a prescription rather than a step something already carries
-out. No measurement is quoted anywhere, for the same reason.
+**Most of this is built, and the parts that are not are named where they
+appear.** The solution lives in `03-push-glasses-apart/06-smolvla-fine-tuned/`:
+it records its demonstrations from the teacher, fits the correction, and has
+been run on the bench's held-out tables, with its numbers in that folder's
+README. The two parts of the shared contract it waited on are in the bench
+now — a rendered view looking straight down in `bench/top_view.py`, and
+`Bench.follow()`, which carries a chunk of waypoints out as an action — so
+nothing below is blocked on them. Three things here are still prescriptions
+rather than code, and each says so where it is described: **DAgger**, the
+**second rung on π0.5**, and the **several training seeds** the bench asks for,
+of which one was fitted. Everything else in this document describes a program
+that has run.
 
 By the end you will understand what fine-tuning is and why it is far cheaper
 than fitting a model of this size from random numbers, what low-rank
-adaptation is and what it trades away to fit in a rented accelerator's memory,
+adaptation is and what it trades away to fit in the memory it has to fit in,
 where the demonstrations come from and why they are free while also capping
 what this solution can ever be, which of solution 5's weaknesses the training
 repairs and which of them survive it untouched, the two ways training on one
@@ -186,10 +194,13 @@ pair's result should be read.
 
 Everything else about the model is unchanged, including the things that limit
 it. It still takes one instruction in words, and the task still has one
-instruction, so that channel still carries nothing. It still predicts a chunk
-of waypoints and commits to part of it before looking again. And it still has
-no field in it for a rule, so it still cannot be the thing that refuses a
-glass.
+instruction, so that channel still carries nothing. It still takes the arm's
+own pose, and the bench parks the jaw between actions, so that channel carries
+nothing either: the same six numbers go in at every ask. It still predicts a
+chunk of waypoints and commits to the whole of it before looking again, because
+the number of actions SmolVLA emits in a pass and the number it is configured
+to carry out are the same fifty. And it still has no field in it for a rule, so
+it still cannot be the thing that refuses a glass.
 
 ## Fine-tuning — continuing somebody else's training
 
@@ -294,8 +305,11 @@ which holds about 3.3 billion parameters, a low-rank fine-tune needs more than
 first is an accelerator that can be rented by the hour; the second is not
 something this project is going to reach for. SmolVLA is much smaller — about
 450 million parameters, a few gigabytes at inference, and it runs on a laptop
-— so the same saving at this size is the difference between renting a small
-accelerator for hours and renting a larger one for longer.
+— and **at that size the saving is larger than it needs to be**: the measured
+figure for the training below is 1.02 GiB, which fits on this machine without
+anything being rented. The arithmetic above is still what makes that true, but
+the conclusion it was written to support — that an accelerator has to be
+rented — is only the conclusion for the larger model.
 
 **The trade is that it adapts less deeply, and this has to be stated plainly
 because it decides how the pair's result should be read.** The correction is
@@ -328,13 +342,24 @@ helps.
 
 [Solution 2](02-geometry-ranked.md) generates pushes by geometry and ranks them
 with a fitted ranker, and it is a working chooser of pushes. Run it on the
-bench over the training half of the tables and every push it makes is a
-demonstration. The observation at each moment is what this model takes as its
-input: the rendered view of the table from the top, the one instruction, and
-the arm's own joint readings. The action is the jaw trajectory the bench's own
-macro produced from the parameterised push, which is precisely the shared
-output. So a demonstration is a recording of the shared contract being
-satisfied, and nothing in it had to be drawn, labelled or judged by a person.
+bench over the training half of the tables and almost every push it makes is a
+demonstration. The observation is what this model takes as its input: the
+rendered view of the table from the top taken at the moment the push was
+chosen, the one instruction, and the arm's own pose. The action is the path the
+jaw really followed, which the bench writes down on every action, so a
+demonstration is a recording of the shared contract being satisfied and nothing
+in it had to be drawn, labelled or judged by a person.
+
+What that came to, measured: **800 training tables, 22 minutes of simulator
+time on this laptop, 2,012 demonstrations.** Two things about the count are
+worth knowing. **Most of the teacher's pushes are not demonstrations**: of the
+3,554 pushes it made, 1,533 were the 5 mm test pushes that settle whether a
+glass slides, and those belong to the shared tipping check rather than to the
+chooser, so none of them is a target. And of the remaining 2,021 real pushes,
+**only 9 had to be thrown away** — 8 toppled a glass and 1 pushed one out of
+the zone. The section below warns at length about what filtering to successes
+throws out, and on this bench the answer is four tenths of one per cent. That
+is a quantity worth having rather than a worry worth carrying.
 
 Two things about that recording are worth noticing, because they decide what
 the policy can and cannot learn. The teacher works from the numeric readings
@@ -376,6 +401,18 @@ picture of solution 2 in the cases where solution 2 was right. The policy is
 therefore fitted on the easy half of its teacher's own experience, and the hard
 half — the glass that stuck, the jaw that met a neighbour first, the push that
 went nowhere — is missing from its training by construction.
+
+**On this bench that half is tiny, and knowing the size changes what the
+argument is worth.** Solution 2 is good enough that 9 pushes in 2,021 had to be
+discarded. So the missing hard half is not a hole in the training set; it is
+nine examples. What this really says is something less comfortable than the
+usual worry: the hard cases the teacher handled badly are nearly absent not
+because they were filtered out but because the teacher almost never meets one,
+and a student fitted on that set has never been shown a difficult table because
+the teacher does not produce difficult tables. DAgger is still the repair, and
+it is the repair for a different reason than the filtering: it would put the
+*learner* in states the teacher never visits, and there are plenty of those
+however good the teacher is.
 
 **So what can fine-tuning add beyond its teacher?** One thing, and it is worth
 being precise about it, because it is the only honest claim in this direction.
@@ -464,6 +501,27 @@ the weights were trained and saying the scale moved are one statement said
 twice. So **nothing varies between the two that the training did not bring**,
 and the pair is a clean measurement.
 
+**One thing the convention settles turned out to reach into the physics, and it
+is worth naming because it was not obvious until the code was written.** A
+chunk holds the number of waypoints the borrowed model emits in one pass, which
+is fifty, and the bench consumes waypoints a fixed period apart, so a chunk is
+two and a half seconds of motion whatever it contains. The teacher's push, once
+the bench has sampled it, is a hundred waypoints or more, because the teacher
+feels forward at 10 mm/s and pushes at 20. Fitting that push into a chunk means
+resampling it, and resampling it means the student's jaw travels about 36 mm/s
+where its teacher travelled at 10 and 20. So **the student does not merely
+imitate its teacher's pushes; it makes them faster**, and the glasses are
+pushed by a jaw with more momentum behind it. It is not free to go as fast as
+it likes: the bench holds a commanded path to the jaw's top speed of 200 mm/s,
+past which a leg simply takes longer, so spacing buys speed only up to the
+speed the arm has. A demonstration's 36 mm/s is nowhere near that, but a
+chunk the model invents can be, and then the cap decides how fast the push
+really is. This is forced rather than
+chosen: the alternatives are to change the chunk length, which is the borrowed
+model's own, or to ask the model several times during one push, which would
+spend several of the shared budget's pushes on one. It does not disturb the
+pair, because solution 5's chunks are two and a half seconds of motion too.
+
 **There is one place where the pair could nonetheless be made unfair, and it
 should be named rather than hidden.** The agreed convention is a choice, and a
 careless choice hurts solution 5 much more than it hurts this solution, because
@@ -487,18 +545,46 @@ kind of input it was never fitted on, and a model used across such a gap fails
 in a characteristic way: not by producing nonsense, but by producing confident,
 plausible, wrong answers, which is worse because nothing further along looks
 suspicious. A chunk of waypoints that is smooth and well formed and aimed at
-nothing in particular is exactly that kind of failure. Fine-tuning removes the
-gap by construction, because the inputs the model is fitted on are the inputs
-it will be asked about. The flat rendered grey, the teardrop outline leaning
-away from the point below the camera, the bare table, one kind of glass to a
-table: all of those are simply what a table looks like, as far as the
-fine-tuned model is concerned, because that is what every table in its
-training set looked like.
+nothing in particular is exactly that kind of failure.
+
+**That gap has now been measured, and the number is larger than the prose
+suggests.** Before the training has taken a single step the correction is
+still zero, so the model is exactly solution 5, and asking it for a chunk on
+tuning tables the teacher had also been run over puts its waypoints a median of
+**320 mm** from the teacher's, and 660 mm away at worst. The glass zone is
+320 mm by 360 mm. So the borrowed model's answer is not a push aimed at the
+wrong glass; it is a smooth motion somewhere else on the table entirely, which
+is what reading a model across a domain gap this wide actually looks like.
+
+Fine-tuning removes the gap by construction, because the inputs the model is
+fitted on are the inputs it will be asked about. The pale blue of a glass against the tan of the table,
+the same blue whatever the kind, the outline leaning outwards from the point
+below the camera, the bare table, one kind of glass to a table: all of those
+are simply what a table looks like, as far as the fine-tuned model is
+concerned, because that is what every table in its training set looked like.
 
 **The scale of the actions stops being left to chance**, for the reason the
 previous section gives. The model is trained towards recordings of real pushes
 on this bench, so the size of the motion it proposes is the size this table
 needs, rather than the size the borrowed recordings happened to use.
+
+**That turns out to be two claims, and only one of them held.** The *height*
+was learned, and convincingly. Solution 5 measures its own chunks and reports
+that they come no lower than 247 mm above the table: the borrowed model
+essentially never brings the jaw down to the glasses at all. The fine-tuned
+model's chunks come down to 50 mm, which is the height the gripper pushes at.
+That is the model having learned from this bench's own pushes that a push
+happens on the table rather than above it, and it is the clearest single sign
+in these measurements that the domain gap closed.
+
+The *length* was not learned. The fine-tuned chunks still cover about 310 mm
+of table where the teacher's covered 89, at about 90 mm/s where the teacher
+pushed at 20 — better than solution 5's 964 mm, and still three times too far.
+So the model learned where a push happens long before it learned how far one
+goes, and a push three times too long on a crowded table is a push into a
+neighbour. The toppled count in the folder's README is that. The honest answer
+to "does the scale of the actions stop being left to chance" is therefore:
+partly, and the part that was left is the part that topples glasses.
 
 **Something like friction is absorbed, and this one needs care rather than
 celebration.** Nothing in the cell measures friction and the bench never
@@ -574,9 +660,19 @@ something unexpected during the chunk — a glass that sticks, a neighbour met
 earlier than the readings implied — is met by a policy that is still executing
 what it decided before. Fine-tuning changes how often a surprise arrives, by
 making the predictions better suited to this table. It does not change what
-happens when one does. The thing that can act inside a push is the early abort
-described in the shared document, which reads the jaw's force signal, and it
-sits outside both solutions.
+happens when one does.
+
+**And the thing that was supposed to act inside a push is not built.** The
+early abort — the monitor that reads the jaw's force as the push develops and
+stops it the moment the contact stops behaving like a slide — is a design in
+[pushing without toppling](../pushing-without-toppling.md) and nothing in the
+bench does it. What the bench does is stop at a jam, which is a much higher
+force than a glass beginning to tip, and `follow()` is explicit that below that
+level the chunk is carried out as it was given, because carrying it out as
+given is the point of accepting one. So a surprise inside a chunk is not caught
+by anything today. That falls on solution 5 and this solution equally, so it
+does not disturb the pair; it does mean the pair's topple counts are what the
+limit computed before the jaw moves achieves on its own.
 
 **The run-time cost is unchanged.** It is a large neural network forward pass
 per chunk in both, since the correction folds into the weights, and that cost
@@ -650,7 +746,11 @@ low-rank adaptation, the same bench, the same marking, with a much larger
 borrowed model in the middle. Because everything except the model is held
 still, the gap between the two rungs measures what size is worth on this task,
 in the same way the gap between this solution and solution 5 measures what
-training is worth.
+training is worth. It is also less work than it sounds: the version of LeRobot
+this problem installs carries π0.5 beside SmolVLA, so the rung is the same
+training loop pointed at a different policy and a different set of weights,
+rather than new machinery. What it is not is affordable here, and that is the
+whole of why it stays a prescription.
 
 **Its cost is a weekend on a rented accelerator, which is of order a hundred
 dollars.** That is honest and it is not nothing. It is also the affordable
@@ -751,8 +851,13 @@ should refuse is marked *correct but incomplete*, which is a good outcome.
 
 **That check is not this solution's and cannot be made this solution's.** It
 belongs to [pushing without toppling](../pushing-without-toppling.md), where it
-is explained once for all six, and it runs on every proposed push before the
-jaw moves. The reasons it has to sit outside the policy are worth repeating in
+is explained once for all six, and it runs on every glass before the jaw moves.
+In code it is `slides` in `01-one-fixed-nudge/plan.py`, which is worth saying
+because that is not where a thing shared by six solutions would naturally sit.
+There is no shared module for it: solutions 2, 3, 5 and this one all reach into
+solution 1's folder for the same arithmetic rather than each writing it out, so
+the six do refuse the same glasses, but by borrowing rather than by sharing.
+The reasons it has to sit outside the policy are worth repeating in
 one place, because they are easy to lose in the middle of a document about
 training. A policy has no field in it for a rule, so it cannot be told. Its
 training set contained no refusals, because the teacher refused those glasses
@@ -770,13 +875,15 @@ arithmetic. Any difference in the refusal counts between the two comes from
 their pushes having left the glasses in different places, not from either of
 them being better at refusing.
 
-One qualification keeps that from sounding safer than it is. The check needs
+Two qualifications keep that from sounding safer than it is. The check needs
 the friction coefficient, nobody has it, and the limit it computes is only as
-good as the guess. The guard against a guess that was too generous is the early
-abort inside the loop, which reads the jaw's force while the push is happening
-and stops it when the contact stops behaving like a slide. That too is shared,
-and it is the only thing in this problem that can prevent a topple rather than
-report one.
+good as the guess. And the guard against a guess that was too generous — the
+early abort that reads the jaw's force while the push is happening and stops it
+when the contact stops behaving like a slide — **is a design and not code**.
+The bench stops a push at a jam, which is far more force than a glass needs to
+begin tipping, and nothing reads the force as it develops. So the only thing
+protecting a glass in either half of this pair is the limit computed before the
+jaw moves, and a 5 mm test push where that limit is undecided.
 
 ## A worked example
 
@@ -793,8 +900,9 @@ narrow enough that its limit falls below the jaw's top edge. The bench renders
 the view from the top and hands over the readings, each carrying problem 2's
 error.
 
-**What solution 5 would do.** The downloaded model is shown a rendered grey
-view of a kind it has never seen, together with an instruction, and it returns
+**What solution 5 would do.** The downloaded model is shown a rendered view of
+a kind it has never seen — pale blue glasses, opaque, shaded, standing on a
+tan table — together with an instruction, and it returns
 a chunk of waypoints on the scale of robots that are not this one, read
 through the convention the pair agreed in advance. What comes out is a smooth,
 well-formed jaw motion whose relationship to these five glasses is genuinely in
@@ -830,13 +938,21 @@ model of pushing during the run, because neither is being trained at run time.
 What differs is whether the model had ever seen this situation at all.
 
 **And the case neither can answer.** The third glass, with the narrow foot,
-cannot be pushed safely. Both solutions propose a push on it, because neither
-has anything in it that could decline. The shared check computes the limit from
-the glass's measured foot width and the jaw's top edge, finds it below 65 mm,
-and refuses the push with that reason. The glass is left standing and the table
-is marked *correct but incomplete*. The refusal, its reason and its correctness
-belong entirely to the shared geometry, and the pair's two models contributed
-nothing to it except a push that was stopped.
+cannot be pushed safely. The shared check computes the limit from the glass's
+measured foot width and the jaw's top edge, finds it below 65 mm, and refuses
+that glass with that reason before either model is asked anything. The glass is
+left standing and the table is marked *correct but incomplete*. The refusal,
+its reason and its correctness belong entirely to the shared geometry.
+
+**But the refused glass stays in the picture, and that is the part the code
+had to settle.** Neither model can be told to leave it alone — there is no
+field in a policy for a rule — so a chunk whose path runs into a refused glass
+is simply not carried out. That check reads the path, which is something the
+geometry can only do once the model has answered, so it costs one of the
+table's pushes every time it fires: an answer was asked for and spent, and the
+model cannot be asked for a different one. Both halves of the pair pay that in
+the same code, which is why it does not disturb the comparison, and the counts
+in each folder's `asking.json` say how often it happened.
 
 The honest summary of the example is that fine-tuning changes the first half of
 it and not the second. The chunk becomes a push aimed at a glass on this table,
@@ -854,16 +970,18 @@ file produced by continuing their training inherits whatever they carried, and
 no amount of training here relicenses it. It needs **PyTorch** underneath,
 which is what both the training and the forward pass run on.
 
-It needs **the two parts of the bench that do not exist yet**, and this is the
-first thing to build rather than the last. A rendered view looking straight
-down is the input this model takes, and the bench today renders only for the
-films used to check a run by eye, from a camera looking steeply down from the
-arm's side. A path by which a chunk of waypoints is carried out as an action is
-the output this model produces, and the bench today accepts a parameterised
-push and owns the macro that expands it. Neither is hard, and both are the real
-price of going off the shelf, because every LeRobot policy expects pictures and
-an action space at control rate. Until they are written, nothing in this
-document can be run.
+It needs **the two parts of the bench this solution waited on**, and both are
+there now. A rendered view looking straight down is the input this model takes,
+and `bench/top_view.py` is that view: a camera fixed 750 mm above the middle of
+the glass zone, looking straight down, returning a 384 by 384 picture that
+frames the whole zone. It is separate from the camera the films use, which
+looks steeply down from the arm's side. A path by which a chunk of waypoints is
+carried out as an action is the output this model produces, and `Bench.follow()`
+is that path: it takes the waypoints as they come, consumes them a fixed period
+apart, and reports the same record a parameterised push does, so the scorecard
+cannot tell which door an action came through. Neither was hard, and both were
+the real price of going off the shelf, because every LeRobot policy expects
+pictures and an action space at control rate.
 
 It needs **solution 2 built**, because solution 2 is the teacher and its pushes
 are the training set. It needs **simulator time** to record those pushes over
@@ -872,31 +990,40 @@ recordings in which something went wrong. It needs the **held-out half** of the
 tables, which the bench already enforces, for checking that the policy learned
 pushing rather than the tables.
 
-**It needs a rented accelerator for the training run, and this is the solution
-where that matters most.** A low-rank fine-tune of SmolVLA needs an accelerator
-for hours, which is of order tens of dollars. The second rung needs one for a
-weekend, which is of order a hundred. Renting a small accelerator for a whole
-month would be of order five hundred, which is the scale to keep in mind if the
-training has to be repeated many times over several seeds.
+**It does not need a rented accelerator, and this is the place the document
+was wrong.** The training runs on this machine, an Apple Silicon Mac with no
+NVIDIA card, through Metal. Measured while it ran: **1.02 GiB held**, with the
+borrowed weights, the correction, the correction's gradients and the
+optimiser's running averages all in memory at once. Low-rank adaptation is
+exactly why, and for exactly the reason the section above gives — only the
+correction's four million numbers carry gradients and optimiser state, so what
+has to be held is the model plus a little. What the writing got wrong was how
+little "a little" is at 450 million parameters. Memory was never close to being
+the obstacle.
 
-The project's old rule was that everything must run on this machine, which is
-an Apple Silicon Mac with no NVIDIA card, and [the plan](../solutions-plan.md)
-lifts that rule for problem 3 so that each solution states what it needs and
-roughly what renting it costs, in the same way a licence is stated. **Of the
-six, this is the solution where the lifting matters most, and the reason is
-about memory rather than about time.** Solutions 1 and 2 need no accelerator of
-any kind, and solution 5 trains nothing at all. The other two learned solutions
-fit small networks, so where they rent at all the rental buys time and the
-question is how many hours training takes. Here the question is whether the
-training fits at all, because 450 million borrowed weights, the correction, the
-correction's gradients and the optimiser's running averages all have to be held
-at the same time. Low-rank adaptation is the thing that brings that total down
-to a size an accelerator can be rented by the hour for, and without it the
-number to compare against would be the 70 GB a full fine-tune of the larger
-model in this family needs. The asymmetry worth noting is that **the trained
-model then runs here perfectly well**, because SmolVLA uses a few gigabytes at
-inference and runs on a laptop. The rental is a cost of building this solution,
-not of using it.
+**What renting buys here is time, not memory, and that distinction matters
+because time is what this solution is actually short of.** A training step on
+Metal takes a second or two where an NVIDIA card would take a fraction of one,
+and LeRobot's own SmolVLA fine-tune is twenty thousand steps at a batch of
+sixty-four. What ran here is a thousand at a batch of four, which is a small
+fraction of that compute, and **every number this solution reports carries
+that caveat**. A step took about four seconds, on a laptop that was also
+running three other solutions' training at the time. Renting is still how real compute would be spent on it:
+hours of a small accelerator is of order tens of dollars, a weekend of order a
+hundred, and a month of order five hundred, which is the scale to keep in mind
+if the training has to be repeated over several seeds. None of it was spent.
+
+The project's old rule was that everything must run on this machine, and [the
+plan](../solutions-plan.md) lifts that rule for problem 3 so that each solution
+states what it needs and roughly what renting it costs, in the same way a
+licence is stated. **The lifting turned out not to be needed for this
+solution**, which is the opposite of what this section first claimed. Where it
+is still needed is the second rung: π0, which belongs to the same family, holds
+about 3.3 billion parameters and its full fine-tune floor is above 70 GB, and
+there the question really is whether the training fits. At 450 million it was
+not a question. And **the trained model runs here perfectly well** too,
+because SmolVLA uses a few gigabytes at inference, so neither building this
+solution nor using it needed anything rented.
 
 And once trained, it needs **a correction kept in step with the cell**. Change
 the camera, the way the view from the top is rendered, the range of proportions
@@ -920,9 +1047,10 @@ policy may make. Learning from examples of correct pushes leaves "never topple"
 as a constraint the teacher enforced and the shared check enforces again.
 
 **Its training is affordable, and its run-time cost is its partner's.** The
-low-rank correction fits in a rented accelerator for hours, and it folds into
-the weights afterwards, so nothing about running it is more expensive than
-running the model as it downloads.
+low-rank correction fits in the memory of a laptop, which is further than this
+document expected it to go, and it folds into the weights afterwards, so
+nothing about running it is more expensive than running the model as it
+downloads.
 
 **It is one half of the cleanest comparison in this folder**, and that is a
 strength of the arrangement rather than of the model.
@@ -1076,7 +1204,9 @@ per decision.
 
 It is right for smooth contact-rich motions, which is what this problem has. It
 is wrong where a fast reaction inside the chunk is needed, because the chunk is
-already decided, and that is the gap the shared early abort fills. For the same
+already decided, and here nothing fills that gap: the early abort that would
+have filled it is a design and the bench only stops a push at a jam. For the
+same
 reason, the bench had to be designed to accept chunks: forcing a chunked policy
 down to three numbers would have measured a damaged version of the method rather
 than the method.
@@ -1128,7 +1258,7 @@ arithmetic and looks again, costs nothing to build or run, and is in this
 folder to answer
 the question of whether any learning beats a fixed nudge at all. If this
 solution does not beat it by a margin larger than its own spread, the
-450 million parameters and the rented accelerator have bought nothing.
+450 million parameters and the hours of training have bought nothing.
 
 Against [solution 4](04-a-world-model.md), the comparison is planning against
 reacting. Solution 4 learns how the table changes and searches over candidate

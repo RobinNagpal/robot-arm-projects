@@ -145,18 +145,26 @@ so that the reading transfers to whichever model is licensed conveniently.
 
 ## What is built
 
-**None of the six is built as a solution on the bench.** All six are designs,
-and each document says so. One of them starts from something that already
-exists: the network solution 2 describes is written in this project's code, and
-that document separates plainly what exists from what the design adds around
-it. Nothing else here has been run.
+**All six are built and all six have been run on the bench.** Each has code in
+a folder named after the document you are reading about it, and the numbers the
+six produced are set side by side in
+[`02-segment-glasses/results/`](../../../02-segment-glasses/results/). No number
+in this project is an estimate: where something could not be run, the result is
+absent and the reason is written down instead.
 
-The bench itself exists, including the shared arithmetic and the measurement of
-the best answer any method could possibly give, so the yardstick is ready
-before the cars are.
+The bench was built before the solutions, which was deliberate rather than
+accidental, because a comparison whose yardstick arrives after the results is a
+comparison nobody can trust. Building the solutions then tested the yardstick in
+return, and twice it was the yardstick that was wrong: the mask measurement had
+to be rewritten after the bench's own perfect masks failed it, and two of the
+six turned out to have been scored on different pictures from the other four.
+Both are fixed, and both were found by measuring rather than by reading.
 
-That order is deliberate rather than accidental. A comparison whose yardstick
-arrives after the results is a comparison nobody can trust.
+Three things are specified in these documents and are **not** built, and each is
+named in the document that asks for it. Two solutions have a second rung that
+cannot run here: one needs weights that are behind a licence gate, and one ran
+out of machine part way through its training. Neither claims a number. The
+amodal target of solution 6 is the third.
 
 ## Where to go next
 

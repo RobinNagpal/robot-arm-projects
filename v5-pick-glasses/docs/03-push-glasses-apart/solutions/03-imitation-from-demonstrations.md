@@ -2,7 +2,8 @@
 
 > **What it uses** — [LeRobot](https://github.com/huggingface/lerobot), which
 > holds reference implementations of this whole family of policies, with
-> PyTorch underneath, and a rented accelerator for the training run. The model
+> PyTorch underneath. No rented accelerator: this one fitted on the machine
+> the project is written on, an Apple M4 with no NVIDIA card. The model
 > is **ACT**, an action chunking transformer: it predicts a short run of future
 > actions in one go rather than one action at a time. A second rung uses
 > **Diffusion Policy**, also in LeRobot, which reaches the same kind of answer
@@ -41,8 +42,9 @@
 > **What it costs** — the demonstrations are free in money and cheap in time,
 > because the teacher is a program and the tables are simulated, so the whole
 > dataset is arm time on the bench rather than human hours at a teleoperation
-> rig. Training runs in hours on a small rented accelerator, which is of order
-> tens of dollars. The licence position is as simple as it gets here:
+> rig. Training runs in hours — on this machine's own graphics processor, as
+> it turned out, so the rental this document first budgeted for was not
+> needed. The licence position is as simple as it gets here:
 > LeRobot is Apache-2.0, which is the permissive kind of licence [the
 > implementation notes](../../../implementation-notes.md) record for
 > everything else this project depends on, and because no borrowed weights
@@ -67,16 +69,23 @@ action chunking transformer, taken from LeRobot, and a second rung replaces it
 with Diffusion Policy, which arrives at the same kind of answer by a different
 route.
 
-**This is a design and not a report, and it is worth being exact about which
-parts exist.** [The test bench](../the-bench.md) is built, and so is the
-programmed geometry that picks a landing spot for one glass at a time. The
-ranker that turns that geometry into [solution 2](02-geometry-ranked.md) is a
-design. The straight-down rendered view this policy would read, and the path
-that would let the bench carry out a chunk of waypoints, are both recorded in
-[the plan](../solutions-plan.md) as not existing yet. And no policy has been
-trained. So nothing below describes a program that has run, no measurement is
-quoted anywhere, and where this document says what the method would do, that
-is what the design says it would do.
+**This is built, and it is worth being exact about which parts.** [The test
+bench](../the-bench.md) is built, the programmed geometry that picks a landing
+spot for one glass at a time is built, and so is the ranker that turns that
+geometry into [solution 2](02-geometry-ranked.md), which is this solution's
+teacher. The two things the bench was missing are built as well: the
+straight-down rendered view this policy reads, as `bench/top_view.py`, and the
+path that carries out a chunk of waypoints, as `Bench.follow`. ACT has been
+fitted here, from random numbers, on demonstrations recorded off solution 2's
+own pushes, and run over the held-out tables. The code is in
+`03-push-glasses-apart/03-imitation-from-demonstrations/` and the numbers it
+scored are in that folder's `README.md`, not here: this document is the
+design, and a measurement quoted in two places drifts.
+
+Three things below are still prescriptions rather than code, and each says so
+where it appears: the DAgger round, the force monitor that would watch a chunk
+while it runs, and deliberately over-representing the crowded corner cases in
+the demonstration set.
 
 The reason this solution is worth writing out in full is that it is the
 cheapest way of asking a question the other five cannot ask. Solution 2 is a
@@ -335,24 +344,30 @@ towards the teacher's own competence. So this solution's picture of problem 3
 is solution 2's picture of problem 3, with solution 2's blind spots deepened
 rather than merely copied.
 
-Three things can be done about it, and all three are prescriptions in this
-project rather than code that exists.
+Three things can be done about it. Two are now code and the third is still a
+prescription.
 
 **Keep the teacher's refusals, as refusals.** A glass solution 2 declined to
 push is not a failure and should not be dropped as one; [pushing without
 toppling](../pushing-without-toppling.md) is explicit that a refusal is a
 result. A dataset that silently omits those tables teaches the student nothing
-about them, and silence in a dataset is not a label.
+about them, and silence in a dataset is not a label. **Done**: the refusals
+and their reasons are counted beside the demonstrations.
 
 **Record what the filtering removed, broken down by table.** The thinning is
 invisible unless it is counted. A table of kept and dropped pushes, grouped by
 the kind of table and by the way the dropped ones failed, says where the
-student's coverage is thin before the student is ever run.
+student's coverage is thin before the student is ever run. **Done**: the
+collection writes exactly that table, and the first thing it says is that on
+these tables the teacher is clean enough that the thinning is small — far
+smaller than this section assumed when it was written.
 
 **Weight the hard tables up, and gather more of them.** Because tables are
 drawn from numbers and cost only time, a thin region can be filled by drawing
 more tables of that kind rather than by accepting the thinness. That is the
 cheapest defence available here and it is unavailable on real hardware.
+**Not done**: the demonstration set is drawn from consecutive table numbers,
+so it holds whatever mixture the bench produces.
 
 None of the three removes the problem. The ceiling stays where the next
 sections put it.
@@ -411,13 +426,27 @@ arm is carrying out a motion it decided on from a picture that is now out of
 date, and if something unexpected happens three waypoints in, the remaining
 waypoints do not know. So the chunk's length is a real trade and not a
 formality: a long chunk is committed and blind, a short chunk is responsive and
-prone to dither. Two things make the trade bearable in this problem. The jaw
-feels its way to contact rather than driving to a computed point, so the one
-moment the motion could strike something unexpectedly is handled by the bench's
-own behaviour rather than by the policy. And the force monitor described in
-[pushing without toppling](../pushing-without-toppling.md) reads the jaw far
-faster than any camera, so there is something watching during a chunk even
-though the policy is not.
+prone to dither. And it is a trade in speed as well as in length, because
+waypoints are consumed at a fixed rate: how far apart they are is how fast the
+jaw goes. The bench caps that at the fastest the cell ever moves the jaw, so a
+chunk whose waypoints are further apart than the arm can cover in one control
+period is taken slower rather than at a speed the arm does not have. A policy
+copying this teacher never meets the cap — the teacher's own waypoints are
+about a millimetre apart, and the cap is at ten — but a policy that learned to
+emit coarser chunks would be slowed by it.
+
+What makes the trade bearable is set by `Bench.follow`, and
+it is worth being exact because it is less than the loop gives a
+parameterised push. Coming down to the chunk's first waypoint is the bench's
+own move and it stops if the jaw touches anything on the way, so a chunk that
+starts over an obstacle comes back as blocked rather than being driven
+through. But **once the jaw is travelling across the table the bench does not
+feel for the glass.** A chunk is carried out as it was given, which is the
+whole point of accepting one, and the only thing that stops it is the jam
+threshold. So the slow approach to contact is not the cell's behaviour here;
+it is part of the chunk, copied from the teacher's own feel. That is the one
+place where this solution leans on the demonstrations for safety rather than
+on the bench.
 
 Finally, chunking is the reason [the test bench](../the-bench.md) accepts
 waypoints at all, and that argument is worth repeating here because it is about
@@ -573,8 +602,19 @@ bench](../the-bench.md) owns a macro that turns a parameterised push into a
 descent, a feel, a slide, a back-off and a lift, and the solutions that think
 in parameterised pushes go through it. A chunk is already a jaw trajectory, so
 there is nothing for the macro to do. The bench carries the waypoints out as
-given. That the bench accepts them is a design decision recorded there and not
-yet written.
+given, through `Bench.follow`, which is built.
+
+**Two small things travel beside the waypoints, and they are not the
+policy's.** The bench's chunk carries the glass it is meant to move and the
+place the solution expects that glass to arrive, because the scorecard counts
+pushes per glass and measures how far each glass ended from its aim. A policy
+whose output is a run of waypoints produces neither. Both are therefore read
+back off the chunk after the fact: the glass is the one the jaw ends up
+against, and the aim is that last fingertip moved forward by half the glass's
+measured width, which is solution 1's own convention. Nothing about that
+reaches the policy or changes the motion. It is bookkeeping for the
+scorecard, and it is named here because it is the one place where this
+solution's output is not literally the whole answer.
 
 **The score is the outcome, not the action.** The bench does not ask whether
 the chunk was the chunk it would have chosen, or whether the waypoints were
@@ -619,19 +659,33 @@ bench's macro produced, and the bench's verdict on what happened to the table
 afterwards. Pushes that failed are dropped and the dropping is counted, so the
 thinning is visible. Refusals are kept as refusals. What remains is a dataset of
 pairs — a picture, and a chunk of waypoints — which is exactly the shape
-behaviour cloning needs. ACT is then fitted on it from random numbers, for
-hours, on a small rented accelerator. The second rung fits Diffusion Policy on
-the same dataset, changing the model and nothing else. Both are fitted several
-times with different seeds, because one training run is not a measurement.
+behaviour cloning needs. One detail of the shape is worth naming, because the
+document above does not settle it: a recorded path is a few hundred waypoints
+long and a chunk is a fixed, shorter run, so every demonstration is trimmed to
+the part at push height and resampled to the chunk's length. The trimming is
+free, because the bench does the descent and the lift itself. The resampling
+is not free: waypoints are consumed at a fixed rate, so squeezing a long push
+into a fixed chunk runs it faster than it was demonstrated. The chunk's length
+is therefore set near the median length of the teacher's own pushes, and a
+push longer than that is replayed quicker than it was made.
 
-**Online, on every push.** The arm looks at the table. The straight-down view
-goes into the policy, which returns one action chunk. Before any of it reaches
-the arm, the shared topple limit is evaluated for the glass the chunk is aimed
-at, and a glass that fails it is refused with a reason rather than pushed. The
-bench carries the chunk out: the closed jaw comes down, feels forward until it
-touches, travels, backs off, lifts clear, and reports what it felt. The arm
-looks again. The loop repeats until every glass has room, or the glasses that
-are left have all been refused, or the push budget is spent.
+ACT is then fitted on the dataset from random numbers, for hours. The second
+rung fits Diffusion Policy on the same dataset, changing the model and nothing
+else. Both are fitted several times with different seeds, because one training
+run is not a measurement.
+
+**Online, on every push.** The arm looks at the table and racks every glass
+that already has room. The shared topple limit is then evaluated on every
+glass still standing there, before the policy is asked anything, and a glass
+that fails it is refused with its reason and taken out of play. Only then does
+the straight-down view go into the policy, which returns one action chunk; the
+chunk is charged to one of the glasses the limit left in play, so a refused
+glass can never be pushed. The bench carries the chunk out: the closed jaw is
+placed clear above the first waypoint, comes down to it, follows the waypoints
+one control period apart, and lifts clear, reporting what it felt in the same
+words a parameterised push reports. The arm looks again. The loop repeats
+until every glass has room, or the glasses that are left have all been
+refused, or the push budget is spent.
 
 Three things are worth holding on to from all of that.
 
@@ -708,9 +762,12 @@ toppling](../pushing-without-toppling.md) describes a monitor that reads the
 jaw's force signal during a push and stops the arm the moment the contact stops
 behaving like a slide, and notes that it is the only thing in this problem that
 can prevent a topple rather than report one. A chunking policy is open-loop
-while its chunk runs, so during that window the force monitor is the only thing
-observing at all. The monitor is a prescription in this project rather than
-built code, and this solution is the one with the strongest reason to want it.
+while its chunk runs, so during that window such a monitor would be the only
+thing observing at all. **It is still a prescription rather than built code,
+and this solution is the one with the strongest reason to want it.** What the
+bench does have during a chunk is the jam threshold, which stops a chunk whose
+jaw has wedged. That catches a blocked path; it does not recognise a glass
+beginning to tip, which is the failure the monitor was for.
 
 ## A worked example
 
@@ -804,36 +861,46 @@ program that chooses pushes well, there are no demonstrations, and with a
 teacher that chooses badly the student has nothing worth copying. [The
 plan](../solutions-plan.md) builds the two in that order for this reason.
 
-It needs **two things the bench does not have**, and this is the third of the
-honest costs. [The plan](../solutions-plan.md) records both in its audit of
-`bench.py`. The first is a **rendered view of the table from the top**: the
-bench returns numeric readings, and it does render the world, but from the
+It needed **two things the bench did not have**, and that was the third of the
+honest costs. [The plan](../solutions-plan.md) recorded both in its audit of
+`bench.py`. The first was a **rendered view of the table from the top**: the
+bench returned numeric readings, and it did render the world, but from the
 arm's side rather than straight down, and only for the films used to check a
-run by eye. The second is a **path that accepts a chunk of waypoints**: today
+run by eye. The second was a **path that accepts a chunk of waypoints**:
 `push()` takes a parameterised push and *is* the macro that expands it, so
-there is no way in for a trajectory. Neither is hard, and both are the real
-price of going off the shelf, because every LeRobot policy expects pictures and
-a control-rate action space. Solutions 1 and 2 need neither, which is one more
-reason to build them first.
+there was no way in for a trajectory. Both are now built — `bench/top_view.py`
+and `Bench.follow` — and both were the real price of going off the shelf,
+because every LeRobot policy expects pictures and a control-rate action space.
+Solutions 1 and 2 need neither, which is one more reason to build them first.
 
 It needs **demonstrations**, which cost arm time on the bench and nothing else,
-drawn only from table numbers below the dividing line, with the crowded corner
-cases deliberately over-represented so that the edge of what the policy will
-face sits somewhere in the middle of what it was trained on.
+drawn only from table numbers below the dividing line. The prescription here
+is to over-represent the crowded corner cases deliberately, so that the edge
+of what the policy will face sits somewhere in the middle of what it was
+trained on. **That part is not done**: the demonstration set is drawn from
+consecutive table numbers, which is whatever mixture the bench's own table
+generator produces, and the crowded corners are therefore as rare in the
+training set as they are on the bench.
 
-It needs **compute to rent**, and this is the cheapest entry in the folder.
-**Training runs in hours on a small rented accelerator, which is of order tens
-of dollars.** The reason it is so modest is worth stating, because it is easy
-to assume that anything with a transformer in it is expensive. The dataset is
-small — thousands of pushes, each a picture and a short chunk — the network is
-small by the standards of the foundation models in [solution
+It needs **compute**, and this is the cheapest entry in the folder. **Training
+runs in hours.** The reason it is so modest is worth stating, because it is
+easy to assume that anything with a transformer in it is expensive. The dataset
+is small — thousands of pushes, each a picture and a short chunk — the network
+is small by the standards of the foundation models in [solution
 5](05-smolvla-as-it-downloads.md) and [solution
 6](06-smolvla-fine-tuned.md), and nothing has to be learned about vision in
-general, only about this one cell's pictures of this one task. Several training
-seeds multiply that figure by a small number and leave it in the same range.
-For comparison, renting an accelerator for a weekend is of order a hundred
-dollars, and a small one for a month of order five hundred, so even a generous
-schedule of retraining here stays well inside a weekend's rental.
+general, only about this one cell's pictures of this one task.
+
+**In the end nothing was rented.** This document first budgeted tens of
+dollars for a small accelerator, and that is still the right figure for
+anybody who wants one. But a network of a few tens of millions of parameters
+on a few thousand small pictures fits on the graphics processor an Apple M4
+already has, in hours per training seed, so the whole of this solution —
+demonstrations, several training seeds and the held-out run — was made on the
+machine the project is written on. For comparison, renting an accelerator for
+a weekend is of order a hundred dollars, and a small one for a month of order
+five hundred, so even a generous schedule of retraining stays well inside a
+weekend's rental if a laptop is not available.
 
 At run time it needs very little: **one forward pass per chunk** for ACT, and
 several passes per chunk for the denoising rung, against a push that takes the
@@ -861,8 +928,8 @@ bench's decision to accept waypoints costs it nothing.
 learning — that somebody has to demonstrate the task by hand, many times — does
 not apply, because the teacher is code and the tables are simulated.
 
-**It is cheap to train and cheap to run.** Hours on a small rented accelerator,
-and one forward pass per push.
+**It is cheap to train and cheap to run.** Hours on a laptop's own graphics
+processor, and one forward pass per push.
 
 **It is a measurement.** Student against teacher, on the same tables with the
 same scorecard, with every shared part held still. Even if this solution were
@@ -889,14 +956,20 @@ copies failures as readily as successes, and it thins the dataset exactly in
 the situations where the teacher struggled. So the student is fitted most
 densely where help was least needed.
 
-**It needs bench work that does not exist.** A straight-down rendered view and
-a waypoint path, both recorded in the plan as missing. Until they are built,
-this solution cannot run at all.
+**It needed bench work the first two solutions did not.** A straight-down
+rendered view and a waypoint path, both recorded in the plan as missing and
+both now built. That cost is paid, but two smaller ones are paid on every
+push rather than once. The bench's chunk wants a glass and an aim that the
+policy does not produce, so both are read back off the waypoints outside it.
+And nothing stops a network emitting a coordinate the jaw cannot reach, so
+every chunk is pulled inside the jaw's limits before it is followed, and how
+often that happens has to be counted and reported rather than hidden.
 
 **It is open-loop inside a chunk, and it cannot refuse.** During a chunk
-nothing is read, so the force monitor is the only observer; and the policy's
-only output is waypoints, so a refusal has to come from the shared gate in
-front of it rather than from the policy itself.
+nothing is read, and the monitor that would watch the force is not built, so
+the only thing stopping a chunk is the jam threshold. And the policy's only
+output is waypoints, so a refusal has to come from the shared gate in front of
+it rather than from the policy itself.
 
 **And it cannot explain itself, or say when it is lost.** When solution 2 is
 wrong you can print the candidates and the scores and see which step went
