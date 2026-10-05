@@ -41,7 +41,16 @@ import tables
 import train
 import viewpoints
 from collect import DATA
-from drawing import WHITE, above, beside, foot, grid, panel, tag, write  # 02-segment-glasses/02-train-from-scratch
+from drawing import (  # 02-segment-glasses/02-train-from-scratch
+    WHITE,
+    above,
+    beside,
+    foot,
+    grid,
+    panel,
+    tag,
+    write,
+)
 from push_model import Ensemble, sigmoid
 
 SAVED = Path(__file__).parent / "saved"

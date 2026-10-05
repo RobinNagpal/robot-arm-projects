@@ -15,7 +15,6 @@ from __future__ import annotations
 import random
 from dataclasses import dataclass
 
-import numpy as np
 from work_cell.arm.dimensions import GRIPPER_MAX_OPENING, LOWEST_GRIP
 from work_cell.glasses import spec
 from work_cell.glasses.profile import profile_from_outline
@@ -101,6 +100,3 @@ def glass_grip(glass: SpawnedGlass) -> TrueGrip:
 def kind_index(kind: str) -> int:
     return KINDS.index(kind)
 
-
-def outline_of(glass: Glass) -> Outline:
-    return Outline(np.asarray(glass.height), np.asarray(glass.radius))
