@@ -10,7 +10,7 @@
     "merged": 0,
     "split": 0,
     "false": 0,
-    "position_mm_median": 6.3,
+    "position_mm_median": 8.5,
     "position_mm_worst": 46.5
   },
   "mask": {
@@ -46,13 +46,15 @@
       "tapered_glass": {
         "glasses": 25,
         "covered_median": 100.0,
-        "covered_worst": 98.9,
+        "covered_worst": 49.9,
         "not_the_glass_median": 0.0,
         "not_the_glass_worst": 0.0
       }
     }
   },
-  "handed over": {},
+  "handed over": {
+    "a group too wide for one glass of this kind, and it did not come apart": 3
+  },
   "model": "none: written rules over the depth readings",
   "grouping distance mm": 25.0,
   "fitted here": "nothing"

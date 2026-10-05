@@ -42,6 +42,12 @@ from scoring import Scorecard
 # arithmetic.
 PLACE_TOLERANCE = 0.002
 
+# How far the circle fitted to a group's outside may sit from the glass's own
+# widest part. It is the check's own error, and what it has to be smaller than
+# is the room the kind's range leaves: the narrowest kind here spans 60 to
+# 85 mm, so a fit wrong by this much still refuses nothing it should keep.
+FIT_TOLERANCE = 0.004
+
 
 def _glass(kind, outline_, x=0.48, y=-0.26):
     return render.Glass(kind, x, y, outline_.height, outline_.radius)
@@ -109,7 +115,7 @@ def test_what_comes_back_is_the_benchs_own_record_and_carries_no_private_arithme
     picture = render.render([_glass("tapered_glass", outline_, x, y)], pose)
     found, _ = find.load().find(picture, "tapered_glass")
     assert [type(one) for one in found] == [Found]
-    assert set(Found.__dataclass_fields__) == {"x", "y", "width", "pixels"}
+    assert set(Found.__dataclass_fields__) == {"x", "y", "width", "pixels", "cut_off"}
     # The pixels are the mask's, said as (row, column) the way the bench reads them.
     assert found[0].pixels.shape[1] == 2
 
@@ -128,6 +134,132 @@ def test_a_group_too_small_to_place_is_a_doubt_and_not_a_glass(monkeypatch):
     found, doubts = find.load().find(picture, "straight_glass")
     assert found == []
     assert doubts == [find.TOO_LITTLE]
+
+
+# ------------------------------------- the circle, the split and the refusals
+
+
+def test_the_circle_fit_recovers_a_circle_it_was_given():
+    """The arithmetic on its own, against an answer written down before the fit ran."""
+    angles = np.linspace(0, 2 * math.pi, 37)[:-1]
+    ring = np.stack([0.4 + 0.031 * np.cos(angles), -0.2 + 0.031 * np.sin(angles)], 1)
+    circle = find.fit_circle(ring)
+    assert math.dist((circle.x, circle.y), (0.4, -0.2)) < 1e-9
+    assert abs(circle.width - 0.062) < 1e-9
+
+
+@pytest.mark.parametrize("kind", render.KINDS)
+def test_the_fitted_footprint_is_the_glasss_own_width(kind):
+    """What the check is held against, on a family rather than on one glass.
+
+    The fit is on the outside of a group's patch of table, so it has to come
+    back near the glass's widest part for the kind's own range to mean anything.
+    """
+    pose, (x, y) = _middle_station()
+    for outline_, _ in family(kind, 6, seed=7):
+        picture = render.render([_glass(kind, outline_, x, y)], pose)
+        one = masks_to_glasses.one_glass(picture, glass_masks(picture)[0])
+        fitted = find.footprint(find.dots_of(picture, one.pixels)).width
+        assert abs(fitted - 2.0 * float(outline_.radius.max())) < FIT_TOLERANCE
+
+
+def test_the_split_puts_two_separated_clouds_of_dots_one_each_side():
+    """k-means with two centres, on dots whose answer is not in question."""
+    rng = np.random.default_rng(0)
+    left = rng.normal([0.40, -0.30], 0.01, (200, 2))
+    right = rng.normal([0.52, -0.30], 0.01, (200, 2))
+    mine = find.halve(np.concatenate([left, right]))
+    # Each cloud whole on one side, whichever of the two sides it landed on.
+    assert len(set(mine[:200].tolist())) == 1
+    assert len(set(mine[200:].tolist())) == 1
+    assert mine[0] != mine[-1]
+
+
+@pytest.mark.parametrize("kind", render.KINDS)
+def test_two_glasses_in_one_group_come_apart_into_two_reports(kind):
+    """The step the document prescribes, where distance alone has nothing left to say.
+
+    Each pair stands with half the grouping distance of bare table between the
+    two footprints, so the dots chain into one group however far apart the
+    centres are. A family of pairs, because a rule that separates one pair and
+    fails on a differently proportioned one is the failure to catch.
+    """
+    pose, (x, y) = _middle_station()
+    drawn = [outline_ for outline_, _ in family(kind, 8, seed=7)]
+    for first, second in zip(drawn[::2], drawn[1::2], strict=True):
+        apart = float(first.radius.max() + second.radius.max()) + find.GROUPING / 2.0
+        glasses = [_glass(kind, first, x, y - apart / 2), _glass(kind, second, x, y + apart / 2)]
+        picture = render.render(glasses, pose)
+        assert len(glass_masks(picture)) == 1
+
+        found, doubts = find.load().find(picture, kind)
+        assert (len(found), doubts) == (2, [])
+        # Each report nearest a different glass, which is what two glasses means.
+        away = [[math.dist((one.x, one.y), (g.x, g.y)) for g in glasses] for one in found]
+        assert sorted(gaps.index(min(gaps)) for gaps in away) == [0, 1]
+
+
+@pytest.mark.parametrize("kind", render.KINDS)
+def test_three_glasses_in_one_group_are_handed_over_rather_than_guessed_at(kind):
+    """Two circles cannot say how many glasses a row of three holds, only that it is too many."""
+    pose, (x, y) = _middle_station()
+    drawn = [outline_ for outline_, _ in family(kind, 3, seed=5)]
+    at, places = 0.0, []
+    for before, outline_ in zip([None, *drawn[:-1]], drawn, strict=True):
+        if before is not None:
+            at += float(before.radius.max() + outline_.radius.max()) + find.GROUPING / 2.0
+        places.append(at)
+    middle = sum(places) / len(places)
+    glasses = [_glass(kind, o, x, y + p - middle) for o, p in zip(drawn, places, strict=True)]
+
+    picture = render.render(glasses, pose)
+    assert len(glass_masks(picture)) == 1
+    assert find.load().find(picture, kind) == ([], [find.TOO_WIDE])
+
+
+def test_a_group_too_narrow_with_the_whole_of_it_in_frame_is_a_doubt(monkeypatch):
+    """The refusal the document prescribes, on a group the picture did hold all of."""
+    pose, (x, y) = _middle_station()
+    outline_ = next(o for o, _ in family("tapered_glass", 1, seed=11))
+    picture = render.render([_glass("tapered_glass", outline_, x, y)], pose)
+    whole = glass_masks(picture)[0]
+    one = masks_to_glasses.one_glass(picture, whole)
+    dots = find.dots_of(picture, one.pixels)
+
+    # Cut down to a disc narrower than the narrowest glass of the kind, so the
+    # fit has something real to refuse and the frame has nothing to do with it.
+    inside = np.hypot(dots[:, 0] - one.x, dots[:, 1] - one.y) < 0.4 * data.widths("tapered_glass")[0]
+    small = np.zeros_like(whole)
+    small[one.pixels[inside, 0], one.pixels[inside, 1]] = True
+    assert not masks_to_glasses.one_glass(picture, small).cut_off
+
+    monkeypatch.setattr(find, "glass_masks", lambda picture: [small])
+    assert find.load().find(picture, "tapered_glass") == ([], [find.TOO_NARROW])
+
+
+def test_a_group_the_frame_cut_short_is_reported_and_not_refused_on_its_width():
+    """The repair, on the bench's own held-out scenes rather than on a built case.
+
+    A glass near the edge of a station's frame shows part of its footprint, so
+    the circle fitted to it is too narrow for the kind through no fault of the
+    grouping. Refusing on that width would throw away correct answers, and the
+    bench's floor measures how many: with the renderer's own exact masks the
+    kind's range refuses 66 of 297 glass sightings, and every one reaches the
+    frame edge.
+    """
+    finder, cut_short = find.load(), 0
+    for example in data.held_out(3):
+        narrowest = data.widths(example.kind)[0]
+        for sight in example.sights:
+            for mask in glass_masks(sight.picture):
+                one = masks_to_glasses.one_glass(sight.picture, mask)
+                if one is None:
+                    continue
+                if find.footprint(find.dots_of(sight.picture, one.pixels)).width < narrowest:
+                    assert one.cut_off
+                    cut_short += 1
+            assert find.TOO_NARROW not in finder.find(sight.picture, example.kind)[1]
+    assert cut_short, "no group in these scenes was cut short, so nothing was tested"
 
 
 def test_the_glasses_the_layout_set_out_are_found_one_each_over_a_whole_survey():

@@ -18,13 +18,17 @@ belongs to how the mask was drawn.
 
 **The kind of glass is handed in and is not used.** The document prescribes a
 check here: fit a circle to the pixels of a pile, and refuse a pile whose width
-falls outside the range this kind of glass can be. It is not built, and a
-refusal was measured and thrown out: the bench's own exact masks, one station at
-a time, give a footprint outside the kind's range for 66 of 297 glass sightings,
-because a glass clipped at the edge of one station's frame shows only part of
-its footprint. The station that saw a glass squarely is chosen afterwards by
-`marking.survey`, where a solution has no say, so the check belongs after the
-survey rather than inside one picture.
+falls outside the range this kind of glass can be. **It is not built**, and what
+was measured against building it has since been answered elsewhere. The
+measurement: the bench's own exact masks, one station at a time over 20 held-out
+spawned scenes, give a footprint outside the kind's range for 66 of 297 glass
+sightings, and every one of those 66 reaches the edge of its station's frame, so
+a refusal on width inside one picture was throwing away correct answers about
+glasses the picture did not hold all of. The answer: `masks_to_glasses` now
+reports that fact per report, as `Found.cut_off`, and solutions 1, 4, 5 and 6
+refuse on width while reading it. The check could therefore be built here on the
+same terms. Nothing has been measured for this solution either way, and until it
+is, this file makes no use of the kind.
 
 **`rank_views` and `measure` are not part of problem 2.** The bench stops at a
 mask, a place and a width; choosing a viewpoint and reading a glass's profile

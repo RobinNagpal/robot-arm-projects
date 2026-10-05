@@ -460,13 +460,31 @@ def test_the_grid_is_fine_enough_for_the_narrowest_glass_of_the_kind():
 def test_a_width_no_glass_of_the_kind_could_have_is_refused_whatever_named_it(kind):
     picture, _ = _two_glasses(kind)
     pair = (picture.ids == 1) | (picture.ids == 2)
+    assert not masks_to_glasses.one_glass(picture, pair).cut_off
     kept, doubts = reports.believable(picture, [pair], kind)
     assert kept == []
-    assert doubts == [reports.TOO_WIDE]
+    assert doubts == [reports.NO_SUCH_WIDTH]
 
     kept, doubts = reports.believable(picture, [picture.ids == 1], kind)
     assert len(kept) == 1 and doubts == []
     assert reports.legal(kept[0], data.widths(kind))
+
+
+@pytest.mark.parametrize("kind", render.KINDS)
+def test_a_report_the_frame_cut_short_is_not_refused_on_its_width(kind):
+    """The width of a region the picture ran out on is not the glass's width.
+
+    Measured on masks nothing can improve on: the bench's own exact masks, one
+    station at a time over 20 held-out spawned scenes, give a footprint outside
+    the kind's range for 66 of 297 glass sightings, and every one of those 66
+    reaches the frame edge. The survey's three overlapping stations are what
+    answer such a report, not a refusal inside one picture.
+    """
+    picture, _ = _two_glasses(kind)
+    everything = np.ones(picture.ids.shape, dtype=bool)
+    kept, doubts = reports.believable(picture, [everything], kind)
+    assert doubts == []
+    assert len(kept) == 1 and kept[0].cut_off
 
 
 def test_a_mask_too_small_to_fit_anything_to_is_not_a_report_at_all():

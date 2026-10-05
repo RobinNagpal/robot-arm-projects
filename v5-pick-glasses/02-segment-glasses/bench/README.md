@@ -24,6 +24,10 @@ Nothing here imports a solution. A solution imports from here.
 - `masks_to_glasses.py` — turns one mask into a place on the table and a rough
   width. Every solution calls it, so a difference in the scorecard belongs to
   how the mask was drawn and never to what was done with the mask afterwards.
+  It also says whether a mask reaches the edge of its picture, because the
+  footprint fitted to a glass the frame cut in half is part of a footprint and a
+  solution refusing on width needs to know which it has. The observation is the
+  bench's; what to do about it is each solution's.
 - `marking.py` — the survey itself: it asks a solution about each station's
   picture, decides which station to believe where two overlap, and writes the
   answer down in one vocabulary. Each solution's own `run.py` calls it. It is

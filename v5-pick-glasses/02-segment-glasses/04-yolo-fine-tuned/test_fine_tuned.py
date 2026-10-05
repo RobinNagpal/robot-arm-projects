@@ -269,12 +269,34 @@ def test_one_glass_proposed_twice_leaves_one_report():
 def test_a_footprint_no_glass_of_this_kind_could_have_is_a_doubt_and_not_a_glass():
     example = _scene(0)
     sight = example.sights[0]
-    # The whole table, which is far wider than any glass of any kind.
+    # Nearly the whole table, which is far wider than any glass of any kind,
+    # kept one pixel clear of the frame so the refusal is about the width.
+    nearly = np.zeros((render.HEIGHT, render.WIDTH), dtype=bool)
+    nearly[1:-1, 1:-1] = True
+    finder = yolo_fine_tuned.Finder(_Stub([nearly]))
+    found, doubts = finder.find(sight.picture, example.kind)
+    assert found == []
+    assert doubts == [yolo_fine_tuned.NO_SUCH_WIDTH]
+
+
+def test_a_candidate_the_frame_cut_short_is_kept_whatever_its_width():
+    """The width read off a mask the picture ran out on is not the glass's width.
+
+    That was measured on masks no model can improve on: the bench's own exact
+    masks, one station at a time over 20 held-out spawned scenes, give a
+    footprint outside the kind's range for 66 of 297 glass sightings, and every
+    one of those 66 reaches the frame edge. Refusing on such a width refuses the
+    view rather than the mask, and the survey's overlapping stations are what
+    answer it instead.
+    """
+    example = _scene(0)
+    sight = example.sights[0]
     everything = np.ones((render.HEIGHT, render.WIDTH), dtype=bool)
     finder = yolo_fine_tuned.Finder(_Stub([everything]))
     found, doubts = finder.find(sight.picture, example.kind)
-    assert found == []
-    assert doubts == ["kept, but its width is outside what this kind can be"]
+    assert doubts == []
+    assert len(found) == 1
+    assert found[0].cut_off
 
 
 def test_a_candidate_with_no_depth_readings_behind_it_is_a_doubt_and_not_a_glass():
@@ -285,7 +307,7 @@ def test_a_candidate_with_no_depth_readings_behind_it_is_a_doubt_and_not_a_glass
     finder = yolo_fine_tuned.Finder(_Stub([speck]))
     found, doubts = finder.find(sight.picture, example.kind)
     assert found == []
-    assert doubts == ["found something with too few depth readings to place"]
+    assert doubts == [yolo_fine_tuned.TOO_LITTLE]
 
 
 def test_a_picture_the_model_found_nothing_in_comes_back_empty_rather_than_failing():

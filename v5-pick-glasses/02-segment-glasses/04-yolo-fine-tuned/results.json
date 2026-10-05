@@ -5,17 +5,17 @@
   "stations": 3,
   "glasses": 100,
   "find": {
-    "found": 92,
-    "missed": 8,
+    "found": 99,
+    "missed": 1,
     "merged": 0,
     "split": 0,
     "false": 0,
-    "position_mm_median": 3.5,
-    "position_mm_worst": 42.6
+    "position_mm_median": 5.5,
+    "position_mm_worst": 46.5
   },
   "mask": {
     "all": {
-      "glasses": 92,
+      "glasses": 99,
       "covered_median": 99.8,
       "covered_worst": 92.2,
       "not_the_glass_median": 4.4,
@@ -23,17 +23,17 @@
     },
     "by_kind": {
       "short_stemmed_glass": {
-        "glasses": 24,
+        "glasses": 25,
         "covered_median": 99.7,
         "covered_worst": 95.7,
-        "not_the_glass_median": 4.6,
+        "not_the_glass_median": 4.7,
         "not_the_glass_worst": 9.4
       },
       "stemmed_glass": {
-        "glasses": 18,
+        "glasses": 23,
         "covered_median": 99.8,
         "covered_worst": 92.2,
-        "not_the_glass_median": 3.9,
+        "not_the_glass_median": 4.4,
         "not_the_glass_worst": 17.7
       },
       "straight_glass": {
@@ -44,7 +44,7 @@
         "not_the_glass_worst": 6.8
       },
       "tapered_glass": {
-        "glasses": 24,
+        "glasses": 25,
         "covered_median": 99.8,
         "covered_worst": 95.9,
         "not_the_glass_median": 3.9,
@@ -53,7 +53,7 @@
     }
   },
   "handed over": {
-    "kept, but its width is outside what this kind can be": 73
+    "its width is outside what this kind can be, with the whole of it in frame": 16
   },
   "model": "yolo26n-seg.pt",
   "confidence bar": 0.25,

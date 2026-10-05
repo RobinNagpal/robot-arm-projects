@@ -229,7 +229,7 @@ def test_what_comes_back_is_the_benchs_own_record_and_carries_no_private_arithme
     picture = sight.picture
     found, _ = pipeline.find_glasses(picture, _Said(models.top_target(picture, example.glasses)))
     assert [type(one) for one in found] == [Found] * len(found)
-    assert set(Found.__dataclass_fields__) == {"x", "y", "width", "pixels"}
+    assert set(Found.__dataclass_fields__) == {"x", "y", "width", "pixels", "cut_off"}
 
 
 def test_this_solution_answers_the_same_interface_as_the_other_five():
@@ -258,7 +258,7 @@ def test_a_glass_squarely_in_the_way_vetoes_the_view():
 
 def test_a_reported_glass_reaches_the_viewpoint_step_as_a_half_width():
     """The viewpoint rules are about distances from an axis; the bench reports a width."""
-    one = Found(0.5, -0.3, 0.08, np.zeros((0, 2), dtype=int))
+    one = Found(0.5, -0.3, 0.08, np.zeros((0, 2), dtype=int), cut_off=False)
     assert viewpoints.reported(one) == viewpoints.Seen(0.5, -0.3, 0.04)
 
 

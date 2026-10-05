@@ -31,8 +31,9 @@ downloads without an account; SAM 3's terms are its own.
 - `sam_keeper.py` — the lower rung: the grid of prompts, the cleanup, the eight
   measurements, the keeper and its two thresholds.
 - `sam3_words.py` — the upper rung: one word, no grid, no keeper.
-- `reports.py` — what both rungs end with: the width check against the kind and
-  one report per place on the table. Nothing in it is fitted.
+- `reports.py` — what both rungs end with: the width check against the kind,
+  which a report the frame cut short is not put to, and one report per place on
+  the table. Nothing in it is fitted.
 - `weights.py` — fetches the borrowed weights into `weights/`, which is not
   committed.
 - `train.py` — fits the keeper. The table in it is the only place that knows
@@ -124,19 +125,51 @@ folds). The upper rung has no row here because it could not be run.
 | on 20 held-out scenes | spawned | crowded |
 | --- | --- | --- |
 | glasses on the table | 100 | 101 |
-| found | 76 | 71 |
-| missed | 24 | 30 |
+| found | 81 | 73 |
+| missed | 19 | 28 |
 | merged / split / false | 0 / 0 / 0 | 0 / 0 / 0 |
-| position error, median · worst | 2.6 · 43.1 mm | 0.9 · 28.7 mm |
+| position error, median · worst | 3.0 · 43.1 mm | 1.0 · 28.7 mm |
+| mask covered, median · worst | 96.8% · 68.8% | 98.4% · 78.8% |
+| mask not the glass, median · worst | 0.0% · 1.0% | 0.0% · 11.7% |
 | handed over, cannot tell | 120 | 108 |
-| handed over, width the kind cannot have | 18 | 11 |
-| handed over, a pair that did not come apart | 0 | 1 |
+| handed over, width the kind cannot have, whole of it in frame | 0 | 1 |
+| handed over, a pair that did not come apart | 0 | 0 |
 
 Nothing wrong is reported: no glass is invented, none is merged with another
 and none is split in two. What it misses, it misses, and what it cannot settle
 it hands over — which is the shape this project asks a doubtful answer to take.
 Most of what it hands over is proposals that fell in the band between the
-keeper's two thresholds — 120 of them on the spawned scenes against 24 glasses
+keeper's two thresholds — 120 of them on the spawned scenes against 19 glasses
 missed. The keeper behind those answers was fitted on 208 rows, and more rows
 is the one lever this solution has on them: `make train SCENES=40`, at about
 eight seconds a picture.
+
+### What not refusing on a cut-off region was worth
+
+`reports.legal` used to put every report to the width check. These are the same
+keeper, the same weights and the same scenes, with it reading
+`masks_to_glasses.Found.cut_off` first:
+
+| | spawned: before · after | crowded: before · after |
+| --- | --- | --- |
+| **found, of the glasses put out** | 76 · **81** of 100 | 71 · **73** of 101 |
+| missed | 24 · **19** | 30 · **28** |
+| merged / split / false | 0 / 0 / 0 · 0 / 0 / 0 | 0 / 0 / 0 · 0 / 0 / 0 |
+| position error, median | 2.6 · 3.0 mm | 0.9 · 1.0 mm |
+| handed over, width the kind cannot have | 18 · **0** | 11 · **1** |
+| handed over, a pair that did not come apart | 0 · 0 | 1 · **0** |
+
+**Every one of the 18 width refusals on the spawned scenes was a region the
+frame had cut short**, since none of them is left, and 10 of the 11 on the
+crowded scenes were. Seven glasses came back for 0.4 mm of median place on the
+spawned scenes and 0.1 mm on the crowded ones, and nothing wrong was reported
+for any of them: still no glass invented, merged or split. The one crowded pair
+that used to be handed over because it would not come apart now does come apart,
+because the second round of prompting inside it puts both halves to the same
+check and the check no longer refuses a half the frame cut short.
+
+Why the refusal was worth repairing is in `reports.py`, with the measurement:
+handed the bench's own exact masks, one station at a time over 20 held-out
+spawned scenes, the kind's range of footprints refuses 66 of 297 glass
+sightings, and every one of those 66 reaches the frame edge. The check was
+refusing the view and not the region.

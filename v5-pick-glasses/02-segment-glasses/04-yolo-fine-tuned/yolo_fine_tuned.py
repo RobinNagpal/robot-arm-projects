@@ -32,6 +32,22 @@ masks are also still the pixels the camera saw, so a glass standing partly
 behind another is still read as a smaller glass in the wrong place, and a glass
 nothing saw at all leaves no candidate and no entry.
 
+**The one refusal, and the one thing that excuses it.** A candidate whose
+footprint no glass of this kind could have is reported as a doubt rather than
+kept, which is the prescribed check and can only turn a glass into a doubt. It
+is **not** applied to a candidate whose mask reaches the edge of the picture. At
+the cell's own survey height one picture does not hold the glass zone, so a
+glass near the frame edge shows part of its footprint and the width read off it
+is not the glass's width. Two measurements say so. The bench's own exact masks,
+one station at a time over 20 held-out spawned scenes, give a footprint outside
+the kind's range for 66 of 297 glass sightings, and every one of those 66
+reaches the frame edge; and of this model's own refusals over eight of those
+scenes, all eleven too-narrow ones had a mask touching that edge. So the check
+was refusing the view rather than the mask, and the fact it now reads first is
+`masks_to_glasses.Found.cut_off`. The survey's three overlapping stations are
+what make this safe rather than generous: where a glass was seen squarely by
+another station, that station's report is the one `marking.survey` keeps.
+
 **The camera belongs to data.py**, which stands it at the cell's own survey
 height and takes the pictures a survey there needs. Nothing here chooses a
 viewpoint, so this solution and its partner are guaranteed the same pictures.
@@ -106,6 +122,11 @@ BATCH = 8
 # The training run is the same every time it is given the same scenes, so a
 # scorecard claimed on it can be repeated.
 FITTING_SEED = 0
+
+# The two reasons a candidate is handed over instead of kept. Fixed strings,
+# because the scorecard counts the doubts by reason.
+TOO_LITTLE = "found something with too few depth readings to place"
+NO_SUCH_WIDTH = "its width is outside what this kind can be, with the whole of it in frame"
 
 WEIGHTS = Path(__file__).parent / "weights"
 
@@ -182,6 +203,11 @@ class Finder:
         could have, so that a candidate whose footprint no glass of this kind
         could have is reported as a doubt rather than kept as a glass. A limit
         on the kind, never the size of any one glass.
+
+        A candidate the frame cut short is kept whatever its width, for the
+        reason this module's own description gives: the picture ran out before
+        the glass did, so its width is not the glass's width and cannot refuse
+        it.
         """
         narrowest, widest = data.widths(kind)
         kept: list[Found] = []
@@ -189,11 +215,11 @@ class Finder:
         for mask in self.candidates(picture)[0]:
             found = masks_to_glasses.one_glass(picture, mask)
             if found is None:
-                doubts.append("found something with too few depth readings to place")
-            elif narrowest <= found.width <= widest:
+                doubts.append(TOO_LITTLE)
+            elif narrowest <= found.width <= widest or found.cut_off:
                 kept.append(found)
             else:
-                doubts.append("kept, but its width is outside what this kind can be")
+                doubts.append(NO_SUCH_WIDTH)
         return masks_to_glasses.one_per_place(kept, narrowest), doubts
 
 

@@ -49,7 +49,7 @@ def outcome(proposal, chance, widths) -> str:
     """What happened to this proposal after the keeper spoke."""
     answer = sam_keeper.verdict(chance)
     if answer == sam_keeper.KEEP:
-        return "reported as a glass" if reports.legal(proposal.found, widths) else reports.TOO_WIDE
+        return "reported as a glass" if reports.legal(proposal.found, widths) else reports.NO_SUCH_WIDTH
     if answer == sam_keeper.SPLIT:
         return "prompted again inside itself, to see whether it comes apart"
     if answer == sam_keeper.UNSURE:

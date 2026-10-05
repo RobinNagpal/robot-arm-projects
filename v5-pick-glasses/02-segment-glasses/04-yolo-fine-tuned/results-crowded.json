@@ -5,35 +5,35 @@
   "stations": 3,
   "glasses": 101,
   "find": {
-    "found": 66,
-    "missed": 35,
+    "found": 73,
+    "missed": 28,
     "merged": 1,
     "split": 0,
     "false": 0,
-    "position_mm_median": 0.5,
-    "position_mm_worst": 42.3
+    "position_mm_median": 0.9,
+    "position_mm_worst": 74.5
   },
   "mask": {
     "all": {
-      "glasses": 66,
-      "covered_median": 99.2,
+      "glasses": 73,
+      "covered_median": 99.3,
       "covered_worst": 88.3,
-      "not_the_glass_median": 3.7,
+      "not_the_glass_median": 3.9,
       "not_the_glass_worst": 21.2
     },
     "by_kind": {
       "short_stemmed_glass": {
-        "glasses": 17,
+        "glasses": 19,
         "covered_median": 99.4,
-        "covered_worst": 96.0,
-        "not_the_glass_median": 4.4,
+        "covered_worst": 95.5,
+        "not_the_glass_median": 4.6,
         "not_the_glass_worst": 10.8
       },
       "stemmed_glass": {
-        "glasses": 13,
+        "glasses": 16,
         "covered_median": 99.2,
         "covered_worst": 88.3,
-        "not_the_glass_median": 3.3,
+        "not_the_glass_median": 3.5,
         "not_the_glass_worst": 16.0
       },
       "straight_glass": {
@@ -44,16 +44,16 @@
         "not_the_glass_worst": 21.2
       },
       "tapered_glass": {
-        "glasses": 17,
-        "covered_median": 99.4,
+        "glasses": 19,
+        "covered_median": 99.5,
         "covered_worst": 96.8,
         "not_the_glass_median": 3.7,
-        "not_the_glass_worst": 6.3
+        "not_the_glass_worst": 11.5
       }
     }
   },
   "handed over": {
-    "kept, but its width is outside what this kind can be": 106
+    "its width is outside what this kind can be, with the whole of it in frame": 47
   },
   "model": "yolo26n-seg.pt",
   "confidence bar": 0.25,

@@ -24,6 +24,19 @@ and their depth readings are left out. Nothing is inferred in their place; what
 they are worth is a question about geometry, and a guess about it would be this
 module's own private arithmetic.
 
+**A picture may not hold the whole glass.** At the cell's own survey height one
+picture does not cover the glass zone, so a glass near the edge of a station's
+frame is cut off and the footprint fitted to what is left is part of a
+footprint. That is a fact about the view and not about the mask, so ``cut_off``
+reports it and nothing here acts on it: every report says whether the mask it
+was measured from reaches the edge of the picture, and the same question can be
+asked of any mask on its own. What the fact is worth was measured: handed the
+renderer's exact masks, one station at a time over 20 held-out spawned scenes,
+the kind's own range of footprints refuses 66 of 297 glass sightings, and
+**every one of those 66 reaches the frame edge**. So a caller that refuses a
+report on its width without reading ``cut_off`` is refusing the view rather than
+the mask.
+
 Nothing here knows how large a glass is, and nothing here rejects anything. A
 width that no glass of the kind could have is for the caller to refuse.
 """
@@ -49,14 +62,25 @@ SPREAD = 95
 MIN_PIXELS = 100
 
 
+def cut_off(mask: np.ndarray) -> bool:
+    """Whether a mask reaches the edge of its picture, so the glass may continue outside it.
+
+    An observation about a mask and not a judgement about it. What a report
+    whose evidence ran out at the frame edge is worth is the caller's own
+    business, and this module's description says what it was measured to be.
+    """
+    return bool(mask[0].any() or mask[-1].any() or mask[:, 0].any() or mask[:, -1].any())
+
+
 @dataclass(frozen=True)
 class Found:
-    """One glass as a solution reports it: where it stands, and how wide."""
+    """One glass as a solution reports it: where it stands, how wide, and how much was in frame."""
 
     x: float
     y: float
     width: float
     pixels: np.ndarray  # (row, column) of every pixel whose depth reading was used
+    cut_off: bool  # its mask reached the picture's edge, so the glass may continue outside it
 
 
 def one_glass(picture: Picture, mask: np.ndarray, asserted: np.ndarray | None = None) -> Found | None:
@@ -71,6 +95,10 @@ def one_glass(picture: Picture, mask: np.ndarray, asserted: np.ndarray | None = 
     rows, columns = np.nonzero(mask)
     if rows.size == 0:
         return None
+    # Asked of the mask rather than of the pixels left at the end: a pixel the
+    # camera got no reading for is still a pixel of this glass running up
+    # against the frame edge, and it is dropped from the arithmetic below.
+    ran_out = cut_off(mask)
     points = to_world(picture, rows, columns)
 
     # A pixel where the ray hit nothing has no point in the room, so it cannot
@@ -83,7 +111,7 @@ def one_glass(picture: Picture, mask: np.ndarray, asserted: np.ndarray | None = 
     top = points[points[:, 2] >= points[:, 2].max() - RIM_BAND]
     x, y = top[:, :2].mean(0)
     reach = float(np.percentile(np.linalg.norm(points[:, :2] - [x, y], axis=1), SPREAD))
-    return Found(float(x), float(y), 2.0 * reach, np.stack([rows, columns], 1))
+    return Found(float(x), float(y), 2.0 * reach, np.stack([rows, columns], 1), ran_out)
 
 
 def to_glasses(picture: Picture, masks: list[np.ndarray]) -> list[Found]:

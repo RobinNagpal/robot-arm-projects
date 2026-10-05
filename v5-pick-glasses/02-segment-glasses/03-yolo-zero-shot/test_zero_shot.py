@@ -202,7 +202,7 @@ def test_the_surer_of_two_outlines_of_one_glass_is_the_one_kept():
 
 def test_nothing_the_solution_hands_over_carries_a_category():
     """The borrowed name filters and is then discarded, so it cannot reach a record."""
-    assert set(Found.__dataclass_fields__) == {"x", "y", "width", "pixels"}
+    assert set(Found.__dataclass_fields__) == {"x", "y", "width", "pixels", "cut_off"}
     masks = yolo_zero_shot.masks_from(
         _answer(["cup"], [0.9], [_square(10, 10, 40)]), (render.HEIGHT, render.WIDTH)
     )

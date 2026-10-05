@@ -5,54 +5,56 @@
   "stations": 3,
   "glasses": 101,
   "find": {
-    "found": 28,
-    "missed": 73,
-    "merged": 21,
-    "split": 1,
+    "found": 17,
+    "missed": 84,
+    "merged": 0,
+    "split": 0,
     "false": 0,
-    "position_mm_median": 18.6,
-    "position_mm_worst": 129.7
+    "position_mm_median": 0.7,
+    "position_mm_worst": 24.0
   },
   "mask": {
     "all": {
-      "glasses": 29,
-      "covered_median": 99.9,
-      "covered_worst": 86.4,
-      "not_the_glass_median": 54.7,
-      "not_the_glass_worst": 77.4
+      "glasses": 17,
+      "covered_median": 98.6,
+      "covered_worst": 56.8,
+      "not_the_glass_median": 0.0,
+      "not_the_glass_worst": 0.5
     },
     "by_kind": {
       "short_stemmed_glass": {
-        "glasses": 8,
-        "covered_median": 100.0,
-        "covered_worst": 86.4,
-        "not_the_glass_median": 52.4,
-        "not_the_glass_worst": 77.4
-      },
-      "stemmed_glass": {
-        "glasses": 8,
-        "covered_median": 98.3,
-        "covered_worst": 92.5,
-        "not_the_glass_median": 28.1,
-        "not_the_glass_worst": 63.7
-      },
-      "straight_glass": {
-        "glasses": 7,
-        "covered_median": 99.9,
-        "covered_worst": 99.6,
-        "not_the_glass_median": 61.0,
-        "not_the_glass_worst": 74.0
-      },
-      "tapered_glass": {
         "glasses": 6,
         "covered_median": 100.0,
-        "covered_worst": 99.8,
-        "not_the_glass_median": 62.4,
-        "not_the_glass_worst": 72.4
+        "covered_worst": 87.6,
+        "not_the_glass_median": 0.0,
+        "not_the_glass_worst": 0.0
+      },
+      "stemmed_glass": {
+        "glasses": 6,
+        "covered_median": 87.0,
+        "covered_worst": 56.8,
+        "not_the_glass_median": 0.0,
+        "not_the_glass_worst": 0.5
+      },
+      "straight_glass": {
+        "glasses": 3,
+        "covered_median": 99.6,
+        "covered_worst": 89.6,
+        "not_the_glass_median": 0.0,
+        "not_the_glass_worst": 0.0
+      },
+      "tapered_glass": {
+        "glasses": 2,
+        "covered_median": 100.0,
+        "covered_worst": 100.0,
+        "not_the_glass_median": 0.0,
+        "not_the_glass_worst": 0.0
       }
     }
   },
-  "handed over": {},
+  "handed over": {
+    "a group too wide for one glass of this kind, and it did not come apart": 54
+  },
   "model": "none: written rules over the depth readings",
   "grouping distance mm": 25.0,
   "fitted here": "nothing"

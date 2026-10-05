@@ -35,11 +35,13 @@ is a glass hidden by something the model never reported, and there is nothing in
 the picture to work that out from either.
 
 **Two checks, each of which can only refuse.** The width must lie inside the
-range this kind of glass allows. And the asserted part must lie where the camera
-could not see: a mask claiming a glass continues across a patch with a clear
-view of it, where the reading comes back off something standing nowhere near
-this glass, is contradicting a direct observation. A glass failing either is
-reported as doubtful rather than placed.
+range this kind of glass allows, **unless the picture ran out before the glass
+did**, which `_width_refuses` says why. And the asserted part must lie where the
+camera could not see: a mask claiming a glass continues across a patch with a
+clear view of it, where the reading comes back off something standing nowhere
+near this glass, is contradicting a direct observation. A glass failing either
+is reported as doubtful rather than placed, and the reason says as well whether
+the mask runs off the edge of the frame.
 
 **The visible fraction travels with every report**, because every consumer
 further down has its own tolerance for how much of an answer was asserted and
@@ -222,11 +224,6 @@ def over_a_clear_view(picture, mask: np.ndarray, found: Found, widest: float) ->
     return wrong
 
 
-def cut_off(mask: np.ndarray) -> bool:
-    """Whether a mask runs off the edge of the frame, so part of the glass is outside it."""
-    return bool(mask[0].any() or mask[-1].any() or mask[:, 0].any() or mask[:, -1].any())
-
-
 def _refused(mask, asserted, score, found, why) -> Seen:
     """One refusal, saying as well whether the glass was cut off at the frame edge.
 
@@ -236,9 +233,29 @@ def _refused(mask, asserted, score, found, why) -> Seen:
     three overlapping stations for exactly this, so a glass cut off in one
     picture sits well inside another's and is reported from there.
     """
-    if cut_off(mask):
+    if masks_to_glasses.cut_off(mask):
         why = f"{why}, and it runs off the edge of the frame"
     return Seen(mask, asserted, score, found, why)
+
+
+def _width_refuses(found: Found, kind: str) -> bool:
+    """Whether a report's width is a reason to refuse it.
+
+    A width outside the range the kind allows is the prescribed check, and it is
+    not asked of a report whose observed pixels reach the edge of the picture.
+    At the cell's own survey height one picture does not hold the glass zone, so
+    a glass at the far side of a station's frame shows part of its footprint and
+    the width measured off that part is not the glass's width. Refusing on it
+    refuses the view rather than the mask, which was measured on masks nothing
+    can improve on: the bench's own exact masks, one station at a time over 20
+    held-out spawned scenes, give a footprint outside the kind's range for 66 of
+    297 glass sightings, and every one of those 66 reaches the frame edge. The
+    survey's three overlapping stations are the answer to such a report instead,
+    and ``run.py`` keeps the one from the station the glass stood nearest the
+    middle of.
+    """
+    narrowest, widest = data.widths(kind)
+    return not found.cut_off and not narrowest <= found.width <= widest
 
 
 def _judge(picture, mask, behind, score, kind) -> Seen:
@@ -250,11 +267,11 @@ def _judge(picture, mask, behind, score, kind) -> Seen:
     would come back a legal width if it ran first, and the loud failure this
     project relies on would have been quietly repaired into a plausible one.
     """
-    narrowest, widest = data.widths(kind)
+    widest = data.widths(kind)[1]
     first = masks_to_glasses.one_glass(picture, mask, behind)
     if first is None:
         return _refused(mask, behind, score, None, "too little of it was seen to place it")
-    if not narrowest <= first.width <= widest:
+    if _width_refuses(first, kind):
         return _refused(mask, behind, score, first, "its width is outside what this kind can be")
 
     # Asserted twice over: hidden behind another report, and claimed where the
@@ -267,7 +284,7 @@ def _judge(picture, mask, behind, score, kind) -> Seen:
         return _refused(mask, asserted, score, None, "too little of it was seen to place it")
     if clear.sum() > OVER_A_CLEAR_VIEW * mask.sum():
         return _refused(mask, asserted, score, found, "it claims glass where the camera saw past it")
-    if not narrowest <= found.width <= widest:
+    if _width_refuses(found, kind):
         return _refused(mask, asserted, score, found, "its width is outside what this kind can be")
     return Seen(mask, asserted, score, found, None)
 

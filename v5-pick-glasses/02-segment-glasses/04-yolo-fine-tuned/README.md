@@ -37,6 +37,16 @@ and reports it as a doubt; solution 3 deliberately has no such check. That
 refusal can only turn a reported glass into a reported doubt, never the other
 way round, so it cannot flatter this side of the comparison.
 
+**The refusal is not made on a candidate whose mask reaches the edge of the
+picture.** At the cell's own survey height one picture does not hold the glass
+zone, so a glass near the frame edge shows part of its footprint and the width
+read off that part is not the glass's width. Handed the bench's own exact masks,
+one station at a time over 20 held-out spawned scenes, the kind's range refuses
+66 of 297 glass sightings and **every one of those 66 reaches the frame edge**;
+and of this model's own refusals over eight of those scenes, every too-narrow
+one had a mask touching that edge. So the check was refusing the view rather
+than the mask, and it now reads `masks_to_glasses.Found.cut_off` first.
+
 ## The files
 
 - `yolo_fine_tuned.py` — the model, the two settings, and the same
@@ -121,11 +131,38 @@ scenes from each family, three stations each.
 | | spawned | crowded |
 |---|---|---|
 | glasses put out | 100 | 101 |
-| **found** | **92** | **66** |
-| missed | 8 | 35 |
+| **found** | **99** | **73** |
+| missed | 1 | 28 |
 | merged / split / false | 0 / 0 / 0 | 1 / 0 / 0 |
-| position error, median · worst | 3.5 · 42.6 mm | 0.5 · 42.3 mm |
-| doubted: width outside what the kind can be | 73 | 106 |
+| position error, median · worst | 5.5 · 46.5 mm | 0.9 · 74.5 mm |
+| mask covered, median · worst | 99.8% · 92.2% | 99.3% · 88.3% |
+| mask not the glass, median · worst | 4.4% · 17.7% | 3.9% · 21.2% |
+| doubted: width outside the kind, whole glass in frame | 16 | 47 |
+
+### What not refusing on a cut-off mask was worth
+
+The width check used to be made on every candidate. These two columns are the
+same weights, the same settings and the same scenes, with the check reading
+`cut_off` first:
+
+| | spawned: before · after | crowded: before · after |
+|---|---|---|
+| **found, of the glasses put out** | 92 · **99** of 100 | 66 · **73** of 101 |
+| missed | 8 · **1** | 35 · **28** |
+| merged | 0 · 0 | 1 · 1 |
+| position error, median | 3.5 · 5.5 mm | 0.5 · 0.9 mm |
+| doubted on width | 73 · 16 | 106 · 47 |
+
+Seven glasses came back on each family, fourteen in all, and nothing was merged
+for any of them. The place got worse by 2.0 mm at the median and 3.9 mm at the
+worst on spawned layouts, and by 0.4 mm and 32.2 mm on crowded ones. That is the
+honest price rather than a surprise: what came back are reports of glasses no
+station saw whole, so they are the worst-placed reports in the run, and before
+the repair the refusal was hiding them instead of placing them.
+
+The 16 and 47 that remain are refusals with the whole glass in frame, which is
+the check doing the work it was prescribed for: a mask of one real glass whose
+edge read too generously, or one region over two glasses.
 
 ### What the pair measures
 
@@ -135,9 +172,9 @@ not.
 
 | found, of the glasses put out | solution 3, untrained | solution 4, trained here | the bench's floor |
 |---|---|---|---|
-| spawned | 10 of 100 | **92 of 100** | 100 of 100 |
-| crowded | 4 of 101 | **66 of 101** | 83 of 101 |
-| position error, median (spawned) | 28.1 mm | 3.5 mm | 6.3 mm |
+| spawned | 10 of 100 | **99 of 100** | 100 of 100 |
+| crowded | 4 of 101 | **73 of 101** | 83 of 101 |
+| position error, median (spawned) | 28.1 mm | 5.5 mm | 6.3 mm |
 
 **That gap is what fine-tuning bought**, and nothing else can be blamed for it.
 Solution 3 does find things in these pictures; it calls them sports balls and
@@ -149,24 +186,20 @@ Three things about the table are worth reading carefully.
 
 **On crowded scenes the floor is 83, not 101.** Eighteen of those glasses are
 completely hidden from every station, so no method of any kind can report them.
-This solution's 66 is 17 short of what was there to find, not 35.
+This solution's 73 is 10 short of what was there to find, not 28.
 
-**The median position error being below the floor's is not a better-than-perfect
-result.** The two medians are taken over different sets of glasses. The floor
-reports every glass, including ones a station saw only a sliver of, where even
-an exact mask gives a poor place — its own worst error is 46.5 mm. This solution
-reports 92, and the width refusal removes exactly the cases whose mask was cut
-off at the frame edge, so what is left is the better-seen subset.
+**The spawned median sitting just below the floor's is not a better-than-perfect
+result.** The two medians are taken over different sets of glasses: the floor
+reports all 100 and this solution reports 99.
 
 **The refusals are the coarse outline, not false objects.** Measured over eight
-held-out spawned scenes: 92 candidates kept, 11 refused as too narrow and every
-one of those had a mask touching the frame edge, and 20 refused as too wide —
-and all 20 of those masks mostly cover exactly one real glass. So nothing the
-model found was table or nothing; what the check catches is a mask of one real
-glass whose edge read too generously or was clipped, which is the limit the
-document says training does not touch. The three overlapping stations are what
-keep that from costing the glass: it is usually reported from a station that saw
-it whole.
+held-out spawned scenes, before the repair: 92 candidates kept, 11 refused as
+too narrow and **every one of those had a mask touching the frame edge**, and 20
+refused as too wide. All 20 of the wide ones mostly cover exactly one real
+glass. So nothing the model found was table or nothing; what the check catches
+is a mask of one real glass whose edge read too generously, which is the limit
+the document says training does not touch, and what it was also catching was
+every glass the frame cut in half.
 
 At run time the model costs 0.089 s a picture, measured over ten passes with the
 model already loaded, so a whole 20-scene run is a few seconds of model time.

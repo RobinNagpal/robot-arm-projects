@@ -338,20 +338,51 @@ def test_a_width_no_glass_of_the_kind_could_have_is_doubted(kind):
     One mask over two glasses standing well apart is the shape that fails it,
     and it is the loud failure the quiet one is traded against: a merged region
     is wider than any glass of the kind can be, so it is refused.
+
+    The pair stands across the line out from under the camera rather than along
+    it, so that both are well inside one frame. A merged region running off the
+    edge of the frame is not refused on its width at all, and
+    ``_width_refuses`` says why.
     """
     outlines = [outline for outline, _ in family(kind, 2, seed=29)]
     pose, (bx, by) = _middle()
     glasses = [
-        _one(kind, outlines[0], bx - MIN_SEPARATION, by),
-        _one(kind, outlines[1], bx + MIN_SEPARATION, by),
+        _one(kind, outlines[0], bx, by - MIN_SEPARATION / 2),
+        _one(kind, outlines[1], bx, by + MIN_SEPARATION / 2),
     ]
     picture = render.render(glasses, pose)
     merged = (picture.ids == 1) | (picture.ids == 2)
     one = rf_detr_seg._judge(picture, merged, np.zeros_like(merged), 0.9, kind)
     assert one.found is not None
+    assert not one.found.cut_off
     assert one.found.width > data.widths(kind)[1]
-    assert one.doubt is not None, f"{kind}: a region {one.found.width:.3f} m wide was not refused"
-    assert one.doubt.startswith("its width is outside what this kind can be")
+    assert one.doubt == "its width is outside what this kind can be"
+
+
+@pytest.mark.parametrize("kind", KINDS)
+def test_a_region_the_frame_cut_short_is_not_refused_on_its_width(kind):
+    """The width of a region the picture ran out on is not the glass's width.
+
+    Measured on masks nothing can improve on: the bench's own exact masks, one
+    station at a time over 20 held-out spawned scenes, give a footprint outside
+    the kind's range for 66 of 297 glass sightings, and every one of those 66
+    reaches the frame edge. The three overlapping stations answer such a report
+    instead, and the refusal that remains is about the mask.
+    """
+    outlines = [outline for outline, _ in family(kind, 2, seed=29)]
+    pose, (bx, by) = _middle()
+    glasses = [
+        _one(kind, outlines[0], bx, by - MIN_SEPARATION / 2),
+        _one(kind, outlines[1], bx, by + MIN_SEPARATION / 2),
+    ]
+    picture = render.render(glasses, pose)
+    merged = (picture.ids == 1) | (picture.ids == 2)
+    # The same region, now reaching the top of the frame in its own columns.
+    merged[0, merged.any(0)] = True
+
+    found = masks_to_glasses.one_glass(picture, merged)
+    assert found.cut_off and found.width > data.widths(kind)[1]
+    assert not rf_detr_seg._width_refuses(found, kind)
 
 
 def test_a_refusal_says_when_the_glass_ran_off_the_edge_of_the_frame():
@@ -368,8 +399,8 @@ def test_a_refusal_says_when_the_glass_ran_off_the_edge_of_the_frame():
     pose, (bx, by) = _middle()
     corner = _silhouettes([_one(kind, outline, *GLASS_ZONE[1::2])], pose)[0]
     middle = _silhouettes([_one(kind, outline, bx, by)], pose)[0]
-    assert rf_detr_seg.cut_off(corner)
-    assert not rf_detr_seg.cut_off(middle)
+    assert masks_to_glasses.cut_off(corner)
+    assert not masks_to_glasses.cut_off(middle)
 
     empty = np.zeros_like(corner)
     assert rf_detr_seg._refused(middle, empty, 0.9, None, "no good").doubt == "no good"

@@ -84,9 +84,14 @@ hidden](../../docs/02-segment-glasses/hidden-glasses.md) exists for.
 
 ## The two checks, each of which can only refuse
 
-- **The width must lie inside the range the kind allows.** One region over two
-  glasses is wider than any glass of the kind can be. This is the loud failure
-  the quiet one is traded against.
+- **The width must lie inside the range the kind allows, unless the picture ran
+  out before the glass did.** One region over two glasses is wider than any
+  glass of the kind can be, and that is the loud failure the quiet one is traded
+  against. A mask reaching the edge of the frame is a different thing: at the
+  cell's own survey height one picture does not hold the glass zone, so a glass
+  at the far side of a station's frame is cut in half and the width read off the
+  half is not the glass's width. `_width_refuses` reads
+  `masks_to_glasses.Found.cut_off` and does not refuse those.
 - **The asserted part must lie where the camera could not see.** A mask
   claiming glass across a patch the camera had a clear view of, where the
   reading comes back off a surface standing further away than the kind's widest
@@ -94,23 +99,27 @@ hidden](../../docs/02-segment-glasses/hidden-glasses.md) exists for.
   `masks_to_glasses.SPREAD`'s own tail, so the two checks do different work.
 
 A glass failing either is reported as doubtful, with the reason, and the reason
-says as well whether the glass ran off the edge of the frame. That turns out to
-be the whole story about false refusals. Handed the bench's own exact
+says as well whether the glass ran off the edge of the frame. **The frame turns
+out to be the whole story about false refusals.** Handed the bench's own exact
 silhouettes on 20 held-out scenes — the best masks that exist, so every refusal
-here is a false one:
+here is a false one — with every glass a station saw any pixel of counted once:
 
-| | spawned | crowded |
+| | spawned: before · after | crowded: before · after |
 |---|---|---|
-| reported | 73.3% | 74.3% |
-| refused, and the glass ran off the edge of the frame | 26.7% | 22.8% |
-| refused with the whole glass in frame | **0.0%** | **2.3%** |
+| reported | 73.3% · **87.0%** | 76.8% · **87.9%** |
+| refused, and the glass ran off the edge of the frame | 26.7% · 13.0% | 20.1% · 9.0% |
+| refused with the whole glass in frame | 0.0% · 0.0% | 3.1% · 3.1% |
 
-At the cell's own survey height one picture does not hold the glass zone, so a
-glass at the far side of a station's frame is cut in half and the width read
-off it is not the glass's width. The survey stands at three overlapping
-stations for exactly this: a glass cut off in one picture sits well inside
-another's, and `run.py` keeps the report from the station the glass stood
-nearest the middle of.
+"Before" is the width check made on every report; "after" is the same check
+reading `cut_off` first. Half the false refusals go, and the ones that remain
+all run off the frame edge for the *other* reason — too little of the glass was
+in frame to place it at all, or the mask claims glass where the camera saw past
+it. Not one refusal with the whole glass in frame changes, which is the check
+still doing its own work.
+
+The survey stands at three overlapping stations for exactly this: a glass cut
+off in one picture sits well inside another's, and `run.py` keeps the report
+from the station the glass stood nearest the middle of.
 
 Every report carries its **visible fraction**, the observed share of its own
 mask, because every consumer further down has its own tolerance for how much of
@@ -165,29 +174,26 @@ masks the renderer itself drew, which no segmenter can improve on.
 
 | | found | missed | merged | split | false | place | covered | not the glass |
 |---|---|---|---|---|---|---|---|---|
-| `modal` | 90 | 10 | 0 | 0 | 0 | 4.2 mm median, 42.2 worst | 96.8% | 0.0% |
+| `modal` | 96 | 4 | 0 | 0 | 0 | 4.5 mm median, 42.2 worst | 96.7% | 0.0% |
 | the floor, exact masks | 100 | 0 | 0 | 0 | 0 | 6.3 mm median, 46.5 worst | 100% | 0.0% |
 
 By kind, `modal` covered 96.8% of a straight glass, 97.3% of a tapered one,
-96.4% of a stemmed one and 95.7% of a short stemmed one, and claimed 0.0–0.1%
+96.4% of a stemmed one and 96.1% of a short stemmed one, and claimed 0.0–0.1%
 of pixels that were not the glass. All four kinds come out within two points of
 each other, stem included, which is what [the test
 bench](../../docs/02-segment-glasses/the-bench.md) says to expect of a solution
 fitted on this cell's own pictures and not of one built from written rules.
 
-The ten missed glasses are not masks the model got wrong. They are glasses
-refused at every station they appeared in, and 88 of the 90 refusals in that
-run say the glass ran off the edge of a frame. That also explains the one line
-where this solution beats the floor: `bench/floor.py` applies no checks at all,
-so it keeps the reports from cut-off masks that are refused here, and a report
-read off half a glass is what a place 6.3 mm out is made of. The trade is the
-project's own: a refused glass is a result, a wrongly placed one is not.
+The four missed glasses are not masks the model got wrong. They are glasses
+refused at every station they appeared in, and 42 of the 44 refusals in that run
+say the glass ran off the edge of a frame. Only 2 of the 44 are the width check
+with the whole glass in frame.
 
 ### Crowded layouts, 20 scenes, 101 glasses
 
 | | found | missed | merged | split | false | place |
 |---|---|---|---|---|---|---|
-| `modal` | 74 | 27 | 2 | 1 | 0 | 0.5 mm median, 58.4 worst |
+| `modal` | 78 | 23 | 3 | 2 | 0 | 0.5 mm median, 58.4 worst |
 | the floor, exact visible masks | 83 | 18 | 1 | 1 | 0 | 0.4 mm median, 50.0 worst |
 | the floor, whole masks with the asserted pixels named | 83 | 18 | 1 | 1 | 0 | 0.4 mm median, 50.0 worst |
 | the floor, the same masks fed in whole | 69 | 32 | **14** | 2 | 0 | 0.1 mm median, 72.7 worst |
@@ -197,16 +203,43 @@ place: feeding the asserted pixels in turns 1 merged report into 14 and loses
 14 glasses, with exact masks and no model anywhere. That is the row this
 folder's split exists to stay off.
 
-`modal` covered 97.4% of each glass it reported here and claimed 0.0% that was
+`modal` covered 97.3% of each glass it reported here and claimed 0.0% that was
 not the glass, which is the same quality as on the easy layouts; what crowding
 costs it is glasses it never reports at all, not outlines it draws badly.
 
 The split is doing work on this run even though the target is the visible
-pixels. 152 of its 275 reports had an asserted part named and left out, and the
+pixels. 185 of its 272 reports had an asserted part named and left out, and the
 least visible of them was 11% observed — a predicted mask bleeds over the glass
 in front of it whether or not it was trained to, and the reading under the
 bleed belongs to that other glass either way. So the first rung needs the split
 as well; the second rung only needs it more.
+
+### What not refusing on a cut-off mask was worth
+
+Same weights, same settings, same scenes, with `_width_refuses` reading
+`cut_off` first:
+
+| | spawned: before · after | crowded: before · after |
+|---|---|---|
+| **found, of the glasses put out** | 90 · **96** of 100 | 74 · **78** of 101 |
+| missed | 10 · **4** | 27 · **23** |
+| merged / split | 0 / 0 · 0 / 0 | 2 / 1 · 3 / 2 |
+| place, median · worst | 4.2 · 42.2 mm · 4.5 · 42.2 mm | 0.5 · 58.4 mm · 0.5 · 58.4 mm |
+| refused on width, mask off the frame edge | 71 · **0** | 62 · **0** |
+| refused on width, whole glass in frame | 2 · 2 | 15 · 15 |
+| refused for claiming glass past a clear view | 14 · 39 | 3 · 36 |
+| refused for too little of it to place | 3 · 3 | 5 · 8 |
+
+Ten glasses came back for the price of one more merged report and one more
+split one on the crowded layouts, and the place did not move. **Every width
+refusal that went was one made on a mask the frame had cut short**, and the two
+the check keeps on the spawned layouts and the fifteen on the crowded ones — the
+refusals with the whole glass in frame — are untouched.
+
+The other two rows move because a report refused on its width used to stop
+there. Now it goes on to the clear-view check, and some of them fail that
+instead — which is the stronger of the two checks, since it is geometry on the
+kind's own limits rather than a comparison against a range.
 
 ### The amodal rung
 

@@ -551,7 +551,8 @@ class Finder:
         The keeper sorts the proposals and the geometry disposes. A proposal it
         wants to keep still has to fit a circle inside the range this kind of
         glass can be, so a wrong keep becomes a doubtful report rather than a
-        glass that is not there.
+        glass that is not there — unless the picture ran out before the glass
+        did, which ``reports.legal`` explains.
         """
         look, shortlist = survey(picture, kind)
         widths = data.widths(kind)
@@ -575,7 +576,7 @@ class Finder:
                 if reports.legal(proposal.found, widths):
                     kept.append(proposal.found)
                 else:
-                    doubts.append(reports.TOO_WIDE)
+                    doubts.append(reports.NO_SUCH_WIDTH)
             elif answer == UNSURE:
                 doubts.append("cannot tell whether this is one glass")
         return masks_to_glasses.one_per_place(kept, widths[0]), doubts

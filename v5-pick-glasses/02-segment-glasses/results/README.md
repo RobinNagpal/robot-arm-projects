@@ -18,29 +18,40 @@ by side.
 | | found | missed | merged | split | false | position median · worst | mask covered | mask not the glass |
 |---|---|---|---|---|---|---|---|---|
 | **floor** (exact masks) | 100 | 0 | 0 | 0 | 0 | 6.3 · 46.5 mm | 100.0% | 0.0% |
-| [1 rules on the table](../01-rules-on-the-table/) | **100** | 0 | 0 | 0 | 0 | 6.3 · 46.5 mm | 98.9% | **0.0%** |
+| [1 rules on the table](../01-rules-on-the-table/) | **100** | 0 | 0 | 0 | 0 | 8.5 · 46.5 mm | 98.9% | **0.0%** |
 | [2 trained from scratch](../02-train-from-scratch/) | 63 | 37 | 0 | 0 | 0 | **0.5** · 19.1 mm | 98.2% | 1.5% |
 | [3 YOLO as it downloads](../03-yolo-zero-shot/) | 10 | 90 | 0 | 0 | 0 | 28.1 · 36.3 mm | 100.0% | 4.3% |
-| [4 YOLO fine-tuned](../04-yolo-fine-tuned/) | 92 | 8 | 0 | 0 | 0 | 3.5 · 42.6 mm | **99.8%** | 4.4% |
-| [5 SAM 2 with a keeper](../05-sam2-with-a-keeper/) | 76 | 24 | 0 | 0 | 0 | 2.6 · 43.1 mm | 96.9% | **0.0%** |
-| [6 RF-DETR fine-tuned](../06-rf-detr-fine-tuned/) | 90 | 10 | 0 | 0 | 0 | 4.2 · 42.2 mm | 96.8% | **0.0%** |
+| [4 YOLO fine-tuned](../04-yolo-fine-tuned/) | 99 | 1 | 0 | 0 | 0 | 5.5 · 46.5 mm | **99.8%** | 4.4% |
+| [5 SAM 2 with a keeper](../05-sam2-with-a-keeper/) | 81 | 19 | 0 | 0 | 0 | 3.0 · 43.1 mm | 96.8% | **0.0%** |
+| [6 RF-DETR fine-tuned](../06-rf-detr-fine-tuned/) | 96 | 4 | 0 | 0 | 0 | 4.5 · 42.2 mm | 96.7% | **0.0%** |
 
 ### Crowded layouts — 101 glasses, closer than the layout rule allows
 
 | | found | missed | merged | split | false | position median · worst | mask covered | mask not the glass |
 |---|---|---|---|---|---|---|---|---|
 | **floor** (exact masks) | 83 | 18 | 1 | 1 | 0 | 0.4 · 50.0 mm | 100.0% | 0.0% |
-| [1 rules on the table](../01-rules-on-the-table/) | 28 | 73 | **21** | 1 | 0 | 18.6 · 129.7 mm | 99.9% | 54.7% |
+| [1 rules on the table](../01-rules-on-the-table/) | 17 | 84 | 0 | 0 | 0 | 0.7 · **24.0** mm | 98.6% | **0.0%** |
 | [2 trained from scratch](../02-train-from-scratch/) | 72 | 29 | 1 | 0 | 0 | 0.7 · 43.8 mm | 97.2% | 1.4% |
 | [3 YOLO as it downloads](../03-yolo-zero-shot/) | 4 | 97 | 0 | 0 | 0 | 36.5 · 46.6 mm | 84.5% | 3.6% |
-| [4 YOLO fine-tuned](../04-yolo-fine-tuned/) | 66 | 35 | 1 | 0 | 0 | **0.5** · 42.3 mm | **99.2%** | 3.7% |
-| [5 SAM 2 with a keeper](../05-sam2-with-a-keeper/) | 71 | 30 | 0 | 0 | 0 | 0.9 · 28.7 mm | 98.4% | **0.0%** |
-| [6 RF-DETR fine-tuned](../06-rf-detr-fine-tuned/) | **74** | 27 | 2 | 1 | 0 | **0.5** · 58.4 mm | 97.4% | **0.0%** |
+| [4 YOLO fine-tuned](../04-yolo-fine-tuned/) | 73 | 28 | 1 | 0 | 0 | 0.9 · 74.5 mm | **99.3%** | 3.9% |
+| [5 SAM 2 with a keeper](../05-sam2-with-a-keeper/) | 73 | 28 | 0 | 0 | 0 | 1.0 · 28.7 mm | 98.4% | **0.0%** |
+| [6 RF-DETR fine-tuned](../06-rf-detr-fine-tuned/) | **78** | 23 | 3 | 2 | 0 | **0.5** · 58.4 mm | 97.3% | **0.0%** |
 
 Solutions 5 and 6 have more than one rung; the rows above are rung `sam2` and
 rung `modal`. The floor is `bench/floor.py` with the renderer's own masks, which
 no segmenter can improve on. Even it misses 18 crowded glasses, because a glass
 standing wholly behind another is in no picture at all.
+
+**Four of the six rows moved when one refusal was repaired.** Solutions 4, 5 and
+6 each refused a report whose width no glass of the kind could have, and each
+made that refusal on a report measured from a mask the frame had cut in half.
+Handed the bench's own exact masks, one station at a time, the kind's range
+refuses 66 of 297 glass sightings and **every one of those 66 reaches the frame
+edge** — the bench refusing its own perfect masks. `masks_to_glasses` now says
+whether a mask reached the picture's edge and the three solutions read it before
+refusing: 92 → 99, 76 → 81 and 90 → 96 found on spawned layouts, 66 → 73,
+71 → 73 and 74 → 78 on crowded ones. Solution 1 gained the width check it
+never had, which is where its own two rows come from.
 
 ## What the numbers mean
 
@@ -69,17 +80,20 @@ kind of glass.
 ## What the comparison says
 
 **The written rule and the fitted network fail in opposite directions.**
-Solution 1 finds every glass the layout spaces and merges 21 pairs the moment
-they stand closer than the rule allows, because its one grouping distance is
-what decides. Solution 2 merges almost nothing and misses 37 glasses on the easy
-layouts, because a glass whose middle falls outside the picture casts votes that
-land nowhere — a limit of the voting design rather than of its training.
+Solution 1 finds every glass the layout spaces, and the moment glasses stand
+closer than the rule allows its one grouping distance runs them together — so it
+hands over 54 of the 72 groups that hold more than one glass rather than
+reporting any of them, and finds 17 of 101. It merges nothing and places what it
+does report to 0.7 mm. Solution 2 merges almost nothing and misses 37 glasses on
+the easy layouts, because a glass whose middle falls outside the picture casts
+votes that land nowhere — a limit of the voting design rather than of its
+training.
 
 **Borrowed weights carry the names, not the shapes.** Solution 3 finds 10 of
 100 with nothing merged, split or false: it locates the objects and calls them
 sports balls and frisbees. Continuing its training on this cell and cutting the
 vocabulary to one class is solution 4, and the gap between the two — 10 found
-against 92 — is the measurement of what that training bought.
+against 99 — is the measurement of what that training bought.
 
 **The two mask numbers disagree about who is best, and that is the useful
 result.** Solution 1's masks almost never claim a pixel that is not glass
