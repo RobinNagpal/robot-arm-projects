@@ -236,6 +236,8 @@ wide one can be badly short of room while the wide one, at the very same
 distance, has room to spare, because the wide one's rim reaches much further
 into the gap than the narrow one's does.
 
+![The same pair of glasses from the top at four separations, showing that the wide one comes free before the narrow one does: each glass carries the 70 mm ring the open jaw needs, and a glass is blocked while its neighbour's edge is inside that ring, so the narrow glass, whose neighbour's edge reaches further in, is still blocked at a distance where the wide one already has its room.](../../../images/03-push-glasses-apart/01-four-distances-one-pair.png)
+
 From that, the error falls out. The shortfall of one glass against one
 neighbour is
 
@@ -567,6 +569,8 @@ and the tapered glass is wider higher up by definition. So the limit is checked
 against 65 mm, and the 15 mm difference is not a rounding question: it falls
 entirely in the direction that topples glasses, since every glass the lenient
 check wrongly admits is a glass that will be touched above its limit.
+
+![The height at which a push starts tipping a glass, drawn against the foot it stands on, with the jaw's middle at 50 mm and its top edge at 65 mm ruled across it: the push lands on the top edge, those 15 mm cost most of the glasses that the jaw's middle would have been allowed to touch, and the three friction lines, one of which is the simulator's own and none of which the arm is told, give three different answers about the same glass.](../../../images/03-push-glasses-apart/02-the-friction-ceiling.png)
 
 The friction in that rule is the number nobody has, so the check is made at
 both ends of the range that glass on a dry wooden top plausibly covers, and the

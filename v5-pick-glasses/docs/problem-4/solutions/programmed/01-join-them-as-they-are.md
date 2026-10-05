@@ -47,7 +47,7 @@ them by distance. Nothing in it is about a kind. On problem 2's 50 test scenes
 it found all 250 glasses, and a mixed table is no harder for it: glasses still
 stand at least 150 mm apart before problem 3 crowds them.
 
-The [problem](../../problem.md#problem-2s-strongest-tool-is-taken-away) warns that
+The [problem](../../problem.md#3-telling-glasses-apart-from-above-gets-harder) warns that
 the footprint check gets weaker with four kinds. That is true, and it does not
 matter here, because neither of problem 2's built pipelines uses a footprint
 check.

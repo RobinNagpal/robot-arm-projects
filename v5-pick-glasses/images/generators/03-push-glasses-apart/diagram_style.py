@@ -120,9 +120,10 @@ CAST = (STURDY, TIPPY, MIDDLING, SHORT_ONE)
 
 # Friction between glass and table. Nothing in this cell measures it, which is
 # the point: the arithmetic below is only as good as a guessed number, and
-# every document that uses it has to say so. This pair brackets the range
-# usually quoted for glass on a dry surface.
-MU_LOW = 0.3
+# every document that uses it has to say so. This pair is the range bench.py
+# itself names for glass on a dry wooden top, and the documents quote it, so a
+# picture drawing anything narrower claims more than the project knows.
+MU_LOW = 0.2
 MU_HIGH = 0.5
 
 

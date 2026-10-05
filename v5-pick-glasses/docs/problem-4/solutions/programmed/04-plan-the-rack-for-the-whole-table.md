@@ -12,7 +12,7 @@ is needed; the best answer is simply computed.*
 
 ## Introduction
 
-[The problem](../../problem.md#the-rack-has-to-be-shared-out) says the slot choice
+[The problem](../../problem.md#2-the-rack-has-to-be-shared-out) says the slot choice
 stops being "the next free one" and becomes a decision that can run out of
 room. This document measures how often it does, and replaces the slot choice
 with one that looks at the whole table.

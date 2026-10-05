@@ -87,6 +87,8 @@ cylinders, each cylinder as wide as the glass is at its widest anywhere inside
 it, so the collision shape is never thinner than the real glass. The bottom
 cylinder is the foot, which is the edge the glass tips over.
 
+![Every glass the bench stands on a table is a stack of cylinders, each one as wide as the glass is anywhere inside it, and the bottom cylinder is the foot it would tip over; the height at which a push starts tipping a glass rather than sliding it follows from that foot and from a friction the bench keeps to itself.](../../images/03-push-glasses-apart/04-the-model-that-was-built.png)
+
 ## What a solution is given
 
 Given those tables, the next fixed thing is what a solution may read off them.

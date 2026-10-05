@@ -122,7 +122,7 @@ expectations for a slower, better one is standard, and often right. It works
 when the rough measurement's mistakes are harmless to what it is used for.
 
 **Why a ranker is not automatically safe.** [The problem 3
-overview](../../../03-push-glasses-apart/solutions/solution-overview.md#three-families-and-what-hybrid-means)
+overview](../../../03-push-glasses-apart/solutions/overview.md#where-the-learned-part-sits)
 says a ranker's mistakes cost one wasted attempt. That is true when the ranked
 candidates have all passed a safety check that does not depend on the ranker.
 Here the guess would be an input to the safety check itself, and that makes it

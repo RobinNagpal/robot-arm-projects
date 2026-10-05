@@ -176,6 +176,8 @@ all of that kind, and they are not wrong to be: a model that chooses the push
 can express pushes the enumerator never offers. The point of this solution is
 the opposite trade, and the next sections are the two halves of it.
 
+![The enumerator writes down every push, the filter keeps only the safe ones, and the model reorders what is left, so nothing it can emit is unsafe; a model that chooses the push instead has every push in its output space and needs a geometric check bolted on after it.](../../../images/03-push-glasses-apart/06-generate-veto-then-rank.png)
+
 ## What the geometry proposes
 
 The enumerator is the built half of this solution, so it comes first, and its
@@ -218,6 +220,8 @@ how many glasses have room afterwards — those candidates are a **tie**, and
 they differ only in how far the glass has to travel, which the geometry prints
 for nothing.
 
+![On one crowded table the pushes that finish the job fan out in every direction, and because each heading stops at the first travel that works, every one of them leaves the glass within a millimetre of the same room margin and scores exactly the same; they differ only in how far the glass travels.](../../../images/03-push-glasses-apart/06-the-room-test-and-the-fan.png)
+
 **A ranking problem in which the candidates within a group are tied carries no
 information.** A model fitted to that group would return the same value for
 every member of it, which is the correct answer and a useless one. So the
@@ -225,6 +229,8 @@ signal a ranker could use does not live in the job-finishing set at all. It
 lives in the wider set of pushes that only ease the crowding, where the
 candidates genuinely differ from one another, and where the geometry is
 guessing at a sequence of pushes rather than finishing the job in one.
+
+![The enumerator almost always finds a safe push for a crowded glass and rarely finds one that finishes the job; the job-finishing candidates score identically in every set there is, while the wider set of pushes that only ease the crowding is where the candidates differ.](../../../images/03-push-glasses-apart/06-how-alike-the-survivors-are.png)
 
 That is a sharp conclusion to reach before the model has been described, and it
 is the honest shape of this solution. The arrangement is excellent. The
@@ -684,6 +690,8 @@ candidate set is empty, and **a ranking over an empty set is still empty**. This
 is the commoner refusal by a wide margin in the record this solution extends:
 all 52 of the glasses that run left on the table were refused for this reason,
 and not one for tipping.
+
+![The topple limit is evaluated at the jaw's top edge across the whole believed range of friction, and on the held-out tables it refuses nothing: every refusal in the record is a glass with nowhere clear to push it to.](../../../images/03-push-glasses-apart/06-where-the-refusals-come-from.png)
 
 Both refusals are reported with their reason, which makes the run **correct but
 incomplete** rather than wrong. That distinction is the project's position

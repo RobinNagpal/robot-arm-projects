@@ -164,6 +164,8 @@ it is at the bottom. So the limit a solution computes is only as good as its
 guess, and the guess can be wrong by a factor that decides whether a glass
 should have been pushed at all.
 
+![The highest safe contact moves a long way between one plausible friction and another, so a limit worked out from a guessed coefficient declares glasses safe that the real table tips over.](../../images/03-push-glasses-apart/07-the-safety-net.png)
+
 Two habits follow, and both of them are followed by all six solutions.
 
 **Push as low as the gripper can reach, always.** Since the height is fixed at
@@ -211,6 +213,8 @@ contact everywhere. The programmed approach built here goes one step further and
 makes a small test push first, to see how the glass responds before committing
 to the full one.
 
+![Driving to a contact point worked out from the measurements aims at a part of the glass the jaw never meets, and the reading it was worked out from carries error, so the jaw misses; feeling forward until the force reads finds where the glass really is.](../../images/03-push-glasses-apart/03-feel-do-not-drive.png)
+
 **Look again.** Fresh measurements say where the glass really ended up, which
 is compared with where it was sent. The difference is the only honest
 information anyone has about a push, since no model in the cell could have
@@ -241,6 +245,8 @@ instead:
 did the intended glass move as intended, did anything else move, and has
 anything fallen over.
 
+![Seen from straight above, a glass that moved as intended, a glass whose neighbour moved too and a glass that fell over are three different results, and how far the middle travelled separates only the first from the third.](../../images/03-push-glasses-apart/07-what-the-overhead-view-reports.png)
+
 **Where that model sits is the reason it is safe to have.** It runs after the
 push, so it can only ever be wrong about something that has already happened. It
 cannot cause a topple, because by the time it speaks the push is over. It cannot
@@ -260,9 +266,18 @@ one of timing.
 The jaw reports the force it feels while it is pushing, at a far higher rate
 than any camera reports pictures. A glass that is sliding and a glass that has
 begun to turn over do not feel the same through that signal, because the two do
-not develop the same way as the push continues. A monitor reading that signal
-could stop the arm the moment the contact stops behaving like a slide, back the
-jaw off a short way along the line it was pushing, and hand over.
+not develop the same way as the push continues.
+
+![A glass that is sliding needs the same force from start to finish, while a glass that has begun to turn needs less and less as it comes towards balance, and the wall it is pushed on rolls away down the face of the pad as it goes.](../../images/03-push-glasses-apart/08-slide-against-tip.png)
+
+A monitor reading that signal could stop the arm the moment the contact stops
+behaving like a slide, back the jaw off a short way along the line it was
+pushing, and hand over. A single force level would not do it: across the
+glasses a kind allows, every force a tip produces is a force some slide
+produces too, which is why the signal has to be read as it develops rather than
+compared against a threshold.
+
+![Over four hundred drawn glasses of one kind, pushed at the jaw's top edge, the force a tip produces and the force a slide produces cover the same band, so no level of force tells the two apart.](../../images/03-push-glasses-apart/08-no-threshold-separates.png)
 
 **That is what separates it from the verifier: it acts during the push rather
 than after it.** The verifier can only describe a glass that is already on its

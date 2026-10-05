@@ -115,10 +115,12 @@ whose base is `2a` across, standing on a table it rubs against with friction
 
     h  <  a / μ
 
-and tips above it. A 60 mm base at μ = 0.3 gives 100 mm of room to push in. A
-45 mm base at μ = 0.5 gives 45 mm. That is below the lowest the gripper can
-reach without fouling the table. So that glass cannot be pushed safely at all,
-and the only correct answer for it is to refuse.
+and tips above it. Both ends of that fraction matter. A wide foot at the
+slippery end of the plausible friction range leaves room to push well above
+anything the gripper could reach, so such a glass is easy. A narrow foot at the
+grippy end leaves less room than the gripper can reach without fouling the
+table — and a glass like that cannot be pushed safely at all, so the only
+correct answer for it is to refuse.
 
 **The height to compare against is the top edge of the jaw, not the bottom.**
 The middle of the jaw rides as low as the gripper goes, 50 mm, but the jaw is
@@ -159,6 +161,8 @@ uniform, the contact is not a point, and the glass rotates as well as slides.
 Planar pushing is a well-studied problem and the honest summary is that
 predicting the outcome precisely needs numbers nobody here has. So the arm has
 to look again after each push rather than assume.
+
+![A finger that meets a round glass anywhere but on the line through its middle turns the glass as well as moving it, so only a push aimed through the middle slides it roughly straight.](../../images/problem-3-an-off-centre-push-spins.png)
 
 **Which glass to move.** Moving the wrong one of a pair can make the situation
 worse — into a third glass, or out of reach. The choice needs the whole

@@ -368,7 +368,7 @@ def picture_how_alike() -> None:
     margins.spines["left"].set_visible(False)
     margins.set_xlabel("millimetres of spread inside one candidate set, median",
                        fontsize=LABEL_SIZE, color=INK)
-    note(margins, 22.0, -1.05,
+    note(margins, 22.0, -2.55,
          "A freeing push stops at the first travel that\n"
          "works, so every survivor comes to rest within a\n"
          "millimetre of the same room margin. They differ\n"
@@ -388,9 +388,9 @@ def picture_how_alike() -> None:
         flat.text(x, value + 2.5, f"{value:.0f}% tied", fontsize=LABEL_SIZE, color=colours[x],
                   ha="center", va="bottom")
         flat.text(x, 3.0, f"{count} sets", fontsize=NOTE_SIZE, color=INK, ha="center", va="bottom")
-    flat.text(0.0, -24.0, "what legality already guarantees", fontsize=NOTE_SIZE, color=MUTED,
+    flat.text(0.0, -24.0, "what legality\nalready guarantees", fontsize=NOTE_SIZE, color=MUTED,
               ha="center", va="top")
-    flat.text(1.0, -24.0, "what the planner really sorts", fontsize=NOTE_SIZE, color=MUTED,
+    flat.text(1.0, -24.0, "what the planner\nreally sorts", fontsize=NOTE_SIZE, color=MUTED,
               ha="center", va="top")
     flat.set_xticks(positions)
     flat.set_xticklabels(names, fontsize=LABEL_SIZE)
@@ -408,7 +408,7 @@ def picture_how_alike() -> None:
            f"tie in {SWEEP['free_label_tied_pct']:.0f}% of the {SWEEP['free_sets']} sets there are, and "
            f"its members come to rest within {SWEEP['free_margin_spread_median_mm']} mm of each other. "
            f"The variation is in the wider ranked set, where most candidates do not finish the job.")
-    figure.subplots_adjust(bottom=0.22, top=0.90, wspace=0.24)
+    figure.subplots_adjust(bottom=0.28, top=0.90, wspace=0.24)
     save(figure, "06-how-alike-the-survivors-are.png")
     print("  how alike: freeing sets tied on the label in "
           f"{SWEEP['free_label_tied_pct']:.0f}% of {SWEEP['free_sets']}; "
@@ -575,82 +575,6 @@ def picture_the_pattern() -> None:
 # ---------------------------------------------------------------------------
 # 5. Does the order matter, and where the learning actually paid.
 # ---------------------------------------------------------------------------
-def picture_does_order_matter() -> None:
-    """The evidence for the verdict: reorder the same candidate set and count."""
-    figure, (orders, scored) = new(14.2, 5.8, columns=2)
-
-    # ------------------------------------- panel 1: four ways of choosing
-    chart(orders, f"The same candidates, four orders, {ORDER_TABLES} tables")
-    names = [row[0] for row in ORDERS]
-    pushes = [row[3] for row in ORDERS]
-    refused = [row[2] for row in ORDERS]
-    positions = np.arange(len(names))
-    colours = [GOOD, GLASS, WARN, WARN]
-    orders.barh(-positions, pushes, height=0.46, color=[to_rgba(c, 0.45) for c in colours],
-                edgecolor=colours, lw=1.1)
-    for y, (push, miss) in enumerate(zip(pushes, refused, strict=True)):
-        orders.text(push + 3.0, -y, f"{push} pushes, {miss} glasses refused",
-                    fontsize=NOTE_SIZE, color=colours[y], ha="left", va="center")
-        orders.text(0.0, -y + 0.38, names[y], fontsize=NOTE_SIZE, color=INK, ha="left", va="bottom")
-    orders.set_xlim(0.0, 250.0)
-    orders.set_ylim(-9.6, 1.2)
-    orders.set_yticks([])
-    orders.spines["left"].set_visible(False)
-    orders.set_xlabel("pushes taken to clear the same thirty tables", fontsize=LABEL_SIZE, color=INK)
-    note(orders, 125.0, -4.35,
-         f"Ordering is worth something: shuffle the same set and the run costs\n"
-         f"{ORDERS[2][3] - ORDERS[0][3]} more pushes and leaves {ORDERS[2][2] - ORDERS[0][2]} "
-         f"more glasses behind. plan.py's printed rule already\nhas that. Ranking by the label this "
-         f"solution proposes clears the same\nglasses and takes {ORDERS[1][3] - ORDERS[0][3]} "
-         f"more pushes to do it.\n\n"
-         f"And a ranker cannot beat being told the answer. Over "
-         f"{ORACLE['tables']} tables and\n{ORACLE['glasses']} glasses, trying every possible first "
-         f"push and keeping the best\nresult racks {ORACLE['best_racked']} against plan.py's "
-         f"{ORACLE['plan_racked']}, for the same "
-         f"{ORACLE['plan_pushes']} pushes. That is\nthe whole of what a perfect opening choice is "
-         f"worth here: {ORACLE['best_racked'] - ORACLE['plan_racked']} glasses in "
-         f"{ORACLE['glasses']}.", INK, va="top")
-
-    # ---------------------------- panel 2: what the two implementations scored
-    chart(scored, f"The two implementations, {SWEEP['tables']} held-out tables")
-    pair = [("geometry alone\nproblem-3-programmed", SCORED["programmed"], GLASS),
-            ("a learned forward model and a search\nproblem-3-learned", SCORED["learned"], GOOD)]
-    width = 0.34
-    metrics = ["glasses racked", "glasses refused", "pushes taken", "repeat pushes"]
-    keys = ["racked", "refused", "pushes", "repeats"]
-    spots = np.arange(len(metrics))
-    for offset, (name, data, colour) in zip((-width / 2, width / 2), pair, strict=True):
-        values = [data[k] for k in keys]
-        scored.bar(spots + offset, values, width=width, color=to_rgba(colour, 0.5),
-                   edgecolor=colour, lw=1.1, label=name)
-        for x, value in zip(spots + offset, values, strict=True):
-            scored.text(x, value + 4.0, str(value), fontsize=NOTE_SIZE, color=colour,
-                        ha="center", va="bottom")
-    scored.set_xticks(spots)
-    scored.set_xticklabels(metrics, fontsize=NOTE_SIZE)
-    scored.set_ylim(0.0, 285.0)
-    scored.legend(fontsize=NOTE_SIZE, frameon=False, loc="upper left", ncol=1)
-    note(scored, 3.52, 258.0,
-         f"Both topple nothing.\nThe learned one racks "
-         f"{SCORED['learned']['racked'] - SCORED['programmed']['racked']} more glasses\n"
-         f"in {SCORED['programmed']['pushes'] - SCORED['learned']['pushes']} fewer pushes — and not "
-         f"by\nordering these candidates\nbetter. It replaced the model\nof what a push does, "
-         f"which is\nthe quantity geometry gets wrong.", INK, va="top", ha="right")
-
-    footer(figure,
-           "This is the evidence the verdict rests on. A better order is worth a little and "
-           "plan.py's rule already collects it. The large gain in this cell came from somewhere "
-           "else entirely: predicting where the glass\nactually goes. Read the right-hand panel as "
-           "the answer to 'should a model go here at all' — yes, but as a forward model, not as a "
-           "ranker over candidates the arithmetic has already sorted.")
-    figure.subplots_adjust(bottom=0.20, top=0.90, wspace=0.16)
-    save(figure, "06-does-the-order-matter.png")
-    for name, racked, miss, push, cleared in ORDERS:
-        print(f"    {name:46s} racked {racked} refused {miss} pushes {push} cleared {cleared}")
-    print(f"    {'a perfect first push, ' + str(ORACLE['tables']) + ' tables':46s} racked "
-          f"{ORACLE['best_racked']} refused {ORACLE['best_refused']} pushes {ORACLE['best_pushes']}"
-          f"  against plan.py's {ORACLE['plan_racked']}/{ORACLE['plan_refused']}/"
-          f"{ORACLE['plan_pushes']}")
 
 
 # ---------------------------------------------------------------------------
@@ -719,8 +643,11 @@ def picture_the_room_test() -> None:
                          base_fraction=foot_list[index] / width_list[index],
                          colour=colour, alpha=0.30, lw=1.2)
     # The radius of the keep-out circle, drawn on the widest glass and on the
-    # narrowest, which is where the asymmetry shows.
-    for index, angle in ((widest_one, 60.0), (narrowest, 250.0)):
+    # narrowest, which is where the asymmetry shows. Neither radius is written
+    # down, because the caption gives the rule and half a glass's width is a
+    # glass measurement; what the two leaders carry is the comparison.
+    for index, angle, standing in ((widest_one, 60.0, "widest"),
+                                   (narrowest, 250.0, "narrowest")):
         centre = EXAMPLE_POSITIONS[index]
         radius = keep_out(index, width_list)
         tip = aim_of(centre, angle, radius)
@@ -728,7 +655,7 @@ def picture_the_room_test() -> None:
                                                             width_list)) < 0.0 else GLASS
         test.plot([centre[0], tip[0]], [centre[1], tip[1]], color=colour, lw=1.2, zorder=7)
         note(test, tip[0], tip[1] + 6.0,
-             f"{radius:.0f} mm, because\nthis glass is {width_list[index]:.0f} mm wide",
+             f"the {standing} glass here,\nso the {standing} circle",
              colour, va="bottom",
              bbox={"facecolor": "white", "edgecolor": "none", "pad": 1.2})
     first, second = EXAMPLE_CROWDED
@@ -818,7 +745,6 @@ def main() -> None:
     picture_how_alike()
     picture_the_refusals()
     picture_the_pattern()
-    picture_does_order_matter()
 
 
 if __name__ == "__main__":

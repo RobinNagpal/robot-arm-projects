@@ -42,7 +42,6 @@ from pathlib import Path
 
 import numpy as np
 from diagram_style import (
-    FINGER_HEIGHT,
     GLASS,
     GLASS_ZONE,
     GOOD,
@@ -62,19 +61,17 @@ from diagram_style import (
     WARN,
     bare,
     glass_from_above,
-    glass_from_the_side,
     grip_ring,
     has_room,
     in_reach,
     in_zone,
-    push_arrow,
     save,
     topple_height,
 )
 from diagram_style import (
     new as new_figure,
 )
-from matplotlib.patches import Circle, Rectangle
+from matplotlib.patches import Rectangle
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src" / "work_cell"))
 
@@ -372,224 +369,16 @@ def footer(figure, text: str) -> None:
 # --------------------------------------------------------------------------- #
 # Picture 1 — the test, the nudge, and the height the push is stuck at
 # --------------------------------------------------------------------------- #
-def picture_the_nudge_on_a_real_table(best: float) -> None:
-    t = table(EASY_SEED)
-    crowded, = (k for k in range(t["n"]) if not room(t, k))
-    neighbour = blocking(t, crowded)
-    moved, away_from, landing, trouble = nudge(t, crowded, neighbour, best)
-    apart = math.dist(t["at"][crowded], t["at"][neighbour])
-    reaches_in = intrusion(t, crowded, neighbour)
-    after = list(t["at"])
-    after[moved] = landing
-
-    figure, (plan, side) = new_figure(13.8, 6.8, columns=2)
-
-    panel(plan, f"Why {LETTERS[crowded]} has no room, and what the nudge does about it")
-    zone(plan)
-    draw_table(plan, t, rings=(crowded,),
-               faded=[k for k in range(t["n"]) if k not in (crowded, neighbour)])
-    push_arrow(plan, t["at"][moved], landing, colour=GOOD, lw=2.2)
-    glass_from_above(plan, landing, t["widest"][moved],
-                     base_fraction=t["base"][moved] / t["widest"][moved],
-                     colour=GOOD, alpha=0.22, edge=GOOD)
-    for k in range(t["n"]):
-        name_glass(plan, t["at"][k], LETTERS[k])
-    # Both labels live in the empty column to the right of every glass, so that
-    # neither one, and neither leader, has to cross anything.
-    lead(plan, f"{LETTERS[crowded]} needs {GRIP_ROOM:.0f} mm of\nclear table all round.\n"
-               f"{LETTERS[neighbour]}'s rim reaches\n{reaches_in:.1f} mm inside it",
-         (t["at"][crowded][0] + GRIP_ROOM, t["at"][crowded][1]), (700, -250), WARN,
-         ha="left", va="center")
-    lead(plan, f"{LETTERS[moved]} has the wider foot,\nso {LETTERS[moved]} is the one pushed\n"
-               f"{best:.0f} mm away from {LETTERS[crowded]}:\n"
-               f"now {math.dist(landing, t['at'][crowded]):.1f} mm apart",
-         ((t["at"][moved][0] + landing[0]) / 2.0, (t["at"][moved][1] + landing[1]) / 2.0),
-         (700, -80), GOOD, ha="left", va="center")
-    plan.set_xlim(250, 815)
-    plan.set_ylim(-475, -15)
-
-    panel(side, "The height the push is really made at")
-    side.axhspan(LOWEST_GRIP - FINGER_HEIGHT / 2.0, JAW_TOP, facecolor=MUTED, alpha=0.20,
-                 zorder=1)
-    side.axhline(JAW_TOP, color=INK, lw=1.7, zorder=7)
-    places = {crowded: 0.0, neighbour: 200.0}
-    for k, offset in places.items():
-        rim = t["widest"][k]
-        glass_from_the_side(side, offset, t["height"][k], rim,
-                            base_fraction=t["base"][k] / rim, colour=GLASS, alpha=0.24,
-                            edge=GLASS)
-        note(side, offset, -14, f"{LETTERS[k]}: a foot {t['base'][k]:.1f} mm across", INK,
-             ha="center", va="top")
-        on_the_left = offset == 0.0
-        for mu, colour, style in ((MU_LOW, GOOD, "-"), (MU_HIGH, WARN, (0, (5, 3)))):
-            h = topple_height(t["base"][k], mu)
-            side.plot([offset - rim * 0.62, offset + rim * 0.62], [h, h], color=colour,
-                      lw=1.6, ls=style, zorder=8)
-            # A topple height within a few millimetres of the jaw's top edge
-            # would print its label over that line, so it is nudged clear.
-            near = JAW_TOP - 9.0 < h < JAW_TOP + 9.0
-            side.text(offset + (-rim * 0.66 if on_the_left else rim * 0.66),
-                      h - 14.0 if near else h,
-                      f"{h:.1f} mm, mu {mu}", fontsize=NOTE_SIZE, color=colour,
-                      ha="right" if on_the_left else "left", va="center")
-    lead(side, f"the closed jaw is {FINGER_HEIGHT:.0f} mm tall and its middle rides at\n"
-               f"{LOWEST_GRIP:.0f} mm, so a glass that flares outwards meets its\n"
-               f"top edge first, at {JAW_TOP:.0f} mm. That is the push height",
-         (100, JAW_TOP), (100, 300), INK, ha="center", va="bottom")
-    note(side, -138, 412,
-         "green: the height a push starts tipping the glass over, if the friction is 0.3\n"
-         "red: the same height if it is 0.5, and nothing in the cell tells the arm which",
-         MUTED, ha="left", va="top")
-    side.set_xlim(-140, 340)
-    side.set_ylim(-60, 420)
-
-    footer(figure, (
-        f"Table {EASY_SEED} from the spawner, four tapered glasses. {LETTERS[crowded]} is the narrow "
-        f"one and it has no room, because room is measured to a neighbour's edge and "
-        f"{LETTERS[neighbour]} is wide. {LETTERS[neighbour]} itself has room at the same "
-        f"{apart:.1f} mm, because its neighbour is only {t['widest'][crowded]:.1f} mm "
-        f"across.\nThe nudge pushes whichever of the two has the wider foot, which here is "
-        f"{LETTERS[neighbour]}, and that is lucky: at a friction of {MU_LOW} it is the only one of "
-        f"the two that slides rather than tipping.\nOn the right is the part the nudge cannot "
-        f"choose. The push lands at {JAW_TOP:.0f} mm, and whether that slides a glass or tips it "
-        f"over turns on a friction the arm is never told."))
-    figure.subplots_adjust(bottom=0.17, top=0.92, wspace=0.08)
-    save(figure, "02-the-nudge-on-a-real-table.png")
-    print(f"  table {EASY_SEED}: {LETTERS[crowded]} has no room; {LETTERS[neighbour]}'s rim reaches "
-          f"{reaches_in:.1f} mm inside its {GRIP_ROOM:.0f} mm ring, at {apart:.1f} mm between "
-          f"middles")
-    print(f"    {LETTERS[neighbour]} needs {GRIP_ROOM + t['widest'][crowded] / 2:.1f} mm and has "
-          f"{apart:.1f}, so it has room while {LETTERS[crowded]} does not")
-    print(f"    pushed {LETTERS[moved]} {best:.0f} mm; {LETTERS[crowded]} now "
-          f"{math.dist(landing, t['at'][crowded]):.1f} mm off and "
-          f"{'has room' if room(t, crowded, after) else 'still has none'}; faults "
-          f"{[n for n, hit in trouble.items() if hit] or 'none'}")
-    for k in range(t["n"]):
-        heights = {mu: topple_height(t["base"][k], mu) for mu in (MU_LOW, TABLE_FRICTION, MU_HIGH)}
-        print(f"    {LETTERS[k]}: height {t['height'][k]:.1f} mm, widest {t['widest'][k]:.1f} mm, "
-              f"foot {t['base'][k]:.1f} mm, tips above "
-              + ", ".join(f"{h:.1f} mm at mu {mu}" for mu, h in heights.items())
-              + f"; pushable at {JAW_TOP:.0f} mm for mu "
-              + ", ".join(str(mu) for mu, h in heights.items() if h > JAW_TOP))
 
 
 # --------------------------------------------------------------------------- #
 # Picture 2 — the sweep, and why no single distance can be right
 # --------------------------------------------------------------------------- #
-def picture_the_sweep(rows: list[dict], jobs, best: float) -> None:
-    figure, (curve, spread) = new_figure(13.8, 5.4, columns=2)
-
-    distance = [r["distance"] for r in rows]
-    curve.plot(distance, [r["wrong"] for r in rows], color=INK, lw=2.4,
-               label="anything at all wrong")
-    curve.plot(distance, [r["the glass still has no room"] for r in rows], color=GLASS, lw=1.7,
-               label="the glass still has no room")
-    curve.plot(distance, [r["outside the glass zone"] for r in rows], color=WARN, lw=1.7,
-               label="outside the glass zone")
-    curve.plot(distance, [met_a_glass(r) for r in rows], color=WARN, lw=1.7, ls=(0, (5, 3)),
-               label="met another glass")
-    low = min(rows, key=lambda r: r["wrong"])
-    curve.axvline(low["distance"], color=GOOD, lw=1.3, ls=(0, (4, 3)), zorder=1)
-    curve.plot([low["distance"]], [low["wrong"]], "o", color=GOOD, ms=6, zorder=6)
-    lead(curve, f"the best a fixed distance can do:\n{low['distance']:.0f} mm, and still "
-                f"{low['wrong']:.1f}% wrong",
-         (low["distance"], low["wrong"]), (low["distance"] + 6, low["wrong"] + 26), GOOD,
-         ha="left", va="bottom")
-    curve.set_xlabel("how far the nudge pushes, mm", fontsize=LABEL_SIZE, color=INK)
-    curve.set_ylabel("share of glasses without room, per cent", fontsize=LABEL_SIZE, color=INK)
-    curve.set_title("Every nudge distance is wrong in one of two ways",
-                    fontsize=TITLE_SIZE, color=INK, pad=8)
-    curve.set_xlim(0, max(distance))
-    curve.set_ylim(0, 100)
-    curve.legend(fontsize=NOTE_SIZE - 0.4, loc="lower right", frameon=False)
-    plain(curve)
-
-    needed = sorted(intrusion(t, c, n) for t, c, n in jobs)
-    spread.hist(needed, bins=32, color=GLASS, alpha=0.55, edgecolor=GLASS)
-    middle = needed[len(needed) // 2]
-    top = spread.get_ylim()[1] * 1.24
-    spread.set_ylim(0, top)
-    spread.axvline(best, color=GOOD, lw=1.7)
-    spread.axvline(middle, color=INK, lw=1.2, ls=(0, (4, 3)))
-    spread.text(best + 0.6, top * 0.97, f"the one nudge,\n{best:.0f} mm", fontsize=NOTE_SIZE,
-                color=GOOD, ha="left", va="top")
-    spread.text(middle - 0.6, top * 0.97, f"the middle glass\nneeds {middle:.1f} mm",
-                fontsize=NOTE_SIZE, color=INK, ha="right", va="top")
-    spread.set_xlabel("how far the glass has to move to clear its own ring, mm",
-                      fontsize=LABEL_SIZE, color=INK)
-    spread.set_ylabel("glasses without room", fontsize=LABEL_SIZE, color=INK)
-    spread.set_title("What the glasses actually need", fontsize=TITLE_SIZE, color=INK, pad=8)
-    plain(spread)
-
-    footer(figure, (
-        f"{len(jobs)} glasses without room, on {HOW_MANY_TABLES} tables. Left: a short nudge leaves "
-        f"the glass where it was, a long one carries it out of the zone or into another glass, and "
-        f"the two curves cross at {low['distance']:.0f} mm.\nRight: what one glass has to move to "
-        f"clear its own ring runs from {needed[0]:.1f} to {needed[-1]:.1f} mm, so one distance "
-        f"overshoots most of them and falls short for the rest. That is the case against a fixed "
-        f"number."))
-    figure.subplots_adjust(bottom=0.25, top=0.90, wspace=0.22)
-    save(figure, "02-the-nudge-distance-sweep.png")
-    print(f"  sweep over {len(jobs)} glasses without room: best {low['distance']:.0f} mm at "
-          f"{low['wrong']:.1f}% wrong")
-    for r in rows:
-        if r["distance"] in (4.0, 10.0, 16.0, low["distance"], 30.0, 40.0, 60.0, 90.0, 120.0):
-            print(f"    {r['distance']:5.0f} mm: wrong {r['wrong']:5.1f}%  still no room "
-                  f"{r['the glass still has no room']:5.1f}%  met a glass {met_a_glass(r):5.1f}%  "
-                  f"out of the zone {r['outside the glass zone']:5.1f}%  out of reach "
-                  f"{r['outside the arm\'s reach']:4.1f}%  rack {r['into the rack']:4.1f}%")
-    print(f"    the move each glass needs: {needed[0]:.1f} to {needed[-1]:.1f} mm, "
-          f"middle {middle:.1f} mm")
 
 
 # --------------------------------------------------------------------------- #
 # Picture 3 — the failure that separates this from solution 3
 # --------------------------------------------------------------------------- #
-def picture_into_another_glass(best: float) -> None:
-    t = table(HARD_SEED)
-    crowded = max(range(t["n"]),
-                  key=lambda c: sum(intrusion(t, c, k) > 0 for k in range(t["n"]) if k != c))
-    blockers = [k for k in range(t["n"]) if k != crowded and intrusion(t, crowded, k) > 0]
-    spare = [k for k in range(t["n"]) if k != crowded and k not in blockers]
-
-    figure, axes = new_figure(13.8, 6.0, columns=2)
-    for axis, neighbour in zip(axes, blockers, strict=True):
-        other = next(k for k in blockers if k != neighbour)
-        apart = math.dist(t["at"][crowded], t["at"][neighbour])
-        panel(axis, f"{LETTERS[crowded]} pushed away from {LETTERS[neighbour]}, "
-                    f"which stands {apart:.1f} mm off")
-        draw_table(axis, t, faded=spare)
-        moved, away_from, landing, trouble = nudge(t, crowded, neighbour, best)
-        glass_from_above(axis, landing, t["widest"][moved],
-                         base_fraction=t["base"][moved] / t["widest"][moved],
-                         colour=WARN, alpha=0.34, edge=WARN)
-        push_arrow(axis, t["at"][moved], landing, colour=WARN, lw=2.2)
-        overlap = ((t["widest"][moved] + t["widest"][other]) / 2.0
-                   - math.dist(landing, t["at"][other]))
-        for k in range(t["n"]):
-            name_glass(axis, t["at"][k], LETTERS[k])
-        note(axis, landing[0] + 74, landing[1],
-             f"lands {overlap:.1f} mm\ninside {LETTERS[other]}", WARN, ha="left", va="center")
-        print(f"  table {HARD_SEED}: {LETTERS[crowded]} pushed {best:.0f} mm away from "
-              f"{LETTERS[neighbour]} ({apart:.1f} mm off, reaching "
-              f"{intrusion(t, crowded, neighbour):.1f} mm into the ring) lands {overlap:.1f} mm "
-              f"inside {LETTERS[other]}; faults {[n for n, hit in trouble.items() if hit]}")
-        axis.set_xlim(300, 730)
-        axis.set_ylim(-437, -113)
-    for k in range(t["n"]):
-        print(f"    {LETTERS[k]}: widest {t['widest'][k]:.1f} mm, foot {t['base'][k]:.1f} mm, "
-              f"tips above {topple_height(t['base'][k], MU_LOW):.1f} mm at mu {MU_LOW} and "
-              f"{topple_height(t['base'][k], MU_HIGH):.1f} mm at mu {MU_HIGH}")
-
-    footer(figure, (
-        f"Table {HARD_SEED} from the spawner, with {LETTERS[spare[0]]} faded because no push here "
-        f"goes near it. {LETTERS[crowded]} has {LETTERS[blockers[0]]} inside its ring on one side "
-        f"and {LETTERS[blockers[1]]} on the other, and it has the wider foot in both pairs, so it "
-        f"is the glass the method picks both times.\nThe nudge has only two directions to offer and "
-        f"each one drives {LETTERS[crowded]} into the glass on the other side. Nothing in the method "
-        f"looks at the third glass, so nothing stops either push."))
-    figure.subplots_adjust(bottom=0.15, top=0.91, wspace=0.06)
-    save(figure, "02-into-another-glass.png")
 
 
 # --------------------------------------------------------------------------- #
@@ -607,62 +396,6 @@ def _legal_map(t: dict, crowded: int, moved: int, step: float = 3.0):
     return xs, ys, good
 
 
-def picture_where_a_glass_may_land(best: float) -> None:
-    figure, axes = new_figure(13.8, 6.0, columns=2)
-    numbers = []
-    for axis, seed in zip(axes, (EASY_SEED, HARD_SEED), strict=True):
-        t = table(seed)
-        crowded = max(range(t["n"]),
-                      key=lambda c: (not room(t, c),
-                                     sum(intrusion(t, c, k) > 0 for k in range(t["n"]) if k != c)))
-        neighbour = blocking(t, crowded)
-        moved, away_from, landing, trouble = nudge(t, crowded, neighbour, best)
-        xs, ys, good = _legal_map(t, crowded, moved)
-        wrong = any(trouble.values())
-
-        panel(axis, f"Table {seed}: everywhere {LETTERS[moved]} may legally land")
-        axis.pcolormesh(xs, ys, np.ma.masked_where(~good, good.astype(float)),
-                        cmap="Greens", vmin=0.0, vmax=2.0, shading="nearest", zorder=0)
-        zone(axis, label=False)
-        draw_table(axis, t)
-        for k in range(t["n"]):
-            name_glass(axis, t["at"][k], LETTERS[k])
-        here = t["at"][moved]
-        axis.add_patch(Circle(here, best, facecolor="none", edgecolor=INK, lw=1.3,
-                              ls=(0, (5, 3)), zorder=6))
-        axis.plot([landing[0]], [landing[1]], marker="X", ms=11,
-                  color=WARN if wrong else GOOD, zorder=8)
-        rows, columns = np.nonzero(good)
-        shortest = (min(math.dist(here, (float(xs[c]), float(ys[r])))
-                        for r, c in zip(rows, columns, strict=True)) if len(rows) else math.inf)
-        numbers.append((seed, moved, shortest, wrong, float(good.mean())))
-        # The label goes to the right of the landing, which is the one side
-        # that is clear on both of these tables.
-        note(axis, landing[0] + 56, landing[1],
-             "the nudge lands here,\nand it is not legal" if wrong
-             else "the nudge lands here,\nand it is legal",
-             WARN if wrong else GOOD, ha="left", va="center")
-        note(axis, 180, -500,
-             f"the dashed circle is every spot {best:.0f} mm away.\n"
-             f"the shortest legal push for {LETTERS[moved]} is {shortest:.0f} mm", INK,
-             ha="left", va="bottom")
-        axis.set_xlim(170, 830)
-        axis.set_ylim(-510, -35)
-
-    footer(figure, (
-        "The green is every spot where the crowded glass ends with the room the jaw needs, nothing "
-        "that had room loses it, no glass is struck on the way, and the landing is inside the zone "
-        f"and the reach.\nThe dashed circle is the one distance the nudge ever pushes. On table "
-        f"{numbers[0][0]} it crosses the green and the nudge lands in it. On table {numbers[1][0]} "
-        f"the nearest legal spot is {numbers[1][2]:.0f} mm away, so no nudge of {best:.0f} mm in "
-        "any direction could have worked. The method never works this region out, which is the "
-        "whole difference between it and solution 3."))
-    figure.subplots_adjust(bottom=0.13, top=0.94, wspace=0.06)
-    save(figure, "02-where-a-glass-may-land.png")
-    for seed, moved, shortest, wrong, share in numbers:
-        print(f"  table {seed}: pushing {LETTERS[moved]}, shortest legal push {shortest:.1f} mm, "
-              f"the {best:.0f} mm nudge is {'wrong' if wrong else 'legal'}, "
-              f"{100 * share:.1f}% of the drawn area is legal")
 
 
 # --------------------------------------------------------------------------- #
@@ -687,24 +420,26 @@ def picture_the_friction_ceiling(jobs) -> None:
               fontsize=NOTE_SIZE, color=INK, ha="right", va="top")
     # Where each friction's line crosses the push height is the narrowest foot
     # that still slides. Marked at the crossing rather than labelled off to one
-    # side, so that no leader has to cross another curve.
+    # side, so that no leader has to cross another curve. The crossing is left
+    # unnumbered, and so is the axis below it: a figure for the foot here would
+    # put a scale on the histogram and so publish the range this kind draws.
     for mu, colour in ((MU_LOW, GOOD), (TABLE_FRICTION, MUTED), (MU_HIGH, WARN)):
         needed = 2.0 * JAW_TOP * mu
         if needed > max(width):
             continue
         line.plot([needed], [JAW_TOP], "o", color=colour, ms=6, zorder=6)
-        line.text(needed, JAW_TOP - 4.0, f"{needed:.1f}", fontsize=NOTE_SIZE, color=colour,
-                  ha="center", va="top")
-    line.text(max(drawn) + 1, 22.0,
-              f"at mu {MU_HIGH} the foot would have to be {2 * JAW_TOP * MU_HIGH:.0f} mm,\n"
-              f"off this chart to the right", fontsize=NOTE_SIZE, color=WARN,
-              ha="right", va="center")
+    line.text(max(drawn) + 1, 29.0,
+              f"at mu {MU_HIGH} a glass would need a wider foot than this\n"
+              f"kind draws, so its crossing is off the chart to the right",
+              fontsize=NOTE_SIZE, color=WARN, ha="right", va="center")
     counts, edges = np.histogram(drawn, bins=26)
     line.bar(edges[:-1], 13.0 * counts / counts.max(), width=np.diff(edges), align="edge",
              color=GLASS, alpha=0.40, zorder=0)
     line.text(min(drawn), 15.0, "where the 400 drawn feet actually are", fontsize=NOTE_SIZE,
               color=GLASS, ha="left", va="bottom")
-    line.set_xlabel("the foot the glass stands on, mm across", fontsize=LABEL_SIZE, color=INK)
+    line.set_xlabel("the foot the glass stands on, from the narrowest this kind draws to the widest",
+                    fontsize=LABEL_SIZE, color=INK)
+    line.set_xticks([])
     line.set_ylabel("the height a push starts tipping it, mm", fontsize=LABEL_SIZE, color=INK)
     line.set_title("Whether a glass can be pushed at all", fontsize=TITLE_SIZE, color=INK, pad=8)
     line.set_ylim(0, 125)
@@ -745,11 +480,12 @@ def picture_the_friction_ceiling(jobs) -> None:
         "A push at height h slides a glass while h is under a / mu, where a is half the foot and mu "
         f"is the friction with the table. The jaw's middle rides at {LOWEST_GRIP:.0f} mm, but a "
         f"tapered glass is wider higher up and meets the jaw's top edge first, so the push lands at "
-        f"{JAW_TOP:.0f} mm and the foot has to be wider than 2 x {JAW_TOP:.0f} x mu.\nThose 15 mm "
-        f"cost more than they look. The simulator uses {TABLE_FRICTION} and scores the run against "
-        f"it; the arm is never told it and nothing in the cell measures it. At {MU_HIGH} the foot "
-        f"would have to be {2 * JAW_TOP * MU_HIGH:.0f} mm across, which is wider than the widest "
-        f"this kind draws."))
+        f"{JAW_TOP:.0f} mm and the foot has to be wider than 2 x {JAW_TOP:.0f} x mu. Each dot is "
+        f"where a friction's line crosses that height: the narrowest foot that still slides at "
+        f"it.\nThose 15 mm cost more than they look. The simulator uses {TABLE_FRICTION} and "
+        f"scores the run against it; the arm is never told it and nothing in the cell measures "
+        f"it. At {MU_HIGH} the rule asks for a wider foot than this kind ever draws, so at the "
+        f"real {JAW_TOP:.0f} mm not one of the 400 may be pushed at all."))
     figure.subplots_adjust(bottom=0.26, top=0.90, wspace=0.24)
     save(figure, "02-the-friction-ceiling.png")
     for (label, height, mu), share in shares.items():
@@ -929,10 +665,6 @@ def main() -> None:
     best = min(rows, key=lambda r: r["wrong"])["distance"]
     print(f"best nudge distance: {best:.0f} mm")
 
-    picture_the_nudge_on_a_real_table(best)
-    picture_the_sweep(rows, jobs, best)
-    picture_into_another_glass(best)
-    picture_where_a_glass_may_land(best)
     picture_the_friction_ceiling(jobs)
     report(tables, jobs, rows, best)
 

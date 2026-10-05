@@ -422,8 +422,8 @@ def problem_3_push_low_or_it_topples() -> None:
     )
     axes.text(
         0.50, 0.83,
-        "a 60 mm base at \u03bc = 0.3 gives 100 mm;  a 45 mm base at \u03bc = 0.5 gives 45 mm,\n"
-        "which is below where the gripper can reach — so that glass is refused rather than pushed",
+        "a wide foot at the slippery end of the range leaves room above anything the gripper\n"
+        "can reach; a narrow foot at the grippy end leaves less — and that glass is refused",
         ha="center", fontsize=8.4, color=MUTED,
     )
 
@@ -513,52 +513,21 @@ def _two_glasses(axis, near=(0.38, 0.30), far=(0.58, 0.45), r=0.10):
     return near, far, r
 
 
-def problem_3_friction_cone() -> None:
-    """The friction cone, and what it decides about a push.
+def problem_3_an_off_centre_push_spins() -> None:
+    """Why a push does not go where it was aimed.
 
-    Background for the pushing-mechanics option. A push inside the cone sticks
-    and drives the object; outside it, the finger slides across the surface.
+    A finger that meets a round glass anywhere but on the line through its
+    middle turns it as well as moving it, so the arm has to look again after a
+    push rather than assume the glass went where it was sent.
     """
-    figure, (cone, spin) = plt.subplots(1, 2, figsize=(10.8, 4.4))
+    figure, spin = plt.subplots(figsize=(6.6, 3.6))
     figure.patch.set_facecolor(PAPER)
+    spin.set_facecolor(PAPER)
 
-    import math as _math
-
-    _bare(cone)
-    cone.set_xlim(-0.5, 1.0)
-    cone.set_ylim(-0.75, 0.75)
-    cone.set_aspect("equal")
-    cone.set_title("the friction cone at the contact", fontsize=10.5, color=INK, pad=8)
-
-    # the surface, and the normal
-    cone.plot([0, 0], [-0.6, 0.6], color=INK, lw=2.5)
-    cone.text(-0.06, 0.62, "the glass's wall", ha="center", fontsize=8.4, color=INK)
-    half = _math.degrees(_math.atan(0.35))
-    cone.add_patch(
-        plt.matplotlib.patches.Wedge((0, 0), 0.85, -half, half, fc=GOOD, alpha=0.18, ec="none")
-    )
-    cone.annotate("", xy=(0.85, 0), xytext=(0, 0),
-                  arrowprops=dict(arrowstyle="-|>", color=MUTED, lw=1.2, ls=(0, (4, 3))))
-    cone.text(0.87, 0, "straight in", fontsize=8.4, color=MUTED, va="center")
-    cone.text(
-        0.30, 0.20, "inside the cone:\nthe finger sticks,\nand the glass goes",
-        fontsize=8.2, color=GOOD,
-    )
-
-    for sign in (1, -1):
-        cone.annotate(
-            "", xy=(0.62 * _math.cos(_math.radians(52)), sign * 0.62 * _math.sin(_math.radians(52))),
-            xytext=(0, 0), arrowprops=dict(arrowstyle="-|>", color=WARN, lw=1.6),
-        )
-    cone.text(0.10, -0.55, "outside it: the finger\nslides across the glass", fontsize=8.2, color=WARN)
-    cone.text(-0.45, 0.0, "half-angle\n= arctan \u03bc", fontsize=8.4, color=GOOD, va="center")
-
-    # right: which way it turns
     _bare(spin)
-    spin.set_xlim(-0.2, 1.2)
-    spin.set_ylim(-0.6, 0.6)
+    spin.set_xlim(-0.2, 1.12)
+    spin.set_ylim(-0.50, 0.40)
     spin.set_aspect("equal")
-    spin.set_title("and which way the glass turns", fontsize=10.5, color=INK, pad=8)
     spin.add_patch(Circle((0.55, 0.0), 0.28, fc=GLASS, alpha=0.45, ec=GLASS, lw=1.5))
     spin.plot([0.55], [0.0], marker="+", ms=10, color=INK)
     spin.text(0.55, -0.055, "middle", ha="center", va="top", fontsize=8, color=INK)
@@ -582,11 +551,11 @@ def problem_3_friction_cone() -> None:
     spin.text(0.55, -0.42, "slides roughly straight", ha="center", fontsize=8.4, color=GOOD)
 
     figure.suptitle(
-        "Background: the two things contact mechanics decides about a push",
-        fontsize=12, color=INK, y=1.02,
+        "A push that misses the middle turns the glass as well as moving it",
+        fontsize=12, color=INK, y=0.97,
     )
     figure.tight_layout()
-    _save(figure, "problem-3-friction-cone.png")
+    _save(figure, "problem-3-an-off-centre-push-spins.png")
 
 
 # ------------------------------------ shared: how programmed and learned mix
@@ -675,74 +644,11 @@ def where_the_learned_part_sits() -> None:
     _save(figure, "where-the-learned-part-sits.png")
 
 
-def open_and_closed_loop() -> None:
-    """One pass against a loop that chooses its own next measurement."""
-    figure, (openl, closedl) = plt.subplots(1, 2, figsize=(11.4, 4.2))
-    figure.patch.set_facecolor(PAPER)
-
-    for axis in (openl, closedl):
-        _bare(axis)
-        axis.set_xlim(0, 1)
-        axis.set_ylim(0, 1)
-
-    def box(axis, x, y, w, h, label, colour):
-        axis.add_patch(Rectangle((x, y), w, h, fill=False, ec=colour, lw=1.7))
-        axis.text(x + w / 2, y + h / 2, label, ha="center", va="center",
-                  fontsize=8.8, color=INK)
-
-    openl.set_title("open loop: look once, then act", fontsize=10.5, color=INK, pad=10)
-    for i, (label, colour) in enumerate(
-        [("take the pictures", MUTED), ("work it all out", MUTED), ("act", MUTED)]
-    ):
-        box(openl, 0.10 + i * 0.30, 0.46, 0.24, 0.16, label, colour)
-        if i:
-            openl.add_patch(
-                FancyArrowPatch((0.06 + i * 0.30, 0.54), (0.095 + i * 0.30, 0.54),
-                                arrowstyle="-|>", mutation_scale=11, color=MUTED, lw=1.3)
-            )
-    openl.text(
-        0.5, 0.30,
-        "the number of pictures is fixed before the run.\n"
-        "if one object is unclear, that is how it stays.",
-        ha="center", va="top", fontsize=8.4, color=MUTED,
-    )
-
-    closedl.set_title("closed loop: the next picture is chosen on the way",
-                      fontsize=10.5, color=INK, pad=10)
-    box(closedl, 0.34, 0.74, 0.32, 0.14, "take a picture", GLASS)
-    box(closedl, 0.34, 0.50, 0.32, 0.14, "work out what is clear", GLASS)
-    box(closedl, 0.06, 0.26, 0.34, 0.14, "unclear: where would\nhelp most?", WARN)
-    box(closedl, 0.60, 0.26, 0.34, 0.14, "clear: act", GOOD)
-    closedl.add_patch(FancyArrowPatch((0.5, 0.74), (0.5, 0.645), arrowstyle="-|>",
-                                      mutation_scale=11, color=MUTED, lw=1.3))
-    closedl.add_patch(FancyArrowPatch((0.42, 0.50), (0.26, 0.405), arrowstyle="-|>",
-                                      mutation_scale=11, color=WARN, lw=1.3))
-    closedl.add_patch(FancyArrowPatch((0.58, 0.50), (0.74, 0.405), arrowstyle="-|>",
-                                      mutation_scale=11, color=GOOD, lw=1.3))
-    closedl.add_patch(FancyArrowPatch((0.06, 0.33), (0.34, 0.80), arrowstyle="-|>",
-                                      mutation_scale=11, color=WARN, lw=1.3,
-                                      connectionstyle="arc3,rad=-0.45"))
-    closedl.text(0.045, 0.60, "go and look\nfrom there", fontsize=8.2, color=WARN,
-                 ha="left", va="center")
-    closedl.text(
-        0.5, 0.16,
-        "each extra look costs arm time, so the loop has a budget\n"
-        "and stops when nothing is unclear or the budget is spent",
-        ha="center", va="top", fontsize=8.4, color=MUTED,
-    )
-
-    figure.suptitle(
-        "Feedback: deciding what to measure next, rather than measuring once",
-        fontsize=12.5, color=INK, y=1.02,
-    )
-    figure.tight_layout()
-    _save(figure, "open-and-closed-loop.png")
 
 
 DRAWINGS = {
     "where-the-learned-part-sits": where_the_learned_part_sits,
-    "open-and-closed-loop": open_and_closed_loop,
-    "problem-3-friction-cone": problem_3_friction_cone,
+    "problem-3-an-off-centre-push-spins": problem_3_an_off_centre_push_spins,
     "problem-4-one-wrong-name": problem_4_one_wrong_name,
     "the-five-problems": five_problems,
     "problem-1-what-is-asked": problem_1,

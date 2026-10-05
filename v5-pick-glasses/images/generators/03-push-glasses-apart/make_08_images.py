@@ -8,8 +8,8 @@ simulator is handed when it spawns the glass. No size of any glass is written
 down in this file.
 
 Two of these pictures show a force against time. Those curves are **computed
-from the model stated in the document**, not recorded from a run, and both the
-caption and the axis label say so. The model is one line: a glass tipping about
+rather than recorded from a run**, and the pictures say so on their face. The
+model is one line: a glass tipping about
 the leading edge of its foot needs a horizontal push at world height ``h`` of
 
     F = m g r sin(theta_c - theta) / h
@@ -33,7 +33,6 @@ import numpy as np
 from diagram_style import (
     CAST,
     FINGER_HEIGHT,
-    GLASS,
     GOOD,
     INK,
     JAW_TOP,
@@ -49,16 +48,13 @@ from diagram_style import (
     TIPPY,
     TITLE_SIZE,
     WARN,
-    bare,
     base_width,
     new,
-    push_arrow,
     pushable,
     save,
     tips,
     topple_height,
 )
-from matplotlib.patches import Polygon, Rectangle
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src" / "work_cell"))
 
@@ -328,85 +324,6 @@ def contact_x(outline, rotation, pivot_x):
     return float(np.interp(PUSH_HEIGHT, turned[order, 1], turned[order, 0]))
 
 
-def over_the_leading_edge() -> None:
-    outline = FAMILY[EXAMPLE]
-    state = STATES[EXAMPLE]
-    pivot_x = 1000.0 * state["half_base"]
-    stages = (
-        (0.0, "upright, and pushed", GOOD),
-        (state["no_return"], "past saving", WARN),
-        (state["balance"], "balanced on the edge", WARN),
-    )
-
-    figure, axes = new(11.4, 4.6, columns=3)
-    for axis, (rotation, title, colour) in zip(axes, stages, strict=True):
-        bare(axis)
-        # Otherwise the next panel's white background paints over a label that
-        # reaches past this panel's edge.
-        axis.patch.set_visible(False)
-        axis.plot([-95, 95], [0, 0], color=INK, lw=1.4, zorder=1)
-        axis.add_patch(Polygon(side_polygon(outline, rotation), closed=True,
-                               facecolor=GLASS, alpha=0.28, edgecolor=GLASS,
-                               lw=1.2, zorder=3))
-
-        centre = rotate_point((0.0, 1000.0 * state["centre"]), rotation, pivot_x)
-        axis.plot(*centre, marker="o", ms=5.0, color=INK, zorder=6)
-        axis.plot([pivot_x, centre[0]], [0.0, centre[1]], color=INK, lw=0.9,
-                  ls=(0, (3, 2)), zorder=5)
-        axis.plot([centre[0], centre[0]], [centre[1], 0.0], color=MUTED, lw=0.8,
-                  ls=(0, (1, 2)), zorder=4)
-        axis.plot(pivot_x, 0.0, marker="v", ms=7.0, color=colour, zorder=7)
-
-        # The pad, touching the wall at the lowest height the gripper can reach.
-        wall = contact_x(outline, rotation, pivot_x)
-        axis.add_patch(Rectangle((wall - 9.0, PUSH_HEIGHT - PAD_HEIGHT / 2.0), 9.0,
-                                 PAD_HEIGHT, facecolor=INK, alpha=0.75,
-                                 edgecolor="none", zorder=6))
-        push_arrow(axis, (wall - 32.0, PUSH_HEIGHT), (wall - 11.0, PUSH_HEIGHT),
-                   colour=INK, lw=1.4)
-
-        axis.set_title(title, fontsize=TITLE_SIZE, color=colour, pad=8)
-        axis.set_xlim(-100, 100)
-        axis.set_ylim(-40, 1.30 * outline.total_height * 1000.0)
-        axis.set_aspect("equal")
-
-    lean = np.degrees(state["no_return"])
-    over = np.degrees(state["balance"])
-    notes = (
-        f"The foot is {2000 * state['half_base']:.0f} mm across, so the edge it turns on\n"
-        f"is {1000 * state['half_base']:.0f} mm from the axis, and the centre of mass\n"
-        f"is {1000 * state['centre']:.0f} mm up.",
-        f"{lean:.1f} degrees over. The arm can still stop, but the\n"
-        f"turning it has already given the glass covers the\n"
-        f"rest of the climb, so stopping no longer saves it.",
-        f"{over:.1f} degrees over. The dotted plumb line has\n"
-        f"reached the edge, the glass needs no more push,\n"
-        f"and it leaves the pad behind.",
-    )
-    for axis, note in zip(axes, notes, strict=True):
-        axis.text(0.5, -0.03, note, transform=axis.transAxes, ha="center", va="top",
-                  fontsize=NOTE_SIZE, color=MUTED, linespacing=1.6)
-
-    axes[0].annotate("the leading edge of the foot",
-                     xy=(pivot_x + 1.0, -1.0), xytext=(pivot_x - 4.0, -28.0),
-                     fontsize=NOTE_SIZE, color=WARN, ha="left", va="center",
-                     annotation_clip=False,
-                     arrowprops=dict(arrowstyle="-", color=WARN, lw=0.9))
-    wall0 = contact_x(outline, 0.0, pivot_x)
-    axes[0].annotate(f"the jaw's top edge, at {PUSH_HEIGHT:.0f} mm",
-                     xy=(wall0 - 6.0, PUSH_HEIGHT - PAD_HEIGHT / 2.0),
-                     xytext=(-96.0, -20.0), fontsize=NOTE_SIZE, color=INK,
-                     ha="left", va="center", annotation_clip=False,
-                     arrowprops=dict(arrowstyle="-", color=INK, lw=0.8))
-    axes[0].annotate("centre of mass", xy=(2.0, 1000.0 * state["centre"]),
-                     xytext=(14.0, 1000.0 * state["centre"] + 26.0),
-                     fontsize=NOTE_SIZE, color=INK, ha="left", va="center",
-                     arrowprops=dict(arrowstyle="-", color=INK, lw=0.8))
-
-    figure.suptitle(f"A tipping glass turns on one edge of its foot, pushed at "
-                    f"{PUSH_HEIGHT:.0f} mm, and the window closes before it balances",
-                    fontsize=TITLE_SIZE, color=INK, y=1.0)
-    save(figure, "08-over-the-leading-edge.png")
 
 
 # ---------------------------------------------------------------------------
@@ -539,16 +456,18 @@ def slide_against_tip() -> None:
         for side in ("left", "bottom"):
             axis.spines[side].set_color(MUTED)
 
-    figure.suptitle("Both curves are computed from the model in the text, not recorded "
-                    "from a run", fontsize=TITLE_SIZE, color=INK, y=1.03)
+    figure.suptitle("Both curves are computed from how a glass slides and how one tips, "
+                    "not recorded from a run", fontsize=TITLE_SIZE, color=INK, y=1.03)
     figure.text(0.5, -0.07,
                 f"One drawn tapered glass: {outline.total_height * 1000:.0f} mm tall, a foot "
                 f"{2000 * state['half_base']:.0f} mm across, {state['mass'] * 1000:.0f} g, "
                 f"pushed at {PUSH_HEIGHT:.0f} mm — the jaw's top edge — at {PUSH_SPEED:.0f} mm/s. "
                 f"The marks along "
                 f"the bottom of each panel are the wrist\nsensor's {SENSOR_HZ:.0f} Hz samples. "
-                "The left panel ignores any vertical force the finger puts into the wall. The "
-                "right panel is geometry alone: how much torque\nthat angle moves depends on "
+                "Sliding needs mu m g, which does not change; starting to tip needs m g a / h, "
+                "and that falls to nothing as the\nglass comes to balance over the edge of its "
+                "foot. The left panel ignores any vertical force the finger puts into the wall. "
+                "The right panel is geometry alone:\nhow much torque that angle moves depends on "
                 "the stiffness of the pad, which nothing in this cell has measured.",
                 ha="center", va="top", fontsize=NOTE_SIZE, color=MUTED, linespacing=1.5)
     save(figure, "08-slide-against-tip.png")
@@ -558,142 +477,12 @@ def slide_against_tip() -> None:
 # 4. The timing budget.
 # ---------------------------------------------------------------------------
 
-def the_timing_budget() -> None:
-    state = STATES[EXAMPLE]
-    tight = STATES[TIGHTEST]
-    # From the balance point to the lean bench.py calls fallen. The glass is
-    # accelerating here, so this is shorter than the steady rate would give.
-    fall = (state["to_balance_ms"] - state["window_ms"]
-            + fall_time_ms(state, STANDING_TILT - np.degrees(state["balance"])))
-    slow = tipping(FAMILY[TIGHTEST], speed_mms=SLOW_PUSH)["window_ms"]
-    span = state["window_ms"] + fall
-
-    figure, axis = new(10.6, 4.8)
-    bare(axis)
-    axis.set_xlim(-0.03 * span, 1.52 * span)
-    axis.set_ylim(-3.05, 2.7)
-
-    # The two phases of the topple, on one time line.
-    axis.add_patch(Rectangle((0.0, 1.30), state["window_ms"], 0.60, facecolor=GOOD,
-                             alpha=0.28, edgecolor=GOOD, lw=1.0))
-    axis.add_patch(Rectangle((state["window_ms"], 1.30), fall, 0.60, facecolor=WARN,
-                             alpha=0.22, edgecolor=WARN, lw=1.0))
-    axis.text(state["window_ms"] / 2.0, 1.60,
-              f"the arm can still stop it: {state['window_ms']:.0f} ms",
-              fontsize=LABEL_SIZE, color=INK, ha="center", va="center")
-    axis.text(state["window_ms"] + fall / 2.0, 1.60,
-              f"it is going over: {fall:.0f} ms more",
-              fontsize=LABEL_SIZE, color=WARN, ha="center", va="center")
-    axis.text(0.0, 2.02, "the glass starts to turn", fontsize=NOTE_SIZE, color=GOOD,
-              ha="left", va="bottom")
-    axis.text(state["window_ms"], 2.02, "past saving", fontsize=NOTE_SIZE, color=WARN,
-              ha="center", va="bottom")
-    axis.text(state["window_ms"] + fall, 2.02,
-              f"{STANDING_TILT:.0f} degrees: bench.py calls it fallen", fontsize=NOTE_SIZE,
-              color=WARN, ha="left", va="bottom")
-
-    # The sensor's samples, counted in fives.
-    for index, tick in enumerate(np.arange(0.0, span + SAMPLE_MS, SAMPLE_MS)):
-        axis.plot([tick, tick], [0.74, 1.02], color=MUTED, lw=1.0, alpha=0.8)
-        if index % 5 == 0:
-            axis.text(tick, 0.62, f"{index}", fontsize=6.6, color=MUTED,
-                      ha="center", va="top")
-    axis.text(span + 14.0, 0.88, f"wrist samples, one every {SAMPLE_MS:.0f} ms",
-              fontsize=NOTE_SIZE, color=MUTED, ha="left", va="center")
-
-    # The chain from a changed signal to a stopped arm.
-    left = 0.0
-    colours = (MUTED, GLASS, INK, GOOD)
-    for (_name, cost), colour in zip(CHAIN, colours, strict=True):
-        axis.add_patch(Rectangle((left, -0.62), cost, 0.55, facecolor=colour, alpha=0.5,
-                                 edgecolor=colour, lw=0.9))
-        left += cost
-    axis.text(0.0, -0.80,
-              " + ".join(f"{name} {cost:.0f}" for name, cost in CHAIN)
-              + "  (milliseconds)", fontsize=NOTE_SIZE, color=MUTED,
-              ha="left", va="top")
-
-    # The hard case, and the same glass pushed at half speed.
-    bars = (
-        (-1.70, tight["window_ms"], WARN,
-         f"the tightest of the {len(DOOMED)} pushes that topple, at "
-         f"{PUSH_SPEED:.0f} mm/s: {tight['window_ms']:.0f} ms — still "
-         f"{tight['window_ms'] / CHAIN_MS:.1f} times the chain"),
-        (-2.55, slow, GOOD,
-         f"the same glass at {SLOW_PUSH:.0f} mm/s: {slow:.0f} ms"),
-    )
-    for offset, value, colour, label in bars:
-        axis.add_patch(Rectangle((0.0, offset), value, 0.48, facecolor=colour, alpha=0.25,
-                                 edgecolor=colour, lw=1.0))
-        axis.text(max(value, CHAIN_MS) + 14.0, offset + 0.24, label, fontsize=NOTE_SIZE,
-                  color=colour, ha="left", va="center")
-
-    axis.plot([CHAIN_MS, CHAIN_MS], [-0.68, 0.22], color=INK, lw=1.2)
-    axis.plot([CHAIN_MS, CHAIN_MS], [-2.70, -1.02], color=INK, lw=1.2)
-    axis.text(CHAIN_MS, -2.80,
-              f"{CHAIN_MS:.0f} ms: a changed signal to a stopped arm",
-              fontsize=NOTE_SIZE, color=INK, ha="center", va="top")
-
-    axis.set_title("The budget: how long the arm has, against how long it takes to stop",
-                   fontsize=TITLE_SIZE, color=INK, pad=14)
-    figure.text(0.5, -0.02,
-                f"Times computed for drawn tapered glasses pushed at {PUSH_HEIGHT:.0f} mm, the jaw's "
-                f"top edge, which is where a tapered glass meets it.\nThe time line at the top is the "
-                f"worked example; "
-                "the two bars below it are the worst case the plan lets through, at full speed "
-                "and at half speed.",
-                ha="center", va="top", fontsize=NOTE_SIZE, color=MUTED, linespacing=1.5)
-    save(figure, "08-the-timing-budget.png")
 
 
 # ---------------------------------------------------------------------------
 # 5. How many samples there are, across every glass the plan would push.
 # ---------------------------------------------------------------------------
 
-def how_many_samples() -> None:
-    fast = np.array([STATES[i]["window_ms"] for i in DOOMED]) / SAMPLE_MS
-    slow = np.array([tipping(FAMILY[i], speed_mms=SLOW_PUSH)["window_ms"]
-                     for i in DOOMED]) / SAMPLE_MS
-    edges = np.arange(0.0, max(fast.max(), slow.max()) + 4.0, 4.0)
-
-    figure, axis = new(8.6, 4.4)
-    axis.hist(fast, bins=edges, color=WARN, alpha=0.55,
-              label=f"pushed at {PUSH_SPEED:.0f} mm/s")
-    axis.hist(slow, bins=edges, color=GOOD, alpha=0.45,
-              label=f"pushed at {SLOW_PUSH:.0f} mm/s")
-    need = CHAIN_MS / SAMPLE_MS
-    axis.set_ylim(0.0, 1.20 * axis.get_ylim()[1])
-    axis.axvline(need, color=INK, lw=1.4)
-    axis.axvspan(0.0, need, color=INK, alpha=0.06, zorder=0)
-    axis.text(need + 2.0, axis.get_ylim()[1] * 0.985,
-              f"the detector needs {need:.1f} samples", fontsize=NOTE_SIZE, color=INK,
-              ha="left", va="top")
-    short_fast = int((fast < need).sum())
-    short_slow = int((slow < need).sum())
-    axis.text(edges.max() * 0.47, axis.get_ylim()[1] * 0.72,
-              f"{short_fast} of {len(fast)} glasses fall short at {PUSH_SPEED:.0f} mm/s\n"
-              f"{short_slow} of {len(slow)} fall short at {SLOW_PUSH:.0f} mm/s",
-              fontsize=NOTE_SIZE, color=INK, ha="left", va="top", linespacing=1.6)
-
-    axis.set_xlabel(f"wrist samples between the first sign and the deadline, at "
-                    f"{SENSOR_HZ:.0f} Hz", fontsize=LABEL_SIZE, color=INK)
-    axis.set_ylabel("how many glasses", fontsize=LABEL_SIZE, color=INK)
-    axis.set_title(f"The {len(DOOMED)} of {SWEEP} drawn glasses a careless check authorises "
-                   f"and the real table topples", fontsize=TITLE_SIZE, color=INK, pad=12)
-    axis.tick_params(labelsize=NOTE_SIZE, colors=MUTED)
-    for side in ("top", "right"):
-        axis.spines[side].set_visible(False)
-    for side in ("left", "bottom"):
-        axis.spines[side].set_color(MUTED)
-    axis.legend(fontsize=NOTE_SIZE, frameon=False, loc="upper right")
-    figure.text(0.5, -0.04,
-                "Computed for each drawn glass from its own mass, centre of mass and inertia, "
-                f"pushed at {PUSH_HEIGHT:.0f} mm — the jaw's top edge, not the {JAW_MIDDLE:.0f} mm "
-                f"its middle rides at. The deadline is the point of no return\nor "
-                f"{STANDING_TILT:.0f} degrees of lean, whichever comes first. Halving the push "
-                "speed doubles every window, which is the cheapest way to buy time.",
-                ha="center", va="top", fontsize=NOTE_SIZE, color=MUTED, linespacing=1.5)
-    save(figure, "08-how-many-samples.png")
 
 
 # ---------------------------------------------------------------------------
@@ -882,11 +671,8 @@ def report() -> None:
 def main() -> None:
     report()
     print()
-    over_the_leading_edge()
     no_threshold_separates()
     slide_against_tip()
-    the_timing_budget()
-    how_many_samples()
 
 
 if __name__ == "__main__":

@@ -119,6 +119,8 @@ regularity in the recorded pushes, absorbed along with everything else nobody
 wrote down — that the jaw has a body behind its fingers, that a tapered glass
 meets the jaw's top edge, that a glass turns as well as travels.
 
+![Whether a push slides a glass or tips it over turns on a friction nothing in the cell measures and on the height the jaw really meets the glass at, which for a tapered glass is the jaw's top edge and not its middle; across the range the friction plausibly covers, the share of drawn glasses that can be pushed at all runs from most of them to none, and a model fitted to recorded pushes absorbs both without ever being told either.](../../../images/03-push-glasses-apart/10-the-friction-it-absorbs.png)
+
 There is a second difficulty, and it is the one the sequence capability
 answers. A glass pushed out of one crowd can easily land in another, and a
 glass pushed into its own clear spot can block the route the next glass needed.
@@ -839,6 +841,8 @@ holes the search would otherwise exploit. **Nobody labels any of it.** The
 answer to every example is what the second look found, so the data costs
 simulator time and no human time at all, which is the single biggest practical
 advantage this family has over anything trained on demonstrations.
+
+![One training table yields a dozen examples, because the table is built once and the state after each push starts the next and no push has to be a useful one; a real run makes as few pushes as it can, so gathering the same thirty-eight thousand rows from ordinary runs would take thousands of them, where the simulator produces them in under an hour of processor time and nobody labels any of it.](../../../images/03-push-glasses-apart/10-the-data-it-takes.png)
 
 **A training run, before the solution can answer anything.** Rung one trains
 five small networks, and its README records the whole of that — the pushes and

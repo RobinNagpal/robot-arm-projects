@@ -45,7 +45,6 @@ from diagram_style import (
     bare,
     base_width,
     glass_from_above,
-    glass_from_the_side,
     has_room,
     new,
     push_arrow,
@@ -55,7 +54,7 @@ from diagram_style import (
     topple_height,
 )
 from matplotlib.colors import to_rgba
-from matplotlib.patches import Circle, Polygon, Rectangle
+from matplotlib.patches import Circle, Polygon
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "src" / "work_cell"))
@@ -359,125 +358,12 @@ def lying_patch(axis, polygon, offset=(0.0, 0.0), colour=WARN, alpha=0.30, lw=1.
 # 1. The same glass, standing and toppled, from above.
 # --------------------------------------------------------------------------- #
 
-def picture_the_same_glass_twice() -> None:
-    figure, axes = new(13.4, 6.3, columns=3)
-    chosen = (HARDEST, MIDDLING, EASIEST)
-    titles = ("The hardest of the four hundred",
-              "The middle one",
-              "The easiest of the four hundred")
-    limit = max(MEASURED[i]["over_long"] for i in chosen) / 2.0 + 30.0
-    height_limit = 186.0
-
-    for axis, index, title in zip(axes, chosen, titles, strict=True):
-        glass = MEASURED[index]
-        stage(axis, title)
-        axis.set_xlim(-limit, limit)
-        axis.set_ylim(-height_limit, height_limit)
-
-        rim = glass["widest"]
-        top_row, bottom_row = rim / 2.0 + 22.0, -(rim / 2.0 + 22.0)
-        glass_from_above(axis, (0.0, top_row), rim,
-                         base_fraction=glass["base"] / rim,
-                         colour=GLASS, alpha=0.32, lw=1.4)
-        span(axis, -rim / 2.0, rim / 2.0, top_row + rim / 2.0 + 8.0,
-             f"standing: {rim:.0f} mm, round", GLASS)
-
-        lying = from_above(FAMILY[index], glass["topple_lean"])
-        lying = lying_patch(axis, lying,
-                            offset=(-(lying[:, 0].min() + lying[:, 0].max()) / 2.0, bottom_row))
-        axis.annotate("", xy=(lying[:, 0].min(), bottom_row - rim / 2.0 - 10.0),
-                      xytext=(lying[:, 0].max(), bottom_row - rim / 2.0 - 10.0),
-                      arrowprops={"arrowstyle": "<->", "color": WARN, "lw": 1.0})
-        note(axis, 0, bottom_row - rim / 2.0 - 17.0,
-             f"toppled: {glass['over_long']:.0f} by {glass['over_short']:.0f} mm", WARN, va="top")
-
-        grew = glass["over_long"] - rim
-        note(axis, 0, -height_limit + 4,
-             f"{glass['height']:.0f} mm tall, rim {rim:.0f} mm\n"
-             f"the blob grows by {grew:.0f} mm in one direction",
-             WARN if grew < 20.0 else INK, va="bottom")
-
-    footer(figure,
-           f"Three of the {HOW_MANY} glasses the spawner drew for this kind, picked out by how "
-           "much the overhead blob changes when the glass goes over. Toppling stretches one "
-           "extent and leaves the other alone, so the whole difference is the glass's own ratio "
-           "of height to width — and this kind is allowed to be almost as wide as it is tall.")
-    figure.subplots_adjust(bottom=0.075, top=0.95, wspace=0.05)
-    save(figure, "07-the-same-glass-twice.png")
 
 
 # --------------------------------------------------------------------------- #
 # 2. Where in the kind's range the confusion is real.
 # --------------------------------------------------------------------------- #
 
-def picture_where_the_confusion_is_real() -> None:
-    figure, axes = new(12.8, 5.2, columns=2)
-    heights = np.array([m["height"] for m in MEASURED])
-    widest = np.array([m["widest"] for m in MEASURED])
-    long_extent = np.array([m["over_long"] for m in MEASURED])
-    over_top = np.array([m["over_top"] for m in MEASURED])
-
-    rim_from, rim_to = (v * 1000.0 for v in KIND_RANGES[KIND]["rim_diameter"])
-    height_from, height_to = (v * 1000.0 for v in KIND_RANGES[KIND]["height"])
-    passes = long_extent <= rim_to
-
-    range_axis, top_axis = axes
-
-    plot_frame(range_axis, "Which glasses of the kind hide a topple from above",
-               "height standing, mm", "widest diameter, mm")
-    range_axis.add_patch(Rectangle((height_from, rim_from), height_to - height_from,
-                                   rim_to - rim_from, facecolor="none",
-                                   edgecolor=MUTED, lw=1.0, ls=(0, (4, 3)), zorder=1))
-    range_axis.scatter(heights[~passes], widest[~passes], s=11, color=GOOD, alpha=0.5,
-                       linewidths=0, zorder=3)
-    range_axis.scatter(heights[passes], widest[passes], s=30, color=WARN, alpha=0.95,
-                       linewidths=0, zorder=4)
-    range_axis.set_xlim(height_from - 8, height_to + 8)
-    range_axis.set_ylim(rim_from - 42, rim_to + 34)
-    range_axis.text(height_from + 2, rim_to + 30,
-                    "the dashed box is the whole range this kind is drawn from",
-                    fontsize=NOTE_SIZE, color=MUTED, ha="left", va="top")
-    range_axis.text(height_to - 2, rim_from - 30,
-                    "green: the blob gets visibly longer",
-                    fontsize=NOTE_SIZE, color=GOOD, ha="right", va="bottom")
-    range_axis.annotate(f"{passes.sum()} of {HOW_MANY}: toppled, the blob is still no longer\n"
-                        f"than the {rim_to:.0f} mm a standing one is allowed to be",
-                        xy=(heights[passes].max() + 3, widest[passes].min() - 1),
-                        xytext=(height_from + 46, rim_from - 12),
-                        fontsize=NOTE_SIZE, color=WARN, ha="left", va="top",
-                        arrowprops={"arrowstyle": "-", "color": WARN, "lw": 0.8})
-
-    plot_frame(top_axis, "And what happens to the tallest point",
-               "height standing, mm", "tallest point after toppling, mm")
-    drop = heights - over_top
-    taller = drop <= 0.0
-    top_axis.plot([height_from - 8, height_to + 8], [height_from - 8, height_to + 8],
-                  color=MUTED, lw=1.0, ls=(0, (4, 3)), zorder=1)
-    top_axis.scatter(heights[~taller], over_top[~taller], s=11, color=GOOD, alpha=0.5,
-                     linewidths=0, zorder=3)
-    top_axis.scatter(heights[taller], over_top[taller], s=30, color=WARN, alpha=0.95,
-                     linewidths=0, zorder=4)
-    top_axis.set_xlim(height_from - 8, height_to + 8)
-    top_axis.set_ylim(0, height_to + 40)
-    top_axis.text(height_to + 4, height_to + 4, "no change at all",
-                  fontsize=NOTE_SIZE, color=MUTED, ha="right", va="bottom")
-    top_axis.text(height_from + 2, height_to + 34,
-                  f"the tallest point falls by {np.median(drop):.0f} mm for the middle glass\n"
-                  f"of the kind, and by {drop.max():.0f} mm for the tallest",
-                  fontsize=NOTE_SIZE, color=INK, ha="left", va="top")
-    top_axis.annotate(f"for {taller.sum()} of {HOW_MANY} it goes up instead: a wide glass\n"
-                      "lying down stands taller than a short one upright",
-                      xy=(heights[taller].max() + 2, over_top[taller].min() - 2),
-                      xytext=(height_from + 30, 16),
-                      fontsize=NOTE_SIZE, color=WARN, ha="left", va="bottom",
-                      arrowprops={"arrowstyle": "-", "color": WARN, "lw": 0.8})
-
-    footer(figure,
-           f"Every point is one of the {HOW_MANY} glasses drawn from "
-           f'KIND_RANGES["{KIND}"], seed {SEED}. Red marks the glasses whose topple that '
-           "overhead reading cannot report as anything out of the ordinary.")
-    figure.subplots_adjust(bottom=0.19, wspace=0.24)
-    save(figure, "07-where-the-confusion-is-real.png")
 
 
 # --------------------------------------------------------------------------- #
@@ -599,125 +485,12 @@ def picture_what_the_overhead_view_reports() -> None:
 # 4. What the low side-on look settles.
 # --------------------------------------------------------------------------- #
 
-def picture_the_side_on_look() -> None:
-    figure, axes = new(13.4, 5.2, columns=3)
-    glass = MEASURED[HARDEST]
-    lying = from_the_side(FAMILY[HARDEST], glass["topple_lean"])
-    rim, base_d, height = glass["widest"], glass["base"], glass["height"]
-
-    left, right = -26.0, max(glass["over_run"], rim) + 58.0
-    top = height + 30.0
-
-    standing_axis, lying_axis, gap_axis = axes
-
-    stage(standing_axis, "Standing, seen level from low down")
-    standing_axis.set_xlim(left, right)
-    standing_axis.set_ylim(-34, top)
-    standing_axis.plot([left + 4, right - 4], [0, 0], color=INK, lw=1.2, zorder=1)
-    glass_from_the_side(standing_axis, rim / 2.0 + 8.0, height, rim,
-                        base_fraction=base_d / rim, colour=GLASS, alpha=0.32, lw=1.4)
-    tall_span(standing_axis, rim + 30.0, 0.0, height, f"{height:.0f} mm tall", INK)
-    span(standing_axis, 8.0, 8.0 + base_d, -26, f"{base_d:.0f} mm on the table", INK, above=4.0)
-
-    stage(lying_axis, "The same glass, toppled, seen the same way")
-    lying_axis.set_xlim(left, right)
-    lying_axis.set_ylim(-34, top)
-    lying_axis.plot([left + 4, right - 4], [0, 0], color=INK, lw=1.2, zorder=1)
-    lying_patch(lying_axis, lying, offset=(8.0, 0.0))
-    tall_span(lying_axis, glass["over_run"] + 20.0, 0.0, glass["over_top"],
-              f"{glass['over_top']:.0f} mm tall", WARN)
-    span(lying_axis, 8.0, 8.0 + glass["over_run"], -26,
-         f"{glass['over_run']:.0f} mm on the table", WARN, above=4.0)
-    note(lying_axis, (right + left) / 2.0, top - 4,
-         "it rests on its wall, so the axis tilts\nand the rim end lifts clear", MUTED, va="top")
-
-    on_table = np.array([m["over_run"] / m["over_top"] for m in MEASURED])
-    upright = np.array([m["base"] / m["height"] for m in MEASURED])
-    jitter = np.random.default_rng(SEED).normal(0, 0.05, HOW_MANY)
-    plot_frame(gap_axis, "The ratio, over every glass of the kind",
-               "what lies on the table, divided by how tall it stands", "")
-    gap_axis.set_yticks([])
-    gap_axis.axvspan(upright.max(), on_table.min(), color=to_rgba(GOOD, 0.16), zorder=0)
-    gap_axis.scatter(upright, 1.0 + jitter, s=10, color=GLASS, alpha=0.5, linewidths=0)
-    gap_axis.scatter(on_table, jitter, s=10, color=WARN, alpha=0.5, linewidths=0)
-    gap_axis.set_ylim(-0.7, 2.2)
-    gap_axis.set_xlim(0, on_table.max() * 1.08)
-    gap_axis.text(0.02, 1.30, f"standing: {upright.min():.2f} to {upright.max():.2f}",
-                  fontsize=NOTE_SIZE, color=GLASS, ha="left", va="bottom")
-    gap_axis.text(on_table.max(), 0.30, f"toppled: {on_table.min():.2f} to {on_table.max():.2f}",
-                  fontsize=NOTE_SIZE, color=WARN, ha="right", va="bottom")
-    gap_axis.text((upright.max() + on_table.min()) / 2.0, 2.16,
-                  f"{HOW_MANY} glasses,\nnone in the gap",
-                  fontsize=NOTE_SIZE, color=GOOD, ha="center", va="top")
-
-    footer(figure,
-           f"The same {height:.0f} mm glass whose overhead blob barely changed. Seen level from "
-           "low down, how much of the glass lies along the table divided by how tall it stands "
-           f"separates standing from toppled across all {HOW_MANY} drawn glasses, with nothing "
-           "in between. That is the measurement the second look is bought for.")
-    figure.subplots_adjust(bottom=0.15, wspace=0.16)
-    save(figure, "07-the-side-on-look-settles-it.png")
 
 
 # --------------------------------------------------------------------------- #
 # 5. The line the project draws, and what the overhead view sees at it.
 # --------------------------------------------------------------------------- #
 
-def picture_the_twenty_degree_line() -> None:
-    figure, axes = new(12.8, 5.4, columns=2)
-    glass = MEASURED[HARDEST]
-    rim = glass["widest"]
-    shapes_axis, curve_axis = axes
-
-    stage(shapes_axis, "The same glass from above, at three leans")
-    leans = ((0.0, "upright"),
-             (STANDING_TILT, f"leaning {STANDING_TILT:.0f}°: the bench calls this fallen"),
-             (glass["topple_lean"], f"flat on its wall, {glass['topple_lean']:.0f}°"))
-    step = rim + 34.0
-    limit = max(np.ptp(from_above(FAMILY[HARDEST], lean)[:, 0]) for lean, _ in leans) / 2.0 + 30.0
-    shapes_axis.set_xlim(-limit, limit)
-    shapes_axis.set_ylim(-2.0 * step - rim / 2.0 - 16.0, step * 0.62)
-    for row, (lean, label) in enumerate(leans):
-        shape = from_above(FAMILY[HARDEST], lean)
-        shape = lying_patch(shapes_axis, shape,
-                            offset=(-(shape[:, 0].min() + shape[:, 0].max()) / 2.0, -row * step),
-                            colour=GLASS if row == 0 else WARN)
-        long = shape[:, 0].max() - shape[:, 0].min()
-        span(shapes_axis, shape[:, 0].min(), shape[:, 0].max(),
-             -row * step + rim / 2.0 + 5.0, f"{long:.0f} mm — {label}",
-             GLASS if row == 0 else WARN, above=5.0)
-
-    plot_frame(curve_axis, "How long the blob gets, as the glass goes over",
-               "lean from upright, degrees", "longest extent of the blob, mm")
-    rim_to = KIND_RANGES[KIND]["rim_diameter"][1] * 1000.0
-    for index, colour, label in ((HARDEST, WARN, "the hardest of the four hundred"),
-                                 (MIDDLING, INK, "the middle one"),
-                                 (EASIEST, GOOD, "the easiest")):
-        over = MEASURED[index]["topple_lean"]
-        leans = np.linspace(0.0, over, 40)
-        long = [np.ptp(from_above(FAMILY[index], lean, samples=400)[:, 0]) for lean in leans]
-        curve_axis.plot(leans, long, color=colour, lw=1.6, label=label)
-    curve_axis.axvline(STANDING_TILT, color=INK, lw=1.2, ls=(0, (3, 2)))
-    curve_axis.axhline(rim_to, color=MUTED, lw=1.0, ls=(0, (4, 3)))
-    curve_axis.set_xlim(0, 80)
-    curve_axis.set_ylim(0, 250)
-    curve_axis.text(STANDING_TILT + 2, 242,
-                    f"{STANDING_TILT:.0f}°: past this the bench\ncalls the glass fallen",
-                    fontsize=NOTE_SIZE, color=INK, ha="left", va="top")
-    curve_axis.annotate(f"{rim_to:.0f} mm: the widest a standing\nglass of this kind may be",
-                        xy=(30, rim_to), xytext=(24, 56),
-                        fontsize=NOTE_SIZE, color=MUTED, ha="left", va="bottom",
-                        arrowprops={"arrowstyle": "-", "color": MUTED, "lw": 0.8})
-    curve_axis.legend(fontsize=NOTE_SIZE, frameon=False, loc="lower right")
-
-    footer(figure,
-           f"The project's own test for a fallen glass is bench.py's STANDING_TILT_DEG: a lean of "
-           f"more than {STANDING_TILT:.0f} degrees from upright. At exactly that lean the overhead "
-           f"blob of the hardest glass has grown by "
-           f"{np.ptp(from_above(FAMILY[HARDEST], STANDING_TILT)[:, 0]) - rim:.0f} mm, which is why "
-           "the verdict cannot be reached from above.")
-    figure.subplots_adjust(bottom=0.16, wspace=0.16)
-    save(figure, "07-the-twenty-degree-line.png")
 
 
 # --------------------------------------------------------------------------- #
@@ -997,10 +770,6 @@ def numbers() -> None:
 
 
 if __name__ == "__main__":
-    picture_the_same_glass_twice()
-    picture_where_the_confusion_is_real()
     picture_what_the_overhead_view_reports()
-    picture_the_side_on_look()
-    picture_the_twenty_degree_line()
     picture_the_safety_net()
     numbers()

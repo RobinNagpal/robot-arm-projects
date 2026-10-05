@@ -14,7 +14,7 @@ rating.*
 
 ## Introduction
 
-[The problem](../../problem.md#naming-the-kind-becomes-load-bearing) says that
+[The problem](../../problem.md#1-naming-the-kind-becomes-load-bearing) says that
 nothing downstream re-checks the name, and that the first thing to notice a
 wrong one is the width at first contact in step 5. That is right, and it is
 already built: `_close_until_touching()` in `task.py` closes at 1 N and refuses

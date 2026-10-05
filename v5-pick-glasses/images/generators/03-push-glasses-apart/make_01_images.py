@@ -24,7 +24,6 @@ from pathlib import Path
 
 import numpy as np
 from diagram_style import (
-    GLASS,
     GLASS_ZONE,
     GOOD,
     GRIP_ROOM,
@@ -42,12 +41,10 @@ from diagram_style import (
     bare,
     crowded_pairs,
     glass_from_above,
-    glass_from_the_side,
     grip_ring,
     grippable,
     in_reach,
     new,
-    push_arrow,
     pushable,
     room_around,
     save,
@@ -395,15 +392,21 @@ def picture_four_distances(pair: tuple[dict, dict]) -> None:
     narrow_needs = GRIP_ROOM + wide["rim"] / 2.0
     guarantee = spawn.MIN_SEPARATION * 1000.0
 
+    # Three of the four distances are set by the rims, so only the fourth may be
+    # written down: the guaranteed separation belongs to the cell. The other
+    # three are named by the relation that puts them where they are.
     panels = (
-        (touching, f"{touching:.0f} mm \u2014 the rims touch"),
-        (wide_needs, f"{wide_needs:.0f} mm \u2014 the wide one is grippable"),
-        (narrow_needs, f"{narrow_needs:.0f} mm \u2014 the narrow one is too"),
-        (guarantee, f"{guarantee:.0f} mm \u2014 what problem 2 guarantees"),
+        (touching, "the rims touch", "rim against rim"),
+        (wide_needs, "the wide one has its room",
+         "the narrow one's edge\nreaches the wide one's ring"),
+        (narrow_needs, "the narrow one has it too",
+         "the wide one's edge\nreaches the narrow one's ring"),
+        (guarantee, f"{guarantee:.0f} mm \u2014 what problem 2 guarantees",
+         f"{guarantee:.0f} mm"),
     )
 
     figure, axes = new(12.6, 3.6, columns=4)
-    for axis, (distance, title) in zip(axes, panels, strict=True):
+    for axis, (distance, title, span) in zip(axes, panels, strict=True):
         bare(axis)
         axis.set_xlim(-100.0, 265.0)
         axis.set_ylim(-125.0, 135.0)
@@ -417,20 +420,20 @@ def picture_four_distances(pair: tuple[dict, dict]) -> None:
             grip_ring(axis, centre, colour=colour)
             glass_from_above(axis, centre, glass["rim"], glass["base"] / glass["rim"],
                              colour=colour, edge=colour)
-        _span(axis, 0.0, distance, -95.0, f"{distance:.0f} mm")
+        _span(axis, 0.0, distance, -95.0, span)
         axis.set_title(title, fontsize=LABEL_SIZE, color=INK, pad=6)
-    _note(axes[3], 0.0, 100.0, f"wide: {wide['rim']:.0f} mm rim", colour=INK, ha="center")
-    _note(axes[3], guarantee, 100.0, f"narrow: {narrow['rim']:.0f} mm rim", colour=INK, ha="center")
+    _note(axes[3], 0.0, 100.0, "the wider of the pair", colour=INK, ha="center")
+    _note(axes[3], guarantee, 100.0, "the narrower", colour=INK, ha="center")
 
-    figure.suptitle("One real pair of glasses, and the three distances that decide what can be picked up",
+    figure.suptitle("One pair of glasses, and why what each one needs is set by how wide the other is",
                     fontsize=TITLE_SIZE, color=INK, y=1.0)
     figure.text(
         0.5, 0.01,
         f"The dashed ring is the {GRIP_ROOM:.0f} mm of clear room the open jaw needs round a glass's middle, "
-        f"and a glass is blocked when that ring reaches another glass's material. So the test is not the "
-        f"same for both of\nthem: the narrow glass reaches less far out from its own middle, so the wide one "
-        f"comes free {narrow_needs - wide_needs:.0f} mm earlier. Every one of these distances is below the "
-        f"{guarantee:.0f} mm problem 2 hands over.",
+        f"and a glass is blocked when another glass's edge reaches inside that ring. So the test is not the "
+        f"same for both of\nthem: the narrow glass's edge reaches less far out from its own middle, so the "
+        f"wide one comes free first, and it comes free sooner by half of however much the two rims differ. "
+        f"Every one of these\ndistances is below the {guarantee:.0f} mm problem 2 hands over.",
         fontsize=NOTE_SIZE, color=INK, ha="center",
     )
     figure.subplots_adjust(left=0.01, right=0.99, top=0.84, bottom=0.14, wspace=0.05)
@@ -447,230 +450,10 @@ def _zone(axis) -> None:
     axis.set_aspect("equal")
 
 
-def picture_peel_in_rounds(table: list[dict], label: str) -> None:
-    """The cascade: a glass that was blocked at the start, freed by racking its neighbour."""
-    rounds, residue = peel(table)
-    names = "ABCDEF"
-    freed = rounds[1][0]
-    by = blockers(table, freed, set(range(len(table))))[0]
-    apart = math.dist(table[freed]["at"], table[by]["at"])
-    figure, axes = new(12.0, 4.8, columns=3)
-
-    first = [names[index] for index in rounds[0]]
-    titles = (
-        "What the survey shows",
-        f"Round one racks {', '.join(first[:-1])} and {first[-1]} \u2014 {names[freed]} is now free",
-        f"Round two racks {names[freed]}",
-    )
-    gone: set[int] = set()
-    for step, (axis, title) in enumerate(zip(axes, titles, strict=True)):
-        bare(axis)
-        _zone(axis)
-        live = set(range(len(table))) - gone
-        for index, glass in enumerate(table):
-            if index in gone:
-                glass_from_above(axis, glass["at"], glass["rim"], glass["base"] / glass["rim"],
-                                 colour=MUTED, alpha=0.08, edge=MUTED, lw=0.7, foot=False)
-                continue
-            free = not blockers(table, index, live)
-            colour = GOOD if free else WARN
-            # Only the pair being argued about carries a ring. Drawing all four
-            # is what made the first version of this picture unreadable.
-            ringed = index in (freed, by) if step == 0 else index == freed
-            if ringed:
-                grip_ring(axis, glass["at"], colour=colour)
-            glass_from_above(axis, glass["at"], glass["rim"], glass["base"] / glass["rim"],
-                             colour=colour, edge=colour)
-            if ringed and index == by:
-                # Beside the ring rather than above it: above is where the ring
-                # of the glass it blocks already is.
-                _note(axis, glass["at"][0] - GRIP_ROOM - 16.0, glass["at"][1],
-                      names[index], colour=INK, size=LABEL_SIZE, ha="right")
-            else:
-                _note(axis, glass["at"][0], glass["at"][1] + glass["rim"] / 2.0 + 14.0,
-                      names[index], colour=INK, size=LABEL_SIZE, ha="center", va="bottom")
-        if step == 0:
-            here, there = table[freed]["at"], table[by]["at"]
-            axis.annotate("", xy=there, xytext=here, zorder=8,
-                          arrowprops=dict(arrowstyle="<|-|>", color=WARN, lw=1.0,
-                                          shrinkA=0, shrinkB=0))
-            _, x_to, _, y_to = GLASS_ZONE
-            _note(axis, x_to, y_to + 26.0,
-                  f"{names[freed]} and {names[by]} stand {apart:.1f} mm apart",
-                  colour=WARN, ha="right", va="bottom")
-        if step == 2:
-            _, x_to, _, y_to = GLASS_ZONE
-            _note(axis, x_to, y_to + 26.0,
-                  "the table is empty, and nothing was pushed", colour=GOOD, ha="right", va="bottom")
-        gone |= set(rounds[step]) if step < len(rounds) else set()
-        axis.set_title(title, fontsize=LABEL_SIZE, color=INK, pad=6)
-
-    figure.suptitle("Peeling one real table: nothing is pushed, and nothing needs to be",
-                    fontsize=TITLE_SIZE, color=INK, y=0.99)
-    figure.text(
-        0.5, 0.015,
-        f"{names[freed]} and {names[by]} stand {apart:.1f} mm apart. That is inside the "
-        f"{GRIP_ROOM + table[by]['rim'] / 2.0:.1f} mm {names[freed]} needs from a neighbour "
-        f"{table[by]['rim']:.1f} mm across, and outside the "
-        f"{GRIP_ROOM + table[freed]['rim'] / 2.0:.1f} mm\n{names[by]} needs from one "
-        f"{table[freed]['rim']:.1f} mm across. So {names[by]} is racked in the first round and its leaving "
-        f"is what releases {names[freed]}. The residue is empty: this table needed no push at all."
-        if not residue else "",
-        fontsize=NOTE_SIZE, color=INK, ha="center",
-    )
-    figure.subplots_adjust(left=0.01, right=0.99, top=0.86, bottom=0.12, wspace=0.05)
-    save(figure, f"01-{label}.png")
 
 
-def picture_what_it_is_worth() -> None:
-    """The measured payoff, over the bench's own held-out scenes.
-
-    Every number drawn here comes from ``BENCH`` above, which was measured by
-    problem-3-programmed/measure_peel.py. This environment cannot run the bench
-    itself.
-    """
-    figure, axes = new(12.2, 3.9, columns=3)
-    for axis in axes:
-        for side in ("top", "right"):
-            axis.spines[side].set_visible(False)
-        for side in ("left", "bottom"):
-            axis.spines[side].set_color(MUTED)
-        axis.tick_params(colors=MUTED, labelsize=NOTE_SIZE)
-
-    scenes = BENCH["scenes"]
-    counts = (BENCH["emptied"], BENCH["residue"], BENCH["nothing_free"])
-    share = [100.0 * value / scenes for value in counts]
-    bars = axes[0].barh(range(3), share, color=(GOOD, GLASS, WARN), height=0.6)
-    axes[0].set_yticks(range(3))
-    axes[0].set_yticklabels(["the peel clears\nthe table", "it racks some and\nleaves a residue",
-                            "nothing was free\nto start with"], fontsize=NOTE_SIZE, color=INK)
-    axes[0].invert_yaxis()
-    axes[0].set_xlim(0.0, 100.0)
-    axes[0].set_xlabel("per cent of scenes", fontsize=NOTE_SIZE, color=MUTED)
-    for bar, value, number in zip(bars, share, counts, strict=True):
-        axes[0].text(value + 2.0, bar.get_y() + bar.get_height() / 2.0,
-                     f"{value:.1f}%  ({number})", fontsize=NOTE_SIZE, color=INK, va="center")
-    axes[0].set_title(f"What happens to {scenes} bench scenes", fontsize=LABEL_SIZE, color=INK, pad=8)
-
-    racked, left = BENCH["racked"], BENCH["left"]
-    axes[1].bar(("racked with\nno push", "left for the\npushing logic"), (racked, left),
-                color=(GOOD, WARN), width=0.5)
-    for index, value in enumerate((racked, left)):
-        axes[1].text(index, value + 60.0, f"{value}  ({100.0 * value / BENCH['glasses']:.0f}%)",
-                     fontsize=NOTE_SIZE, color=INK, ha="center")
-    axes[1].set_ylim(0.0, max(racked, left) * 1.2)
-    axes[1].set_ylabel(f"glasses, of {BENCH['glasses']}", fontsize=NOTE_SIZE, color=MUTED)
-    axes[1].set_title("Less than a third leave without a push",
-                      fontsize=LABEL_SIZE, color=INK, pad=8)
-
-    sizes = sorted(BENCH["residues"])
-    heights = [BENCH["residues"][size] for size in sizes]
-    axes[2].bar([str(size) for size in sizes], heights,
-                color=[GOOD if size == 0 else WARN for size in sizes], width=0.6)
-    for index, value in enumerate(heights):
-        axes[2].text(index, value + 6.0, str(value), fontsize=NOTE_SIZE, color=INK, ha="center")
-    axes[2].set_ylim(0.0, max(heights) * 1.18)
-    axes[2].set_xlabel("glasses left for the pushing logic", fontsize=NOTE_SIZE, color=MUTED)
-    axes[2].set_title("A residue is never one glass", fontsize=LABEL_SIZE, color=INK, pad=8)
-
-    figure.suptitle("What racking the free glasses first is worth, on the bench's own crowded tables",
-                    fontsize=TITLE_SIZE, color=INK, y=1.0)
-    figure.text(
-        0.5, 0.005,
-        f"Scenes {BENCH['seeds'][0]} to {BENCH['seeds'][1]} of problem-3-sim/bench.py, which is the "
-        f"held-out half of its scene space: four to six glasses, the four kinds in turn, every table "
-        f"guaranteed to have\nat least one glass without room. {BENCH['without_room']} of the "
-        f"{BENCH['glasses']} glasses have no room at the start, and the closest pair on a scene runs from "
-        f"{BENCH['closest'][0]:.1f} to {BENCH['closest'][2]:.1f} mm. A residue of one is impossible, "
-        "because a single glass left on the table has nothing to block it.",
-        fontsize=NOTE_SIZE, color=INK, ha="center",
-    )
-    figure.subplots_adjust(left=0.08, right=0.98, top=0.82, bottom=0.22, wspace=0.42)
-    save(figure, "01-what-the-peel-is-worth.png")
 
 
-def picture_residue_inherits(table: list[dict], residue: list[int], pushing: dict) -> None:
-    """What the two glasses left over inherit: a limit that needs a number nobody has."""
-    figure, axes = new(12.2, 4.4, columns=2)
-    side, spread = axes
-    names = "ABCDEF"
-    label_box = dict(facecolor="#ffffff", edgecolor="none", pad=1.2)
-
-    bare(side)
-    side.set_xlim(-180.0, 620.0)
-    side.set_ylim(-95.0, 250.0)
-    side.set_aspect("equal")
-    side.plot([-180.0, 620.0], [0.0, 0.0], color=INK, lw=1.2, zorder=2)
-    side.plot([-180.0, 620.0], [LOWEST_GRIP, LOWEST_GRIP], color=INK, lw=0.9, ls=(0, (4, 3)), zorder=2)
-    _note(side, -178.0, -14.0, "the table", colour=MUTED, va="top")
-    _note(side, -178.0, -44.0,
-          f"the dashed line is {LOWEST_GRIP:.0f} mm, the lowest the gripper can push without\n"
-          "its own body going through the table; each coloured line is the height\n"
-          "that glass tips above, for one guess at the friction", colour=INK, va="top")
-
-    for slot, index in enumerate(residue):
-        glass = table[index]
-        x = slot * 330.0
-        glass_from_the_side(side, x, glass["height"], glass["rim"], glass["base"] / glass["rim"],
-                            colour=GLASS, edge=GLASS)
-        _note(side, x, glass["height"] + 14.0,
-              f"{names[index]}: a {glass['base']:.0f} mm foot", colour=INK, ha="center", va="bottom")
-        for mu, colour in ((MU_LOW, GOOD), (MU_HIGH, WARN)):
-            height = topple_height(glass["base"], mu)
-            safe = pushable(glass["base"], mu)
-            shown = colour if safe else WARN
-            side.plot([x - glass["rim"] / 2.0 - 20.0, x + glass["rim"] / 2.0 + 20.0], [height, height],
-                      color=shown, lw=1.5, zorder=5)
-            side.text(x + glass["rim"] / 2.0 + 26.0, height,
-                      f"{height:.0f} mm  (\u03bc = {mu})",
-                      fontsize=NOTE_SIZE, color=shown, ha="left", va="center", zorder=9,
-                      bbox=label_box)
-            if not safe:
-                _note(side, x, -14.0, f"no push is safe at \u03bc = {mu}",
-                      colour=WARN, ha="center", va="top")
-        push_arrow(side, (x - glass["rim"] / 2.0 - 74.0, LOWEST_GRIP),
-                   (x - glass["base"] / 2.0 - 5.0, LOWEST_GRIP),
-                   colour=INK if pushable(glass["base"], MU_HIGH) else WARN)
-    side.set_title("The two glasses this table leaves behind", fontsize=LABEL_SIZE, color=INK, pad=8)
-
-    spread.hist(pushing["bases"], bins=26, color=GLASS, alpha=0.55, edgecolor=GLASS)
-    top = spread.get_ylim()[1]
-    spread.set_ylim(0.0, top * 1.42)
-    # No tick up where the two notes are written, or the topmost one is drawn over.
-    spread.set_yticks([tick for tick in spread.get_yticks() if tick <= top])
-    for cliff, colour, mu, kept, side_of in ((pushing["cliff_low"], GOOD, MU_LOW, pushing["low"], "right"),
-                                             (pushing["cliff_high"], WARN, MU_HIGH, pushing["high"], "left")):
-        spread.axvline(cliff, color=colour, lw=1.4)
-        spread.text(cliff + (-0.8 if side_of == "right" else 0.8), top * 1.39,
-                    f"\u03bc = {mu}\na foot under {cliff:.0f} mm cannot be pushed at all\n"
-                    f"{100.0 * kept / pushing['count']:.1f}% of these glasses can be",
-                    fontsize=NOTE_SIZE, color=colour, va="top",
-                    ha="right" if side_of == "right" else "left")
-    for name in ("top", "right"):
-        spread.spines[name].set_visible(False)
-    for name in ("left", "bottom"):
-        spread.spines[name].set_color(MUTED)
-    spread.tick_params(colors=MUTED, labelsize=NOTE_SIZE)
-    spread.set_xlabel("the foot a glass stands on, mm", fontsize=NOTE_SIZE, color=MUTED)
-    spread.set_ylabel(f"glasses, of {pushing['count']} drawn", fontsize=NOTE_SIZE, color=MUTED)
-    spread.set_title("The same cliff across the tapered kind, the narrowest-footed of the four",
-                     fontsize=LABEL_SIZE, color=INK, pad=8)
-
-    margin = topple_height(table[residue[0]]["base"], MU_HIGH) - LOWEST_GRIP
-    figure.suptitle("Every glass racked without a push is a glass whose friction never mattered",
-                    fontsize=TITLE_SIZE, color=INK, y=1.0)
-    figure.text(
-        0.5, 0.01,
-        f"A push slides a glass while it is made below half the foot divided by the friction with the "
-        f"table, and tips it above. Nothing in this cell measures that friction, though the simulator "
-        f"gives the table {BENCH_FRICTION} and keeps it\nfrom the arm. At \u03bc = {MU_HIGH} one of these "
-        f"two glasses has no safe push height at all and the other has {margin:.0f} mm of margin; at "
-        f"\u03bc = {MU_LOW} both are comfortable. The peel took the other two glasses off this table "
-        "without ever needing to know which case holds.",
-        fontsize=NOTE_SIZE, color=INK, ha="center",
-    )
-    figure.subplots_adjust(left=0.03, right=0.98, top=0.85, bottom=0.17, wspace=0.14)
-    save(figure, "01-what-the-residue-inherits.png")
 
 
 # --------------------------------------------------------------------------- #
@@ -761,10 +544,5 @@ def main() -> None:
 
     pair = (cascade[3], cascade[0]) if cascade[3]["rim"] > cascade[0]["rim"] else (cascade[0], cascade[3])
     picture_four_distances(pair)
-    picture_peel_in_rounds(cascade, "the-peel-in-rounds")
-    picture_what_it_is_worth()
-    picture_residue_inherits(stall, residue_stall, pushing)
-
-
 if __name__ == "__main__":
     main()

@@ -336,8 +336,11 @@ def search(glasses: list[dict], index: int, rng: np.random.Generator) -> dict:
     spread = np.array([math.pi, (TRAVEL_RANGE[1] - TRAVEL_RANGE[0]) / 2.0])
 
     rounds = []
-    for _ in range(ROUNDS):
-        draws = rng.normal(mean, spread, size=(DRAWS, 2))
+    for round_number in range(ROUNDS):
+        # plan.py draws twice as many in the first round, before it has elites
+        # to narrow around, so the picture has to do the same.
+        wanted = 2 * DRAWS if round_number == 0 else DRAWS
+        draws = rng.normal(mean, spread, size=(wanted, 2))
         draws[:, 1] = np.clip(draws[:, 1], *TRAVEL_RANGE)
         kept, dropped = [], []
         for heading, travel in draws:
@@ -638,7 +641,7 @@ def picture_planning(crowded: list[dict], pair: tuple[int, int], plan: dict) -> 
     figure, axes = new(13.4, 5.9, columns=3)
     wide, narrow, done = axes
 
-    stage(wide, f"Round 1: {DRAWS} candidate pushes")
+    stage(wide, f"Round 1: {2 * DRAWS} candidate pushes")
     zone(wide, label=False)
     draw_table(wide, crowded, faded=True)
     for _heading, _travel, where in first["dropped"]:
@@ -648,9 +651,9 @@ def picture_planning(crowded: list[dict], pair: tuple[int, int], plan: dict) -> 
     frame_on(wide, crowded, pad=115.0)
     under(figure, 0, 3,
           f"each mark is where the push would leave glass {name}.\n"
-          f"{len(first['dropped'])} of the {DRAWS} are struck out by arithmetic before\n"
-          f"the model is asked: outside the zone, outside the arm's\n"
-          f"reach, or too close to another glass")
+          f"the model answers every one of them. {len(first['dropped'])} are then\n"
+          f"dropped on what it predicted: a topple, a landing off the\n"
+          f"map or out of reach, or the copies disagreeing too much")
 
     stage(narrow, f"Round {ROUNDS}: the best {ELITES} of the {DRAWS}")
     zone(narrow, label=False)
@@ -707,7 +710,8 @@ def picture_planning(crowded: list[dict], pair: tuple[int, int], plan: dict) -> 
           f"{2 * 23.0:.0f}, so the panel is drawn very close")
 
     footer(figure,
-           f"The candidates, the filter and the scoring are the real search: {DRAWS} draws a round, "
+           f"The candidates, the filter and the scoring are the real search: {2 * DRAWS} draws in "
+           f"the first round and {DRAWS} in each of the rest, "
            f"best {ELITES} kept, {ROUNDS} rounds, as problem-3-learned/plan.py runs it. The "
            f"{MEASURED_ONE_PUSH_ERROR:.1f} mm offset in\nthe third panel is the median one-push error "
            f"that project's README records for its own model on unseen tables. The three rings are an "
@@ -719,7 +723,7 @@ def picture_planning(crowded: list[dict], pair: tuple[int, int], plan: dict) -> 
            f"re-measured here over 564 pushes on 250 tables of this project's own bench.")
     figure.subplots_adjust(bottom=0.36, top=0.93, wspace=0.10)
     save(figure, "10-planning-against-the-model.png")
-    print(f"  round 1: {len(first['kept'])} kept, {len(first['dropped'])} dropped of {DRAWS}")
+    print(f"  round 1: {len(first['kept'])} kept, {len(first['dropped'])} dropped of {2 * DRAWS}")
     print(f"  round {ROUNDS}: {len(last['kept'])} kept, elite {len(last['elite'])}, "
           f"best cost {plan['cost']:.1f}")
     print(f"  landing aimed ({landing[0]:.1f}, {landing[1]:.1f}), reached ({real[0]:.1f}, {real[1]:.1f}), "
