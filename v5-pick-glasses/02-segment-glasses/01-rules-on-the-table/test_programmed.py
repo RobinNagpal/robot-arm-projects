@@ -143,9 +143,9 @@ def test_the_circle_fit_recovers_a_circle_it_was_given():
     """The arithmetic on its own, against an answer written down before the fit ran."""
     angles = np.linspace(0, 2 * math.pi, 37)[:-1]
     ring = np.stack([0.4 + 0.031 * np.cos(angles), -0.2 + 0.031 * np.sin(angles)], 1)
-    circle = find.fit_circle(ring)
-    assert math.dist((circle.x, circle.y), (0.4, -0.2)) < 1e-9
-    assert abs(circle.width - 0.062) < 1e-9
+    assert abs(find.circle_width(ring) - 0.062) < 1e-9
+    # Where the ring sits makes no difference to how wide it is.
+    assert abs(find.circle_width(ring - [0.9, 0.4]) - 0.062) < 1e-9
 
 
 @pytest.mark.parametrize("kind", render.KINDS)
@@ -159,7 +159,7 @@ def test_the_fitted_footprint_is_the_glasss_own_width(kind):
     for outline_, _ in family(kind, 6, seed=7):
         picture = render.render([_glass(kind, outline_, x, y)], pose)
         one = masks_to_glasses.one_glass(picture, glass_masks(picture)[0])
-        fitted = find.footprint(find.dots_of(picture, one.pixels)).width
+        fitted = find.footprint(find.dots_of(picture, one.pixels))
         assert abs(fitted - 2.0 * float(outline_.radius.max())) < FIT_TOLERANCE
 
 
@@ -199,21 +199,69 @@ def test_two_glasses_in_one_group_come_apart_into_two_reports(kind):
         assert sorted(gaps.index(min(gaps)) for gaps in away) == [0, 1]
 
 
-@pytest.mark.parametrize("kind", render.KINDS)
-def test_three_glasses_in_one_group_are_handed_over_rather_than_guessed_at(kind):
-    """Two circles cannot say how many glasses a row of three holds, only that it is too many."""
-    pose, (x, y) = _middle_station()
-    drawn = [outline_ for outline_, _ in family(kind, 3, seed=5)]
+def _in_a_row(kind: str, count: int, seed: int, x: float, y: float):
+    """``count`` glasses of one kind in a line, each half the grouping distance from the next.
+
+    Inside the grouping distance on purpose, so the whole row chains into one
+    group and distance alone has nothing left to say about it.
+    """
+    drawn = [outline_ for outline_, _ in family(kind, count, seed=seed)]
     at, places = 0.0, []
     for before, outline_ in zip([None, *drawn[:-1]], drawn, strict=True):
         if before is not None:
             at += float(before.radius.max() + outline_.radius.max()) + find.GROUPING / 2.0
         places.append(at)
     middle = sum(places) / len(places)
-    glasses = [_glass(kind, o, x, y + p - middle) for o, p in zip(drawn, places, strict=True)]
+    return [_glass(kind, o, x, y + p - middle) for o, p in zip(drawn, places, strict=True)]
 
-    picture = render.render(glasses, pose)
+
+@pytest.mark.parametrize("kind", render.KINDS)
+def test_three_glasses_in_one_group_come_apart_rather_than_being_handed_over(kind):
+    """What repeating the split buys, on the row one split cannot answer.
+
+    One split of a row of three leaves a part still holding two, so a rule that
+    stopped there would hand the whole row over. The rule asks again of the part,
+    and the row comes apart.
+
+    What is checked of each report is that it lands **on** a glass: a place
+    further from every glass than the narrowest width the kind allows would be a
+    report of the gap between two of them, which is the way a split like this
+    goes wrong. Several seeds, because three drawn glasses are a different row
+    every time.
+    """
+    pose, (x, y) = _middle_station()
+    narrowest = data.widths(kind)[0]
+    for seed in (5, 9, 13, 17):
+        glasses = _in_a_row(kind, 3, seed, x, y)
+        picture = render.render(glasses, pose)
+        assert len(glass_masks(picture)) == 1
+
+        found, doubts = find.load().find(picture, kind)
+        assert doubts == []
+        # Two parts of one split can land at one place, which the bench collapses
+        # exactly as it collapses two stations' reports of one glass.
+        kept = masks_to_glasses.one_per_place(found, narrowest)
+        assert len(kept) > 1
+        for one in kept:
+            assert min(math.dist((one.x, one.y), (g.x, g.y)) for g in glasses) < narrowest
+
+
+def test_a_group_the_split_cannot_divide_is_handed_over_whole(monkeypatch):
+    """Where the repetition stops, and what is reported when it stops short.
+
+    Reporting the parts of a group that happened to fit while dropping the one
+    that did not would be claiming to know how many glasses the group holds, and
+    the fit has just said it cannot. So the group goes over whole.
+    """
+    kind = "straight_glass"
+    pose, (x, y) = _middle_station()
+    picture = render.render(_in_a_row(kind, 3, 5, x, y), pose)
     assert len(glass_masks(picture)) == 1
+    assert len(find.load().find(picture, kind)[0]) > 1
+
+    # A halving that puts every dot on one side divides nothing, so the splitting
+    # has nowhere left to go.
+    monkeypatch.setattr(find, "halve", lambda dots: np.ones(len(dots), dtype=bool))
     assert find.load().find(picture, kind) == ([], [find.TOO_WIDE])
 
 
@@ -255,7 +303,7 @@ def test_a_group_the_frame_cut_short_is_reported_and_not_refused_on_its_width():
                 one = masks_to_glasses.one_glass(sight.picture, mask)
                 if one is None:
                     continue
-                if find.footprint(find.dots_of(sight.picture, one.pixels)).width < narrowest:
+                if find.footprint(find.dots_of(sight.picture, one.pixels)) < narrowest:
                     assert one.cut_off
                     cut_short += 1
             assert find.TOO_NARROW not in finder.find(sight.picture, example.kind)[1]

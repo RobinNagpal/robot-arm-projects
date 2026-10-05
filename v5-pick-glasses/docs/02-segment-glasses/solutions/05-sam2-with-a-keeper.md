@@ -615,6 +615,19 @@ kind, and if that width falls outside the range this kind of glass can be, the
 proposal is **not reported as a glass**, whatever the keeper said. It becomes a
 doubtful report carrying its reason instead.
 
+**With one exception, and the exception is about the view rather than the
+proposal.** At the cell's own survey height one picture does not hold the glass
+zone, so a glass at the edge of a station's frame shows part of its footprint
+and the width measured off that part is part of a width. Refusing on it refuses
+the view, and that was measured on masks nothing can improve on: handed the
+bench's own exact masks, one station at a time over 20 held-out spawned
+arrangements, the kind's range of footprints refuses 66 of 297 glass sightings,
+and **every one of those 66 reaches the frame edge**. So the check is not put to
+a proposal whose mask reaches that edge. What answers such a proposal instead is
+the survey rather than a refusal inside one picture: the cell stands at three
+overlapping stations, and the report kept is the one from the station the glass
+stood nearest the middle of.
+
 A second piece of arithmetic settles what the width check cannot. **Two reports
 at one place on the table are one glass reported twice**, because two glasses of
 one kind standing side by side have their centres at least the narrowest width

@@ -26,9 +26,13 @@ reading at every pixel, and the camera's own pose. Nothing else, and in
 particular never the simulator's record of what it put out.
 
 **The same output.** One record per glass: its mask pixels, its place on the
-table, a rough width — and beside those records the two honest statements the
-problem asks for, which glasses could not be separated and which parts of the
-table could not have been seen.
+table, a rough width, and whether the picture held the whole glass — and beside
+those records the two honest statements the problem asks for, which glasses
+could not be separated and which parts of the table could not have been seen.
+The last of the four is a fact about the view, which the bench reports and every
+solution may read: a footprint fitted to a glass the frame cut in half is part
+of a footprint, and a solution that refuses a report on its width needs to know
+which it has.
 
 **The same final step.** Turning a mask into a place and a width belongs to the
 bench. Every solution hands over masks and the bench does the arithmetic.

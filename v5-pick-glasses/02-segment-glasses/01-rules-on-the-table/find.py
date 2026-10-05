@@ -23,10 +23,11 @@ glass.
 **The kind of glass decides what a group's width is allowed to be.** A circle is
 fitted to each group, and the width it gives is held against the range of
 footprints this kind of glass can have, which the cell is told. A group too wide
-for one glass of the kind is not one glass, so it is split in two with k-means
-and a circle is fitted to each half; two glasses are reported only when both
-halves land inside the range and the two circles between them account for every
-dot. **The fitted width decides only the split.** The width that goes into the
+for one glass of the kind is not one glass, so it is split in two with k-means —
+and **the same question is then asked of each part**, so a part still too wide is
+split again. The repetition is the point: the bench's crowded family stands
+three glasses to a line, so one split into two necessarily leaves a part holding
+two. **The fitted width decides only the split.** The width that goes into the
 record is the bench's, measured from the pixels handed back.
 
 **A group too narrow for the kind is refused only when the whole of it was in
@@ -94,31 +95,27 @@ TOO_WIDE = "a group too wide for one glass of this kind, and it did not come apa
 TOO_NARROW = "a group too narrow for any glass of this kind, with the whole of it in frame"
 
 
-@dataclass(frozen=True)
-class Circle:
-    """A circle fitted to a patch of table: where it sits, and how wide it is."""
-
-    x: float
-    y: float
-    width: float
-
-
-def fit_circle(dots: np.ndarray) -> Circle:
-    """The circle through a ring of dots, in one solve and with no starting guess.
+def circle_width(dots: np.ndarray) -> float:
+    """How wide the circle through a ring of dots is, in one solve and with no starting guess.
 
     Written out, the equation of a circle is not linear in its centre and its
     radius. Multiplied out it is: ``x^2 + y^2 = D x + E y + F`` is linear in D, E
     and F, the centre is half of D and E, and the radius comes back at the end.
     So the fit is a least squares solve rather than an iterative search.
+
+    The centre falls out of the same solve and is not returned, because nothing
+    here needs it: the place that goes into the record is the bench's, read off
+    the mask's own pixels, and the only thing this fit is asked for is a width to
+    hold against the kind's range.
     """
     terms = np.column_stack([dots, np.ones(len(dots))])
     solved = np.linalg.lstsq(terms, (dots**2).sum(1), rcond=None)[0]
     x, y = solved[0] / 2.0, solved[1] / 2.0
-    return Circle(float(x), float(y), 2.0 * float(np.sqrt(max(solved[2] + x * x + y * y, 0.0))))
+    return 2.0 * float(np.sqrt(max(solved[2] + x * x + y * y, 0.0)))
 
 
-def footprint(dots: np.ndarray) -> Circle:
-    """The circle round the patch of table a group of dots marks.
+def footprint(dots: np.ndarray) -> float:
+    """How wide the circle round the patch of table a group of dots marks is.
 
     Only the dots on the **outside** of the patch are fitted, and not every dot
     in it. A group is a filled disc rather than a ring, and a circle fitted to a
@@ -128,7 +125,7 @@ def footprint(dots: np.ndarray) -> Circle:
     patch is, and over the 289 whole glasses of 20 held-out spawned scenes a
     circle fitted to the hull reads 0.3 mm over the true width at the median.
     """
-    return fit_circle(cv2.convexHull(dots.astype(np.float32)).reshape(-1, 2).astype(float))
+    return circle_width(cv2.convexHull(dots.astype(np.float32)).reshape(-1, 2).astype(float))
 
 
 def halve(dots: np.ndarray) -> np.ndarray:
@@ -160,21 +157,6 @@ def halve(dots: np.ndarray) -> np.ndarray:
 def dots_of(picture: Picture, pixels: np.ndarray) -> np.ndarray:
     """Where a report's own pixels stand on the table, with the height dropped."""
     return to_world(picture, pixels[:, 0], pixels[:, 1])[:, :2]
-
-
-def accounted_for(dots: np.ndarray, circles: list[Circle]) -> bool:
-    """Whether two circles between them cover every dot of the group they came from.
-
-    Two halves of a smear of three glasses can both come out a width the kind
-    allows while leaving the glass in the middle inside neither circle, so the
-    two widths on their own are not enough to call a group two glasses. The
-    mesh's own square is allowed, because that is how finely a dot is placed at
-    all.
-    """
-    covered = np.zeros(len(dots), bool)
-    for circle in circles:
-        covered |= np.hypot(dots[:, 0] - circle.x, dots[:, 1] - circle.y) <= circle.width / 2.0 + CELL
-    return bool(covered.all())
 
 
 def glass_masks(picture: Picture) -> list[np.ndarray]:
@@ -212,30 +194,61 @@ def glass_masks(picture: Picture) -> list[np.ndarray]:
     return masks
 
 
-def come_apart(picture: Picture, one: Found, widths: tuple[float, float]) -> list[Found] | None:
-    """The group as two glasses, or None if two circles cannot explain it.
+def as_glasses(picture: Picture, one: Found, widths: tuple[float, float]) -> list[Found] | None:
+    """The glasses one patch of dots holds, or None if the fitted circles cannot say.
 
-    The group is halved, a circle is fitted to each half, and two glasses are
-    reported only when both of those circles are widths this kind of glass can
-    have and the two of them together account for every dot. Each half is then
-    measured by the bench like any other mask, so the fitted circles leave this
-    file and only the split they decided reaches the record.
+    The same rule for a whole group and for a part that came out of a split,
+    which is what makes it repeat. A patch whose fitted width the kind allows is
+    one glass. A patch wider than the kind allows is more than one, so it is
+    split. A patch narrower than the kind allows cannot be helped by splitting,
+    because both halves of a footprint are narrower than the footprint, so this
+    is as far as the fit goes: it is a glass the picture did not hold all of when
+    its pixels reach the frame edge, and a refusal when they do not.
     """
-    dots = dots_of(picture, one.pixels)
-    mine = halve(dots)
-    apart, circles = [], []
+    width = footprint(dots_of(picture, one.pixels))
+    if widths[0] <= width <= widths[1]:
+        return [one]
+    if width > widths[1]:
+        return come_apart(picture, one, widths)
+    return [one] if one.cut_off else None
+
+
+def come_apart(picture: Picture, one: Found, widths: tuple[float, float]) -> list[Found] | None:
+    """One patch halved with k-means, with the same rule asked again of each half.
+
+    The repetition is what [the
+    document](../../docs/02-segment-glasses/solutions/01-rules-on-the-table.md)
+    prescribes, and the reason is the arrangements: the bench's crowded family
+    stands three glasses to a line, so one split into two necessarily leaves a
+    part still holding two. Measured over 20 held-out crowded arrangements,
+    stopping after one split finds 17 of 101 glasses and hands 54 groups over,
+    and repeating finds 71 and hands 3 over.
+
+    Nothing counts the rounds. Each half has strictly fewer dots than the part it
+    came from, so the splitting runs out on its own: on a part the halving will
+    not divide, on a half the bench cannot place, or on a part the kind's widths
+    settle either way. A group with any part left over is handed over whole,
+    because reporting the parts that happened to fit would be claiming to know
+    how many glasses it holds, and the fit has just said it cannot.
+
+    Each half is measured by the bench like any other mask, so the fitted circles
+    leave this file and only the split they decided reaches the record.
+    """
+    mine = halve(dots_of(picture, one.pixels))
+    if mine.all() or not mine.any():
+        return None
+    parts: list[Found] = []
     for half in (~mine, mine):
         side = np.zeros(picture.depth.shape, dtype=bool)
         side[one.pixels[half, 0], one.pixels[half, 1]] = True
         measured = masks_to_glasses.one_glass(picture, side)
         if measured is None:
             return None
-        circle = footprint(dots_of(picture, measured.pixels))
-        if not widths[0] <= circle.width <= widths[1]:
+        got = as_glasses(picture, measured, widths)
+        if got is None:
             return None
-        apart.append(measured)
-        circles.append(circle)
-    return apart if accounted_for(dots, circles) else None
+        parts.extend(got)
+    return parts
 
 
 @dataclass(frozen=True)
@@ -248,11 +261,16 @@ class Finder:
         ``kind`` fixes the range of footprints a glass here can have, which is a
         limit on the kind and never the size of any one glass.
 
-        The groups are disjoint patches of table, so no two of them are reports
-        of one place and there is nothing to collapse here. Bringing the
-        stations of a survey together is ``marking.survey``'s job.
+        The groups are disjoint patches of table, but the parts of a split are
+        not: a group cut into several can leave two parts over one glass. Those
+        are collapsed by ``masks_to_glasses.one_per_place`` in
+        ``marking.survey``, which is where the stations of a survey are brought
+        together too, and the scorecard counts what it collapses as a split.
+        Doing it here as well would only take the choice of which report keeps a
+        place away from the bench, which orders them by the station that saw the
+        glass squarest.
         """
-        narrowest, widest = data.widths(kind)
+        widths = data.widths(kind)
         found: list[Found] = []
         doubts: list[str] = []
         for mask in glass_masks(picture):
@@ -260,21 +278,15 @@ class Finder:
             if one is None:
                 doubts.append(TOO_LITTLE)
                 continue
-            circle = footprint(dots_of(picture, one.pixels))
-            if narrowest <= circle.width <= widest:
-                found.append(one)
-            elif circle.width > widest:
-                apart = come_apart(picture, one, (narrowest, widest))
-                if apart is None:
-                    doubts.append(TOO_WIDE)
-                else:
-                    found.extend(apart)
-            elif one.cut_off:
-                # Too narrow, but the picture ran out before the glass did, so
-                # the width is not the glass's and cannot refuse it.
-                found.append(one)
+            parts = as_glasses(picture, one, widths)
+            if parts is not None:
+                found.extend(parts)
             else:
-                doubts.append(TOO_NARROW)
+                # Which way the group's own width failed, which is what the
+                # scorecard counts the doubts by. A part inside it may have
+                # failed the other way; the group is handed over whole anyway.
+                wide = footprint(dots_of(picture, one.pixels)) > widths[1]
+                doubts.append(TOO_WIDE if wide else TOO_NARROW)
         return found, doubts
 
 

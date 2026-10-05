@@ -98,9 +98,13 @@ be answering this problem.
 
 ## What must come back
 
-One record per glass, holding its mask pixels, its place on the table and a
-rough width of its footprint. Beside those records come the two honest
-statements [the problem](problem.md) asks for: which glasses could not be
+One record per glass, holding its mask pixels, its place on the table, a rough
+width of its footprint, and **whether the picture held the whole glass** — that
+last one because a glass at the edge of a station's frame shows only part of its
+footprint, so a width read off it is part of a width, and a solution refusing a
+report on its width has to be able to tell which it has. The bench observes it;
+what to do about it is the solution's own. Beside those records come the two
+honest statements [the problem](problem.md) asks for: which glasses could not be
 separated and why, and which parts of the table could not have been seen at
 all. Neither is a list of glasses, and the bench counts both rather than
 treating a reported doubt as a missing answer.

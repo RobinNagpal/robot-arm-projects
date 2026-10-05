@@ -30,7 +30,7 @@ by side.
 | | found | missed | merged | split | false | position median · worst | mask covered | mask not the glass |
 |---|---|---|---|---|---|---|---|---|
 | **floor** (exact masks) | 83 | 18 | 1 | 1 | 0 | 0.4 · 50.0 mm | 100.0% | 0.0% |
-| [1 rules on the table](../01-rules-on-the-table/) | 17 | 84 | 0 | 0 | 0 | 0.7 · **24.0** mm | 98.6% | **0.0%** |
+| [1 rules on the table](../01-rules-on-the-table/) | 71 | 30 | 10 | 1 | 0 | 6.0 · 58.2 mm | 94.6% | **0.0%** |
 | [2 trained from scratch](../02-train-from-scratch/) | 72 | 29 | 1 | 0 | 0 | 0.7 · 43.8 mm | 97.2% | 1.4% |
 | [3 YOLO as it downloads](../03-yolo-zero-shot/) | 4 | 97 | 0 | 0 | 0 | 36.5 · 46.6 mm | 84.5% | 3.6% |
 | [4 YOLO fine-tuned](../04-yolo-fine-tuned/) | 73 | 28 | 1 | 0 | 0 | 0.9 · 74.5 mm | **99.3%** | 3.9% |
@@ -50,8 +50,9 @@ refuses 66 of 297 glass sightings and **every one of those 66 reaches the frame
 edge** — the bench refusing its own perfect masks. `masks_to_glasses` now says
 whether a mask reached the picture's edge and the three solutions read it before
 refusing: 92 → 99, 76 → 81 and 90 → 96 found on spawned layouts, 66 → 73,
-71 → 73 and 74 → 78 on crowded ones. Solution 1 gained the width check it
-never had, which is where its own two rows come from.
+71 → 73 and 74 → 78 on crowded ones. Solution 1 gained the width check its own
+document prescribes and never had, which is where its two rows come from: 28 of
+101 crowded glasses with 21 merged reports before it, 71 with 10 after.
 
 ## What the numbers mean
 
@@ -80,12 +81,14 @@ kind of glass.
 ## What the comparison says
 
 **The written rule and the fitted network fail in opposite directions.**
-Solution 1 finds every glass the layout spaces, and the moment glasses stand
-closer than the rule allows its one grouping distance runs them together — so it
-hands over 54 of the 72 groups that hold more than one glass rather than
-reporting any of them, and finds 17 of 101. It merges nothing and places what it
-does report to 0.7 mm. Solution 2 merges almost nothing and misses 37 glasses on
-the easy layouts, because a glass whose middle falls outside the picture casts
+Solution 1 finds every glass the layout spaces, and on the crowded layouts the
+only thing standing between its one grouping distance and a merged report is the
+check on the width: 72 groups there held more than one glass, 69 of them were cut
+apart into two to nine parts, and 3 were handed over. That recovers 71 of the 83
+any method could find, at the price of 10 reports still covering two glasses and
+a place 6.0 mm from the truth against the floor's 0.4 mm, because a cut drawn
+where the dots divide is not where the glasses divide. Solution 2 merges almost nothing and misses 37 glasses
+on the easy layouts, because a glass whose middle falls outside the picture casts
 votes that land nowhere — a limit of the voting design rather than of its
 training.
 
@@ -96,8 +99,10 @@ vocabulary to one class is solution 4, and the gap between the two — 10 found
 against 99 — is the measurement of what that training bought.
 
 **The two mask numbers disagree about who is best, and that is the useful
-result.** Solution 1's masks almost never claim a pixel that is not glass
-(0.0%), because a pixel reaches a mask only by standing above the table; the
+result.** Solution 1's masks almost never claim a pixel that is not glass at the
+median (0.0%), because a pixel reaches a mask only by standing above the table —
+though a part cut out of a run-together group can be mostly its neighbour, which
+is what its 79.3% worst case on the crowded layouts is; the
 fitted and borrowed models all claim a thin margin around the glass (1.4–4.4%)
 because a learned outline follows a shape coarsely. Neither habit is visible in
 the places at all.

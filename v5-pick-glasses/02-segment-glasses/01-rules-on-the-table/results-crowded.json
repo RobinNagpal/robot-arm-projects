@@ -5,55 +5,55 @@
   "stations": 3,
   "glasses": 101,
   "find": {
-    "found": 17,
-    "missed": 84,
-    "merged": 0,
-    "split": 0,
+    "found": 71,
+    "missed": 30,
+    "merged": 10,
+    "split": 1,
     "false": 0,
-    "position_mm_median": 0.7,
-    "position_mm_worst": 24.0
+    "position_mm_median": 6.0,
+    "position_mm_worst": 58.2
   },
   "mask": {
     "all": {
-      "glasses": 17,
-      "covered_median": 98.6,
-      "covered_worst": 56.8,
+      "glasses": 72,
+      "covered_median": 94.6,
+      "covered_worst": 1.2,
       "not_the_glass_median": 0.0,
-      "not_the_glass_worst": 0.5
+      "not_the_glass_worst": 79.3
     },
     "by_kind": {
       "short_stemmed_glass": {
-        "glasses": 6,
-        "covered_median": 100.0,
-        "covered_worst": 87.6,
+        "glasses": 20,
+        "covered_median": 91.3,
+        "covered_worst": 52.7,
         "not_the_glass_median": 0.0,
-        "not_the_glass_worst": 0.0
+        "not_the_glass_worst": 10.2
       },
       "stemmed_glass": {
-        "glasses": 6,
-        "covered_median": 87.0,
-        "covered_worst": 56.8,
+        "glasses": 15,
+        "covered_median": 79.7,
+        "covered_worst": 1.2,
         "not_the_glass_median": 0.0,
-        "not_the_glass_worst": 0.5
+        "not_the_glass_worst": 79.3
       },
       "straight_glass": {
-        "glasses": 3,
-        "covered_median": 99.6,
-        "covered_worst": 89.6,
+        "glasses": 17,
+        "covered_median": 99.7,
+        "covered_worst": 88.4,
         "not_the_glass_median": 0.0,
-        "not_the_glass_worst": 0.0
+        "not_the_glass_worst": 39.7
       },
       "tapered_glass": {
-        "glasses": 2,
-        "covered_median": 100.0,
-        "covered_worst": 100.0,
-        "not_the_glass_median": 0.0,
-        "not_the_glass_worst": 0.0
+        "glasses": 20,
+        "covered_median": 82.0,
+        "covered_worst": 16.9,
+        "not_the_glass_median": 11.7,
+        "not_the_glass_worst": 55.6
       }
     }
   },
   "handed over": {
-    "a group too wide for one glass of this kind, and it did not come apart": 54
+    "a group too wide for one glass of this kind, and it did not come apart": 3
   },
   "model": "none: written rules over the depth readings",
   "grouping distance mm": 25.0,

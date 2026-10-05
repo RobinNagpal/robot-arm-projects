@@ -396,10 +396,16 @@ time to find.
 
 Inside that window the design places the value deliberately **low** rather than
 in the middle, because the two mistakes are not equally bad. A glass split into
-two groups announces itself, because both halves then fail the width check
-described next, since half a footprint is far too narrow to be a glass of this
-kind. Two glasses merged into one group are much quieter. So the setting leans
-towards splitting, which is the mistake that gets caught.
+two groups usually announces itself: half a footprint is far too narrow to be a
+glass of this kind, so both halves fail the width check described next. Usually
+and not always, and the exception is worth knowing, because it is the same
+exception that check has to make anyway. A glass at the edge of a station's
+frame is already short of its own footprint through no fault of the grouping, so
+the check cannot refuse a narrow width read off a group whose pixels reach that
+edge — and a half of such a glass reaches it too. There the split goes
+unannounced. Two glasses merged into one group are quieter still, everywhere. So
+the setting leans towards splitting, which is the mistake that mostly gets
+caught.
 
 ## Checking a group against the widths the kind allows
 
@@ -434,27 +440,88 @@ the widest glass of the widest kind are very different objects. Within a
 the table. So the check available here is far tighter than a general-purpose
 test asking only whether an object is object-sized.
 
-The design prescribes four outcomes for that check. If one circle fits and its
-width lies inside the kind's range, the group is one glass and its pixels are
-reported as one mask. If the width lies outside the range, the group is not one
-glass of this kind, so two circles are tried instead. If two circles both land
-inside the range and together account for all the dots, that is two glasses and
-both masks are reported. And if the group still fails, it is reported as
-doubtful, carrying the measured width and the range it failed, rather than
-guessed at.
+The design prescribes the check as a rule that **repeats**, and it has four
+outcomes. Fit one circle to the group. If its width lies inside the kind's
+range, the group is one glass and its pixels are reported as one mask. If the
+width is **wider** than any glass of this kind, the group is not one glass, so
+it is split in two and the same question is then asked of each part: a part
+inside the range is one glass, and a part still too wide is split again. If the
+width is **narrower** than any glass of this kind, splitting cannot help, since
+both halves of a footprint are narrower than the footprint; such a part is a
+glass the picture did not hold all of when its pixels reach the edge of the
+frame, and a refusal when they do not. And if any part cannot be settled either
+way, the whole group is reported as doubtful, carrying the measured width and
+the range it failed, rather than guessed at.
 
 ![One circle fitted to the whole group comes out wider than any glass of this kind can be, so the group is rejected as one glass and two circles are fitted instead; both of those lie inside the widths the kind allows, so the group is split in two, and the fitted width decides only the split, because the width that goes into the record is measured by the bench.](../../../images/02-segment-glasses/02-circle-fit-decides.png)
 
 Splitting a group in two is done with a simple and well-known method called
 k-means with two centres: drop two seeds anywhere in the group, give each dot to
 whichever seed is nearer, move each seed to the middle of the dots it was given,
-and repeat until nothing moves. Then fit a circle to each half.
+and repeat until nothing moves. Then fit a circle to each half. The picture
+above is one round of that, and the rule above is that round applied again to a
+half that is still too wide.
 
 What makes this check worth having is that it is **arithmetic rather than
 judgement**. The statement "this group is too wide to be one glass" contains two
 quantities, both of which were known before the run started, and both of which
 can be printed. It is not a threshold somebody adjusted until the tests passed,
 and that difference is the whole reason a written rule can be trusted here.
+
+### Why one split is not enough
+
+Splitting once answers two glasses run together, and two is not what the
+difficult arrangements hold. The bench's crowded family stands **three** glasses
+to a line and two lines to an arrangement, closer together than the cell's own
+layout rule allows, so a chain of three or more glasses in one group is the
+ordinary case there rather than the exception. It was counted: over 20 held-out
+crowded arrangements, 72 groups held more than one glass and **47 of those held
+three or more**. One split into two necessarily leaves at least one part holding
+two glasses, that part is still too wide, and a rule that stops after one split
+can only hand the whole group over.
+
+What the difference is worth was measured both ways on those same 20
+arrangements. Stopping after one split finds **17** of 101 glasses and hands 54
+groups over. Repeating the split on any part still too wide finds **71** of 101
+and hands 3 over. The second reports 10 masks covering two glasses where the
+first reports none, and that is the price of it; the places it reports sit
+6.0 mm from the truth at the median against 0.7 mm. On the spawned arrangements,
+where the layout rule keeps every glass clear of the next, the two rules find
+the same 100 glasses at the same places, and repeating removes the three groups
+one split had to hand over. So the repetition costs nothing where it is not
+needed.
+
+That is not a new rule so much as the natural form of the one already stated.
+"A group too wide for one glass of this kind is not one glass" is a statement
+about any patch of dots, including a patch that came out of a split, and
+applying it to the parts is what the document means by it.
+
+### Where the repetition stops
+
+Nothing is counted down, and no limit is written anywhere. Each split gives both
+of its parts strictly fewer dots than the part they came from, so the splitting
+runs out on its own, and it runs out in one of three ways. Every part is a width
+the kind allows, which is the answer. Or a part comes back narrower than the
+kind allows, which splitting cannot repair. Or a part cannot be divided at all —
+the halving puts every dot on one side of it, or a half holds too few depth
+readings for the bench to fit a footprint to.
+
+A group with any part left over at the end is handed over **whole**, and not in
+pieces. Reporting the parts that happened to fit while dropping the one that did
+not would be claiming to know how many glasses the group holds, and the one
+thing the fit has just said is that it cannot say.
+
+**The condition that two circles together account for all the dots is answered
+by the repetition rather than kept as a test of its own.** It was there to catch
+two circles fitted to a smear of three glasses, with the middle glass inside
+neither of them; repeating the split answers that case directly, by cutting the
+smear again. Keeping it as well was measured and it is strictly worse: on the
+crowded arrangements it takes the run from 71 glasses found and 3 groups handed
+over down to 53 found and 37 handed over, and on the spawned arrangements it
+refuses 20 whole glasses that nothing else objects to. The reason is geometry
+rather than bad luck. A part cut out of a filled patch by a straight line is not
+a disc, so a circle fitted to it does not reach into the corners the cut left,
+and the further the splitting goes the less disc-like the parts become.
 
 ## The masks are what this contributes
 
@@ -537,9 +604,12 @@ flowchart TD
     FL --> CL["group the dots that lie within the grouping distance"]
     CL --> CHK{"is the group's width one this kind of glass can be?"}
     CHK -- yes --> MK["collect the group's pixels: one mask, one glass"]
-    CHK -- no --> SP["try two circles instead"]
-    SP -- "both in range" --> MK
-    SP -- "still not" --> DB["report it as doubtful, and do not guess"]
+    CHK -- "no, wider" --> SP["split it in two with k-means"]
+    SP -- "ask again, of each part" --> CHK
+    SP -- "it will not divide" --> DB
+    CHK -- "no, narrower" --> EDGE{"do its pixels reach the frame edge?"}
+    EDGE -- yes --> MK
+    EDGE -- no --> DB["report the group as doubtful, and do not guess"]
     MK --> OUT["the masks, handed to the bench"]
     MK --> SH["from the glasses found: each taller one hides a wedge"]
     SH --> BL["the blind region for this camera position"]
@@ -823,11 +893,15 @@ width.
 
 If the two glasses were actually touching, there would be no strip of bare table
 at any grouping distance, so distance would have nothing left to say. It would
-be one group, always. The width check could still *suspect* two, because the
-group is too wide to be one glass, but suspecting is all it could do, since
-there is no gap to measure and no distance reasoning left. With three glasses in
-a row the fit could not even say how many there were, only that there were too
-many. That case is the handover to [problem 3](../../03-push-glasses-apart/problem.md), and
+be one group, always, and everything about the answer would then rest on the
+width: the group is too wide for one glass, so it is cut in two, and the two
+parts are believed only if both come back widths the kind allows. With three
+touching in a row the cut repeats, and the arithmetic can still arrive at three
+parts that each fit — but every one of those cuts is a straight line through a
+patch of dots with no gap in it, drawn where the dots happen to divide rather
+than where the glasses do, so where the masks meet is a guess and the places
+read off them are worth less the more cuts it took. That is the handover to
+[problem 3](../../03-push-glasses-apart/problem.md), and
 it is the honest edge of this method.
 
 ![Two glasses are brought closer together in three steps: while the strip of bare table between them is wider than the grouping distance, distance alone separates them; once the strip is narrower than that, only the check on the width recovers them; and when they touch there is no strip left for either to work on.](../../../images/02-segment-glasses/02-touching-is-the-limit.png)

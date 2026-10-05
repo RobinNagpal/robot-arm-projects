@@ -25,7 +25,7 @@
       "short_stemmed_glass": {
         "glasses": 25,
         "covered_median": 88.7,
-        "covered_worst": 63.6,
+        "covered_worst": 44.7,
         "not_the_glass_median": 0.0,
         "not_the_glass_worst": 0.0
       },
@@ -52,9 +52,7 @@
       }
     }
   },
-  "handed over": {
-    "a group too wide for one glass of this kind, and it did not come apart": 3
-  },
+  "handed over": {},
   "model": "none: written rules over the depth readings",
   "grouping distance mm": 25.0,
   "fitted here": "nothing"

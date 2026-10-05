@@ -559,13 +559,24 @@ This failure is loud where the one it replaces is quiet, and two cheap
 prescriptions bound it. Both are prescriptions and neither is anything this
 folder runs.
 
-**The width must lie inside the range the kind allows.** Inventing glass means
-reporting a glass where none stands, and every report carries a width, so a
-width outside the range this kind allows is reason enough to refuse the report
-and hand it on as doubtful. Notice that this check is useless against a mask cut
-short, where the shrunken width looks like a legal smaller glass, and useful
-against an invention, where claiming a glass means claiming a footprint and a
-claimed footprint either fits the kind or does not.
+**The width must lie inside the range the kind allows, unless the picture ran
+out before the glass did.** Inventing glass means reporting a glass where none
+stands, and every report carries a width, so a width outside the range this kind
+allows is reason enough to refuse the report and hand it on as doubtful — when
+the mask it was measured from lies inside the frame. When the mask reaches the
+edge of the frame it is not. At the cell's own survey height one picture does not
+hold the glass zone, so a glass at the far side of a station's frame is cut in
+half and the width read off the half is not the glass's width; refusing on it
+refuses the view and not the mask. That was measured on masks nothing can
+improve on: handed the bench's own exact masks, one station at a time over 20
+held-out spawned arrangements, the kind's range of footprints refuses 66 of 297
+glass sightings, and **every one of those 66 reaches the frame edge**. The three
+overlapping stations are the answer to such a report instead.
+
+Notice as well that this check is useless against a mask cut short by the glass
+in front of it, where the shrunken width looks like a legal smaller glass, and
+useful against an invention, where claiming a glass means claiming a footprint
+and a claimed footprint either fits the kind or does not.
 
 **The asserted part must lie where the camera could not see.** A model claiming
 a glass continues behind the near glass is claiming something about a part of
@@ -670,7 +681,9 @@ the part that was seen, and the **visible fraction** this document prescribes
 carrying alongside them.
 
 Then the prescribed checks, each of which can only refuse. The width must lie
-inside the range the kind allows. The asserted part must lie inside the piece of
+inside the range the kind allows, unless the mask it was measured from reaches
+the edge of the frame, where the width belongs to the part of the glass the
+picture held. The asserted part must lie inside the piece of
 table the camera could not see. A glass passing both is reported with its place,
 its width and its visible fraction; a glass failing either is reported as
 doubtful, with the check it failed.

@@ -569,60 +569,85 @@ def figure_grouping_distance() -> None:
 # --------------------------------------------------------------------------- #
 
 def figure_circle_fit() -> None:
-    figure, (left, middle, right) = new(13.6, 5.4, columns=3)
+    """Why the split has to repeat, drawn on the case that forces it.
 
-    blob_a = (-88.0, 0.0)
-    blob_b = (89.0, 0.0)
-    # the one circle a fit would put round both blobs together
-    whole = (blob_b[0] + FOOTPRINT_B / 2.0) - (blob_a[0] - FOOTPRINT_A / 2.0)
-    for axis in (left, middle):
+    Three objects in a line is the arrangement the crowded tables actually
+    produce, and it is the reason one split into two cannot be enough: whichever
+    way a group of three is cut in two, one of the two parts still holds two.
+    """
+    figure, (one, once, twice, ruler) = new(18.2, 5.4, columns=4)
+
+    # Three in a line, which is what the crowded tables stand up.
+    blobs = (
+        ((-150.0, 0.0), FOOTPRINT_A),
+        ((0.0, 0.0), FOOTPRINT_B),
+        ((150.0, 0.0), FOOTPRINT_A),
+    )
+    whole = (blobs[-1][0][0] + FOOTPRINT_A / 2.0) - (blobs[0][0][0] - FOOTPRINT_A / 2.0)
+    # What the first cut leaves: one object on one side, two still together.
+    pair = (blobs[1][0][0] + blobs[2][0][0]) / 2.0
+    pair_width = (blobs[2][0][0] + FOOTPRINT_A / 2.0) - (blobs[1][0][0] - FOOTPRINT_B / 2.0)
+
+    for axis in (one, once, twice):
         bare(axis)
-        axis.set_xlim(-190, 190)
-        axis.set_ylim(-260, 150)
+        axis.set_xlim(-260, 260)
+        axis.set_ylim(-300, 150)
         axis.set_aspect("equal")
-        for centre, width in ((blob_a, FOOTPRINT_A), (blob_b, FOOTPRINT_B)):
+        for centre, width in blobs:
             x, y = disc_dots(centre, width, 150)
             axis.scatter(x, y, s=2.0, color=MUTED, zorder=2, linewidths=0)
 
-    panel_title(left, "One circle: too wide to be one glass", colour=WARN)
-    left.add_patch(Circle((0.5, 0), whole / 2.0, facecolor=WARN, alpha=0.10, edgecolor=WARN, lw=2.0))
-    span(left, (-whole / 2.0, -136), (whole / 2.0, -136), "wider than this kind goes", colour=WARN,
+    panel_title(one, "One circle: too wide to be one object", colour=WARN)
+    one.add_patch(Circle((0, 0), whole / 2.0, facecolor=WARN, alpha=0.10, edgecolor=WARN, lw=2.0))
+    span(one, (-whole / 2.0, -170), (whole / 2.0, -170), "wider than this kind goes", colour=WARN,
          above=False, pad=4)
-    note(left, 0, -178, "Fitted to the whole group, the one circle is wider\nthan any glass of this "
-         "kind can be, so the group\nis rejected as one glass.", colour=INK, ha="center", va="top")
+    note(one, 0, -212, "Fitted to the whole group, the circle is wider than\nany object of this kind "
+         "can be. So the group is not\none object, and it has to be cut.", colour=INK, ha="center",
+         va="top")
 
-    panel_title(middle, "Two circles: each a width this kind allows", colour=GOOD)
-    for centre, width in ((blob_a, FOOTPRINT_A), (blob_b, FOOTPRINT_B)):
-        middle.add_patch(
-            Circle(centre, width / 2.0, facecolor=GOOD, alpha=0.12, edgecolor=GOOD, lw=2.0)
-        )
-        middle.scatter([centre[0]], [centre[1]], s=24, color=GOOD, marker="+", zorder=6)
-    note(middle, blob_a[0], -46, "in range", colour=GOOD, ha="center", va="top",
-         size=LABEL_SIZE)
-    note(middle, blob_b[0], -46, "in range", colour=GOOD, ha="center", va="top",
-         size=LABEL_SIZE)
-    note(middle, 0, -178, "Two circles are tried instead. Both are inside\nthe range, and together they"
-         " explain every\ndot, so the group is split in two.", colour=INK, ha="center", va="top")
+    panel_title(once, "Cut once: one part is still too wide", colour=WARN)
+    once.add_patch(Circle(blobs[0][0], FOOTPRINT_A / 2.0, facecolor=GOOD, alpha=0.12,
+                          edgecolor=GOOD, lw=2.0))
+    once.scatter([blobs[0][0][0]], [0], s=24, color=GOOD, marker="+", zorder=6)
+    note(once, blobs[0][0][0], -46, "in range", colour=GOOD, ha="center", va="top", size=LABEL_SIZE)
+    once.add_patch(Circle((pair, 0), pair_width / 2.0, facecolor=WARN, alpha=0.10,
+                          edgecolor=WARN, lw=2.0))
+    note(once, pair, -118, "still too wide", colour=WARN, ha="center", va="top", size=LABEL_SIZE)
+    note(once, 0, -212, "The cut separates one object and leaves the other\ntwo together. Whichever "
+         "way three in a line are cut\nin two, one part still holds two of them.", colour=INK,
+         ha="center", va="top")
+
+    panel_title(twice, "Cut the part that failed: all three in range", colour=GOOD)
+    for centre, width in blobs:
+        twice.add_patch(Circle(centre, width / 2.0, facecolor=GOOD, alpha=0.12, edgecolor=GOOD,
+                               lw=2.0))
+        twice.scatter([centre[0]], [0], s=24, color=GOOD, marker="+", zorder=6)
+    for centre, _ in blobs:
+        note(twice, centre[0], -46, "in range", colour=GOOD, ha="center", va="top", size=LABEL_SIZE)
+    note(twice, 0, -212, "So the rule is applied again to the part that failed,\nand only to that "
+         "part. It stops when every part is in\nrange, or when a part cannot be cut any further.",
+         colour=INK, ha="center", va="top")
 
     # the ruler the decision is made against
-    bare(right)
-    right.set_xlim(-22, 300)
-    right.set_ylim(-2.9, 2.0)
-    panel_title(right, "What this kind is allowed to be")
-    right.add_patch(Rectangle((KIND_NARROWEST, 0), KIND_WIDEST - KIND_NARROWEST, 0.34,
+    bare(ruler)
+    ruler.set_xlim(-22, 460)
+    ruler.set_ylim(-3.4, 2.0)
+    panel_title(ruler, "What this kind is allowed to be")
+    ruler.add_patch(Rectangle((KIND_NARROWEST, 0), KIND_WIDEST - KIND_NARROWEST, 0.34,
                               facecolor=GOOD, alpha=0.45, edgecolor=GOOD, lw=1.0))
-    right.add_patch(Rectangle((0, 0), 280, 0.34, facecolor="none", edgecolor=INK, lw=1.0))
-    for tick in range(0, 281, 40):
-        right.plot([tick, tick], [-0.07, 0], color=INK, lw=0.9)
-    right.text(140, -0.45, "footprint diameter, narrowest on the left", ha="center", va="top",
+    ruler.add_patch(Rectangle((0, 0), 440, 0.34, facecolor="none", edgecolor=INK, lw=1.0))
+    for tick in range(0, 441, 40):
+        ruler.plot([tick, tick], [-0.07, 0], color=INK, lw=0.9)
+    ruler.text(220, -0.45, "footprint diameter, narrowest on the left", ha="center", va="top",
                fontsize=LABEL_SIZE, color=INK)
-    right.text(KIND_NARROWEST - 6, 0.40, "this kind's widths",
+    ruler.text(KIND_NARROWEST - 6, 0.40, "this kind's widths",
                ha="right", va="bottom", fontsize=NOTE_SIZE, color=GOOD)
     for value in (FOOTPRINT_B, FOOTPRINT_A):
-        right.plot([value, value], [0, 0.34], color=GOOD, lw=1.4)
-    right.plot([whole, whole], [0, 0.34], color=WARN, lw=1.4)
-    right.annotate(
-        "both fitted widths:\ninside the range",
+        ruler.plot([value, value], [0, 0.34], color=GOOD, lw=1.4)
+    for value in (pair_width, whole):
+        ruler.plot([value, value], [0, 0.34], color=WARN, lw=1.4)
+    ruler.annotate(
+        "the fitted widths:\ninside the range",
         xy=(FOOTPRINT_A, 0.34),
         xytext=(112, 0.98),
         ha="right",
@@ -631,28 +656,31 @@ def figure_circle_fit() -> None:
         color=GOOD,
         arrowprops={"arrowstyle": "->", "color": GOOD, "lw": 1.0},
     )
-    right.annotate(
-        "the one circle: nothing\nof this kind is that wide",
-        xy=(whole, 0.34),
-        xytext=(whole - 8, 1.34),
+    ruler.annotate(
+        "after one cut, and\nbefore any cut: both\nwider than the kind goes",
+        xy=(pair_width, 0.34),
+        xytext=(whole, 1.44),
         ha="right",
         va="top",
         fontsize=NOTE_SIZE,
         color=WARN,
         arrowprops={"arrowstyle": "->", "color": WARN, "lw": 1.0},
     )
-    right.text(
+    ruler.text(
         -20, -0.80,
         "The rule, in full:\n"
         "  one circle in range: one object.\n"
-        "  out of range, but two circles in range: two objects.\n"
-        "  still out of range: reported doubtful, never guessed at.\n\n"
-        "The fitted width decides only how a group is split. The\n"
-        "width that goes into the record is measured by the bench,\n"
-        "from the mask, so this circle never leaves the solution.\n\n"
-        "This check exists only because every object here is one\n"
-        "known kind, so the range is one the project holds.\n"
-        "Problem 4, with four kinds on the table, takes it back.",
+        "  too wide, and the parts it is cut into are in range: that many objects.\n"
+        "  a part still too wide: cut that part again, and only that part.\n"
+        "  a part that cannot be cut into parts in range: reported doubtful.\n"
+        "  too narrow: doubtful, unless the picture cut the object short at its\n"
+        "    edge, in which case the width is no evidence and the report stands.\n\n"
+        "The fitted width decides only how a group is split. The width that goes\n"
+        "into the record is measured by the bench, from the mask, so this circle\n"
+        "never leaves the solution.\n\n"
+        "This check exists only because every object here is one known kind, so\n"
+        "the range is one the project holds. Problem 4, with four kinds on the\n"
+        "table, takes it back.",
         ha="left", va="top", fontsize=NOTE_SIZE, color=INK,
     )
 
