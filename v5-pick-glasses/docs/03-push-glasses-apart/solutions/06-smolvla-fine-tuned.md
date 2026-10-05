@@ -98,7 +98,7 @@ needs a sense of what a push does, and nothing in a picture contains that.
 
 **This is a design and not a report.** Nothing in this solution is built, so
 nothing below describes a program that has run. The bench itself is built and
-lives in `problem-3-sim/`, but two parts of the shared contract this solution
+lives in `03-push-glasses-apart/bench/`, but two parts of the shared contract this solution
 depends on do not exist in it yet, and [the plan](../solutions-plan.md) names
 them: a rendered view looking straight down, and a path by which a chunk of
 waypoints can be carried out as an action. Until both are written, this

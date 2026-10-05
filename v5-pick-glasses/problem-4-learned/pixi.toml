@@ -5,8 +5,8 @@ description = "Problem 4 learned: find, view, measure, name and grip mixed glass
 channels = ["conda-forge"]
 platforms = ["osx-arm64", "linux-64"]
 
-# Its own environment, apart from the ROS one, as in problem-2-learned and
-# problem-3-learned.
+# Its own environment, apart from the ROS one, as in 02-segment-glasses/02-train-from-scratch and
+# 03-push-glasses-apart/04-a-world-model.
 [dependencies]
 python = "3.12.*"
 numpy = ">=1.26,<3"
@@ -15,13 +15,13 @@ pytorch = ">=2.3"
 py-opencv = ">=4.9"
 pytest = ">=7"
 
-# The physics engine the pushes happen in, as in problem-3-learned.
+# The physics engine the pushes happen in, as in 03-push-glasses-apart/04-a-world-model.
 [pypi-dependencies]
 mujoco = ">=3.3"
 
 [activation.env]
 # The project's own modules; problem 2's renderer, scoring and view geometry;
-# problem 3's physics bench. problem-2-sim comes before problem-3-sim, because
+# problem 3's physics bench. 02-segment-glasses/bench comes before 03-push-glasses-apart/bench, because
 # both have a scoring.py and the one used here is problem 2's.
-PYTHONPATH = "$PIXI_PROJECT_ROOT/../src/work_cell:$PIXI_PROJECT_ROOT/../problem-2-sim:$PIXI_PROJECT_ROOT/../problem-3-sim:$PIXI_PROJECT_ROOT/../problem-2-learned"
+PYTHONPATH = "$PIXI_PROJECT_ROOT/../src/work_cell:$PIXI_PROJECT_ROOT/../02-segment-glasses/bench:$PIXI_PROJECT_ROOT/../03-push-glasses-apart/bench:$PIXI_PROJECT_ROOT/../02-segment-glasses/02-train-from-scratch"
 PYTORCH_ENABLE_MPS_FALLBACK = "1"

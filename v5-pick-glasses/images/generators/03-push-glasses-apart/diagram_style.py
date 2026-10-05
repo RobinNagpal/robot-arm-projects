@@ -62,14 +62,14 @@ PAD_HEIGHT = 14.0            # arm/dimensions.py
 # The middle of the jaw rides at LOWEST_GRIP, but the jaw is 30 mm tall, so its
 # top edge is 15 mm higher. A glass that is wider higher up — which every
 # tapered glass is, by definition — meets that top edge first, and that is
-# where the push lands. problem-3-sim/bench.py says so in as many words:
+# where the push lands. 03-push-glasses-apart/bench/bench.py says so in as many words:
 # "A glass that is wider higher up meets the jaw here first, so this, not
 # PUSH_HEIGHT, is how high it is pushed."
 #
 # Fifteen millimetres sounds like a detail and is not. Pushing a tapered glass
 # at 65 mm rather than 50 mm takes the share that can be pushed at all from
 # 92% to 52% at mu = 0.3, and from 14% to nothing whatever at mu = 0.5.
-FINGER_HEIGHT = 30.0         # problem-3-sim/bench.py
+FINGER_HEIGHT = 30.0         # 03-push-glasses-apart/bench/bench.py
 JAW_TOP = LOWEST_GRIP + FINGER_HEIGHT / 2.0   # 65 mm
 MIN_SEPARATION = 150.0       # glasses/spawn.py: guaranteed between centres when problem 2 ended
 
@@ -86,7 +86,7 @@ TOUCHING_APART = 75.0                    # rims in contact, for the widest pair
 GRIPPABLE_APART = 2.0 * GRIP_ROOM        # 140 mm between middles
 
 # What the simulator actually uses for friction between glass and table.
-# problem-3-sim/bench.py TABLE_FRICTION. The arm is not told this number: it is
+# 03-push-glasses-apart/bench/bench.py TABLE_FRICTION. The arm is not told this number: it is
 # the ground truth a run is scored against, not an input to any decision. That
 # distinction is the whole of solution 9, and every document that quotes a
 # friction figure has to say which of the two it means.
@@ -178,7 +178,7 @@ def has_room(point, others) -> bool:
 
     ``others`` is (x, y, widest width) for every other glass on the table, in
     millimetres. This is the project's own test, copied from
-    ``problem-3-sim/bench.py``, and it is the one to use.
+    ``03-push-glasses-apart/bench/bench.py``, and it is the one to use.
 
     It is **not symmetric**. The room a glass needs depends on how wide its
     neighbour is, not on how wide it is, so a narrow glass beside a wide one is

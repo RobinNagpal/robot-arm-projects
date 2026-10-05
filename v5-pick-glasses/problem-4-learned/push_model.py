@@ -1,6 +1,6 @@
 """The forward model: a push in, what it will do out.
 
-Problem 3's network (problem-3-learned/model.py), resized for the wider input.
+Problem 3's network (03-push-glasses-apart/04-a-world-model/model.py), resized for the wider input.
 A small MLP trained ENSEMBLE times from different starts; where the copies
 disagree the model has not seen a push like this one, and the planner takes
 the worst copy's topple chance rather than the average.

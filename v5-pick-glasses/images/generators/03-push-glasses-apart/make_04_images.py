@@ -64,7 +64,7 @@ SWEPT = 400
 SEED = 0
 
 # How far a push actually has to carry a glass, measured on the project's own
-# crowded tables rather than guessed. ``scene(seed)`` in problem-3-sim/bench.py
+# crowded tables rather than guessed. ``scene(seed)`` in 03-push-glasses-apart/bench/bench.py
 # was run for the sixty tapered-kind seeds below 400 — the seeds where
 # ``seed % 4 == 1``, which is 1 to 237 — and for every glass that bench's own
 # ``has_room`` calls crowded, the shortfall is how far the nearest offending
@@ -73,16 +73,16 @@ SEED = 0
 # shortfall is 11.8 mm and the largest in sixty scenes is 31.8 mm.
 #
 # The numbers are held here rather than recomputed because bench.py imports
-# MuJoCo, which is in the problem-3-programmed environment and not in the root
+# MuJoCo, which is in the 03-push-glasses-apart/01-one-fixed-nudge environment and not in the root
 # one every generator in this repository runs under. To check them:
 #
-#   cd problem-3-programmed && pixi run python -c "
-#   import sys; sys.path.insert(0, '../problem-3-sim'); import bench; ..."
+#   cd 03-push-glasses-apart/01-one-fixed-nudge && pixi run python -c "
+#   import sys; sys.path.insert(0, '../03-push-glasses-apart/bench'); import bench; ..."
 PUSH_TYPICAL = 11.8
 PUSH_LONGEST = 31.8
 CROWDED_OF = (210, 300, 60)
 
-# The jaw, as problem-3-sim/bench.py builds it. Its fingers are 30 mm tall and
+# The jaw, as 03-push-glasses-apart/bench/bench.py builds it. Its fingers are 30 mm tall and
 # ride with their middle at LOWEST_GRIP, so the face that meets the glass runs
 # from 35 to 65 mm. A tapered glass is wider higher up, so it touches the top
 # edge of that face first, and bench's JAW_TOP says so in as many words: this,
@@ -417,7 +417,7 @@ def one_at_a_time(rows):
 # --------------------------------------------------------------------------- #
 # 6. What the working bench builds, and where its tipping edge is.
 # --------------------------------------------------------------------------- #
-# The rule problem-3-sim/bench.py uses to turn an outline into collision
+# The rule 03-push-glasses-apart/bench/bench.py uses to turn an outline into collision
 # shapes, copied here because bench.py imports MuJoCo and this script must run
 # in the root environment. Each cylinder is as wide as the glass is at its
 # widest inside it, so the shape is never thinner than the glass, and bench's

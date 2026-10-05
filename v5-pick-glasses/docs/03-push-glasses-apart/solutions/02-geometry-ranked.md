@@ -72,7 +72,7 @@ great deal.
 
 Half of this solution is already written and half of it is a design, and the
 line between them is worth drawing before anything else. The candidate
-generation exists: `problem-3-programmed/plan.py` sweeps the headings, steps
+generation exists: `03-push-glasses-apart/01-one-fixed-nudge/plan.py` sweeps the headings, steps
 the travel out, applies the tests and returns every push that survives, and it
 runs on the bench today. What it does with that set is also written, and it is
 a printed rule rather than a model: it takes the shortest push that finishes
@@ -162,7 +162,7 @@ of a fitted function than predicting the outcome correctly.
 
 **The method degrades to what already exists.** Delete the fitted model, keep
 the printed rule that takes the shortest job-finishing push, and the run is the
-geometry in `problem-3-programmed` exactly. So this solution extends that code
+geometry in `03-push-glasses-apart/01-one-fixed-nudge` exactly. So this solution extends that code
 rather than replacing it, and it can be tried and then abandoned at no cost.
 
 The contrast that makes the arrangement worth understanding is with the obvious
@@ -769,7 +769,7 @@ It needs **scikit-learn and NumPy**, both small, both pure software, and both
 BSD 3-clause, so there is no licence condition to carry anywhere and nothing to
 revisit if this work were taken further.
 
-It needs the **enumerator**, which exists in `problem-3-programmed/plan.py` and
+It needs the **enumerator**, which exists in `03-push-glasses-apart/01-one-fixed-nudge/plan.py` and
 runs on the bench today. This is the part of the solution that is built, and it
 is also the part that decides the ceiling.
 
@@ -1019,7 +1019,7 @@ from the destination. Solution 4 fits a model of **what a push will actually
 do**, which is the quantity the geometry gets wrong, because predicting where a
 pushed glass ends up needs the friction and the weight distribution that nobody
 here has. The record in this repository already contains a result bearing on
-that choice: the learned approach in `problem-3-learned`, which is solution 4's
+that choice: the learned approach in `03-push-glasses-apart/04-a-world-model`, which is solution 4's
 first rung, racked 208 of the 251 glasses in 113 pushes with 15 repeats, where
 the geometry alone racked 199 in 212 pushes with 90 repeats, and neither toppled
 anything. **The learning that paid in this cell attacked the quantity the

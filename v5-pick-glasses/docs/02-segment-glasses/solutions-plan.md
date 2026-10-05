@@ -38,7 +38,7 @@ ceiling any car could reach.
 | `docs/02-segment-glasses/` | `docs/02-segment-glasses/` |
 | `images/02-segment-glasses/` | `images/02-segment-glasses/` |
 | `images/generators/02-segment-glasses/` | `images/generators/02-segment-glasses/` |
-| `problem-2-sim/` | `02-segment-glasses-sim/` |
+| `02-segment-glasses/bench/` | `02-segment-glasses-sim/` |
 
 Documents:
 
@@ -123,29 +123,29 @@ It is discarded. Recording it is small work.
 
 | Folder | Holds | Decision |
 |---|---|---|
-| `problem-2-sim` | the renderer, the scenes, the scorecard | keep, rename |
-| `problem-2-programmed` | **solution 1 as written** | keep |
-| `problem-2-learned` | **solution 2's network**, and the ranker | keep |
-| `problem-2-results` | the two pipelines compared | keep |
-| `problem-2-pretrained` | shared pieces **and** two superseded models | split |
+| `02-segment-glasses/bench` | the renderer, the scenes, the scorecard | keep, rename |
+| `02-segment-glasses/01-rules-on-the-table` | **solution 1 as written** | keep |
+| `02-segment-glasses/02-train-from-scratch` | **solution 2's network**, and the ranker | keep |
+| `02-segment-glasses/results` | the two pipelines compared | keep |
+| `02-segment-glasses/05-sam2-with-a-keeper` | shared pieces **and** two superseded models | split |
 
 An audit cut this list down. Only one folder holds anything dead.
 
-**`problem-2-programmed` is solution 1.** Its finding step groups points where
+**`02-segment-glasses/01-rules-on-the-table` is solution 1.** Its finding step groups points where
 they stand on the table rather than where they fall in the picture, which is
 solution 1's method exactly. It is not superseded by anything.
 
-**`problem-2-learned` is solution 2.** Its network is the one solution 2
+**`02-segment-glasses/02-train-from-scratch` is solution 2.** Its network is the one solution 2
 describes as already written, and `problem-4-learned` imports it.
 
-**`problem-2-results` is cited from outside.** Problem 4's documents point at
+**`02-segment-glasses/results` is cited from outside.** Problem 4's documents point at
 its comparison of the two pipelines in three places.
 
 **The bench is used by three problems**, not one: problems 2, 3 and 4 all put
 it on their path. Deleting it would change the input the six are compared on,
 which is the one thing this plan holds fixed.
 
-### Splitting `problem-2-pretrained`
+### Splitting `02-segment-glasses/05-sam2-with-a-keeper`
 
 It holds the shared pieces as well as two superseded models. The shared ones
 belong in the bench; only the models go.

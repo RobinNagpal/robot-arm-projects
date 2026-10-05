@@ -3,7 +3,7 @@
 Every glass drawn here is one the project's own code drew. Two sources, and
 nothing else: ``family("tapered_glass", HOW_MANY, SEED)`` from
 ``work_cell.glasses.shapes`` for the measurements across the kind's range, and
-``scene(seed)`` from ``problem-3-sim/bench.py`` for the crowded tables, because
+``scene(seed)`` from ``03-push-glasses-apart/bench/bench.py`` for the crowded tables, because
 that is the authoritative generator for this problem. No size in this file was
 chosen to make a picture work.
 
@@ -64,13 +64,13 @@ from work_cell.glasses.shapes import KIND_RANGES, family  # noqa: E402
 
 
 def _bench():
-    """``problem-3-sim/bench.py``: the crowded tables, the jaw, and the real friction.
+    """``03-push-glasses-apart/bench/bench.py``: the crowded tables, the jaw, and the real friction.
 
     Imported for ``scene`` and for its constants. None of the physics is touched
     here, so when MuJoCo is not installed a placeholder stands in for it just
     long enough to load the module.
     """
-    sys.path.insert(0, str(ROOT / "problem-3-sim"))
+    sys.path.insert(0, str(ROOT / "03-push-glasses-apart/bench"))
     if importlib.util.find_spec("mujoco") is None:
         sys.modules["mujoco"] = types.ModuleType("mujoco")
     import bench

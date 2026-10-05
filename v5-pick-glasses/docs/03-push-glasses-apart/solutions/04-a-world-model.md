@@ -164,9 +164,9 @@ running code in this repository and which parts are described here and not
 written, because this solution is unusual among the six in how much of it
 exists.
 
-**Rung one is built.** It lives in `problem-3-learned/`, it trains on data it
+**Rung one is built.** It lives in `03-push-glasses-apart/04-a-world-model/`, it trains on data it
 collects itself, and it has been run on the bench's held-out tables with its
-results recorded in `problem-3-results/`. The model is `model.py`, what it is
+results recorded in `03-push-glasses-apart/results/`. The model is `model.py`, what it is
 shown is `features.py`, and the search and the loop around it are `plan.py`.
 Everything this document says about those three files is a description of code.
 

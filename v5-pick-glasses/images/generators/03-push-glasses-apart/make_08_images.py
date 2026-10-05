@@ -72,17 +72,17 @@ GRAVITY = 9.81
 # the glass meets the jaw's TOP edge first. That is JAW_TOP, and it is 15 mm
 # higher than the number it is easy to reach for. Every figure in this script
 # is computed at JAW_TOP and says so in its caption.
-PUSH_HEIGHT = JAW_TOP              # mm; problem-3-sim/bench.py JAW_TOP
+PUSH_HEIGHT = JAW_TOP              # mm; 03-push-glasses-apart/bench/bench.py JAW_TOP
 JAW_MIDDLE = LOWEST_GRIP           # mm; what a careless tipping check would use
 
-PUSH_SPEED = 20.0                  # mm/s; problem-3-sim/bench.py PUSH_SPEED
+PUSH_SPEED = 20.0                  # mm/s; 03-push-glasses-apart/bench/bench.py PUSH_SPEED
 SLOW_PUSH = 10.0                   # mm/s; half speed, for the comparison
 
 # What the simulator really puts under the glasses, and what the arm is never
 # told. The plan assumes MU_LOW; the table is grippier than that.
 TRUE_MU = TABLE_FRICTION
 
-# The project's own definition of fallen: problem-3-sim/bench.py
+# The project's own definition of fallen: 03-push-glasses-apart/bench/bench.py
 # STANDING_TILT_DEG, "A glass leaning further than this has fallen over."
 # scoring.py reads it from the settled pose at the end of a run, so a glass
 # that leans past it and rocks back still scores as standing. It is used here

@@ -1,0 +1,29 @@
+[workspace]
+name = "push-glasses-apart"
+version = "0.1.0"
+description = "Problem 3: six ways to push crowded glasses apart, scored on one bench"
+channels = ["conda-forge"]
+platforms = ["osx-arm64", "linux-64"]
+
+# One environment for all six solutions and the bench they share. Separate
+# from the ROS one, because PyTorch beside RoboStack's libraries is a conflict
+# not worth having.
+[dependencies]
+python = "3.12.*"
+numpy = ">=1.26,<3"
+pytorch = ">=2.3"
+# Solution 2's ranker is gradient-boosted trees, which is what sklearn is for.
+scikit-learn = ">=1.4"
+# rack/layout.py imports OpenCV, and the glass zone is read from there.
+py-opencv = ">=4.9"
+pytest = ">=7"
+ruff = ">=0.4"
+
+[pypi-dependencies]
+# The physics engine the pushes happen in.
+mujoco = ">=3.3"
+
+[activation.env]
+# The project's own modules, and the bench every solution is scored on.
+PYTHONPATH = "$PIXI_PROJECT_ROOT/../src/work_cell:$PIXI_PROJECT_ROOT/bench"
+PYTORCH_ENABLE_MPS_FALLBACK = "1"

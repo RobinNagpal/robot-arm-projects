@@ -1,6 +1,6 @@
 """Choose one push against the forward model. Programmed: the search, not the model.
 
-Problem 3's cross-entropy search (problem-3-learned/plan.py), with three
+Problem 3's cross-entropy search (03-push-glasses-apart/04-a-world-model/plan.py), with three
 changes for mixed tables:
 
 - each glass is given its own kind, or NOT_MEASURED;

@@ -28,12 +28,12 @@ from pathlib import Path
 
 import cv2
 import numpy as np
-from models import SHRINK, VOTE_SCALE  # problem-2-learned
+from models import SHRINK, VOTE_SCALE  # 02-segment-glasses/02-train-from-scratch
 from work_cell.rack.layout import GLASS_ZONE
 from work_cell.table.layout import TABLE_TOP_Z
 
 import nets
-import pipeline as p2  # problem-2-learned
+import pipeline as p2  # 02-segment-glasses/02-train-from-scratch
 import push_features as features
 import render
 import scoring
@@ -41,7 +41,7 @@ import tables
 import train
 import viewpoints
 from collect import DATA
-from drawing import WHITE, above, beside, foot, grid, panel, tag, write  # problem-2-learned
+from drawing import WHITE, above, beside, foot, grid, panel, tag, write  # 02-segment-glasses/02-train-from-scratch
 from push_model import Ensemble, sigmoid
 
 SAVED = Path(__file__).parent / "saved"

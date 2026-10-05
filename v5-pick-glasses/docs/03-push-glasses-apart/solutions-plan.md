@@ -121,10 +121,10 @@ price of reproducing it.
 
 | Folder | Holds | Decision |
 |---|---|---|
-| `problem-3-sim` | the bench; problem 4 imports it | keep, rename |
-| `problem-3-programmed` | the geometry cars 1 and 2 need | keep |
-| `problem-3-learned` | car 4's first rung, already written | keep |
-| `problem-3-results` | the two approaches compared; problem 4 cites it | keep |
+| `03-push-glasses-apart/bench` | the bench; problem 4 imports it | keep, rename |
+| `03-push-glasses-apart/01-one-fixed-nudge` | the geometry cars 1 and 2 need | keep |
+| `03-push-glasses-apart/04-a-world-model` | car 4's first rung, already written | keep |
+| `03-push-glasses-apart/results` | the two approaches compared; problem 4 cites it | keep |
 
 The eleven solution documents become six. Nothing in the code is superseded,
 so the deletions are documents and any diagram left without a home.

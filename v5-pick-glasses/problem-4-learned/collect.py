@@ -1,6 +1,6 @@
 """Push glasses about at random on mixed training tables, and write down what happened.
 
-Problem 3's round 1 (problem-3-learned/collect.py), on mixed tables, with one
+Problem 3's round 1 (03-push-glasses-apart/04-a-world-model/collect.py), on mixed tables, with one
 addition. Before each push some glasses have their kind hidden, so the model
 also learns what a push does to a glass it was not told about. The simulator
 still knows the kind and still pushes the glass for real; only the model's

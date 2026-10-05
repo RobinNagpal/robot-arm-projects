@@ -21,11 +21,11 @@ from pathlib import Path
 import cv2
 import numpy as np
 import torch
-from models import VOTE_SCALE  # problem-2-learned
+from models import VOTE_SCALE  # 02-segment-glasses/02-train-from-scratch
 from work_cell.glasses import spec
 
 import nets
-import pipeline as p2  # problem-2-learned
+import pipeline as p2  # 02-segment-glasses/02-train-from-scratch
 import push_features as features
 import push_plan
 import rack_plan

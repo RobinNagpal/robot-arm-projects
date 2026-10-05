@@ -58,7 +58,7 @@ SLICES = 80                      # how finely a glass is sliced when it is proje
 BASE_FRACTION = 0.45             # base radius over rim radius, the default splay_circles uses
 
 # The width the cell treats as agreement between two measurements of the same
-# glass, from problem-2-programmed/measure.py. It is a rule about the sensors
+# glass, from 02-segment-glasses/01-rules-on-the-table/measure.py. It is a rule about the sensors
 # rather than a fact about any glass, so it belongs here: the fit error and the
 # displacement of a fitted centre are compared against it.
 TOLERANCE = 6.0

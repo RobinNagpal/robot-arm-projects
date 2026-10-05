@@ -17,7 +17,7 @@ no pair is ever closer, while a glass loses its room somewhere below 123 mm, so
 **the shipped spawner cannot produce a crowded table at all.** The crowding
 here is made by sliding a glass in along the line towards a neighbour until the
 pair sits between having the room the jaw needs and touching, which is what
-``problem-3-sim/bench.py`` does to its own tables. Every picture that uses a
+``03-push-glasses-apart/bench/bench.py`` does to its own tables. Every picture that uses a
 crowded table says so.
 
 The authoritative crowded-table generator is ``bench.scene``, not this file.
@@ -35,7 +35,7 @@ worst case of that, for two of the widest glasses the kind allows.
 Where a picture needs a prediction, the prediction is a stand-in stated in the
 caption: the glass slides the full length of the push along the push, and the
 error between prediction and outcome is the 4.5 mm median that
-``problem-3-learned``'s README records for its own model on unseen tables.
+``03-push-glasses-apart/04-a-world-model``'s README records for its own model on unseen tables.
 
     pixi run python images/generators/03-push-glasses-apart/make_10_images.py
 """
@@ -89,27 +89,27 @@ from work_cell.glasses.spawn import MIN_SEPARATION, random_glasses  # noqa: E402
 PROJECT = Path(__file__).resolve().parents[3]
 
 # How far in a glass is slid to crowd it, as a fraction of the way from having
-# the room the jaw needs to touching its neighbour. problem-3-sim/bench.py
+# the room the jaw needs to touching its neighbour. 03-push-glasses-apart/bench/bench.py
 # draws uniformly across that whole span; half way in is the middle of it, and
 # it leaves a pair that is clearly crowded and clearly not touching.
 CROWD_PART = 0.5
 
 # How far inside the zone's edge a glass is aimed, because it will not land
-# exactly where it was aimed. problem-3-learned/plan.py uses 12 mm.
+# exactly where it was aimed. 03-push-glasses-apart/04-a-world-model/plan.py uses 12 mm.
 ZONE_MARGIN = 12.0
 
-# The search, as problem-3-learned/plan.py runs it: draws per round, how many
+# The search, as 03-push-glasses-apart/04-a-world-model/plan.py runs it: draws per round, how many
 # of the best are kept to aim the next round, and rounds.
 DRAWS, ELITES, ROUNDS = 300, 30, 4
 
-# How far a push may travel, from problem-3-learned/features.py TRAVEL.
+# How far a push may travel, from 03-push-glasses-apart/04-a-world-model/features.py TRAVEL.
 TRAVEL_RANGE = (10.0, 100.0)
 
 # Each millimetre of push costs this much of a millimetre of missing room, so
 # the shortest push that does the job wins. plan.py TRAVEL_COST.
 TRAVEL_COST = 0.1
 
-# What problem-3-learned's README records for its own model on tables it was
+# What 03-push-glasses-apart/04-a-world-model's README records for its own model on tables it was
 # not trained on: the pushed glass lands this far from where the model said it
 # would, median. It is train.py's ``landing_mm_median``, printed at the end of
 # a training run; it is in that README and nowhere else, and it was not
@@ -118,11 +118,11 @@ MEASURED_ONE_PUSH_ERROR = 4.5
 
 # The same question asked of the geometry, which predicts a slide instead of
 # learning one: how far from its aim a pushed glass really stopped. Measured
-# here, by running problem-3-programmed's planner over bench tables 10100 to
+# here, by running 03-push-glasses-apart/01-one-fixed-nudge's planner over bench tables 10100 to
 # 10349 and comparing every push's ``aim`` with the simulator's record of where
 # the glass landed. 564 pushes that ran their full length, median 1.07 mm,
 # 3.00 mm at the ninetieth percentile, 34.40 mm at worst. The throwaway script
-# is measure_programmed.py; re-run it from problem-3-programmed.
+# is measure_programmed.py; re-run it from 03-push-glasses-apart/01-one-fixed-nudge.
 MEASURED_GEOMETRY_ERROR = 1.07
 
 # What that README records about the training set. These are read here rather
@@ -130,12 +130,12 @@ MEASURED_GEOMETRY_ERROR = 1.07
 # environment does not have.
 ROUND_ONE = (4_000, 24_759)      # tables, pushes
 ROUND_TWO = (5_000, 13_253)
-PUSHES_PER_TABLE = 12            # problem-3-learned/collect.py
+PUSHES_PER_TABLE = 12            # 03-push-glasses-apart/04-a-world-model/collect.py
 
-# Measured against problem-3-sim/bench.py, which is the crowded-table generator
+# Measured against 03-push-glasses-apart/bench/bench.py, which is the crowded-table generator
 # and the physics for this whole problem. It imports MuJoCo, which is not in
 # this project's root environment, so the measurements were taken by a
-# throwaway script run from problem-3-learned (which has MuJoCo) over the first
+# throwaway script run from 03-push-glasses-apart/04-a-world-model (which has MuJoCo) over the first
 # 300 seeds whose kind is the tapered glass — that is, seed % 4 == 1 — and the
 # numbers are written here rather than recomputed. Re-measure by building a
 # Bench and timing Bench.push on those seeds.
@@ -147,7 +147,7 @@ BENCH_PUSH_MS = 78.0             # one push, median, one core
 BENCH_PUSH_STEPS = 4_331         # physics steps in that push, median
 BENCH_PUSH_SECONDS = 8.66        # what those steps are, as simulated time
 
-RESULTS = PROJECT / "problem-3-learned" / "results.json"
+RESULTS = PROJECT / "03-push-glasses-apart/04-a-world-model" / "results.json"
 
 
 # --------------------------------------------------------------------------- #
@@ -237,7 +237,7 @@ def pull_closest_pair(glasses: list[dict], part: float) -> tuple[list[dict], tup
 
 
 def pull_every_glass(glasses: list[dict], rng: random.Random) -> list[dict]:
-    """Crowd a whole table, the way problem-3-sim/bench.py crowds its own.
+    """Crowd a whole table, the way 03-push-glasses-apart/bench/bench.py crowds its own.
 
     Each glass after the first is slid in towards one already placed until the
     pair sits between touching and having room. A slide that would put two
@@ -287,7 +287,7 @@ def room_missing(glasses: list[dict]) -> float:
 
     Each neighbour whose edge is inside a glass's GRIP_ROOM adds how far inside
     it is. Zero when every glass can be gripped. This is the shortfall
-    problem-3-learned/plan.py minimises, written out here.
+    03-push-glasses-apart/04-a-world-model/plan.py minimises, written out here.
     """
     return sum(
         max(0.0, needs(a, b) - math.dist((a["x"], a["y"]), (b["x"], b["y"])))
@@ -712,7 +712,7 @@ def picture_planning(crowded: list[dict], pair: tuple[int, int], plan: dict) -> 
     footer(figure,
            f"The candidates, the filter and the scoring are the real search: {2 * DRAWS} draws in "
            f"the first round and {DRAWS} in each of the rest, "
-           f"best {ELITES} kept, {ROUNDS} rounds, as problem-3-learned/plan.py runs it. The "
+           f"best {ELITES} kept, {ROUNDS} rounds, as 03-push-glasses-apart/04-a-world-model/plan.py runs it. The "
            f"{MEASURED_ONE_PUSH_ERROR:.1f} mm offset in\nthe third panel is the median one-push error "
            f"that project's README records for its own model on unseen tables. The three rings are an "
            f"illustration\nof why the horizon is one push: if that error simply added up, a plan "
@@ -896,7 +896,7 @@ def picture_the_data(crowded: list[dict]) -> None:
     frame_on(real, crowded, pad=90.0)
     under(figure, 1, 2,
           f"a run stops as soon as every glass has room, so it makes as few pushes as it can.\n"
-          f"Over the {scenes} held-out tables problem-3-learned was scored on, {run_pushes} pushes "
+          f"Over the {scenes} held-out tables 03-push-glasses-apart/04-a-world-model was scored on, {run_pushes} pushes "
           f"were made\nin all: {per_run:.2f} a table, and each one costs a survey and a plan")
 
     core_minutes = rows * BENCH_PUSH_MS / 1000.0 / 60.0

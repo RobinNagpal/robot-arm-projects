@@ -39,7 +39,7 @@ share of the glass's widest part, is set by its kind:
 
 From above, the camera sees the widest part and not the foot, which is hidden
 under the bowl or the rim. Problem 3's bench hands the foot over anyway, and
-[problem 3's results](../../../../problem-3-results/README.md#what-these-results-do-not-cover)
+[problem 3's results](../../../../03-push-glasses-apart/results/README.md#what-these-results-do-not-cover)
 flag it as generous. With one known kind per table, a real cell could at least
 bound the foot from the kind. With several kinds, it cannot.
 
@@ -72,9 +72,9 @@ joins its outline.
 ### How many crowded glasses can still be seen
 
 200 mixed tables were built with `_crowded_layout()` from
-`problem-3-sim/bench.py`, each glass's kind drawn separately, and each table
+`03-push-glasses-apart/bench/bench.py`, each glass's kind drawn separately, and each table
 kept only if at least one glass lacked room. For every glass without room,
-`problem-2-programmed/views.py` was asked for its best allowed place — reachable,
+`02-segment-glasses/01-rules-on-the-table/views.py` was asked for its best allowed place — reachable,
 not standing in another glass, nothing squarely in the way — and whether that
 place leaves a clear gap in the picture between the target and every glass that
 could spoil it.

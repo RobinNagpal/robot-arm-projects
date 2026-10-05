@@ -1,12 +1,12 @@
 """Diagrams and measurements for solution 3 — plan, feel, look again.
 
-Solution 3 is built. ``problem-3-programmed/plan.py`` chooses the pushes and
-``problem-3-sim/bench.py`` makes the tables and the physics, so this script
+Solution 3 is built. ``03-push-glasses-apart/01-one-fixed-nudge/plan.py`` chooses the pushes and
+``03-push-glasses-apart/bench/bench.py`` makes the tables and the physics, so this script
 does not invent either. It mirrors both:
 
 * ``scene(seed)`` here reproduces ``bench.scene(seed)`` exactly — the same kind,
   the same count, the same outlines and the same positions. A throwaway script
-  under ``problem-3-programmed`` checked that against the real thing on 80
+  under ``03-push-glasses-apart/01-one-fixed-nudge`` checked that against the real thing on 80
   seeds and found no disagreement at all; the check is quoted in the document.
 * ``slides``, ``along``, ``choose`` and ``shortfall`` here are the same
   arithmetic as ``plan.py``, in millimetres instead of metres.
@@ -15,7 +15,7 @@ The mirror exists for one reason. ``bench.py`` imports MuJoCo, which is not in
 the root environment, and every diagram generator in this repository has to run
 from the project root under that environment. Anything that needs the physics
 rather than the geometry is therefore *recorded* rather than recomputed:
-``STORY`` below holds a real run of ``problem-3-programmed`` on table 10001,
+``STORY`` below holds a real run of ``03-push-glasses-apart/01-one-fixed-nudge`` on table 10001,
 and ``SCORED`` holds the numbers from its ``results.json``.
 
 No glass size is written down here. Every outline comes from
@@ -76,7 +76,7 @@ from work_cell.glasses.shapes import KIND_RANGES, draw  # noqa: E402
 from work_cell.rack.layout import GLASS_ZONE as ZONE_M  # noqa: E402
 
 # --------------------------------------------------------------------------- #
-# The jaw, from problem-3-sim/bench.py, in millimetres. These are the arm's own
+# The jaw, from 03-push-glasses-apart/bench/bench.py, in millimetres. These are the arm's own
 # numbers, taken from arm/gripper.urdf.xacro by the bench.
 # --------------------------------------------------------------------------- #
 
@@ -103,7 +103,7 @@ KINDS = ("straight_glass", "tapered_glass", "stemmed_glass", "short_stemmed_glas
 TEST_SEEDS = 10_000                     # bench.TEST_SEEDS: held-out tables start here
 
 # --------------------------------------------------------------------------- #
-# The planner, from problem-3-programmed/plan.py, in millimetres.
+# The planner, from 03-push-glasses-apart/01-one-fixed-nudge/plan.py, in millimetres.
 # --------------------------------------------------------------------------- #
 
 MU_LOWEST = 0.2                         # plan.MU_LOWEST
@@ -125,13 +125,13 @@ LONGEST_PUSH = 150.0                    # plan.LONGEST_PUSH
 # What only the physics can say. Both blocks are recorded output, not guesses.
 # --------------------------------------------------------------------------- #
 
-# problem-3-programmed/results.json, the full held-out run of 50 tables.
+# 03-push-glasses-apart/01-one-fixed-nudge/results.json, the full held-out run of 50 tables.
 SCORED = dict(scenes=50, glasses=251, crowded_at_start=190, done=35, incomplete=15, wrong=0,
               racked=199, refused=52, toppled=0, out_of_zone=0, picked_without_room=0,
               pushes=212, repeats=90, aim_median=1.0, aim_worst=3.9,
               refused_because="nowhere clear to push it to")
 
-# One real run of problem-3-programmed on table 10001, six tapered glasses,
+# One real run of 03-push-glasses-apart/01-one-fixed-nudge on table 10001, six tapered glasses,
 # recorded by the throwaway measurement script under that directory. Positions
 # and landings are the simulator's own record, in millimetres.
 STORY = dict(
@@ -886,7 +886,7 @@ def study_the_loop(count: int = 40) -> None:
               f"{st.median(pushes):.0f}, most {max(pushes)}; {spread}")
     print(f"   pushes that took the room away from a glass that had it: {broke} of "
           f"{total_pushes} = {100.0 * broke / total_pushes:.1f}%")
-    print("   the scored run of the real thing, from problem-3-programmed/results.json:")
+    print("   the scored run of the real thing, from 03-push-glasses-apart/01-one-fixed-nudge/results.json:")
     print(f"      {SCORED['scenes']} tables, {SCORED['glasses']} glasses, "
           f"{SCORED['crowded_at_start']} without room at the start")
     print(f"      {SCORED['done']} done, {SCORED['incomplete']} incomplete, "
@@ -1079,8 +1079,8 @@ def picture_feel_do_not_drive() -> None:
 
 def main() -> None:
     print("Measurements for the shared pushing-without-toppling document")
-    print("Tables and planner mirrored from problem-3-sim/bench.py and "
-          "problem-3-programmed/plan.py")
+    print("Tables and planner mirrored from 03-push-glasses-apart/bench/bench.py and "
+          "03-push-glasses-apart/01-one-fixed-nudge/plan.py")
     study_the_tables()
     study_the_gate()
     study_the_optimistic_gate()

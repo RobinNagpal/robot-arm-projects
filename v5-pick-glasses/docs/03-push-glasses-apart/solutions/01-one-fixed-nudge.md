@@ -263,7 +263,7 @@ distances, and [the target layout](../the-target-layout.md) makes again when it
 insists that a layout has to use the edge version of the condition.
 
 **The shortfall is already in the repository.** The function `shortfall()` in
-[`problem-3-programmed/plan.py`](../../../problem-3-programmed/plan.py)
+[`03-push-glasses-apart/01-one-fixed-nudge/plan.py`](../../../03-push-glasses-apart/01-one-fixed-nudge/plan.py)
 computes exactly the expression above and adds it up over the whole table, as a
 measure of how crowded the arrangement is. This solution uses the same quantity
 one glass at a time, as its error.
@@ -381,18 +381,18 @@ real code is involved and it would be easy to over-claim.
 
 **Built, in the repository, and run against the bench:**
 
-- the bench itself, in [`problem-3-sim/`](../../../problem-3-sim/), with the
+- the bench itself, in [`03-push-glasses-apart/bench/`](../../../03-push-glasses-apart/bench/), with the
   crowded tables, the measurement error, `look()`, `push()`, `take()` and the
   scorecard;
 - the room test, as `has_room()` in
-  [`problem-3-sim/bench.py`](../../../problem-3-sim/bench.py), which holds the
+  [`03-push-glasses-apart/bench/bench.py`](../../../03-push-glasses-apart/bench/bench.py), which holds the
   70 mm as the gripper's constant and applies it to the neighbour's edge;
 - the shortfall, as `shortfall()` in
-  [`problem-3-programmed/plan.py`](../../../problem-3-programmed/plan.py);
+  [`03-push-glasses-apart/01-one-fixed-nudge/plan.py`](../../../03-push-glasses-apart/01-one-fixed-nudge/plan.py);
 - the tipping rule, as `slides()` in the same file, evaluated at the top edge
   of the jaw and at both ends of the plausible friction range, together with
   the small test push that settles the glasses the range cannot;
-- the loop, in [`problem-3-programmed/run.py`](../../../problem-3-programmed/run.py):
+- the loop, in [`03-push-glasses-apart/01-one-fixed-nudge/run.py`](../../../03-push-glasses-apart/01-one-fixed-nudge/run.py):
   look, rack every glass that already has room, choose one push, make it, look
   again, with a budget of pushes per glass and a budget per table;
 - the refusal reasons, and the scorecard that counts them with the outcome
@@ -417,7 +417,7 @@ real code is involved and it would be easy to over-claim.
 
 One measurement from the built code is worth quoting, with its attribution
 made clear. The programmed run reports in
-[`problem-3-programmed/results.json`](../../../problem-3-programmed/results.json)
+[`03-push-glasses-apart/01-one-fixed-nudge/results.json`](../../../03-push-glasses-apart/01-one-fixed-nudge/results.json)
 that its pushed glasses stopped a median of 1.0 mm, and at worst 3.9 mm, from
 where they were aimed. **That run uses the searching planner rather than this
 solution's rule**, so the figure is not this solution's score. What it does say

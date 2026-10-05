@@ -9,7 +9,7 @@
 4. GripNet  — new. The same side picture in; whether the glass can be held,
               how high up, and how far apart the pads are when they touch.
 
-TopNet and the Ranker are imported from problem-2-learned/models.py as they
+TopNet and the Ranker are imported from 02-segment-glasses/02-train-from-scratch/models.py as they
 are. SideNet's picture half is the same layers as problem 2's; only the heads
 on the end differ.
 
@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import numpy as np
 import torch
-from models import (  # problem-2-learned
+from models import (  # 02-segment-glasses/02-train-from-scratch
     DEVICE,
     HEIGHT_SCALE,
     SMALL,

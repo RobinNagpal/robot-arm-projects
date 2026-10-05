@@ -6,7 +6,7 @@
                           --GripNet--> can it be held; grip height; opening
 
 The order they run in is run.py's. Finding and choosing a view are problem
-2's own functions (problem-2-learned/pipeline.py), called as they are.
+2's own functions (02-segment-glasses/02-train-from-scratch/pipeline.py), called as they are.
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ from work_cell.glasses import spec
 from work_cell.table.layout import TABLE_TOP_Z
 
 import nets
-import pipeline as p2  # problem-2-learned
+import pipeline as p2  # 02-segment-glasses/02-train-from-scratch
 import render
 import tables
 import viewpoints

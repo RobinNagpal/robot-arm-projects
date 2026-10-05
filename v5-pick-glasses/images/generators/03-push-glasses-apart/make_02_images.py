@@ -3,12 +3,12 @@
 Every glass drawn here is a real glass, and every arrangement is a real table.
 The outlines come from ``work_cell.glasses.shapes`` at sizes drawn from
 ``KIND_RANGES["tapered_glass"]``, and the places they stand in come from the
-layout rule in ``problem-3-sim/bench.py``, which is the generator the real runs
+layout rule in ``03-push-glasses-apart/bench/bench.py``, which is the generator the real runs
 are scored against. No glass's size is written down in this file.
 
 **Why the layout rule is copied rather than imported.** ``bench.py`` imports
-MuJoCo, which is installed in ``problem-3-programmed`` and
-``problem-3-learned`` but not in the root environment every generator in this
+MuJoCo, which is installed in ``03-push-glasses-apart/01-one-fixed-nudge`` and
+``03-push-glasses-apart/04-a-world-model`` but not in the root environment every generator in this
 repository runs from. ``scene`` and ``_crowded_layout`` need none of it, so
 they are mirrored below, in metres, exactly as they are written there. The copy
 was checked against the original over 2399 seeds — every tapered test seed this
@@ -79,7 +79,7 @@ from work_cell.glasses.shapes import draw, family  # noqa: E402
 from work_cell.rack.layout import GLASS_ZONE as ZONE_M  # noqa: E402
 
 # --------------------------------------------------------------------------- #
-# problem-3-sim/bench.py, mirrored. Metres, as it is written there.
+# 03-push-glasses-apart/bench/bench.py, mirrored. Metres, as it is written there.
 # --------------------------------------------------------------------------- #
 KINDS = ("straight_glass", "tapered_glass", "stemmed_glass", "short_stemmed_glass")
 TEST_SEEDS = 10_000     # scenes from here up are for testing; training draws below

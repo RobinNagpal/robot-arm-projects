@@ -23,10 +23,10 @@ what breaks.
 
 | Piece | From | What it does | Where the model sits |
 | --- | --- | --- | --- |
-| TopNet | [`problem-2-learned`](../../../../problem-2-learned/README.md) | each glass pixel in the overhead picture votes for the middle of its glass | decider, for finding |
-| Ranker | `problem-2-learned` | orders the places the geometry allows for a side view | ranker |
-| SideNet | `problem-2-learned` | reads the height and 16 widths from the side picture | decider, for measuring |
-| the forward model | [`problem-3-learned`](../../../../problem-3-learned/README.md) | predicts what a push does to every glass | decider, for pushing, checked by looking again |
+| TopNet | [`02-segment-glasses/02-train-from-scratch`](../../../../02-segment-glasses/02-train-from-scratch/README.md) | each glass pixel in the overhead picture votes for the middle of its glass | decider, for finding |
+| Ranker | `02-segment-glasses/02-train-from-scratch` | orders the places the geometry allows for a side view | ranker |
+| SideNet | `02-segment-glasses/02-train-from-scratch` | reads the height and 16 widths from the side picture | decider, for measuring |
+| the forward model | [`03-push-glasses-apart/04-a-world-model`](../../../../03-push-glasses-apart/04-a-world-model/README.md) | predicts what a push does to every glass | decider, for pushing, checked by looking again |
 
 Then the rules: `classify()` names the kind from SideNet's profile, and
 `find_grip()` chooses the grip from it.
@@ -36,7 +36,7 @@ Then the rules: `classify()` names the kind from SideNet's profile, and
 **Finding.** TopNet was scored on problem 2's scenes, which cycle through the
 four kinds, one kind per scene. It found all 250 glasses. A mixed scene is new
 to it, and it would be retrained on mixed scenes. `make train` in
-`problem-2-learned` retrains all three of its models in about a minute. Nothing
+`02-segment-glasses/02-train-from-scratch` retrains all three of its models in about a minute. Nothing
 about voting for a centre depends on the kind.
 
 **Choosing the view.** The veto in front of the Ranker is geometry, and the
@@ -54,7 +54,7 @@ problem 4 means.
 
 In problem 2, SideNet's profile only had to be good enough to measure: height
 to within 5.4 mm at the median, widths to within 2.4 mm. [Problem 2's
-results](../../../../problem-2-results/README.md) found it measures worse than the
+results](../../../../02-segment-glasses/results/README.md) found it measures worse than the
 silhouette. The silhouette is out by 0.8 mm in height at the median.
 
 In problem 4 the profile also has to carry the **name**. And the name is asked
@@ -118,7 +118,7 @@ levels, and one misread level would then decide it.
 **Keep the finding and the pushing. Do not measure with SideNet.** Measure with
 the silhouette, as problem 2's programmed twin does, because the name needs a
 profile with enough rows to smooth. [Problem 2's
-results](../../../../problem-2-results/README.md#what-the-comparison-says) already
+results](../../../../02-segment-glasses/results/README.md#what-the-comparison-says) already
 said the silhouette measures better. Problem 4 turns that from "more accurate"
 into "the only one the naming can use".
 
@@ -126,7 +126,7 @@ That is what the recommended combination does.
 
 ## What it needs
 
-- `problem-2-learned` retrained on mixed scenes: a minute.
+- `02-segment-glasses/02-train-from-scratch` retrained on mixed scenes: a minute.
 - The forward model retrained on mixed tables: see [solution
   9](09-plan-the-whole-table-with-the-push-model.md).
 - A mixed-kind bench to score it on, the same as every problem 4 solution.

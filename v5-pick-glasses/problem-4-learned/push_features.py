@@ -1,6 +1,6 @@
 """What the push model is shown, and what it is asked to predict.
 
-Problem 3's features (problem-3-learned/features.py) with one change: the kind
+Problem 3's features (03-push-glasses-apart/04-a-world-model/features.py) with one change: the kind
 belongs to each glass, not to the table. Problem 3's tables had one kind, so
 it was given once. Here every glass, pushed or not, carries one of five: the
 four kinds, or NOT_MEASURED for a glass nobody has photographed from the side

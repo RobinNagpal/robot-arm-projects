@@ -1,0 +1,35 @@
+[workspace]
+name = "segment-glasses"
+version = "0.1.0"
+description = "Problem 2: six ways to turn the same pictures into the same masks, scored on one bench"
+channels = ["conda-forge"]
+platforms = ["osx-arm64", "linux-64"]
+
+# One environment for all six solutions and the bench they share. Separate
+# from the ROS one, because PyTorch beside RoboStack's libraries is a conflict
+# not worth having.
+[dependencies]
+python = "3.12.*"
+numpy = ">=1.26,<3"
+pytorch = ">=2.3"
+# Solution 6 and the older Mask R-CNN baseline come from torchvision; SAM 2
+# comes from transformers.
+torchvision = ">=0.18"
+transformers = ">=4.40"
+# Solution 5's keeper is gradient-boosted trees, which is what sklearn is for.
+scikit-learn = ">=1.4"
+# rack/layout.py imports OpenCV, and the glass zone is read from there.
+py-opencv = ">=4.9"
+pytest = ">=7"
+ruff = ">=0.4"
+
+[pypi-dependencies]
+# Solutions 3 and 4. Ultralytics is AGPL-3.0, which both documents say is the
+# condition this folder accepts deliberately; nothing else here is copyleft.
+ultralytics = ">=8.4"
+
+[activation.env]
+# The project's own modules, and the bench every solution is scored on.
+PYTHONPATH = "$PIXI_PROJECT_ROOT/../src/work_cell:$PIXI_PROJECT_ROOT/bench"
+# Some operations have no MPS kernel and silently need the CPU instead.
+PYTORCH_ENABLE_MPS_FALLBACK = "1"

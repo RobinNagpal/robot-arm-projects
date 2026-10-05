@@ -62,7 +62,7 @@ from work_cell.glasses.shapes import KIND_RANGES, family  # noqa: E402
 SEEDS = 500
 COUNTS = (4, 5, 6)
 
-# The four kinds, in the order problem-3-sim/bench.py cycles them.
+# The four kinds, in the order 03-push-glasses-apart/bench/bench.py cycles them.
 KINDS = ("straight_glass", "tapered_glass", "stemmed_glass", "short_stemmed_glass")
 
 # The top edge of the closed jaw, 65 mm above the table: bench.py builds it from
@@ -88,7 +88,7 @@ DIRECTIONS = tuple(40.0 * step for step in range(9))
 TOUCHING_FLOOR = KIND_RANGES["tapered_glass"]["rim_diameter"][1]
 
 # What the peel is actually worth, measured on the bench's own crowded tables
-# by problem-3-programmed/measure_peel.py over bench.scene seeds 10000-10999 —
+# by 03-push-glasses-apart/01-one-fixed-nudge/measure_peel.py over bench.scene seeds 10000-10999 —
 # the held-out half of the scene space — using bench.has_room as the test.
 #
 # They are copied here rather than computed, because bench.py imports MuJoCo and
@@ -112,7 +112,7 @@ BENCH = {
     "picks": 1.40,                     # free picks per scene
     "disagreed": 0,                    # scenes where a random pick order changed the residue
     "unpushable": {0.3: 48, 0.35: 185, 0.5: 1311},   # of the 3599 left
-    # The same sweep with the 5 mm take margin problem-3-programmed/run.py
+    # The same sweep with the 5 mm take margin 03-push-glasses-apart/01-one-fixed-nudge/run.py
     # applies, which is three standard deviations of the measurement error in
     # the gap between two glasses.
     "margin": {"racked": 1073, "emptied": 8, "nothing_free": 338, "cascades": 36},
@@ -486,7 +486,7 @@ def main() -> None:
           f"{GRIP_ROOM + max(w[1] for w in widths) * 500:.1f} mm over all four")
 
     print(f"the peel on bench.scene, seeds {BENCH['seeds'][0]}-{BENCH['seeds'][1]} "
-          f"(measured by problem-3-programmed/measure_peel.py, copied in above):")
+          f"(measured by 03-push-glasses-apart/01-one-fixed-nudge/measure_peel.py, copied in above):")
     print(f"    {BENCH['scenes']} scenes, {BENCH['glasses']} glasses, "
           f"{BENCH['without_room']} = {100.0 * BENCH['without_room'] / BENCH['glasses']:.1f}% "
           f"without room at the start")

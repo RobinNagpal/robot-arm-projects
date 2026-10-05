@@ -119,7 +119,7 @@ A model earns its place when there are examples of failures nobody has
 described. That needs real pictures of real glasses, with the profiles that
 went wrong marked. The simulator's glasses are opaque and make no reflections,
 so it cannot produce them. This is the same position [problem 2's learned
-models](../../../../problem-2-results/README.md#what-the-comparison-says) ended in:
+models](../../../../02-segment-glasses/results/README.md#what-the-comparison-says) ended in:
 where the answer can be worked out exactly, working it out beats learning it,
 and learning pays when the rule cannot be written.
 

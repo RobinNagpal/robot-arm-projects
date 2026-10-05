@@ -26,7 +26,7 @@ It is the plan for the one learned piece in the recommended combination.
 
 ## What problem 3's model is
 
-From [`problem-3-learned`](../../../../problem-3-learned/README.md): a small
+From [`03-push-glasses-apart/04-a-world-model`](../../../../03-push-glasses-apart/04-a-world-model/README.md): a small
 network, three layers of 256, trained five times from different starts. Where
 the five disagree, it has not seen a push like the one asked about.
 
@@ -157,9 +157,9 @@ make the best push; look again                                  problem 3, uncha
 
 ## What it needs
 
-- `problem-3-sim/bench.py` draws each glass's kind separately — the same change
+- `03-push-glasses-apart/bench/bench.py` draws each glass's kind separately — the same change
   every problem 4 solution needs.
-- `problem-3-learned/features.py` puts the kind on each glass instead of the
+- `03-push-glasses-apart/04-a-world-model/features.py` puts the kind on each glass instead of the
   table, with a fifth "not measured" value and the foot zeroed with it.
 - Collection that hides some glasses' kinds at random.
 - A second topple limit, for not-measured glasses, set on tuning tables.

@@ -118,8 +118,8 @@ finding 2 were drawn into the mask by hand.
 
 The rack tables are 4 to 6 glasses of at least two kinds, drawn at random, with
 the rack in the middle of `RACK_AREA`. The crowded tables in finding 5 use
-`_crowded_layout()` from `problem-3-sim/bench.py`, with each glass's kind drawn
-separately, and the view check from `problem-2-programmed/views.py`.
+`_crowded_layout()` from `03-push-glasses-apart/bench/bench.py`, with each glass's kind drawn
+separately, and the view check from `02-segment-glasses/01-rules-on-the-table/views.py`.
 
 ## The words
 
