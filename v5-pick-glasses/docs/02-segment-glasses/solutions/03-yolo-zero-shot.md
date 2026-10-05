@@ -207,6 +207,8 @@ filter on a list of names rather than anything fitted. That is the point to
 remember: **this solution would contain no numbers fitted in this cell at all**,
 not one.
 
+![The whole chain, with the one step this project wrote marked out: a grey picture from the top goes into the borrowed model exactly as it downloads, the model returns a box, a name, a score and an outline for every object it believes it found, a gate keeps an outline only when its name is one of five, the name is then thrown away and the bench's shared arithmetic turns what is left into a place and a width; the funnel underneath is the measured one, in which 180 glasses standing across 36 pictures produced 87 named outlines and five names on the list of five, every one of them the same name.](../../../images/02-segment-glasses/03-the-name-is-the-only-gate.png)
+
 ## What instance segmentation is, and the two kinds beside it
 
 Three kinds of model all produce outlines, and they are not interchangeable, so
@@ -311,6 +313,8 @@ a stem should be where the method does worst, and the stemmed glass worst of
 all. That is an expectation drawn from the shape of the glasses and the
 coarseness of the outline, not a measurement of this model.
 
+![The two mask numbers broken down by kind, measured on the handful of glasses whose names got past the filter: the two kinds without a stem are covered almost exactly and the stemmed kinds worst, which is the order this section predicts from the shapes alone, while the outline leaks only a few percent onto the table in every kind; each bar carries the number of glasses its median is taken over, and that number is between one and five, so the order is a hint rather than a result.](../../../images/02-segment-glasses/03-the-outlines-were-not-the-problem.png)
+
 **The edge of the outline is approximate, and the arithmetic reads the width
 from the edge.** The shared step takes a glass's width from how far its mask's
 points reach away from the axis, so an outline that is a little too generous
@@ -340,9 +344,16 @@ whose scores are badly calibrated may still rank a clear glass above a doubtful
 one, because ranking only needs the scores to move in the right direction, not
 to be honest about their size. So this design may use the number to sort the
 outlines and to set a bar below which an outline is ignored, but it must treat
-that bar as a **knob set by hand and checked on arrangements from the bench's
-training half**, not as a probability threshold with a meaning. Calling it a
-probability would be claiming a property nobody has measured.
+that bar as a **knob, not as a probability threshold with a meaning**. Calling
+it a probability would be claiming a property nobody has measured.
+
+What the code does with that knob is the strictest thing it could do: it leaves
+it at the value the library itself uses when nobody chooses one. Nothing here
+looked at this cell's pictures and moved it, because the moment a bar is tuned
+on arrangements from the bench, this solution stops being a borrowed model used
+as it downloads and becomes a very small fitted one. The bar is therefore a
+borrowed number like the weights are borrowed, and the scorecard records that
+nothing at all was fitted here.
 
 This is also the one place where the solution could be improved without
 abandoning its central promise. Fitting a small correction from the model's
@@ -383,6 +394,8 @@ evidence, is all that remains. So the gap is not only that the picture is poorer
 than a photograph; it is also that the thing in the picture no longer looks like
 the thing the model was taught to name.
 
+![A drinking glass as a photograph shows it from the side, with a bright line where the rim catches the light, a highlight running down one side, the wall behind showing through it and a shadow where it meets the table, set beside the same kind of glass as this cell renders it from the top: a plain disc shaded by how far away the nearest surface is, with not one of those four features present, so that all the model is left with is a round silhouette and its width.](../../../images/02-segment-glasses/03-a-glass-from-the-top.png)
+
 Put together, this is the clearest reason the solution might fail outright
 rather than merely do poorly, and it is also what makes the comparison with
 [solution 4](04-yolo-fine-tuned.md) the interesting one. Solution 4 takes this
@@ -391,6 +404,8 @@ standard repair for exactly this gap. The difference between the two would
 therefore be a clean measurement of what the gap costs, and that is the most
 useful thing this solution could contribute to the folder even if it performed
 badly.
+
+![Every name the borrowed model offered over thirty-six pictures, kind by kind and with no filter in front of it, set against the five names the filter accepts: four of those five were never offered once, the only accepted name that ever arrived was vase, five times out of eighty-seven, and seventy-six of the eighty-seven were a sports ball or a frisbee, which are the two roundest things on the model's list. The model finds the objects and names them; it simply does not call them drinking vessels.](../../../images/02-segment-glasses/03-what-it-named.png)
 
 ## The masks are what this contributes
 
@@ -507,11 +522,20 @@ lost stem. The short glass is reported at a place pulled towards the part of it
 that stayed visible, and with a width read from a slice of its silhouette rather
 than from the whole of it, so it is reported narrower than it is.
 
-That last report is the honest summary of this solution. Four glasses were put
-out and four reports came back, so the counts look right. One of the four is
-quietly wrong, and nothing in the run marks it as doubtful. It is the failure a
-borrowed model used as the decider would produce most often, and it is the
-reason the comparison against the same model fitted here matters.
+That last report is the hazard this solution carries. Four glasses were put out
+and four reports came back, so the counts look right. One of the four is
+quietly wrong, and nothing in the run marks it as doubtful, which is why the
+comparison against the same model fitted here matters: a wrong report that
+looks right is worse than no report.
+
+**The run, when it was made, failed in a different way from this, and the
+difference is worth more than the example.** This walk-through assumes the
+model names the glasses and then draws them imperfectly. It does not name them.
+Over the held-out scenes nothing at all was merged, split or falsely found,
+while nine glasses in ten were never reported, so the quietly wrong report
+above is a hazard the method has rather than the failure it actually produced.
+The measured failure is silence, and the section on what was measured gives
+it.
 
 ## What it needs
 
@@ -530,8 +554,8 @@ same one, because the pair is only clean while both start from the same file.
 
 What it does not need is the expensive part of every other learned solution
 here: no labelled pictures, no training run, no weights file to keep in step
-with the cell, and no held-out set beyond the small one used to set the bar on
-the confidence number.
+with the cell, and no held-out set at all, because there is no number in it
+that this cell chose.
 
 ## The licence, which is the real cost here
 
@@ -594,6 +618,16 @@ cannot do because it trains nothing. A completely hidden glass is invisible to
 it, and no model can find what left no pixels. Neither limit has a fix inside
 this solution, and the project's usual answer applies to both: report the doubt
 rather than the guess, and send the arm to look again.
+
+**One check the other solutions make is deliberately left out here, and the
+reason is the comparison.** Every sibling refuses a report whose width no glass
+of the kind on the table could have, which turns a bad outline into a stated
+doubt instead of a wrong answer. This solution is handed the kind as well, and
+ignores it. That is not an oversight: the quietly wrong report in the worked
+example above is exactly what such a check would catch, and catching it here
+would hide the behaviour that the comparison with solution 4 exists to measure.
+A reader building on this solution rather than comparing it should add the
+check, and the code says so where the kind is received and unused.
 
 The honest position is therefore that this is the first thing to run and
 unlikely to be the one carried into a finished product. Its value is the
@@ -695,6 +729,8 @@ between their scores would be a measurement of what the training bought and of
 nothing else. No other pair in the folder is that clean, and that is the main
 reason this solution is worth building even though it is unlikely to be the one
 carried forward.
+
+![What that pair measured: ten glasses of a hundred found on the spawned layouts and four of a hundred and one on the crowded ones, against the bench's floor at 100 and 83 and against solution 4, which is this same model with its training continued here, at 99 and 73; and the scorecard's five columns for this solution, in which merged, split and false are all zero, so every glass it reported was a real glass and the whole of the failure is the ninety glasses that got no report at all.](../../../images/02-segment-glasses/03-silence-against-the-floor.png)
 
 ← [A network trained here from scratch](02-train-from-scratch.md) · [The same
 model, fine-tuned here](04-yolo-fine-tuned.md) →

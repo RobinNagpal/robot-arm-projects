@@ -1,14 +1,11 @@
-"""Pictures for solution 9 — a fine-tuned instance segmenter.
+"""Pictures for solution 4 — the borrowed segmenter, fine-tuned on this cell.
 
-Seven figures, each carrying one point of the document:
+Four figures, each carrying one point of the document:
 
     04-class-map-against-instances.png  one label per pixel against one mask per glass
-    09-the-two-stages.png               propose regions, then classify and cut a mask
     04-what-a-backbone-brings.png       what arrives already fitted, and why it transfers
     04-fine-tune-against-scratch.png    how many labelled scenes each start needs
     04-boxes-scores-masks.png           what one pass returns, and what the score is for
-    09-overlapping-proposals.png        many boxes for one glass, collapsed by overlap
-    09-where-it-stops.png               a glass with no pixels is in no output
 
 Run from the project root:
 

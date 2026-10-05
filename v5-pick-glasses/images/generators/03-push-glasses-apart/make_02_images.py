@@ -8,8 +8,9 @@ implementation of problem 3, not against anything invented for a picture:
 - ``03-push-glasses-apart/01-one-fixed-nudge/plan.py`` holds the candidate pushes and the rule
   that ranks them, which is the "geometry generates" half of this solution
   already written;
-- ``03-push-glasses-apart/01-one-fixed-nudge/results.json`` and ``03-push-glasses-apart/04-a-world-model/results.json``
-  hold what each scored on the fifty held-out tables.
+- ``01-one-fixed-nudge/results.json`` and ``04-a-world-model/results.json``,
+  both under ``03-push-glasses-apart/``, hold what each scored on the fifty
+  held-out tables.
 
 ``bench.py`` imports MuJoCo, which is not in the root environment, so nothing
 here imports it and this file still runs from the project root. The population
@@ -473,7 +474,7 @@ def picture_the_refusals() -> None:
                   f"Read the two panels together. The tipping arithmetic is real and it is inside the\n"
                   f"filter, so a glass that would go over never reaches a ranker. On these tables it\n"
                   f"refuses nothing, because the jaw meets a glass low enough that the foot usually\n"
-                  f"wins. Every refusal 03-push-glasses-apart/01-one-fixed-nudge made on the {SWEEP['tables']} held-out "
+                  f"wins. Every refusal the one fixed nudge made on the {SWEEP['tables']} held-out "
                   f"tables was the other\nkind: {SWEEP['safe_none_pct']:.0f}% of crowded glasses have "
                   f"no safe push at all, and most of the rest have\nnone that finishes the job. That "
                   f"is a shortage of candidates, and no ranking repairs it.",
@@ -564,7 +565,8 @@ def picture_the_pattern() -> None:
            "This is the pattern worth taking away, and it is worth taking away even though it earns "
            "little here. The model's output is a permutation of a set the arithmetic has already "
            "cleared, so no value it can emit is\nan unsafe push. Delete its weights, keep plan.py's "
-           "printed rule, and the run still works — which is exactly what 03-push-glasses-apart/01-one-fixed-nudge is, "
+           "printed rule, and the run still works — which is exactly what "
+           "the one fixed nudge is, "
            "and it topples nothing on the fifty held-out tables.")
     figure.subplots_adjust(bottom=0.15, top=0.91, wspace=0.08)
     save(figure, "02-generate-veto-then-rank.png")

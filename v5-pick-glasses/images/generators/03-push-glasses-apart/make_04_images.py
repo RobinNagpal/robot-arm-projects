@@ -712,7 +712,7 @@ def picture_planning(crowded: list[dict], pair: tuple[int, int], plan: dict) -> 
     footer(figure,
            f"The candidates, the filter and the scoring are the real search: {2 * DRAWS} draws in "
            f"the first round and {DRAWS} in each of the rest, "
-           f"best {ELITES} kept, {ROUNDS} rounds, as 03-push-glasses-apart/04-a-world-model/plan.py runs it. The "
+           f"best {ELITES} kept, {ROUNDS} rounds, as this solution's planner runs it. The "
            f"{MEASURED_ONE_PUSH_ERROR:.1f} mm offset in\nthe third panel is the median one-push error "
            f"that project's README records for its own model on unseen tables. The three rings are an "
            f"illustration\nof why the horizon is one push: if that error simply added up, a plan "
@@ -896,7 +896,7 @@ def picture_the_data(crowded: list[dict]) -> None:
     frame_on(real, crowded, pad=90.0)
     under(figure, 1, 2,
           f"a run stops as soon as every glass has room, so it makes as few pushes as it can.\n"
-          f"Over the {scenes} held-out tables 03-push-glasses-apart/04-a-world-model was scored on, {run_pushes} pushes "
+          f"Over the {scenes} held-out tables this solution was scored on, {run_pushes} pushes "
           f"were made\nin all: {per_run:.2f} a table, and each one costs a survey and a plan")
 
     core_minutes = rows * BENCH_PUSH_MS / 1000.0 / 60.0

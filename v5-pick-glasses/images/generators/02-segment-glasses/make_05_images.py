@@ -611,7 +611,8 @@ def figure_the_prompt_grid() -> None:
     )
 
     figure.suptitle(
-        "Prompting on a grid: points on the same glass return the same mask, points on the table return table.",
+        "Prompting on a grid: points on the same glass return the same mask, points on the table return "
+        "table.",
         fontsize=TITLE_SIZE, color=INK, y=1.01,
     )
     figure.tight_layout()
@@ -655,7 +656,8 @@ def figure_everything_is_proposed() -> None:
          colour=INK, va="top", halo=True)
     note(left, 120, -70,
          f"{RAW_MASKS} masks come back from the {len(GRID) - ON_TABLE} points\nthat landed on something, at "
-         f"{MASKS_PER_POINT} scales each.\nNear-duplicates collapse, and {len(PROPOSALS)} distinct\nproposals "
+         f"{MASKS_PER_POINT} scales each.\nNear-duplicates collapse, and {len(PROPOSALS)} "
+         f"distinct\nproposals "
          "are left. They are the eight\non the right.",
          colour=INK, va="top", halo=True)
 
@@ -848,7 +850,8 @@ def figure_the_keeper() -> None:
         box(right, leaf_x, leaf_y, 0.20, 0.080, text, tint(colour, 0.13), edge=colour,
             size=NOTE_SIZE - 1.4)
     note(right, 0.02, 0.560,
-         f"Every question is a threshold on one of the {len(FEATURES)} features below, and every leaf holds a "
+         f"Every question is a threshold on one of the {len(FEATURES)} features below, and every leaf holds "
+         f"a "
          f"small push\ntowards one of the three answers. A tree {TREE_DEPTH} questions deep is weak on its "
          "own, and is meant to be.",
          colour=INK, va="top")
@@ -876,7 +879,8 @@ def figure_the_keeper() -> None:
         tint(GOOD, 0.14), edge=GOOD, size=NOTE_SIZE - 1.2)
     note(right, 0.02, 0.288,
          f"{ROUNDS} rounds, one set of trees per answer, so {TREES} shallow trees in all. Added up, they are "
-         f"the keeper.\nThere is no gradient to follow through a picture and no graphics card in it anywhere: "
+         f"the keeper.\nThere is no gradient to follow through a picture and no graphics card in it "
+         f"anywhere: "
          "a table this\nsize fits in seconds on the processor alone, and the labels are free, because the "
          "simulator already\nknows which pixels belong to which glass.",
          colour=INK, va="top")
@@ -907,7 +911,8 @@ def figure_the_keeper() -> None:
        "to learn what a glass looks like. It only has to learn which\nmeasurements go with a glass, and a "
        "short table of widths, errors, heights, ratios and counts is the case boosted trees were made for: "
         f"a tree asks a threshold\nquestion and lands in a leaf, and the sum of {TREES} weak ones is the "
-        "answer. What it cannot do is invent a proposal. If a glass never came back from SAM 2, the\nkeeper is never shown it, "
+        "answer. What it cannot do is invent a proposal. If a glass never came back from SAM 2, the\nkeeper "
+        "is never shown it, "
         "and none of its three answers is about it.",
         ha="center", va="top", fontsize=NOTE_SIZE, color=INK,
     )
@@ -1010,7 +1015,8 @@ def figure_the_domain_gap() -> None:
          colour=INK, va="bottom", size=NOTE_SIZE - 0.6, halo=True)
 
     figure.suptitle(
-        "The honest risk: the borrowed weights have never seen a picture like the one this cell can give them.",
+        "The honest risk: the borrowed weights have never seen a picture like the one this cell can give "
+        "them.",
         fontsize=TITLE_SIZE, color=INK, y=1.01,
     )
     figure.tight_layout()
@@ -1020,7 +1026,8 @@ def figure_the_domain_gap() -> None:
        "code shades the depth into a grey picture and repeats it\nacross the three channels the model "
        "expects. Every cue the weights were fitted with is then missing at once: there is no colour to "
        "separate one object from\nthe next, no texture inside a surface, no highlight on a rim, no shadow "
-        "under a base and nothing behind the table. This is the largest risk in the solution, and it\ncannot be trained away, "
+        "under a base and nothing behind the table. This is the largest risk in the solution, and it\ncannot "
+        "be trained away, "
         "because the whole point of this solution is that the borrowed part is never trained.",
         ha="center", va="top", fontsize=NOTE_SIZE, color=INK,
     )
@@ -1162,7 +1169,8 @@ def figure_borrowed_against_trained() -> None:
         "of trees. What the picture is for is the gap between them, and the gap is not close: for every "
         f"number fitted in this cell, about {BORROWED_PER_FITTED:,.0f} are brought in\nalready fitted from "
        "somewhere else. That is what buys the small training set, and it is also what buys the risk, because "
-        " a borrowed weight cannot be corrected here.\nSolution 2 makes the opposite trade: nothing borrowed, "
+        " a borrowed weight cannot be corrected here.\nSolution 2 makes the opposite trade: nothing "
+        "borrowed, "
         "nothing unexamined, and every one of its numbers paid for with rendered scenes.",
         ha="center", va="top", fontsize=NOTE_SIZE, color=INK,
     )
@@ -1266,10 +1274,12 @@ def figure_where_it_stops() -> None:
     figure.tight_layout()
     figure.text(
         0.5, -0.03,
-        f"Both glasses here are of the one kind on the table, one near the tall end of its range of sizes and "
+        f"Both glasses here are of the one kind on the table, one near the tall end of its range of sizes "
+        f"and "
         f"one near the short end, standing {apart:.0f} mm apart, "
         f"which is further\napart than the guaranteed gap of {MIN_APART:.0f} mm. The arrangement "
-        "is an ordinary one, and the project's own coverage test confirms that every point of the short glass's\noutline falls inside the tall one's. This is the same "
+        "is an ordinary one, and the project's own coverage test confirms that every point of the short "
+        "glass's\noutline falls inside the tall one's. This is the same "
         "limit every solution in this problem meets, and it is geometry, not a weakness of any model.",
         ha="center", va="top", fontsize=NOTE_SIZE, color=INK,
     )
