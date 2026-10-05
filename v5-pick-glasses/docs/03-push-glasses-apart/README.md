@@ -73,5 +73,5 @@ the price of reproducing it. Solutions 1 and 2 need nothing rented at all.
 ## The plan behind the six
 
 [The plan](solutions-plan.md) records the decisions in short form: the contract
-all six share, why these six and not others, what the bench still has to grow,
+all six share, why these six and not others, what the bench grew in order to mark them,
 and what the scorecard needs that problem 2's did not.

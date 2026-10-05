@@ -71,22 +71,23 @@ cannot be stood back up by anything in this project, that property is worth a
 great deal.
 
 All of this is now written, and the result is worth stating before anything
-else, because it is the finding rather than a footnote. The candidate
-generation exists: `03-push-glasses-apart/01-one-fixed-nudge/plan.py` sweeps the headings, steps
-the travel out, applies the tests and returns every push that survives. The
-printed rule that takes the shortest push which finishes the job exists beside
-it. And the trees described below — their inputs, the number they predict, the
-training set and the labelling — are built too, in
+else, because it is the finding rather than a footnote. The candidate generation
+exists: `03-push-glasses-apart/01-one-fixed-nudge/plan.py` sweeps the headings,
+steps the travel out, applies the tests and returns every push that survives.
+The printed rule that takes the shortest push which finishes the job exists
+beside it. And the trees described below — their inputs, the number they
+predict, the training set and the labelling — are built too, in
 `03-push-glasses-apart/02-geometry-ranked`, fitted, and run over the same fifty
 held-out tables as the rule, with the model deleted, so that both sides see
 exactly the same candidates and the only difference between the two runs is who
-picks. **The ranker loses that comparison.** It racked 185 of the 251 glasses
-in 229 pushes where the printed rule racked 195 in 213, finishing two fewer
-tables and toppling nothing either way. The ablation is in the folder:
-`results.json` is the ranker's run and `rule.json` is the rule's. Why it loses
-is explained in [where it is strong and where it breaks](#where-it-is-strong-and-where-it-breaks),
-and the short answer is that the model is fitted on room gained while the run
-is scored on glasses racked, and those are not the same quantity.
+picks. **The ranker loses that comparison.** It racked 185 of the 251 glasses in
+229 pushes where the printed rule racked 195 in 213, finishing two fewer tables
+and toppling nothing either way. The ablation is in the folder: `results.json`
+is the ranker's run and `rule.json` is the rule's. Why it loses is explained in
+[where it is strong and where it
+breaks](#where-it-is-strong-and-where-it-breaks), and the short answer is that
+the model is fitted on room gained while the run is scored on glasses racked,
+and those are not the same quantity.
 
 By the end of this document you will understand what a decision tree is and
 what boosting a set of them means, why a handful of geometric quantities suits
@@ -238,8 +239,9 @@ of a fitted function than predicting the outcome correctly.
 
 **The method degrades to what already exists.** Delete the fitted model, keep
 the printed rule that takes the shortest job-finishing push, and the run is the
-geometry in `03-push-glasses-apart/01-one-fixed-nudge` exactly. So this solution extends that code
-rather than replacing it, and it can be tried and then abandoned at no cost.
+geometry in `03-push-glasses-apart/01-one-fixed-nudge` exactly. So this solution
+extends that code rather than replacing it, and it can be tried and then
+abandoned at no cost.
 
 The contrast that makes the arrangement worth understanding is with the obvious
 alternative, which is to let a model choose the push directly. Such a model
@@ -849,10 +851,11 @@ It needs **scikit-learn and NumPy**, both small, both pure software, and both
 BSD 3-clause, so there is no licence condition to carry anywhere and nothing to
 revisit if this work were taken further.
 
-It needs the **enumerator**, which lives in `03-push-glasses-apart/01-one-fixed-nudge/plan.py`
-and is loaded from there rather than copied, so the heading sweep, the stepped
-travel, the four tests and the tipping rule have one definition in this
-repository. It is also the part that decides the ceiling.
+It needs the **enumerator**, which lives in
+`03-push-glasses-apart/01-one-fixed-nudge/plan.py` and is loaded from there
+rather than copied, so the heading sweep, the stepped travel, the four tests and
+the tipping rule have one definition in this repository. It is also the part
+that decides the ceiling.
 
 It needs a **training set**, which is a few thousand pairs of a candidate and
 what happened to it, generated on the training half of the bench's tables and

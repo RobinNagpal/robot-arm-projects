@@ -57,7 +57,7 @@ enumerates.
 | Glasses toppled | **0** | **0** |
 | Pushes | 229 (109 repeats) | **213** (90 repeats) |
 | Landing, median / worst | 1.0 / 3.9 mm | 1.0 / 3.9 mm |
-| Thinking per push | 101 ms | **82 ms** |
+| Thinking per push | 81 ms | **61 ms** |
 
 **The ranker loses.** It racks ten fewer glasses for sixteen more pushes, and
 the document predicted exactly this. It is not a matter of an unlucky fit:
@@ -172,11 +172,11 @@ make test        # the quick checks; no trained model needed
 Nothing here needs an accelerator and nothing downloads. `make train` spends
 about 5 minutes making pushes and **1.7 seconds** fitting the trees on a laptop
 processor; `data/rows.npz` is cached, so refitting is seconds. Run time is a
-few hundred threshold comparisons per candidate, which is the 101 ms per push
+few hundred threshold comparisons per candidate, which is the 81 ms per push
 above, and most of that is the enumeration rather than the trees: the printed
-rule, which scores nothing, spends 82 ms. Both figures move by a few tens of
-milliseconds with whatever else the machine is doing, so read them as an order
-of magnitude.
+rule, which scores nothing, spends 61 ms. Both figures were taken on an idle
+machine, because the same runs timed while the machine was busy read roughly
+twice as much.
 
 `data/`, `model/`, `demonstrations/` and `videos/` are not in git, because each
 is regenerated from a list of table numbers. Any run shorter than the 50

@@ -13,8 +13,8 @@ document is the specification and carries the reasoning; this file carries the
 numbers and the decisions the document left open.
 
 The model is **SmolVLA**, `lerobot/smolvla_base`, about 450 million
-parameters. **It runs here**: on an M4 laptop, on Metal, about 1 second of
-thinking per push.
+parameters. **It runs here**: on an M4 laptop, on Metal, about three tenths of
+a second of thinking per push.
 
 ## How to run
 
@@ -45,15 +45,22 @@ holds what the asking cost.
 | Pushes that never touched anything | 674 of 754 (±15.1) | 0 | 0 |
 | Pushes that jammed | 63 (±5.5) | 3 | **0** |
 | Landing, median / worst | 74.0 / 239 mm | 1.6 / 48.2 mm | 1.0 / 3.9 mm |
-| Thinking per push | **about 1 s** | about 0.6 s | under 0.2 s |
+| Thinking per push | **299 ms** | 415 ms | 61 ms |
 
-The thinking times are deliberately rough. Every one of them was measured
-while this machine was busy with other work, and the same solution timed twice
-minutes apart gave answers a factor of two apart, so the column is trustworthy
-about the order of magnitude and about nothing finer. What it does say is worth
-saying: this solution thinks for about a second per push where the geometry
-thinks for a fraction of one, and it is the only one here whose cost would be
-felt by a person standing beside the cell.
+The thinking times are this solution's own, with the simulator's time taken
+off, and all three were measured on an idle machine. That condition is not a
+detail: timed while the machine was busy with other work, this solution
+reported about a second per push, which is three and a half times the truth, so
+a compute column measured under load compares the load rather than the methods.
+
+What the honest column says is worth saying, and it is not what the rough one
+said. Running a borrowed model of this size costs about five times what the
+geometry costs, which is real but is not the thing that makes this solution
+unusable. The world model, which is small and written here, costs more per
+push than this does, because it imagines each candidate through an ensemble
+before it chooses. So the price of a foundation model at this size is a
+nuisance rather than a barrier, and the reason this solution finishes nothing
+lies in its answers and not in its speed.
 
 **It ran, and it did badly.** That is the result, reported as it came out.
 Nothing was tuned to improve it; the only run ever made with a different

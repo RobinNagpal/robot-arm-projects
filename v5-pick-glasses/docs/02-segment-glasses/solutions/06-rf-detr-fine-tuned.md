@@ -637,9 +637,9 @@ out before the glass did.** Inventing glass means reporting a glass where none
 stands, and every report carries a width, so a width outside the range this kind
 allows is reason enough to refuse the report and hand it on as doubtful — when
 the mask it was measured from lies inside the frame. When the mask reaches the
-edge of the frame it is not. At the cell's own survey height one picture does not
-hold the glass zone, so a glass at the far side of a station's frame is cut in
-half and the width read off the half is not the glass's width; refusing on it
+edge of the frame it is not. At the cell's own survey height one picture does
+not hold the glass zone, so a glass at the far side of a station's frame is cut
+in half and the width read off the half is not the glass's width; refusing on it
 refuses the view and not the mask. That was measured on masks nothing can
 improve on: handed the bench's own exact masks, one station at a time over 20
 held-out spawned arrangements, the kind's range of footprints refuses 66 of 297

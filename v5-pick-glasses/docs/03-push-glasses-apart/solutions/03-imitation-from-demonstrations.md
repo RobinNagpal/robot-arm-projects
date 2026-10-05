@@ -50,8 +50,9 @@
 > everything else this project depends on, and because no borrowed weights
 > are used, the weights file this solution produces inherits no terms from
 > anybody. The real price is paid elsewhere, in two parts named plainly below:
-> the policy cannot be much better than its teacher, and the bench has to grow
-> two things it does not have.
+> the policy cannot be much better than its teacher, and it asks two things of
+> the bench that a push-parameter solution never needs: the table seen from
+> straight above, and a path given as waypoints rather than as a push.
 
 > **The cell is described once, in [the cell](../../the-cell.md)** — the
 > layout, the two places the camera works from, from the top and from the
@@ -724,11 +725,11 @@ reaches the policy or changes the motion. It is bookkeeping for the
 scorecard, and it is named here because it is the one place where this
 solution's output is not literally the whole answer.
 
-**The score is the outcome, not the action.** The bench does not ask whether
-the chunk was the chunk it would have chosen, or whether the waypoints were
-smooth. It looks only at the table afterwards: which glasses have room, which
-are standing, where each one ended up, and how many pushes it took. That is
-what makes a three-number push and a chunk of a hundred-odd waypoints comparable at
+**The score is the outcome, not the action.** The bench does not ask whether the
+chunk was the chunk it would have chosen, or whether the waypoints were smooth.
+It looks only at the table afterwards: which glasses have room, which are
+standing, where each one ended up, and how many pushes it took. That is what
+makes a three-number push and a chunk of a hundred-odd waypoints comparable at
 all, and it is the only reason this solution and its teacher can be set side by
 side.
 

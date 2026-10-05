@@ -12,24 +12,34 @@ on this page is read from a solution's own `results.json`.
 
 | | tables done | tables wrong | glasses racked | toppled | pushes | thinking per push |
 |---|---|---|---|---|---|---|
-| [1 one fixed nudge](../01-one-fixed-nudge/) | **33** | **0** | 195 | **0** | 213 | fast |
-| [2 geometry ranked](../02-geometry-ranked/) | 31 | **0** | 185 | **0** | 229 | fast |
-| [3 imitation, ACT](../03-imitation-from-demonstrations/) | 3 | 1 | 68 | 1 | 643 | fast |
-| [4 a world model](../04-a-world-model/) | 31 | 1 | **202** | 1 | **114** | middling |
-| [5 SmolVLA as it downloads](../05-smolvla-as-it-downloads/) | 0 | 5 | 56 | 6 | 754 | slow |
-| [6 SmolVLA fine-tuned](../06-smolvla-fine-tuned/) | 4 | **38** | 77 | **46** | 400 | slow |
+| [1 one fixed nudge](../01-one-fixed-nudge/) | **33** | **0** | 195 | **0** | 213 | 61 ms |
+| [2 geometry ranked](../02-geometry-ranked/) | 31 | **0** | 185 | **0** | 229 | 81 ms |
+| [3 imitation, ACT](../03-imitation-from-demonstrations/) | 3 | 1 | 68 | 1 | 643 | **12 ms** |
+| [4 a world model](../04-a-world-model/) | 31 | 1 | **202** | 1 | **114** | 415 ms |
+| [5 SmolVLA as it downloads](../05-smolvla-as-it-downloads/) | 0 | 5 | 56 | 6 | 754 | 299 ms |
+| [6 SmolVLA fine-tuned](../06-smolvla-fine-tuned/) | 4 | **38** | 77 | **46** | 400 | 294 ms |
 
 A table is **done** when every glass on it was picked up, and **wrong** when
 the run ended in a state the cell should never reach. Solutions 3, 5 and 6 are
 run several times and the figure shown is the middle one; each folder's own
 page gives the spread between runs.
 
-The thinking column is deliberately coarse. Every time on this page was
-measured while the machine was busy with other work, and the same solution
-timed twice minutes apart gave answers a factor of two apart. The column is
-good for the order of magnitude and nothing finer: the two geometry solutions
-think for a small fraction of a second, the world model for longer, and the two
-that run a large borrowed model take about a second for every push.
+The thinking column is the solution's own time, with the simulator's time
+taken off, measured on an idle machine with nothing else running. That last
+condition matters: the same runs timed while other work was on the machine
+reported up to three and a half times these figures, so a compute column
+measured under load compares the load and not the methods.
+
+Read against the other columns, the column says something that is easy to get
+backwards. **The cheapest thinking belongs to a neural network, and the dearest
+to a search.** The imitation policy answers in about a hundredth of a second,
+because predicting a chunk of waypoints is one pass through a small network,
+while the two geometry solutions spend longer enumerating candidates and the
+world model spends longest of all, because it imagines each candidate through
+an ensemble before choosing. The two borrowed-model solutions cost the same as
+each other, and that is the expected result rather than a surprise: a low-rank
+correction changes the weights a model uses, not how many of them it uses, so
+fine-tuning buys or loses accuracy without changing the price per push.
 
 ## What the comparison says
 

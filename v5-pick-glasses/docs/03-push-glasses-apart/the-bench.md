@@ -16,9 +16,8 @@ that problem 2's did not.
 Read this before any of the solution documents, because every one of them
 assumes it.
 
-The bench is built. It lives in `03-push-glasses-apart/bench/`, and the two approaches
-already in the repository run on it, as does problem 4. Where this document
-describes something that is a decision rather than working code, it says so.
+The bench is built. It lives in `03-push-glasses-apart/bench/`, and all six
+solutions run on it, as does problem 4.
 
 ## Why there is a bench at all
 

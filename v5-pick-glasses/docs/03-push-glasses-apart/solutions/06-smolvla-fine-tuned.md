@@ -638,11 +638,12 @@ wrong glass; it is a smooth motion somewhere else on the table entirely, which
 is what reading a model across a domain gap this wide actually looks like.
 
 Fine-tuning removes the gap by construction, because the inputs the model is
-fitted on are the inputs it will be asked about. The pale blue of a glass against the tan of the table,
-the same blue whatever the kind, the outline leaning outwards from the point
-below the camera, the bare table, one kind of glass to a table: all of those
-are simply what a table looks like, as far as the fine-tuned model is
-concerned, because that is what every table in its training set looked like.
+fitted on are the inputs it will be asked about. The pale blue of a glass
+against the tan of the table, the same blue whatever the kind, the outline
+leaning outwards from the point below the camera, the bare table, one kind of
+glass to a table: all of those are simply what a table looks like, as far as the
+fine-tuned model is concerned, because that is what every table in its training
+set looked like.
 
 **The scale of the actions stops being left to chance**, for the reason the
 previous section gives. The model is trained towards recordings of real pushes
@@ -1089,12 +1090,13 @@ because time is what this solution is actually short of.** A training step on
 Metal takes a second or two where an NVIDIA card would take a fraction of one,
 and LeRobot's own SmolVLA fine-tune is twenty thousand steps at a batch of
 sixty-four. What ran here is a thousand at a batch of four, which is a small
-fraction of that compute, and **every number this solution reports carries
-that caveat**. A step took about four seconds, on a laptop that was also
-running three other solutions' training at the time. Renting is still how real compute would be spent on it:
-hours of a small accelerator is of order tens of dollars, a weekend of order a
-hundred, and a month of order five hundred, which is the scale to keep in mind
-if the training has to be repeated over several seeds. None of it was spent.
+fraction of that compute, and **every number this solution reports carries that
+caveat**. A step took about four seconds, on a laptop that was also running
+three other solutions' training at the time. Renting is still how real compute
+would be spent on it: hours of a small accelerator is of order tens of dollars,
+a weekend of order a hundred, and a month of order five hundred, which is the
+scale to keep in mind if the training has to be repeated over several seeds.
+None of it was spent.
 
 The project's old rule was that everything must run on this machine, and [the
 plan](../solutions-plan.md) lifts that rule for problem 3 so that each solution

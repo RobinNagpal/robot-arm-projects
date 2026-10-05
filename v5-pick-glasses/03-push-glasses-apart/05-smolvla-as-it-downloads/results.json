@@ -128,10 +128,10 @@
       "most": 249.9
     },
     "seconds_per_push": {
-      "median": 1.07,
-      "sd": 0.259,
-      "least": 0.727,
-      "most": 1.234
+      "median": 0.299,
+      "sd": 0.005,
+      "least": 0.297,
+      "most": 0.306
     }
   },
   "each": [
@@ -166,7 +166,7 @@
         "aim_mm_median": 81.2,
         "aim_mm_worst": 234.6
       },
-      "seconds_per_push": 1.2338
+      "seconds_per_push": 0.3065
     },
     {
       "scenes": 50,
@@ -199,7 +199,7 @@
         "aim_mm_median": 74.0,
         "aim_mm_worst": 249.9
       },
-      "seconds_per_push": 1.07
+      "seconds_per_push": 0.2966
     },
     {
       "scenes": 50,
@@ -231,7 +231,7 @@
         "aim_mm_median": 71.7,
         "aim_mm_worst": 239.2
       },
-      "seconds_per_push": 0.727
+      "seconds_per_push": 0.2991
     }
   ]
 }

@@ -131,15 +131,15 @@ It is discarded. Recording it is small work.
 
 An audit cut this list down. Only one folder holds anything dead.
 
-**`02-segment-glasses/01-rules-on-the-table` is solution 1.** Its finding step groups points where
-they stand on the table rather than where they fall in the picture, which is
-solution 1's method exactly. It is not superseded by anything.
+**`02-segment-glasses/01-rules-on-the-table` is solution 1.** Its finding step
+groups points where they stand on the table rather than where they fall in the
+picture, which is solution 1's method exactly. It is not superseded by anything.
 
-**`02-segment-glasses/02-train-from-scratch` is solution 2.** Its network is the one solution 2
-describes as already written, and `problem-4-learned` imports it.
+**`02-segment-glasses/02-train-from-scratch` is solution 2.** Its network is the
+one solution 2 describes as already written, and `problem-4-learned` imports it.
 
-**`02-segment-glasses/results` is cited from outside.** Problem 4's documents point at
-its comparison of the two pipelines in three places.
+**`02-segment-glasses/results` is cited from outside.** Problem 4's documents
+point at its comparison in three places.
 
 **The bench is used by three problems**, not one: problems 2, 3 and 4 all put
 it on their path. Deleting it would change the input the six are compared on,

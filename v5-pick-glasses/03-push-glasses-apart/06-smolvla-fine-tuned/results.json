@@ -44,15 +44,15 @@
       "most": 85.0
     },
     "glasses_end.refused": {
-      "median": 115.0,
-      "sd": 5.033,
+      "median": 114.0,
+      "sd": 5.0,
       "least": 109.0,
       "most": 119.0
     },
     "glasses_end.toppled": {
       "median": 46.0,
-      "sd": 5.686,
-      "least": 38.0,
+      "sd": 5.132,
+      "least": 39.0,
       "most": 49.0
     },
     "glasses_end.pushed_out_of_the_zone": {
@@ -75,8 +75,8 @@
     },
     "refused_because.stopped: a glass fell over": {
       "median": 79.0,
-      "sd": 6.557,
-      "least": 71.0,
+      "sd": 7.095,
+      "least": 70.0,
       "most": 84.0
     },
     "refused_because.push budget spent": {
@@ -111,9 +111,9 @@
     },
     "pushes.jammed": {
       "median": 45.0,
-      "sd": 5.508,
+      "sd": 4.933,
       "least": 44.0,
-      "most": 54.0
+      "most": 53.0
     },
     "pushes.aim_mm_median": {
       "median": 60.6,
@@ -128,10 +128,10 @@
       "most": 1105.3
     },
     "seconds_per_push": {
-      "median": 0.819,
-      "sd": 0.204,
-      "least": 0.572,
-      "most": 0.978
+      "median": 0.294,
+      "sd": 0.008,
+      "least": 0.292,
+      "most": 0.306
     }
   },
   "each": [
@@ -165,7 +165,7 @@
         "aim_mm_median": 60.6,
         "aim_mm_worst": 1105.3
       },
-      "seconds_per_push": 0.9777
+      "seconds_per_push": 0.3064
     },
     {
       "scenes": 50,
@@ -197,7 +197,7 @@
         "aim_mm_median": 61.3,
         "aim_mm_worst": 917.3
       },
-      "seconds_per_push": 0.5724
+      "seconds_per_push": 0.2938
     },
     {
       "scenes": 50,
@@ -210,26 +210,26 @@
       },
       "glasses_end": {
         "racked": 85,
-        "refused": 115,
-        "toppled": 38,
+        "refused": 114,
+        "toppled": 39,
         "pushed_out_of_the_zone": 13,
         "picked_without_room": 0,
         "left_with_no_reason": 0
       },
       "refused_because": {
         "push budget spent": 44,
-        "stopped: a glass fell over": 71
+        "stopped: a glass fell over": 70
       },
       "pushes": {
         "total": 461,
         "repeats": 330,
         "blocked_on_the_way_down": 275,
         "never_touched": 50,
-        "jammed": 54,
+        "jammed": 53,
         "aim_mm_median": 54.7,
         "aim_mm_worst": 283.4
       },
-      "seconds_per_push": 0.8187
+      "seconds_per_push": 0.2922
     }
   ]
 }

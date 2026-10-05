@@ -249,12 +249,13 @@ running code in this repository and which parts are described here and not
 written, because this solution is unusual among the six in how much of it
 exists.
 
-**Rung one is built.** It lives in `03-push-glasses-apart/04-a-world-model/`, it trains on data it
-collects itself, and it has been run on the bench's held-out tables with its
-results recorded in that folder's own `results.json`, and set beside the other
-five in `03-push-glasses-apart/results/README.md`. The model is `model.py`, what it is
-shown is `features.py`, and the search and the loop around it are `plan.py`.
-Everything this document says about those three files is a description of code.
+**Rung one is built.** It lives in `03-push-glasses-apart/04-a-world-model/`, it
+trains on data it collects itself, and it has been run on the bench's held-out
+tables with its results recorded in that folder's own `results.json`, and set
+beside the other five in `03-push-glasses-apart/results/README.md`. The model is
+`model.py`, what it is shown is `features.py`, and the search and the loop
+around it are `plan.py`. Everything this document says about those three files
+is a description of code.
 
 **The sequence capability is a design.** The planner that exists chooses one
 push at a time: it scores each candidate by the table one push later, makes the
@@ -661,11 +662,11 @@ them is the point of having both.
 
 **TD-MPC2** is the better known of the two model-based methods of this family,
 and it does not come from the library the other borrowed solutions here use;
-that library ships its predecessor. Like rung one it learns a model of how the world changes and plans
-through it at run time, rather than learning a policy that maps a situation
-straight to an action. So the overall shape — learn what happens, then search
-over actions against what was learned, then act on only the first — is the same
-shape this whole document has described.
+that library ships its predecessor. Like rung one it learns a model of how the
+world changes and plans through it at run time, rather than learning a policy
+that maps a situation straight to an action. So the overall shape — learn what
+happens, then search over actions against what was learned, then act on only the
+first — is the same shape this whole document has described.
 
 The difference is what the model predicts, and it is worth stating honestly
 because it is the whole contrast.
