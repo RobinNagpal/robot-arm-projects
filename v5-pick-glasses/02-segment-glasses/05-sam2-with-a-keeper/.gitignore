@@ -1,0 +1,3 @@
+# Borrowed weights, which this project does not own, and the keeper fitted
+# beside them. Fetched again by weights.py and refitted by train.py.
+weights/

@@ -1,12 +1,19 @@
-"""Solution 8: SAM outlines everything, and a small fitted keeper picks out the glasses.
+"""Solution 5, the lower rung: SAM 2 outlines everything, and a fitted keeper picks the glasses.
 
-The borrowed half is `facebook/sam-vit-base`, used exactly as it was downloaded.
-It is prompted with a regular grid of points over the picture, it answers every
-prompt with an outline, and nothing here ever computes a gradient through it.
+The borrowed half is `facebook/sam2.1-hiera-base-plus`, used exactly as it was
+downloaded. It is prompted with a regular grid of points over the picture, it
+answers every prompt with an outline, and nothing here ever computes a gradient
+through it. The second generation is wanted for its stronger picture encoder;
+the memory it carries between the frames of a video is not used, because this
+problem is answered one picture at a time.
 What comes back is a heap rather than a list of objects: the same region arrives
 from dozens of prompts, and one prompt returns a part, a whole and something
 larger. Scoring, stability and duplicate removal cut the heap down to a shortlist
 of **proposals**, and none of that involves fitting either.
+
+The upper rung of this solution is `sam3_words.py`, which asks a generation
+newer for the word "drinking glass" and needs no grid and no keeper. Everything
+after the model is shared with this file.
 
 The fitted half is the **keeper**, which is the only thing in this solution that
 knows anything about this cell. It is shown eight measurements of one proposal
@@ -29,7 +36,8 @@ of prompts has to be; no glass's size is written down anywhere for it.
 
 **The camera belongs to data.py**, which stands it at the cell's own survey
 height and takes the three pictures a survey there needs. Nothing in this file
-chooses a viewpoint, so all three solutions are guaranteed the same pictures.
+chooses a viewpoint, so every solution scored on this bench is guaranteed the
+same pictures.
 """
 
 from __future__ import annotations
@@ -42,6 +50,7 @@ from pathlib import Path
 
 import cv2
 import numpy as np
+import reports
 import torch
 import weights
 from sklearn.calibration import CalibratedClassifierCV
@@ -86,7 +95,7 @@ POINTS_ACROSS_SMALLEST = 3
 # masks take while they are being cut down.
 PROMPTS_AT_ONCE = 64
 
-# What SAM's own quality estimate and its stability have to reach. Stability is
+# What SAM 2's own quality estimate and its stability have to reach. Stability is
 # how little a mask changes when the cut-off that turns the model's output into
 # a yes-or-no mask is nudged by STABILITY_NUDGE either way: a boundary the model
 # is unsure of moves a long way for a small nudge.
@@ -132,6 +141,10 @@ FOLDS, ENOUGH_FOR_ISOTONIC = 3, 200
 # different thing to do next, not a doubtful glass.
 SURE_ONE_GLASS, SURE_NOT_ONE_GLASS = 0.7, 0.3
 
+# What the keeper decides to do about one proposal. KEEP and SPLIT are work to
+# do; UNSURE is the band between the two thresholds and REJECT is below both.
+KEEP, SPLIT, UNSURE, REJECT = "keep", "more than one glass", "cannot tell", "not a glass"
+
 # The fit is the same every time it is run on the same scenes, so a scorecard
 # can be repeated.
 FITTING_SEED = 0
@@ -139,10 +152,10 @@ FITTING_SEED = 0
 
 @dataclass
 class Proposal:
-    """One region SAM proposed, and everything measured about it."""
+    """One region SAM 2 proposed, and everything measured about it."""
 
     mask: np.ndarray  # boolean, the shape of the picture
-    score: float  # SAM's own estimate of how good this mask is
+    score: float  # SAM 2's own estimate of how good this mask is
     stability: float
     votes: int  # how many prompt points returned this same region
     found: Found  # its place and width, from the shared arithmetic
@@ -177,20 +190,23 @@ def _grid(spacing: int, inside: np.ndarray | None = None) -> list[list[float]]:
 
 @lru_cache(maxsize=1)
 def _sam():
-    """SAM as downloaded, on whichever processor this machine has. Never trained."""
-    from transformers import SamModel, SamProcessor
+    """SAM 2 as downloaded, on whichever processor this machine has. Never trained."""
+    from transformers import Sam2Model, Sam2Processor
 
-    path = weights.sam()
+    # The upload is the video checkpoint, and loading it here says so. The
+    # image half of it is all this problem wants: one picture at a time, with
+    # no memory carried between frames because there are no frames.
+    path = weights.sam2()
     where = device.pick()
-    model = SamModel.from_pretrained(path).to(where).eval()
-    return SamProcessor.from_pretrained(path), model, where
+    model = Sam2Model.from_pretrained(path).to(where).eval()
+    return Sam2Processor.from_pretrained(path), model, where
 
 
 def _onto(tensor: torch.Tensor, where: torch.device) -> torch.Tensor:
     """Move a tensor to the device, in a dtype the device will take.
 
-    The processor returns the prompt points as float64 and MPS refuses float64
-    outright, so anything that arrives in it is cast on the way across.
+    MPS refuses float64 outright, so anything that arrives in it is cast on the
+    way across rather than failing at the first prompt.
     """
     if tensor.dtype == torch.float64:
         tensor = tensor.to(torch.float32)
@@ -198,17 +214,19 @@ def _onto(tensor: torch.Tensor, where: torch.device) -> torch.Tensor:
 
 
 class _Look:
-    """One picture through SAM's picture encoder, and any number of prompts after it.
+    """One picture through SAM 2's picture encoder, and any number of prompts after it.
 
     The split is what makes a grid of prompts affordable. The encoder is the
     expensive part and runs once here; every prompt afterwards is one pass
-    through the small mask decoder.
+    through the small mask decoder. What it leaves behind is a feature map per
+    level rather than one block of numbers, because the mask decoder of this
+    generation reads the fine levels as well as the coarsest.
     """
 
     def __init__(self, image: np.ndarray) -> None:
-        self.image = image
         self.processor, self.model, self.where = _sam()
         prepared = self.processor(image, return_tensors="pt")
+        self.sizes = prepared["original_sizes"]
         with torch.no_grad():
             self.embeddings = self.model.get_image_embeddings(_onto(prepared["pixel_values"], self.where))
 
@@ -216,14 +234,17 @@ class _Look:
         """Prompt at every point and return the masks worth keeping, with their scores.
 
         Every prompt gets three masks back, roughly a part, a whole and something
-        larger, because SAM hands ambiguity back rather than resolving it. The
+        larger, because SAM 2 hands ambiguity back rather than resolving it. The
         low-scoring and the unstable ones are dropped here; the duplicates are
         dropped afterwards, once they can be compared with each other.
+
+        The picture is not handed over again. The prompts only have to be scaled
+        to the size the encoder was given, and the picture's own size is all that
+        takes, so nothing re-reads the pixels for a second round of prompts.
         """
         asked = [[[point] for point in points]]
-        prepared = self.processor(self.image, input_points=asked, return_tensors="pt")
+        prepared = self.processor(original_sizes=self.sizes, input_points=asked, return_tensors="pt")
         all_points = _onto(prepared["input_points"], self.where)
-        sizes = (prepared["original_sizes"], prepared["reshaped_input_sizes"])
 
         masks, scores, stability = [], [], []
         with torch.no_grad():
@@ -242,7 +263,7 @@ class _Look:
                 if not keep.any():
                     continue
                 chosen = small.reshape(1, -1, 1, *small.shape[-2:])[:, keep]
-                raised = self.processor.image_processor.post_process_masks(chosen, *sizes, binarize=True)[0]
+                raised = self.processor.post_process_masks(chosen, self.sizes, binarize=True)[0]
                 masks.append(raised.reshape(-1, render.HEIGHT, render.WIDTH).numpy())
                 scores.append(quality[keep])
                 stability.append(steadiness[keep])
@@ -388,7 +409,7 @@ def _proposals(picture, kind, masks, scores, stability, votes) -> list[Proposal]
 
 
 def survey(picture, kind: str) -> tuple[_Look, list[Proposal]]:
-    """One picture through SAM, and the proposals that survived, measured and ready."""
+    """One picture through SAM 2, and the proposals that survived, measured and ready."""
     look = _Look(pictures.shade(picture))
     masks, scores, stability = look.at(_grid(prompt_spacing(kind)))
     kept, votes = _deduplicate(masks, scores)
@@ -397,7 +418,39 @@ def survey(picture, kind: str) -> tuple[_Look, list[Proposal]]:
     return look, _proposals(picture, kind, masks[kept], scores[kept], stability[kept], votes)
 
 
-def _label(mask: np.ndarray, visible: list[np.ndarray]) -> int:
+def verdict(chance: np.ndarray) -> str:
+    """What to do about a proposal, read off its three calibrated chances.
+
+    The two thresholds are applied here and nowhere else, so what the keeper
+    decided and what is printed beside its measurements cannot drift apart.
+    More than one glass is not a point on the line between the thresholds: it is
+    a different thing to do next rather than a doubtful glass, so it is answered
+    first.
+    """
+    if int(np.argmax(chance)) == MORE_THAN_ONE:
+        return SPLIT
+    if chance[ONE_GLASS] >= SURE_ONE_GLASS:
+        return KEEP
+    if chance[ONE_GLASS] > SURE_NOT_ONE_GLASS:
+        return UNSURE
+    return REJECT
+
+
+def explanation(features: np.ndarray, chance: np.ndarray) -> list[str]:
+    """The keeper's inputs beside its answer, as lines a person can read and argue with.
+
+    This is what the document claims for this solution and for no other one in
+    the set: the deciding is a short list of named measurements and the answer
+    that followed from them, so a person can point at the measurement that was
+    wrong. `show_keeper.py` prints these over a real scene.
+    """
+    lines = [f"{value:14.3f}  {name}" for name, value in zip(MEASUREMENTS, features, strict=True)]
+    chances = ", ".join(f"{name} {share:.2f}" for name, share in zip(ANSWERS, chance, strict=True))
+    lines.append(f"{'->':>14}  {verdict(chance)}, from {chances}")
+    return lines
+
+
+def label(mask: np.ndarray, visible: list[np.ndarray]) -> int:
     """Which of the three answers a proposal deserves, from the truth the simulator holds.
 
     Arithmetic rather than judgement: which glasses are mostly inside it, and
@@ -425,9 +478,9 @@ def table(examples: Iterable[data.Example]) -> tuple[np.ndarray, np.ndarray, int
             pictures_seen += 1
             for proposal in survey(sight.picture, example.kind)[1]:
                 rows.append(proposal.features)
-                answers.append(_label(proposal.mask, sight.visible))
+                answers.append(label(proposal.mask, sight.visible))
     if not rows:
-        raise RuntimeError(f"SAM proposed nothing on any of the {pictures_seen} pictures asked for")
+        raise RuntimeError(f"SAM 2 proposed nothing on any of the {pictures_seen} pictures asked for")
     return np.stack(rows), np.array(answers), pictures_seen
 
 
@@ -455,9 +508,10 @@ def fit(examples: Iterable[data.Example], *, amodal: bool, save: Path) -> Mappin
     The probability is calibrated as part of the fit, because two thresholds are
     put on it afterwards and a threshold on an uncalibrated number means nothing.
 
-    ``amodal`` is what solutions 9 and 10 differ by and this solution has no use
-    for: the keeper is asked which region is a glass, not how much of a glass a
-    region is, so its labels come from the pixels the camera saw either way.
+    ``amodal`` is what the solutions that complete a hidden outline differ by,
+    and this one has no use for it: the keeper is asked which region is a glass,
+    not how much of a glass a region is, so its labels come from the pixels the
+    camera saw either way.
     """
     if amodal:
         raise ValueError("the keeper is fitted on what the camera saw; it has no amodal target")
@@ -500,7 +554,7 @@ class Finder:
         glass that is not there.
         """
         look, shortlist = survey(picture, kind)
-        low, high = data.widths(kind)
+        widths = data.widths(kind)
         read = np.stack([p.features for p in shortlist]) if shortlist else np.zeros((0, len(MEASUREMENTS)))
         told = self.chances(read)
 
@@ -510,27 +564,28 @@ class Finder:
         # the surer of them that keeps the place.
         surest = sorted(range(len(shortlist)), key=lambda index: -told[index].max())
         for proposal, chance in ((shortlist[index], told[index]) for index in surest):
-            if int(np.argmax(chance)) == MORE_THAN_ONE:
+            answer = verdict(chance)
+            if answer == SPLIT:
                 apart = _separate(look, picture, proposal, kind)
                 if apart:
                     kept.extend(apart)
                 else:
                     doubts.append("more than one glass, and they did not come apart")
-            elif chance[ONE_GLASS] >= SURE_ONE_GLASS:
-                if low <= proposal.found.width <= high:
+            elif answer == KEEP:
+                if reports.legal(proposal.found, widths):
                     kept.append(proposal.found)
                 else:
-                    doubts.append("kept, but its width is outside what this kind can be")
-            elif chance[ONE_GLASS] > SURE_NOT_ONE_GLASS:
+                    doubts.append(reports.TOO_WIDE)
+            elif answer == UNSURE:
                 doubts.append("cannot tell whether this is one glass")
-        return masks_to_glasses.one_per_place(kept, low), doubts
+        return masks_to_glasses.one_per_place(kept, widths[0]), doubts
 
 
 def _separate(look, picture, proposal: Proposal, kind: str) -> list[Found]:
     """Prompt again inside one proposal, to see whether it comes apart into glasses.
 
     Two glasses in line with the camera make one region with no seam along it,
-    which is why SAM proposed them as one thing. A fresh grid inside that region
+    which is why SAM 2 proposed them as one thing. A fresh grid inside that region
     sometimes finds the step between the near glass's rim and the far one's wall,
     and only widths the kind allows are believed.
     """
@@ -539,15 +594,11 @@ def _separate(look, picture, proposal: Proposal, kind: str) -> list[Found]:
         return []
     masks, scores, _ = look.at(points)
     kept, _ = _deduplicate(masks, scores)
-    low, high = data.widths(kind)
-
-    apart = []
-    for index in kept:
-        mask = masks[index] & proposal.mask
-        found = masks_to_glasses.one_glass(picture, mask)
-        if found is not None and low <= found.width <= high:
-            apart.append(found)
-    apart = masks_to_glasses.one_per_place(apart, low)
+    inside = [masks[index] & proposal.mask for index in kept]
+    # The same two checks every report passes, and only what passes both is
+    # believed to be one of the two glasses. What they refuse is not a doubt of
+    # its own: the pair is already reported as one if it does not come apart.
+    apart, _ = reports.believable(picture, inside, kind)
     return apart if len(apart) >= 2 else []
 
 

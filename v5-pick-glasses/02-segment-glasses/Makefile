@@ -28,4 +28,4 @@ floor: install ## The best any solution could do: the renderer's own masks
 	pixi run python bench/floor.py
 
 by-kind: install ## What a borrowed model outlines well, one kind at a time
-	pixi run python bench/by_kind.py
+	pixi run python 05-sam2-with-a-keeper/by_kind.py

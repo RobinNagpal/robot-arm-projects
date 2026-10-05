@@ -1,11 +1,12 @@
-"""Run one solution over the held-out scenes, score it, and write its numbers.
+"""The marking every solution is scored through, and the words its numbers come in.
 
-    pixi run python run.py --solution sam --scenes 20
-    pixi run python run.py --solution amodal --crowded --show
-
-The same three names as train.py and the same table, and the same indifference
-to which of them was asked for: what `make train` wrote is loaded, the solution
-is handed one picture at a time, and what it hands back is scored.
+A solution in this folder draws masks. It does not decide which station saw a
+glass, how two stations' reports are brought together, or how the answer is
+written down, because those are the same for all six and keeping them here is
+what makes the six comparable. So this file is a library that every solution's
+own ``run.py`` calls, and it holds no model and loads no weights. It is not
+named ``run.py`` itself because every solution's own runner is, and the two
+would then shadow each other.
 
 **A survey is three pictures, not one.** At the cell's own survey height one
 picture does not hold the glass zone, because a rim seen from above leans away
@@ -20,26 +21,20 @@ That is the whole reason the cell surveys from overlapping stations.
 What a solution hands back is masks_to_glasses.Found, which is the one shape
 every solution in this folder produces: the pixels of one glass, the place on the
 table they give, and the width. That place and that width come from
-masks_to_glasses for all three, so a difference in the scorecard belongs to how
+masks_to_glasses for all six, so a difference in the scorecard belongs to how
 the mask was drawn and never to what was done with the mask afterwards.
 
 A solution is handed the picture and the kind of glass on the table, which the
 cell is told, and never the scene behind it: no list of glasses and no true mask,
 which is what data.py keeps for training.
 
-What comes out is `results-<solution>.json` and the same find line
-../02-segment-glasses/01-rules-on-the-table and ../02-segment-glasses/02-train-from-scratch print, so the three approaches
-can be set beside each other.
+Each solution writes its own ``results.json`` beside itself, in the same words,
+so the six can be set side by side.
 """
 
 from __future__ import annotations
 
-import json
 import math
-from pathlib import Path
-
-import weights
-from train import NAMES, chosen, command, how_many, module
 
 import data
 import masks_to_glasses
@@ -79,13 +74,24 @@ def survey(finder, example: data.Example, card: Scorecard):
 
 
 def score(card: Scorecard, example: data.Example, kept, station) -> None:
-    """Judge one scene's answer in the picture the scorecard reads ids from."""
-    card.found(
+    """Judge one scene's answer: which glass each mask is, and how well it was drawn.
+
+    The two are judged in different pictures on purpose. Which glass a mask is
+    has to be settled in one picture shared by every station, or two stations'
+    answers about the same glass could not be brought together. How well the
+    mask was drawn has to be judged in the picture it was drawn in, against what
+    that station could see, because the stations do not see the same pixels of a
+    glass and comparing across them would measure the cameras instead.
+    """
+    matches = card.found(
         example.glasses,
         example.reference,
         [data.in_reference(station[id(g)].picture, g.pixels, example.reference) for g in kept],
         [(g.x, g.y) for g in kept],
     )
+    for glass, index in zip(kept, matches, strict=True):
+        if index is not None:
+            card.mask(example.kind, glass.pixels, station[id(glass)].visible[index])
 
 
 def summary(name: str, card: Scorecard, scenes: int, crowded: bool) -> dict:
@@ -107,6 +113,7 @@ def summary(name: str, card: Scorecard, scenes: int, crowded: bool) -> dict:
         "stations": len(data.stations()),
         "glasses": card.count["put out"],
         "find": find,
+        "mask": card.mask_quality(),
         "handed over": {
             reason.split(": ")[1]: count
             for reason, count in card.count.items()
@@ -132,45 +139,17 @@ def show(result: dict) -> None:
         f"find     found {find['found']}, missed {find['missed']}, merged {find['merged']}, "
         f"split {find['split']}, false {find['false']}; {position(find)}"
     )
-    print(f"doubted  {result['handed over'] or 'nothing'}")
-
-
-def main() -> None:
-    parser = command("Run one solution on held-out scenes and score it")
-    parser.add_argument("--show", action="store_true", help="print each scene as it is scored")
-    parser.add_argument(
-        "--crowded",
-        action="store_true",
-        help="score on crowded layouts, where one glass really does hide another",
-    )
-    given = parser.parse_args()
-    chosen(given.solution)
-    scenes = how_many(given, 20)
-
-    fitted = weights.fitted(given.solution)
-    if not fitted.exists():
-        raise SystemExit(
-            f"{given.solution} has not been trained yet: there is no {fitted.name} in {fitted.parent}.\n"
-            f"Train it first, which is the slow step:\n"
-            f"  make train SOLUTION={given.solution}\n"
-            f"The solutions here are: {NAMES}"
+    mask = result.get("mask") or {}
+    if mask:
+        whole = mask["all"]
+        print(
+            f"mask     covered {whole['covered_median']}% of the glass median, "
+            f"{whole['covered_worst']}% worst; {whole['not_the_glass_median']}% of the mask "
+            f"was not the glass median, {whole['not_the_glass_worst']}% worst"
         )
-    finder = module(given.solution).load(fitted)
-
-    card = Scorecard()
-    for example in data.held_out(scenes, hard=given.crowded):
-        kept, station = survey(finder, example, card)
-        score(card, example, kept, station)
-        if given.show:
-            print(f"seed {example.seed}  {len(example.glasses)} out, {len(kept)} found")
-
-    result = summary(given.solution, card, scenes, given.crowded)
-    show(result)
-    tail = "-crowded" if given.crowded else ""
-    save = Path(__file__).parent / f"results-{given.solution}{tail}.json"
-    save.write_text(json.dumps(result, indent=2) + "\n")
-    print(f"\nsaved to {save}")
-
-
-if __name__ == "__main__":
-    main()
+        for kind, row in mask["by_kind"].items():
+            print(
+                f"  {kind:20} covered {row['covered_median']}%, "
+                f"not the glass {row['not_the_glass_median']}%  ({row['glasses']} glasses)"
+            )
+    print(f"doubted  {result['handed over'] or 'nothing'}")

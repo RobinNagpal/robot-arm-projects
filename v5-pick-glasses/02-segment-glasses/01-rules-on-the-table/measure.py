@@ -1,4 +1,8 @@
-"""Step 3: measure a glass from one side picture, and say if the picture is bad.
+"""Measure a glass from one side picture, and say if the picture is bad.
+
+**This is not part of problem 2 either**, for the reason `views.py` gives: the
+bench stops at a mask, a place and a width, and measuring the glass is the step
+after the viewpoint. Nothing in `run.py` calls it.
 
 Problem 1's silhouette, then two corrections the silhouette leaves out:
 
@@ -16,8 +20,7 @@ anyway, since it is one line.
 from __future__ import annotations
 
 import numpy as np
-from find import Seen
-from views import DEPTH_BAND
+from views import DEPTH_BAND, Seen
 from work_cell.arm.dimensions import MEASURE_VIEW_HEIGHT
 from work_cell.glasses.detect import STANDING_CLEARANCE, standing_on_the_table, the_one_in_the_middle
 from work_cell.glasses.perception import NotMeasurable, profile_from_mask

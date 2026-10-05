@@ -24,10 +24,14 @@ camera, same table.
 from one arrangement to the next.** The cell has four kinds, described in [the
 cell](../the-cell.md), and the arrangements cycle through them, so a run meets
 all four in turn. That matters for comparing answers, because the four kinds are
-not equally hard. The two kinds with no stem are outlined almost exactly by
-anything that tries. The two with a stem are harder, and the stemmed glass is
-the hardest of the four, because a stem is thin and a thin part is the first
-thing a rough outline loses.
+not equally hard to outline. A stem is thin, and a thin part is the first thing
+a rough outline loses, so the two kinds with a stem are the harder pair and the
+stemmed glass is the hardest of the four. That holds for a solution built from
+rules written by hand, which the marking confirms. It does not hold for a
+solution fitted on this cell's own pictures, which covers all four kinds about
+equally well. So the difference between the kinds is a difference between
+methods as much as between shapes, which is why every answer here is broken
+down by kind.
 
 **The glasses stand apart.** There is a guaranteed smallest gap between any two
 centres, wide enough that even the two widest glasses of a kind leave bare table

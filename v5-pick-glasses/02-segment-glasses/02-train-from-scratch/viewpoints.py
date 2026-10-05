@@ -1,5 +1,12 @@
 """Where to stand the camera to photograph one glass from the side.
 
+**This is not part of problem 2.** Problem 2 asks for masks, and the bench that
+scores the six solutions stops at a mask, a place and a width. Choosing a
+viewpoint is the step after that, and it is kept here because
+`docs/problem-4/solutions/learned/08-the-learned-pipelines-retrained.md` names
+this folder's Ranker as one of the parts its pipeline reuses. Nothing in
+`run.py` calls it.
+
 Geometry lists the places and throws out the ones that cannot work: out of the
 arm's comfortable reach, or with another glass square in the line of sight.
 What is left goes to the learned ranker, which only puts them in order. So a
@@ -52,6 +59,16 @@ class Seen:
 
 def seen(glass: Glass) -> Seen:
     return Seen(glass.x, glass.y, glass.max_radius)
+
+
+def reported(found) -> Seen:
+    """The same, for a glass as the finder reported it rather than as the simulator knows it.
+
+    ``found`` is a ``masks_to_glasses.Found``, which carries a width because that
+    is what a scorecard reads, and every rule here is about distances from a
+    glass's axis. Halving it in one place keeps the two from drifting apart.
+    """
+    return Seen(found.x, found.y, found.width / 2.0)
 
 
 def angles() -> np.ndarray:

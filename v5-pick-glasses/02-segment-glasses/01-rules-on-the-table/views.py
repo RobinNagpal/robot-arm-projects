@@ -1,4 +1,11 @@
-"""Step 2: where to stand the camera to photograph one glass from the side.
+"""Where to stand the camera to photograph one glass from the side.
+
+**This is not part of problem 2.** Problem 2 asks for masks, and the bench that
+scores the six solutions stops at a mask, a place and a width. Choosing a
+viewpoint is the step after that, and it is kept here because
+`docs/problem-4/solutions/programmed/05-measure-before-you-push.md` and
+`docs/problem-4/solutions/solution-overview.md` both name this file as the view
+check their pipeline uses. Nothing in `run.py` calls it.
 
 Three stages, all geometry:
 
@@ -17,9 +24,9 @@ the rule measures.
 from __future__ import annotations
 
 import math
+from dataclasses import dataclass
 
 import numpy as np
-from find import Seen
 from work_cell.arm.dimensions import COMFORTABLE_REACH
 from work_cell.table.layout import ROBOT_BASE
 
@@ -37,6 +44,20 @@ DEPTH_BAND = 0.12
 
 # Where in its reach the arm is most at ease, for breaking ties.
 MIDDLE_REACH = sum(COMFORTABLE_REACH) / 2
+
+
+@dataclass(frozen=True)
+class Seen:
+    """What this step is told about one glass: where it stands, and how wide it is.
+
+    Half the width, because every rule below is about distances from a glass's
+    axis. The place and the width come from the bench's own arithmetic over the
+    mask, so the viewpoint step works from the same numbers the scorecard does.
+    """
+
+    x: float
+    y: float
+    radius: float
 
 
 def angles() -> np.ndarray:

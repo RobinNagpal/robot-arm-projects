@@ -1,9 +1,10 @@
-"""The quick checks on the parts all three solutions stand on.
+"""The quick checks on the parts both rungs of this solution stand on.
 
 No weights and no network: what is checked here is the shading, the camera the
-three solutions share, the split between training and held-out scenes, the two
-kinds of mask, the arithmetic that turns a mask into a place and a width, and
-that the three solutions really do answer one interface.
+two rungs share, the split between training and held-out scenes, the two kinds
+of mask, the arithmetic that turns a mask into a place and a width, the
+keeper's own arithmetic and its two thresholds, and that both rungs really do
+answer one interface.
 
 Every check that involves a glass runs over a family of them rather than one,
 because a rule that holds for one glass of a kind and fails for a differently
@@ -16,8 +17,12 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+import reports
+import sam3_words
+import sam_keeper
 import torch
 import train
+import weights
 from work_cell.arm.dimensions import SURVEY_HEIGHT, survey_stations
 from work_cell.glasses.shapes import family
 from work_cell.rack.layout import GLASS_ZONE
@@ -30,8 +35,8 @@ import pictures
 import render
 
 # How far a place read off a mask may sit from where the glass really stands,
-# and how far its width may be out. The tolerances 02-segment-glasses/01-rules-on-the-table's own
-# tests hold that arithmetic to, since it is the same arithmetic.
+# and how far its width may be out. The tolerances ../01-rules-on-the-table's
+# own tests hold that arithmetic to, since it is the same arithmetic.
 PLACE_TOLERANCE = 0.002
 WIDTH_TOLERANCE = 0.003
 
@@ -171,7 +176,7 @@ def test_a_whole_glass_mask_contains_the_visible_one():
 
 @pytest.mark.parametrize("kind", render.KINDS)
 def test_a_crowded_scene_really_does_hide_one_glass_behind_another(kind):
-    # The case solution 10 exists for. A spawned layout keeps glasses far enough
+    # The case an amodal rung exists for. A spawned layout keeps glasses far enough
     # apart that it almost never happens, so it is built on purpose.
     example = data.crowded(render.KINDS.index(kind))
     assert example.kind == kind
@@ -208,7 +213,7 @@ def test_a_mask_with_nothing_in_it_is_not_a_glass():
 
 
 def _hiding(kind):
-    """A tall glass near the camera and a short one behind it, as solution 10's case."""
+    """A tall glass near the camera and a short one behind it, as the amodal case."""
     pose, below = _middle_station()
     drawn = [outline for outline, _ in family(kind, 40, seed=5)]
     near = _one(kind, max(drawn, key=lambda o: o.total_height), below[0] + 0.03, below[1])
@@ -293,9 +298,223 @@ def test_every_solution_here_is_one_interface():
 def test_only_the_dispatch_table_knows_the_solutions_apart():
     """No `if solution == ...` anywhere else: a module is told what to do, not who it is."""
     for source in sorted(HERE.glob("*.py")):
-        if source.name in ("train.py", "test_pretrained.py"):
+        if source.name in ("train.py", "test_keeper.py"):
             continue
         text = source.read_text()
         for name in train.SOLUTIONS:
             for quoted in (f'"{name}"', f"'{name}'"):
                 assert quoted not in text, f"{source.name} names {name}"
+
+
+# ------------------------------------------------- the keeper, with no weights
+
+
+def _two_glasses(kind, apart=0.10):
+    """Two glasses of one kind standing ``apart`` metres either side of the middle station."""
+    pose, below = _middle_station()
+    drawn = [outline for outline, _ in family(kind, 20, seed=7)]
+    left = _one(kind, drawn[0], below[0] - apart / 2, below[1])
+    right = _one(kind, drawn[1], below[0] + apart / 2, below[1])
+    return render.render([left, right], pose), pose
+
+
+def test_the_keeper_is_shown_eight_measurements_and_they_are_the_eight_named():
+    assert len(sam_keeper.MEASUREMENTS) == len(set(sam_keeper.MEASUREMENTS)) == 8
+
+
+@pytest.mark.parametrize("kind", render.KINDS)
+def test_a_proposal_is_measured_into_those_eight_numbers(kind):
+    """The measuring, run on true masks so that no model has to be downloaded.
+
+    What is checked is that every one of the eight is a length, a count or a
+    ratio of the size it claims to be: a glass stands clear of the table, its
+    footprint falls inside the range its kind allows, and it is rounder than
+    half, whichever kind it is.
+    """
+    picture, _ = _two_glasses(kind)
+    masks = np.stack([picture.ids == 1, picture.ids == 2])
+    ones = np.ones(len(masks))
+    proposals = sam_keeper._proposals(picture, kind, masks, ones, ones, ones.astype(int))
+
+    assert len(proposals) == 2
+    for proposal in proposals:
+        width, roundness, above, out, votes, step, area, nesting = proposal.features
+        assert proposal.features.shape == (len(sam_keeper.MEASUREMENTS),)
+        assert 0.0 <= width <= 1.0
+        assert 0.5 < roundness <= 1.0
+        assert above > 0.0
+        assert 0.0 < out < max(data.frame())
+        assert votes == 1
+        assert 0.0 <= step <= 1.0
+        assert area > 0.0
+        assert nesting == 0.0
+
+
+def test_a_part_inside_a_whole_declares_itself_in_the_containment_measurement():
+    """A rim sits inside its glass, and one count read both ways separates them."""
+    kind = "straight_glass"
+    picture, _ = _two_glasses(kind)
+    glass = picture.ids == 1
+    rows, columns = np.nonzero(glass)
+    part = np.zeros_like(glass)
+    # The top half of that glass's pixels: entirely inside it, and not the whole.
+    part[rows[rows < (rows.min() + rows.max()) // 2], columns[rows < (rows.min() + rows.max()) // 2]] = True
+
+    masks = np.stack([glass, part])
+    ones = np.ones(len(masks))
+    whole, inside = sam_keeper._proposals(picture, kind, masks, ones, ones, ones.astype(int))
+    assert inside.features[-1] > 0, "the part is inside something"
+    assert whole.features[-1] < 0, "the whole holds something"
+
+
+def test_how_round_a_shape_is_tells_a_filled_disc_from_a_ring():
+    size = 200
+    rows, columns = np.indices((size, size))
+    away = np.hypot(rows - size / 2, columns - size / 2)
+    disc = away < 60
+    ring = disc & (away > 45)
+    assert sam_keeper._roundness(disc) == pytest.approx(1.0, abs=0.1)
+    assert sam_keeper._roundness(ring) < 0.5
+    assert sam_keeper._roundness(np.zeros((size, size), dtype=bool)) == 0.0
+
+
+def test_the_same_region_arriving_many_times_is_kept_once_and_counted():
+    masks = np.zeros((3, 40, 40), dtype=bool)
+    masks[0, 5:25, 5:25] = True  # one region
+    masks[1, 6:26, 6:26] = True  # the same region, a prompt or two over
+    masks[2, 30:38, 30:38] = True  # somewhere else entirely
+    kept, votes = sam_keeper._deduplicate(masks, np.array([0.9, 0.8, 0.7]))
+    assert kept == [0, 2]
+    assert list(votes) == [2, 1]
+    assert sam_keeper._deduplicate(np.zeros((0, 40, 40), dtype=bool), np.zeros(0))[0] == []
+
+
+@pytest.mark.parametrize("kind", render.KINDS)
+def test_the_three_answers_come_out_of_the_truth_by_arithmetic(kind):
+    picture, _ = _two_glasses(kind)
+    visible = [picture.ids == 1, picture.ids == 2]
+    assert sam_keeper.label(visible[0], visible) == sam_keeper.ONE_GLASS
+    assert sam_keeper.label(visible[0] | visible[1], visible) == sam_keeper.MORE_THAN_ONE
+    assert sam_keeper.label(np.zeros_like(visible[0]), visible) == sam_keeper.DROP
+    # The table holds both glasses and is mostly not them, which is the case
+    # the second half of the label exists for.
+    assert sam_keeper.label(np.ones_like(visible[0]), visible) == sam_keeper.DROP
+
+
+def test_the_two_thresholds_leave_a_band_that_means_cannot_tell():
+    def chance(one_glass, more=0.0):
+        return np.array([1.0 - one_glass - more, one_glass, more])
+
+    assert sam_keeper.verdict(chance(0.95)) == sam_keeper.KEEP
+    assert sam_keeper.verdict(chance(sam_keeper.SURE_ONE_GLASS)) == sam_keeper.KEEP
+    assert sam_keeper.verdict(chance(0.5)) == sam_keeper.UNSURE
+    assert sam_keeper.verdict(chance(sam_keeper.SURE_NOT_ONE_GLASS)) == sam_keeper.REJECT
+    assert sam_keeper.verdict(chance(0.1)) == sam_keeper.REJECT
+    # More than one glass is a different thing to do next, not a doubtful glass,
+    # so it is answered before either threshold is looked at.
+    assert sam_keeper.verdict(chance(0.4, more=0.55)) == sam_keeper.SPLIT
+
+
+def test_the_keeper_prints_its_inputs_beside_its_answer():
+    """The document's headline claim for this solution, checked as code."""
+    features = np.arange(len(sam_keeper.MEASUREMENTS), dtype=float)
+    chance = np.array([0.02, 0.95, 0.03])
+    lines = sam_keeper.explanation(features, chance)
+
+    assert len(lines) == len(sam_keeper.MEASUREMENTS) + 1
+    for name, line in zip(sam_keeper.MEASUREMENTS, lines, strict=False):
+        assert name in line
+    assert sam_keeper.verdict(chance) in lines[-1]
+    for answer in sam_keeper.ANSWERS:
+        assert answer in lines[-1]
+
+
+def test_the_keeper_has_no_amodal_target_and_refuses_one():
+    with pytest.raises(ValueError):
+        sam_keeper.fit([], amodal=True, save=HERE / "weights" / "never-written.pt")
+
+
+def test_too_few_of_an_answer_to_calibrate_on_is_refused_rather_than_guessed():
+    enough = np.array([0, 0, 1, 1, 2, 2])
+    assert sam_keeper._calibration(enough) == ("sigmoid", 2)
+    with pytest.raises(RuntimeError):
+        sam_keeper._calibration(np.array([0, 0, 1, 1, 2]))
+
+
+def test_the_grid_is_fine_enough_for_the_narrowest_glass_of_the_kind():
+    for kind in render.KINDS:
+        spacing = sam_keeper.prompt_spacing(kind)
+        across = data.widths(kind)[0] / (data.frame()[0] / render.WIDTH)
+        assert spacing >= 1
+        assert across / spacing >= sam_keeper.POINTS_ACROSS_SMALLEST
+    inside = np.zeros((render.HEIGHT, render.WIDTH), dtype=bool)
+    inside[100:140, 100:140] = True
+    points = sam_keeper._grid(10, inside=inside)
+    assert points and all(inside[int(row), int(column)] for column, row in points)
+
+
+# ------------------------------------------- the arithmetic that has last word
+
+
+@pytest.mark.parametrize("kind", render.KINDS)
+def test_a_width_no_glass_of_the_kind_could_have_is_refused_whatever_named_it(kind):
+    picture, _ = _two_glasses(kind)
+    pair = (picture.ids == 1) | (picture.ids == 2)
+    kept, doubts = reports.believable(picture, [pair], kind)
+    assert kept == []
+    assert doubts == [reports.TOO_WIDE]
+
+    kept, doubts = reports.believable(picture, [picture.ids == 1], kind)
+    assert len(kept) == 1 and doubts == []
+    assert reports.legal(kept[0], data.widths(kind))
+
+
+def test_a_mask_too_small_to_fit_anything_to_is_not_a_report_at_all():
+    picture, _ = _two_glasses("straight_glass")
+    empty = np.zeros(picture.ids.shape, dtype=bool)
+    assert reports.believable(picture, [empty], "straight_glass") == ([], [])
+
+
+def test_two_reports_at_one_place_are_one_glass_reported_twice():
+    """The same glass arriving twice, which is what a mouth kept beside its glass is."""
+    kind = "straight_glass"
+    picture, _ = _two_glasses(kind)
+    glass = picture.ids == 1
+    again = np.roll(glass, 2, axis=1)  # the same region, two pixels over
+
+    assert len(reports.believable(picture, [glass], kind)[0]) == 1
+    assert len(reports.believable(picture, [again], kind)[0]) == 1
+    assert len(reports.believable(picture, [glass, again], kind)[0]) == 1
+
+
+# ------------------------------------------------------- the word rung's shape
+
+
+def test_the_word_rung_fits_nothing_and_says_so_rather_than_writing_a_file():
+    save = HERE / "weights" / "never-written.pt"
+    with pytest.raises(SystemExit):
+        sam3_words.fit([], amodal=False, save=save)
+    assert not save.exists()
+
+
+def test_the_word_rung_needs_nothing_loaded_and_carries_one_prompt():
+    finder = sam3_words.load(None)
+    assert finder.prompt == sam3_words.PROMPT
+    assert sam3_words.PROMPT.strip() == sam3_words.PROMPT and sam3_words.PROMPT
+    assert 0.0 < sam3_words.SURE_ENOUGH < 1.0
+
+
+def test_the_table_says_which_rung_fits_something_and_which_does_not():
+    fitting = [name for name, solution in train.SOLUTIONS.items() if solution.fits]
+    assert len(fitting) == 1, "the keeper is the only thing fitted in this solution"
+    assert len(train.SOLUTIONS) == 2, "two rungs, one generation apart"
+    with pytest.raises(SystemExit):
+        train.chosen("not-a-rung")
+
+
+def test_the_borrowed_weights_are_two_generations_of_one_model_and_are_cached_here():
+    assert weights.CACHE.parent == HERE
+    assert weights.fitted("anything").parent == weights.CACHE
+    # The tokenizer's tables come with the rung that is prompted with a word,
+    # and with neither of the other kinds of file.
+    assert set(weights.MODEL_FILES) < set(weights.WORD_FILES)

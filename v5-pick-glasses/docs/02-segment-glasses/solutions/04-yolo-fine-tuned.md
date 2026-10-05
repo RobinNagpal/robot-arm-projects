@@ -318,18 +318,17 @@ move as approximating a curve by a short weighted sum of fixed basis functions.
 A handful of terms captures the broad shape of almost anything, and no handful
 of them will ever capture a fine detail that none of the basis shapes contains.
 
-Two consequences follow, and training changes neither.
+Two consequences were expected to follow, and the marking has now tested both.
+One of them did not survive the test, and the other did.
 
-**A thin part of a glass is the first thing lost.** A stem is narrow compared
-with the bowl above it, so it is exactly the sort of detail a coarse pattern
-cannot hold, and the outline tends either to thicken it or to drop it. The
-bench's marking is broken down by kind for this reason, and [the
-problem](../problem.md) already says what to expect from it: the two kinds with
-no stem are outlined almost exactly by anything that tries, the stemmed kinds
-are where methods differ, and the stemmed glass is the hardest of the four.
-Fine-tuning can teach the model that a stem is
-part of the glass. It cannot give the model a way to describe a shape its
-outline machinery is too coarse to express.
+**A thin part of a glass was expected to be the first thing lost.** A stem is
+narrow compared with the bowl above it, so it looks like exactly the sort of
+detail a coarse pattern cannot hold, and a solution built from rules written by
+hand does lose it. This one does not. After training, it covers the stemmed
+glass as completely as it covers the two kinds with no stem, so the stem is not
+where a fitted model loses pixels. Teaching the model that the stem is part of
+the glass turns out to be enough on its own, and the coarseness of the outline
+machinery does not stand in the way of it.
 
 **The edge of the outline stays approximate, and the width is read from the
 edge.** The bench reads a glass's width from how far its mask's points reach out
@@ -338,6 +337,12 @@ slightly too wide and one slightly too tight reports it slightly too narrow. The
 enlargement step tends to err the same way each time, so the error does not
 average away over many glasses. Training moves where that error sits; it does
 not remove the mechanism that produces it.
+
+The marking shows this one from the other side. The model's masks almost always
+cover the whole glass, and they almost always carry a thin margin of pixels that
+are not the glass with them. That margin is the approximate edge, measured
+rather than argued about, and it is the one thing the written rule does better:
+the rule claims less of the glass and nothing that is not the glass.
 
 **A partly hidden glass stays a problem.** The outline this model returns is
 **modal**, which means it marks only the pixels where the camera actually saw

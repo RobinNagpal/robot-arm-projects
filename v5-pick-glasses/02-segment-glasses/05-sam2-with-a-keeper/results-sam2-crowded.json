@@ -1,0 +1,21 @@
+{
+  "solution": "sam2",
+  "scenes": 20,
+  "layouts": "crowded",
+  "stations": 3,
+  "glasses": 101,
+  "find": {
+    "found": 71,
+    "missed": 30,
+    "merged": 0,
+    "split": 0,
+    "false": 0,
+    "position_mm_median": 0.9,
+    "position_mm_worst": 28.7
+  },
+  "handed over": {
+    "cannot tell whether this is one glass": 108,
+    "kept, but its width is outside what this kind can be": 11,
+    "more than one glass, and they did not come apart": 1
+  }
+}

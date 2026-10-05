@@ -71,16 +71,29 @@ def is_good(picture: Picture, alone: Picture) -> bool:
 
 
 class Scorecard:
-    """Counts and errors for one run, in the same shape for both approaches."""
+    """Counts and errors for one run, in the same shape for every solution."""
 
     def __init__(self) -> None:
         self.count = Counter()
         self.position_mm: list[float] = []
         self.profile_mm: list[tuple[float, float]] = []
+        # Per matched glass: its kind, how much of it the mask covered, and how
+        # much of the mask was not it. Kept per glass rather than summed,
+        # because the interesting number is the typical glass of a kind and a
+        # mean over kinds would hide exactly the difference this measures.
+        self.masks: list[tuple[str, float, float]] = []
         self.rng = random.Random(1)
 
     def found(self, glasses: list[Glass], top: Picture, pixels: list[np.ndarray], xy) -> list[int | None]:
-        """Which true glass each found one is, judged by the pixels it covers."""
+        """Which true glass each found one is, judged by the pixels it covers.
+
+        This answers which glass a mask is, and nothing about how well it was
+        drawn. ``mask`` below answers that, and it has to be told separately,
+        because the two questions are asked in different pictures: a mask is
+        matched to a glass in the one picture every station's answer is carried
+        into, but it can only be judged against the truth in the picture it was
+        drawn in.
+        """
         self.count["put out"] += len(glasses)
         claimed, matches = Counter(), []
         for mine, (x, y) in zip(pixels, xy, strict=True):
@@ -118,6 +131,62 @@ class Scorecard:
         self.profile_mm.append((1000 * height, 1000 * width))
         return height, width
 
+    def mask(self, kind: str, mine: np.ndarray, truth: np.ndarray) -> None:
+        """How well one mask was drawn, judged in the picture it was drawn in.
+
+        A place can be right while the outline around it is poor, so the bench
+        measures the mask itself as well. Two fractions are kept: **how much of
+        the real glass the mask covered**, which falls when an outline misses a
+        thin part such as a stem, and **how much of the mask was not that
+        glass**, which rises when an outline spreads onto the table or onto a
+        neighbour. Together they separate solutions that agree on where the
+        glasses are, which is the thing the places alone cannot tell apart.
+
+        Both are measured in the station's own picture, against what that
+        station could see of that glass. Judging a mask in another picture would
+        mix how well it was drawn with how differently two cameras see the same
+        glass, and for a glass with a stem those two are nowhere near equal.
+
+        ``mine`` is the mask's pixels as rows of row and column, and ``truth``
+        is a boolean picture of that glass. The pixels are counted once each,
+        because a mask may name the same pixel twice. A mask that asserts
+        pixels it cannot see, as an amodal one does, counts those as not being
+        the glass, since the truth here is what the camera could see.
+        """
+        whole = int(np.count_nonzero(truth))
+        if not whole:
+            return
+        here = np.unique(mine, axis=0)
+        on_it = int(np.count_nonzero(truth[here[:, 0], here[:, 1]]))
+        self.masks.append((kind, on_it / whole, (len(here) - on_it) / len(here)))
+
+    def mask_quality(self) -> dict:
+        """The two mask fractions, as percentages, for each kind and for all of them.
+
+        The median is reported rather than the mean, because one badly drawn
+        glass can pull a mean a long way and the question here is what a
+        typical glass of that kind looks like.
+        """
+        if not self.masks:
+            return {}
+        kinds = sorted({kind for kind, _, _ in self.masks})
+
+        def over(rows: list[tuple[str, float, float]]) -> dict:
+            covered = [100 * c for _, c, _ in rows]
+            spread = [100 * s for _, _, s in rows]
+            return {
+                "glasses": len(rows),
+                "covered_median": round(float(np.median(covered)), 1),
+                "covered_worst": round(float(np.min(covered)), 1),
+                "not_the_glass_median": round(float(np.median(spread)), 1),
+                "not_the_glass_worst": round(float(np.max(spread)), 1),
+            }
+
+        return {
+            "all": over(self.masks),
+            "by_kind": {kind: over([r for r in self.masks if r[0] == kind]) for kind in kinds},
+        }
+
     def summary(self, scenes: int) -> dict:
         errors = np.array(self.profile_mm) if self.profile_mm else np.zeros((1, 2))
         c = self.count
@@ -129,6 +198,7 @@ class Scorecard:
                 "position_mm_median": round(float(np.median(self.position_mm)), 1),
                 "position_mm_worst": round(float(np.max(self.position_mm)), 1),
             },
+            "mask": self.mask_quality(),
             "view": {
                 "chosen_unspoiled": c["chosen unspoiled"],
                 "random_unspoiled": c["random unspoiled"],

@@ -1,7 +1,7 @@
 """The scenes, and depth pictures of them, without Gazebo.
 
-Shared by 02-segment-glasses/02-train-from-scratch and 02-segment-glasses/01-rules-on-the-table, so the two are tested
-on exactly the same tables and the same pictures.
+Shared by every solution in 02-segment-glasses, so they are tested on exactly
+the same tables and the same pictures.
 
 The wrist camera's lens and size, the project's own glass shapes and the
 project's own layout. What Gazebo would add is a slower picture of the same

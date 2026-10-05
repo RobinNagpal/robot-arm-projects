@@ -1,0 +1,44 @@
+{
+  "scenes per kind": 3,
+  "kinds": {
+    "straight_glass": {
+      "glasses on the table, counted once per picture": 45,
+      "named": {
+        "sports ball": 8,
+        "frisbee": 5,
+        "vase": 3,
+        "person": 1
+      },
+      "named a drinking vessel": 3
+    },
+    "tapered_glass": {
+      "glasses on the table, counted once per picture": 45,
+      "named": {
+        "frisbee": 19,
+        "sports ball": 4,
+        "person": 1
+      },
+      "named a drinking vessel": 0
+    },
+    "stemmed_glass": {
+      "glasses on the table, counted once per picture": 45,
+      "named": {
+        "sports ball": 12,
+        "frisbee": 4,
+        "bird": 2,
+        "cake": 1,
+        "donut": 1
+      },
+      "named a drinking vessel": 0
+    },
+    "short_stemmed_glass": {
+      "glasses on the table, counted once per picture": 45,
+      "named": {
+        "frisbee": 14,
+        "sports ball": 10,
+        "vase": 2
+      },
+      "named a drinking vessel": 2
+    }
+  }
+}

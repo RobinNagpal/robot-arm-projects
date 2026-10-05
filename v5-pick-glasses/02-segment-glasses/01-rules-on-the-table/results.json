@@ -1,27 +1,59 @@
 {
-  "scenes": 50,
-  "glasses": 250,
+  "solution": "01-rules-on-the-table",
+  "scenes": 20,
+  "layouts": "spawned",
+  "stations": 3,
+  "glasses": 100,
   "find": {
-    "found": 250,
+    "found": 100,
     "missed": 0,
     "merged": 0,
     "split": 0,
     "false": 0,
-    "position_mm_median": 0.2,
-    "position_mm_worst": 1.2
+    "position_mm_median": 6.3,
+    "position_mm_worst": 46.5
   },
-  "view": {
-    "chosen_unspoiled": 246,
-    "random_unspoiled": 223,
-    "judged": 250,
-    "handed_over": {
-      "no clean picture": 2
+  "mask": {
+    "all": {
+      "glasses": 100,
+      "covered_median": 98.9,
+      "covered_worst": 24.9,
+      "not_the_glass_median": 0.0,
+      "not_the_glass_worst": 0.0
+    },
+    "by_kind": {
+      "short_stemmed_glass": {
+        "glasses": 25,
+        "covered_median": 88.7,
+        "covered_worst": 63.6,
+        "not_the_glass_median": 0.0,
+        "not_the_glass_worst": 0.0
+      },
+      "stemmed_glass": {
+        "glasses": 24,
+        "covered_median": 86.6,
+        "covered_worst": 24.9,
+        "not_the_glass_median": 0.0,
+        "not_the_glass_worst": 0.0
+      },
+      "straight_glass": {
+        "glasses": 26,
+        "covered_median": 99.5,
+        "covered_worst": 98.3,
+        "not_the_glass_median": 0.0,
+        "not_the_glass_worst": 0.0
+      },
+      "tapered_glass": {
+        "glasses": 25,
+        "covered_median": 100.0,
+        "covered_worst": 98.9,
+        "not_the_glass_median": 0.0,
+        "not_the_glass_worst": 0.0
+      }
     }
   },
-  "measure": {
-    "measured": 248,
-    "height_mm_median": 0.8,
-    "height_mm_worst": 2.3,
-    "width_mm_median": 1.7
-  }
+  "handed over": {},
+  "model": "none: written rules over the depth readings",
+  "grouping distance mm": 25.0,
+  "fitted here": "nothing"
 }

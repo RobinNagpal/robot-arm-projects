@@ -25,18 +25,19 @@ and not a number invented here.
   alone from the same station and taking where it landed. The simulator knows
   what it drew, so this label costs one render and no labelling.
 
-Solution 9 trains against the first and solution 10 against the second, and that
-is the only difference between them. The whole masks are rendered on first use,
-so a solution that never asks for them never waits for them.
+A solution fitted on this cell trains against the first; the amodal rung of
+06-rf-detr-fine-tuned trains against the second, and that is the only
+difference between the two rungs. The whole masks are rendered on first use, so
+a solution that never asks for them never waits for them.
 
 **Two kinds of scene.** The spawned ones, which are what the cell really
 produces, and crowded ones built here, which stand glasses closer than the
 layout rule allows and on a line out from under a camera, because that is the
 only arrangement in which one glass covers another from above. A spawned layout
 keeps a guaranteed separation, so hiding is rare in one even at the survey
-height, and a training set of spawned scenes alone leaves solution 10 almost
-nothing to learn from. Both kinds are drawn for every solution, so the three
-still see the same scenes.
+height, and a training set of spawned scenes alone leaves an amodal rung
+almost nothing to learn from. Both kinds are drawn for every solution, so all
+six still see the same scenes.
 
 **Which seeds may be drawn from** is settled here and not left to each caller.
 render.TEST_SEEDS is the line: below it is for training, at or above it is held
@@ -194,7 +195,7 @@ class Sight:
         return [render.render([glass], self.pose).ids == 1 for glass in self.glasses]
 
     def masks(self, amodal: bool) -> list[np.ndarray]:
-        """The training target: whole outlines for solution 10, visible pixels for solution 9."""
+        """The training target: whole outlines for an amodal rung, visible pixels otherwise."""
         return self.whole if amodal else self.visible
 
 
@@ -224,8 +225,8 @@ class Example:
         its pixels, so it needs one picture in which every glass appears and
         none hides another. That is what ``render.top_pose`` is: from 750 mm the
         whole zone is in frame and nothing covers anything. It is also the
-        picture ../02-segment-glasses/01-rules-on-the-table and ../02-segment-glasses/02-train-from-scratch are scored in,
-        so the find counts here mean the same as theirs.
+        picture every solution in this folder is scored in, so the find counts
+        here mean the same as theirs.
         """
         return render.render(self.glasses, render.top_pose())
 

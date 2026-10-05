@@ -20,7 +20,7 @@ from torch import nn
 from viewpoints import FEATURES
 from work_cell.table.layout import TABLE_TOP_Z
 
-from render import HEIGHT, STANDOFF, TOP_HEIGHT, WIDTH, Picture, project
+from render import HEIGHT, STANDOFF, WIDTH, Picture, project
 from scoring import FRACTIONS
 
 DEVICE = "mps" if torch.backends.mps.is_available() else "cpu"
@@ -54,9 +54,15 @@ def top_input(picture: Picture) -> np.ndarray:
     Where the pixel is matters: from above, a rim leans outwards from the
     middle of the picture, more for a taller glass, so the way to a glass's
     middle depends on where in the frame it is seen.
+
+    How high the camera was comes from the picture's own pose rather than from a
+    height written down here. The cell surveys the zone from three stations, and
+    a camera height fixed to one picture would turn the first channel into
+    nonsense in any other.
     """
     depth = picture.depth[::SHRINK, ::SHRINK]
-    near = np.where(np.isfinite(depth), (TOP_HEIGHT - depth) / 0.25, 0.0)
+    above_the_table = picture.camera_to_world[2, 3] - TABLE_TOP_Z
+    near = np.where(np.isfinite(depth), (above_the_table - depth) / 0.25, 0.0)
     rows, columns = np.indices(SMALL)
     return np.stack([near, rows / SMALL[0] * 2 - 1, columns / SMALL[1] * 2 - 1]).astype(np.float32)
 

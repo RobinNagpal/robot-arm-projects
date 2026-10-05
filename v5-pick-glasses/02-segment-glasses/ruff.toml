@@ -3,7 +3,7 @@ extend = "../ruff.toml"
 [lint.isort]
 # The bench's modules import each other by bare name, and so do the solutions.
 known-first-party = [
-    "by_kind", "data", "device", "floor", "masks_to_glasses", "pictures",
-    "render", "run", "scoring",
+    "data", "device", "floor", "marking", "masks_to_glasses", "pictures",
+    "render", "scoring",
 ]
 known-third-party = ["work_cell"]

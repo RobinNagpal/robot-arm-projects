@@ -1,0 +1,8 @@
+# The borrowed weights, fetched by the first run, and the file fine-tuning
+# makes from them. Both are large, both are remade by running train.py, and
+# the fine-tuned one is bound by the download's AGPL-3.0 licence.
+weights/
+
+# The training set train.py writes out for Ultralytics to read. A few hundred
+# pictures, rendered again whenever a training run starts.
+dataset/

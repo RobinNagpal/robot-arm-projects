@@ -32,6 +32,7 @@ from work_cell.glasses.perception import NotMeasurable
 from work_cell.rack.layout import GLASS_ZONE
 from work_cell.table.layout import ROBOT_BASE, TABLE_CENTRE_XY, TABLE_SIZE
 
+import data
 import render
 import scoring
 from render import HORIZONTAL_FOV, STANDOFF
@@ -303,10 +304,13 @@ def answered(seed: int, top_net, ranker):
     the rest, and the side picture from each of those with the simulator's
     verdict on it.
     """
-    glasses = render.scene(seed)
-    found = pipeline.find_glasses(render.render(glasses, render.top_pose()), top_net)
+    example = data.spawned(seed)
+    glasses = example.glasses
+    sight = example.sights[len(example.sights) // 2]
+    found, _ = pipeline.find_glasses(sight.picture, top_net)
     for number, item in enumerate(found, start=1):
-        target, others = item.seen, [f.seen for f in found if f is not item]
+        target = viewpoints.reported(item)
+        others = [viewpoints.reported(f) for f in found if f is not item]
         middle = np.array([target.x, target.y])
         index = min(range(len(glasses)), key=lambda i: math.dist((glasses[i].x, glasses[i].y), middle))
         ranked = pipeline.rank_views(target, others, ranker)

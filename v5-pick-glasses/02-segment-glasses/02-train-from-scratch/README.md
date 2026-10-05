@@ -1,211 +1,223 @@
-# Problem 2 — the learned way
+# Solution 2 — a network trained here from scratch
 
-Several glasses of one kind on the table. Find each one from above, choose
-where to photograph it from the side, and read its profile from that picture.
-Here a small model does each of the three jobs. Each model is trained on 200
-pictures, which takes about a minute on a laptop.
+A small U-Net written in this project and fitted from random numbers on the
+bench's own arrangements. At every pixel it calls glass it predicts a short
+arrow pointing at the middle of that pixel's own glass; adding the arrow to the
+pixel's place is a vote, the votes pile up, and one pile is one glass. **Nothing
+is borrowed**: no downloaded weights, no pre-trained backbone, no licence
+condition. Its document is
+[`docs/02-segment-glasses/solutions/02-train-from-scratch.md`](../../docs/02-segment-glasses/solutions/02-train-from-scratch.md),
+and the bench it is scored on is
+[`docs/02-segment-glasses/the-bench.md`](../../docs/02-segment-glasses/the-bench.md).
 
-`../02-segment-glasses/01-rules-on-the-table` does the same job with written rules only. Both are
-scored on the same scenes and pictures, from `../02-segment-glasses/bench`.
+## The files
 
-## Why this approach
+- `models.py` — TopNet, which is the solution. Also the Ranker and SideNet; see
+  below.
+- `pipeline.py` — the votes, the piles, the masks, and the same
+  `Finder.find(picture, kind)` interface the other five solutions answer. It
+  hands back a boolean mask per glass; the place and the width come from the
+  bench's `masks_to_glasses`.
+- `train.py` — draws the bench's training arrangements and fits the models.
+  TopNet trains on every station of every training scene, half of them crowded,
+  with the simulator's own record of which glass each pixel shows as the labels.
+- `run.py` — the held-out scenes over the survey's three stations, scored;
+  writes `results.json` and `results-crowded.json`.
+- `show_top_net.py`, `drawing.py` — pictures of what TopNet is taught and what
+  it answers. See [looking at the data](#looking-at-the-data).
+- `test_learned.py` — the quick checks. No trained weights needed.
+- `viewpoints.py`, the `Ranker` and `SideNet` in `models.py`,
+  `pipeline.rank_views`, `pipeline.measure`, `show_ranker.py`,
+  `show_side_net.py` — **not part of this problem.** The bench stops at a mask,
+  a place and a width; choosing a viewpoint and reading a glass's profile from
+  the side are the steps after that, and nothing in `run.py` touches them. They
+  are kept because
+  [problem 4's documents](../../docs/problem-4/solutions/learned/08-the-learned-pipelines-retrained.md)
+  name this folder's Ranker and SideNet as parts their pipeline reuses.
 
-**Each model learns a job that is hard to write down as a rule.** Which pixels
-belong to which glass, which viewpoint will give a clean picture, and how a
-glass's shape reads off a side picture. The programmed version needs a
-hand-worked height correction for its level camera; SideNet learns the whole
-picture-to-shape step from examples, and nobody wrote a correction.
-
-**Finding glasses by voting separates glasses that overlap in the picture.**
-Each glass pixel points at the middle of its own glass, and the votes are
-counted. No boundary has to be found, so no boundary can be got wrong. A glass
-that is partly hidden still votes for the right middle from what shows of it.
-This is [solution 6](../../docs/02-segment-glasses/solutions/02-train-from-scratch.md),
-the one the solution overview names for the day glasses are allowed to touch.
-
-**The learned parts sit where a mistake is cheap.**
-- TopNet only groups pixels. The place and width of each glass come from those
-  pixels' depth readings, by arithmetic.
-- The Ranker only orders places the geometry has already allowed. A bad order
-  wastes one look; it cannot send the arm somewhere unsafe.
-- SideNet is the exception: its answer is used as it is, and nothing checks it.
-
-**It passes the project's rule for learned methods.** Every model is trained
-from scratch on pictures the simulator draws, and the simulator gives the right
-answers for free. Nothing is downloaded, no graphics card is needed, and all
-three train in about a minute.
-
-## Where it stands
-
-On the same 50 held-out scenes, the programmed version is ahead on every line.
-
-| Step | Learned (this folder) | Programmed |
-|---|---|---|
-| Find | 250 of 250; position 0.4 mm median, 1.3 mm worst | 250 of 250; 0.2 mm median, 1.2 mm worst |
-| Choose | first place clean 232 of 245; 5 handed over | 246 of 250; 2 handed over |
-| Measure | height 5.4 mm median, 36 mm worst; width 2.4 mm | height 0.8 mm median, 2.3 mm worst; width 1.7 mm |
-
-Finding is as good as the rules. Measuring is where it falls behind, for three
-reasons:
-- SideNet sees one picture, gets no retry, and nothing checks its answer.
-- 200 examples is few. SideNet pulls unusual glasses towards the average, so
-  its worst errors are the tallest stemmed glasses read short.
-- Part of the height error is in the hand-over, not in SideNet.
-  `pipeline.measure` passes on the 16 levels as the glass's profile, and a
-  profile's height is its top level, which is 97% of the height SideNet said.
-  So every height is scored about 3% short.
-
-## How it works
+## How the finding works
 
 ```
-1. overhead depth picture ──TopNet──▶ each glass: where it stands, how wide
-2. 24 places round each glass ──geometry veto──▶ allowed places ──Ranker──▶ best first
-3. side depth picture from the best place ──SideNet──▶ height, and width at 16 heights
+one station's picture ──TopNet──▶ per pixel: glass or not, and the way to the
+                                  middle of its own glass
+the votes             ──tally──▶  one pile per glass
+the pixels of a pile  ──the bench──▶ a place on the table and a width
 ```
 
-| Model | Kind | Weights | Given | Gives back |
-|---|---|---|---|---|
-| TopNet | small U-Net | 144 thousand | 3 grids of 160 × 120: height above the table, row, column | 3 grids: glass or not, and the way to its glass's middle |
-| Ranker | MLP | 1.3 thousand | 7 numbers about one camera place | the chance the side picture from there is clean |
-| SideNet | CNN | 718 thousand | 1 grid of 160 × 120: distance, per pixel | 17 numbers: the height, and the width at 16 levels |
+| | |
+|---|---|
+| kind | small U-Net, 144 thousand weights |
+| given | 3 grids of 160 × 120: height above the table, row, column |
+| gives back | 3 grids: glass or not, and the two parts of the arrow |
+| trained on | 600 pictures — 200 arrangements × 3 stations, half of them crowded |
+| labels | the simulator's record of which glass each pixel shows (rung one) |
 
-**Training.** `train.py` draws 200 scenes. Each gives one picture from above
-and one side picture of one glass. The simulator knows the answers: which glass
-each pixel shows, each glass's true shape, and whether the side picture was
-spoiled. The models learn from those.
+The height channel is worked out from the picture's own camera pose rather than
+from a height written down, because the cell surveys from three stations and a
+fixed height would be nonsense at the other two.
 
-**1. Find — TopNet.**
-- For every pixel of the overhead picture it says whether it is glass, and
-  which way the middle of its glass is.
-- Each glass pixel votes where it points. Where 30 or more votes land
-  together, that is one glass.
-- The pixels that voted for a middle give the glass's place on the table and
-  its width.
-
-**2. Choose a place — geometry, then the Ranker.**
-- Try 24 places in a circle round the glass.
-- Geometry throws out places the arm cannot reach, places where the camera
-  would stand in another glass, and places with a glass squarely in the way.
-- The Ranker scores each place that is left. It is given numbers, not a
-  picture, because there is no picture until the arm goes there.
-- Take the best place. If it scores under 0.5, hand the glass to problem 3.
-
-**3. Measure — SideNet.**
-- It reads the side picture from the chosen place and gives the height and
-  16 widths directly.
-- It works in scaled units, height ÷ 250 mm and widths ÷ 100 mm, so that all
-  17 numbers sit near 1 while it learns. The pipeline turns them back into
-  millimetres.
+**Where in the frame each pixel sits is handed in as two more channels**, and it
+is the one fact a pixel cannot see: a camera looking straight down throws a
+glass's outline outwards from the point below the lens, further the taller the
+glass, so the direction to a glass's middle depends on where in the frame the
+pixel is.
 
 ## Running it
 
-Everything runs from this folder. The first `make` installs the environment
-with [pixi](https://pixi.sh), which is the only thing to install by hand. No
-ROS and no Gazebo are needed.
-
 ```
-make train      # draw 200 scenes and train all three models, about a minute
-make run        # run the 50 held-out scenes and score them; writes results.json
-make test       # the quick checks
+pixi run python 02-train-from-scratch/train.py --scenes 200
+pixi run python 02-train-from-scratch/run.py --scenes 20
+pixi run python 02-train-from-scratch/run.py --scenes 20 --crowded
+pixi run pytest -q 02-train-from-scratch
 ```
 
-- `make train SCENES=400` trains on more scenes.
-- `pixi run python run.py --scenes 5 --show` runs a few scenes and prints
-  each glass.
-- The weights are not committed, so run `make train` before anything else.
-  Your numbers will be close to the table above rather than equal to it.
+The weights are not committed, so train before running. Nothing downloads.
+
+## What it costs
+
+Training all three models on 200 arrangements takes about ten minutes on this
+machine's integrated graphics through the MPS backend, nearly all of it TopNet's
+600 pictures. A 20-scene run over three stations each — 60 pictures — takes
+about 20 seconds including the rendering. No labelling by hand, because the
+simulator knows which glass each pixel shows, and no graphics card of its own.
+
+## Results — 20 held-out scenes from each family, three stations each
+
+Trained on 200 arrangements, which is 600 survey pictures, half of them crowded.
+
+| | spawned | crowded |
+|---|---|---|
+| glasses put out | 100 | 101 |
+| **found** | **63** | **72** |
+| missed | 37 | 29 |
+| merged / split / false | 0 / 0 / 0 | 1 / 0 / 0 |
+| position error, median · worst | 0.5 · 19.1 mm | 0.7 · 43.8 mm |
+| mask covered, median · worst | 98.2% · 92.7% | 97.2% · 80.3% |
+| mask not the glass, median · worst | 1.5% · 4.1% | 1.4% · 17.5% |
+
+**Of the glasses it reports, it is as close to the floor as a method can get.**
+The bench's floor — the same arithmetic on the masks the renderer itself drew —
+is 6.3 mm median on spawned layouts and 0.4 mm on crowded ones. 0.5 mm and
+0.7 mm are at that limit, so there is nothing left in the places to win.
+
+**The masks are even across the four kinds, which is the result worth having.**
+
+| kind | covered | not the glass |
+|---|---|---|
+| straight glass | 98.0% | 1.8% |
+| tapered glass | 98.5% | 1.9% |
+| stemmed glass | 98.6% | 1.3% |
+| short stemmed glass | 96.8% | 1.5% |
+
+That is the comparison
+[the bench document](../../docs/02-segment-glasses/the-bench.md) predicts, and
+it comes out as predicted: a fitted model covers all four kinds almost equally
+well, the stemmed glass included, where `01-rules-on-the-table` covers the two
+stemmed kinds 11–13 points worse than the two without a stem. And it pays for
+that in the other number, in the opposite direction: 1.5% of every mask here is
+not the glass, where the written rule's masks are at 0.0%, because a learned
+outline follows the shape coarsely and its edge sits a little outside the glass.
+Neither habit can be seen in the places.
+
+**What it misses, it cannot see at all.** 37 of 100 glasses are missed on
+spawned layouts, and that is not the network. A vote is a place in the picture
+and the tally is the size of the picture, so a glass whose own middle falls
+outside the frame votes nowhere. Of the 100 glasses put out, only **61** have
+their rim's middle inside any of the three stations' pictures, and 63 were
+found; on crowded layouts the counts are 84 and 72. So the design is already
+within a few glasses of its own ceiling, and the ceiling — not the training — is
+what the missed column measures. The repair is a tally with a margin round the
+picture, not a better network.
+
+### What the training set was worth
+
+The weights before this change were fitted on one picture per scene from
+`render.top_pose`, 750 mm above the zone, which is not what the bench hands a
+solution. Scored on the bench's survey pictures they give:
+
+| | found | position median | mask covered median |
+|---|---|---|---|
+| fitted on the 750 mm top view | 100 of 100 | 17.3 mm | 84.3% |
+| fitted on the bench's stations | 63 of 100 | 0.5 mm | 98.2% |
+
+The first row looks better and is worse, which is worth understanding. The old
+weights learned their arrows on a view where a rim leans barely at all, so on
+these pictures they predict arrows that are far too short. A short arrow for a
+glass near the frame edge lands *inside* the picture instead of outside it, so a
+pile forms and the glass is counted — at a middle that is wrong, which is where
+the 17.3 mm and the 84.3% come from. **It found more glasses by being wrong
+about where their middles are.** Reading the found column on its own would have
+rewarded exactly that.
+
+## What this does not do
+
+- **No width check, and the document asks for one.** The document prescribes
+  fitting a circle to the pixels of a pile and refusing a pile whose width falls
+  outside the range this kind of glass can be. It is not built. A refusal was
+  tried and measured, and it is worse than nothing: the bench's own exact masks,
+  judged one station at a time, give a footprint outside the kind's range for 66
+  of 297 glass sightings, because a glass clipped at the edge of one station's
+  frame shows only part of its footprint. The station that saw a glass squarely
+  is chosen by the bench afterwards, where a solution has no say, so the check
+  belongs after the survey rather than inside one picture.
+- **No rung two.** The document's second rung takes its labels from the arm's
+  own movement rather than from the answer key. It is a design and is not built;
+  `train.py` fits rung one.
+- **No domain randomisation.** The document asks for the lighting, the table's
+  shade, the glass tint, the exposure and the noise to be varied so that shape
+  is the only thing left that predicts the answer. The bench renders one table
+  under one setting, so nothing here is varied and the network is free to use
+  the renderer's constants as a clue. It would not survive a changed light, and
+  no number in this folder would show it.
+- **A glass whose middle is off the picture cannot be voted for.** A vote is a
+  place in the picture and the tally is the size of the picture, so a glass whose
+  own middle falls outside the frame votes nowhere. The survey does not rescue
+  it: the stations are spread along one axis only, because one picture already
+  covers the glass zone across the other, and a glass at the far edge of that
+  other axis has its rim thrown outside the frame from every station. The repair
+  is a tally with a margin round the picture, not a better network.
+- **Not Gazebo.** The pictures come from `../bench/render.py`, which uses the
+  wrist camera's lens but not the simulator.
 
 ## Looking at the data
 
 `make show` saves pictures of what each model is taught and what it answers,
-into `saved/`. It trains nothing; it uses the weights in `weights/`. All of it
-takes about five minutes and 400 MB.
+into `saved/`. It trains nothing; it uses the weights in `weights/`.
 
 ```
-make show                                    # all three models, train and test
-
-pixi run python show_top_net.py train        # TopNet, the 200 training scenes
-pixi run python show_top_net.py test         # TopNet, the 50 held-out scenes
-pixi run python show_ranker.py train
-pixi run python show_ranker.py test
-pixi run python show_side_net.py train
-pixi run python show_side_net.py test
+pixi run python 02-train-from-scratch/show_top_net.py train --scenes 10
+pixi run python 02-train-from-scratch/show_top_net.py test --scenes 10
+pixi run python 02-train-from-scratch/show_top_net.py test --scenes 10 --crowded
 ```
 
-Add `--scenes 10` to any one of them for a quick look.
+Each scene gets a `.png` to look at, a `.npz` holding every number behind it,
+and a `.json` with four pixels written out in full: three on glass and one off
+it, ringed in red in the first panel. One station of the three is drawn, the
+middle one, which is the station the crowded family's lines of glasses run out
+from.
 
-The `.png` files are for looking at, and the `.json` files open as text. A
-`.npz` file holds number grids and has to be opened with Python:
+**`train/` — four panels each.** The height of each pixel above the table;
+whether each pixel is glass; and the way from each pixel to the middle of its
+glass's rim, drawn once as a colour and once as arrows.
+
+**`test/` — six panels each.** What TopNet is given and the two things it says
+back; then where the arrows land and which middles were picked, the glasses made
+from them with the true middles marked, and how far each arrow is from the true
+one. Under the panels, each found glass's place and width beside the true ones.
+In the `.json`, `glass_score` is TopNet's raw answer (above 0 means glass) and
+`glass_chance` is the same answer as a chance between 0 and 1.
+
+A `.npz` holds number grids and has to be opened with Python:
 
 ```
 pixi run python -c "
 import numpy as np
-d = np.load('saved/top-net/train/scene-00002.npz')
+d = np.load('02-train-from-scratch/saved/top-net/train/scene-00002.npz')
 for k in d.files: print(k, d[k].shape)
 print(d['target'][:, 31, 38])     # the 3 true answers for the pixel at row 31, column 38
 "
 ```
 
-### TopNet — `saved/top-net/`
-
-Each scene has a `.png`, a `.npz` with every number behind it, and a `.json`
-with four pixels written out in full: three on glass and one off it. The same
-four are ringed in red in the first panel.
-
-**`train/` — the 200 training scenes, four panels each.**
-- Given: the height of each pixel above the table. TopNet is also given each
-  pixel's row and column; those are the same in every scene and are not drawn.
-- Answer 1: is this pixel glass.
-- Answer 2: the way from this pixel to the middle of its glass's rim, drawn
-  once as a colour for every pixel and once as arrows for some of them.
-- The `.npz` holds `depth` and `ids` as the simulator drew them at 320 × 240,
-  and `input` and `target` as TopNet gets them.
-
-**`test/` — the 50 held-out scenes, six panels each.**
-- Top row: what TopNet is given, and the two things it says back.
-- Bottom row: where the arrows land and which middles were picked; the
-  glasses made from them, with the true middles marked; and how far each
-  arrow is from the true one.
-- Under the panels: each found glass's place and width beside the true ones.
-- In the `.json`, `glass_score` is TopNet's raw answer (above 0 means glass)
-  and `glass_chance` is the same answer as a chance between 0 and 1.
-
-### Ranker — `saved/ranker/`
-
-Each picture has a `.json` beside it with the same numbers.
-
-**`train/` — one picture per training scene.** A training example is one
-place round one glass.
-- Left: the table from above, with the camera at that place. The 7 values the
-  Ranker is given are drawn on it, numbered 1 to 7, and listed underneath with
-  what each one means.
-- Right: the side picture from that place, and the same picture with the
-  target alone. The true answer is whether the two measure the same.
-- `all-examples.csv` is the whole training set as one table.
-
-**`test/` — one picture per glass of the 50 held-out scenes.**
-- Top left: all 24 places round the glass. A cross is a place the geometry
-  vetoed, coloured by the reason. A dot is an allowed place, with the Ranker's
-  score beside it. The best one is ringed.
-- Top right: the best place, with its 7 values drawn on.
-- Below: the side picture from every allowed place, best score first, each
-  marked with whether it truly came out clean.
-- The `.json` lists all 24 places. Only the best-scoring one has
-  `"chosen": true`, because the arm takes one side picture per glass.
-
-### SideNet — `saved/side-net/`
-
-Each picture has a `.json` with the 17 values in millimetres and in the scaled
-units SideNet works in, and a `.npz` with its input and output.
-
-**`train/` — one picture per training scene, three panels.**
-- Given: the side picture. The glass in the middle is the one to measure.
-- The 17 true values drawn on it: a thick line at the height, and a thin line
-  across the glass at each of the 16 levels, as long as the width there.
-- The same 17 values to scale, and as a table.
-
-**`test/` — one picture per measured glass of the 50 held-out scenes.**
-- The same panels, and a fourth with SideNet's own values drawn in orange.
-- The last panel lays the two outlines over each other and lists true, said
-  and the difference for each value.
-- A glass handed to problem 3 has no picture, because SideNet never runs on it.
+`show_ranker.py` and `show_side_net.py` do the same for the two models that are
+not part of this problem; their panels are described in
+[problem 4's document](../../docs/problem-4/solutions/learned/08-the-learned-pipelines-retrained.md).

@@ -1,21 +1,21 @@
-"""Fit whatever the chosen solution fits, and save it beside the borrowed weights.
+"""Fit whatever the chosen rung fits, and save it beside the borrowed weights.
 
-    pixi run python train.py --solution sam --scenes 20
-    pixi run python train.py --solution maskrcnn
-    pixi run python train.py --solution amodal
+    pixi run python 05-sam2-with-a-keeper/train.py --solution sam2 --scenes 20
 
-The three commands are the same command. That is the point of this file: a
-solution here is a module to call and the masks to train against, and those two
-facts are all of what this file knows about any of the three. Which model gets
-loaded, what is fitted, how long it takes and what it writes belong to the
-module named in the table below, so `sam`, `maskrcnn` and `amodal` are
-indistinguishable from here and stay comparable for that reason.
+This solution has two rungs, which are two generations of one approach, and
+this file is indifferent to which of them is asked for: a rung here is a module
+to call and the masks to train against, and those two facts are all of what
+this file knows about either. Which model gets loaded, what is fitted, how long
+it takes and what it writes belong to the module named in the table below, so
+the two stay comparable for that reason.
 
-The table is the only place in this folder that knows the three names apart.
-Nothing else anywhere may branch on which solution is running; a module is told
-what to do, not who it is. `maskrcnn` and `amodal` name one module on purpose.
-They are solutions 9 and 10, which differ only in what their masks are trained
-against, so the difference between them is one flag in the table.
+Only the lower rung fits anything. The upper one does its naming inside the
+borrowed weights, so the table says it fits nothing and asking to train it is
+refused with that reason rather than quietly writing an empty file.
+
+The table is the only place in this folder that knows the rungs apart. Nothing
+else anywhere may branch on which one is running; a module is told what to do,
+not who it is.
 
 Every solution is fitted through the same three calls:
 
@@ -46,11 +46,12 @@ import data
 
 @dataclass(frozen=True)
 class Solution:
-    """One solution: the module that does the work, what its masks mean, and how much to fit on."""
+    """One rung: the module that does the work, what its masks mean, and how much to fit on."""
 
     module: str
     amodal: bool  # whole outlines rather than the pixels the camera can see
-    scenes: int  # the default, because running SAM costs far more than a training step
+    scenes: int  # the default, because running the borrowed model costs far more than a fit
+    fits: bool = True  # whether anything in this rung is fitted in this cell at all
 
 
 # The scene count is set so that fitting the keeper finishes in a few minutes
@@ -58,7 +59,8 @@ class Solution:
 # that wait for accuracy. Running the borrowed model over a picture costs
 # several seconds, and every scene is a picture from each station.
 SOLUTIONS = {
-    "sam": Solution("sam_keeper", amodal=False, scenes=12),
+    "sam2": Solution("sam_keeper", amodal=False, scenes=12),
+    "sam3": Solution("sam3_words", amodal=False, scenes=0, fits=False),
 }
 
 NAMES = " ".join(SOLUTIONS)
@@ -117,6 +119,8 @@ def how_many(given, fallback: int) -> int:
 def main() -> None:
     given = command("Fit what one solution fits, on scenes from the simulator").parse_args()
     solution = chosen(given.solution)
+    if not solution.fits:
+        raise SystemExit(f"{given.solution} fits nothing in this cell. Run it without training it.")
     scenes = how_many(given, solution.scenes)
 
     save = weights.fitted(given.solution)

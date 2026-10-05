@@ -1,0 +1,5 @@
+# The borrowed weights, fetched by weights.py, and everything the fine-tune
+# makes from them: the COCO folder the package trains out of, the run's logs
+# and checkpoints, and the one file run.py reads back. All large, all remade by
+# running train.py again.
+weights/

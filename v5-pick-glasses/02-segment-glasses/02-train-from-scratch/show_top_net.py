@@ -1,11 +1,19 @@
 """Save pictures of what TopNet is taught, and of what it answers.
 
-    pixi run python show_top_net.py train    # the training scenes: what goes in, and the right answer
-    pixi run python show_top_net.py test     # the held-out scenes: what goes in, and what TopNet says
+    pixi run python 02-train-from-scratch/show_top_net.py train
+    pixi run python 02-train-from-scratch/show_top_net.py test --crowded
+
+``train`` draws the training scenes: what goes in, and the right answer.
+``test`` draws the held-out ones: what goes in, and what TopNet says.
 
 Each scene gets a .png to look at, a .npz holding every number behind it, and
 a .json with a few pixels written out in full, in saved/top-net/. Nothing here
 trains anything: ``test`` uses the weights that ``make train`` left.
+
+**One station of the three**, the middle one, because a page of three pictures
+of every scene is three times the size for no more insight. It is the station
+the crowded family's lines of glasses run out from, so it is the one where a
+glass covers another.
 """
 
 from __future__ import annotations
@@ -23,7 +31,9 @@ import torch
 from drawing import LINE_HEIGHT, WHITE, foot, grey, grid, write
 from models import SHRINK, SMALL, VOTE_SCALE
 from train import WEIGHTS
+from work_cell.table.layout import TABLE_TOP_Z
 
+import data
 import render
 
 SAVED = Path(__file__).parent / "saved" / "top-net"
@@ -144,6 +154,7 @@ def sample_pixels(picture: render.Picture, net_input: np.ndarray, target: np.nda
     Three on glass and one off it, the same ones every time. ``out`` is
     TopNet's answer, if there is one to set beside the true answer.
     """
+    above_the_table = picture.camera_to_world[2, 3] - TABLE_TOP_Z
     glass, other = np.argwhere(target[0] > 0.5), np.argwhere(target[0] < 0.5)
     chosen = [glass[len(glass) * part // 4] for part in (1, 2, 3)] + [other[len(other) // 2]]
     pixels = []
@@ -159,7 +170,7 @@ def sample_pixels(picture: render.Picture, net_input: np.ndarray, target: np.nda
                 "height": round(float(net_input[0, row, column]), 3),
                 "row": round(float(net_input[1, row, column]), 3),
                 "column": round(float(net_input[2, row, column]), 3),
-                "height_in_mm": round(1000 * (render.TOP_HEIGHT - depth)) if np.isfinite(depth) else None,
+                "height_in_mm": round(1000 * (above_the_table - depth)) if np.isfinite(depth) else None,
             },
             "true_answer": {
                 "glass": int(is_glass),
@@ -193,13 +204,19 @@ def _number(image: np.ndarray, pixels: list[dict]) -> np.ndarray:
 GIVEN = "given: height, brighter is higher. red rings: the pixels in the .json"
 
 
+def _sight(seed: int, crowded: bool):
+    """Scene ``seed`` and the middle station's picture of it."""
+    example = data.crowded(seed) if crowded else data.spawned(seed)
+    return example, example.sights[len(example.sights) // 2]
+
+
 # ------------------------------------------------------- the two pictures
 
 
-def taught_picture(seed: int) -> tuple[np.ndarray, dict, list[dict]]:
+def taught_picture(seed: int, crowded: bool = False) -> tuple[np.ndarray, dict, list[dict]]:
     """One training scene: what TopNet is given, and the answer it is marked against."""
-    glasses = render.scene(seed)
-    picture = render.render(glasses, render.top_pose())
+    example, sight = _sight(seed, crowded)
+    glasses, picture = example.glasses, sight.picture
     net_input, target = models.top_input(picture), models.top_target(picture, glasses)
     glass = target[0] > 0.5
     across, down = target[1] * VOTE_SCALE, target[2] * VOTE_SCALE
@@ -227,13 +244,13 @@ def taught_picture(seed: int) -> tuple[np.ndarray, dict, list[dict]]:
     return image, numbers, pixels
 
 
-def answered_picture(seed: int, top_net) -> tuple[np.ndarray, dict, list[dict]]:
+def answered_picture(seed: int, top_net, crowded: bool = False) -> tuple[np.ndarray, dict, list[dict]]:
     """One held-out scene: what TopNet is given, what it says, and what is made of that."""
-    glasses = render.scene(seed)
-    picture = render.render(glasses, render.top_pose())
+    example, sight = _sight(seed, crowded)
+    glasses, picture = example.glasses, sight.picture
     net_input, target = models.top_input(picture), models.top_target(picture, glasses)
     votes = pipeline.cast_votes(picture, top_net)
-    found = pipeline.gather(picture, votes)
+    found, doubts = pipeline.gather(picture, votes)
 
     out = votes.out
     said, truly = out[0] > 0, target[0] > 0.5
@@ -290,13 +307,13 @@ def answered_picture(seed: int, top_net) -> tuple[np.ndarray, dict, list[dict]]:
     )
 
     # Under the pictures: each found glass beside the true glass nearest to it.
-    lines = [f"scene {seed}: {len(glasses)} {glasses[0].kind} put out, {len(found)} found"]
+    doubted = f", {len(doubts)} doubted" if doubts else ""
+    lines = [f"scene {seed}: {len(glasses)} {glasses[0].kind} put out, {len(found)} found{doubted}"]
     for index, one in enumerate(found):
-        true = min(glasses, key=lambda g, one=one: math.dist((g.x, g.y), (one.seen.x, one.seen.y)))
-        off = 1000 * math.dist((true.x, true.y), (one.seen.x, one.seen.y))
-        seen = one.seen
+        true = min(glasses, key=lambda g, one=one: math.dist((g.x, g.y), (one.x, one.y)))
+        off = 1000 * math.dist((true.x, true.y), (one.x, one.y))
         lines.append(
-            f"glass {index + 1}: at x {seen.x:.3f} y {seen.y:.3f} m, {2000 * seen.radius:.0f} mm wide."
+            f"glass {index + 1}: at x {one.x:.3f} y {one.y:.3f} m, {1000 * one.width:.0f} mm wide."
             f"   true: x {true.x:.3f} y {true.y:.3f} m, {2000 * true.max_radius:.0f} mm wide."
             f"   {off:.1f} mm from the true place"
         )
@@ -306,7 +323,7 @@ def answered_picture(seed: int, top_net) -> tuple[np.ndarray, dict, list[dict]]:
         "target": target,
         "tally": votes.tally,
         "middles": np.array(votes.middles).reshape(-1, 2),
-        "found": np.array([[f.seen.x, f.seen.y, f.seen.radius] for f in found]).reshape(-1, 3),
+        "found": np.array([[f.x, f.y, f.width] for f in found]).reshape(-1, 3),
         "truth": np.array([[g.x, g.y, g.max_radius] for g in glasses]),
     }
     return np.vstack([image, foot(lines, image.shape[1])]), numbers, pixels
@@ -315,18 +332,22 @@ def answered_picture(seed: int, top_net) -> tuple[np.ndarray, dict, list[dict]]:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("which", choices=["train", "test"])
-    parser.add_argument("--scenes", type=int, help="how many; 200 for train and 50 for test if not given")
+    parser.add_argument("--scenes", type=int, help="how many; 200 for train and 20 for test if not given")
+    parser.add_argument("--crowded", action="store_true", help="the crowded family, not the spawned one")
     arguments = parser.parse_args()
 
     if arguments.which == "train":
-        first, count, draw = 0, arguments.scenes or 200, taught_picture
+        first, count = 0, arguments.scenes or 200
+
+        def draw(seed):
+            return taught_picture(seed, arguments.crowded)
     else:
         top_net = models.TopNet()
         top_net.load_state_dict(torch.load(WEIGHTS / "top_net.pt"))
-        first, count = render.TEST_SEEDS, arguments.scenes or 50
+        first, count = render.TEST_SEEDS, arguments.scenes or 20
 
         def draw(seed):
-            return answered_picture(seed, top_net)
+            return answered_picture(seed, top_net, arguments.crowded)
 
     folder = SAVED / arguments.which
     folder.mkdir(parents=True, exist_ok=True)

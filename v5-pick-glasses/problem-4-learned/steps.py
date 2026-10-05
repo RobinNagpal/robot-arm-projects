@@ -86,11 +86,15 @@ def look(bench: Bench, top_net) -> tuple[render.Picture, list[Sighting], list[re
     ids, glasses = tables.on_bench(bench)
     top = render.render(glasses, render.top_pose())
     sightings = []
-    for found in p2.find_glasses(top, top_net):
-        points = render.to_world(top, found.pixels[:, 0], found.pixels[:, 1])
+    # Problem 2's finder hands back the bench's own record — a place, a width and
+    # the mask's pixels — and separately what it could not settle, which this
+    # run has no use for because its own bench counts a missing glass itself.
+    found, _ = p2.find_glasses(top, top_net)
+    for one in found:
+        points = render.to_world(top, one.pixels[:, 0], one.pixels[:, 1])
         points = points[np.isfinite(points).all(1)]
         height = float(points[:, 2].max() - TABLE_TOP_Z)
-        x, y = found.seen.x, found.seen.y
+        x, y = one.x, one.y
         near = min(ids, key=lambda i: math.dist(bench.position(i), (x, y)), default=None)
         if near is not None and math.dist(bench.position(near), (x, y)) > SAME_PLACE:
             near = None
@@ -98,8 +102,8 @@ def look(bench: Bench, top_net) -> tuple[render.Picture, list[Sighting], list[re
         sightings.append(
             Sighting(
                 near,
-                Seen(near if near is not None else -1, x, y, height, 2 * found.seen.radius, 0.0, standing),
-                found.pixels,
+                Seen(near if near is not None else -1, x, y, height, one.width, 0.0, standing),
+                one.pixels,
             )
         )
     return top, sightings, glasses, ids

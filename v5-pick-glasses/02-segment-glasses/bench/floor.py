@@ -16,14 +16,22 @@ far from it has something left to gain from better masks.
 It runs three ways, because a mask can be exact in three different senses:
 
 ``visible``   only the pixels the camera can see of a glass, which is what
-              solution 9 is trained to draw.
+              every solution here draws when it is fitted on this cell.
 ``whole``     the glass's whole outline as if nothing stood in front of it,
-              which is what solution 10 is trained to draw, with the pixels it
-              only asserts named so that their depth readings are left out.
+              which is what the amodal rung of 06-rf-detr-fine-tuned draws,
+              with the pixels it only asserts named so that their depth
+              readings are left out.
 ``poisoned``  the same whole outline with nothing named, which is the one
               implementation mistake that destroys the answer while every check
               still passes. It is run here so that the cost of making it is a
               measurement rather than a warning.
+
+The first two come out of the scorecard the same, and that is the point rather
+than a fault: naming the asserted pixels removes them from the arithmetic, so a
+whole outline with them named leaves exactly the visible pixels behind. What
+naming is worth therefore cannot be seen in a whole run, where most glasses
+have nothing in front of them anyway, and ``hidden()`` below answers it for the
+partly hidden glasses the question is actually about.
 """
 
 from __future__ import annotations
@@ -35,8 +43,8 @@ from pathlib import Path
 import numpy as np
 
 import data
+import marking
 import masks_to_glasses
-import run
 from scoring import Scorecard
 
 # The three senses in which a mask can be exact, in the order they are reported.
@@ -82,9 +90,9 @@ def measure(way: str, scenes: int, crowded: bool) -> dict:
     finder, card = Exact(way), Scorecard()
     for example in data.held_out(scenes, hard=crowded):
         finder.remember(example)
-        kept, station = run.survey(finder, example, card)
-        run.score(card, example, kept, station)
-    return run.summary(f"exact {way} masks", card, scenes, crowded)
+        kept, station = marking.survey(finder, example, card)
+        marking.score(card, example, kept, station)
+    return marking.summary(f"exact {way} masks", card, scenes, crowded)
 
 
 def hidden(scenes: int) -> dict:
@@ -135,7 +143,7 @@ def main() -> None:
     results = [measure(way, given.scenes, given.crowded) for way in WAYS]
     for result in results:
         print(f"\n{result['solution']}")
-        run.show(result)
+        marking.show(result)
 
     whole = {"ways": results}
     if given.crowded:

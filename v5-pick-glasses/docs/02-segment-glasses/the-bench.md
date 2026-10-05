@@ -189,10 +189,29 @@ lost the thin stem of a glass or stopped at the edge of an occluder. The second
 catches an outline that leaked onto the table or swallowed a neighbour.
 
 Both are then **broken down by kind of glass**, because the four kinds are not
-equally hard and an average over all four hides the interesting part. The two
-kinds without a stem are outlined almost exactly by anything that tries; the
-stemmed kinds are where methods differ, and the stemmed glass is the hardest of
-the four.
+equally hard to outline and an average over all four would hide that.
+
+What the breakdown shows is worth saying plainly, because it is not what the
+shapes alone suggest. A solution that works from rules written by hand does
+lose the thin stem: it covers the two kinds without a stem almost completely,
+and the two kinds with a stem noticeably less, so for that kind of solution the
+stem really is the hard part. A solution fitted on this cell's own pictures does
+not lose it: it covers all four kinds almost equally well, the stemmed glass
+included. So the stem is where a written rule runs out, and not where every
+method runs out.
+
+Those two solutions differ in the other number instead, and in opposite
+directions. The written rule almost never includes a pixel that is not the
+glass, because it only accepts a pixel it is sure about, so it is exact about
+what it claims and simply claims too little. The fitted model always includes a
+few, because a learned outline follows the shape coarsely and its edge sits a
+little outside the glass, so it claims the whole glass and a thin margin around
+it. Neither of those two habits can be seen in the places the solutions report,
+which is the reason this measurement exists at all.
+
+The measurement is checked against the floor below, where the masks are the ones
+the renderer itself drew. There both numbers come out perfect for all four
+kinds, which is what a correct yardstick has to say about a perfect mask.
 
 ### The ceiling: what the best possible answer would be
 

@@ -1,11 +1,9 @@
 """Every instance mask turned into a place on the table and a rough width.
 
-This is the same arithmetic as ../02-segment-glasses/01-rules-on-the-table/find.py and
-../02-segment-glasses/02-train-from-scratch/pipeline.py, and all three solutions here call it. That is
-deliberate twice over. Between the folders it means a difference in the
-scorecard belongs to how the mask was drawn and not to what was done with the
-mask afterwards. Inside this folder it means solutions 8, 9 and 10 differ only
-where they are meant to differ.
+Every solution in this folder calls it, and that is deliberate: a difference
+in the scorecard then belongs to how the mask was drawn and never to what was
+done with the mask afterwards, so the six differ only where they are meant to
+differ.
 
 Each pixel of a mask carries a depth reading, so it becomes a point in the room.
 The axis comes from the points at the top of the glass rather than from all of

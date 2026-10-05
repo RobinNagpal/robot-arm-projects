@@ -1,4 +1,5 @@
-# Retrained in about a minute with `make train`.
+# Retrained with `make train`, which takes about ten minutes: TopNet now
+# learns from 600 survey pictures rather than 200 pictures from one viewpoint.
 weights/
 
 # Drawn again in a few seconds with `make show`.

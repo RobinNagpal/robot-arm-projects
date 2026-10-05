@@ -21,11 +21,13 @@ import numpy as np
 import pipeline
 import torch
 import train
+import viewpoints
 from drawing import WHITE, above, beside, foot, grey, panel, write
 from models import HEIGHT_SCALE, SHRINK, WIDTH_SCALE
 from show_ranker import judge, place_number
 from work_cell.table.layout import TABLE_TOP_Z
 
+import data
 import render
 import scoring
 from scoring import FRACTIONS
@@ -186,10 +188,13 @@ def answered(seed: int, top_net, ranker, side_net):
     The same steps run.py takes: find the glasses, rank the places round
     each, and measure from the best one unless the Ranker doubts it.
     """
-    glasses = render.scene(seed)
-    found = pipeline.find_glasses(render.render(glasses, render.top_pose()), top_net)
+    example = data.spawned(seed)
+    glasses = example.glasses
+    sight = example.sights[len(example.sights) // 2]
+    found, _ = pipeline.find_glasses(sight.picture, top_net)
     for number, item in enumerate(found, start=1):
-        target, others = item.seen, [f.seen for f in found if f is not item]
+        target = viewpoints.reported(item)
+        others = [viewpoints.reported(f) for f in found if f is not item]
         ranked = pipeline.rank_views(target, others, ranker)
         if not ranked or ranked[0][0] < pipeline.MIN_SCORE:
             continue
