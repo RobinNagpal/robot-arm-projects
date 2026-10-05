@@ -20,15 +20,7 @@
 > measurements and answers keep, drop, or more than one glass; what it keeps
 > still has to pass a width check against the kind, which is known; and the
 > proposals that survive all of that are the masks this solution reports.
-> **How it differs from the other five** — **solution 1** writes the deciding
-> down as rules and fits nothing at all, where this one fits the deciding and
-> borrows the seeing. **Solution 2** fits every number it uses on this cell's
-> own pictures, where this one fits almost none of them. **Solution 3** borrows
-> a model's shapes *and* its names, where this one borrows the shapes and
-> replaces the names. **Solution 4** moves borrowed weights towards this cell's
-> pictures, where here the borrowed weights never move at all. **Solution 6**
-> fits a whole transformer segmenter in this cell, which makes it the largest
-> fitted thing in the set against the smallest.
+
 > **What it costs** — no hand labelling, because the bench's own answer key
 > turns a proposal into a training label by arithmetic. Fitting the keeper is
 > seconds of processor time with no graphics card; what takes real time is
@@ -100,7 +92,6 @@ def prompt_spacing(kind: str) -> int:
     ...
     narrowest = data.widths(kind)[0] / _metres_per_pixel()
     return max(1, int(narrowest / POINTS_ACROSS_SMALLEST))
-
 
 def _grid(spacing: int, inside: np.ndarray | None = None) -> list[list[float]]:
     """Prompt points (column, row) on a regular grid, optionally only where ``inside`` is true."""

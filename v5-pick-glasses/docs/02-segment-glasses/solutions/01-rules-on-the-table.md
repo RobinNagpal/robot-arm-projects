@@ -23,20 +23,7 @@
 > to be one glass; then hand back, for each surviving group, the picture pixels
 > its dots came from. Those pixels are the mask, and the mask is the whole
 > contribution.
-> **How it differs from the other five** — solution 2 trains a small network
-> here on this cell's own pictures, so it needs labelled arrangements and a
-> training run, where this one needs neither; solution 3 runs Ultralytics
-> YOLO26-seg exactly as it downloads, so it fits nothing in this cell either,
-> but it carries a weights file that somebody else fitted on somebody else's
-> pictures; solution 4 is that same model fine-tuned on this cell's own
-> arrangements, which buys a far more reliable finding of the glasses for the
-> price of labels and training time, and leaves the coarseness of its outlines
-> where it was; solution 5 keeps a large promptable model, SAM 2, and fits only
-> a small keeper that decides which of the many outlines it offers are glasses;
-> and solution 6 fine-tunes a transformer segmenter, RF-DETR-Seg, which is the
-> largest fitted model of the six. This one is the only one of the six that
-> holds no fitted numbers at all, anywhere, and the only one that makes its
-> decision in the room rather than in the picture.
+
 > **What it costs** — no labels, because nothing learns; no training time, for
 > the same reason; no graphics processor, because the work is a few passes over
 > a small grid of numbers; and no licence condition, because the two libraries
@@ -53,8 +40,7 @@
 This document describes the one answer to [problem 2](../problem.md) that
 contains no model of any kind. The problem is to say which pixels belong to
 which glass when several glasses stand on a table and the camera looks at them
-from the top. Five of the six answers to that problem fit numbers to examples,
-either here or somewhere else, and then trust the fitted numbers. This one fits
+from the top. This one fits
 nothing. It states a rule, in words a person can read, and applies it.
 
 The rule is possible because of one fact about the input. Every pixel arrives
@@ -64,19 +50,6 @@ picture has become a crowd of points in the room, the question "which glass is
 this?" stops being a question about the picture and becomes a question about
 distance on the table. That change of place is the whole idea, and everything
 else in this document follows from it.
-
-By the end you will understand how a pixel and a depth reading become a point in
-the room, why throwing the height of those points away makes the grouping easy
-rather than harder, what the one grouping rule is and where its single setting
-comes from, why this solution's masks are a *consequence* of the grouping rather
-than the thing it directly produces, and what that costs it on the one
-measurement the test bench uses to separate methods. You will also understand
-why this solution is the one the other five are read against: it needs no data,
-no training, no weights file and no graphics processor, so if a model cannot
-beat a written rule, the model has earned nothing.
-
-Two honest notes before the method starts, because both change how the rest
-should be read.
 
 **The method is built, and the numbers quoted below were measured by running
 it.** The code is in `02-segment-glasses/01-rules-on-the-table/` and it writes
@@ -118,7 +91,6 @@ def circle_width(dots: np.ndarray) -> float:
     x, y = solved[0] / 2.0, solved[1] / 2.0
     return 2.0 * float(np.sqrt(max(solved[2] + x * x + y * y, 0.0)))
 
-
 def footprint(dots: np.ndarray) -> float:
     """How wide the circle round the patch of table a group of dots marks is.
     ...
@@ -141,7 +113,6 @@ def as_glasses(picture: Picture, one: Found, widths: tuple[float, float]) -> lis
     if width > widths[1]:
         return come_apart(picture, one, widths)
     return [one] if one.cut_off else None
-
 
 def come_apart(picture: Picture, one: Found, widths: tuple[float, float]) -> list[Found] | None:
     ...
@@ -166,9 +137,6 @@ record is measured by the bench, from the pixels these functions hand back.
 
 ## The problem this solves
 
-To state the problem we need the situation and three words, and the three words
-are used in a particular way here.
-
 The situation is the one [problem 2](../problem.md) sets out. Four to six
 drinking glasses stand upright on a table, all of the same kind, and the kind is
 known. They stand inside the rectangle of table this project calls the glass
@@ -183,9 +151,7 @@ pixel is believed to show a glass.
 
 The second word is **patch**. A patch is one group of touching yes pixels — what
 you get by starting at a yes pixel and spreading out to every neighbouring yes
-pixel until nothing new joins. A patch is cheap to find and it is exactly what a
-single glass on an empty table gives back, so it is the obvious thing to reach
-for. **One patch is not the same as one glass**, however, and that gap is the
+pixel until nothing new joins. **One patch is not the same as one glass**, however, and that gap is the
 first difficulty of this problem.
 
 The third word is the promise the problem makes about where the glasses stand.
@@ -196,9 +162,6 @@ strip of bare table between them. Everything below rests on that strip existing,
 which is why it is stated here rather than assumed later.
 
 ### Why a picture from the top joins two glasses that stand apart
-
-The reason one patch can hold two glasses is worth following, because it is also
-the reason the fix has to work outside the picture.
 
 A picture of a tall object is not a picture of its base. The camera looks down,
 so the table is the furthest thing from the lens and a glass's rim is the
@@ -211,14 +174,10 @@ effect **splay**, and [the cell](../../the-cell.md) derives it in full.
 
 The practical result is that a tall glass's outline leans outwards, away from
 the point below the camera, and it can come to rest on top of whatever stands in
-that direction. Whether that matters depends on how much the heights inside one
-kind differ, and in this problem one kind is deliberately very wide: its tall
-glasses are more than twice the height of its short ones. A tall glass of that
+that direction. A tall glass of that
 kind is thrown outwards a long way while a short glass standing beyond it is
 barely thrown at all, so the tall glass's outline can reach the short one and
 pass over it.
-
-That gives two failures rather than one, and they are not equally dangerous.
 
 **The merge is the loud failure.** If the tall glass's outline reaches the short
 one without covering it, the two touch and come back as a single patch. That
@@ -236,15 +195,9 @@ The second failure cannot be answered by grouping pixels better, because the
 pixels are not there to group. It is answered instead by arithmetic that never
 looks at the picture's contents, and [when the glasses are completely
 hidden](#when-the-glasses-are-completely-hidden) is where that arithmetic is set
-out. The first failure is what the rest of this method is about, and the lesson
-it teaches is that no amount of care inside the picture will fix it: the picture
-has already thrown away the one thing that would have kept the two glasses
-apart, which is which pixels were near the camera and which were far.
+out.
 
 ## The main idea
-
-The main idea is a change of place rather than a change of algorithm, and it is
-small enough to state in two sentences.
 
 A depth camera gives a distance for every pixel, which is enough to turn each
 pixel into a point in the room: the pixel says which direction the camera was
@@ -253,11 +206,6 @@ own pose says where that direction starts. Once every pixel has become a point
 in the room, the glasses are told apart by distance on the table, and the strip
 of bare table between two glasses — which the picture could not show us — is
 simply there to be measured.
-
-That is the whole method. Five concepts fill it in, and the sections below take
-one at a time, in the order the work happens: turning a pixel into a point,
-keeping only what stands above the table, throwing the height away, grouping the
-dots by distance, and checking each group against the widths the kind allows.
 
 ## Turning a pixel into a point in the room
 
@@ -988,92 +936,58 @@ it is the honest edge of this method.
 
 ## What it needs
 
-The list is short, which is the point of this solution.
-
 **No labelled data.** Nothing in the method is fitted, so the bench's training
-half of the arrangements is never read. Every arrangement is a test arrangement
-for this solution, which is a small extra benefit when the four fitted solutions
-can only be marked on half of them.
+half of the arrangements is never read.
 
 **No training time and no weights file.** There is nothing to train and nothing
-to keep in step with the cell. A change to the cell's layout changes the two
-quantities the grouping distance is pinned between, and the design has the next
-run compute a new one.
+to keep in step with the cell.
 
 **No graphics processor.** The work is a comparison over a grid of depth
 readings, one multiplication per kept pixel, dropping one column of numbers, a
 spreading-out step over a grid of bins, and a direct least-squares solve per
-group. All of it is ordinary processor work on a small picture. The design
-expects one picture to be handled in a time far too short to matter beside any
-movement of the arm, because every small movement of the arm costs seconds. That
-expectation follows from the amount of arithmetic rather than from a timing
-anybody has taken, and it is stated that way on purpose.
+group. All of it is ordinary processor work on a small picture.
 
 **Two libraries, both already in the cell.** NumPy does the arithmetic over the
 depth readings. OpenCV does the picture handling the cell already does, which
 here means growing and joining the marked squares into groups, and finding the
-outside of a patch of dots before a circle is fitted to it. Neither carries a
-licence condition that reaches this project, which is a difference worth noting
-beside the two solutions built on Ultralytics YOLO26-seg, where the licence is
-a real cost rather than a footnote.
+outside of a patch of dots before a circle is fitted to it.
 
 **Three things from the problem rather than from the sensor.** The method needs
 the table's height, which the cell knows because the table is bolted to the
 arm's own frame; the guaranteed smallest distance between two glass centres,
 which is what gives the grouping distance an upper limit; and the range of
 widths the kind on the table is allowed, which is what gives the width check
-something to compare against. If any of the three were unavailable, the rule
-could not be stated.
-
-**And depth readings.** This is the one requirement that is not free, and it is
-the one the next section is mostly about.
+something to compare against.
 
 ## Where it is strong and where it breaks
 
-The strengths all come from how little this method assumes.
-
 **It needs nothing fitted, so it can be read.** The rule is one sentence about
 distance on the table, and its one setting is computed from two quantities the
-project already holds. Anybody can read the rule, disagree with it, and say
-exactly which quantity they disagree about. None of the other five offers that,
-because a fitted model's rule is spread across its weights and cannot be stated
-in a sentence.
+project already holds.
 
 **It is exact and repeatable.** The same picture gives the same groups every
 time, because nothing in the method samples randomly or depends on an order.
-That is worth more than it sounds when a result has to be reproduced months
-later.
 
 **When it fails, printing one number usually tells you why.** Every step
 produces one quantity worth printing: how many pixels passed the
 standing-above-the-table test, how many bins were marked, how many groups came
-out, how many dots each group held, and each group's fitted width. These fail
-in a characteristic order. A table height set slightly too low turns the whole
+out, how many dots each group held, and each group's fitted width. A table height set slightly too low turns the whole
 table top into one enormous group, and the standing-pixel count says so
 immediately. A grouping distance set too small shows up as too many groups,
 each with too few dots. One set too large shows up as too few groups with one
-impossible width. **A fitted model's failure has no equivalent, because there
-is no single number inside it that was wrong first.** That difference is the
-strongest practical argument for keeping this solution in the set, whatever its
-score.
+impossible width.
 
 **It answers in real distances from the arm's base**, because it worked in the
-room the whole time rather than converting at the end. Three gifts from the cell
-make that easy: the table's height is known, the glasses stand upright so they
-flatten to neat discs, and only one kind of glass is on the table at a time.
+room the whole time rather than converting at the end.
 
-**It can say where it has not looked.** Almost no perception method can, because
-almost none of them has a way to tell "nothing there" from "could not have been
-seen". This one can, from arithmetic it is already doing, once that branch is
+**It can say where it has not looked.** This one can, from arithmetic it is already doing, once that branch is
 built.
 
 The weaknesses divide into one limit on the idea itself, one limit on the
 sensor, and several assumptions.
 
 **The limit on the idea is that somebody has to be able to state the rule.**
-This method works here because the problem hands it a rule that can be written
-down: glasses stand further apart than a known distance, so distance separates
-them. The moment that promise goes, the rule goes with it. Two glasses that
+Two glasses that
 touch leave no strip of bare table at any grouping distance, which is why
 [problem 3](../../03-push-glasses-apart/problem.md) exists; two glasses one behind the other
 at the same distance from the camera stay one group, because distance cannot
@@ -1081,37 +995,15 @@ separate things that are not apart in the direction being measured. And allowing
 all four kinds on the table at once widens the acceptable range of widths and
 weakens the width check by exactly as much, since a group that would be
 impossible for the narrowest kind is ordinary for the widest, which is [problem
-4](../../problem-4/problem.md). In every one of those cases the fix is not a
-better rule but a method that does not need one, and that is the argument for
-the other five.
+4](../../problem-4/problem.md).
 
 **The limit on the sensor is that the rule needs depth readings, and real
-transparent glass does not give them.** This is the most important sentence in
-the document to read honestly. Every dot in this method was born from a depth
-reading, so a pixel with no reading contributes nothing. A depth camera measures
-distance by what bounces back off a surface, and a beam aimed at real glassware
-mostly passes straight through it, so the readings come back missing, or worse,
-belonging to whatever stood behind the glass. **The cell gets away with this
+transparent glass does not give them.** Every dot in this method was born from a depth
+reading, so a pixel with no reading contributes nothing. **The cell gets away with this
 only because the simulator renders the glasses as opaque solids**, which is what
 the problem statement assumes. So this method would not transfer to a real table
 of real glasses as it stands, and that is a limit of the method rather than of
-the cell. Methods built on the grey picture rather than on the depth reading do
-not share it, which is a real point in their favour and not a courtesy.
-
-The assumptions are worth listing because each of them is true here and is still
-an assumption. The method assumes a round footprint, and a jug would come back
-as a width the kind allows with nothing to object to it, because the width is
-the only number the fit keeps. It assumes things stand apart, which the grouping
-distance is derived from rather than tuned to, but derived from an assumption is
-still from an assumption. One stray dot in the wrong place chains two groups
-into one, and a table height set slightly too low turns the whole table top
-into one group; the guards against both are a minimum number of dots per group,
-which the code applies, and the minimum-neighbours rule described in the next
-section, which discards a dot with nothing around it and is not built. Finally,
-points higher than the tallest glass the cell handles are dropped, and although
-nothing legal is cut, the design prescribes that the run report how many points
-were dropped at each end, because a sudden change there means something is
-wrong that nothing else would catch.
+the cell.
 
 ## The general ideas behind this
 
@@ -1123,10 +1015,6 @@ does *not* need — no training data, no model file and no idea what the objects
 are — so it works on an object the robot has never seen, and it gives positions
 in real distances straight away, which is what an arm needs anyway.
 
-Five published ideas sit underneath it. Each is given here with an honest note
-on where it is normally right and where it is not, because four of the five
-appear in almost every robot that looks at objects on a surface.
-
 ### The pinhole camera model — turning a pixel and a depth into a point
 
 A pixel, plus a depth reading, plus the camera's pose, is a point in the room:
@@ -1135,12 +1023,10 @@ pose says where the ray starts. Reversing a projection this way is called
 back-projection, and it is the bridge between everything measured in pixels and
 everything an arm does in real distances.
 
-It is used in anything with a depth camera — building point clouds, turning a
-detection into a pose the gripper can go to, lining separate scans up with each
-other. It is rarely right for surfaces a depth sensor reads badly, such as
+It is rarely right for surfaces a depth sensor reads badly, such as
 glass, polished metal, black plastic, or anything shiny or see-through, because
 there the depth is missing or wrong and back-projection then produces confident
-nonsense. That is exactly the limit described above.
+nonsense.
 
 For more, see the [pinhole camera
 model](https://en.wikipedia.org/wiki/Pinhole_camera_model), and Hartley and
@@ -1155,12 +1041,8 @@ making the plane through them, counting how many other points lie on that plane,
 and keeping the best plane after a few hundred tries. Deleting the biggest plane
 is how a table-top scene becomes just the objects.
 
-It is used wherever most of the data does not belong to the model you want:
-finding the ground, fitting lines and circles, joining pictures together, lining
-point clouds up. It is rarely right for scenes with no dominant shape, or where
-the thing you want *is* the minority and several models fit equally well. It
-also does not give the same answer twice, which matters when a result has to be
-repeatable.
+It is rarely right for scenes with no dominant shape, or where
+the thing you want *is* the minority and several models fit equally well.
 
 **This solution skips it**, because the table is fixed to the arm's frame and
 its height is known, so the plane is a constant and finding it is a comparison
@@ -1177,12 +1059,9 @@ statistics literature is **DBSCAN**, which adds a minimum-neighbours rule so
 that scattered noise cannot form clusters of its own (Ester and colleagues, KDD
 1996). That extra rule is what the guard described above borrows.
 
-It is used for table-top work and bin picking, where objects are separated in
-space and nobody wants to say in advance what they look like, and it is the
-first thing to try on any depth picture of a scene. It is rarely right for
+It is rarely right for
 objects that genuinely touch, because distance can only separate things that
-have distance between them. It is also poor when the right grouping distance
-differs across the scene, since one number has to serve everywhere.
+have distance between them.
 
 For more, see [DBSCAN](https://en.wikipedia.org/wiki/DBSCAN) and [cluster
 analysis](https://en.wikipedia.org/wiki/Cluster_analysis) for the wider family.
@@ -1190,18 +1069,13 @@ analysis](https://en.wikipedia.org/wiki/Cluster_analysis) for the wider family.
 ### Least-squares shape fitting — turning a cloud of dots into a number
 
 Fit a shape to a set of points by minimising an error that can be written as a
-linear equation, which then has a direct solution and needs no iteration. A fit
-uses every point rather than the two extreme ones, so one stray dot moves it far
-less than it moves a box drawn round the extremes. And its **residual**, meaning
+linear equation, which then has a direct solution and needs no iteration. And its **residual**, meaning
 how far the points sit from the fitted shape on average, is a free measure of
 how well the shape really explains the data.
 
-It is used for measuring manufactured parts, which are mostly made of circles,
-lines and planes, so it appears throughout metrology and inspection and anywhere
-an object's geometry is known in advance. It is rarely right for shapes the
+It is rarely right for shapes the
 model does not describe, because then it returns a confident number together
-with a large residual that nobody checks. The residual is the guard, and
-ignoring it is the classic mistake.
+with a large residual that nobody checks.
 
 For more, Kåsa's algebraic circle fit with the Pratt and Taubin refinements are
 the three standard versions, and the geometry is in [circular
@@ -1209,28 +1083,14 @@ segment](https://en.wikipedia.org/wiki/Circular_segment).
 
 ### Visibility reasoning — knowing where you could not have looked
 
-The fifth idea is the least familiar of the five, although it is old and
-standard in its own field. It is that a sensor's view divides space into three
-parts rather than two: the part it can see and found something in, the part it
-can see and found nothing in, and **the part it could not have seen at all**.
-Treating the third as if it were the second is the mistake, and it is an easy
-one, because both of them look like absence in the data.
-
-Mobile robots meet this constantly and have standard machinery for it. They keep
-a map in which every cell is marked free, occupied or **unknown**, and the
-unknown cells are what exploration is for: a robot that treats unknown as free
-drives into walls, and one that treats it as occupied never moves. The same
-three-way distinction is what turns "I found nothing there" into the two quite
-different statements "there is nothing there" and "I have not looked there".
-
-It is used for exploration and mapping, for planning when things are hidden
-behind other things, and for any inspection task where saying "clear" carries a
-cost if it is wrong. It is rarely done **analytically**, as it is here, because
-most scenes are too irregular for the hidden region to have a closed form, so
-the usual approach is to divide space into cells and trace rays through them.
-This cell is the lucky case: the objects are upright round solids on a known
-plane and the camera looks straight down, so the hidden region is a union of
-wedges and can be computed exactly and cheaply.
+A sensor's view divides space into three parts rather than two: the part it can
+see and found something in, the part it can see and found nothing in, and **the
+part it could not have seen at all**. Treating the third as the second is the
+mistake, and an easy one, because both look like absence in the data. Mobile
+robots keep a map marking every cell free, occupied or **unknown**, and this
+cell is the lucky case where the hidden region can be computed exactly, because
+the objects are upright round solids on a known plane and the camera looks
+straight down.
 
 For more, the general form is [occupancy grid
 mapping](https://en.wikipedia.org/wiki/Occupancy_grid_mapping), where the
@@ -1238,39 +1098,18 @@ three-way marking is the whole point.
 
 ## Where it sits among the other five
 
-This is the solution the other five are read against, and it is worth being
-exact about why, because the comparison is sharper than "rules against models".
-
-It is the only one of the six that holds **no fitted numbers at all**. Solution
-2 fits a small network here, and solutions 4 and 6 fine-tune a borrowed model
-here, so all three need labelled arrangements, a training run and a weights file
-to keep in step with the cell. Solution 5 fits only a small keeper on top of SAM
-2, which is much less, but it is not nothing, and the model underneath it was
-fitted by somebody else. Solution 3 fits nothing in this cell, which makes it
+It is the only one of the six that holds **no fitted numbers at all**. Solution 3 fits nothing in this cell, which makes it
 the closest of the five to this one in cost — but it still carries a weights
 file, and the rule inside that file was fitted on somebody else's photographs
 for somebody else's purpose, so nobody using it can say what the rule is. **This
 solution's rule is one sentence, and that is the difference.**
 
-One more thing follows from holding no fitted numbers, and it is worth naming
-because the other documents lean on it. Four of the six start from weights
-fitted on photographs of the everyday world rather than on this cell's own
-pictures, and that difference between the two sets of pictures is called the
-**domain gap**. This solution has none — trivially, because it has no model
-that could have one. Solution 2 is the one for which having no gap is a real
-property, because it is fitted, and fitted here.
-
 That is what makes it the baseline. The test bench holds the input, the output
 and the marking fixed, so a model's score can be compared with this one's
 directly, and the comparison has a plain reading: **if a model cannot beat a
-written rule, it has earned nothing.** It cost labels, training time and
-hardware that this one did not, so matching it is not a result. Beating it is,
-and the bench's mask measurements are where that would show, because this
-solution's masks are limited by the step that decides which pixels stand above
-the table and a model's are not.
+written rule, it has earned nothing.**
 
-The comparison runs the other way as well, which is the part that is easy to
-forget. This solution is the one that shows what the problem's *promises* are
+This solution is the one that shows what the problem's *promises* are
 worth. Its rule exists only because the glasses are guaranteed to stand apart,
 the table's height is known, one kind is on the table at a time, and the glasses
 return depth readings. Each of the five models needs fewer of those promises

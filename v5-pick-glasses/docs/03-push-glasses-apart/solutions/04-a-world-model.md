@@ -108,7 +108,6 @@ everything around them is the ensemble, in
 ENSEMBLE = 5
 HIDDEN = 256
 
-
 class PushNet(nn.Module):
     def __init__(self) -> None:
         super().__init__()

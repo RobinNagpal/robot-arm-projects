@@ -101,7 +101,6 @@ def top_target(picture: Picture, glasses) -> np.ndarray:
         target[2][mine] = (row - rows[mine]) / VOTE_SCALE
     return target
 
-
 class TopNet(nn.Module):
     ...
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -505,9 +504,6 @@ coming back. That matters because real glassware returns almost no depth, and
 it is the reason this choice is worth stating rather than assuming.
 
 ![An arrow measured in the picture is a different number for the same glass at every range, while an arrow measured on the table is the same number wherever the camera stood, which is the whole of the choice between the two frames.](../../../images/02-segment-glasses/02-image-space-against-table-space.png)
-
-Either way the votes are what comes next, and the rest of this document does
-not depend on which frame was chosen.
 
 ## From votes to glasses
 

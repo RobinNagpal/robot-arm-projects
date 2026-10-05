@@ -139,7 +139,6 @@ def push_segment(waypoints: tuple[Waypoint, ...]) -> tuple[Waypoint, ...]:
     furthest = start + int(np.argmax(gone))
     return tuple(waypoints[start : furthest + 1]) if furthest > start else ()
 
-
 def to_action(waypoints: tuple[Waypoint, ...]) -> np.ndarray:
     """A run of waypoints as the (n, 5) numbers a policy is fitted on."""
     return np.array(

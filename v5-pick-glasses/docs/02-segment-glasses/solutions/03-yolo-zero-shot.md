@@ -106,7 +106,6 @@ def masks_from(answer, shape: tuple[int, int]) -> list[np.ndarray]:
     surest = sorted(range(len(confidences)), key=lambda index: -confidences[index])
     return merge_doubles(outline_to_mask(answer.masks.xy[index], shape) for index in surest if keep[index])
 
-
 def look(picture) -> object:
     ...
     model, where = _model()
@@ -135,7 +134,6 @@ VESSELS = ("wine glass", "cup")
 NEIGHBOURS = ("bowl", "vase", "bottle")
 
 ACCEPTED = frozenset(VESSELS + NEIGHBOURS)
-
 
 def is_drinking_vessel(name: str) -> bool:
     """Whether one of the model's category names is kept."""
