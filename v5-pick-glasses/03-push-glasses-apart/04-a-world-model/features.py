@@ -64,10 +64,13 @@ def others_of(seen: list, target) -> list:
 def encode(seen: list, target, kind: str, heading, offset, travel) -> np.ndarray:
     """One input row per candidate push on ``target``.
 
-    ``kind`` is the table's one known kind. ``heading``, ``offset`` (metres across, left positive) and ``travel`` are
+    ``kind`` is the table's one known kind. ``heading``, ``offset`` (metres
+    across, left positive) and ``travel`` are
     arrays of the same length, one entry per candidate.
     """
-    heading, offset, travel = (np.atleast_1d(np.asarray(v, dtype=np.float64)) for v in (heading, offset, travel))
+    heading, offset, travel = (
+        np.atleast_1d(np.asarray(v, dtype=np.float64)) for v in (heading, offset, travel)
+    )
     n = len(heading)
     along, left = frame(heading)
     rows = np.zeros((n, INPUTS), dtype=np.float32)

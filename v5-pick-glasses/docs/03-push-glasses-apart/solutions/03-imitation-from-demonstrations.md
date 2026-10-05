@@ -435,9 +435,9 @@ copying this teacher never meets the cap — the teacher's own waypoints are
 about a millimetre apart, and the cap is at ten — but a policy that learned to
 emit coarser chunks would be slowed by it.
 
-What makes the trade bearable is set by `Bench.follow`, and
-it is worth being exact because it is less than the loop gives a
-parameterised push. Coming down to the chunk's first waypoint is the bench's
+What makes the trade bearable is set by `Bench.follow`, and it is worth being
+exact, because it is less than the loop gives a parameterised push. Coming
+down to the chunk's first waypoint is the bench's
 own move and it stops if the jaw touches anything on the way, so a chunk that
 starts over an obstacle comes back as blocked rather than being driven
 through. But **once the jaw is travelling across the table the bench does not
@@ -512,6 +512,26 @@ will show up as pushes that move glasses too little or in the wrong direction
 on exactly the symmetric arrangements where two answers were available.
 Diffusion Policy can represent the choice. The gap between the two is a
 measurement of how much the averaging cost, on this table, with this data.
+
+**The rung is written and it runs; it has not been fitted here.** It is in
+`policy.py` beside ACT, taking the same demonstrations, the same scaling and
+the same picture, so that only the model differs. What stopped it was the
+compute bill rather than the code: Diffusion Policy is about 75 million
+parameters against ACT's 52 million, a training step costs it roughly twice as
+much, and one chunk at run time is sixteen denoising passes rather than one
+forward pass. Fitting it with several seeds on this machine is a night's work
+on top of ACT's, and a rung reported from one seed is not a result. So there
+is no `results-diffusion.json`, and the gap this section argues for has not
+been measured.
+
+It is worth saying plainly that **ACT's measured behaviour makes this the most
+valuable thing left undone in this solution.** What ACT produces on a table it
+has not seen is a chunk about 55 mm away from the teacher's and about 30
+degrees off in heading — close to what averaging over the teacher's
+alternatives would give, and far enough off that the jaw meets a neighbour on
+the way down. Whether a model that draws its chunk instead of naming one
+escapes that is now a question with a measurement behind it rather than an
+argument.
 
 Two costs come with the second rung and both belong on the scorecard.
 
@@ -843,6 +863,18 @@ on the table are pushed as usual, and the run ends *correct but incomplete*,
 which is the right result. The important part of this example is the negative
 one: nothing the policy could have learned would have improved it, and nothing
 the policy might have produced was allowed to make it worse.
+
+**One correction to all of the above, now that it has been run.** Everything in
+this example is what the design says the method would do, and it was written
+before any of it existed. The refusal behaves exactly as described. The first
+push does not. What the fitted policy actually returns on a table it has not
+seen is a chunk that starts in roughly the right neighbourhood but points about
+thirty degrees away from where the teacher pointed, and the jaw is a quarter of
+a metre long behind its fingertips, so on a crowded table it meets a neighbour
+while it is still coming down. Almost every push ends there, before any glass
+is touched. Nothing in the example about leaning the slide or slowing near the
+end was reached, because the motion never got that far. The folder's
+`README.md` has the counts.
 
 ## What it needs
 

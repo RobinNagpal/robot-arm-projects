@@ -130,7 +130,11 @@ def planned_table(seed: int) -> tuple[np.ndarray, np.ndarray]:
         if roomy:
             bench.take(roomy[0].id)
             continue
-        choices = [] if rng.random() < EXPLORE else [plan.best_push(_model, seen, s, kind, generator).choice for s in seen]
+        choices = (
+            []
+            if rng.random() < EXPLORE
+            else [plan.best_push(_model, seen, s, kind, generator).choice for s in seen]
+        )
         choices = [c for c in choices if c is not None]
         if choices:
             best = min(choices, key=lambda c: c.cost)
@@ -139,7 +143,8 @@ def planned_table(seed: int) -> tuple[np.ndarray, np.ndarray]:
         else:
             target, heading, offset, travel = random_push(rng, seen)
         start = features.jaw_start(target, heading, offset)
-        felt = bench.push(Push(target.id, start, heading, features.jaw_reach(target), travel, (target.x, target.y)))
+        reach, aim = features.jaw_reach(target), (target.x, target.y)
+        felt = bench.push(Push(target.id, start, heading, reach, travel, aim))
         inputs.append(features.encode(seen, target, kind, heading, offset, travel)[0])
         outputs.append(features.outcome(seen, bench.look(), target, heading, felt.blocked))
     if not inputs:

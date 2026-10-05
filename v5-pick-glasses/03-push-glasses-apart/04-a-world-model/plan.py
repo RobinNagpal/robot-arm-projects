@@ -85,7 +85,10 @@ def _in_reach(xy: np.ndarray) -> np.ndarray:
 
 def _in_zone(xy: np.ndarray) -> np.ndarray:
     return np.array([in_zone(x, y) for x, y in xy]) & np.array(
-        [in_zone(x - ZONE_MARGIN, y - ZONE_MARGIN) and in_zone(x + ZONE_MARGIN, y + ZONE_MARGIN) for x, y in xy]
+        [
+            in_zone(x - ZONE_MARGIN, y - ZONE_MARGIN) and in_zone(x + ZONE_MARGIN, y + ZONE_MARGIN)
+            for x, y in xy
+        ]
     )
 
 
@@ -198,7 +201,8 @@ def best_push(model: Ensemble, seen: list, target, kind: str, rng: np.random.Gen
             draws = rng.uniform(low, high, (DRAWS, 3))
             continue
         # The heading's mean is taken round the circle.
-        mean = np.array([math.atan2(np.sin(elite[:, 0]).mean(), np.cos(elite[:, 0]).mean()), *elite[:, 1:].mean(0)])
+        turn = math.atan2(np.sin(elite[:, 0]).mean(), np.cos(elite[:, 0]).mean())
+        mean = np.array([turn, *elite[:, 1:].mean(0)])
         spread = np.maximum(elite.std(0), [0.05, 0.002, 0.003])
         spread[0] = min(spread[0], np.std(features.angle_wrap(elite[:, 0] - mean[0])) + 0.05)
         draws = mean + spread * rng.standard_normal((DRAWS, 3))

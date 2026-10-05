@@ -46,16 +46,23 @@ def loss(out: torch.Tensor, y: torch.Tensor, x: torch.Tensor, topple_weight: flo
     there = torch.ones_like(y[:, : 2 + 2 * features.OTHERS])
     present = x[:, len(features.KINDS) + 5 + 4 :: 5]
     there[:, 2:] = present.repeat_interleave(2, 1)
-    move = (nn.functional.smooth_l1_loss(out[:, : there.shape[1]], y[:, : there.shape[1]], reduction="none", beta=0.1)
+    move = (
+        nn.functional.smooth_l1_loss(
+            out[:, : there.shape[1]], y[:, : there.shape[1]], reduction="none", beta=0.1
+        )
             * there).sum() / there.sum()  # fmt: skip
     toppled = nn.functional.binary_cross_entropy_with_logits(
-        out[:, features.TOPPLED], y[:, features.TOPPLED], pos_weight=torch.tensor(topple_weight, device=out.device)
+        out[:, features.TOPPLED],
+        y[:, features.TOPPLED],
+        pos_weight=torch.tensor(topple_weight, device=out.device),
     )
     blocked = nn.functional.binary_cross_entropy_with_logits(out[:, features.BLOCKED], y[:, features.BLOCKED])
     return move + toppled + blocked
 
 
-def fit(net: PushNet, x: np.ndarray, y: np.ndarray, *, epochs: int, seed: int, topple_weight: float) -> list[float]:
+def fit(
+    net: PushNet, x: np.ndarray, y: np.ndarray, *, epochs: int, seed: int, topple_weight: float
+) -> list[float]:
     """Plain Adam with a cosine schedule. Returns the loss per epoch."""
     torch.manual_seed(seed)
     for layer in net.net:
