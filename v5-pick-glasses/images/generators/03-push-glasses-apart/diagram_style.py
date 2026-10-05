@@ -99,6 +99,41 @@ ROBOT_BASE = (0.0, 0.0)
 COMFORTABLE_REACH = (300.0, 780.0)           # arm/dimensions.py
 RACK_AREA = (320.0, 380.0, 340.0, 380.0)     # rack/layout.py, on the arm's other side
 
+# The straight-down view, which is the only thing solutions 5 and 6 are shown.
+# All of it from 03-push-glasses-apart/bench/bench.py.
+TOP_VIEW_HEIGHT = 750.0        # the camera, directly above the middle of the zone
+TOP_VIEW_SIZE = (384, 384)     # rows, columns. Square, because the frame is
+TRAVEL_HEIGHT = 300.0          # where the jaw travels between pushes
+PUSH_HEIGHT = LOWEST_GRIP      # the middle of the jaw rides as low as the gripper goes
+
+# The middle of the picture, and half its frame measured on the table top.
+# bench.py derives the half frame this same way, and the reason is worth
+# keeping with it: seen from above, a glass leans outwards from the point under
+# the camera, so the frame has to hold the zone and a little more if every
+# glass on it is to be whole.
+VIEW_CENTRE = ((GLASS_ZONE[0] + GLASS_ZONE[1]) / 2.0, (GLASS_ZONE[2] + GLASS_ZONE[3]) / 2.0)
+TOP_VIEW_HALF_FRAME = (
+    (max(GLASS_ZONE[1] - GLASS_ZONE[0], GLASS_ZONE[3] - GLASS_ZONE[2]) / 2.0 + GRIP_ROOM / 2.0)
+    * TOP_VIEW_HEIGHT / (TOP_VIEW_HEIGHT - TRAVEL_HEIGHT)
+)
+
+# Where the bench leaves the jaw between actions: bench.py _lift parks it at
+# (0, 500) in the cell, 1300 mm up, and table/layout.py puts the table top at
+# 750 mm. So it stands 550 mm above the table and outside the picture's frame,
+# which is what makes the pose a solution reads back a constant.
+PARK = (0.0, 500.0, 1300.0 - 750.0)
+
+# How often the bench consumes one waypoint, seconds, and the speeds its own
+# push macro moves at, mm/s. bench.py WAYPOINT_PERIOD, FEEL_SPEED, PUSH_SPEED
+# and TOP_SPEED. The period is why how far apart a chunk's waypoints are *is*
+# how fast the jaw is being asked to go, and TOP_SPEED is where follow() holds
+# it: the fastest the cell ever moves the jaw, which is the speed it descends
+# at, so it never binds on a path the bench itself produces.
+WAYPOINT_PERIOD = 0.05
+FEEL_SPEED = 10.0
+PUSH_SPEED = 20.0
+TOP_SPEED = 200.0
+
 # The tapered kind's declared range, from glasses/shapes.py KIND_RANGES.
 # base_fraction is the base diameter as a fraction of the rim, which is what
 # decides whether a glass slides or tips.

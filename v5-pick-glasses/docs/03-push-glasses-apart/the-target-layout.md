@@ -46,6 +46,8 @@ condition that only looks at the distance between two middles misses exactly the
 case where a narrow glass is crowded by a wide neighbour that is not crowded
 itself.
 
+![The clear room is measured from a glass's middle in to its neighbour's edge, so the distance two middles need is 70 mm plus half the neighbour's rim; on one real table that makes a narrow glass 10.0 mm short of the room a wide neighbour denies it while the wide one has 3.1 mm to spare, and the symmetric version of the test, which measures out from each glass's own middle, misses 8 crowded glasses and invents 11 that are not.](../../images/03-push-glasses-apart/target-what-has-room-means.png)
+
 **Every glass stands inside the glass zone**, the 320 by 360 mm rectangle of
 table where glasses are allowed to be, and **outside the rack**, the 60 by
 40 mm rectangle where they are eventually stood upside down.
@@ -56,8 +58,19 @@ later even if it is perfectly clear of its neighbours.
 
 **Every glass keeps a usable line of sight from the side.** Measuring a glass
 means standing the camera 380 mm out from it, 120 mm above the table, looking
-level, and the arm is offered nine places on that circle, 40° apart. At least
-one of those nine has to have no other glass standing in it.
+level, and the arm is offered a ring of places on that circle, which problem
+2's code divides into twenty-four directions 15° apart. At least one of them
+has to have no other glass standing in it.
+
+This fourth condition is the one to treat with care, because **nothing in
+problem 3 tests it.** The bench has no line-of-sight check and no solution here
+chooses a viewpoint, so a layout that satisfies the first three conditions is
+accepted whether or not a camera could later see each glass from the side. The
+condition is stated because the layout exists to make the next step possible,
+and a reader should know it is a stated intention rather than a marked
+requirement.
+
+![The four conditions drawn on the table from the top, with the glass zone, the rack on the arm's other side and the comfortable reach ring at 300 and 780 mm; the zone's own corners sit 330 and 777 mm from the base and the rack does not overlap the zone at any point, so only the clear room and the zone walls can ever be the active condition.](../../images/03-push-glasses-apart/target-which-conditions-can-bind.png)
 
 **And the glasses move as little as possible.** Every millimetre pushed is a
 millimetre in which something can be knocked over, so of all the arrangements
@@ -152,6 +165,8 @@ should finish; this method also says a route it can take to get there without
 passing through a neighbour on the way, which is a question the other three
 methods leave entirely open.
 
+![One crowded table relaxed step by step, from the measured layout through the first two steps to equilibrium, with the circle each glass denies its neighbours drawn throughout; the crowding falls quickly but not at every step, and across fifty tables the layout it settles on asks for about five times the travel the floor requires.](../../images/03-push-glasses-apart/target-relaxation-step-by-step.png)
+
 ### Assignment to slots
 
 The third method is different in kind from the other three, and the difference
@@ -171,6 +186,8 @@ problem**: given a cost for every pairing of a worker with a job, choose a
 one-to-one pairing with the least total cost. It is solved exactly — not
 approximately — by the **Hungarian algorithm**, in time that grows as the cube
 of the number of items, which for four to six glasses is no time at all.
+
+![The same five glasses and the same twelve slots in both panels, paired first by giving each glass its nearest free slot and then by the Hungarian algorithm; the places are identical, three of the five glasses go somewhere different, and the greedy pairing costs 435 mm of travel against the Hungarian answer's 312 mm.](../../images/03-push-glasses-apart/target-finding-places-is-not-assigning-them.png)
 
 **What it is good for** is certainty. The layout cannot be illegal, the answer
 is exact, there is no seed and no local optimum to worry about, and the same
@@ -218,6 +235,8 @@ beside it for its waypoints. Assignment to slots is the fallback for when a
 legal layout is wanted instantly and optimality is not the point, and Lloyd's
 algorithm is a starting layout and a sanity check. One of them has to be
 chosen and then frozen, for reasons the cautions below make plain.
+
+![The travel each of the four methods asks for, as a multiple of the floor for the same table, over fifty tables: the constrained optimisation is 1x by definition, assignment to slots and repulsive relaxation sit near five times it, Lloyd's algorithm near nine and is the only one that leaves tables illegal, and the same solver started 40 mm away settles in a worse local optimum on five of the fifty.](../../images/03-push-glasses-apart/target-four-methods-against-the-floor.png)
 
 **None of this is written yet, and it is worth being plain about that.** The
 bench exists, and so does the programmed geometry that picks a landing spot one
@@ -268,6 +287,8 @@ solver was minimising exactly that number subject to exactly the conditions the
 task imposes, **no arrangement that satisfies the task needs less movement than
 this**. It is the least the task can possibly cost in travel, and it is called
 the **displacement floor**.
+
+![One table whose six glasses all start without room, and the smallest set of moves that gives every one of them its room, each arrow labelled with its length and totalling 148 mm; across fifty tables the floor runs from 2 to 148 mm with a median of 48 mm, and it reads as a scale on which a solution at twice the floor spent twice the travel the task demanded.](../../images/03-push-glasses-apart/target-the-displacement-floor.png)
 
 That makes every solution readable on a scale that means something. A solution
 does not just move the glasses some number of millimetres; it moves them some
@@ -368,7 +389,7 @@ six solutions, say how.
 - [The problem](problem.md) — why dragging rather than lifting, the three
   distances that matter, and what "done" means.
 - [The test bench](the-bench.md) — the shared input, output and marking, and
-  where the floor sits on the scorecard.
+  the travel each solution reports, which is what the floor is read against.
 - [Pushing without toppling](pushing-without-toppling.md) — how low a push has
   to be, why that is a property of the glass, and the refusal path.
 - [The six solutions](solutions/overview.md) — what each one puts between the

@@ -1242,7 +1242,8 @@ def figure_where_it_stops() -> None:
                          "and splay has thrown its outline right over it", MUTED),
         ("the picture", "every pixel of the short glass is a pixel\nof the tall one instead", MUTED),
         ("the prompt", "a prompt point is a pixel, so no prompt\nexists that reaches the short glass", WARN),
-        ("the proposal", "SAM 2 returns a mask for whatever the point\nlanded on, so no mask contains it", WARN),
+        ("the proposal",
+         "SAM 2 returns a mask for whatever the point\nlanded on, so no mask contains it", WARN),
         ("the keeper", "the keeper only ever sorts proposals,\nso it is never shown this glass at all", WARN),
     )
     top, step = 0.855, 0.153

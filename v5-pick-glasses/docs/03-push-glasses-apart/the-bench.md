@@ -311,6 +311,18 @@ what a push does, and a method whose glasses scatter is succeeding by looking
 again rather than by predicting, which is a real strategy but a different
 one.
 
+**The bench also adds up how far the glasses were really moved**, over every
+push and every table. On its own that total says little, because a solution
+that pushes nothing scores best on it, and pushing nothing is useless. It
+becomes meaningful next to the **displacement floor**, which
+[the target layout](the-target-layout.md) computes: the least total movement
+any legal arrangement of the same glasses needs. The floor belongs to the
+geometry of the table rather than to any method, so no solution can beat it,
+and every solution can be read as a multiple of it. A solution spending twice
+the floor moved the glasses twice as far as the problem required, and that is a
+cost worth seeing beside the tables it finished, because moving a glass further
+than necessary is extra risk taken for nothing.
+
 ## Two things this scorecard needs that problem 2's did not
 
 Problem 2's bench could run each solution once and read the result. This one

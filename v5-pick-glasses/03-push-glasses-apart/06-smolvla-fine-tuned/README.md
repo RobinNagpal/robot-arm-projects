@@ -145,8 +145,8 @@ Each solution's `asking.json` records what its answers looked like:
 | | Solution 5, untrained | This solution | The teacher |
 |---|---|---|---|
 | Lowest the chunk reaches above the table | 247 mm | **50 mm** | 50 mm |
-| Distance across the table in one chunk | 964 mm | 310 mm | 89 mm |
-| Per waypoint, which is the speed | 16.3 mm | 4.6 mm | 1.8 mm |
+| Distance across the table in one chunk | 964 mm | 315 mm | 89 mm |
+| Per waypoint, which is the speed | 16.3 mm | 4.5 mm | 1.8 mm |
 
 The first row is the whole of what the training bought that can be seen
 without the scorecard: the borrowed model never brings the jaw down to the
@@ -169,13 +169,17 @@ below is the middle with the spread across the three.
 | Glasses | 77 racked (±5.7), 115 refused (±5.0), **46 toppled** (±5.7), 13 pushed out of the zone (±5.0) |
 | Glasses picked without room, or left with no reason | **0** and **0** |
 | Pushes | 400 (±40), of which 280 repeats |
-| Pushes that went wrong | **259 blocked on the way down**, 45 jammed, 39 never touched |
+| Pushes that went wrong, in the middle run | **247 blocked on the way down**, 45 jammed, 39 never touched, of 400 |
 | Where the glass stopped, from where the chunk ended | 60.6 mm median, 917 mm worst |
 | Thinking per push | 294 ms (±8) on an idle machine |
 
-**This is a bad score, and it is a bad score for one reason.** Two thirds of
-its pushes — 259 of 400 — were **blocked on the way down**: the chunk's first
-waypoint is over a glass, so the jaw comes down onto one instead of behind it.
+**This is a bad score, and it is a bad score for one reason.** Nearly two
+thirds of its pushes — 247 of the 400 in the middle run — were **blocked on
+the way down**: the chunk's first waypoint is over a glass, so the jaw comes
+down onto one instead of behind it. The share is taken from one run rather
+than from the spread above, because the spread reports a median for each field
+on its own, and those medians come from different runs: 400 pushes from one and
+259 blocked from another, which together describe no run that happened.
 The model learned the height a push happens at and the kind of motion a push
 is, and did not learn where to put the jaw down. From there everything else
 follows: 46 glasses over, 38 tables wrong, and 79 of the refusals reading

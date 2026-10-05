@@ -159,6 +159,8 @@ function returns *is* the speed the jaw is asked to travel at, so the same
 constant fixes the speed as well as the reach, and the two cannot be chosen
 separately.
 
+![Three things go into the borrowed model and only one of them varies: the rendered view from the top changes with every table, while the instruction is the same sentence every time and the jaw's own pose is the same six numbers at all 2,260 asks, because the bench parks the jaw outside the picture's frame and the reading clips it to the edge of the range; what comes back is fifty waypoints of six numbers whose shipped normalisation statistics are saved under keys the normaliser never looks up, so both the normaliser and the un-normaliser do nothing and the numbers arrive as z-scores with no units in them, which is why four of the six slots have to be read as the jaw's x, y, height and heading by hand and the other two dropped.](../../../images/03-push-glasses-apart/05-the-join-at-both-ends.png)
+
 ## The problem this solves
 
 [The problem](../problem.md) asks for a jaw trajectory, and then another, until
@@ -336,6 +338,8 @@ thinks in movement is not squeezed into three numbers describing a push. Both
 that path and the rendered view from the top now exist in the bench, and this
 solution uses them as they come.
 
+![The only object in this solution with both a size in millimetres and a place in the picture is the frame of the straight-down view, 717 mm across on the table top, so two standard deviations of the model's action space are made to span it exactly and anything beyond that clips back onto its edge; because the bench consumes one waypoint every 50 ms, the same constant also fixes the speed, and the median gap in the model's own chunks works out at 286 mm/s against the 20 mm/s the bench's own push macro moves at and the 200 mm/s the arm tops out at.](../../../images/03-push-glasses-apart/05-two-sigmas-span-the-frame.png)
+
 ## The instruction is nearly dead weight here
 
 The second place the trade bites is at the input, and it is the one most likely
@@ -463,6 +467,8 @@ producing plausible wrong actions is not merely inaccurate; it is inaccurate in
 the one way this problem cannot absorb, which is the whole reason the next
 section but one takes the topple limit out of the model's hands entirely.
 
+![Measured, the failure across the gap is blunter than confident wrong pushes: the lowest point of a chunk has a median of 209 mm above the table over 2,260 answers, which is more than three times the 65 mm at which a push really lands and clear over the top of all but the tallest glass the kind is drawn at, so 674 of one run's 754 pushes never touched anything at all, nothing was ever blocked coming down because nothing ever came down, and 69 of the 80 pushes that did reach a glass jammed.](../../../images/03-push-glasses-apart/05-the-chunks-come-back-high.png)
+
 ## The honest expectation
 
 It follows from all of the above that this solution may well do badly, and it
@@ -492,6 +498,8 @@ the same library, the same weights and the same bench, with its training
 continued on this cell's own pushes. If this solution scored well, the pair
 would measure very little, because there would be little room for training to
 improve anything. A poor score here is what gives that comparison its range.
+
+![Put the racking beside the crowding and nothing is left over: 58 of the 251 glasses already had their room at the start and 56 were racked, where any solution that freed a glass would have racked more than 58, because racking one loosens its neighbours; no table of the fifty was finished in any of the three runs, 642 of 754 pushes were repeats, and the one or two glasses a run refused for tipping show that the shared rule hardly binds on these tables, so what is left to explain the shortfall is the pushes.](../../../images/03-push-glasses-apart/05-nothing-is-left-over.png)
 
 ## The price of the model, and why this model
 

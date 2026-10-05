@@ -8,8 +8,10 @@ that converges in an hour and one that does not converge in the hours
 available.
 
 Nothing needed is lost. A glass is about 50 pixels across in the bench's
-picture and about 25 here, and one pixel is 1.6 mm on the table, far finer
-than anything this policy has to resolve.
+picture and about 25 here, so one pixel covers roughly 3.7 mm of table
+against the 1.9 mm the bench renders. That is still finer than anything this
+policy has to resolve, because what it has to find is which way a glass lies
+from its neighbour, not where its rim is to the millimetre.
 
 It lives in a module of its own because two places need it and neither
 should import the other: ``collect.py`` stores demonstrations at this size,

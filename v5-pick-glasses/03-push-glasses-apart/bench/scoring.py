@@ -44,6 +44,13 @@ class Scorecard:
         self.count = Counter()
         self.refusals = Counter()
         self.aim_mm: list[float] = []
+        # How far the glasses were actually moved, summed over every push and
+        # every table. the-target-layout.md computes the least total movement
+        # any legal layout needs, so this is the number that floor is read
+        # against: a solution spending twice the floor moved twice as far as it
+        # had to. It is a distance and not a count, so it is kept apart from
+        # the counters.
+        self.travel_mm = 0.0
         self.thinking = 0.0
         self.timed = False
 
@@ -66,6 +73,9 @@ class Scorecard:
             others = [(*start[j], bench.glasses[j].outline.max_diameter) for j in range(glasses) if j != i]
             c["crowded at start"] += not has_room(*start[i], others)
 
+        # Where each glass stands as the pushes are replayed, so that one
+        # push's travel is measured from where the last one left the glass.
+        standing = {i: start[i] for i in range(glasses)}
         pushed: Counter = Counter()
         for record in bench.records:
             c["pushes"] += 1
@@ -77,6 +87,9 @@ class Scorecard:
             c["jammed"] += felt.jammed
             if felt.touched is not None:
                 self.aim_mm.append(1000 * float(np.hypot(*np.subtract(record.landed, record.push.aim))))
+                was = standing[record.push.glass]
+                self.travel_mm += 1000 * float(np.hypot(*np.subtract(record.landed, was)))
+                standing[record.push.glass] = record.landed
 
         wrong = False
         for i in range(glasses):
@@ -133,6 +146,7 @@ class Scorecard:
                 "aim_mm_median": round(float(np.median(aim)), 1),
                 "aim_mm_worst": round(float(aim.max()), 1),
             },
+            "travel_mm": round(self.travel_mm, 1),
         }
         if self.timed and c["pushes"]:
             result["seconds_per_push"] = round(self.thinking / c["pushes"], 4)

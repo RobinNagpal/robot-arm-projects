@@ -129,6 +129,8 @@ glass scores better than one that reaches the wrong part of it. The last
 section of this document reads that gap in full, and nothing between here and
 there should be taken to promise otherwise.
 
+![The bench places the jaw clear above a chunk's first waypoint and brings it straight down onto that waypoint before carrying out any of the rest, so a first waypoint behind a glass gives a push and a first waypoint over one puts the jaw on the rim, which is reported as blocked and sends it straight back up with nothing pushed; that is where 247 of this solution's 400 pushes in a run end, against none at all for solution 5, which never came down, and from it follow 46 glasses over against 6 and 39 tables wrong against 5, with a few more tables finished and a third more glasses racked on the other side of the ledger.](../../../images/03-push-glasses-apart/06-the-jaw-comes-down-on-the-glass.png)
+
 By the end you will understand what fine-tuning is and why it is far cheaper
 than fitting a model of this size from random numbers, what low-rank
 adaptation is and what it trades away to fit in the memory it has to fit in,
@@ -415,6 +417,8 @@ solution and its partner cost the same to run**, and whatever separates their
 scores cannot be explained by one of them having been given more computation
 at run time.
 
+![Every one of the model's 453,859,552 borrowed numbers stays frozen where it is, and a correction forced through a squeeze down to sixteen numbers and back out to full width is added beside the query, key, value and output projections of every attention layer, the feed-forward tables being left alone entirely; that is 3,813,376 numbers, 0.84 per cent of the model, and because only they carry gradients and optimiser state the whole training held 1.02 GiB against the 22 GB the same trick needs on a model seven times the size — and once the two thin tables are folded back in, the fitted model costs 294 ms a push against its partner's 299 ms.](../../../images/03-push-glasses-apart/06-where-the-correction-goes.png)
+
 ## Where the demonstrations come from, and what they cost
 
 Fine-tuning needs examples, which here means recorded pushes with what was
@@ -668,6 +672,8 @@ neighbour. The toppled count in the folder's README is that. The honest answer
 to "does the scale of the actions stop being left to chance" is therefore:
 partly, and the part that was left is the part that topples glasses.
 
+![Measured the same way by the same code, the borrowed model's chunks come no lower than 209 mm above the table while the fitted model's come down to 50 mm, which is exactly the height its teacher's pushes were recorded at and the height the gripper pushes at, so the height was learned; the length was not, because one fitted chunk still covers 315 mm of a glass zone that is only 320 mm across, against the teacher's 89 mm, and it travels at 90 mm/s where the teacher's recorded pushes run at 20 and even their resampled chunks at 36.](../../../images/03-push-glasses-apart/06-the-height-was-learned-the-length-was-not.png)
+
 **Something like friction is absorbed, and this one needs care rather than
 celebration.** Nothing in the cell measures friction and the bench never
 reveals it, so neither solution can know it. But the bench holds the same three
@@ -805,6 +811,8 @@ saves confusion. Training longer and harder on this bench's pushes closes the
 domain gap further while making both forgetting and overfitting more likely. So
 there is a sensible amount of training rather than a maximum, and the held-out
 half of the tables is what decides where it is.
+
+![What was actually spent is one part in 320 of the compute LeRobot's own SmolVLA fine-tune asks for — a thousand steps at a batch of four against twenty thousand at a batch of sixty-four — and it took 68 minutes of this laptop's Metal while 1.02 GiB was held, so memory was never the obstacle at this size and time was; on tuning tables nothing was fitted on, the distance from the teacher's own waypoints fell from 320 mm at step zero, where the correction is still zero and the model is therefore exactly solution 5, to 84 mm by step 500, and then stopped, while the fitting loss went on halving, which is the shape that says the extra training is going into the examples rather than into the pushing.](../../../images/03-push-glasses-apart/06-a-thousandth-of-the-recipe.png)
 
 A third thing is not a risk of training but a consequence of it, and it belongs
 here because it decides how this solution is measured at all. A policy of this

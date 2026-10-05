@@ -104,8 +104,9 @@ Two things had to be true for it to fit in hours rather than overnight.
 **The policy reads the picture at half the bench's size.** 192 by 192 rather
 than 384, shrunk with an area filter inside `policy.py`. The vision backbone
 is most of the cost of a step and that cost falls with the area, so this is
-roughly three times faster per step. One pixel is then 1.6 mm on the table,
-which is far finer than anything the policy has to resolve.
+roughly three times faster per step. One pixel then covers about 3.7 mm of
+table, against the 1.9 mm the bench renders, which is still finer than
+anything the policy has to resolve.
 
 **It needs enough demonstrations, which cost minutes rather than money.** The
 first fit used 3,144 demonstrations from 1,300 tables and 51 passes over them.
@@ -181,9 +182,11 @@ here that can knock a glass over.
 ## Why it scores that way
 
 **Almost every push ends before a glass is touched.** The policy's starting
-point lands in roughly the right neighbourhood — within a centimetre or two of
-where the teacher put the fingertips — but its heading is around 30 degrees
-out. The jaw is 270 mm long behind its fingertips and its body is 90 mm wide,
+point lands in roughly the right neighbourhood, but no closer than that:
+measured over held-back demonstrations its first waypoint sits 66 to 79 mm
+from where the teacher put the fingertips at the median, and 130 to 150 mm at
+the worst tenth. Its heading is around 30 degrees out. The jaw is 270 mm long
+behind its fingertips and its body is 90 mm wide,
 so on a crowded table a heading that far off puts that body over a neighbour.
 `follow()` brings the jaw down to the chunk's first waypoint and stops if it
 touches anything on the way, which it does, and the push is reported blocked

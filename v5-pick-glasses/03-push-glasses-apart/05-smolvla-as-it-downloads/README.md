@@ -43,9 +43,15 @@ holds what the asking cost.
 | Tables scored *wrong* | 5 of 50 (±0.6) | 1 | **0** |
 | Pushes | 754 (±13.0) | 114 | 213 |
 | Pushes that never touched anything | 674 of 754 (±15.1) | 0 | 0 |
-| Pushes that jammed | 63 (±5.5) | 3 | **0** |
+| Pushes that jammed | 69 of the same 754 (±5.5) | 3 | **0** |
 | Landing, median / worst | 74.0 / 239 mm | 1.6 / 48.2 mm | 1.0 / 3.9 mm |
 | Thinking per push | **299 ms** | 415 ms | 61 ms |
+
+Where this column gives a share of the pushes, both parts come from the same
+run, the middle one by push count. That is worth stating because the spread
+reports a median for each field separately, and those medians can come from
+different runs, so parts taken from the spread need not add up to a whole that
+ever happened.
 
 The thinking times are this solution's own, with the simulator's time taken
 off, and all three were measured on an idle machine. That condition is not a
@@ -184,7 +190,7 @@ Slots 3 (wrist flex) and 5 (gripper) are dropped, because the bench holds the
 jaw level and closed and offers no way to change either. A test checks that
 changing them changes nothing.
 
-### What one standard deviation is worth, and why position and speed are one choice
+### What one standard deviation is worth, and why it also sets the speed
 
 A z-score is not a length, so something has to set the scale. Only one object
 in this solution has both a metric extent and is seen by the model: the frame
@@ -288,6 +294,13 @@ the table on a word it never said. It is applied where it can honestly bite —
 a table is finished once every glass still on it has been refused for tipping
 or had its share — and `ASKS_PER_TABLE`, three answers per push in the budget,
 is a guard against a loop rather than a budget.
+
+One number in the scorecard inherits that weakness and should be read with it
+in mind. A **repeat** is counted as a push at a glass that had already been
+pushed at, so for the other solutions it means the method chose the same glass
+twice. Here the glass was never chosen, only inferred from where the jaw went,
+so the repeat count says that two paths came nearest to the same glass rather
+than that the model meant to return to it.
 
 ## Where the document and the code disagreed
 

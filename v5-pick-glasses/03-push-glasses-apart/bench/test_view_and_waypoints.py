@@ -279,7 +279,7 @@ def test_a_run_that_was_not_timed_reports_no_time_at_all():
     assert "seconds_per_push" not in card.summary()
 
 
-def test_the_scorecard_still_writes_the_shape_the_two_built_solutions_committed(tmp_path):
+def test_the_scorecard_writes_the_shape_every_solution_reports(tmp_path):
     table = bench.Bench(bench.TEST_SEEDS)
     card = Scorecard()
     card.scene(table, {glass.id: "untouched" for glass in table.look()})
@@ -294,5 +294,6 @@ def test_the_scorecard_still_writes_the_shape_the_two_built_solutions_committed(
         "glasses_end",
         "refused_because",
         "pushes",
+        "travel_mm",
     }
     assert Path(save).read_text().endswith("}\n")

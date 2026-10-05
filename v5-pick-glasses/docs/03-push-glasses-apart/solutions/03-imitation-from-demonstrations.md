@@ -358,6 +358,8 @@ afterwards. So **every push solution 2 makes is a finished demonstration
 already**: a picture of the table before it, the waypoints that were followed,
 and the bench's own verdict on whether it worked.
 
+![One real training table seen from the top with the push the teacher chose on it, the path the jaw really followed written down waypoint by waypoint at half a millimetre apart while feeling and a millimetre apart while pushing, and the counts for the whole set: 22,846 pushes on 5,200 tables of which 12,656 were kept, where almost everything dropped is the teacher's own 5 mm test push rather than a failure.](../../../images/03-push-glasses-apart/03-where-the-demonstrations-come-from.png)
+
 Five consequences follow, and they are the reason [the
 plan](../solutions-plan.md) says that supplying demonstrations is what earns
 solution 2 its place beyond being a baseline.
@@ -472,6 +474,8 @@ sequence: this waypoint, then this one, then this one, several of them,
 produced together in a single pass. The arm then carries out that whole
 sequence before anything is asked again.
 
+![A parameterised push drawn from the side as the bench's macro expands it — down at 10 mm a waypoint, feeling at 0.5 mm, pushing at 1 mm, backing off and lifting — against the chunk the policy emits, a fixed block of 120 waypoints by five columns predicted in one pass, with the teacher's own pushes running from 25 to 246 waypoints and every one of them resampled to that fixed 120.](../../../images/03-push-glasses-apart/03-a-chunk-is-not-a-push.png)
+
 The programming comparison is exact and it is worth stating plainly, because
 the difference sounds smaller than it is. One way to write a controller is a
 function called on every tick that returns the single next thing to do; the
@@ -509,6 +513,14 @@ Nothing inside the chunk is a decision made on top of an earlier mistake. A
 step-by-step policy has one decision per tick, and every one of them is made
 from a state its own previous decisions produced, which is the mechanism the
 section after next is about.
+
+Consistent is not the same as direct, and the measurement makes the difference
+plain. The fitted policy's chunks wander two to four times as far as the glass
+they move ends up travelling, where the teacher's path and its displacement are
+the same length. So chunking stops one mistake from feeding the next, and it
+does not stop the policy from being unsure: a chunk can be internally
+consistent and still take a long, wavering route to a short move. What
+chunking removes is compounding, not indecision.
 
 **A chunk is open-loop while it runs.** Nothing is being read during it. The
 arm is carrying out a motion it decided on from a picture that is now out of
@@ -622,6 +634,8 @@ the way down. Whether a model that draws its chunk instead of naming one
 escapes that is now a question with a measurement behind it rather than an
 argument.
 
+![The teacher's chunk drawn beside the policy's on the same scale: the teacher's is a straight 87 mm of path for 87 mm of displacement, every single one of them, while the policy's wanders 262 mm of path to get 28 mm away, and across the held-back demonstrations the policy's chunks walk two to four times as far as they get; beside it, the waypoints that had to be pulled inside the jaw's limits, which were every one of them the height column and at most 1.7 mm below push height.](../../../images/03-push-glasses-apart/03-inside-one-chunk.png)
+
 Two costs come with the second rung and both belong on the scorecard.
 
 **It costs more per push.** One chunk needs several denoising passes rather
@@ -732,6 +746,8 @@ standing, where each one ended up, and how many pushes it took. That is what
 makes a three-number push and a chunk of a hundred-odd waypoints comparable at
 all, and it is the only reason this solution and its teacher can be set side by
 side.
+
+![Two fits compared: the first drove the training loss to 0.04, six times lower than the fit this solution shipped, and was memorising — 11 mm from the teacher on tables it had seen against 62 mm on tables it had not — while four times the demonstrations removed the memorising and left the error on unseen tables exactly where it was; and of the three shipped seeds the one that fitted closest to the teacher both racked the most glasses and toppled the most.](../../../images/03-push-glasses-apart/03-the-loss-was-not-the-score.png)
 
 **Everything else in the pipeline is shared, so a difference in the score
 belongs to the policy.** The tables are the bench's. The measurements are the
@@ -965,6 +981,8 @@ is touched. Nothing in the example about leaning the slide or slowing near the
 end was reached, because the motion never got that far. The folder's
 `README.md` has the counts.
 
+![The same held-out table with the teacher's push and the policy's chunk side by side: the teacher brings the fingertips down 10 mm clear of the glass's rim and the 270 mm body of the jaw clears every other glass, while the policy brings them down 30 mm inside the rim of the glass it means to push, so the bench stops the descent and reports the chunk blocked with nothing moved; over the whole run 569 of 643 pushes end that way and 472 of them go to a glass that has already been pushed.](../../../images/03-push-glasses-apart/03-blocked-on-the-way-down.png)
+
 ## What it needs
 
 It needs **[LeRobot](https://github.com/huggingface/lerobot)**, which holds ACT
@@ -1084,7 +1102,12 @@ push rather than once. The bench's chunk wants a glass and an aim that the
 policy does not produce, so both are read back off the waypoints outside it.
 And nothing stops a network emitting a coordinate the jaw cannot reach, so
 every chunk is pulled inside the jaw's limits before it is followed, and how
-often that happens has to be counted and reported rather than hidden.
+often that happens has to be counted and reported rather than hidden. When it
+was counted, the character of it was milder than this warning suggests: every
+waypoint that had to be pulled in was pulled in **height** alone, by less than
+two millimetres, and not one chunk ever asked for a place off the table. So the
+limit that bites is the one the jaw has below the table top, not the reach
+across it.
 
 **It is open-loop inside a chunk, and it cannot refuse.** During a chunk
 nothing is read, and the monitor that would watch the force is not built, so
