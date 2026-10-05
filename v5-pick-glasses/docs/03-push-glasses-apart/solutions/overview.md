@@ -121,16 +121,25 @@ the comparison, not a detail.
 
 ## What is built
 
-The bench is built. The geometry that generates and chooses a push is built,
-and so is a world model of the kind solution 4 describes in its first rung.
-Everything else is a design, and each document says which of its parts is
-which rather than describing code that does not exist.
+**All six are built, and all six have been run on the bench.** Each has code in
+a folder named after the document you are reading about it, and the numbers they
+produced are set side by side in
+[`03-push-glasses-apart/results/`](../../../03-push-glasses-apart/results/).
+Where something could not be run, the result is absent and the reason is
+written down rather than estimated.
 
-The two parts of the shared contract that used to gate solutions 3, 5 and 6
-are written: the view of the table from the top is `bench/top_view.py`, and
-the path that accepts waypoints directly is `Bench.follow()`. Solutions 1 and
-2 were still the right things to build first, because solution 2 is the
-teacher whose pushes solutions 3 and 6 learn from.
+Solutions 1 and 2 were built first, and that order mattered more than expected.
+Solution 2 is the teacher whose pushes solutions 3 and 6 learn from, so until it
+worked there was nothing for them to learn from. The bench also had to grow
+before the three that read pictures could run at all: the view from above and
+the path that accepts waypoints are both recent, and
+[the plan](../solutions-plan.md) says what they cost to add.
+
+One prescription in [pushing without
+toppling](../pushing-without-toppling.md) is **not** built and is worth knowing
+about before reading the results: the early abort, which would stop a push
+while the glass is still moving. Nothing here implements it, and solution 6 is
+what its absence costs.
 
 ## Where to go next
 

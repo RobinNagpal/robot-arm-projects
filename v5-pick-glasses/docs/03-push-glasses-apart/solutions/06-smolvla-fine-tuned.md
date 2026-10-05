@@ -1231,6 +1231,25 @@ document has already made: the correction is low-rank, so the answer is a lower
 bound, and the agreed convention has to be chosen fairly or the gap measures
 that too. **If this document is read for one reason, it should be that one.**
 
+**And the measurement, now that it exists, answers it in a way this document
+did not anticipate.** The folder's README has the numbers; what they say is
+that training worked and the score got worse. The fine-tuned model's chunks
+are much closer to the teacher's than the borrowed model's, and it brings the
+jaw down to the table where the borrowed model never did — but two thirds of
+its pushes are blocked coming down, because it never learned where to put the
+jaw down, and 46 glasses a run go over. Solution 5 stays out of the *wrong*
+column by never reaching a glass at all: it hovers, refuses nearly everything,
+and is marked correct but incomplete. So the gap between the two is not a
+measurement of training buying nothing. It is a measurement of training buying
+enough competence to act and not enough to act safely, on a scorecard where a
+toppled glass cannot be undone. **A policy that does nothing scores better
+than a policy that does the wrong thing**, and any reading of this pair that
+skips that sentence has misread it. The honest conclusion about the method is
+therefore still open, and what it is waiting on is more training — the compute
+spent here is about one part in three hundred of what the recipe asks — and
+DAgger, because "the jaw came down on a glass" is precisely a state the
+teacher never visits and so precisely what these demonstrations cannot teach.
+
 Against [solution 3](03-imitation-from-demonstrations.md), the comparison is
 borrowing against building, and it is the second clean pair this solution is
 part of. Both learn from the same demonstrations, drawn from the same training

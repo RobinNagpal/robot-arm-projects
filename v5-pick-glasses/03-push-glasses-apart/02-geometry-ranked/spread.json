@@ -1,0 +1,95 @@
+{
+  "tables": 60,
+  "seconds": 106,
+  "pushes": 4511,
+  "a glass": {
+    "groups": 269,
+    "candidates_per_group_median": 84.0,
+    "groups_with_a_job_finishing_push": 173,
+    "within_group_spread_mm": {
+      "job finishing": {
+        "groups": 161,
+        "candidates_median": 9.0,
+        "range_mm_median": 0.0,
+        "range_mm_mean": 0.144,
+        "deviation_mm_median": 0.0
+      },
+      "easing": {
+        "groups": 212,
+        "candidates_median": 12.0,
+        "range_mm_median": 11.851,
+        "range_mm_mean": 14.537,
+        "deviation_mm_median": 4.087
+      },
+      "the same push made again": {
+        "groups": 269,
+        "candidates_median": 4.0,
+        "range_mm_median": 0.0,
+        "range_mm_mean": 0.002,
+        "deviation_mm_median": 0.0
+      },
+      "the same push made again, as the camera measures it": {
+        "groups": 269,
+        "candidates_median": 4.0,
+        "range_mm_median": 4.891,
+        "range_mm_mean": 4.975,
+        "deviation_mm_median": 2.183
+      }
+    },
+    "where_the_job_finishing_pushes_aim_mm": {
+      "groups": 161,
+      "candidates_median": 9.0,
+      "range_mm_median": 0.961,
+      "range_mm_mean": 0.927,
+      "deviation_mm_median": 0.354
+    },
+    "best_possible_over_the_printed_rule_mm": {
+      "groups": 206,
+      "median": 0.0,
+      "mean": 0.158,
+      "worst": 5.086,
+      "groups_where_the_rule_was_best": 159,
+      "groups_where_the_rule_toppled_a_glass": 5
+    },
+    "toppled": 99
+  },
+  "a decision": {
+    "groups": 101,
+    "candidates_per_group_median": 261.0,
+    "groups_with_a_job_finishing_push": 93,
+    "within_group_spread_mm": {
+      "job finishing": {
+        "groups": 91,
+        "candidates_median": 15.0,
+        "range_mm_median": 0.0,
+        "range_mm_mean": 28.153,
+        "deviation_mm_median": 0.0
+      },
+      "easing": {
+        "groups": 93,
+        "candidates_median": 24.0,
+        "range_mm_median": 19.296,
+        "range_mm_mean": 73.426,
+        "deviation_mm_median": 5.734
+      },
+      "the same push made again": {
+        "groups": 0
+      },
+      "the same push made again, as the camera measures it": {
+        "groups": 0
+      }
+    },
+    "where_the_job_finishing_pushes_aim_mm": {
+      "groups": 0
+    },
+    "best_possible_over_the_printed_rule_mm": {
+      "groups": 82,
+      "median": 2.56,
+      "mean": 20.358,
+      "worst": 1008.08,
+      "groups_where_the_rule_was_best": 29,
+      "groups_where_the_rule_toppled_a_glass": 1
+    },
+    "toppled": 99
+  }
+}

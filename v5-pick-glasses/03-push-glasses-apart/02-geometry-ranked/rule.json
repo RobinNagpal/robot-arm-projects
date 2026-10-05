@@ -16,7 +16,8 @@
     "left_with_no_reason": 0
   },
   "refused_because": {
-    "nowhere clear to push it to": 56
+    "still without room after pushing": 52,
+    "nowhere clear to push it to": 4
   },
   "pushes": {
     "total": 213,
@@ -27,5 +28,5 @@
     "aim_mm_median": 1.0,
     "aim_mm_worst": 3.9
   },
-  "seconds_per_push": 0.1337
+  "seconds_per_push": 0.082
 }

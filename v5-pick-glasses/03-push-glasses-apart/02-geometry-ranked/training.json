@@ -1,0 +1,79 @@
+{
+  "rows": 4844,
+  "tables": 190,
+  "finish_the_job": 1483,
+  "toppled": 57,
+  "room_gained_mm_median": 15.66,
+  "trees": 200,
+  "depth": 3,
+  "fitting_seconds": 2.2,
+  "importances": [
+    [
+      "push height over the topple limit",
+      0.425
+    ],
+    [
+      "foot width",
+      0.383
+    ],
+    [
+      "destination to the rack",
+      0.052
+    ],
+    [
+      "room at the destination",
+      0.049
+    ],
+    [
+      "destination to the zone edge",
+      0.043
+    ],
+    [
+      "contact angle, from the line to the nearest edge",
+      0.026
+    ],
+    [
+      "neighbours within reach",
+      0.015
+    ],
+    [
+      "push distance",
+      0.006
+    ]
+  ],
+  "validation": {
+    "rows": 1262,
+    "a glass": {
+      "groups": 227,
+      "pairs_right": 0.697,
+      "groups_offering_a_job_finishing_push": 127,
+      "where_the_rankers_top_pick_finishes_the_job": 85,
+      "regret_mm_median": {
+        "ranker": 0.0,
+        "printed rule": 0.0,
+        "an arbitrary pick": 3.03
+      },
+      "regret_mm_mean": {
+        "ranker": 1.43,
+        "printed rule": 0.19,
+        "an arbitrary pick": 5.84
+      }
+    },
+    "a decision": {
+      "groups": 98,
+      "pairs_right": 0.68,
+      "groups_offering_a_job_finishing_push": 83,
+      "where_the_rankers_top_pick_finishes_the_job": 47,
+      "regret_mm_median": {
+        "ranker": 0.0,
+        "printed rule": 0.36,
+        "an arbitrary pick": 8.9
+      },
+      "regret_mm_mean": {
+        "ranker": 4.38,
+        "printed rule": 18.66,
+        "an arbitrary pick": 27.65
+      }
+    }
+  }
+}

@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import copy
 import math
+import time
 from pathlib import Path
 
 import cv2
@@ -70,7 +71,11 @@ class FilmedBench(Bench):
 
     def take(self, glass: int) -> None:
         self.doing = f"take glass {glass}"
+        # Drawing the take is the bench's time, not the solution's. Every
+        # other frame is captured inside an action, which is already charged.
+        started = time.perf_counter()
         self._show_take(glass)
+        self.seconds += time.perf_counter() - started
         super().take(glass)
 
     def _show_take(self, glass: int) -> None:
@@ -123,9 +128,8 @@ class FilmedBench(Bench):
         self.renderer.update_scene(self.data if data is None else data, self.camera)
         frame = self.renderer.render()[:, :, ::-1].copy()
         for row, text in enumerate([self.label, extra or self.doing]):
-            cv2.putText(
-                frame, text, (12, 28 + 28 * row), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2, cv2.LINE_AA
-            )
+            place, font = (12, 28 + 28 * row), cv2.FONT_HERSHEY_SIMPLEX
+            cv2.putText(frame, text, place, font, 0.7, (255, 255, 255), 2, cv2.LINE_AA)
         self.frames.append(frame)
 
     def save(self, path: Path, outcome: str = "") -> None:

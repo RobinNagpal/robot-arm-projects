@@ -21,7 +21,7 @@ from model import Ensemble, sigmoid
 from work_cell.arm.dimensions import COMFORTABLE_REACH
 from work_cell.table.layout import ROBOT_BASE
 
-from bench import GRIP_ROOM, Bench, Push, has_room, in_zone
+from bench import GRIP_ROOM, PUSHES_PER_GLASS, PUSHES_PER_TABLE, Bench, Push, has_room, in_zone
 
 # Added to the room a glass needs before it is taken, for the camera's error.
 # Chosen on the tuning tables: at 4 or 5 mm, glasses that had room were pushed
@@ -59,9 +59,6 @@ WORTH_IT = 0.002
 JITTERS = 4
 JITTER_POSITION = 0.001
 JITTER_WIDTH = 0.003
-
-MAX_PUSHES = 16
-PUSHES_PER_GLASS = 4
 
 # The cross-entropy search: draws per round, how many of the best are kept to
 # aim the next round, and rounds.
@@ -242,11 +239,11 @@ def clear(bench: Bench, model: Ensemble, kind: str, rng: np.random.Generator) ->
         choices = [v.choice for v in verdicts.values() if v.choice is not None]
         choice = min(choices, key=lambda c: c.cost, default=None)
 
-        if pushes >= MAX_PUSHES or choice is None or choice.cost > here - WORTH_IT:
+        if pushes >= PUSHES_PER_TABLE or choice is None or choice.cost > here - WORTH_IT:
             for s in seen:
                 verdict = verdicts[s.id]
-                if pushes >= MAX_PUSHES:
-                    refused[s.id] = f"the table's {MAX_PUSHES} pushes are spent"
+                if pushes >= PUSHES_PER_TABLE:
+                    refused[s.id] = f"the table's {PUSHES_PER_TABLE} pushes are spent"
                 elif verdict.choice is None:
                     refused[s.id] = verdict.reason
                 else:

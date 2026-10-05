@@ -1,0 +1,11 @@
+# Labelled candidates: made again with `make train`, about 5 minutes.
+data/
+# The fitted trees: `make train` writes them in seconds once the rows exist.
+model/
+# Demonstrations for solutions 3 and 6: `make demos`. Every table comes from a
+# number, so the set is regenerated rather than archived.
+demonstrations/
+# Films of a few tables: `make film`.
+videos/
+# A run shorter than the 50 held-out tables.
+partial.json

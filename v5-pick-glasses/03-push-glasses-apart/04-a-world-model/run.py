@@ -46,8 +46,9 @@ def main() -> None:
     for i, seed in enumerate(range(arguments.first, arguments.first + arguments.tables)):
         bench = FilmedBench(seed, "learned") if i < arguments.film else Bench(seed)
         kind = KINDS[seed % len(KINDS)]
+        table_started = time.perf_counter()
         refused = clear(bench, model, kind, np.random.default_rng(seed))
-        outcome = card.scene(bench, refused)
+        outcome = card.scene(bench, refused, seconds=time.perf_counter() - table_started)
         if i < arguments.film:
             bench.save(VIDEOS / f"table-{seed}.mp4", f"{outcome}: racked {sum(bench.taken.values())}, "
                        f"refused {len(refused)}")

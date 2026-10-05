@@ -1,0 +1,50 @@
+{
+  "weights": "lerobot/smolvla_base",
+  "rank": 16,
+  "scaling": 32,
+  "tables": [
+    "q_proj",
+    "k_proj",
+    "v_proj",
+    "o_proj"
+  ],
+  "moving_numbers": 3813376,
+  "total_numbers": 453859552,
+  "steps_wanted": 3000,
+  "batch": 4,
+  "learning_rate": 0.0001,
+  "warmup": 100,
+  "seed": 0,
+  "device": "mps",
+  "demonstrations": 2012,
+  "tables_fitted_on": 740,
+  "tuning_demonstrations": 115,
+  "steps_done": 1000,
+  "minutes": 67.5,
+  "memory_gib": 1.02,
+  "history": [
+    {
+      "step": 0,
+      "tuning_mm": {
+        "median": 320.7,
+        "worst": 658.4
+      }
+    },
+    {
+      "step": 500,
+      "loss": 0.2989,
+      "tuning_mm": {
+        "median": 84.3,
+        "worst": 269.6
+      }
+    },
+    {
+      "step": 1000,
+      "loss": 0.1589,
+      "tuning_mm": {
+        "median": 90.0,
+        "worst": 195.6
+      }
+    }
+  ]
+}

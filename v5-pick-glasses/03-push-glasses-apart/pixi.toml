@@ -10,18 +10,39 @@ platforms = ["osx-arm64", "linux-64"]
 # not worth having.
 [dependencies]
 python = "3.12.*"
-numpy = ">=1.26,<3"
-pytorch = ">=2.3"
+numpy = ">=2.0,<2.3"
+pytorch = ">=2.7,<2.12"
+# LeRobot, which solution 3 takes ACT from, holds these two below the versions
+# conda-forge would otherwise pin.
+setuptools = "<81"
+packaging = "<26"
+# LeRobot's dataset half reads parquet through HuggingFace datasets, which
+# holds fsspec below the version conda-forge would otherwise pull in.
+fsspec = "<=2026.2.0"
 # Solution 2's ranker is gradient-boosted trees, which is what sklearn is for.
 scikit-learn = ">=1.4"
 # rack/layout.py imports OpenCV, and the glass zone is read from there.
-py-opencv = ">=4.9"
+py-opencv = ">=4.9,<4.14"
 pytest = ">=7"
 ruff = ">=0.4"
 
 [pypi-dependencies]
 # The physics engine the pushes happen in.
 mujoco = ">=3.3"
+# Solution 3's ACT and solutions 5 and 6's SmolVLA come from here, as their
+# documents say. The smolvla extra is what brings the vision-language half in:
+# transformers for the SmolVLM backbone and its tokeniser. The dataset extra
+# is what lets solution 6 write its demonstrations in LeRobot's own format.
+# Only the library is downloaded here; solution 5 downloads the weights when
+# it runs.
+lerobot = { version = ">=0.6,<0.7", extras = ["smolvla", "dataset"] }
+# Solution 3's second rung. LeRobot's Diffusion Policy asks for this at
+# import time and its own extra does not reach pixi's resolver, so it is
+# named here instead.
+diffusers = ">=0.38,<0.40"
+# Solution 6's low-rank correction. LeRobot trains whole policies and has no
+# LoRA of its own, so the adapters come from the library that defines them.
+peft = ">=0.17,<0.22"
 
 [activation.env]
 # The project's own modules, and the bench every solution is scored on.

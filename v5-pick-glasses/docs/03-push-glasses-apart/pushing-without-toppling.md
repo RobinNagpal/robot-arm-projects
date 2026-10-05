@@ -284,8 +284,12 @@ than after it.** The verifier can only describe a glass that is already on its
 side, because its evidence is a picture and the picture cannot be taken until
 the arm has finished moving and carried the camera somewhere useful. The monitor
 is in contact with the glass while the glass is still deciding what to do. So
-**the early abort is the only thing in this problem that can prevent a topple
-rather than report one**, and that is the whole argument for it.
+**an early abort would be the only thing in this problem that could prevent a
+topple rather than report one**, and that is the whole argument for building
+one. It is an argument and not a description: nothing in this project
+implements it, and the solutions that topple glasses topple them for want of
+it. Solution 6, which is the only one that topples glasses often, is the
+measurement of what its absence costs.
 
 Its own powers are deliberately small. It cannot steer, it cannot choose a
 target and it cannot approve a push; it can only stop one. A monitor that fires

@@ -3,29 +3,31 @@
   "glasses": 251,
   "crowded_at_start": 193,
   "outcome": {
-    "done": 33,
-    "incomplete": 17,
+    "done": 31,
+    "incomplete": 19,
     "wrong": 0
   },
   "glasses_end": {
-    "racked": 195,
-    "refused": 56,
+    "racked": 185,
+    "refused": 66,
     "toppled": 0,
     "pushed_out_of_the_zone": 0,
     "picked_without_room": 0,
     "left_with_no_reason": 0
   },
   "refused_because": {
-    "nowhere clear to push it to": 56
+    "still without room after pushing": 61,
+    "nowhere clear to push it to": 4,
+    "tips before it slides": 1
   },
   "pushes": {
-    "total": 213,
-    "repeats": 90,
+    "total": 229,
+    "repeats": 109,
     "blocked_on_the_way_down": 0,
     "never_touched": 0,
     "jammed": 0,
     "aim_mm_median": 1.0,
     "aim_mm_worst": 3.9
   },
-  "seconds_per_push": 0.1337
+  "seconds_per_push": 0.1009
 }

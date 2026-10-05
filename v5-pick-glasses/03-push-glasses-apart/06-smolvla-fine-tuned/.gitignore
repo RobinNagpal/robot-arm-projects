@@ -1,0 +1,19 @@
+# The demonstrations themselves are a few hundred megabytes of rendered
+# pictures, and demonstrations.py regenerates them from table numbers, so
+# nothing is lost by leaving them out. What was collected is a measurement,
+# so collected.json stays in.
+demonstrations/**
+!demonstrations/collected.json
+demonstrations-check/**
+!demonstrations-check/collected.json
+videos/
+__pycache__/
+
+# The correction's own weights, which are large. Its recipe
+# (adapter_config.json) and what the training did (training.json) stay in,
+# because those are what a reader needs and they are small.
+correction*/*.safetensors
+correction*/*.bin
+# The library writes a blank model card beside the adapter. training.json is
+# the record that says anything.
+correction*/README.md

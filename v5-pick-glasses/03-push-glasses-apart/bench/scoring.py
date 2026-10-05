@@ -10,6 +10,20 @@ What problem.md calls done, correct but incomplete, and wrong:
   given, and nothing went wrong.
 - **wrong**: a glass toppled, left the glass zone, was picked while it did not
   really have room, or was left on the table with no reason given.
+
+Two things here are not in problem 2's scoring.
+
+**One run is not a measurement.** Four of the six solutions are stochastic, so
+asked the same question twice they may answer differently. ``Repeats`` holds
+several evaluation runs of one solution and reports the spread across them. A
+method that wins by less than its own spread has not been shown to win.
+
+**What a push costs to decide belongs beside the counts.** A fixed nudge is
+arithmetic; a planner searches; a foundation model is a large forward pass.
+Pass ``seconds`` to ``scene()`` and the scorecard reports the time per push,
+with the bench's own physics taken off, so what is left is the solution's
+thinking. Leave it out and no time is reported: an unmeasured cost is absent
+rather than zero.
 """
 
 from __future__ import annotations
@@ -30,10 +44,20 @@ class Scorecard:
         self.count = Counter()
         self.refusals = Counter()
         self.aim_mm: list[float] = []
+        self.thinking = 0.0
+        self.timed = False
 
-    def scene(self, bench: Bench, refused: dict[int, str]) -> str:
-        """Judge one table once the approach has finished with it. Returns its outcome."""
+    def scene(self, bench: Bench, refused: dict[int, str], seconds: float | None = None) -> str:
+        """Judge one table once the approach has finished with it. Returns its outcome.
+
+        ``seconds`` is the wall time the approach spent on this table, the
+        bench included. The bench's own share is taken off, so what is counted
+        is the thinking. Left out, no time is reported at all.
+        """
         c = self.count
+        if seconds is not None:
+            self.thinking += max(0.0, seconds - bench.seconds)
+            self.timed = True
         glasses = len(bench.glasses)
         c["scenes"] += 1
         c["glasses"] += glasses
@@ -83,7 +107,7 @@ class Scorecard:
     def summary(self) -> dict:
         c = self.count
         aim = np.array(self.aim_mm) if self.aim_mm else np.zeros(1)
-        return {
+        result = {
             "scenes": c["scenes"],
             "glasses": c["glasses"],
             "crowded_at_start": c["crowded at start"],
@@ -110,6 +134,9 @@ class Scorecard:
                 "aim_mm_worst": round(float(aim.max()), 1),
             },
         }
+        if self.timed and c["pushes"]:
+            result["seconds_per_push"] = round(self.thinking / c["pushes"], 4)
+        return result
 
     def report(self, save: Path) -> None:
         """Print the summary and save it, so two approaches can be set side by side."""
@@ -134,8 +161,95 @@ class Scorecard:
             f"never touched {pushes['never_touched']}, jammed {pushes['jammed']}; landed "
             f"{pushes['aim_mm_median']} mm from the aim median, {pushes['aim_mm_worst']} worst"
         )
+        if "seconds_per_push" in result:
+            print(f"compute  {1000 * result['seconds_per_push']:.1f} ms of thinking per push")
         save.write_text(json.dumps(result, indent=2) + "\n")
         print(f"\nsaved to {save}")
+
+
+class Repeats:
+    """Several evaluation runs of one solution, and the spread across them.
+
+    One run is not a measurement for a policy that draws its action rather
+    than computing it, and the variation between runs is sometimes larger than
+    the gap between two methods. So a solution whose answer is not the same
+    twice runs several times and reports all of them::
+
+        runs = Repeats()
+        for seed in range(5):
+            card = runs.run()
+            for table in tables:
+                card.scene(table, refused, seconds=spent)
+        runs.report(Path("results.json"))
+
+    A deterministic solution has nothing to repeat and keeps using Scorecard
+    on its own, which is why the one-run file's shape is unchanged.
+    """
+
+    def __init__(self) -> None:
+        self.cards: list[Scorecard] = []
+
+    def run(self) -> Scorecard:
+        """A fresh scorecard for the next evaluation run."""
+        self.cards.append(Scorecard())
+        return self.cards[-1]
+
+    def summary(self) -> dict:
+        """Every run in full, and the spread of every number across them."""
+        each = [card.summary() for card in self.cards]
+        return {"runs": len(each), "spread": spread(each), "each": each}
+
+    def report(self, save: Path) -> None:
+        """Print the headline numbers with their spread, and save every run."""
+        result = self.summary()
+        wide = result["spread"]
+        print(f"\n{result['runs']} evaluation runs of {result['each'][0]['scenes']} held-out scenes\n")
+        for line, keys in (
+            ("tables ", ("outcome.done", "outcome.incomplete", "outcome.wrong")),
+            ("glasses", ("glasses_end.racked", "glasses_end.refused", "glasses_end.toppled")),
+            ("pushes ", ("pushes.total", "pushes.repeats", "seconds_per_push")),
+        ):
+            shown = [f"{key.split('.')[-1]} {_band(wide[key])}" for key in keys if key in wide]
+            print(f"{line}  " + ", ".join(shown))
+        save.write_text(json.dumps(result, indent=2) + "\n")
+        print(f"\nsaved to {save}")
+
+
+def spread(each: list[dict]) -> dict:
+    """The middle and the range of every number that every run reports.
+
+    Keyed by a dotted path into the summary, so ``glasses_end.racked`` is the
+    glasses racked. A count only some runs report is left out, because a
+    spread over a different set of runs each time would not mean anything.
+    """
+    rows = [_flat(summary) for summary in each]
+    shared = [key for key in rows[0] if all(key in row for row in rows)]
+    return {key: _band_of([row[key] for row in rows]) for key in shared}
+
+
+def _band_of(values: list[float]) -> dict:
+    return {
+        "median": round(float(np.median(values)), 3),
+        "sd": round(float(np.std(values, ddof=1)) if len(values) > 1 else 0.0, 3),
+        "least": round(min(values), 3),
+        "most": round(max(values), 3),
+    }
+
+
+def _band(band: dict) -> str:
+    return f"{band['median']:g} +/- {band['sd']:g} ({band['least']:g} to {band['most']:g})"
+
+
+def _flat(summary: dict, prefix: str = "") -> dict[str, float]:
+    """Every number in a summary, keyed by its dotted path."""
+    out: dict[str, float] = {}
+    for key, value in summary.items():
+        name = f"{prefix}{key}"
+        if isinstance(value, dict):
+            out.update(_flat(value, f"{name}."))
+        elif isinstance(value, (int, float)) and not isinstance(value, bool):
+            out[name] = float(value)
+    return out
 
 
 def all_racked(bench: Bench) -> bool:

@@ -2,5 +2,5 @@ extend = "../ruff.toml"
 
 [lint.isort]
 # The bench's modules import each other by bare name, and so do the solutions.
-known-first-party = ["bench", "film", "scoring"]
+known-first-party = ["bench", "film", "scoring", "top_view"]
 known-third-party = ["work_cell", "mujoco"]

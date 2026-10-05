@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import math
+import time
 from collections import Counter
 from pathlib import Path
 
@@ -27,8 +28,10 @@ from scoring import Scorecard
 TAKE_MARGIN = 0.005
 
 # A glass pushed this often and still without room is left, with the reason.
-PUSHES_PER_GLASS = 3
-PUSHES_PER_TABLE = 15
+# The budget is the bench's, not this approach's, because the six solutions are
+# only comparable while they are allowed the same number of tries.
+PUSHES_PER_GLASS = bench.PUSHES_PER_GLASS
+PUSHES_PER_TABLE = bench.PUSHES_PER_TABLE
 
 VIDEOS = Path(__file__).parent / "videos"
 
@@ -109,8 +112,9 @@ def main() -> None:
         table = FilmedBench(seed, "programmed") if filmed else bench.Bench(seed)
         if arguments.show:
             print(f"seed {seed} {table.glasses[0].kind}, {len(table.glasses)} glasses")
+        started = time.perf_counter()
         refused = clear(table, arguments.show)
-        outcome = card.scene(table, refused)
+        outcome = card.scene(table, refused, seconds=time.perf_counter() - started)
         if arguments.show:
             print(f"  {outcome}; refused {refused or 'none'}")
         if filmed:

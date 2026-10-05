@@ -1,8 +1,8 @@
 """Crowded tables, and a physics engine to push the glasses around on them.
 
-Shared by 03-push-glasses-apart/01-one-fixed-nudge and 03-push-glasses-apart/04-a-world-model, so the two are tested on
-the same tables, start from the same measurements, push with the same jaw and
-are judged by the same physics.
+Shared by every solution in 03-push-glasses-apart, so they are tested on the
+same tables, start from the same measurements, push with the same jaw and are
+judged by the same physics.
 
 MuJoCo stands in for Gazebo for the reason render.py did in problem 2: a
 learned approach needs thousands of pushes, and Gazebo runs each one at the
@@ -20,6 +20,13 @@ An approach gets three things from here, and nothing else:
 - ``take()`` — pick a glass up and rack it. Problem 1 does the real picking;
   here the glass is simply lifted off the table.
 
+A solution that thinks in trajectories rather than in push parameters calls
+``follow()`` instead of ``push()``. It submits a ``Chunk`` of jaw waypoints,
+the bench carries them out in the same physics, and it reports the same
+``Felt`` into the same record, so the scorecard cannot tell the two apart.
+``top_view.py`` renders the straight-down picture the policies that read
+pictures take as their input.
+
 The rest is the simulator's own record, which only scoring.py reads.
 """
 
@@ -27,6 +34,7 @@ from __future__ import annotations
 
 import math
 import random
+import time
 from dataclasses import dataclass
 
 import mujoco
@@ -69,6 +77,14 @@ TRAVEL_HEIGHT = 0.30
 DESCEND_SPEED = 0.20
 FEEL_SPEED = 0.01
 PUSH_SPEED = 0.02
+# The fastest this cell ever moves the jaw, which is the speed it comes down at.
+# follow() holds a commanded path to it: a solution may ask the jaw to go
+# anywhere, but not to get there faster than the arm can move, because a bench
+# that allowed that would be reporting the physics of an arm nobody has. It is
+# deliberately not a new number. It is the largest of the speeds above, so it
+# never binds on anything the bench itself does, and binds only on a path this
+# cell could not carry out.
+TOP_SPEED = DESCEND_SPEED
 RETREAT = 0.02
 # Over this, the jaw has touched something. Low, because the lightest glass
 # slides under about a quarter of a newton, and a threshold above that pushes
@@ -89,10 +105,29 @@ POSITION_NOISE = 0.0005
 WIDTH_NOISE = 0.0025
 HEIGHT_NOISE = 0.0012
 
+# The straight-down camera top_view.py renders from: directly above the middle
+# of the glass zone, this far above the table top.
+TOP_VIEW_HEIGHT = 0.75
+# How many pixels that view is, (rows, columns). Square, because the frame is.
+TOP_VIEW_SIZE = (384, 384)
+
 # Clear room the open jaw needs from a glass's middle to anything else, from
 # problem.md: half the widest opening, a finger and a pad each side, and a
 # little to spare. A neighbour is in the way when its edge is inside this.
 GRIP_ROOM = 0.070
+
+# Half the straight-down view's frame, measured on the table top. It has to
+# hold the whole glass zone, and a little more: in a view from above a glass
+# leans outwards from the point under the camera, so something standing at the
+# zone's edge appears further out than it stands. TRAVEL_HEIGHT is the height
+# nothing on the table reaches, and half GRIP_ROOM is wider than any glass the
+# jaw can grip, so this frames the zone with every glass on it whole.
+_ZONE_REACH = max(
+    (GLASS_ZONE[1] - GLASS_ZONE[0]) / 2,
+    (GLASS_ZONE[3] - GLASS_ZONE[2]) / 2,
+)
+TOP_VIEW_HALF_FRAME = (_ZONE_REACH + GRIP_ROOM / 2) * TOP_VIEW_HEIGHT / (TOP_VIEW_HEIGHT - TRAVEL_HEIGHT)
+TOP_VIEW_FOVY_DEG = math.degrees(2 * math.atan(TOP_VIEW_HALF_FRAME / TOP_VIEW_HEIGHT))
 
 # The collision shape is a stack of cylinders, each no more than this wider
 # than the glass anywhere inside it.
@@ -102,6 +137,23 @@ KINDS = ("straight_glass", "tapered_glass", "stemmed_glass", "short_stemmed_glas
 
 # Scenes from here on are for testing. Training draws only below it.
 TEST_SEEDS = 10_000
+
+# How often a waypoint is consumed, seconds. A controller eats a trajectory at
+# a fixed rate, so a chunk's speed is in how far apart its waypoints are: 1 mm
+# apart is PUSH_SPEED. The jaw's own path is sampled at the same rate, so a
+# parameterised push can be read back as a chunk and replayed exactly.
+WAYPOINT_PERIOD = 0.05
+TRACE_EVERY = round(WAYPOINT_PERIOD / TIMESTEP)
+# A chunk longer than this is a runaway, not a short run of waypoints. A whole
+# push sampled at WAYPOINT_PERIOD is a few hundred, so this leaves room.
+MAX_WAYPOINTS = 500
+
+# One push budget for all six solutions. It used to live in each runner, so
+# the push counts were not comparable. These are 04-a-world-model's numbers;
+# 01-one-fixed-nudge was written first and spends 3 and 15, which is why its
+# committed scorecard is not reproduced by this budget.
+PUSHES_PER_GLASS = 4
+PUSHES_PER_TABLE = 16
 
 # The share of glasses stood deliberately close to one already down. The rest
 # go anywhere they do not touch, which crowds some of them too.
@@ -206,11 +258,17 @@ def _glass_xml(index: int, glass: SpawnedGlass) -> str:
 def _world(glasses: list[SpawnedGlass]) -> str:
     half_x, half_y = TABLE_SIZE[0] / 2, TABLE_SIZE[1] / 2
     jaw = f'friction="{JAW_FRICTION} 0.005 0.0001" priority="2" rgba="0.6 0.6 0.62 1"'
+    zone_x, zone_y = (GLASS_ZONE[0] + GLASS_ZONE[1]) / 2, (GLASS_ZONE[2] + GLASS_ZONE[3]) / 2
+    # The camera top_view.py renders from. Its axes are the table's own: the
+    # picture's right is +x and the picture's up is +y. It is a camera and not
+    # a body, so adding it changes nothing about the physics.
     return f"""
 <mujoco model="crowded table">
   <option timestep="{TIMESTEP}" cone="elliptic" impratio="10"/>
   <worldbody>
     <light pos="0.4 0 2.5"/>
+    <camera name="top" pos="{zone_x:.5f} {zone_y:.5f} {TABLE_TOP_Z + TOP_VIEW_HEIGHT:.5f}"
+            xyaxes="1 0 0 0 1 0" fovy="{TOP_VIEW_FOVY_DEG:.5f}"/>
     <geom name="table" type="plane" size="{half_x} {half_y} 0.01"
           pos="{TABLE_CENTRE_XY[0]} {TABLE_CENTRE_XY[1]} {TABLE_TOP_Z}"
           friction="{TABLE_FRICTION} 0.005 0.0001" priority="1" rgba="0.75 0.6 0.45 1"/>
@@ -253,6 +311,63 @@ class Push:
 
 
 @dataclass(frozen=True)
+class Waypoint:
+    """One target for the jaw, on the path it is told to follow."""
+
+    x: float
+    y: float
+    z: float  # the middle of the jaw, above the table top: 0.0 is the table
+    heading: float  # the way the jaw points and moves, radians
+
+
+@dataclass(frozen=True)
+class Chunk:
+    """A short run of jaw waypoints, as a policy that thinks in trajectories emits it.
+
+    ``follow()`` carries the waypoints out one WAYPOINT_PERIOD apart, so how
+    far apart they are is how fast the jaw goes, up to TOP_SPEED. Past that the
+    jaw cannot keep up and the leg simply takes longer. Nothing expands a
+    chunk: it is already a jaw trajectory.
+    """
+
+    glass: int  # which glass it is meant to move
+    waypoints: tuple[Waypoint, ...]
+    aim: tuple[float, float]  # where the policy expects the glass to end up
+
+    @classmethod
+    def from_array(cls, glass: int, action: np.ndarray, aim: tuple[float, float]) -> Chunk:
+        """Build a chunk from an (n, 4) array of x, y, z, heading — a policy's own output."""
+        action = np.asarray(action, dtype=float)
+        if action.ndim != 2 or action.shape[1] != 4:
+            raise ValueError(f"a chunk is (n, 4) of x, y, z, heading, not {action.shape}")
+        return cls(glass, tuple(Waypoint(*row) for row in action.tolist()), aim)
+
+    def as_push(self) -> Push:
+        """The one push this chunk amounts to, for the record.
+
+        The scorecard reads ``glass`` and ``aim``, which are the chunk's own.
+        ``start`` and ``heading`` are where the jaw comes down and which way it
+        first points; ``reach`` is the whole distance it is told to travel
+        across the table and ``travel`` the distance from first waypoint to
+        last. A chunk has no feel-then-push split, so those two describe its
+        extent rather than a request.
+        """
+        first, last = self.waypoints[0], self.waypoints[-1]
+        across = sum(
+            math.dist((a.x, a.y), (b.x, b.y))
+            for a, b in zip(self.waypoints, self.waypoints[1:], strict=False)
+        )
+        return Push(
+            glass=self.glass,
+            start=(first.x, first.y),
+            heading=first.heading,
+            reach=across,
+            travel=math.dist((first.x, first.y), (last.x, last.y)),
+            aim=self.aim,
+        )
+
+
+@dataclass(frozen=True)
 class Felt:
     """What the jaw felt. The only thing a push reports back."""
 
@@ -265,11 +380,18 @@ class Felt:
 
 @dataclass(frozen=True)
 class Record:
-    """One push, and what really happened. For scoring."""
+    """One action, and what really happened. For scoring.
+
+    A chunk of waypoints records the same three fields, with ``push`` the one
+    push it amounts to, so nothing downstream can tell the two paths apart.
+    ``waypoints`` is the path the jaw really followed, sampled every
+    WAYPOINT_PERIOD: replay it with ``follow()`` and the same thing happens.
+    """
 
     push: Push
     felt: Felt
     landed: tuple[float, float]
+    waypoints: tuple[Waypoint, ...] = ()
 
 
 class Bench:
@@ -285,6 +407,12 @@ class Bench:
         self.taken: dict[int, bool] = {}
         self.records: list[Record] = []
         self.looks = 0
+        # Wall time spent inside the bench. A runner subtracts it from its own
+        # clock to report what the solution's thinking cost, not the physics.
+        self.seconds = 0.0
+        self._trace: list[Waypoint] | None = None
+        self._driven = 0
+        self._began = 0.0
         self._settle()
         self.start = [self.position(i) for i in range(len(self.glasses))]
 
@@ -292,6 +420,7 @@ class Bench:
 
     def look(self) -> list[Seen]:
         """What the overhead survey and problem 2 measure, with their error."""
+        started = time.perf_counter()
         rng = np.random.default_rng([self.seed, self.looks])
         self.looks += 1
         seen = []
@@ -311,6 +440,7 @@ class Bench:
                     standing=self.tilt(i) < STANDING_TILT_DEG,
                 )
             )
+        self.seconds += time.perf_counter() - started
         return seen
 
     def push(self, push: Push) -> Felt:
@@ -344,8 +474,97 @@ class Bench:
         self._back_off(contact + pushed * u, u)
         return self._record(push, felt)
 
+    def follow(self, chunk: Chunk) -> Felt:
+        """Carry out a chunk of jaw waypoints, and report what the jaw felt.
+
+        The other half of ``push()``: same physics, same ``Felt``, same record,
+        for a policy whose answer is already a trajectory. The jaw is placed
+        clear above where the chunk starts — nothing on the table reaches
+        TRAVEL_HEIGHT — and comes down to the first waypoint. Then it is driven
+        through the waypoints, one WAYPOINT_PERIOD apart.
+
+        What is reported, against what ``push()`` reports:
+
+        - ``blocked`` — touched something while still coming down, before any
+          waypoint had moved it across the table. The jaw goes straight back up
+          and nothing is pushed, as in ``push()``.
+        - ``touched`` — how far it had moved across the table when the force
+          first passed TOUCH_FORCE. ``None`` if it never touched anything.
+        - ``jammed`` — the force passed JAM_FORCE and the chunk was stopped.
+        - ``peak`` — the most force felt at any moment.
+        - ``pushed`` — the furthest the jaw got from where it first touched.
+
+        Once the jaw is moving across the table the force no longer stops it
+        below JAM_FORCE: the chunk is carried out as it was given, which is
+        the point of accepting one. The jaw turns to a waypoint's heading as
+        that leg starts, so a chunk that turns should turn over several
+        waypoints rather than in one.
+
+        Raises ValueError for a chunk the jaw cannot follow: empty, longer than
+        MAX_WAYPOINTS, below the lowest the gripper reaches or above travel
+        height, or off the table.
+        """
+        points = _checked(chunk.waypoints)
+        above = self._place(points[0])
+        legs = [above, *(np.array([p.x, p.y, TABLE_TOP_Z + p.z]) for p in points)]
+
+        peak, across, pushed = 0.0, 0.0, 0.0
+        touched_at, touch_xy = None, np.zeros(2)
+        coming_down, lead_in = True, True
+        at = above
+        for target, point in zip(legs[1:], points, strict=True):
+            self._aim(point.heading)
+            length = float(np.linalg.norm(target - at))
+            if length < 1e-12:
+                continue
+            flat = float(np.linalg.norm(target[:2] - at[:2]))
+            coming_down = coming_down and flat < 1e-12
+            # The lead-in comes down at the speed push() descends at. Every
+            # other leg takes one waypoint period, unless it is so long that
+            # covering it in one period would need more than the jaw's top
+            # speed, in which case it takes the time the jaw really needs. So
+            # how far apart the waypoints are still sets the speed, up to the
+            # point where the arm runs out of speed to give.
+            seconds = length / DESCEND_SPEED if lead_in else max(WAYPOINT_PERIOD, length / TOP_SPEED)
+            lead_in = False
+            gone, force, touch = self._slide(at, target, seconds, TOUCH_FORCE if coming_down else JAM_FORCE)
+            peak = max(peak, force)
+            stopped = gone < length - 1e-9
+            if coming_down and stopped:
+                # Touched something on the way down. Straight back up, no push.
+                self._lift(at + (target - at) * (gone / length))
+                return self._record(chunk.as_push(), Felt(True, None, False, peak, 0.0))
+            was = at
+            at = at + (target - at) * (gone / length)
+            if touched_at is None and touch is not None:
+                touched_at = across + touch * flat / length
+                touch_xy = (was + (target - was) * (touch / length))[:2]
+            across += gone * flat / length
+            if touched_at is not None:
+                pushed = max(pushed, float(np.linalg.norm(at[:2] - touch_xy)))
+            if stopped:
+                felt = Felt(False, touched_at, True, peak, pushed)
+                self._back_off(at, _along(was, target))
+                return self._record(chunk.as_push(), felt)
+
+        felt = Felt(False, touched_at, False, peak, pushed)
+        self._lift(at)
+        return self._record(chunk.as_push(), felt)
+
+    def _place(self, first: Waypoint) -> np.ndarray:
+        """Put the jaw clear above where the chunk starts, without any physics."""
+        above = np.array([first.x, first.y, TABLE_TOP_Z + TRAVEL_HEIGHT])
+        self._aim(first.heading)
+        self.data.mocap_pos[0] = above
+        mujoco.mj_forward(self.model, self.data)
+        return above
+
+    def _aim(self, heading: float) -> None:
+        self.data.mocap_quat[0] = [math.cos(heading / 2), 0.0, 0.0, math.sin(heading / 2)]
+
     def take(self, glass: int) -> None:
         """Pick the glass up and rack it. Whether it really had room is recorded."""
+        started = time.perf_counter()
         others = self._others(glass)
         x, y = self.position(glass)
         self.taken[glass] = self.tilt(glass) < STANDING_TILT_DEG and has_room(x, y, others)
@@ -354,6 +573,7 @@ class Bench:
         self.data.qpos[address : address + 7] = [-3.0, -3.0 + 0.5 * glass, TABLE_TOP_Z, 1, 0, 0, 0]
         self.data.qvel[:] = 0.0
         self._settle()
+        self.seconds += time.perf_counter() - started
 
     # ------------------------------------------------------ the simulator's record
 
@@ -384,13 +604,58 @@ class Bench:
         steps = max(1, math.ceil(length / (speed * TIMESTEP)))
         peak = 0.0
         for k in range(1, steps + 1):
-            self.data.mocap_pos[0] = start + (end - start) * (k / steps)
-            self._step()
+            self._advance(start + (end - start) * (k / steps))
             force = self._jaw_force()
             peak = max(peak, force)
             if force > stop_at:
                 return length * k / steps, peak
         return length, peak
+
+    def _slide(
+        self, start: np.ndarray, end: np.ndarray, seconds: float, stop_at: float
+    ) -> tuple[float, float, float | None]:
+        """Move the jaw to ``end`` over ``seconds``: one leg of a chunk.
+
+        Like ``_drive``, but the speed comes from the time a waypoint is given
+        rather than from a fixed speed, and the first touch is noted without
+        stopping. Returns how far it went, the most force it felt, and how far
+        along it first felt TOUCH_FORCE.
+        """
+        length = float(np.linalg.norm(end - start))
+        steps = max(1, round(seconds / TIMESTEP))
+        peak, touch = 0.0, None
+        for k in range(1, steps + 1):
+            self._advance(start + (end - start) * (k / steps))
+            force = self._jaw_force()
+            peak = max(peak, force)
+            if touch is None and force > TOUCH_FORCE:
+                touch = length * k / steps
+            if force > stop_at:
+                return length * k / steps, peak, touch
+        return length, peak, touch
+
+    def _advance(self, position: np.ndarray) -> None:
+        """One step with the jaw told to be at ``position``, sampling the path.
+
+        The sampling is what makes a parameterised push readable as a chunk:
+        every WAYPOINT_PERIOD the jaw's target is written down, so the record
+        of a push is a trajectory a policy could have emitted.
+        """
+        if self._trace is None:
+            # The first step of an action. The jaw has already been put where
+            # the action starts, so that pose is the path's first waypoint.
+            self._trace, self._driven = [self._jaw_waypoint()], 0
+            self._began = time.perf_counter()
+        self.data.mocap_pos[0] = position
+        self._step()
+        self._driven += 1
+        if self._driven % TRACE_EVERY == 0:
+            self._trace.append(self._jaw_waypoint())
+
+    def _jaw_waypoint(self) -> Waypoint:
+        x, y, z = self.data.mocap_pos[0]
+        w, _, _, spin = self.data.mocap_quat[0]
+        return Waypoint(float(x), float(y), float(z - TABLE_TOP_Z), 2 * math.atan2(float(spin), float(w)))
 
     def _jaw_force(self) -> float:
         """The net force on the jaw, as the wrist's force sensor would read it."""
@@ -423,5 +688,33 @@ class Bench:
         mujoco.mj_step(self.model, self.data)
 
     def _record(self, push: Push, felt: Felt) -> Felt:
-        self.records.append(Record(push, felt, tuple(self.position(push.glass))))
+        # Everything from the action's first step to here was the bench, not
+        # the solution: the physics, the force sums, the back off and the lift.
+        self.seconds += time.perf_counter() - self._began
+        path = tuple(self._trace or ())
+        self._trace = None
+        self.records.append(Record(push, felt, tuple(self.position(push.glass)), path))
         return felt
+
+
+def _along(start: np.ndarray, end: np.ndarray) -> np.ndarray:
+    """The flat direction from ``start`` to ``end``; zero if it only went up or down."""
+    step = np.array([end[0] - start[0], end[1] - start[1], 0.0])
+    length = float(np.linalg.norm(step))
+    return step / length if length > 1e-12 else step
+
+
+def _checked(waypoints: tuple[Waypoint, ...]) -> tuple[Waypoint, ...]:
+    """The chunk, if the jaw can follow it. Otherwise say exactly what is wrong."""
+    if not 1 <= len(waypoints) <= MAX_WAYPOINTS:
+        raise ValueError(f"a chunk is 1 to {MAX_WAYPOINTS} waypoints, not {len(waypoints)}")
+    half_x, half_y = TABLE_SIZE[0] / 2, TABLE_SIZE[1] / 2
+    for i, point in enumerate(waypoints):
+        if not PUSH_HEIGHT - 1e-9 <= point.z <= TRAVEL_HEIGHT + 1e-9:
+            raise ValueError(
+                f"waypoint {i} is {1000 * point.z:.0f} mm up; the jaw rides between "
+                f"{1000 * PUSH_HEIGHT:.0f} and {1000 * TRAVEL_HEIGHT:.0f} mm above the table"
+            )
+        if abs(point.x - TABLE_CENTRE_XY[0]) > half_x or abs(point.y - TABLE_CENTRE_XY[1]) > half_y:
+            raise ValueError(f"waypoint {i} at ({point.x:.3f}, {point.y:.3f}) is off the table")
+    return waypoints

@@ -1,0 +1,6 @@
+# Runs that are not the three full passes over the 50 held-out tables, and
+# the sensitivity check: `make run` writes the real ones.
+partial.json
+asking-partial.json
+# Films of a few tables: `make film`.
+videos/

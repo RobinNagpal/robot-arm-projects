@@ -18,4 +18,4 @@ film: setup ## Film the first FILM held-out tables into videos/
 	pixi run python run.py --scenes $(FILM) --film $(FILM)
 
 test: setup ## The quick checks
-	pixi run pytest -q . ../03-push-glasses-apart/bench
+	pixi run pytest -q . ../bench

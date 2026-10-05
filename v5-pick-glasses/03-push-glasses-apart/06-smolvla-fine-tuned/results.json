@@ -1,0 +1,235 @@
+{
+  "runs": 3,
+  "spread": {
+    "scenes": {
+      "median": 50.0,
+      "sd": 0.0,
+      "least": 50.0,
+      "most": 50.0
+    },
+    "glasses": {
+      "median": 251.0,
+      "sd": 0.0,
+      "least": 251.0,
+      "most": 251.0
+    },
+    "crowded_at_start": {
+      "median": 193.0,
+      "sd": 0.0,
+      "least": 193.0,
+      "most": 193.0
+    },
+    "outcome.done": {
+      "median": 4.0,
+      "sd": 0.577,
+      "least": 3.0,
+      "most": 4.0
+    },
+    "outcome.incomplete": {
+      "median": 8.0,
+      "sd": 1.528,
+      "least": 7.0,
+      "most": 10.0
+    },
+    "outcome.wrong": {
+      "median": 38.0,
+      "sd": 1.0,
+      "least": 37.0,
+      "most": 39.0
+    },
+    "glasses_end.racked": {
+      "median": 77.0,
+      "sd": 5.686,
+      "least": 74.0,
+      "most": 85.0
+    },
+    "glasses_end.refused": {
+      "median": 115.0,
+      "sd": 5.033,
+      "least": 109.0,
+      "most": 119.0
+    },
+    "glasses_end.toppled": {
+      "median": 46.0,
+      "sd": 5.686,
+      "least": 38.0,
+      "most": 49.0
+    },
+    "glasses_end.pushed_out_of_the_zone": {
+      "median": 13.0,
+      "sd": 5.033,
+      "least": 9.0,
+      "most": 19.0
+    },
+    "glasses_end.picked_without_room": {
+      "median": 0.0,
+      "sd": 0.0,
+      "least": 0.0,
+      "most": 0.0
+    },
+    "glasses_end.left_with_no_reason": {
+      "median": 0.0,
+      "sd": 0.0,
+      "least": 0.0,
+      "most": 0.0
+    },
+    "refused_because.stopped: a glass fell over": {
+      "median": 79.0,
+      "sd": 6.557,
+      "least": 71.0,
+      "most": 84.0
+    },
+    "refused_because.push budget spent": {
+      "median": 35.0,
+      "sd": 7.095,
+      "least": 30.0,
+      "most": 44.0
+    },
+    "pushes.total": {
+      "median": 400.0,
+      "sd": 39.879,
+      "least": 386.0,
+      "most": 461.0
+    },
+    "pushes.repeats": {
+      "median": 280.0,
+      "sd": 32.512,
+      "least": 269.0,
+      "most": 330.0
+    },
+    "pushes.blocked_on_the_way_down": {
+      "median": 259.0,
+      "sd": 14.048,
+      "least": 247.0,
+      "most": 275.0
+    },
+    "pushes.never_touched": {
+      "median": 39.0,
+      "sd": 10.017,
+      "least": 30.0,
+      "most": 50.0
+    },
+    "pushes.jammed": {
+      "median": 45.0,
+      "sd": 5.508,
+      "least": 44.0,
+      "most": 54.0
+    },
+    "pushes.aim_mm_median": {
+      "median": 60.6,
+      "sd": 3.625,
+      "least": 54.7,
+      "most": 61.3
+    },
+    "pushes.aim_mm_worst": {
+      "median": 917.3,
+      "sd": 430.638,
+      "least": 283.4,
+      "most": 1105.3
+    },
+    "seconds_per_push": {
+      "median": 0.819,
+      "sd": 0.204,
+      "least": 0.572,
+      "most": 0.978
+    }
+  },
+  "each": [
+    {
+      "scenes": 50,
+      "glasses": 251,
+      "crowded_at_start": 193,
+      "outcome": {
+        "done": 4,
+        "incomplete": 7,
+        "wrong": 39
+      },
+      "glasses_end": {
+        "racked": 77,
+        "refused": 109,
+        "toppled": 46,
+        "pushed_out_of_the_zone": 19,
+        "picked_without_room": 0,
+        "left_with_no_reason": 0
+      },
+      "refused_because": {
+        "stopped: a glass fell over": 79,
+        "push budget spent": 30
+      },
+      "pushes": {
+        "total": 400,
+        "repeats": 280,
+        "blocked_on_the_way_down": 247,
+        "never_touched": 39,
+        "jammed": 45,
+        "aim_mm_median": 60.6,
+        "aim_mm_worst": 1105.3
+      },
+      "seconds_per_push": 0.9777
+    },
+    {
+      "scenes": 50,
+      "glasses": 251,
+      "crowded_at_start": 193,
+      "outcome": {
+        "done": 4,
+        "incomplete": 8,
+        "wrong": 38
+      },
+      "glasses_end": {
+        "racked": 74,
+        "refused": 119,
+        "toppled": 49,
+        "pushed_out_of_the_zone": 9,
+        "picked_without_room": 0,
+        "left_with_no_reason": 0
+      },
+      "refused_because": {
+        "stopped: a glass fell over": 84,
+        "push budget spent": 35
+      },
+      "pushes": {
+        "total": 386,
+        "repeats": 269,
+        "blocked_on_the_way_down": 259,
+        "never_touched": 30,
+        "jammed": 44,
+        "aim_mm_median": 61.3,
+        "aim_mm_worst": 917.3
+      },
+      "seconds_per_push": 0.5724
+    },
+    {
+      "scenes": 50,
+      "glasses": 251,
+      "crowded_at_start": 193,
+      "outcome": {
+        "done": 3,
+        "incomplete": 10,
+        "wrong": 37
+      },
+      "glasses_end": {
+        "racked": 85,
+        "refused": 115,
+        "toppled": 38,
+        "pushed_out_of_the_zone": 13,
+        "picked_without_room": 0,
+        "left_with_no_reason": 0
+      },
+      "refused_because": {
+        "push budget spent": 44,
+        "stopped: a glass fell over": 71
+      },
+      "pushes": {
+        "total": 461,
+        "repeats": 330,
+        "blocked_on_the_way_down": 275,
+        "never_touched": 50,
+        "jammed": 54,
+        "aim_mm_median": 54.7,
+        "aim_mm_worst": 283.4
+      },
+      "seconds_per_push": 0.8187
+    }
+  ]
+}

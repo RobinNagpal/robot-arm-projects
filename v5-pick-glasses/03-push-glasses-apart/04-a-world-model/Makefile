@@ -35,4 +35,4 @@ examples: setup ## Write the first 20 collected pushes out as JSON, to see what 
 	pixi run python examples.py
 
 test: setup ## The quick checks
-	pixi run pytest -q . ../03-push-glasses-apart/bench
+	pixi run pytest -q . ../bench

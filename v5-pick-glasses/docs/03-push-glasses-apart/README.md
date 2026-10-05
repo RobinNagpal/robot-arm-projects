@@ -51,9 +51,19 @@ foundation model.
 
 ## What is built, and what it costs to run
 
-The bench is built, the geometry that chooses a push is built, and so is a
-world model of the kind solution 4 describes first. **The six are otherwise
-designs**, and each says which of its parts is which.
+**All six are built and all six have been run on the bench**, and the numbers
+are set side by side in
+[`03-push-glasses-apart/results/`](../../03-push-glasses-apart/results/). Each
+document says which of its own second rungs was built and which was not, and no
+number anywhere is an estimate: where something could not be run, the result is
+absent and the reason is given instead.
+
+One thing worth knowing before the results. The two solutions that borrow a
+large model needed the bench to grow first, and one prescription that would
+have helped them both was never built: an early abort, which would stop a push
+while the glass is still moving rather than report the topple afterwards. That
+absence is measured rather than assumed, because the fine-tuned solution topples
+glasses and is what the absence costs.
 
 Unlike the rest of this project, problem 3 does not require everything to run
 on one laptop with no graphics card. Each solution states what it needs and
