@@ -14,7 +14,7 @@ this cell ever sees straight on, so nothing here is drawn as one.
 
 Run from the project root:
 
-    pixi run python images/generators/02-segment-glasses/make_02_images.py
+    pixi run python images/generators/02-segment-glasses/make_01_images.py
 """
 
 from __future__ import annotations
@@ -290,7 +290,7 @@ def figure_pixel_to_point() -> None:
         fontsize=TITLE_SIZE, color=INK, y=1.02,
     )
     figure.tight_layout()
-    save(figure, "02-pixel-to-point.png")
+    save(figure, "01-pixel-to-point.png")
 
 
 # --------------------------------------------------------------------------- #
@@ -380,7 +380,7 @@ def figure_picture_versus_table() -> None:
         "be. The missing glass is silent.",
         fontsize=NOTE_SIZE, color=INK, ha="left", va="top",
     )
-    save(figure, "02-merged-in-the-picture.png")
+    save(figure, "01-merged-in-the-picture.png")
 
 
 # --------------------------------------------------------------------------- #
@@ -470,7 +470,7 @@ def figure_why_flatten() -> None:
         fontsize=TITLE_SIZE, color=INK, y=1.03,
     )
     figure.tight_layout()
-    save(figure, "02-why-flatten.png")
+    save(figure, "01-why-flatten.png")
 
 
 # --------------------------------------------------------------------------- #
@@ -561,7 +561,7 @@ def figure_grouping_distance() -> None:
     figure.suptitle("One setting, computed from two known limits, and a wide window to put it in",
                     fontsize=TITLE_SIZE, color=INK, y=1.0)
     figure.tight_layout()
-    save(figure, "02-grouping-distance.png")
+    save(figure, "01-grouping-distance.png")
 
 
 # --------------------------------------------------------------------------- #
@@ -690,7 +690,7 @@ def figure_circle_fit() -> None:
         fontsize=TITLE_SIZE, color=INK, y=1.02,
     )
     figure.tight_layout()
-    save(figure, "02-circle-fit-decides.png")
+    save(figure, "01-circle-fit-decides.png")
 
 
 # --------------------------------------------------------------------------- #
@@ -831,7 +831,7 @@ def figure_the_limit() -> None:
         fontsize=TITLE_SIZE, color=INK, y=1.02,
     )
     figure.tight_layout(rect=(0, 0.10, 1, 1))
-    save(figure, "02-touching-is-the-limit.png")
+    save(figure, "01-touching-is-the-limit.png")
 
 
 # --------------------------------------------------------------------------- #
@@ -1054,7 +1054,7 @@ def figure_hidden_from_above() -> None:
         covers = splay_covers(splay_from_outline(nadir, straight, near),
                               splay_from_outline(nadir, straight + (gap, 0.0), far))
         print(f"    {label}: hidden={covers}")
-    save(figure, "02-hidden-from-above.png")
+    save(figure, "01-hidden-from-above.png")
 
 
 def main() -> None:

@@ -6,16 +6,16 @@ Eight figures, each carrying one point of the document:
     06-scratch-or-fine-tune.png       two ways to start, and why one is barred here
     06-the-u-net-shape.png            the down path, the bottleneck, the up path, the skips
     06-where-the-weights-are.png      the parameter arithmetic, and what a fourth level costs
-    06-most-pixels-are-table.png      the class imbalance, and what it does to a score
-    06-domain-randomisation.png       one scene many ways, and what stays fixed
-    06-semantic-against-instance.png  what a per-pixel class map cannot say
+    02-most-pixels-are-table.png      the class imbalance, and what it does to a score
+    02-domain-randomisation.png       one scene many ways, and what stays fixed
+    02-semantic-against-instance.png  what a per-pixel class map cannot say
     06-confidence-map.png             doubt, and the picture it asks for
-    07-hidden-from-above.png          a glass with no pixels, from 450 mm up
-    07-hidden-from-the-side.png       a glass with no pixels, from the level view
+    02-camera-slides-from-above.png          a glass with no pixels, from 450 mm up
+    02-camera-slides-from-the-side.png       a glass with no pixels, from the level view
 
 Run from the project root:
 
-    pixi run python images/generators/02-segment-glasses/make_07_images.py
+    pixi run python images/generators/02-segment-glasses/make_02_network_images.py
 
 Every number here is arithmetic on channel widths, on image sizes, or on the
 discs in these drawings. None of it is a measurement of a trained network, and
@@ -550,7 +550,7 @@ def figure_most_pixels_are_table() -> None:
         color=INK,
         y=1.06,
     )
-    save(figure, "06-most-pixels-are-table.png")
+    save(figure, "02-most-pixels-are-table.png")
 
 
 # --------------------------------------------------------------------------- #
@@ -634,7 +634,7 @@ def figure_domain_randomisation() -> None:
         color=WARN,
     )
     figure.subplots_adjust(hspace=0.22, wspace=0.08, bottom=0.14)
-    save(figure, "06-domain-randomisation.png")
+    save(figure, "02-domain-randomisation.png")
 
 
 # --------------------------------------------------------------------------- #
@@ -685,7 +685,7 @@ def figure_semantic_against_instance() -> None:
         color=INK,
         y=0.98,
     )
-    save(figure, "06-semantic-against-instance.png")
+    save(figure, "02-semantic-against-instance.png")
 
 
 # --------------------------------------------------------------------------- #

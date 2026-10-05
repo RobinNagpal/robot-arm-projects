@@ -23,6 +23,10 @@ fsspec = "<=2026.2.0"
 scikit-learn = ">=1.4"
 # rack/layout.py imports OpenCV, and the glass zone is read from there.
 py-opencv = ">=4.9,<4.14"
+# The diagrams. Five of this problem's generators run the bench to draw a
+# measurement rather than a sketch, so they need MuJoCo and matplotlib in one
+# environment, and this is the only environment that has MuJoCo.
+matplotlib = ">=3.8"
 pytest = ">=7"
 ruff = ">=0.4"
 

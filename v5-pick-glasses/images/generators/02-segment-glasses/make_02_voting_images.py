@@ -2,7 +2,7 @@
 
 Run from the project root:
 
-    pixi run python images/generators/02-segment-glasses/make_08_images.py
+    pixi run python images/generators/02-segment-glasses/make_02_voting_images.py
 
 Every number drawn here comes from the cell: fx = fy = 277.1 pixels, survey
 height 450 mm, footprints 45 to 105 mm across, and the worked example's pair of
@@ -183,7 +183,7 @@ def the_voting_idea() -> None:
     right.text(0, -52, seam_note, ha="center", fontsize=LABEL_SIZE, color=INK)
 
     figure.tight_layout()
-    save(figure, "06-the-voting-idea.png")
+    save(figure, "02-the-voting-idea.png")
 
 
 # --------------------------------------------------------------------------- 3. where to vote
@@ -242,7 +242,7 @@ def image_space_against_table_space() -> None:
     )
 
     figure.tight_layout()
-    save(figure, "06-image-space-against-table-space.png")
+    save(figure, "02-image-space-against-table-space.png")
 
 
 # --------------------------------------------------------------------------- 4. the stages
@@ -290,7 +290,7 @@ def vote_cloud_and_mean_shift() -> None:
     axes[2].text(0, -46, shift_note, ha="center", fontsize=NOTE_SIZE, color=INK, va="top")
 
     figure.tight_layout()
-    save(figure, "06-vote-cloud-and-mean-shift.png")
+    save(figure, "02-vote-cloud-and-mean-shift.png")
 
 
 # --------------------------------------------------------------------------- 6. spread as confidence
@@ -356,7 +356,7 @@ def too_few_votes() -> None:
         color=MUTED,
     )
     figure.tight_layout()
-    save(figure, "06-too-few-votes.png")
+    save(figure, "02-too-few-votes.png")
 
 
 # --------------------------------------------------------------------------- 8. hidden completely
@@ -688,7 +688,7 @@ def hidden_from_above() -> dict:
         f"the shorter one's, and that difference is the whole of the effect.",
         ha="center", fontsize=NOTE_SIZE, color=MUTED,
     )
-    save(figure, "06-hidden-from-above.png")
+    save(figure, "02-votes-when-hidden-from-above.png")
     return cases
 
 
@@ -814,7 +814,7 @@ def hidden_from_the_side() -> dict:
         f"outline covers the far glass whole.",
         ha="center", fontsize=NOTE_SIZE, color=MUTED,
     )
-    save(figure, "06-hidden-from-the-side.png")
+    save(figure, "02-votes-when-hidden-from-the-side.png")
     return cases
 
 

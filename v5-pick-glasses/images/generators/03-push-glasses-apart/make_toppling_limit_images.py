@@ -21,7 +21,7 @@ help. A sliding glass instead needs ``mu m g``, which does not change.
 
 Run from the project root:
 
-    pixi run python images/generators/03-push-glasses-apart/make_08_images.py
+    pixi run python images/generators/03-push-glasses-apart/make_toppling_limit_images.py
 """
 
 from __future__ import annotations
@@ -373,7 +373,7 @@ def no_threshold_separates() -> None:
                      f"tip needs m g a / h. The mass of each drawn glass is the simulator's own "
                      f"spawn arithmetic.",
                      ha="center", va="top", fontsize=NOTE_SIZE, color=MUTED, linespacing=1.5)
-    save(figure, "08-no-threshold-separates.png")
+    save(figure, "toppling-no-threshold-separates.png")
 
 
 # ---------------------------------------------------------------------------
@@ -470,7 +470,7 @@ def slide_against_tip() -> None:
                 "The right panel is geometry alone:\nhow much torque that angle moves depends on "
                 "the stiffness of the pad, which nothing in this cell has measured.",
                 ha="center", va="top", fontsize=NOTE_SIZE, color=MUTED, linespacing=1.5)
-    save(figure, "08-slide-against-tip.png")
+    save(figure, "toppling-slide-against-tip.png")
 
 
 # ---------------------------------------------------------------------------

@@ -5,12 +5,12 @@ Nine diagrams, each carrying a different point:
     03-two-difficulties.png       separation and viewpoint are not one problem
     03-the-fixed-sweep.png        the three-station sweep the cell already runs
     03-occlusion-as-geometry.png  the wedge test, before any motion planner
-    03-three-tests.png            reach, line of sight and path, on one plan view
+    hidden-three-tests.png            reach, line of sight and path, on one plan view
     03-bound-then-score.png       filter first, or score first and let the planner reject
     03-the-budget.png             extra looks against the tens-of-seconds ceiling
     03-no-viewpoint.png           the object with nowhere to look from
     03-hidden-from-above.png      a glass covered by a taller one, from three nadirs
-    03-hidden-from-the-side.png   a glass behind another, and the step that frees it
+    hidden-moving-the-camera.png   a glass behind another, and the step that frees it
 
 The last two project real glass outlines, taken from ``work_cell.glasses.shapes``,
 through the cell's own camera. A standing glass is a circle only in its
@@ -18,7 +18,7 @@ footprint, which neither of the two views ever sees straight on.
 
 Run from the project root:
 
-    pixi run python images/generators/02-segment-glasses/make_03_images.py
+    pixi run python images/generators/02-segment-glasses/make_hidden_tests_images.py
 """
 
 from __future__ import annotations
@@ -426,7 +426,7 @@ def three_tests() -> None:
             "and a path the arm can fly"
         ),
     )
-    save(figure, "03-three-tests.png")
+    save(figure, "hidden-three-tests.png")
 
 
 # ----------------------------------------------------- 5. bound, then score
@@ -701,7 +701,7 @@ def hidden_from_the_side() -> None:
             "and the cure is a step round rather than a step out"
         ),
     )
-    save(figure, "03-hidden-from-the-side.png")
+    save(figure, "hidden-moving-the-camera.png")
 
 
 def main() -> None:

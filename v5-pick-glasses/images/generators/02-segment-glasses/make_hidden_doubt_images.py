@@ -22,7 +22,7 @@ version of these two pictures got wrong.
 
 Run from the project root:
 
-    pixi run python images/generators/02-segment-glasses/make_04_images.py
+    pixi run python images/generators/02-segment-glasses/make_hidden_doubt_images.py
 """
 
 from __future__ import annotations
@@ -469,7 +469,7 @@ def hidden_from_above() -> None:
         f"patches wide enough to hold a glass.",
         ha="center", fontsize=NOTE_SIZE, color=INK, linespacing=1.6,
     )
-    save(figure, "04-hidden-from-above.png")
+    save(figure, "hidden-from-above.png")
 
 
 def hidden_from_the_side() -> None:
@@ -609,7 +609,7 @@ def hidden_from_the_side() -> None:
         f"it failed to show.",
         ha="center", fontsize=NOTE_SIZE, color=INK, linespacing=1.6,
     )
-    save(figure, "04-hidden-from-the-side.png")
+    save(figure, "hidden-from-the-side.png")
 
 
 def main() -> None:

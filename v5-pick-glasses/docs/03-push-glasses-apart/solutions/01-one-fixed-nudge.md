@@ -646,7 +646,7 @@ against 65 mm, and the 15 mm difference is not a rounding question: it falls
 entirely in the direction that topples glasses, since every glass the lenient
 check wrongly admits is a glass that will be touched above its limit.
 
-![The height at which a push starts tipping a glass, drawn against the foot it stands on, with the jaw's middle at 50 mm and its top edge at 65 mm ruled across it: the push lands on the top edge, those 15 mm cost most of the glasses that the jaw's middle would have been allowed to touch, and the three friction lines, one of which is the simulator's own and none of which the arm is told, give three different answers about the same glass.](../../../images/03-push-glasses-apart/02-the-friction-ceiling.png)
+![The height at which a push starts tipping a glass, drawn against the foot it stands on, with the jaw's middle at 50 mm and its top edge at 65 mm ruled across it: the push lands on the top edge, those 15 mm cost most of the glasses that the jaw's middle would have been allowed to touch, and the three friction lines, one of which is the simulator's own and none of which the arm is told, give three different answers about the same glass.](../../../images/03-push-glasses-apart/01-the-friction-ceiling.png)
 
 The friction in that rule is the number nobody has, so the check is made at
 both ends of the range that glass on a dry wooden top plausibly covers, and the

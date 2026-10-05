@@ -2,7 +2,7 @@
 
 Run from the project root:
 
-    pixi run python images/generators/02-segment-glasses/make_06_images.py
+    pixi run python images/generators/02-segment-glasses/make_hidden_outcome_images.py
 
 Every picture here is drawn from the numbers in
 ``docs/02-segment-glasses/06-learn-which-viewpoints-pay-off.md``. Nothing is measured
@@ -375,7 +375,7 @@ def veto_then_ordering() -> None:
         "24 directions in, 8 scored: the geometry vetoes, the model only orders",
         fontsize=TITLE_SIZE + 1, color=INK, pad=14,
     )
-    save(figure, "04-veto-then-ordering.png")
+    save(figure, "hidden-veto-then-ordering.png")
 
 
 # --------------------------- 6. supervised against reinforcement, for this job

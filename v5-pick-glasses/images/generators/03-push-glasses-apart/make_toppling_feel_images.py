@@ -22,7 +22,7 @@ No glass size is written down here. Every outline comes from
 ``work_cell.glasses.shapes.draw`` inside its kind's declared range, which is
 what ``bench.scene`` calls.
 
-    pixi run python images/generators/03-push-glasses-apart/make_03_images.py
+    pixi run python images/generators/03-push-glasses-apart/make_toppling_feel_images.py
 """
 
 from __future__ import annotations
@@ -1068,7 +1068,7 @@ def picture_feel_do_not_drive() -> None:
                     "uncertain and about the wrong part of the glass",
                     fontsize=TITLE_SIZE, color=INK, y=0.97)
     figure.subplots_adjust(left=0.02, right=0.98, top=0.87, bottom=0.03, wspace=0.08)
-    save(figure, "03-feel-do-not-drive.png")
+    save(figure, "toppling-feel-do-not-drive.png")
     print(f"   feel, do not drive: glass {NAMES[glass.id]} of table {STORY['seed']}, "
           f"{glass.height:.0f} mm tall, widest {glass.widest:.0f} mm, foot {glass.foot:.0f} mm; "
           f"the wall at {JAW_TOP:.0f} mm is {wall:.1f} mm out and the widest part "

@@ -15,7 +15,7 @@ pictures got wrong.
 
 Run from the project root:
 
-    pixi run python images/generators/02-segment-glasses/make_09_images.py
+    pixi run python images/generators/02-segment-glasses/make_02_views_images.py
 """
 
 from __future__ import annotations
@@ -273,7 +273,7 @@ def labels_come_from() -> None:
         color=INK,
     )
 
-    save(figure, "07-where-the-labels-come-from.png")
+    save(figure, "02-where-the-labels-come-from.png")
 
 
 # ---------------------------------------------------------------------------
@@ -399,7 +399,7 @@ def two_views_parallax() -> None:
         linespacing=1.6,
     )
 
-    save(figure, "07-two-views-parallax.png")
+    save(figure, "02-two-views-parallax.png")
 
 
 # ---------------------------------------------------------------------------
@@ -521,7 +521,7 @@ def embedding_space() -> None:
         size=NOTE_SIZE,
     )
 
-    save(figure, "07-embedding-space.png")
+    save(figure, "02-embedding-space.png")
 
 
 # ---------------------------------------------------------------------------
@@ -636,7 +636,7 @@ def parallax_arithmetic() -> None:
     )
 
     figure.tight_layout()
-    save(figure, "07-depth-against-shift.png")
+    save(figure, "02-depth-against-shift.png")
 
 
 # ---------------------------------------------------------------------------
@@ -706,7 +706,7 @@ def deliberate_motion_loop() -> None:
         linespacing=1.6,
     )
 
-    save(figure, "07-deliberate-motion-loop.png")
+    save(figure, "02-deliberate-motion-loop.png")
 
 
 # ---------------------------------------------------------------------------
@@ -831,7 +831,7 @@ def the_limit() -> None:
 
     axis.plot([5.90, 5.90], [0.05, 4.45], color=MUTED, linewidth=0.9, alpha=0.6)
 
-    save(figure, "07-the-limit.png")
+    save(figure, "02-the-limit.png")
 
 
 # ---------------------------------------------------------------------------
@@ -957,7 +957,7 @@ def hidden_from_above() -> None:
         f"problem rather than a parallax one.",
         fontsize=NOTE_SIZE, color=WARN, ha="center", va="top", linespacing=1.8,
     )
-    save(figure, "07-hidden-from-above.png")
+    save(figure, "02-camera-slides-from-above.png")
 
 
 # ---------------------------------------------------------------------------
@@ -1085,7 +1085,7 @@ def hidden_from_the_side() -> None:
         f"far one's — the same one-over-the-depth difference this method already measures.",
         fontsize=NOTE_SIZE, color=INK, ha="center", va="top", linespacing=1.8,
     )
-    save(figure, "07-hidden-from-the-side.png")
+    save(figure, "02-camera-slides-from-the-side.png")
 
 
 def main() -> None:

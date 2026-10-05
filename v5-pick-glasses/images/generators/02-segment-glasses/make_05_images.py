@@ -2,24 +2,24 @@
 
 Seven pictures, each carrying one point of the document:
 
-    08-what-promptable-means.png     a fixed class list against a prompt, and
+    05-what-promptable-means.png     a fixed class list against a prompt, and
                                      the same picture prompted at two points
-    08-the-prompt-grid.png           a regular grid of prompt points over the
+    05-the-prompt-grid.png           a regular grid of prompt points over the
                                      top view, and what each point returns
-    08-everything-is-proposed.png    the pile that comes back: glasses, table,
+    05-everything-is-proposed.png    the pile that comes back: glasses, table,
                                      a rim on its own, two glasses as one
-    08-the-keeper.png                the keeper as a funnel, as boosted trees,
+    05-the-keeper.png                the keeper as a funnel, as boosted trees,
                                      and as three answers with a doubtful band
-    08-the-domain-gap.png            photographs against a grey picture shaded
+    05-the-domain-gap.png            photographs against a grey picture shaded
                                      from depth, which is the honest risk
-    08-borrowed-against-trained.png  what SAM 2 brings against what is fitted here,
+    05-borrowed-against-trained.png  what SAM 2 brings against what is fitted here,
                                      and against solution 2, which fits it all
-    08-where-it-stops.png            a glass covered completely: no pixels, so
+    05-where-it-stops.png            a glass covered completely: no pixels, so
                                      no prompt point, so no proposal
 
 Run from the project root:
 
-    pixi run python images/generators/02-segment-glasses/make_08_images.py
+    pixi run python images/generators/02-segment-glasses/make_05_images.py
 
 Every number that appears as a label is computed from the constants at the top
 of this file, so none of it can drift. The scenes are built from the shared cast
@@ -544,7 +544,7 @@ def figure_what_promptable_means() -> None:
         "is the only job this solution fits any weights for.",
         ha="center", va="top", fontsize=NOTE_SIZE, color=INK,
     )
-    save(figure, "08-what-promptable-means.png")
+    save(figure, "05-what-promptable-means.png")
 
 
 # --------------------------------------------------------------------------- #
@@ -615,7 +615,7 @@ def figure_the_prompt_grid() -> None:
         fontsize=TITLE_SIZE, color=INK, y=1.01,
     )
     figure.tight_layout()
-    save(figure, "08-the-prompt-grid.png")
+    save(figure, "05-the-prompt-grid.png")
 
 
 # --------------------------------------------------------------------------- #
@@ -689,7 +689,7 @@ def figure_everything_is_proposed() -> None:
         "model is for. Somebody else has to do the deciding, and here that somebody is the keeper.",
         ha="center", va="top", fontsize=NOTE_SIZE, color=INK,
     )
-    save(figure, "08-everything-is-proposed.png")
+    save(figure, "05-everything-is-proposed.png")
 
 
 # --------------------------------------------------------------------------- #
@@ -911,7 +911,7 @@ def figure_the_keeper() -> None:
         "and none of its three answers is about it.",
         ha="center", va="top", fontsize=NOTE_SIZE, color=INK,
     )
-    save(figure, "08-the-keeper.png")
+    save(figure, "05-the-keeper.png")
 
 
 # --------------------------------------------------------------------------- #
@@ -1024,7 +1024,7 @@ def figure_the_domain_gap() -> None:
         "because the whole point of this solution is that the borrowed part is never trained.",
         ha="center", va="top", fontsize=NOTE_SIZE, color=INK,
     )
-    save(figure, "08-the-domain-gap.png")
+    save(figure, "05-the-domain-gap.png")
 
 
 # --------------------------------------------------------------------------- #
@@ -1166,7 +1166,7 @@ def figure_borrowed_against_trained() -> None:
         "nothing unexamined, and every one of its numbers paid for with rendered scenes.",
         ha="center", va="top", fontsize=NOTE_SIZE, color=INK,
     )
-    save(figure, "08-borrowed-against-trained.png")
+    save(figure, "05-borrowed-against-trained.png")
 
 
 # --------------------------------------------------------------------------- #
@@ -1273,7 +1273,7 @@ def figure_where_it_stops() -> None:
         "limit every solution in this problem meets, and it is geometry, not a weakness of any model.",
         ha="center", va="top", fontsize=NOTE_SIZE, color=INK,
     )
-    save(figure, "08-where-it-stops.png")
+    save(figure, "05-where-it-stops.png")
     print(f"  hidden pair: {apart:.0f} mm apart, tall patch {patch_mm:.0f} mm across, "
           f"{on_tall} prompt points on the tall glass, {on_short} on the short one")
 

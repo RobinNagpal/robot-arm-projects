@@ -178,7 +178,7 @@ value it has room to hold, and a value that is the same everywhere cannot mark
 a boundary. So the fix is not a better network. **It is a different output**,
 and that is what the second half of this solution's network is.
 
-![Two glasses in line with the camera overlap in the picture, and a class map has only one value to put on both of them, so the separating has to come from a different output — which here is the arrow at each glass pixel towards the middle of its own glass.](../../../images/02-segment-glasses/06-semantic-against-instance.png)
+![Two glasses in line with the camera overlap in the picture, and a class map has only one value to put on both of them, so the separating has to come from a different output — which here is the arrow at each glass pixel towards the middle of its own glass.](../../../images/02-segment-glasses/02-semantic-against-instance.png)
 
 ## The main idea
 
@@ -204,7 +204,7 @@ same middle. Two glasses make two piles, because each glass's pixels point at
 their own middle. So counting glasses becomes counting piles, and splitting a
 blob becomes asking which pile each of its pixels voted into.
 
-![Every glass pixel's arrow ends on the middle of its own glass, so one glass makes one pile of votes and two glasses joined in the picture make two piles, and the seam between them is a change of direction rather than a gap.](../../../images/02-segment-glasses/06-the-voting-idea.png)
+![Every glass pixel's arrow ends on the middle of its own glass, so one glass makes one pile of votes and two glasses joined in the picture make two piles, and the seam between them is a change of direction rather than a gap.](../../../images/02-segment-glasses/02-the-voting-idea.png)
 
 Two things about that are worth noticing immediately, because they are why this
 design is chosen over the obvious alternatives.
@@ -445,7 +445,7 @@ and it has no term for the table at all. Using one minus Dice alongside the
 weighted cross entropy is the usual recipe, from Milletari and colleagues, 2016
 ([arXiv:1606.04797](https://arxiv.org/abs/1606.04797)).
 
-![Bare table outnumbers glass by a wide margin in every picture from the top, so a score that counts pixels is already high for a network that answers table everywhere, while a score that measures overlap gives that same network nothing.](../../../images/02-segment-glasses/06-most-pixels-are-table.png)
+![Bare table outnumbers glass by a wide margin in every picture from the top, so a score that counts pixels is already high for a network that answers table everywhere, while a score that measures overlap gives that same network nothing.](../../../images/02-segment-glasses/02-most-pixels-are-table.png)
 
 The general lesson is worth more than the detail: **a score that rewards saying
 nothing will be optimised by a network that says nothing.**
@@ -504,7 +504,7 @@ by working on the picture, which is an answer that does not depend on depth
 coming back. That matters because real glassware returns almost no depth, and
 it is the reason this choice is worth stating rather than assuming.
 
-![An arrow measured in the picture is a different number for the same glass at every range, while an arrow measured on the table is the same number wherever the camera stood, which is the whole of the choice between the two frames.](../../../images/02-segment-glasses/06-image-space-against-table-space.png)
+![An arrow measured in the picture is a different number for the same glass at every range, while an arrow measured on the table is the same number wherever the camera stood, which is the whole of the choice between the two frames.](../../../images/02-segment-glasses/02-image-space-against-table-space.png)
 
 Either way the votes are what comes next, and the rest of this document does
 not depend on which frame was chosen.
@@ -532,7 +532,7 @@ to be told: unlike methods that divide data into a fixed number of groups,
 nothing has to say how many piles to expect. That matters here more than
 usually, because in this problem the count *is* the answer.
 
-![One glass's votes land in one thick patch and two glasses' votes in two, and the published method for finding those patches slides a window uphill to the average of the votes inside it until it stops, so the starts that stop together are one glass.](../../../images/02-segment-glasses/06-vote-cloud-and-mean-shift.png)
+![One glass's votes land in one thick patch and two glasses' votes in two, and the published method for finding those patches slides a window uphill to the average of the votes inside it until it stops, so the starts that stop together are one glass.](../../../images/02-segment-glasses/02-vote-cloud-and-mean-shift.png)
 
 Both forms have exactly one number to choose, which is how close two votes have
 to be to count as the same pile, and it is pinned at both ends before anything
@@ -633,7 +633,7 @@ away it is. Points on one glass therefore move together, and points on a
 different glass at a different distance move by a different amount. **That
 agreement is the label.**
 
-![The arm's own encoders say exactly how far it slid the camera between two pictures of a still scene, and every pixel of the near glass then shifts by one amount while every pixel of the far glass shifts by another, which is the agreement this rung uses in place of an answer key.](../../../images/02-segment-glasses/07-two-views-parallax.png)
+![The arm's own encoders say exactly how far it slid the camera between two pictures of a still scene, and every pixel of the near glass then shifts by one amount while every pixel of the far glass shifts by another, which is the agreement this rung uses in place of an answer key.](../../../images/02-segment-glasses/02-two-views-parallax.png)
 
 ### Parallax: the shift goes as one divided by the depth
 
@@ -653,7 +653,7 @@ separation, in proportion**. That turns the arm into a dial it can set
 deliberately, and it is the reason this rung can say in advance how far it must
 move to settle a particular doubt.
 
-![How far a surface moves between the two pictures goes as one divided by its depth, so the effect is steep close up and nearly flat far away, and the separation between two glasses' shifts grows in step with the slide, which is what turns the arm into a dial.](../../../images/02-segment-glasses/07-depth-against-shift.png)
+![How far a surface moves between the two pictures goes as one divided by its depth, so the effect is steep close up and nearly flat far away, and the separation between two glasses' shifts grows in step with the slide, which is what turns the arm into a dial.](../../../images/02-segment-glasses/02-depth-against-shift.png)
 
 ### Why the slide has to be sideways, and why the top view is the weak case
 
@@ -681,7 +681,7 @@ sideways at every survey station, because a station takes two pictures a short
 distance apart; a slide taken deliberately for this purpose is the same kind of
 movement, just longer and from the side.
 
-![The loop this rung prescribes would not take another picture and hope: it would name the doubt in pixels, divide by how much separation one millimetre of slide is worth, move the arm exactly that far, and check each region that came back against the range this kind of glass can be.](../../../images/02-segment-glasses/07-deliberate-motion-loop.png)
+![The loop this rung prescribes would not take another picture and hope: it would name the doubt in pixels, divide by how much separation one millimetre of slide is worth, move the arm exactly that far, and check each region that came back against the range this kind of glass can be.](../../../images/02-segment-glasses/02-deliberate-motion-loop.png)
 
 So this rung's labels come mostly from pictures taken from the side, which has
 a plain consequence worth stating rather than hiding. **The labels for the
@@ -735,7 +735,7 @@ that over many pixels and many pairs, and the map arranges itself so that the
 pixels of one surface sit together and the pixels of different surfaces sit
 apart, without anybody ever having said what a glass is.
 
-![Every pixel becomes a short list of numbers, and training pulls a pixel and its positive partner together while pushing it away from its negatives, so the pixels of one surface end up in one neighbourhood without anything ever naming a glass.](../../../images/02-segment-glasses/07-embedding-space.png)
+![Every pixel becomes a short list of numbers, and training pulls a pixel and its positive partner together while pushing it away from its negatives, so the pixels of one surface end up in one neighbourhood without anything ever naming a glass.](../../../images/02-segment-glasses/02-embedding-space.png)
 
 What that gets right is worth naming, because no appearance-based rule can do
 it. The line the embedding draws runs where the **depth jumps**, and not where
@@ -756,7 +756,7 @@ That makes the check after the network less optional here than anywhere else in
 this document, because a merged pair comes back from an embedding as one tidy
 region with no complaint attached to it at all.
 
-![Two glasses of one kind standing the same distance from the lens shift by the same amount however far the camera slides, so there is nothing for parallax to separate them by; and where there is, an embedding still says only which pixels are alike and never how many glasses there are.](../../../images/02-segment-glasses/07-the-limit.png)
+![Two glasses of one kind standing the same distance from the lens shift by the same amount however far the camera slides, so there is nothing for parallax to separate them by; and where there is, an embedding still says only which pixels are alike and never how many glasses there are.](../../../images/02-segment-glasses/02-the-limit.png)
 
 ### What this rung buys and what it costs
 
@@ -768,7 +768,7 @@ one, is fitted to labels that exist only because the pictures were rendered, so
 every one of them would have to be labelled again from nothing on the day the
 code met real hardware. This one would not.
 
-![A person drawing round every glass, the simulator's record of which glass each pixel shows, and the arm's own encoders are three ways to get the answer written beside a picture, and only the last of them is one a real arm would still have.](../../../images/02-segment-glasses/07-where-the-labels-come-from.png)
+![A person drawing round every glass, the simulator's record of which glass each pixel shows, and the arm's own encoders are three ways to get the answer written beside a picture, and only the last of them is one a real arm would still have.](../../../images/02-segment-glasses/02-where-the-labels-come-from.png)
 
 It costs three things. The labels are **weaker**, as the section above says,
 and weakest exactly where the problem is hardest. The labels are **not free**,
@@ -816,7 +816,7 @@ than anything expected, so that none of them is a reliable shortcut and shape
 is the only thing left that predicts the answer (Tobin and colleagues, 2017,
 [arXiv:1703.06907](https://arxiv.org/abs/1703.06907)).
 
-![The same kind of arrangement rendered under different lighting, table colour and texture, glass tint, exposure, picture noise and camera pose, with the lens and the picture size held fixed on purpose, so that shape is the only thing left that predicts the answer.](../../../images/02-segment-glasses/06-domain-randomisation.png)
+![The same kind of arrangement rendered under different lighting, table colour and texture, glass tint, exposure, picture noise and camera pose, with the lens and the picture size held fixed on purpose, so that shape is the only thing left that predicts the answer.](../../../images/02-segment-glasses/02-domain-randomisation.png)
 
 One thing would **not** be varied, which is the camera's lens. The focal length
 and the picture size are facts about the camera this cell has rather than
@@ -898,7 +898,7 @@ kind spans a small glass and a much taller one, a glass can be left with only a
 crescent of itself even at the gap the cell guarantees, and a crescent is
 exactly what voting handles best.
 
-![When a tall glass's outline is thrown far enough outwards to swallow a shorter neighbour standing at the closest separation the cell allows, not one vote mentions the covered glass; swing the same pair off the line out from the camera and the crescent that survives casts few votes, but they pile up almost exactly where that glass really stands.](../../../images/02-segment-glasses/06-hidden-from-above.png)
+![When a tall glass's outline is thrown far enough outwards to swallow a shorter neighbour standing at the closest separation the cell allows, not one vote mentions the covered glass; swing the same pair off the line out from the camera and the crescent that survives casts few votes, but they pile up almost exactly where that glass really stands.](../../../images/02-segment-glasses/02-votes-when-hidden-from-above.png)
 
 The second half is a hard stop. **A glass covered completely owns no pixels, so
 it casts no votes, so there is no pile to find.** There is no loose spread to
@@ -906,7 +906,7 @@ notice and no short count to fail, because both of this solution's own alarms
 are measurements of votes and there are no votes to measure. The vote map
 simply has one peak where two glasses are standing, and nothing in it is wrong.
 
-![Looking level the near glass's outline covers the far one whole with no outward throw needed, and the single pile of votes left behind is tight, well filled and a believable width, so nothing about it looks wrong; step the far glass off the line of sight and the strip that appears votes for its own middle.](../../../images/02-segment-glasses/06-hidden-from-the-side.png)
+![Looking level the near glass's outline covers the far one whole with no outward throw needed, and the single pile of votes left behind is tight, well filled and a believable width, so nothing about it looks wrong; step the far glass off the line of sight and the strip that appears votes for its own middle.](../../../images/02-segment-glasses/02-votes-when-hidden-from-the-side.png)
 
 It is worth settling whether more training would help, because it is the first
 thing anyone suggests. Take the arrangement with the hidden glass and the same
@@ -937,7 +937,7 @@ neighbour's outline, and that throw has to run so far out that the covered glass
 was never inside the frame to begin with. Nothing is missing from the picture;
 the picture never reached that part of the table.
 
-![Four pictures from the top as the camera slides outwards show the covered glass sitting outside the frame in every one of them, so from the top this solution loses a glass only where its picture never reached, and a short sideways move of the camera ends even that.](../../../images/02-segment-glasses/07-hidden-from-above.png)
+![Four pictures from the top as the camera slides outwards show the covered glass sitting outside the frame in every one of them, so from the top this solution loses a glass only where its picture never reached, and a short sideways move of the camera ends even that.](../../../images/02-segment-glasses/02-camera-slides-from-above.png)
 
 From the side nothing is thrown outwards at all. The near glass's outline simply
 lies over the far one's along the line the two of them stand on, and pushing the
@@ -945,7 +945,7 @@ far glass further back does not help, because it only shrinks in the picture
 while the near outline stays as it is. Here the covered glass is inside the
 frame, and this solution still has no pixel of it to vote with.
 
-![Looking from the side, the far glass contributes not one pixel while it stands on the line of sight, however much further back it is put, and only sideways movement brings it back — in less of a slide than a survey station already makes between its two pictures.](../../../images/02-segment-glasses/07-hidden-from-the-side.png)
+![Looking from the side, the far glass contributes not one pixel while it stands on the line of sight, however much further back it is put, and only sideways movement brings it back — in less of a slide than a survey station already makes between its two pictures.](../../../images/02-segment-glasses/02-camera-slides-from-the-side.png)
 
 So what this solution hands on is not a glass but a region: the part of the
 table it could not have seen. Working out that region is geometry on the
@@ -994,7 +994,7 @@ measurements of the votes. The pair is reported as one the arm could not
 separate, with its reason, which is a result this problem asks for and not a
 failure.
 
-![The less of a glass reaches the picture the fewer votes it casts and the further its votes sit from their own peak, so a short count and a wide spread are two separate warnings, both of them measurements of the votes rather than the network's opinion of itself.](../../../images/02-segment-glasses/06-too-few-votes.png)
+![The less of a glass reaches the picture the fewer votes it casts and the further its votes sit from their own peak, so a short count and a wide spread are two separate warnings, both of them measurements of the votes rather than the network's opinion of itself.](../../../images/02-segment-glasses/02-too-few-votes.png)
 
 **What it costs in time.** Running the network on a picture costs milliseconds.
 Moving the arm to a new place and letting it settle costs seconds. So the

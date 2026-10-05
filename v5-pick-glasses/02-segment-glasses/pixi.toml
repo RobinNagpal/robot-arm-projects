@@ -22,6 +22,9 @@ transformers = ">=4.40"
 scikit-learn = ">=1.4"
 # rack/layout.py imports OpenCV, and the glass zone is read from there.
 py-opencv = ">=4.9"
+# The diagrams. Ultralytics happens to pull matplotlib in, but the generators
+# are not its dependents, so this folder asks for it in its own right.
+matplotlib = ">=3.8"
 # Pulled in by solution 6's package, through supervision. From conda-forge
 # rather than from PyPI because the PyPI wheel is tagged for a newer macOS
 # than this workspace asks for, so pip builds it from source and the build

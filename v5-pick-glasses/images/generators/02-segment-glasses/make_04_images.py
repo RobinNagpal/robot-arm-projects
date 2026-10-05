@@ -2,17 +2,17 @@
 
 Seven figures, each carrying one point of the document:
 
-    09-class-map-against-instances.png  one label per pixel against one mask per glass
+    04-class-map-against-instances.png  one label per pixel against one mask per glass
     09-the-two-stages.png               propose regions, then classify and cut a mask
-    09-what-a-backbone-brings.png       what arrives already fitted, and why it transfers
-    09-fine-tune-against-scratch.png    how many labelled scenes each start needs
-    09-boxes-scores-masks.png           what one pass returns, and what the score is for
+    04-what-a-backbone-brings.png       what arrives already fitted, and why it transfers
+    04-fine-tune-against-scratch.png    how many labelled scenes each start needs
+    04-boxes-scores-masks.png           what one pass returns, and what the score is for
     09-overlapping-proposals.png        many boxes for one glass, collapsed by overlap
     09-where-it-stops.png               a glass with no pixels is in no output
 
 Run from the project root:
 
-    pixi run python images/generators/02-segment-glasses/make_09_images.py
+    pixi run python images/generators/02-segment-glasses/make_04_images.py
 
 Every scene here is a legal arrangement of the shared cast of glasses: a couple
 of large ones and a couple of the smallest this kind allows, with every pair of
@@ -602,7 +602,7 @@ def figure_class_map_against_instances() -> None:
     )
     figure.tight_layout()
     print(f"  scene: {patches} regions, {len(built)} glasses, merged pairs {merged}")
-    save(figure, "09-class-map-against-instances.png")
+    save(figure, "04-class-map-against-instances.png")
 
 
 # --------------------------------------------------------------------------- #
@@ -811,7 +811,7 @@ def figure_what_a_backbone_brings() -> None:
         fontsize=TITLE_SIZE + 1, color=INK, pad=12,
     )
     print(f"  backbone: feature grids {sizes} from {FRAME_W} x {FRAME_H}")
-    save(figure, "09-what-a-backbone-brings.png")
+    save(figure, "04-what-a-backbone-brings.png")
 
 
 # --------------------------------------------------------------------------- #
@@ -919,7 +919,7 @@ def figure_fine_tune_against_scratch() -> None:
     )
     figure.tight_layout()
     print(f"  curves: usable at {need_borrowed:.0f} scenes borrowed, {need_scratch:.0f} from scratch")
-    save(figure, "09-fine-tune-against-scratch.png")
+    save(figure, "04-fine-tune-against-scratch.png")
 
 
 # --------------------------------------------------------------------------- #
@@ -1044,7 +1044,7 @@ def figure_boxes_scores_masks() -> None:
         ha="center", va="top", fontsize=NOTE_SIZE, color=MUTED,
     )
     print(f"  output: {[(r['name'], round(r['score'], 2), round(r['across_mm'])) for r in rows]}")
-    save(figure, "09-boxes-scores-masks.png")
+    save(figure, "04-boxes-scores-masks.png")
 
 
 # --------------------------------------------------------------------------- #

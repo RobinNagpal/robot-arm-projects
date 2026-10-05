@@ -13,7 +13,7 @@ the bench's own STANDING_TILT_DEG, and a glass flat on its wall. A tapered glass
 lying down rests on one slant line of its own wall, so its axis is tilted, and
 the tilt changes both the length it covers on the table and how tall it stands.
 
-    pixi run python images/generators/03-push-glasses-apart/make_07_images.py
+    pixi run python images/generators/03-push-glasses-apart/make_toppling_view_images.py
 """
 
 from __future__ import annotations
@@ -478,7 +478,7 @@ def picture_what_the_overhead_view_reports() -> None:
            f"{push:.0f} mm short. Displacement separates the first outcome from the third and "
            "says nothing at all about the second.")
     figure.subplots_adjust(bottom=0.15, wspace=0.05)
-    save(figure, "07-what-the-overhead-view-reports.png")
+    save(figure, "toppling-what-the-overhead-view-reports.png")
 
 
 # --------------------------------------------------------------------------- #
@@ -564,7 +564,7 @@ def picture_the_safety_net() -> None:
            f"the jaw aims at, and {int(caught.sum())} of the {HOW_MANY} drawn glasses go over. "
            "The verifier is what notices afterwards.")
     figure.subplots_adjust(bottom=0.21, wspace=0.14)
-    save(figure, "07-the-safety-net.png")
+    save(figure, "toppling-the-safety-net.png")
 
 
 # --------------------------------------------------------------------------- #

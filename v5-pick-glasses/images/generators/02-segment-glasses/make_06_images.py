@@ -16,7 +16,7 @@ this script runs.
 
 Run from the project root:
 
-    pixi run python images/generators/02-segment-glasses/make_10_images.py
+    pixi run python images/generators/02-segment-glasses/make_06_images.py
 """
 
 from __future__ import annotations
@@ -452,7 +452,7 @@ def figure_modal_against_amodal() -> None:
     )
     print(f"  modal/amodal: {name} amodal {whole_area:.0f} mm2, modal {seen_area:.0f} mm2, "
           f"hidden {hidden_area:.0f} mm2, tightest gap {tightest:.0f} mm")
-    save(figure, "10-modal-against-amodal.png")
+    save(figure, "06-modal-against-amodal.png")
 
 
 # --------------------------------------------------------------------------- #
@@ -532,7 +532,7 @@ def figure_labels_for_free() -> None:
     )
     print(f"  labels: {name} amodal {area_of(amodal, step):.0f} mm2, modal "
           f"{area_of(modal, step):.0f} mm2, hidden {area_of(hidden, step):.0f} mm2")
-    save(figure, "10-labels-for-free.png")
+    save(figure, "06-labels-for-free.png")
 
 
 # --------------------------------------------------------------------------- #
@@ -621,7 +621,7 @@ def figure_measuring_whether_it_works() -> None:
         ha="center", va="top", fontsize=NOTE_SIZE, color=INK,
     )
     print(f"  scoring: visible overlap {visible_iou:.3f}, hidden overlap {hidden_iou:.3f}")
-    save(figure, "10-measuring-whether-it-works.png")
+    save(figure, "06-measuring-whether-it-works.png")
 
 
 # --------------------------------------------------------------------------- #
@@ -740,7 +740,7 @@ def figure_where_it_stops() -> None:
     print(f"  where it stops: partly covered keeps {100.0 * kept:.0f}%, "
           f"completely covered keeps {gone_area:.0f} mm2, splay_covers={covered}, "
           f"tall patch {patch_mm:.0f} mm")
-    save(figure, "10-where-it-stops.png")
+    save(figure, "06-where-it-stops.png")
 
 
 def main() -> None:

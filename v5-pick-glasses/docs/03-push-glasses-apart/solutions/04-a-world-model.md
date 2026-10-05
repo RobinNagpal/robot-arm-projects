@@ -204,7 +204,7 @@ regularity in the recorded pushes, absorbed along with everything else nobody
 wrote down — that the jaw has a body behind its fingers, that a tapered glass
 meets the jaw's top edge, that a glass turns as well as travels.
 
-![Whether a push slides a glass or tips it over turns on a friction nothing in the cell measures and on the height the jaw really meets the glass at, which for a tapered glass is the jaw's top edge and not its middle; across the range the friction plausibly covers, the share of drawn glasses that can be pushed at all runs from most of them to none, and a model fitted to recorded pushes absorbs both without ever being told either.](../../../images/03-push-glasses-apart/10-the-friction-it-absorbs.png)
+![Whether a push slides a glass or tips it over turns on a friction nothing in the cell measures and on the height the jaw really meets the glass at, which for a tapered glass is the jaw's top edge and not its middle; across the range the friction plausibly covers, the share of drawn glasses that can be pushed at all runs from most of them to none, and a model fitted to recorded pushes absorbs both without ever being told either.](../../../images/03-push-glasses-apart/04-the-friction-it-absorbs.png)
 
 There is a second difficulty, and it is the one the sequence capability
 answers. A glass pushed out of one crowd can easily land in another, and a
@@ -240,7 +240,7 @@ goal by changing only the arithmetic**. If the task later became spreading the
 glasses evenly rather than clearing them, the model would not be touched; a
 trained policy would have to be trained again.
 
-![The model's question has one shape: a table as the camera measured it and one push go in, and a table afterwards comes out — a displacement for every glass, plus whether anything toppled and whether the jaw was blocked coming down.](../../../images/03-push-glasses-apart/10-what-a-forward-model-predicts.png)
+![The model's question has one shape: a table as the camera measured it and one push go in, and a table afterwards comes out — a displacement for every glass, plus whether anything toppled and whether the jaw was blocked coming down.](../../../images/03-push-glasses-apart/04-what-a-forward-model-predicts.png)
 
 ## What exists in code, and what is a design
 
@@ -480,7 +480,7 @@ hundred candidate pushes examined per crowded glass. That sounds extravagant
 and costs almost nothing, because a candidate push is one row of thirty-four
 numbers through five small networks, and the batch goes through in one call.
 
-![An early round spreads its candidates over the whole range and most are struck out by the filters, on the table the model predicts for them; by round four the draws have collapsed onto one small region, and the score is the room still missing on the table plus a small penalty per millimetre pushed.](../../../images/03-push-glasses-apart/10-planning-against-the-model.png)
+![An early round spreads its candidates over the whole range and most are struck out by the filters, on the table the model predicts for them; by round four the draws have collapsed onto one small region, and the score is the room still missing on the table plus a small penalty per millimetre pushed.](../../../images/03-push-glasses-apart/04-planning-against-the-model.png)
 
 Two properties make this search the right one here, and both are worth
 remembering for other problems.
@@ -623,7 +623,7 @@ it clears no room and it spends a push. Only a method that can ask *and then
 what* can see its value, and asking *and then what* requires a function that
 returns a table.
 
-![Pushing one glass at a time, where each push has to leave the glass it moved with full room by itself, takes four pushes on a real four-glass layout; choosing the best pair together takes two, and choosing the second of that pair needs to know where the first one lands.](../../../images/03-push-glasses-apart/10-when-a-sequence-beats-one-at-a-time.png)
+![Pushing one glass at a time, where each push has to leave the glass it moved with full room by itself, takes four pushes on a real four-glass layout; choosing the best pair together takes two, and choosing the second of that pair needs to know where the first one lands.](../../../images/03-push-glasses-apart/04-when-a-sequence-beats-one-at-a-time.png)
 
 The extension to the built planner is small, and it is worth describing
 precisely so that it is clear how little the model has to change. The search
@@ -947,7 +947,7 @@ answer to every example is what the second look found, so the data costs
 simulator time and no human time at all, which is the single biggest practical
 advantage this family has over anything trained on demonstrations.
 
-![One training table yields a dozen examples, because the table is built once and the state after each push starts the next and no push has to be a useful one; a real run makes as few pushes as it can, so gathering the same thirty-eight thousand rows from ordinary runs would take thousands of them, where the simulator produces them in under an hour of processor time and nobody labels any of it.](../../../images/03-push-glasses-apart/10-the-data-it-takes.png)
+![One training table yields a dozen examples, because the table is built once and the state after each push starts the next and no push has to be a useful one; a real run makes as few pushes as it can, so gathering the same thirty-eight thousand rows from ordinary runs would take thousands of them, where the simulator produces them in under an hour of processor time and nobody labels any of it.](../../../images/03-push-glasses-apart/04-the-data-it-takes.png)
 
 **A training run, before the solution can answer anything.** Rung one trains
 five small networks, and its README records the whole of that — the pushes and

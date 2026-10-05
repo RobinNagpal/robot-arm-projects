@@ -449,7 +449,7 @@ mask** covers the pixels the glass would occupy if nothing stood in front of it.
 The amodal mask always contains the modal one, and the difference between the
 two is the **hidden part**.
 
-![The same arrangement from the top, shown three ways: the modal mask of the covered glass holds only the pixels where its own surface was seen, the amodal mask holds its whole silhouette, and the difference between the two is the hidden part.](../../../images/02-segment-glasses/10-modal-against-amodal.png)
+![The same arrangement from the top, shown three ways: the modal mask of the covered glass holds only the pixels where its own surface was seen, the amodal mask holds its whole silhouette, and the difference between the two is the hidden part.](../../../images/02-segment-glasses/06-modal-against-amodal.png)
 
 The everyday version shows that the amodal answer is the normal one. Look at a
 cat sitting behind a garden railing. What reaches your eyes, strictly, is a set
@@ -703,7 +703,7 @@ shows up in any footprint: a completion that attributes a slice to the glass it
 came off adds a glass to the answer rather than improving the footprint of a
 glass that was already there.
 
-![A stand-in prediction that completes most of the hidden part but stops short of its far edge scores well when the overlap is counted over the pixels the camera saw and much worse when it is counted over the hidden part alone, which is why the hidden part alone is the number to watch.](../../../images/02-segment-glasses/10-measuring-whether-it-works.png)
+![A stand-in prediction that completes most of the hidden part but stops short of its far edge scores well when the overlap is counted over the pixels the camera saw and much worse when it is counted over the hidden part alone, which is why the hidden part alone is the number to watch.](../../../images/02-segment-glasses/06-measuring-whether-it-works.png)
 
 ## The masks are what this contributes
 
@@ -838,7 +838,7 @@ have gone missing entirely is reported from the sliver that is left. **The
 boundary moves; it does not disappear.** Beyond wherever it now sits, this
 solution has nothing to say, and should say so.
 
-![A partly covered glass still reaches the picture, so it fills a slot of its own and leaves an edge to carry on from, while a glass whose outline is swallowed whole reaches it nowhere and leaves nothing to extend, which is the rung at which completion stops.](../../../images/02-segment-glasses/10-where-it-stops.png)
+![A partly covered glass still reaches the picture, so it fills a slot of its own and leaves an edge to carry on from, while a glass whose outline is swallowed whole reaches it nowhere and leaves nothing to extend, which is the rung at which completion stops.](../../../images/02-segment-glasses/06-where-it-stops.png)
 
 So the completely hidden case has to be handed on, and what is handed on is not
 a glass but a region: the part of the table this picture could not have seen.
@@ -1118,7 +1118,7 @@ other glasses taken away, and the mask that comes back is the whole silhouette
 exactly, with no guessing in it. For more, see [image
 segmentation](https://en.wikipedia.org/wiki/Image_segmentation).
 
-![The whole silhouette is asked of the simulator rather than of a person: render the scene once for the pixels the camera sees of each glass, render the covered glass again with the others taken away for the shape it would have had, and the difference between the two is the hidden part.](../../../images/02-segment-glasses/10-labels-for-free.png)
+![The whole silhouette is asked of the simulator rather than of a person: render the scene once for the pixels the camera sees of each glass, render the covered glass again with the others taken away for the shape it would have had, and the difference between the two is the hidden part.](../../../images/02-segment-glasses/06-labels-for-free.png)
 
 ## Where it sits among the other five
 
