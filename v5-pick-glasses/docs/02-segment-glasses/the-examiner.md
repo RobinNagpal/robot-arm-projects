@@ -109,26 +109,33 @@ separated and why, and which parts of the table could not have been seen at
 all. Neither is a list of glasses, and the examiner counts both rather than
 treating a reported doubt as a missing answer.
 
-**The step that turns a mask into a place and a width is the examiner's, not the
-solution's.** This is the single most important decision in the whole
-arrangement, so it is worth being clear about why. Each mask pixel carries a
-depth reading, so it becomes a point in the room. The axis is taken from the
-points at the top of the glass rather than from all of them, because a rim leans
-outwards from the point below the camera, so the middle of the whole cloud sits
-off to one side of where the glass really stands while the middle of the rim
-sits over it. The width is how far the cloud reaches from that axis, taken as a
-high percentile so that one stray point cannot widen it.
+**The solution picks the pixels, and the examiner does the measuring.** A mask
+is a set of pixels, and three things are enough to turn it into a place on the
+table and a width: the grey picture says which pixels there are, the depth
+reading beside each pixel says how far away that bit of glass was, and the
+camera's pose says where the camera was standing while it looked. Those are the
+same three things the examiner handed over above, and the examiner runs that
+step itself, the same way for every solution.
 
-Because that step is shared, **a difference in the result belongs to the mask**.
-No solution can win by measuring more cleverly, and none can lose by measuring
-worse. The only thing any of them contributes is which pixels belong to which
-glass, which is what this problem asks.
+The arithmetic of that step is short. The pixels become points standing in the
+room, and the glass's upright axis is taken from the points at the top of it
+rather than from all of them, because a rim leans outwards in the picture while
+the middle of the rim still sits over where the glass really stands. The width
+is then how far the cloud of points reaches out from that axis, taken as a high
+percentile so that one stray point cannot widen it.
 
-One consequence is worth stating plainly, because it answers a question that
-would otherwise come up in all six documents. **No model in this problem
-produces a pose.** Models produce masks. The pose comes from depth and the
-camera's own pose, by arithmetic, and a glass standing upright on a flat table
-has no orientation left to find.
+So the final answer — which glass is where, and how wide — depends on nothing
+but which pixels the solution chose. No solution can win by measuring more
+cleverly, and none can lose by measuring worse. **The method that scores best is
+simply the one whose masks pin down the exact position and size of the
+glasses**, because choosing the pixels is the only thing any of the six
+contributes.
+
+One thing follows from this and is worth saying plainly here, because it would
+otherwise come up in all six documents. **No model in this problem produces a
+pose.** Models produce masks. The place comes afterwards, from the depth
+readings and the camera's pose, by arithmetic — and a glass standing upright on
+a flat table has no orientation left for anybody to find.
 
 ## How a report is matched to a real glass
 
