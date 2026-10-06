@@ -8,7 +8,7 @@ is borrowed**: no downloaded weights, no pre-trained backbone, no licence
 condition. Its document is
 [`docs/02-segment-glasses/solutions/02-train-from-scratch.md`](../../docs/02-segment-glasses/solutions/02-train-from-scratch.md),
 and the bench it is scored on is
-[`docs/02-segment-glasses/the-bench.md`](../../docs/02-segment-glasses/the-bench.md).
+[`docs/02-segment-glasses/the-examiner.md`](../../docs/02-segment-glasses/the-examiner.md).
 
 ## The files
 
@@ -110,7 +110,7 @@ is 6.3 mm median on spawned layouts and 0.4 mm on crowded ones. 0.5 mm and
 | short stemmed glass | 96.8% | 1.5% |
 
 That is the comparison
-[the bench document](../../docs/02-segment-glasses/the-bench.md) predicts, and
+[the examiner document](../../docs/02-segment-glasses/the-examiner.md) predicts, and
 it comes out as predicted: a fitted model covers all four kinds almost equally
 well, the stemmed glass included, where `01-rules-on-the-table` covers the two
 stemmed kinds 11–13 points worse than the two without a stem. And it pays for

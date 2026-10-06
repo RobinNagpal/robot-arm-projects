@@ -8,7 +8,7 @@ the bench's shared arithmetic turns each mask into a place and a width. Its
 document is
 [`docs/02-segment-glasses/solutions/04-yolo-fine-tuned.md`](../../docs/02-segment-glasses/solutions/04-yolo-fine-tuned.md),
 and the bench it is scored on is
-[`docs/02-segment-glasses/the-bench.md`](../../docs/02-segment-glasses/the-bench.md).
+[`docs/02-segment-glasses/the-examiner.md`](../../docs/02-segment-glasses/the-examiner.md).
 
 ## It is one half of a matched pair
 

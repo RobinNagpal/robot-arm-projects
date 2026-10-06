@@ -7,7 +7,7 @@ model, no weights file and no training data, so **not one number in this folder
 was fitted to anything**. Its document is
 [`docs/02-segment-glasses/solutions/01-rules-on-the-table.md`](../../docs/02-segment-glasses/solutions/01-rules-on-the-table.md),
 and the bench it is scored on is
-[`docs/02-segment-glasses/the-bench.md`](../../docs/02-segment-glasses/the-bench.md).
+[`docs/02-segment-glasses/the-examiner.md`](../../docs/02-segment-glasses/the-examiner.md).
 
 ## The files
 

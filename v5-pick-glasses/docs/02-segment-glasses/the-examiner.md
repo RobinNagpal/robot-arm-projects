@@ -3,14 +3,19 @@
 ## Introduction
 
 This problem is answered six different ways, and six answers are only
-comparable if they were asked the same question and marked by the same examiner.
-The examiner is that examiner. It draws the arrangements of glasses, renders
-the pictures, hands exactly those pictures to whichever solution is being tried,
-and then marks what comes back against what it knows it put out. By the end of
-this document you will understand what the examiner gives a solution, what it keeps
-to itself, how a report is matched to a real glass, which numbers decide whether
-one method beat another, and why one of those numbers matters far more than it
-first appears.
+comparable if they were asked the same question and marked the same way. The
+examiner is the program that does both. It draws the arrangements of glasses,
+renders the pictures, hands exactly those pictures to whichever solution is
+being tried, and then marks what comes back against what it knows it put out.
+
+It does that twice for every solution: once with the glasses spaced as the cell
+normally spaces them, and once with them crowded closer than the cell allows. So
+each of the six comes back with two scorecards rather than one.
+
+By the end of this document you will understand what the examiner gives a
+solution, what it keeps to itself, how a report is matched to a real glass,
+which numbers decide whether one method beat another, and why one of those
+numbers matters far more than it first appears.
 
 Read this before any of the solution documents, because every one of them
 assumes it.
@@ -71,6 +76,29 @@ whole outline and appear in the picture not at all.
 used to draw them. Anything a method is fitted on comes from below the dividing
 line, and everything it is marked on comes from above it, so no method is ever
 tested on an arrangement it learned from.
+
+### Every solution is tested twice, once on each family
+
+This is the shape of the whole test, so it is worth stating on its own. **A
+solution is not run once and scored once. It is run twice, once on each family,
+and it comes back with two scorecards.** Both runs use the same 20 held-out
+arrangements of their family, and both are marked exactly the same way, so the
+only thing that changes between a solution's two scorecards is how close the
+glasses were standing.
+
+| run | arrangements | glasses | what it asks |
+|---|---|---|---|
+| the ordinary run | 20 | 100 | can the method do the job the cell actually sets it? |
+| the crowded run | 20 | 101 | where does the method begin to break? |
+
+Every solution gets the same two runs, so reading a solution means reading its
+pair: a method that does well on the ordinary run has met the cell's own
+spacing, and the distance between its two rows is how much of that depended on
+the glasses standing apart.
+
+A fitted solution is still trained only once. Its training set is drawn from
+below the dividing line and holds both kinds of arrangement mixed together, so
+no method meets crowding for the first time in the run that scores it.
 
 ## What a solution is given
 

@@ -60,26 +60,30 @@ knowledge about glasses comes from.
 
 ## What each one scored
 
-Every solution was run by the examiner on the same two sets of held-out
-arrangements: 100 glasses spaced as the cell's own layout rule gives them, and
-101 glasses crowded closer than that rule allows. Read the right column as how
-many of those glasses the method found, and then how good its masks were. The
-full numbers with every column are in
+**Every solution is run twice**, on the same two sets of held-out arrangements:
+once on 100 glasses spaced as the cell's own layout rule gives them, and once on
+101 glasses crowded closer than that rule allows. The first run asks whether the
+method can do the job the cell actually sets. The second asks where it begins to
+break.
+
+The table has one row per solution and one column per run, with the reason for
+both results in the last column. Each result cell gives how many of that run's
+glasses the method found and how much of a glass its masks covered at the middle
+glass. The full numbers with every column are in
 [`02-segment-glasses/results/`](../../../02-segment-glasses/results/).
 
-For scale, no method could find all 101 crowded glasses, because a glass
-standing wholly behind another appears in no picture at all. The examiner's own
-perfect masks find 83 of them, so 83 is the mark to read the crowded numbers
-against.
+Read the crowded column against 83 rather than against 101. No method could find
+all 101, because a glass standing wholly behind another appears in no picture at
+all, and the examiner's own perfect masks find 83 of them.
 
-| Solution | What it scored |
-|---|---|
-| **1. Rules on the table** | Found every one of the 100 spaced glasses, which no other solution did, and at the middle glass its masks claimed no pixel that was not glass. Crowded, it found 71 of the 83 available and handed over 10 reports that each covered two glasses, because the strip of bare table its one rule depends on is sometimes not there. |
-| **2. A network trained from scratch** | Found 63 of 100 spaced and 72 of 101 crowded. The misses are a limit of its voting design rather than of its training: a glass whose middle falls outside the picture casts votes that land nowhere. Where it did find a glass its place was the most accurate of the six on the spaced set, half a millimetre out at the middle glass. |
-| **3. A borrowed model, as it downloads** | Found 10 of 100 spaced and 4 of 101 crowded, the worst score of the six by a wide margin. It is not confused about glasses; it is being shown a kind of picture it has never seen, and it names what it does find a sports ball or a frisbee. **This is the result it was built to produce.** |
-| **4. The same model, fine-tuned** | Found 99 of 100 spaced and 73 of 101 crowded. Of the methods that found most of the glasses it drew the most complete masks, covering 99.8 per cent of the glass spaced and 99.3 per cent crowded. Its masks do claim a thin margin of table around each glass, about four per cent, because a learned outline follows the shape coarsely and its edge sits a little outside the glass. |
-| **5. A foundation model with a keeper** | Found 81 of 100 spaced and 73 of 101 crowded, with nothing merged, split or falsely reported in either set, and its masks never claimed a pixel that was not glass. It is the cleanest of the learned solutions and not the most complete: it covered 96.8 per cent of the glass on the spaced set, against solution 4's 99.8. |
-| **6. A transformer segmenter, fine-tuned** | Found 96 of 100 spaced and 78 of 101 crowded, which is the closest any method came to the 83 a perfect mask finds. Its masks claimed no pixel that was not glass. It is the best of the six on crowded tables and it costs the most machine to train. |
+| Solution | Spaced: 100 glasses | Crowded: 101 glasses | Why those two results |
+|---|---|---|---|
+| **1. Rules on the table** | **100 found**, masks covered 98.9% and claimed no table at all | 71 found, 10 reports covering two glasses each, masks covered 94.6% | The rule needs a strip of bare table between two glasses. The ordinary spacing guarantees one, so it finds everything; crowding withdraws the guarantee, and where the strip is gone two glasses join into one group. |
+| **2. A network trained from scratch** | 63 found, masks covered 98.2%, places 0.5 mm out | 72 found, masks covered 97.2% | Its misses are a limit of the voting design rather than of its training: a glass whose middle falls outside the picture casts votes that land nowhere. Crowding does not make that worse, and its crowded number is in fact the higher of the two. |
+| **3. A borrowed model, as it downloads** | 10 found, masks covered 100% of the few it found | 4 found, masks covered 84.5% | It is being shown a kind of picture it has never seen, so it mostly sees nothing and names what it does find a sports ball or a frisbee. Both runs are poor for the same reason, and the reason is the domain gap rather than the spacing. |
+| **4. The same model, fine-tuned** | **99 found**, masks covered 99.8%, claimed 4.4% that was not glass | 73 found, masks covered 99.3% | Training on this cell's pictures closed the domain gap, so it finds almost everything the ordinary run puts out. What training did not change is the shape of the output, so a glass partly behind another still comes back as a slice, which is what the crowded run costs it. |
+| **5. A foundation model with a keeper** | 81 found, masks covered 96.8% and claimed no table | 73 found, masks covered 98.4%, nothing merged or split | The borrowed model finds shapes and the keeper only decides which are glasses, so it never invents a glass and never merges two. It also never finds a glass the borrowed model did not propose, which is where its missing 19 go. |
+| **6. A transformer segmenter, fine-tuned** | 96 found, masks covered 96.7% and claimed no table | **78 found**, the closest to the 83 available, masks covered 97.3% | Two glasses whose outlines join occupy two query slots, so there is never a joined region to cut apart. That is worth least on the ordinary run, where nothing is joined, and most on the crowded one, which is why it has the best crowded number of the six. It is not immune: it still merged three pairs and split two glasses when crowded. |
 
 Two results in that table are worth more than the others.
 

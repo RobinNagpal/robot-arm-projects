@@ -7,7 +7,7 @@ fitted here**, so there is not one number in this folder that came from this
 cell's data. Its document is
 [`docs/02-segment-glasses/solutions/03-yolo-zero-shot.md`](../../docs/02-segment-glasses/solutions/03-yolo-zero-shot.md),
 and the bench it is scored on is
-[`docs/02-segment-glasses/the-bench.md`](../../docs/02-segment-glasses/the-bench.md).
+[`docs/02-segment-glasses/the-examiner.md`](../../docs/02-segment-glasses/the-examiner.md).
 
 ## The files
 

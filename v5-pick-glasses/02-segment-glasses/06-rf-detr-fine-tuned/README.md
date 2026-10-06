@@ -181,7 +181,7 @@ By kind, `modal` covered 96.8% of a straight glass, 97.3% of a tapered one,
 96.4% of a stemmed one and 96.1% of a short stemmed one, and claimed 0.0–0.1%
 of pixels that were not the glass. All four kinds come out within two points of
 each other, stem included, which is what [the test
-bench](../../docs/02-segment-glasses/the-bench.md) says to expect of a solution
+examiner](../../docs/02-segment-glasses/the-examiner.md) says to expect of a solution
 fitted on this cell's own pictures and not of one built from written rules.
 
 The four missed glasses are not masks the model got wrong. They are glasses

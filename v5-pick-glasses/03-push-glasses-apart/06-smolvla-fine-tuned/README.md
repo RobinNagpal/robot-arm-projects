@@ -48,7 +48,7 @@ make test
 Any run shorter than the full held-out set writes `partial.json`, never
 `results.json`. `make train SEED=1 INTO=correction-1` fits a second training
 seed, and `run.py --correction correction --correction correction-1` scores
-both, which is what [the bench](../../docs/03-push-glasses-apart/the-bench.md)
+both, which is what [the examiner](../../docs/03-push-glasses-apart/the-examiner.md)
 asks for.
 
 ## What it costs

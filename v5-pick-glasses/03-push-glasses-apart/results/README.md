@@ -4,7 +4,7 @@ Six ways of pushing crowded glasses apart so that each one can then be picked
 up, all tested on the same 50 tables holding 251 glasses, 193 of which have no
 room at the start. Every solution is given the same tables, spends the same
 push budget, and is judged by the same scorecard, which is described in
-[`docs/03-push-glasses-apart/the-bench.md`](../../docs/03-push-glasses-apart/the-bench.md).
+[`docs/03-push-glasses-apart/the-examiner.md`](../../docs/03-push-glasses-apart/the-examiner.md).
 None of them saw these tables while it was being built or fitted. Every number
 on this page is read from a solution's own `results.json`.
 

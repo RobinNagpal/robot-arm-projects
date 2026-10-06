@@ -5,7 +5,7 @@ the same scenes, is handed the same pictures, and is judged by the same
 scorecard. That is the whole reason the bench exists: when the input and the
 marking are the same for all six, a difference between their results belongs to
 the method and to nothing else. [The bench
-document](../../docs/02-segment-glasses/the-bench.md) explains the contract;
+document](../../docs/02-segment-glasses/the-examiner.md) explains the contract;
 this page only says which file holds which part of it.
 
 Nothing here imports a solution. A solution imports from here.

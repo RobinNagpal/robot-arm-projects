@@ -3,8 +3,8 @@
 ## Introduction
 
 This problem is answered six different ways, and six answers are only
-comparable if they were asked the same question and marked by the same
-examiner. The examiner is that examiner. It draws the crowded tables, holds
+comparable if they were asked the same question and marked the same way. The
+examiner is the program that does both. It draws the crowded tables, holds
 the physics the glasses slide and tip in, hands each solution the same
 measurements, carries out whatever push comes back, and then marks the result
 against what it knows really happened. By the end of this document you will

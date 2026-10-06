@@ -14,7 +14,7 @@ backbone.
 
 Read [the document](../../docs/03-push-glasses-apart/solutions/03-imitation-from-demonstrations.md)
 for why any of this. Read [the test
-bench](../../docs/03-push-glasses-apart/the-bench.md) first if you have not.
+bench](../../docs/03-push-glasses-apart/the-examiner.md) first if you have not.
 
 ## Where the demonstrations come from
 

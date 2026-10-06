@@ -2,11 +2,15 @@
 
 Six ways of turning the same pictures into the same masks, all scored on the
 bench described in
-[`docs/02-segment-glasses/the-bench.md`](../../docs/02-segment-glasses/the-bench.md):
-the same 20 held-out arrangements from each family, the same three survey
+[`docs/02-segment-glasses/the-examiner.md`](../../docs/02-segment-glasses/the-examiner.md).
+
+**Every solution is run twice**, once on the ordinary arrangements the cell's
+own layout rule produces and once on crowded arrangements that stand the glasses
+closer than that rule allows, which is why there are two tables below rather
+than one. Each run uses the same 20 held-out arrangements, the same three survey
 stations per arrangement, the same shared arithmetic turning a mask into a place
-and a width, and the same scorecard. None of them was trained or tuned on these
-arrangements. Every number here comes from a folder's own `results.json`.
+and a width, and the same scorecard. None of the six was trained or tuned on
+these arrangements. Every number here comes from a folder's own `results.json`.
 
 ## The results
 
