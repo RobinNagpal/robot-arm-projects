@@ -81,12 +81,21 @@ def averaged(cards: list[dict]) -> dict:
                          ("not_the_glass_median", ("mask", "all", "not_the_glass_median"))):
         values = []
         for c in cards:
+            # A block where a solution found nothing has no mask section at all,
+            # which is a result rather than a gap: solution 3 finds no glass in
+            # any of one crowded block's 20 arrangements. Such a block
+            # contributes to the counts and to nothing else, because there is no
+            # mask to measure and no place to be wrong about.
             at = c
             for step in where:
+                if not isinstance(at, dict) or step not in at:
+                    at = None
+                    break
                 at = at[step]
             if at is not None:
                 values.append(at)
         if values:
+            summary[f"{label}_blocks_counted"] = len(values)
             summary[f"{label}_mean_of_blocks"] = round(statistics.fmean(values), 1)
             summary[f"{label}_lowest"] = round(min(values), 1)
             summary[f"{label}_highest"] = round(max(values), 1)

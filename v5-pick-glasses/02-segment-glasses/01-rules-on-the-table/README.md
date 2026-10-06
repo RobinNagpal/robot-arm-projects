@@ -106,10 +106,11 @@ pictures, 72 groups held more than one glass and 47 of those held three or more,
 and one split into two necessarily leaves a part still holding two.
 
 **With the split repeated** the same rule asked again of a part still too wide
-finds 71 of the 83 that any method could find, and hands 3 groups over — 15
-glass sightings in all. The 10 merged reports are the price, and so is the
-place: 6.0 mm at the median against 0.7 mm, because a cut drawn where the dots
-happen to divide is not where the glasses divide. 69 groups came apart on this
+finds 73.0 glasses per 100 against the 86.4 any method could find, averaged over
+five blocks, and hands a few groups over. The 10.7 merged reports per 100 are
+the price, and so is the place: 8.7 mm at the middle glass against the floor's
+0.4 mm, because a cut drawn where the dots happen to divide is not where the
+glasses divide. 69 groups came apart on this
 run, into 2 to 9 parts each. The parts are often more numerous than the glasses
 in the group, and the bench's one-report-per-place step absorbs most of that,
 which is why 10 reports are merged rather than 30.

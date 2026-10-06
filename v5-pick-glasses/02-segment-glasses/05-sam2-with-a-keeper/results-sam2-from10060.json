@@ -1,0 +1,59 @@
+{
+  "solution": "sam2",
+  "scenes": 20,
+  "layouts": "spawned",
+  "stations": 3,
+  "glasses": 101,
+  "find": {
+    "found": 87,
+    "missed": 14,
+    "merged": 0,
+    "split": 1,
+    "false": 0,
+    "position_mm_median": 8.3,
+    "position_mm_worst": 47.6
+  },
+  "mask": {
+    "all": {
+      "glasses": 88,
+      "covered_median": 97.1,
+      "covered_worst": 42.7,
+      "not_the_glass_median": 0.0,
+      "not_the_glass_worst": 0.9
+    },
+    "by_kind": {
+      "short_stemmed_glass": {
+        "glasses": 23,
+        "covered_median": 90.9,
+        "covered_worst": 68.0,
+        "not_the_glass_median": 0.0,
+        "not_the_glass_worst": 0.5
+      },
+      "stemmed_glass": {
+        "glasses": 14,
+        "covered_median": 84.3,
+        "covered_worst": 42.7,
+        "not_the_glass_median": 0.0,
+        "not_the_glass_worst": 0.3
+      },
+      "straight_glass": {
+        "glasses": 27,
+        "covered_median": 97.7,
+        "covered_worst": 88.3,
+        "not_the_glass_median": 0.1,
+        "not_the_glass_worst": 0.3
+      },
+      "tapered_glass": {
+        "glasses": 24,
+        "covered_median": 98.7,
+        "covered_worst": 95.0,
+        "not_the_glass_median": 0.0,
+        "not_the_glass_worst": 0.9
+      }
+    }
+  },
+  "handed over": {
+    "cannot tell whether this is one glass": 127,
+    "its width is outside what this kind can be, with the whole of it in frame": 1
+  }
+}

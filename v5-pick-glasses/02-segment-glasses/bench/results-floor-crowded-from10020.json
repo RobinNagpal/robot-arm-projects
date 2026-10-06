@@ -1,0 +1,187 @@
+{
+  "ways": [
+    {
+      "solution": "exact visible masks",
+      "scenes": 20,
+      "layouts": "crowded",
+      "stations": 3,
+      "glasses": 98,
+      "find": {
+        "found": 84,
+        "missed": 14,
+        "merged": 1,
+        "split": 1,
+        "false": 0,
+        "position_mm_median": 0.3,
+        "position_mm_worst": 75.7
+      },
+      "mask": {
+        "all": {
+          "glasses": 85,
+          "covered_median": 100.0,
+          "covered_worst": 0.0,
+          "not_the_glass_median": 0.0,
+          "not_the_glass_worst": 100.0
+        },
+        "by_kind": {
+          "short_stemmed_glass": {
+            "glasses": 24,
+            "covered_median": 100.0,
+            "covered_worst": 100.0,
+            "not_the_glass_median": 0.0,
+            "not_the_glass_worst": 0.0
+          },
+          "stemmed_glass": {
+            "glasses": 19,
+            "covered_median": 100.0,
+            "covered_worst": 0.0,
+            "not_the_glass_median": 0.0,
+            "not_the_glass_worst": 100.0
+          },
+          "straight_glass": {
+            "glasses": 24,
+            "covered_median": 100.0,
+            "covered_worst": 100.0,
+            "not_the_glass_median": 0.0,
+            "not_the_glass_worst": 0.0
+          },
+          "tapered_glass": {
+            "glasses": 18,
+            "covered_median": 100.0,
+            "covered_worst": 100.0,
+            "not_the_glass_median": 0.0,
+            "not_the_glass_worst": 0.0
+          }
+        }
+      },
+      "handed over": {}
+    },
+    {
+      "solution": "exact whole masks",
+      "scenes": 20,
+      "layouts": "crowded",
+      "stations": 3,
+      "glasses": 98,
+      "find": {
+        "found": 84,
+        "missed": 14,
+        "merged": 1,
+        "split": 1,
+        "false": 0,
+        "position_mm_median": 0.3,
+        "position_mm_worst": 75.7
+      },
+      "mask": {
+        "all": {
+          "glasses": 85,
+          "covered_median": 100.0,
+          "covered_worst": 0.0,
+          "not_the_glass_median": 0.0,
+          "not_the_glass_worst": 100.0
+        },
+        "by_kind": {
+          "short_stemmed_glass": {
+            "glasses": 24,
+            "covered_median": 100.0,
+            "covered_worst": 100.0,
+            "not_the_glass_median": 0.0,
+            "not_the_glass_worst": 0.0
+          },
+          "stemmed_glass": {
+            "glasses": 19,
+            "covered_median": 100.0,
+            "covered_worst": 0.0,
+            "not_the_glass_median": 0.0,
+            "not_the_glass_worst": 100.0
+          },
+          "straight_glass": {
+            "glasses": 24,
+            "covered_median": 100.0,
+            "covered_worst": 100.0,
+            "not_the_glass_median": 0.0,
+            "not_the_glass_worst": 0.0
+          },
+          "tapered_glass": {
+            "glasses": 18,
+            "covered_median": 100.0,
+            "covered_worst": 100.0,
+            "not_the_glass_median": 0.0,
+            "not_the_glass_worst": 0.0
+          }
+        }
+      },
+      "handed over": {}
+    },
+    {
+      "solution": "exact poisoned masks",
+      "scenes": 20,
+      "layouts": "crowded",
+      "stations": 3,
+      "glasses": 98,
+      "find": {
+        "found": 71,
+        "missed": 27,
+        "merged": 7,
+        "split": 0,
+        "false": 0,
+        "position_mm_median": 0.2,
+        "position_mm_worst": 73.9
+      },
+      "mask": {
+        "all": {
+          "glasses": 71,
+          "covered_median": 100.0,
+          "covered_worst": 13.3,
+          "not_the_glass_median": 0.0,
+          "not_the_glass_worst": 42.2
+        },
+        "by_kind": {
+          "short_stemmed_glass": {
+            "glasses": 19,
+            "covered_median": 100.0,
+            "covered_worst": 100.0,
+            "not_the_glass_median": 0.0,
+            "not_the_glass_worst": 30.3
+          },
+          "stemmed_glass": {
+            "glasses": 16,
+            "covered_median": 100.0,
+            "covered_worst": 19.6,
+            "not_the_glass_median": 0.1,
+            "not_the_glass_worst": 42.2
+          },
+          "straight_glass": {
+            "glasses": 21,
+            "covered_median": 100.0,
+            "covered_worst": 100.0,
+            "not_the_glass_median": 0.0,
+            "not_the_glass_worst": 18.9
+          },
+          "tapered_glass": {
+            "glasses": 15,
+            "covered_median": 100.0,
+            "covered_worst": 13.3,
+            "not_the_glass_median": 0.1,
+            "not_the_glass_worst": 40.1
+          }
+        }
+      },
+      "handed over": {}
+    }
+  ],
+  "one glass at a time": {
+    "partly hidden glasses": 138,
+    "asserted pixels": {
+      "named": {
+        "position_mm_median": 11.0,
+        "position_mm_worst": 50.4,
+        "width_mm_median": 71.7
+      },
+      "fed in": {
+        "position_mm_median": 42.9,
+        "position_mm_worst": 107.5,
+        "width_mm_median": 119.9
+      }
+    }
+  }
+}

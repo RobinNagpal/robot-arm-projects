@@ -135,10 +135,15 @@ The weights before this change were fitted on one picture per scene from
 `render.top_pose`, 750 mm above the zone, which is not what the bench hands a
 solution. Scored on the bench's survey pictures they give:
 
-| | found | position median | mask covered median |
+Both rows below are a single run over the first block of 20 held-out
+arrangements, because the older weights were never re-run over the five blocks
+the results page averages. They are comparable with each other and not with the
+averaged numbers there.
+
+| | found of 100 | place, middle glass | mask covered |
 |---|---|---|---|
-| fitted on the 750 mm top view | 100 of 100 | 17.3 mm | 84.3% |
-| fitted on the bench's stations | 63 of 100 | 0.5 mm | 98.2% |
+| fitted on the 750 mm top view | 100 | 17.3 mm | 84.3% |
+| fitted on the examiner's stations | 63 | 0.5 mm | 98.2% |
 
 The first row looks better and is worse, which is worth understanding. The old
 weights learned their arrows on a view where a rim leans barely at all, so on

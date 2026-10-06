@@ -1,0 +1,61 @@
+{
+  "solution": "04-yolo-fine-tuned",
+  "scenes": 20,
+  "layouts": "crowded",
+  "stations": 3,
+  "glasses": 94,
+  "find": {
+    "found": 68,
+    "missed": 26,
+    "merged": 1,
+    "split": 2,
+    "false": 0,
+    "position_mm_median": 0.5,
+    "position_mm_worst": 88.2
+  },
+  "mask": {
+    "all": {
+      "glasses": 70,
+      "covered_median": 99.0,
+      "covered_worst": 92.9,
+      "not_the_glass_median": 3.5,
+      "not_the_glass_worst": 38.2
+    },
+    "by_kind": {
+      "short_stemmed_glass": {
+        "glasses": 19,
+        "covered_median": 99.3,
+        "covered_worst": 96.4,
+        "not_the_glass_median": 4.4,
+        "not_the_glass_worst": 38.2
+      },
+      "stemmed_glass": {
+        "glasses": 17,
+        "covered_median": 98.6,
+        "covered_worst": 92.9,
+        "not_the_glass_median": 2.9,
+        "not_the_glass_worst": 4.4
+      },
+      "straight_glass": {
+        "glasses": 21,
+        "covered_median": 98.8,
+        "covered_worst": 96.2,
+        "not_the_glass_median": 3.6,
+        "not_the_glass_worst": 6.5
+      },
+      "tapered_glass": {
+        "glasses": 13,
+        "covered_median": 99.4,
+        "covered_worst": 97.8,
+        "not_the_glass_median": 2.7,
+        "not_the_glass_worst": 7.9
+      }
+    }
+  },
+  "handed over": {
+    "its width is outside what this kind can be, with the whole of it in frame": 33
+  },
+  "model": "yolo26n-seg.pt",
+  "confidence bar": 0.25,
+  "fitted here": "every weight, continuing the borrowed file's training"
+}

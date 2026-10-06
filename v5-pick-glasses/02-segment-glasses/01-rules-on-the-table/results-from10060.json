@@ -1,0 +1,59 @@
+{
+  "solution": "01-rules-on-the-table",
+  "scenes": 20,
+  "layouts": "spawned",
+  "stations": 3,
+  "glasses": 101,
+  "find": {
+    "found": 101,
+    "missed": 0,
+    "merged": 0,
+    "split": 1,
+    "false": 0,
+    "position_mm_median": 10.8,
+    "position_mm_worst": 46.6
+  },
+  "mask": {
+    "all": {
+      "glasses": 102,
+      "covered_median": 98.7,
+      "covered_worst": 30.2,
+      "not_the_glass_median": 0.0,
+      "not_the_glass_worst": 0.0
+    },
+    "by_kind": {
+      "short_stemmed_glass": {
+        "glasses": 26,
+        "covered_median": 87.8,
+        "covered_worst": 48.7,
+        "not_the_glass_median": 0.0,
+        "not_the_glass_worst": 0.0
+      },
+      "stemmed_glass": {
+        "glasses": 24,
+        "covered_median": 84.0,
+        "covered_worst": 30.2,
+        "not_the_glass_median": 0.0,
+        "not_the_glass_worst": 0.0
+      },
+      "straight_glass": {
+        "glasses": 27,
+        "covered_median": 99.5,
+        "covered_worst": 50.2,
+        "not_the_glass_median": 0.0,
+        "not_the_glass_worst": 0.0
+      },
+      "tapered_glass": {
+        "glasses": 25,
+        "covered_median": 99.9,
+        "covered_worst": 50.0,
+        "not_the_glass_median": 0.0,
+        "not_the_glass_worst": 0.0
+      }
+    }
+  },
+  "handed over": {},
+  "model": "none: written rules over the depth readings",
+  "grouping distance mm": 25.0,
+  "fitted here": "nothing"
+}

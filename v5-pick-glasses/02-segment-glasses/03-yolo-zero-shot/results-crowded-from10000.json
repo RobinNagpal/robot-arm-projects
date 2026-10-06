@@ -1,0 +1,54 @@
+{
+  "solution": "03-yolo-zero-shot",
+  "scenes": 20,
+  "layouts": "crowded",
+  "stations": 3,
+  "glasses": 101,
+  "find": {
+    "found": 4,
+    "missed": 97,
+    "merged": 0,
+    "split": 0,
+    "false": 0,
+    "position_mm_median": 36.5,
+    "position_mm_worst": 46.6
+  },
+  "mask": {
+    "all": {
+      "glasses": 4,
+      "covered_median": 84.5,
+      "covered_worst": 51.6,
+      "not_the_glass_median": 3.6,
+      "not_the_glass_worst": 4.6
+    },
+    "by_kind": {
+      "short_stemmed_glass": {
+        "glasses": 1,
+        "covered_median": 69.0,
+        "covered_worst": 69.0,
+        "not_the_glass_median": 3.2,
+        "not_the_glass_worst": 3.2
+      },
+      "stemmed_glass": {
+        "glasses": 1,
+        "covered_median": 51.6,
+        "covered_worst": 51.6,
+        "not_the_glass_median": 4.6,
+        "not_the_glass_worst": 4.6
+      },
+      "straight_glass": {
+        "glasses": 2,
+        "covered_median": 100.0,
+        "covered_worst": 99.9,
+        "not_the_glass_median": 3.2,
+        "not_the_glass_worst": 4.1
+      }
+    }
+  },
+  "handed over": {
+    "the model named nothing in this picture a drinking vessel": 56
+  },
+  "model": "yolo26n-seg.pt",
+  "confidence bar": 0.25,
+  "fitted here": "nothing"
+}

@@ -1,0 +1,59 @@
+{
+  "solution": "02-train-from-scratch",
+  "scenes": 20,
+  "layouts": "crowded",
+  "stations": 3,
+  "glasses": 101,
+  "find": {
+    "found": 72,
+    "missed": 29,
+    "merged": 1,
+    "split": 0,
+    "false": 0,
+    "position_mm_median": 0.7,
+    "position_mm_worst": 43.8
+  },
+  "mask": {
+    "all": {
+      "glasses": 72,
+      "covered_median": 97.2,
+      "covered_worst": 80.3,
+      "not_the_glass_median": 1.4,
+      "not_the_glass_worst": 17.5
+    },
+    "by_kind": {
+      "short_stemmed_glass": {
+        "glasses": 21,
+        "covered_median": 96.9,
+        "covered_worst": 86.1,
+        "not_the_glass_median": 1.5,
+        "not_the_glass_worst": 2.2
+      },
+      "stemmed_glass": {
+        "glasses": 13,
+        "covered_median": 96.2,
+        "covered_worst": 81.7,
+        "not_the_glass_median": 1.0,
+        "not_the_glass_worst": 17.5
+      },
+      "straight_glass": {
+        "glasses": 19,
+        "covered_median": 97.4,
+        "covered_worst": 92.9,
+        "not_the_glass_median": 1.6,
+        "not_the_glass_worst": 9.7
+      },
+      "tapered_glass": {
+        "glasses": 19,
+        "covered_median": 98.0,
+        "covered_worst": 80.3,
+        "not_the_glass_median": 1.4,
+        "not_the_glass_worst": 12.1
+      }
+    }
+  },
+  "handed over": {},
+  "model": "TopNet, a small U-Net written here",
+  "votes a pile needs": 30,
+  "fitted here": "every weight, from random numbers"
+}

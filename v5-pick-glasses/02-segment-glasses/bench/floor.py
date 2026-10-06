@@ -85,17 +85,18 @@ class Exact:
         return found, []
 
 
-def measure(way: str, scenes: int, crowded: bool) -> dict:
+def measure(way: str, scenes: int, crowded: bool, start: int | None = None) -> dict:
     """One way of being exact, over the same held-out scenes a solution is scored on."""
     finder, card = Exact(way), Scorecard()
-    for example in data.held_out(scenes, hard=crowded):
+    block = {} if start is None else {"start": start}
+    for example in data.held_out(scenes, hard=crowded, **block):
         finder.remember(example)
         kept, station = marking.survey(finder, example, card)
         marking.score(card, example, kept, station)
     return marking.summary(f"exact {way} masks", card, scenes, crowded)
 
 
-def hidden(scenes: int) -> dict:
+def hidden(scenes: int, start: int | None = None) -> dict:
     """What naming the asserted pixels is worth, for one partly hidden glass at a time.
 
     The scorecard above answers for a whole run, where a glass nothing stands in
@@ -104,7 +105,8 @@ def hidden(scenes: int) -> dict:
     """
     apart: dict[str, list[float]] = {"named": [], "fed in": []}
     widths: dict[str, list[float]] = {"named": [], "fed in": []}
-    for example in data.held_out(scenes, hard=True):
+    block = {} if start is None else {"start": start}
+    for example in data.held_out(scenes, hard=True, **block):
         for sight in example.sights:
             for index, glass in enumerate(sight.glasses):
                 visible, whole = sight.visible[index], sight.whole[index]
@@ -138,19 +140,27 @@ def main() -> None:
         action="store_true",
         help="score on crowded layouts, where one glass really does hide another",
     )
+    parser.add_argument(
+        "--from-seed",
+        type=int,
+        default=None,
+        help="first held-out seed, to score a different block of arrangements",
+    )
     given = parser.parse_args()
 
-    results = [measure(way, given.scenes, given.crowded) for way in WAYS]
+    results = [measure(way, given.scenes, given.crowded, given.from_seed) for way in WAYS]
     for result in results:
         print(f"\n{result['solution']}")
         marking.show(result)
 
     whole = {"ways": results}
     if given.crowded:
-        whole |= {"one glass at a time": hidden(given.scenes)}
+        whole |= {"one glass at a time": hidden(given.scenes, given.from_seed)}
         print(f"\nper partly hidden glass  {json.dumps(whole['one glass at a time'], indent=2)}")
 
     tail = "-crowded" if given.crowded else ""
+    if given.from_seed is not None:
+        tail += f"-from{given.from_seed}"
     save = Path(__file__).parent / f"results-floor{tail}.json"
     save.write_text(json.dumps(whole, indent=2) + "\n")
     print(f"\nsaved to {save}")

@@ -1,0 +1,172 @@
+{
+  "ways": [
+    {
+      "solution": "exact visible masks",
+      "scenes": 20,
+      "layouts": "spawned",
+      "stations": 3,
+      "glasses": 100,
+      "find": {
+        "found": 100,
+        "missed": 0,
+        "merged": 0,
+        "split": 0,
+        "false": 0,
+        "position_mm_median": 6.3,
+        "position_mm_worst": 46.5
+      },
+      "mask": {
+        "all": {
+          "glasses": 100,
+          "covered_median": 100.0,
+          "covered_worst": 100.0,
+          "not_the_glass_median": 0.0,
+          "not_the_glass_worst": 0.0
+        },
+        "by_kind": {
+          "short_stemmed_glass": {
+            "glasses": 25,
+            "covered_median": 100.0,
+            "covered_worst": 100.0,
+            "not_the_glass_median": 0.0,
+            "not_the_glass_worst": 0.0
+          },
+          "stemmed_glass": {
+            "glasses": 24,
+            "covered_median": 100.0,
+            "covered_worst": 100.0,
+            "not_the_glass_median": 0.0,
+            "not_the_glass_worst": 0.0
+          },
+          "straight_glass": {
+            "glasses": 26,
+            "covered_median": 100.0,
+            "covered_worst": 100.0,
+            "not_the_glass_median": 0.0,
+            "not_the_glass_worst": 0.0
+          },
+          "tapered_glass": {
+            "glasses": 25,
+            "covered_median": 100.0,
+            "covered_worst": 100.0,
+            "not_the_glass_median": 0.0,
+            "not_the_glass_worst": 0.0
+          }
+        }
+      },
+      "handed over": {}
+    },
+    {
+      "solution": "exact whole masks",
+      "scenes": 20,
+      "layouts": "spawned",
+      "stations": 3,
+      "glasses": 100,
+      "find": {
+        "found": 100,
+        "missed": 0,
+        "merged": 0,
+        "split": 0,
+        "false": 0,
+        "position_mm_median": 6.3,
+        "position_mm_worst": 46.5
+      },
+      "mask": {
+        "all": {
+          "glasses": 100,
+          "covered_median": 100.0,
+          "covered_worst": 100.0,
+          "not_the_glass_median": 0.0,
+          "not_the_glass_worst": 0.0
+        },
+        "by_kind": {
+          "short_stemmed_glass": {
+            "glasses": 25,
+            "covered_median": 100.0,
+            "covered_worst": 100.0,
+            "not_the_glass_median": 0.0,
+            "not_the_glass_worst": 0.0
+          },
+          "stemmed_glass": {
+            "glasses": 24,
+            "covered_median": 100.0,
+            "covered_worst": 100.0,
+            "not_the_glass_median": 0.0,
+            "not_the_glass_worst": 0.0
+          },
+          "straight_glass": {
+            "glasses": 26,
+            "covered_median": 100.0,
+            "covered_worst": 100.0,
+            "not_the_glass_median": 0.0,
+            "not_the_glass_worst": 0.0
+          },
+          "tapered_glass": {
+            "glasses": 25,
+            "covered_median": 100.0,
+            "covered_worst": 100.0,
+            "not_the_glass_median": 0.0,
+            "not_the_glass_worst": 0.0
+          }
+        }
+      },
+      "handed over": {}
+    },
+    {
+      "solution": "exact poisoned masks",
+      "scenes": 20,
+      "layouts": "spawned",
+      "stations": 3,
+      "glasses": 100,
+      "find": {
+        "found": 100,
+        "missed": 0,
+        "merged": 0,
+        "split": 0,
+        "false": 0,
+        "position_mm_median": 6.3,
+        "position_mm_worst": 46.5
+      },
+      "mask": {
+        "all": {
+          "glasses": 100,
+          "covered_median": 100.0,
+          "covered_worst": 100.0,
+          "not_the_glass_median": 0.0,
+          "not_the_glass_worst": 0.0
+        },
+        "by_kind": {
+          "short_stemmed_glass": {
+            "glasses": 25,
+            "covered_median": 100.0,
+            "covered_worst": 100.0,
+            "not_the_glass_median": 0.0,
+            "not_the_glass_worst": 0.0
+          },
+          "stemmed_glass": {
+            "glasses": 24,
+            "covered_median": 100.0,
+            "covered_worst": 100.0,
+            "not_the_glass_median": 0.0,
+            "not_the_glass_worst": 0.0
+          },
+          "straight_glass": {
+            "glasses": 26,
+            "covered_median": 100.0,
+            "covered_worst": 100.0,
+            "not_the_glass_median": 0.0,
+            "not_the_glass_worst": 0.0
+          },
+          "tapered_glass": {
+            "glasses": 25,
+            "covered_median": 100.0,
+            "covered_worst": 100.0,
+            "not_the_glass_median": 0.0,
+            "not_the_glass_worst": 0.0
+          }
+        }
+      },
+      "handed over": {}
+    }
+  ]
+}

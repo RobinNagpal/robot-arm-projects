@@ -1,0 +1,66 @@
+{
+  "solution": "rf-detr-seg modal",
+  "scenes": 20,
+  "layouts": "spawned",
+  "stations": 3,
+  "glasses": 99,
+  "find": {
+    "found": 94,
+    "missed": 5,
+    "merged": 0,
+    "split": 0,
+    "false": 0,
+    "position_mm_median": 6.4,
+    "position_mm_worst": 44.3
+  },
+  "mask": {
+    "all": {
+      "glasses": 94,
+      "covered_median": 96.5,
+      "covered_worst": 85.7,
+      "not_the_glass_median": 0.0,
+      "not_the_glass_worst": 1.5
+    },
+    "by_kind": {
+      "short_stemmed_glass": {
+        "glasses": 24,
+        "covered_median": 96.3,
+        "covered_worst": 94.2,
+        "not_the_glass_median": 0.2,
+        "not_the_glass_worst": 1.3
+      },
+      "stemmed_glass": {
+        "glasses": 20,
+        "covered_median": 96.5,
+        "covered_worst": 85.7,
+        "not_the_glass_median": 0.1,
+        "not_the_glass_worst": 1.5
+      },
+      "straight_glass": {
+        "glasses": 24,
+        "covered_median": 96.5,
+        "covered_worst": 94.9,
+        "not_the_glass_median": 0.0,
+        "not_the_glass_worst": 0.0
+      },
+      "tapered_glass": {
+        "glasses": 26,
+        "covered_median": 96.9,
+        "covered_worst": 94.2,
+        "not_the_glass_median": 0.0,
+        "not_the_glass_worst": 0.1
+      }
+    }
+  },
+  "handed over": {
+    "it claims glass where the camera saw past it, and it runs off the edge of the frame": 34,
+    "its width is outside what this kind can be": 6,
+    "too little of it was seen to place it, and it runs off the edge of the frame": 1
+  },
+  "completion": {
+    "reports": 294,
+    "with an asserted part": 135,
+    "visible_fraction_median": 1.0,
+    "visible_fraction_lowest": 0.721
+  }
+}

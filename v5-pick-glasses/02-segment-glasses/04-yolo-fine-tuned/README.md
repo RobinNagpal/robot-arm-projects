@@ -170,11 +170,13 @@ This is the number the two solutions exist to produce. Same model, same
 starting file, same pictures, same scorecard; one is trained here and one is
 not.
 
-| found, of the glasses put out | solution 3, untrained | solution 4, trained here | the bench's floor |
+Averaged over the five blocks of held-out arrangements, found per 100 glasses:
+
+| found per 100 glasses | solution 3, untrained | solution 4, trained here | the examiner's floor |
 |---|---|---|---|
-| spawned | 10 of 100 | **99 of 100** | 100 of 100 |
-| crowded | 4 of 101 | **73 of 101** | 83 of 101 |
-| position error, median (spawned) | 28.1 mm | 5.5 mm | 6.3 mm |
+| spawned | 6.4 | **99.4** | 100.0 |
+| crowded | 2.1 | **72.0** | 86.4 |
+| place, middle glass (spawned) | 23.7 mm | 6.6 mm | 6.8 mm |
 
 **That gap is what fine-tuning bought**, and nothing else can be blamed for it.
 Solution 3 does find things in these pictures; it calls them sports balls and

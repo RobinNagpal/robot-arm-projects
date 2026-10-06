@@ -1,0 +1,61 @@
+{
+  "solution": "01-rules-on-the-table",
+  "scenes": 20,
+  "layouts": "crowded",
+  "stations": 3,
+  "glasses": 101,
+  "find": {
+    "found": 71,
+    "missed": 30,
+    "merged": 10,
+    "split": 1,
+    "false": 0,
+    "position_mm_median": 6.0,
+    "position_mm_worst": 58.2
+  },
+  "mask": {
+    "all": {
+      "glasses": 72,
+      "covered_median": 94.6,
+      "covered_worst": 1.2,
+      "not_the_glass_median": 0.0,
+      "not_the_glass_worst": 79.3
+    },
+    "by_kind": {
+      "short_stemmed_glass": {
+        "glasses": 20,
+        "covered_median": 91.3,
+        "covered_worst": 52.7,
+        "not_the_glass_median": 0.0,
+        "not_the_glass_worst": 10.2
+      },
+      "stemmed_glass": {
+        "glasses": 15,
+        "covered_median": 79.7,
+        "covered_worst": 1.2,
+        "not_the_glass_median": 0.0,
+        "not_the_glass_worst": 79.3
+      },
+      "straight_glass": {
+        "glasses": 17,
+        "covered_median": 99.7,
+        "covered_worst": 88.4,
+        "not_the_glass_median": 0.0,
+        "not_the_glass_worst": 39.7
+      },
+      "tapered_glass": {
+        "glasses": 20,
+        "covered_median": 82.0,
+        "covered_worst": 16.9,
+        "not_the_glass_median": 11.7,
+        "not_the_glass_worst": 55.6
+      }
+    }
+  },
+  "handed over": {
+    "a group too wide for one glass of this kind, and it did not come apart": 3
+  },
+  "model": "none: written rules over the depth readings",
+  "grouping distance mm": 25.0,
+  "fitted here": "nothing"
+}

@@ -60,34 +60,39 @@ knowledge about glasses comes from.
 
 ## What each one scored
 
-**Every solution is run twice**, on the same two sets of held-out arrangements:
-once on 100 glasses spaced as the cell's own layout rule gives them, and once on
-101 glasses crowded closer than that rule allows. The first run asks whether the
-method can do the job the cell actually sets. The second asks where it begins to
-break.
+**Every solution is run twice**, once on arrangements spaced as the cell's own
+layout rule gives them and once on arrangements crowded closer than that rule
+allows. The first run asks whether the method can do the job the cell actually
+sets. The second asks where it begins to break.
 
-The table has one row per solution and one column per run, with the reason for
-both results in the last column. Each result cell gives how many of that run's
-glasses the method found and how much of a glass its masks covered at the middle
-glass. The full numbers with every column are in
+**Each of those runs is repeated over five blocks of 20 arrangements**, about
+500 glasses in all, and the numbers below are the average of the five with the
+lowest and highest block in brackets. Twenty arrangements is a small sample, so
+the brackets matter as much as the averages: where two solutions' brackets
+overlap, this test has not separated them. The full numbers are in
 [`02-segment-glasses/results/`](../../../02-segment-glasses/results/).
 
-Read the crowded column against 83 rather than against 101. No method could find
-all 101, because a glass standing wholly behind another appears in no picture at
-all, and the examiner's own perfect masks find 83 of them.
+Read the crowded column against 86.4 rather than against 100. No method could
+find them all, because a glass standing wholly behind another appears in no
+picture at all, and that is what the examiner's own perfect masks reach.
 
 Both columns are over **all four kinds of glass**, roughly a quarter each, so
-every mask figure below is an average across kinds that are not equally hard to
-outline. The results folder opens that average up.
+every mask figure is an average across kinds that are not equally hard to
+outline.
 
-| Solution | Spaced: 100 glasses | Crowded: 101 glasses | Why those two results |
+| Solution | Spaced, found per 100 | Crowded, found per 100 | Why those two results |
 |---|---|---|---|
-| **1. Rules on the table** | **100 found**, masks covered 98.9% and claimed no table at all | 71 found, 10 reports covering two glasses each, masks covered 94.6% | The rule needs a strip of bare table between two glasses. The ordinary spacing guarantees one, so it finds everything; crowding withdraws the guarantee, and where the strip is gone two glasses join into one group. |
-| **2. A network trained from scratch** | 63 found, masks covered 98.2%, places 0.5 mm out | 72 found, masks covered 97.2% | Its misses are a limit of the voting design rather than of its training: a glass whose middle falls outside the picture casts votes that land nowhere. Crowding does not make that worse, and its crowded number is in fact the higher of the two. |
-| **3. A borrowed model, as it downloads** | 10 found, masks covered 100% of the few it found | 4 found, masks covered 84.5% | It is being shown a kind of picture it has never seen, so it mostly sees nothing and names what it does find a sports ball or a frisbee. Both runs are poor for the same reason, and the reason is the domain gap rather than the spacing. |
-| **4. The same model, fine-tuned** | **99 found**, masks covered 99.8%, claimed 4.4% that was not glass | 73 found, masks covered 99.3% | Training on this cell's pictures closed the domain gap, so it finds almost everything the ordinary run puts out. What training did not change is the shape of the output, so a glass partly behind another still comes back as a slice, which is what the crowded run costs it. |
-| **5. A foundation model with a keeper** | 81 found, masks covered 96.8% and claimed no table | 73 found, masks covered 98.4%, nothing merged or split | The borrowed model finds shapes and the keeper only decides which are glasses, so it never invents a glass and never merges two. It also never finds a glass the borrowed model did not propose, which is where its missing 19 go. |
-| **6. A transformer segmenter, fine-tuned** | 96 found, masks covered 96.7% and claimed no table | **78 found**, the closest to the 83 available, masks covered 97.3% | Two glasses whose outlines join occupy two query slots, so there is never a joined region to cut apart. That is worth least on the ordinary run, where nothing is joined, and most on the crowded one, which is why it has the best crowded number of the six. It is not immune: it still merged three pairs and split two glasses when crowded. |
+| **1. [Rules on the table](01-rules-on-the-table.md)** | **100.0** (100.0–100.0) | 73.0 (70.3–75.5) | The rule needs a strip of bare table between two glasses. The ordinary spacing guarantees one, so it finds every glass in every block and its score does not move at all; crowding withdraws the guarantee, and where the strip is gone two glasses join into one group. |
+| **2. [A network trained from scratch](02-train-from-scratch.md)** | 64.1 (62.4–66.7) | 74.6 (71.3–79.8) | Its misses are a limit of the voting design rather than of its training: a glass whose middle falls outside the picture casts votes that land nowhere. Crowding does not make that worse, and its crowded number is the higher of the two. It also has the widest spread of any solution here. |
+| **3. [A borrowed model, as it downloads](03-yolo-zero-shot.md)** | 6.4 (2.0–11.9) | 2.1 (0.0–4.2) | It is being shown a kind of picture it has never seen, so it mostly sees nothing and names what it does find a sports ball or a frisbee. Both runs are poor for the same reason, the domain gap rather than the spacing, and on one crowded block it found no glass at all. |
+| **4. [The same model, fine-tuned](04-yolo-fine-tuned.md)** | **99.4** (99.0–100.0) | 72.0 (70.8–72.9) | Training on this cell's pictures closed the domain gap, so it finds almost everything the ordinary run puts out. What training did not change is the shape of the output, so a glass partly behind another still comes back as a slice, which is what the crowded run costs it. |
+| **5. [A foundation model with a keeper](05-sam2-with-a-keeper.md)** | 83.0 (78.0–86.1) | 73.6 (71.9–76.6) | The borrowed model finds shapes and the keeper only decides which are glasses, so it never invents a glass and never merges two. It also never finds a glass the borrowed model did not propose, which is where its missing one in six goes. |
+| **6. [A transformer segmenter, fine-tuned](06-rf-detr-fine-tuned.md)** | 96.4 (94.9–98.0) | **81.9** (77.2–86.5) | Two glasses whose outlines join occupy two query slots, so there is never a joined region to cut apart. That is worth least on the ordinary run, where nothing is joined, and most on the crowded one, which is why it is the only solution that sits clear of the group there. |
+
+**Four of the six are not separated on crowded tables.** Solutions 1, 2, 4 and 5
+average 73.0, 74.6, 72.0 and 73.6, and their brackets all overlap. Which of them
+comes out on top is the luck of which arrangements were drawn, and a single run
+of 20 would have reported one of those orderings as if it were a finding.
 
 Two results in that table are worth more than the others.
 
@@ -95,9 +100,11 @@ Two results in that table are worth more than the others.
 in the set.** Same library, same model, same downloaded weights, same examiner.
 The training also replaces the borrowed list of everyday categories with a
 single class, which cannot be had separately from the training itself, so
-nothing varies between the two that the training did not bring. The gap is 10
-glasses found against 99, and that gap is a measurement of what fine-tuning
-bought.
+nothing varies between the two that the training did not bring. The gap is 6.4
+glasses per 100 against 99.4, and that gap is a measurement of what fine-tuning
+bought. It is also far larger than either solution's spread across the five
+blocks, which makes it the one comparison here that no draw of arrangements
+could have produced by chance.
 
 The reason it is so large has a name. The **domain gap** is the difference
 between the pictures a model was fitted on and the pictures it is asked about.
