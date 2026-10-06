@@ -1092,7 +1092,7 @@ measured — the friction, and the way the weight is distributed under the foot.
 ## Where it sits among the other five
 
 [The six solutions](overview.md) form a ladder ordered by how much of each one
-was fitted in this cell, and this one stands on the lowest rung that has
+was fitted in this cell, and this one stands on the lowest way that has
 anything fitted at all.
 
 Against [solution 1](01-one-fixed-nudge.md), the comparison is whether choosing
@@ -1124,7 +1124,7 @@ from the destination. Solution 4 fits a model of **what a push will actually
 do**, which is the quantity the geometry gets wrong, because predicting where a
 pushed glass ends up needs the friction and the weight distribution that nobody
 here has. Both have now been run on the same tables, and the result bears on
-that choice directly. Solution 4's first rung racked 202 of the 251 glasses in
+that choice directly. Solution 4's first way racked 202 of the 251 glasses in
 114 pushes, repeating only 14 of them, where the geometry racked 195 in 213
 pushes and had to repeat 90. **The learning that paid in this cell attacked the
 quantity the geometry gets wrong, not the quantity it gets right.** That is the

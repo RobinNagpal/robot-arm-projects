@@ -66,7 +66,7 @@ You will also understand the one design question this solution carries inside
 itself, which is the most interesting part of the document. A newer generation
 of the same borrowed model takes a **word** instead of a point: ask it for
 "drinking glass" and it returns every instance of that concept. That would
-delete the keeper completely. So this solution has two **rungs**, meaning two
+delete the keeper completely. So this solution has two **ways**, meaning two
 versions of one approach, one of them a generation newer than the other. The
 last concept section weighs the two against each other, and the honest answer is
 not simply that the newer one is better, because the keeper is the one place in
@@ -717,7 +717,7 @@ fitted component chooses among regions and a rule nobody trained decides whether
 the choice is believable, which is what makes a model this foreign safe to use
 here at all.
 
-## The second rung — a word instead of a grid
+## The second way — a word instead of a grid
 
 Everything above is one generation of this solution. There is a second, and it
 is the most interesting question this document carries, because it would delete
@@ -733,10 +733,10 @@ is no heap to clean up, because nothing proposes the table or a rim in the first
 place, and there is nothing to fit, because the naming is done inside the
 borrowed model.
 
-**Both rungs are the same solution.** Both borrow a promptable foundation model
+**Both of them are the same solution.** Both borrow a promptable foundation model
 and train nothing in this cell. They differ only in where the judgement "this is
-a glass" lives: on the lower rung it lives in a small fitted model in this
-folder, and on the upper rung it lives inside borrowed weights, reached through
+a glass" lives: on the first way it lives in a small fitted model in this
+folder, and on the second way it lives inside borrowed weights, reached through
 a word.
 
 What is gained is real and worth stating plainly. There is **less code**: no
@@ -776,14 +776,14 @@ One practical note belongs here, because the licence is one of this solution's
 advantages and that advantage is not automatically inherited. The terms a newer
 generation of weights is released under have to be read for themselves rather
 than assumed to match the generation before it, and here that matters more than
-as a caution. **The upper rung has not been run on this machine.** The library
-holds the model and the code for this rung is written against it, but the newer
+as a caution. **The second way has not been run on this machine.** The library
+holds the model and the code for this way is written against it, but the newer
 weights are gated: the upload will not hand them over without an account that
-has been granted access. So this rung has no scorecard, and none has been
-invented for it: only the lower rung has been measured.
+has been granted access. So this way has no scorecard, and none has been
+invented for it: only the first way has been measured.
 
 So the recommendation is still not to choose once. Fit the keeper, because it is
-small and it fits in seconds, and run both rungs on the same held-out
+small and it fits in seconds, and run both of them on the same held-out
 arrangements on a machine whose account has been granted the newer weights. The
 examiner makes that comparison honest, and if the text prompt wins, the keeper is
 still the thing that explains why a region was refused.
@@ -884,7 +884,7 @@ and the same arrangement with that glass removed produce the same picture, pixel
 for pixel. No function of the picture can tell them apart, whatever its size and
 however it was fitted, because the thing that differs between the two left no
 trace in the input. A larger checkpoint changes nothing, a text prompt on the
-second rung changes nothing, and neither would training the borrowed model if
+second way changes nothing, and neither would training the borrowed model if
 training it were allowed.
 
 One more thing is worth saying, because it is the temptation this solution
@@ -1088,7 +1088,7 @@ concept that phrase names, rather than choosing from a fixed list of categories.
 The idea that a phrase and a picture can be matched in one space became
 mainstream with CLIP (Radford and colleagues, 2021,
 [arXiv:2103.00020](https://arxiv.org/abs/2103.00020)), and the segmentation
-models built on it are the second rung of this solution.
+models built on it are the second way of this solution.
 
 It is normally the right tool when the thing you want is easy to say and hard to
 write a rule for, and when nobody needs to audit the decision. It is normally
@@ -1200,7 +1200,7 @@ a glass is. This solution borrows the shapes and replaces the names with
 something fitted here and readable. That is the better half to replace, because
 a boundary between one surface and the surface behind it transfers from
 photographs to this cell far better than a category boundary does. The second
-rung of this solution gives that advantage back, which is why the section about
+way of this solution gives that advantage back, which is why the section about
 it is careful rather than enthusiastic.
 
 Against **solution 4** the comparison is about where the adaptation happens.
@@ -1236,7 +1236,7 @@ What this solution is genuinely for is to find out how far borrowed weights get
 in this cell with almost nothing fitted behind them, and to find out at what
 point an explainable decision is worth more than a shorter program. The examiner
 answers the first question by running it beside the other five on the same
-arrangements. The second question is the one the two rungs of this solution ask
+arrangements. The second question is the one the two ways of this solution ask
 of each other, and it is a judgement rather than a measurement.
 
 ← [The same model, fine-tuned here](04-yolo-fine-tuned.md) · [RF-DETR-Seg,

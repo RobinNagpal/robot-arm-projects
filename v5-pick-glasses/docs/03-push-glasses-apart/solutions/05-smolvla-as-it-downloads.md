@@ -533,7 +533,7 @@ than 22 GB of accelerator memory, and a full fine-tune more than 70 GB. Those
 floors decide the matter. A pair of solutions is only worth building if both
 halves can actually be built, and **SmolVLA is chosen here because it is the
 one whose fine-tuning is affordable**, which makes the 5-against-6 comparison
-possible at all. π0.5 appears in this folder only as a further rung inside
+possible at all. π0.5 appears in this folder only as a further way inside
 solution 6, reached by low-rank adaptation, to ask whether a markedly larger
 model is worth it.
 

@@ -35,12 +35,12 @@ and a chunk of waypoints be compared at all.
 | 5 | A foundation model as it downloads | SmolVLA | LeRobot | nothing |
 | 6 | The same model, fine-tuned here | SmolVLA with LoRA | LeRobot | all of it |
 
-Three carry a second rung:
+Three carry a second way:
 
 - **3** — ACT predicts an action chunk directly; Diffusion Policy denoises
   towards one. Same job, different means, both in LeRobot.
-- **4** — rung one is the small ensemble **already written** in this project;
-  rung two is TD-MPC2 off the shelf.
+- **4** — the first way is the small ensemble **already written** in this project;
+  the second way is TD-MPC2 off the shelf.
 - **6** — the same fine-tune on π0.5, to measure whether a markedly larger
   foundation model is worth it.
 
@@ -53,7 +53,7 @@ learning family, in its model-based half.
 
 **π0 full fine-tuning and GR00T N1.7 are left out** as too expensive: π0's
 full fine-tune floor is above 70 GB of accelerator memory. π0.5 appears only
-as a rung, reached by low-rank adaptation, which is affordable.
+as a way, reached by low-rank adaptation, which is affordable.
 
 **Car 2 is the teacher.** Cars 3 and 6 need demonstrations, and ranked
 geometric pushes supply them for nothing. That is what earns car 2 its place
@@ -130,7 +130,7 @@ price of reproducing it.
 |---|---|---|
 | `03-push-glasses-apart/bench` | the examiner; problem 4 imports it | keep, rename |
 | `03-push-glasses-apart/01-one-fixed-nudge` | the geometry cars 1 and 2 need | keep |
-| `03-push-glasses-apart/04-a-world-model` | car 4's first rung, already written | keep |
+| `03-push-glasses-apart/04-a-world-model` | car 4's first way, already written | keep |
 | `03-push-glasses-apart/results` | the two approaches compared; problem 4 cites it | keep |
 
 The eleven solution documents become six. Nothing in the code is superseded,

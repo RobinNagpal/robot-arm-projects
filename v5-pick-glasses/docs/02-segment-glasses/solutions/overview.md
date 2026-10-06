@@ -68,7 +68,7 @@ table reads downwards from nothing fitted to everything fitted.
 | 5 | [A foundation model with a keeper](05-sam2-with-a-keeper.md) | only the keeper | SAM 2 via `transformers`, scikit-learn | permissive |
 | 6 | [A transformer segmenter, fine-tuned](06-rf-detr-fine-tuned.md) | all of it, in this cell | RF-DETR-Seg | Apache 2.0 |
 
-Three of them carry a **second rung** inside themselves, which keeps a real idea
+Three of them carry a **second way** inside themselves, which keeps a real idea
 without spending a whole document on it:
 
 - **Solution 2** takes its labels either from the examiner's answer key, or from
@@ -110,7 +110,7 @@ fitted here from nothing, then a borrowed model untouched, then that same model
 adjusted, then a borrowed model with a small head of its own, then a borrowed
 model fully adjusted.
 
-Each rung costs something different. Nothing fitted costs no data and no
+Each way costs something different. Nothing fitted costs no data and no
 training, and is limited by whether a rule can be written down at all. Fitting
 here costs a training set and a training run, and buys a model that knows
 exactly these pictures. Borrowing costs neither, and buys a model that knows
@@ -165,7 +165,7 @@ six turned out to have been scored on different pictures from the other four.
 Both are fixed, and both were found by measuring rather than by reading.
 
 Three things are specified in these documents and are **not** built, and each is
-named in the document that asks for it. Two solutions have a second rung that
+named in the document that asks for it. Two solutions have a second way that
 cannot run here: one needs weights that are behind a licence gate, and one ran
 out of machine part way through its training. Neither claims a number. The
 amodal target of solution 6 is the third.

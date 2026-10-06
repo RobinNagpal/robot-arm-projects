@@ -66,7 +66,7 @@ Numbered by the ladder, least fitted first, so the table reads downwards.
 | 5 | Promptable foundation model, small fitted head | head only | SAM 2 via `transformers`, scikit-learn | permissive |
 | 6 | Transformer segmenter, fine-tuned | all, here | RF-DETR-Seg | Apache 2.0 |
 
-Three carry a second rung inside them:
+Three carry a second way inside them:
 
 - **2** — labels from the answer key, or from the arm's own movement.
 - **5** — SAM 2 with a grid of points and a keeper, or SAM 3 with a word
@@ -180,10 +180,10 @@ well over a thousand lines, so writing 79 fresh ones is the wrong move.
 |---|---|
 | cluster on the table | solution 1 |
 | the network, and the voting | solution 2 |
-| self-supervised from movement | solution 2, second rung |
+| self-supervised from movement | solution 2, second way |
 | segment anything | solution 5 |
 | the fine-tuned segmenter | solutions 4 and 6 |
-| amodal masks | solution 6, second rung |
+| amodal masks | solution 6, second way |
 | move the camera, choosing the next look | the shared look-again document |
 | split the blob | mostly stale; its splay and merge panels suit `problem.md` |
 

@@ -1,11 +1,11 @@
 # Solution 4 — a world model, then plan with it
 
 > **What it uses** — PyTorch, and MuJoCo through [the test
-> examiner](../the-examiner.md). Rung one is a small network written for this cell
+> examiner](../the-examiner.md). The first way is a small network written for this cell
 > and trained here, five copies of it, with no downloaded weights of any kind.
-> Rung two would be TD-MPC2, the model-based entry in LeRobot, trained here as
-> well. **Rung two is not built**, so no number anywhere in this document is
-> its. Neither rung borrows a model from anybody, so the only licences in play
+> The second way would be TD-MPC2, the model-based entry in LeRobot, trained here as
+> well. **The second way is not built**, so no number anywhere in this document is
+> its. Neither of them borrows a model from anybody, so the only licences in play
 > are the libraries' own.
 > **What it does** — it learns what a push does, and then looks for a good push
 > by trying candidate pushes against that learned model instead of against the
@@ -41,12 +41,12 @@
 > fine-tuned](06-smolvla-fine-tuned.md) bring a large pretrained policy to the
 > same question; they, too, learn what to do rather than what will happen.
 > **What it costs** — pushes made in the simulator and recorded, which is the
-> only training data either rung needs and which nobody has to label. Rung one
+> only training data either way needs and which nobody has to label. The first way
 > trains on an ordinary processor in minutes and needs no rented hardware at
-> all. Rung two is reinforcement learning and wants an accelerator: a weekend
+> all. The second way is reinforcement learning and wants an accelerator: a weekend
 > of rented time, of order a hundred dollars, and a month of a small one, of
 > order five hundred, if several training seeds are to be run. At run time both
-> rungs are the expensive end of the six, because the search asks the model
+> ways are the expensive end of the six, because the search asks the model
 > about hundreds of candidate pushes before every single push the arm makes.
 
 > **The cell is described once, in [the cell](../../the-cell.md)** — the
@@ -80,7 +80,7 @@ that is wrong in small ways is still useful, which turns on planning several
 pushes ahead but executing only the first. You will understand why a
 disagreement between several copies of the same model is a usable measurement
 of the model's own ignorance, which is the most transferable idea in this
-document. And you will understand what the two rungs buy against each other:
+document. And you will understand what the two ways buy against each other:
 a small hand-built model that can be inspected, against a stronger off-the-shelf
 one that brings a maintained implementation.
 
@@ -91,7 +91,7 @@ solution adds learned evidence to is stated there.
 
 ## The code at the heart of it
 
-Two pieces of rung one carry the whole idea, and they are short enough to read
+Two pieces of the first way carry the whole idea, and they are short enough to read
 here. The first is the forward model itself: five copies of a small network
 that take a table and a candidate push and answer with what that push would do.
 The second is the arithmetic that turns those five answers into a single
@@ -248,7 +248,7 @@ running code in this repository and which parts are described here and not
 written, because this solution is unusual among the six in how much of it
 exists.
 
-**Rung one is built.** It lives in `03-push-glasses-apart/04-a-world-model/`, it
+**The first way is built.** It lives in `03-push-glasses-apart/04-a-world-model/`, it
 trains on data it collects itself, and it has been run by the examiner's held-out
 tables with its results recorded in that folder's own `results.json`, and set
 beside the other five in `03-push-glasses-apart/results/README.md`. The model is
@@ -265,11 +265,11 @@ explains how that extension works and what it would buy. But the horizon in the
 built planner is one push, and the reason it is one push is given below under
 compounding error.
 
-**Rung two is a design, and it claims nothing.** It is not wired to this examiner
+**The second way is a design, and it claims nothing.** It is not wired to this examiner
 and it has not been trained or run here, so every number in this document
-belongs to rung one. One thing about it is worth settling before anybody starts:
+belongs to the first way. One thing about it is worth settling before anybody starts:
 the library this project uses elsewhere ships **TD-MPC**, the earlier method,
-and not TD-MPC2. So rung two means fetching TD-MPC2 from its own project, and
+and not TD-MPC2. So the second way means fetching TD-MPC2 from its own project, and
 the convenience of everything living in one library, which solutions 3, 5 and 6
 enjoy, does not apply here. The
 two examiner pieces an off-the-shelf policy needs are no longer the obstacle: the
@@ -315,7 +315,7 @@ fast and narrow, and a forward model is slow and general.
 
 ## What this model is shown, and what it answers
 
-Given that shape, the only real design question for rung one is what to put in
+Given that shape, the only real design question for the first way is what to put in
 the two states and the action, and the answer is: exactly what the arm has, and
 nothing else.
 
@@ -420,7 +420,7 @@ badly wrong in a few places will have those few places chosen for it.
 
 The fix used here is simple to describe and hard to improve on. **Train the
 same network several times from different starting weights on the same data,
-and keep all the copies.** Rung one keeps five. Where the five agree, the
+and keep all the copies.** The first way keeps five. Where the five agree, the
 training data pinned the answer down, which means the model has seen pushes like
 this one. Where they disagree, the data did not pin it down, and each copy
 filled the gap with whatever its own starting weights happened to lead to. So
@@ -473,7 +473,7 @@ batch from around that average with that spread. Repeat. Each round the cloud
 of candidates contracts onto whatever region keeps scoring well, so the method
 spends its later draws where the answer is rather than where it started.
 
-Rung one runs this with six hundred draws in the first round and three hundred
+The first way runs this with six hundred draws in the first round and three hundred
 in each of three more, keeping the best thirty each time, which is about fifteen
 hundred candidate pushes examined per crowded glass. That sounds extravagant
 and costs almost nothing, because a candidate push is one row of thirty-four
@@ -567,7 +567,7 @@ model asked about a table slightly unlike anything in its training data answers
 slightly worse, which produces a table a little further from anything in its
 training data, which it answers worse again.
 
-The size of this is easy to feel with the numbers recorded for rung one. Its
+The size of this is easy to feel with the numbers recorded for the first way. Its
 README reports a median error of about four and a half millimetres for where a
 pushed glass lands, on tables it never trained on. That is a perfectly useful
 one-step model. If that error simply accumulated, a plan rolled three pushes
@@ -578,7 +578,7 @@ that is good at one step can be useless at five**, and the quality of the
 one-step fit says almost nothing about it.
 
 This is why the built planner's horizon is one push. It is the honest horizon
-for a model trained the way rung one's is: every training example is a single
+for a model trained the way the first way's is: every training example is a single
 push, so the model was never asked to be right about a table that one of its own
 predictions produced.
 
@@ -590,14 +590,14 @@ over those pushes. The error then has somewhere to go: the fit is penalised for
 predictions that are plausible one step out and drift two steps out, so it
 learns to produce tables that it can itself handle as input. This is the
 standard remedy in the learned-world-model literature and it is exactly what
-rung two does by construction, which is one of the clearest reasons to want
-rung two at all.
+the second way does by construction, which is one of the clearest reasons to want
+the second way at all.
 
-Two cheaper habits help as well, and rung one uses both. **Keep the horizon as
+Two cheaper habits help as well, and the first way uses both. **Keep the horizon as
 short as the task allows**, because the compounding is a function of depth.
 And **collect training data from the planner itself**, not only from random
 pushes, so that the tables the model sees during training are tables a planner
-would really reach. Rung one's second round of data collection does precisely
+would really reach. The first way's second round of data collection does precisely
 that: the first model plans, the planner finds the pushes where that model is
 wrong in its own favour, those pushes are really made, and what really happened
 goes into the training set. That fills exactly the holes the search is going to
@@ -639,7 +639,7 @@ which is the real reason to want the shortest horizon that can see the answer.
 Two honest qualifications belong here, and they matter.
 
 **The depth that is useful is small.** Compounding error sets an upper limit on
-how far a rollout can be trusted, and for rung one's model that limit is low.
+how far a rollout can be trusted, and for the first way's model that limit is low.
 Two pushes is defensible, three is optimistic, and anything deeper is planning
 against a story rather than a prediction.
 
@@ -653,15 +653,15 @@ spends four pushes instead of six has taken two fewer chances of the single
 failure that cannot be undone. It is not worth something because the arm is
 short of time.
 
-## The second rung: TD-MPC2 off the shelf
+## The second way: TD-MPC2 off the shelf
 
-Rung one is a model written for this cell. Rung two asks what a model written
+The first way is a model written for this cell. The second way asks what a model written
 by people who do this for a living would do instead, and the comparison between
 them is the point of having both.
 
 **TD-MPC2** is the better known of the two model-based methods of this family,
 and it does not come from the library the other borrowed solutions here use;
-that library ships its predecessor. Like rung one it learns a model of how the
+that library ships its predecessor. Like the first way it learns a model of how the
 world changes and plans through it at run time, rather than learning a policy
 that maps a situation straight to an action. So the overall shape — learn what
 happens, then search over actions against what was learned, then act on only the
@@ -670,7 +670,7 @@ first — is the same shape this whole document has described.
 The difference is what the model predicts, and it is worth stating honestly
 because it is the whole contrast.
 
-**Rung one predicts the next table directly, in the quantities the arm
+**The first way predicts the next table directly, in the quantities the arm
 measures.** Its output is displacements in millimetres and two yes-or-no
 answers, and every number in it has a name a person can check against a
 photograph.
@@ -689,7 +689,7 @@ Each buys something real, and the two lists do not overlap.
 **The hand-built one is inspectable and small.** Every input has a name and
 every output has a unit. When it is wrong you can print the thirty-four numbers
 it was shown, the fourteen each copy answered, and the fourteen that really
-happened, and see the disagreement — which is exactly what rung one's tracing
+happened, and see the disagreement — which is exactly what the first way's tracing
 does. It trains in minutes on an ordinary processor, it needs no accelerator,
 and its ensemble gives a signal for ignorance that is easy to reason about.
 Against that, it is weak where it was not told what matters: it sees five
@@ -707,14 +707,14 @@ accelerator, its internal representation cannot be read, and a failure in it is
 much harder to attribute than a wrong number with a unit on it.
 
 **Comparing them is a measurement of whether building it yourself was worth
-it**, and that is the reason this solution has two rungs rather than one. If
+it**, and that is the reason this solution has two ways rather than one. If
 TD-MPC2 clears tables no better than five small networks trained in half an
 hour on a laptop processor, then the cell is narrow enough that the hand-built
 model was the right call, and the thirty-four numbers chosen by hand were a
 better encoding than one learned from scratch. If it clears tables markedly
 better, then what the hand-built encoding left out was real, and the places it
 was left out are where to look next. Either answer is useful, and neither can be
-had from one rung alone. This is the same argument [a network trained here from
+had from one way alone. This is the same argument [a network trained here from
 scratch](../../02-segment-glasses/solutions/02-train-from-scratch.md) makes in
 problem 2, where a model built entirely inside the cell is what makes the
 borrowed models' scores readable.
@@ -850,7 +850,7 @@ worst one. **The model can be confidently wrong.** The ensemble measures
 disagreement, and disagreement only appears where the training data was thin in
 a way the copies noticed. A kind of failure that is absent from the training
 data altogether can produce five copies that agree, agree confidently, and agree
-wrongly. Rung one's own results record exactly this: one glass went over on the
+wrongly. The first way's own results record exactly this: one glass went over on the
 fifty held-out tables and one on a hundred tuning tables, and the model had
 rated as safe every topple it missed. The three causes recorded there are
 instructive, because all three are
@@ -874,7 +874,7 @@ cannot.
 ## A worked example
 
 The clearest way to see the whole arrangement run is on one of the examiner's
-held-out tables, and rung one can be traced step by step on any of them.
+held-out tables, and the first way can be traced step by step on any of them.
 
 Take a table of six glasses of one kind. The first look reports six readings.
 Several pairs are closer than the 70 mm of clear room the gripper needs, so
@@ -908,7 +908,7 @@ After this push one glass has room and is taken. Two pushes later the rest are
 clear and are taken as well, and the table finishes done.
 
 Not every table finishes that way, and the two interesting endings are both
-recorded in rung one's traces. On one, a push is blocked on the way down — the
+recorded in the first way's traces. On one, a push is blocked on the way down — the
 jaw touches something before reaching the table, goes straight back up without
 pushing, and the loop simply looks again and plans afresh, so a blocked push
 costs a push and nothing else. On another, two pushes are made and then no
@@ -916,7 +916,7 @@ further push survives the filters, so three glasses are reported refused with
 their reasons and the table finishes **correct but incomplete**, which [the
 problem](../problem.md) counts as a correct outcome rather than a failure.
 
-Across the fifty held-out tables as a whole, rung one's recorded results — read
+Across the fifty held-out tables as a whole, the first way's recorded results — read
 from its own `results.json` — are two hundred and two of two hundred and
 fifty-one glasses racked in a hundred and fourteen pushes, thirty-one tables
 finished, and the glasses that were left all reported with a reason. **That is
@@ -937,7 +937,7 @@ needed in the first place.
 
 **A physics engine and thousands of pushes in it.** This is the real cost, and
 it is a cost no other solution in this set pays in the same currency. Every
-training example is one push really made: look, push, look again. Rung one's
+training example is one push really made: look, push, look again. The first way's
 README records thirty-eight thousand of them, collected in two rounds — a first
 round of random pushes on thousands of tables, and a second round of pushes
 chosen by the planner using the first round's model, which is what fills the
@@ -948,14 +948,14 @@ advantage this family has over anything trained on demonstrations.
 
 ![One training table yields a dozen examples, because the table is built once and the state after each push starts the next and no push has to be a useful one; a real run makes as few pushes as it can, so gathering the same thirty-eight thousand rows from ordinary runs would take thousands of them, where the simulator produces them in under an hour of processor time and nobody labels any of it.](../../../images/03-push-glasses-apart/04-the-data-it-takes.png)
 
-**A training run, before the solution can answer anything.** Rung one trains
+**A training run, before the solution can answer anything.** The first way trains
 five small networks, and its README records the whole of that — the pushes and
 the five networks — at about half an hour on a laptop processor. **No
-accelerator is needed for rung one at all.** This is unusual among the learned
+accelerator is needed for the first way at all.** This is unusual among the learned
 solutions here and it follows directly from the model being small and the inputs
 being thirty-four numbers rather than a picture.
 
-**For rung two, rented hardware.** TD-MPC2 is reinforcement learning, it trains
+**For the second way, rented hardware.** TD-MPC2 is reinforcement learning, it trains
 on far more interaction than a one-step fit needs, and it wants an accelerator.
 Renting one for a weekend is of order a hundred dollars, which covers a single
 training run. Because [the plan](../solutions-plan.md) requires several training
@@ -978,8 +978,8 @@ jaw, the glass zone, the range of proportions a kind is drawn from, or the
 camera's error, and the weights are quietly out of date in a way no test of the
 code will notice.
 
-**Libraries, and no borrowed model.** PyTorch for both rungs, MuJoCo through the
-examiner, and LeRobot for rung two. Neither rung downloads trained weights from
+**Libraries, and no borrowed model.** PyTorch for both of them, MuJoCo through the
+examiner, and LeRobot for the second way. Neither of them downloads trained weights from
 anybody, so there is no model licence to meet in either — the only conditions
 are the libraries' own, and LeRobot is Apache 2.0.
 
@@ -987,7 +987,7 @@ are the libraries' own, and LeRobot is Apache 2.0.
 examiner](../the-examiner.md) listed them as missing: repeats with a spread on the
 scorecard, because one run of a trained solution is not a measurement, and the
 time per push beside the counts. Both are in `bench/scoring.py` today, as
-`Repeats` and as the seconds-per-push the scorecard records. Rung one's runner
+`Repeats` and as the seconds-per-push the scorecard records. The first way's runner
 uses the plain scorecard, so its results carry the time per push but no spread:
 it has been trained once and run once.
 
@@ -1040,7 +1040,7 @@ planned, and the cap for a one-step-trained model is low.
 **It cannot be inspected the way written geometry can.** When a written rule is
 wrong you can print one number and see why. Here you print thirty-four numbers,
 five answers and what really happened, and infer. That is far better than
-nothing — and it is better than rung two offers — but it is not an explanation.
+nothing — and it is better than the second way offers — but it is not an explanation.
 
 **And it is the most machinery of the six.** A data collector, a trainer, an
 ensemble, a search and a loop, against [one fixed nudge](01-one-fixed-nudge.md),
@@ -1075,7 +1075,7 @@ what the comparison with the other five is meant to settle.
 Nagabandi, Kahn, Fearing and Levine's [*Neural Network Dynamics for Model-Based
 Deep Reinforcement Learning with Model-Free
 Fine-Tuning*](https://arxiv.org/abs/1708.02596) (2017) is the clearest statement
-of the recipe rung one follows: fit a plain network to situation, action and
+of the recipe the first way follows: fit a plain network to situation, action and
 next situation gathered by random exploration, then control with
 model-predictive control on top of it. Its headline result is sample
 efficiency — far fewer interactions than a model-free policy needs for the same
@@ -1096,7 +1096,7 @@ copies as uncertainty. Chua, Calandra, McAllister and Levine's [*Deep
 Reinforcement Learning in a Handful of Trials using Probabilistic Dynamics
 Models*](https://arxiv.org/abs/1805.12114) (2018), usually called PETS, is the
 version that plans with the cross-entropy method against such an ensemble and
-keeps track of where the copies disagree. **Rung one is a simplified PETS**:
+keeps track of where the copies disagree. **The first way is a simplified PETS**:
 five networks, the cross-entropy method, and a veto driven by the worst copy
 rather than the average.
 
@@ -1141,7 +1141,7 @@ description and predict how *that* changes. Hansen, Wang and Su's
 [TD-MPC2](https://arxiv.org/abs/2310.16828) (2023) combine such a learned
 internal model with planning at run time and a learned value to stand in for
 everything beyond the planning horizon, which is how they avoid needing a deep
-rollout. TD-MPC2 is rung two, and it reaches this project through LeRobot.
+rollout. TD-MPC2 is the second way, and it reaches this project through LeRobot.
 
 This family is normally right where the situation cannot be written down — raw
 pictures, contact-rich manipulation, anything where the useful variables are not
@@ -1149,7 +1149,7 @@ the measured ones. It is normally wrong, or at least wasteful, where the
 situation *can* be written down and already has been, which is the case here:
 problem 2 has measured the positions and widths, so a learned encoding is being
 asked to rediscover information the cell already supplies. That is the honest
-prior expectation for rung two on this examiner, and it is exactly the expectation
+prior expectation for the second way on this examiner, and it is exactly the expectation
 the comparison exists to test.
 
 ### Where the push data of record comes from

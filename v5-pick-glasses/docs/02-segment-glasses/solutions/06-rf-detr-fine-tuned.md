@@ -7,7 +7,7 @@
 > so the size can be chosen to suit the machine.
 > **What it does** — it takes one picture from the top and returns one mask per
 > glass, with no step in between that has to cut a joined region apart. The
-> first of its two rungs is built and has been scored; the second was never
+> first of its two ways is built and has been scored; the second was never
 > fitted to completion and claims no number. The model arrives with its weights
 > already fitted to a large collection of ordinary labelled pictures, and
 > training then continues on this cell's own pictures with the list of classes
@@ -68,16 +68,16 @@ reach past the rectangle's edge. This model has no such rectangle standing in
 the way of its masks, and that single structural fact is what the rest of this
 document builds on. The second is what that fact permits: this is the only one
 of the six that can reasonably be asked to mark the part of a glass that nothing
-in the picture shows, which is the **second rung** of this solution and is
+in the picture shows, which is the **second way** of this solution and is
 described in full below.
 
-One thing has to be said before the rest. **The first rung is built and has
-been scored by the examiner; the second rung is not.** Its fine-tune was started
+One thing has to be said before the rest. **The first way is built and has
+been scored by the examiner; the second way is not.** Its fine-tune was started
 with the same settings as the first and stopped unfinished when the machine
 filled up, so no number is claimed for it anywhere. This document quotes no
-scorecard of its own either: the first rung's numbers sit beside its code, in
+scorecard of its own either: the first way's numbers sit beside its code, in
 [`06-rf-detr-fine-tuned/`](../../../02-segment-glasses/06-rf-detr-fine-tuned/).
-So where this document says what the second rung would do, that is the design
+So where this document says what the second way would do, that is the design
 speaking and not a run.
 
 By the end you will understand what a query is and why a fixed number of them is
@@ -94,7 +94,7 @@ Two pieces of code carry this solution, and both are worth seeing before the
 document explains them. The first is the **fine-tune**, which is what turns a
 model fitted on everyday photographs into a finder of glasses in this room. The
 second is the **split**, which separates the pixels of a mask the camera really
-saw from the pixels the model only asserts, and without it the second rung
+saw from the pixels the model only asserts, and without it the second way
 could not be let near the arm.
 
 The fine-tune is two steps, in `06-rf-detr-fine-tuned/rf_detr_seg.py`. The
@@ -191,7 +191,7 @@ The second is that a glass can be **partly covered** by the glass in front of
 it. Its mask then stops where the near glass begins, and what is left is not a
 smaller copy of the glass but a slice of it, lying all to one side. That failure
 is quiet rather than loud, and the whole of [the second
-rung](#the-second-rung--training-against-the-whole-silhouette) is about it.
+way](#the-second-way--training-against-the-whole-silhouette) is about it.
 
 There is a third difficulty neither of those reaches, which is a glass covered
 so completely that it contributes no pixels at all. [When the glasses are
@@ -207,7 +207,7 @@ Those are two separate claims and it is worth keeping them apart. The first is
 shared with other solutions in this set: a model that returns one mask per
 object needs no step that divides a joined region, because the division never
 had to happen. The second belongs to this solution alone, and it is what the
-second rung rests on, because a mask asked to cover more than the camera saw has
+second way rests on, because a mask asked to cover more than the camera saw has
 to be free to grow.
 
 The second half of the main idea is where the numbers inside the model come
@@ -266,7 +266,7 @@ answer was built in.
 ## Why that matters for this problem
 
 That difference matters here for two reasons, one immediate and one that this
-solution's second rung depends on entirely.
+solution's second way depends on entirely.
 
 The immediate reason is that two glasses whose outlines join are two different
 slots from the beginning. The queries work over the whole picture at once, so
@@ -284,7 +284,7 @@ decided by the evidence. Here there is no such edge. A mask may claim any pixel
 in the picture it likes, so asking the model for the whole shape of a glass is a
 request the architecture can express rather than one it has to be forced into.
 That request is [the second
-rung](#the-second-rung--training-against-the-whole-silhouette), and it is the
+way](#the-second-way--training-against-the-whole-silhouette), and it is the
 reason this architecture was chosen for this place in the set.
 
 ## One class
@@ -427,7 +427,7 @@ keeping the ordinary case in proportion. The principle is worth remembering:
 **the edge of the specification should sit somewhere in the middle of the
 training set**, so that the model has met worse than it ever will.
 
-## The second rung — training against the whole silhouette
+## The second way — training against the whole silhouette
 
 Everything above describes a model that marks the pixels the camera can see of
 each glass. This section is the step up, and it belongs to this solution rather
@@ -537,8 +537,8 @@ which is a question about what a glass of this kind looks like and about which
 of two objects at a boundary is in front. The second question needs the model to
 have learned the shape of the kind, and it needs the near-and-far relation to
 come out right, because completing the wrong one of the two objects produces a
-mask spreading over a glass that is actually nearer the camera. So this rung may
-need more training, or a larger size of the model, than the first rung does.
+mask spreading over a glass that is actually nearer the camera. So this way may
+need more training, or a larger size of the model, than the first way does.
 Whether it does is **not known here**, and this document does not assert it.
 
 ### The trap, and it is the one thing most easily got wrong
@@ -574,7 +574,7 @@ split can be read off the answer itself without any reference to the truth.
 The failure if the split is skipped would pass every check the project has. The
 mask would look like a better mask, the footprint fitted to it would still be
 round, and the width would still be inside the range the kind allows, so what
-comes out would be a plausible wrong answer of exactly the kind this rung exists
+comes out would be a plausible wrong answer of exactly the kind this way exists
 to prevent, reached by the repair instead of by the failure the repair is for.
 [The examiner](../the-examiner.md) reports the measurement that settles it, taken
 with exact masks and no model anywhere in the chain: naming the asserted pixels
@@ -586,7 +586,7 @@ than to any model, so it applies here unchanged.
 
 Put the rule together with the exclusion, and the value of the whole silhouette
 turns out to sit where a reader does not first look for it. This is worth being
-exact about, because it is the easiest thing in this rung to misdescribe.
+exact about, because it is the easiest thing in this way to misdescribe.
 
 The asserted pixels are left out, so they contribute nothing to the place and
 nothing to the width. The measurement is the one the observed pixels alone would
@@ -621,7 +621,7 @@ that tolerance once the two parts have been merged.
 ### The risk of inventing glass, and what bounds it
 
 A model trained to extend evidence has an obvious failure direction, and it is
-the mirror image of the failure this rung is for: it can extend evidence that
+the mirror image of the failure this way is for: it can extend evidence that
 needed no extending, or extend a scrap of evidence into a whole object that is
 not there. Two facts about this cell make that concrete. A narrow strip of glass
 pixels looks much the same whether it is the visible sliver of a mostly hidden
@@ -677,7 +677,7 @@ about before the model is trusted.
 
 ### How to tell whether the completion works at all
 
-The last thing this rung needs is a way to tell whether the model is doing what
+The last thing this way needs is a way to tell whether the model is doing what
 it was asked, because the ordinary measure of a segmenter misleads here, and a
 model of this kind can be built, trained and declared a success while completing
 nothing.
@@ -692,13 +692,13 @@ that has learned to ignore the amodal target entirely. The lesson generalises:
 nothing.** Measured against the whole silhouette it is better but still a poor
 guide, because for most glasses the hidden part is a minority of the silhouette
 and for a glass with a clear view it is nothing, so the number mostly reports
-how well the visible boundary was traced, which is the first rung's job.
+how well the visible boundary was traced, which is the first way's job.
 
 So the measure to watch during training is the **overlap over the hidden part
 alone**, which the examiner can supply exactly by subtracting one of its own masks
 from the other. That number ignores every pixel the model could have got right
 by tracing a visible edge. Beside it belong the counts of glasses found, missed
-and merged, because what this rung changes shows up in those counts before it
+and merged, because what this way changes shows up in those counts before it
 shows up in any footprint: a completion that attributes a slice to the glass it
 came off adds a glass to the answer rather than improving the footprint of a
 glass that was already there.
@@ -746,7 +746,7 @@ matched queries to real glasses **one to one**, the filled slots do not
 duplicate each other, so no step afterwards has to reduce overlapping claims to
 one answer.
 
-On the second rung the mask covers the glass's **whole silhouette** rather than
+On the second way the mask covers the glass's **whole silhouette** rather than
 only what the camera saw, so it is then split into its **observed part**, where
 the depth reading agrees that the surface seen there belongs to this glass, and
 its **asserted part**, which is the rest. The observed pixels go to the shared
@@ -769,15 +769,15 @@ solution in this problem ends with.
 Three things are worth holding on to. The **shape of the output** is what
 answers the hardest part of the problem, because a fixed set of slots filled one
 to one holds separate objects without anything having to divide a joined region.
-The **absence of a rectangle round each mask** is what makes the second rung a
+The **absence of a rectangle round each mask** is what makes the second way a
 change of target rather than a change of architecture. And the **separation of
-observed from asserted pixels** is what keeps the second rung honest, because
+observed from asserted pixels** is what keeps the second way honest, because
 the arithmetic and both surviving checks need the two kinds of pixel kept apart.
 
 ## When the glasses are completely hidden
 
 Every document in this set has to answer this, and this one answers it twice,
-because the second rung moves the boundary without removing it.
+because the second way moves the boundary without removing it.
 
 A glass can be missing from a picture altogether. It is standing on the table,
 it is solid, the depth camera is pointed straight at the part of the table it
@@ -810,7 +810,7 @@ identical inputs. What differs between the two scenes left no trace in the
 input, so this is a fact about the input rather than about the model, and
 training cannot change facts about the input.
 
-The second rung does not escape that, and the reason is what completion is.
+The second way does not escape that, and the reason is what completion is.
 **Completion extends evidence.** The model sees a boundary that stops, sees a
 surface in front of where it stopped, and continues the boundary behind that
 surface in the way a glass of this kind would continue. Every part of that
@@ -831,14 +831,14 @@ confident invention is a bad trade where the next step is an arm moving, and it
 is the trade this project's rules refuse: anything doubtful is reported, never
 guessed.
 
-What the second rung does contribute is a boundary further out. Completion needs
+What the second way does contribute is a boundary further out. Completion needs
 less of a glass than anything else in this set, so the point at which hiding
 becomes complete is further away with it than without it, and a glass that would
 have gone missing entirely is reported from the sliver that is left. **The
 boundary moves; it does not disappear.** Beyond wherever it now sits, this
 solution has nothing to say, and should say so.
 
-![A partly covered glass still reaches the picture, so it fills a slot of its own and leaves an edge to carry on from, while a glass whose outline is swallowed whole reaches it nowhere and leaves nothing to extend, which is the rung at which completion stops.](../../../images/02-segment-glasses/06-where-it-stops.png)
+![A partly covered glass still reaches the picture, so it fills a slot of its own and leaves an edge to carry on from, while a glass whose outline is swallowed whole reaches it nowhere and leaves nothing to extend, which is the way at which completion stops.](../../../images/02-segment-glasses/06-where-it-stops.png)
 
 So the completely hidden case has to be handed on, and what is handed on is not
 a glass but a region: the part of the table this picture could not have seen.
@@ -863,7 +863,7 @@ point, so splay stretches the taller one's outline across part of the shorter
 one. In the picture their two outlines join into one region with no seam along
 it.
 
-**What the first rung would return.** The queries work over the whole picture,
+**What the first way would return.** The queries work over the whole picture,
 so the two close glasses occupy two different slots, and the joined region is
 never considered as one thing. Five slots come back filled, and because the
 training matched slots to glasses one to one, no sixth slot reports either of
@@ -873,14 +873,14 @@ and that is allowed, because each mask says "these pixels are part of me" about
 a different glass. Nothing separated the two, and that is the point worth taking
 away: there was never a joined region for anything to divide.
 
-**What the first rung would still get wrong.** The shorter glass's mask stops
+**What the first way would still get wrong.** The shorter glass's mask stops
 where the taller one begins, so it is a slice lying all to one side. Handed to
 the shared arithmetic, that slice gives a width under the truth and a place off
 to one side of where the glass stands, and the width is still one this kind
 allows, so nothing objects. Five glasses are reported, one of them smaller than
 it is and standing where it is not.
 
-**What the second rung would return instead.** The shorter glass's mask covers
+**What the second way would return instead.** The shorter glass's mask covers
 the part behind the taller one as well, so the shorter glass is a region of its
 own and its visible slice is credited to it rather than absorbed into the taller
 glass's region. The mask is then split: the observed part is the slice, and the
@@ -899,7 +899,7 @@ the shorter glass, so its two masks coincide and its footprint is measured
 rather than asserted. The completion decided **where to look**, and the look
 from the side decides **what is true**.
 
-**Now the case neither rung answers.** Push the shorter glass directly behind
+**Now the case neither of them answers.** Push the shorter glass directly behind
 the taller one along that line, close enough that the taller one's stretched
 outline covers it completely. The picture holds no pixel of it, so no slot is
 filled with it and there is no sliver to extend. Four glasses are reported where
@@ -923,7 +923,7 @@ including the crowded arrangements the cell's own rule would never produce. That
 is the genuinely cheap part and it is what makes fine-tuning reasonable here. It
 needs **time on the machine** for the fine-tune, far less than a start from
 random numbers would need but still the largest cost in the solution, and the
-second rung may need more of it than the first.
+second way may need more of it than the first.
 
 It needs **hardware it fits on**. The machine here is a laptop whose graphics
 processor shares memory with the main processor, and PyTorch reaches that
@@ -974,9 +974,9 @@ nothing else.
 **Its licence is permissive**, which matters when the same model has to be
 shipped inside something else.
 
-**Its second rung is the easiest thing in this set to implement wrongly.** If
+**Its second way is the easiest thing in this set to implement wrongly.** If
 the asserted pixels are fed into the shared arithmetic instead of being named
-and excluded, the answer gets worse in exactly the way the rung exists to
+and excluded, the answer gets worse in exactly the way the way exists to
 prevent, and nothing complains: the mask looks better, the footprint stays
 round, and the width stays inside the range the kind allows.
 
@@ -988,7 +988,7 @@ gap to close as well. That is a cost in training time rather than in
 correctness, because the pictures the model is fitted on are the pictures it
 will be run on.
 
-**It is blind to a glass hidden completely**, and so is its second rung. No
+**It is blind to a glass hidden completely**, and so is its second way. No
 pixels means no slot filled, no low score and nothing to check. That is a fact
 about the input rather than about the model.
 
@@ -1113,7 +1113,7 @@ right on real photographs without care, because the label has to be drawn
 through a place nobody can see, so two careful annotators disagree with no way
 to settle who was right, and a model trained on such labels is fitted partly to
 the annotators' guesses. **None of that applies in a simulator**, which is why
-this rung is cheap here: the examiner can render the arrangement again with the
+this way is cheap here: the examiner can render the arrangement again with the
 other glasses taken away, and the mask that comes back is the whole silhouette
 exactly, with no guessing in it. For more, see [image
 segmentation](https://en.wikipedia.org/wiki/Image_segmentation).

@@ -111,7 +111,7 @@ now — a rendered view looking straight down in `bench/top_view.py`, and
 `Bench.follow()`, which carries a chunk of waypoints out as an action — so
 nothing below is blocked on them. Three things here are still prescriptions
 rather than code, and each says so where it is described: **DAgger**, the
-**second rung on π0.5**, and the **several training seeds** the examiner asks for,
+**second way on π0.5**, and the **several training seeds** the examiner asks for,
 of which one was fitted. Everything else in this document describes a program
 that has run.
 
@@ -138,7 +138,7 @@ where the demonstrations come from and why they are free while also capping
 what this solution can ever be, which of solution 5's weaknesses the training
 repairs and which of them survive it untouched, the two ways training on one
 cell's pushes goes wrong, and why a markedly larger foundation model is a
-second rung here rather than the main line.
+second way here rather than the main line.
 
 ## The code that does the work
 
@@ -825,19 +825,19 @@ the spread. **This matters most to this document of any in the folder**, because
 the thing being measured is the gap between two solutions, and a gap smaller
 than either solution's own spread has not been shown to exist.
 
-## A second rung: the same fine-tune on a larger model
+## A second way: the same fine-tune on a larger model
 
 Everything above is about one model, and there is an obvious next question that
 one model cannot answer: would a markedly larger foundation model do better?
-That question is this solution's second rung.
+That question is this solution's second way.
 
-**The rung is the same fine-tune on π0.5.** The same demonstrations, the same
+**The way is the same fine-tune on π0.5.** The same demonstrations, the same
 low-rank adaptation, the same examiner, the same marking, with a much larger
 borrowed model in the middle. Because everything except the model is held
-still, the gap between the two rungs measures what size is worth on this task,
+still, the gap between the two ways measures what size is worth on this task,
 in the same way the gap between this solution and solution 5 measures what
 training is worth. It is also less work than it sounds: the version of LeRobot
-this problem installs carries π0.5 beside SmolVLA, so the rung is the same
+this problem installs carries π0.5 beside SmolVLA, so the way is the same
 training loop pointed at a different policy and a different set of weights,
 rather than new machinery. What it is not is affordable here, and that is the
 whole of why it stays a prescription.
@@ -848,9 +848,9 @@ corner of this family: π0, which belongs to it too, holds about 3.3 billion
 parameters, and a full fine-tune of it needs more than 70 GB of accelerator
 memory, which is why no full fine-tune of a model this size appears anywhere in
 this folder. Low-rank adaptation is what brings a model of that size within
-reach at all, and it is the only way the rung is reached.
+reach at all, and it is the only way the way is reached.
 
-**It is a rung rather than the main line for one practical reason, and the
+**It is a way rather than the main line for one practical reason, and the
 reason is about where mistakes are found.** Almost everything that will go
 wrong in this solution is in the pipeline rather than in the model: rendering
 the view from the top, recording the demonstrations in a form the training loop
@@ -866,7 +866,7 @@ disappears without a single comparison being produced.
 So the order is: get the small model working end to end, measure it against
 solution 5, and only then rent the accelerator for the weekend that answers
 whether size helps. If the small model's fine-tune turns out to buy little, the
-rung is also the thing most worth trying next, because "a larger model" and "a
+way is also the thing most worth trying next, because "a larger model" and "a
 full fine-tune rather than a low-rank one" are the two directions the result
 leaves open, and only the first of them is affordable here.
 
@@ -1111,7 +1111,7 @@ plan](../solutions-plan.md) lifts that rule for problem 3 so that each solution
 states what it needs and roughly what renting it costs, in the same way a
 licence is stated. **The lifting turned out not to be needed for this
 solution**, which is the opposite of what this section first claimed. Where it
-is still needed is the second rung: π0, which belongs to the same family, holds
+is still needed is the second way: π0, which belongs to the same family, holds
 about 3.3 billion parameters and its full fine-tune floor is above 70 GB, and
 there the question really is whether the training fits. At 450 million it was
 not a question. And **the trained model runs here perfectly well** too,
@@ -1381,9 +1381,9 @@ so it is a different kind of expense per push, and can only be changed by
 training it again.
 
 Read as a ladder, the six measure what each increment of fitting buys. This
-solution is the rung where all of the fitting happens on borrowed weights, and
-its partner one rung below is the rung where none of it does. The distance
-between those two rungs is the most valuable single number this folder can
+solution is the way where all of the fitting happens on borrowed weights, and
+its partner one way below is the way where none of it does. The distance
+between those two ways is the most valuable single number this folder can
 produce, which is why it is the first thing this document said and the last.
 
 ← [A foundation model as it downloads](05-smolvla-as-it-downloads.md) ·

@@ -60,7 +60,7 @@ which is what decides both the work involved and what can go wrong.
 | 5 | [A foundation model as it downloads](05-smolvla-as-it-downloads.md) | nothing | SmolVLA, LeRobot | check the weights |
 | 6 | [The same model, fine-tuned here](06-smolvla-fine-tuned.md) | all of it, from a borrowed start | SmolVLA with LoRA, LeRobot | check the weights |
 
-Three carry a **second rung** rather than a document of their own:
+Three carry a **second way** rather than a document of their own:
 
 - **Solution 3** predicts an action chunk directly with ACT, or denoises
   towards one with Diffusion Policy.

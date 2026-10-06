@@ -223,7 +223,7 @@ two objects completely.
 The rest of this document builds that up. First comes what exists in code and
 what is a design, so that nothing later has to be read twice. Then what a
 network is and what training from scratch means. Then the shape of the network
-and the two heads in turn. Then the two rungs of this solution, which are the
+and the two heads in turn. Then the two ways of this solution, which are the
 two places the training labels can come from. Then what the solution hands to
 the examiner, the failure that no amount of training can fix, and where this sits
 among the other five.
@@ -253,7 +253,7 @@ solution is scored on held-out arrangements above that line and writes its own
 **What is a design.** Four things this document describes are written here and
 not built: the two fixes for the rare class in the loss, the check on a pile's
 fitted width, the second alarm on how far a pile's votes sit from their own
-peak, and the whole of the second rung described below, which changes where the
+peak, and the whole of the second way described below, which changes where the
 labels come from. Where this document prescribes a check or a threshold, it
 says so, and it quotes no measurement from anywhere.
 
@@ -562,28 +562,28 @@ keeps this solution inside the same safety argument as rules on the table: a
 learned part decides which pixels group together, and a rule nobody trained
 decides whether the result is believable.
 
-## The two rungs: where the labels come from
+## The two ways: where the labels come from
 
 Everything up to here is one method, and nothing in it says where the training
 labels come from. That question has two answers, and the rest of the method
 does not change between them. The network is the same network, the two heads
 are the same two heads, the votes are the same votes and the checks are the
 same checks. **Only the source of the labels changes**, which is why the two
-are two rungs of one solution rather than two solutions.
+are two ways of one solution rather than two solutions.
 
-The first rung takes its labels from the examiner's answer key, which makes them
-free and exact. The second rung takes its labels from the arm's own movement,
+The first way takes its labels from the examiner's answer key, which makes them
+free and exact. The second way takes its labels from the arm's own movement,
 which makes them neither free nor exact, and buys something else instead. The
-second rung is the point of this document, and the first is best read as the
+second way is the point of this document, and the first is best read as the
 thing it is a step up from.
 
-## Rung one — labels from the answer key
+## The first way — labels from the answer key
 
 The examiner renders every picture itself, so alongside the grey picture and the
 depth reading it has an **id image**: at every pixel, which glass that pixel
 shows, or nothing. The [examiner](../the-examiner.md) describes it in full,
 including the rule that a method may be trained on id images from the training
-half of the arrangements and is never given one while answering. This rung is
+half of the arrangements and is never given one while answering. This way is
 built on that permission.
 
 From an id image both heads' labels fall out by arithmetic.
@@ -605,17 +605,17 @@ vision project is in, and it is the whole reason training from scratch is
 sensible here. No annotator also means no limit on how many arrangements can be
 labelled beyond the time it takes to render them.
 
-The honest weakness of this rung is not in the labels. It is in what they
+The honest weakness of this way is not in the labels. It is in what they
 depend on. The id image comes from the simulator's own record of what it
 rendered, and a real camera on a real table has no such record. So everything
-this rung learns is learned from a source that exists only while the glasses
-are simulated, and the day the cell meets real glasses, this rung has to be
-labelled again by somebody drawing round things. The second rung is what
+this way learns is learned from a source that exists only while the glasses
+are simulated, and the day the cell meets real glasses, this way has to be
+labelled again by somebody drawing round things. The second way is what
 removes that dependency.
 
-## Rung two — labels from the arm's own movement
+## The second way — labels from the arm's own movement
 
-The second rung asks the same network the same two questions and fits it with
+The second way asks the same network the same two questions and fits it with
 no answer key at all. Nothing in the simulator's record is read, not even
 during training.
 
@@ -629,11 +629,11 @@ away it is. Points on one glass therefore move together, and points on a
 different glass at a different distance move by a different amount. **That
 agreement is the label.**
 
-![The arm's own encoders say exactly how far it slid the camera between two pictures of a still scene, and every pixel of the near glass then shifts by one amount while every pixel of the far glass shifts by another, which is the agreement this rung uses in place of an answer key.](../../../images/02-segment-glasses/02-two-views-parallax.png)
+![The arm's own encoders say exactly how far it slid the camera between two pictures of a still scene, and every pixel of the near glass then shifts by one amount while every pixel of the far glass shifts by another, which is the agreement this way uses in place of an answer key.](../../../images/02-segment-glasses/02-two-views-parallax.png)
 
 ### Parallax: the shift goes as one divided by the depth
 
-The effect the rung lives on is called **parallax**, and you have seen it from
+The effect the way lives on is called **parallax**, and you have seen it from
 a moving train, where the near fence races past the window while the far hills
 barely move. When the camera slides sideways, a surface moves across the
 picture by an amount equal to the slide divided by how far away the surface is.
@@ -646,7 +646,7 @@ difference in depth is worth a great deal of separation near the camera and
 almost nothing far from it. The second is that the separation between two
 surfaces' shifts grows in step with the slide, so **a longer slide buys more
 separation, in proportion**. That turns the arm into a dial it can set
-deliberately, and it is the reason this rung can say in advance how far it must
+deliberately, and it is the reason this way can say in advance how far it must
 move to settle a particular doubt.
 
 ![How far a surface moves between the two pictures goes as one divided by its depth, so the effect is steep close up and nearly flat far away, and the separation between two glasses' shifts grows in step with the slide, which is what turns the arm into a dial.](../../../images/02-segment-glasses/02-depth-against-shift.png)
@@ -677,13 +677,13 @@ sideways at every survey station, because a station takes two pictures a short
 distance apart; a slide taken deliberately for this purpose is the same kind of
 movement, just longer and from the side.
 
-![The loop this rung prescribes would not take another picture and hope: it would name the doubt in pixels, divide by how much separation one millimetre of slide is worth, move the arm exactly that far, and check each region that came back against the range this kind of glass can be.](../../../images/02-segment-glasses/02-deliberate-motion-loop.png)
+![The loop this way prescribes would not take another picture and hope: it would name the doubt in pixels, divide by how much separation one millimetre of slide is worth, move the arm exactly that far, and check each region that came back against the range this kind of glass can be.](../../../images/02-segment-glasses/02-deliberate-motion-loop.png)
 
-So this rung's labels come mostly from pictures taken from the side, which has
+So this way's labels come mostly from pictures taken from the side, which has
 a plain consequence worth stating rather than hiding. **The labels for the
 hardest case, which is the merge in a picture from the top, are the ones this
-rung is worst at producing**, because that is exactly where parallax is weak.
-The rung still trains the network that runs on pictures from the top, because
+way is worst at producing**, because that is exactly where parallax is weak.
+The way still trains the network that runs on pictures from the top, because
 training and running are separate, and only the trained network is used at run
 time, on exactly the input the examiner hands every solution. But the supervision
 it gets for the merge is weaker than the answer key's, and that is the price of
@@ -691,7 +691,7 @@ not reading the answer key.
 
 ### What an embedding is
 
-The first rung could turn its labels into targets directly, because the answer
+The first way could turn its labels into targets directly, because the answer
 key says which glass a pixel belongs to and therefore where its arrow should
 point. Movement gives something weaker: it says whether two pixels belong
 together, and nothing about which glass they are or how many glasses there are.
@@ -736,14 +736,14 @@ apart, without anybody ever having said what a glass is.
 What that gets right is worth naming, because no appearance-based rule can do
 it. The line the embedding draws runs where the **depth jumps**, and not where
 the brightness changes. So two glasses of the same kind, the same colour and
-the same shape are no harder for this rung than two different ones, which is
+the same shape are no harder for this way than two different ones, which is
 the exact case that defeats a method relying on how things look.
 
 What it does not get is equally worth naming. **Nothing in an embedding names a
 glass and nothing counts them.** The map says which pixels belong together, and
 something else has to decide how many neighbourhoods there are. So the lists
 are grouped, each group becomes a candidate region, and every candidate region
-goes through the same checks rung one's piles go through: enough pixels, a
+goes through the same checks the first way's piles go through: enough pixels, a
 circle fitted on the table, and a width inside the range this kind of glass
 can be. The grouping step here is doing the job mean shift does for the votes,
 and it has the same one number to choose and the same two limits pinning it.
@@ -754,12 +754,12 @@ region with no complaint attached to it at all.
 
 ![Two glasses of one kind standing the same distance from the lens shift by the same amount however far the camera slides, so there is nothing for parallax to separate them by; and where there is, an embedding still says only which pixels are alike and never how many glasses there are.](../../../images/02-segment-glasses/02-the-limit.png)
 
-### What this rung buys and what it costs
+### What this way buys and what it costs
 
 It buys one thing, and the thing is about the future rather than about this
-problem. **This is the only rung whose supervision a real arm also has.** A
-real arm has joint encoders and a wrist camera, which is everything this rung
-needs. Every other solution here that is fitted in this cell, including rung
+problem. **This is the only way whose supervision a real arm also has.** A
+real arm has joint encoders and a wrist camera, which is everything this way
+needs. Every other solution here that is fitted in this cell, including way
 one, is fitted to labels that exist only because the pictures were rendered, so
 every one of them would have to be labelled again from nothing on the day the
 code met real hardware. This one would not.
@@ -771,21 +771,21 @@ and weakest exactly where the problem is hardest. The labels are **not free**,
 because collecting them means moving the arm, and an arm movement costs seconds
 while a picture costs milliseconds and a pass of the network costs less than
 that; so a training set gathered this way is paid for in arm time rather than
-in render time. And the whole rung depends on there being something to match
+in render time. And the whole way depends on there being something to match
 between two pictures, so it is weakest where the pictures are plainest, which
 is a surface of one even shade.
 
-The honest conclusion is that rung one is the rung to build for this problem
-and rung two is the rung to reach for when the cell leaves the simulator. This
+The honest conclusion is that the first way is the way to build for this problem
+and the second way is the way to reach for when the cell leaves the simulator. This
 cell has a working depth camera, which measures directly what parallax is being
-trained to infer, so inside this problem rung two is doing hard work for
+trained to infer, so inside this problem the second way is doing hard work for
 information the cell already has. It earns its place the day that stops being
 true.
 
 ## The training set
 
-Both rungs need a set of arrangements to learn from, and two decisions about
-that set decide whether the network works at all. They apply to each rung
+Both of them need a set of arrangements to learn from, and two decisions about
+that set decide whether the network works at all. They apply to each way
 equally.
 
 **Spawn the hard case.** The cell's own rule keeps glasses a comfortable
@@ -924,7 +924,7 @@ nothing to extend. A model asked to mark a glass that *might* be standing
 behind this one would be inventing an arrangement rather than reading a
 picture. Whether predicting the hidden part of a partly visible glass is worth
 doing is studied inside [RF-DETR fine-tuned](06-rf-detr-fine-tuned.md), which
-carries that question as its own second rung.
+carries that question as its own second way.
 
 The two views lose a glass in different ways, and the difference is worth
 separating, because what this solution cannot see is not the same in each. From
@@ -1007,8 +1007,8 @@ this machine's integrated graphics through the MPS backend. No dedicated
 graphics card is needed, and nothing is downloaded, so there is no licence
 condition on anything this solution uses.
 
-**A training set.** For rung one, arrangements rendered by the examiner with their
-id images, which costs render time and nothing else. For rung two, pairs of
+**A training set.** For the first way, arrangements rendered by the examiner with their
+id images, which costs render time and nothing else. For the second way, pairs of
 pictures with the camera's movement logged beside each one, which costs arm
 time.
 
@@ -1162,7 +1162,7 @@ For more, see [mean shift](https://en.wikipedia.org/wiki/Mean_shift).
 ### Self-supervised learning — labels from the structure of the data
 
 Rather than annotate anything, construct a task whose answer is already implied
-by the data, so that the supervision is free and unlimited. Rung two is this
+by the data, so that the supervision is free and unlimited. The second way is this
 idea with the arm's own encoders as the generator of labels.
 
 It is used where unlabelled data is abundant and labels are expensive, and in
@@ -1201,7 +1201,7 @@ appearance at all, which is why it works on two identical glasses.
 
 It is used for video segmentation and tracking, and anywhere objects are hard
 to tell apart by how they look. It is rarely right where nothing moves relative
-to anything else, which is exactly why rung two is weak from the top: two rims
+to anything else, which is exactly why the second way is weak from the top: two rims
 at nearly the same distance have almost no relative movement to group by.
 
 ### Contrastive training — turning "these belong together" into a loss

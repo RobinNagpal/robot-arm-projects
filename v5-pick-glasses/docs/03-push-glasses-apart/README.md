@@ -54,7 +54,7 @@ foundation model.
 **All six are built and all six have been run by the examiner**, and the numbers
 are set side by side in
 [`03-push-glasses-apart/results/`](../../03-push-glasses-apart/results/). Each
-document says which of its own second rungs was built and which was not, and no
+document says which of its own second ways was built and which was not, and no
 number anywhere is an estimate: where something could not be run, the result is
 absent and the reason is given instead.
 

@@ -5,7 +5,7 @@
 > PyTorch underneath. No rented accelerator: this one fitted on the machine
 > the project is written on, an Apple M4 with no NVIDIA card. The model
 > is **ACT**, an action chunking transformer: it predicts a short run of future
-> actions in one go rather than one action at a time. A second rung uses
+> actions in one go rather than one action at a time. A second way uses
 > **Diffusion Policy**, also in LeRobot, which reaches the same kind of answer
 > by starting from noise and denoising towards an action chunk. Nothing is
 > downloaded except the library: both models are fitted here, from random
@@ -66,7 +66,7 @@ good pushes and training a model to copy them. The method has a name,
 **behaviour cloning**, and it is the plainest kind of learning there is: no
 reward, no exploration, no physics, only a large table of situations and the
 action somebody took in each one. The model that does the copying is ACT, an
-action chunking transformer, taken from LeRobot, and a second rung replaces it
+action chunking transformer, taken from LeRobot, and a second way replaces it
 with Diffusion Policy, which arrives at the same kind of answer by a different
 route.
 
@@ -557,9 +557,9 @@ down to a handful of parameters removes the mechanism that makes it work, and
 what you would then measure is a damaged version of the method rather than the
 method that exists.
 
-## The second rung — Diffusion Policy
+## The second way — Diffusion Policy
 
-The plan carries a second rung for this solution, and it is not a spare in case
+The plan carries a second way for this solution, and it is not a spare in case
 the first one fails. It is there to test one specific weakness of the first,
 which the previous section has just named.
 
@@ -581,7 +581,7 @@ arrive depends on where the noise started, which is why asking twice can give
 two different good answers.
 
 That last property is the whole argument, and it is worth stating carefully
-because it is the clearest reason to carry both rungs.
+because it is the clearest reason to carry both of them.
 
 **When several different pushes would all be good, a model trained to predict
 one answer tends to average them.** This is not a flaw in any particular
@@ -606,21 +606,21 @@ is therefore being asked, at almost every step, to choose between options it has
 no reason to choose between — and its way of coping is to produce their
 average.
 
-So the two rungs together measure something real rather than merely trying two
+So the two ways together measure something real rather than merely trying two
 models. ACT predicts a chunk directly, and if the averaging problem bites, it
 will show up as pushes that move glasses too little or in the wrong direction
 on exactly the symmetric arrangements where two answers were available.
 Diffusion Policy can represent the choice. The gap between the two is a
 measurement of how much the averaging cost, on this table, with this data.
 
-**The rung is written and it runs; it has not been fitted here.** It is in
+**The way is written and it runs; it has not been fitted here.** It is in
 `policy.py` beside ACT, taking the same demonstrations, the same scaling and
 the same picture, so that only the model differs. What stopped it was the
 compute bill rather than the code: Diffusion Policy is about 75 million
 parameters against ACT's 52 million, a training step costs it roughly twice as
 much, and one chunk at run time is sixteen denoising passes rather than one
 forward pass. Fitting it with several seeds on this machine is a night's work
-on top of ACT's, and a rung reported from one seed is not a result. So there
+on top of ACT's, and a way reported from one seed is not a result. So there
 is no `results-diffusion.json`, and the gap this section argues for has not
 been measured.
 
@@ -635,7 +635,7 @@ argument.
 
 ![The teacher's chunk drawn beside the policy's on the same scale: the teacher's is a straight 87 mm of path for 87 mm of displacement, every single one of them, while the policy's wanders 262 mm of path to get 28 mm away, and across the held-back demonstrations the policy's chunks walk two to four times as far as they get; beside it, the waypoints that had to be pulled inside the jaw's limits, which were every one of them the height column and at most 1.7 mm below push height.](../../../images/03-push-glasses-apart/03-inside-one-chunk.png)
 
-Two costs come with the second rung and both belong on the scorecard.
+Two costs come with the second way and both belong on the scorecard.
 
 **It costs more per push.** One chunk needs several denoising passes rather
 than one forward pass, so the run-time cost is some multiple of ACT's. [The
@@ -794,7 +794,7 @@ is therefore set near the median length of the teacher's own pushes, and a
 push longer than that is replayed quicker than it was made.
 
 ACT is then fitted on the dataset from random numbers, for hours. The second
-rung fits Diffusion Policy on the same dataset, changing the model and nothing
+way fits Diffusion Policy on the same dataset, changing the model and nothing
 else. Both are fitted several times with different seeds, because one training
 run is not a measurement.
 
@@ -955,7 +955,7 @@ average over those examples is something between them: a short, hesitant motion
 that separates nothing. The examiner would score that as a push spent with the
 table unchanged, and a solution that repeats it would burn its push budget
 without failing in any way the counts call wrong. **This is the case the
-Diffusion Policy rung exists to test**, because a model that draws its chunk
+Diffusion Policy way exists to test**, because a model that draws its chunk
 can commit to one side.
 
 **And the refusal.** Take a different table, of stemmed glasses this time, one
@@ -1041,9 +1041,9 @@ five hundred, so even a generous schedule of retraining stays well inside a
 weekend's rental if a laptop is not available.
 
 At run time it needs very little: **one forward pass per chunk** for ACT, and
-several passes per chunk for the denoising rung, against a push that takes the
+several passes per chunk for the denoising way, against a push that takes the
 arm seconds to carry out. The compute column on the scorecard is where that
-difference between the two rungs becomes visible.
+difference between the two ways becomes visible.
 
 And once fitted, it needs **a weights file kept in step with the examiner**.
 Change how the view from the top is rendered, or the macro whose waypoints
@@ -1235,7 +1235,7 @@ is learnable at all.
 ## Where it sits among the other five
 
 [The six solutions](overview.md) form a ladder, ordered by how much of each one
-was fitted in this cell, and this solution is the first rung on which
+was fitted in this cell, and this solution is the first way on which
 everything was.
 
 Against [solution 1](01-one-fixed-nudge.md), the comparison is the basic one
@@ -1293,7 +1293,7 @@ right: same model, same weights, and the only difference between them is that
 one has had its training continued here.
 
 Read as a ladder, the six measure what each increment of fitting buys. This one
-is the rung where all the fitting is done here, from nothing, on examples a
+is the way where all the fitting is done here, from nothing, on examples a
 program produced for free — the cheapest honest attempt at learning this task
 that the folder contains, and the one whose limits are easiest to state in
 advance.

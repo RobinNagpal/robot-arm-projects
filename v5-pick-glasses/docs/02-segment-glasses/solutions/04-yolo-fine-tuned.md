@@ -930,8 +930,8 @@ have been trained on the job, which is the natural question to ask after this
 solution's own pair has answered what training is worth at all.
 
 Read as a ladder, the six measure what each increment of fitting buys. This
-solution is the rung where all of the fitting happens on a borrowed model, and
-its partner one rung below is the rung where none of it does.
+solution is the way where all of the fitting happens on a borrowed model, and
+its partner one way below is the way where none of it does.
 
 ← [A borrowed model, as it downloads](03-yolo-zero-shot.md) · [SAM 2 with a
 keeper](05-sam2-with-a-keeper.md) →
