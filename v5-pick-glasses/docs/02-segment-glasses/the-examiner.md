@@ -52,10 +52,20 @@ invented for convenience.
 from one arrangement to the next so that all four kinds are met in turn. The
 glasses stand far enough apart never to touch.
 
-**There are two families of arrangement.** The ordinary one spaces the glasses
-as the cell's spawner would. The crowded one pushes them as close as the cell
-allows, which is where the methods separate most, because crowding is what
-creates both the merge and the complete hiding.
+**There are two families of arrangement**, and the difference between them is
+only how far apart the glasses stand.
+
+The **ordinary family** is what the cell's own spawner produces. It keeps 150 mm
+between any two centres, and that guarantee is what leaves a strip of bare table
+between every pair of glasses. In an ordinary arrangement each glass makes its
+own separate patch of pixels and nothing is hidden behind anything.
+
+The **crowded family** pushes the glasses as close as the cell allows, which is a
+third to two thirds of that ordinary spacing. This is where the methods separate
+most, because crowding is what creates the two failures worth studying. Two
+glasses close enough together run into a single patch of pixels, so one report
+covers both of them; and a short glass standing behind a tall one can lose its
+whole outline and appear in the picture not at all.
 
 **Arrangements are split into a training half and a test half**, by the number
 used to draw them. Anything a method is fitted on comes from below the dividing
