@@ -576,47 +576,24 @@ opinion about it.
 
 ## When the glasses are completely hidden
 
-Every solution document in this folder answers this question, which is whether
-the method can find a glass that no picture holds. This one's answer is **that
-it cannot, from either of the camera's places**, and the reasoning is short and
-absolute.
+A glass can be covered completely, and then it contributes no pixel to any
+picture. [What is asked for](../problem.md) gives
+the geometry and says how close two glasses have to stand for it, and [looking
+again at what was
+hidden](../hidden-glasses.md) is the shared
+answer: work out from arithmetic where a glass could have been standing unseen,
+and go and look there. **No method that reads pictures can do better**, because
+the arrangement with the hidden glass and the same arrangement with it removed
+produce the same picture, pixel for pixel. What follows is only what is this
+solution's own.
 
-Looking **from the top**, a glass's outline is thrown outwards away from the
-point directly below the camera, and the taller the glass the further out it
-goes. Because one kind holds both short glasses and much taller ones, a tall
-glass's stretched outline can sweep over a short neighbour and cover it
-completely. The short glass then produces no pixels at all. A model finds
-objects in a picture, and there is nothing of that glass in the picture to find,
-so no candidate is produced and no entry appears.
-
-Looking **from the side**, it is plainer. A near glass stands in the way, and
-because it is nearer it is drawn larger, so a glass directly behind it
-disappears however far behind it stands.
-
-**No amount of training helps, and this is worth settling exactly, because more
-training is the first thing anyone suggests.** Take the arrangement with the
-hidden glass, and the same arrangement with that glass taken away. The renderer
-produces the same picture for both, pixel for pixel. A model is a function of
-its input, so no model of any size, fitted by any method, can return two
-different answers for two identical inputs. What differs between the two
-arrangements left no trace in the input. This is therefore a fact about the
-input and not about the model, and it is the one place where this solution and
-its untrained partner are guaranteed to score the same.
-
-Nothing in the output raises a question either. There is no low confidence
-number, because the glass that was found really is a glass and the model is
-right to be sure. There is no impossible width, because the visible pixels
-belong to the glass in front and return to its own true footprint. Every check
-on this solution's output is a check on something that was found, and here there
-is nothing to check.
-
-So this solution reports the case rather than answering it, and what it reports
-is not a glass but a region of table it could not have seen. Working out that
-region is arithmetic on the outward throw and on the glasses that **were**
-found, and then going to look at it is a move of the arm. Both belong to the
-part every solution in this folder shares rather than to any one of them, as
-[looking again at what was hidden](../hidden-glasses.md) sets out. This solution
-contributes the masks that shared part argues from, and none of the argument.
+**This is the one place where this solution and its untrained partner are
+guaranteed to score the same.** Training moves what a model does with the
+pixels it is given, and here there are no pixels to do anything with, so the
+pair that exists to measure what fine-tuning buys measures nothing at all on
+this case. Nothing in the output raises a question either: there is no low
+confidence number and no impossible width, because the visible pixels belong to
+the glass in front and return to its own true footprint.
 
 ## A worked example
 

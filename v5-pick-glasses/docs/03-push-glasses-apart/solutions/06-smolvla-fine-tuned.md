@@ -926,56 +926,39 @@ time.
 
 ## When a glass cannot be pushed safely
 
-Every solution document in this folder answers this question, and this one's
-answer is short, because the answer does not come from the model.
+A glass slides while the jaw touches it below half its foot width divided by
+the friction, and tips above that. The height that counts is the jaw's **top
+edge** at 65 mm, not the 50 mm its middle rides at, and for a glass whose foot
+is narrow enough there is no contact height the arm can offer below the limit.
+The only correct answer for such a glass is to refuse, with the reason
+recorded, which marks the run *correct but incomplete* rather than wrong.
+[Pushing without toppling](../pushing-without-toppling.md)
+sets all of that out once, including what is done when the unknown friction
+leaves the limit undecided, and it is **arithmetic applied before any model is
+consulted** in five of the six solutions. What follows is only what is this
+solution's own.
 
-A glass slides while the jaw's contact height is below half its foot width
-divided by the friction coefficient, and tips above it. The height that counts
-is the **top edge of the jaw**, which stands at 65 mm because the jaw rides as
-low as the gripper goes, at 50 mm, and is 30 mm tall. For a glass whose foot is
-narrow enough, the limit falls below 65 mm, and there is then no contact height
-the arm can offer that is below it. Such a glass tips before it slides whatever
-the arm does, and **the only correct answer for it is to refuse**, with the
-reason recorded. A refusal is a result, and a run that refuses the glasses it
-should refuse is marked *correct but incomplete*, which is a good outcome.
+**This is the one place where this solution and its untrained partner are
+guaranteed to behave the same**, because the thing that decides the outcome is
+the same code in both, reading the same readings and applying the same
+arithmetic. Any difference in their refusal counts comes from their pushes
+having left the glasses in different places, not from either being better at
+refusing.
 
-**That check is not this solution's and cannot be made this solution's.** It
-belongs to [pushing without toppling](../pushing-without-toppling.md), where it
-is explained once for all six, and it runs on every glass before the jaw moves.
-In code it is `slides` in `01-one-fixed-nudge/plan.py`, which is worth saying
-because that is not where a thing shared by six solutions would naturally sit.
-There is no shared module for it: solutions 2, 3, 5 and this one all reach into
-solution 1's folder for the same arithmetic rather than each writing it out, so
-those five do refuse the same glasses, but by borrowing rather than by sharing.
-[Solution 4](04-a-world-model.md) is the one that does not apply it, and says
-so.
-The reasons it has to sit outside the policy are worth repeating in
-one place, because they are easy to lose in the middle of a document about
-training. A policy has no field in it for a rule, so it cannot be told. Its
-training set contained no refusals, because the teacher refused those glasses
-and the recordings that remain are of pushes that happened, so it has never
-seen the case. And the cost of being wrong is not symmetric: a glass left
-standing with a reason can be revisited by anything later in the project, while
-a glass that went over is finished, because nothing in this project can stand a
-glass back up.
-
-So this solution's honest position is that it proposes and the shared geometry
-disposes. **This is the one place where this solution and its untrained partner
-are guaranteed to behave the same**, because the thing that decides the outcome
-is the same code in both, reading the same readings, applying the same
-arithmetic. Any difference in the refusal counts between the two comes from
-their pushes having left the glasses in different places, not from either of
-them being better at refusing.
+Three reasons the check has to sit outside the policy are worth keeping
+together, because they are easy to lose in a document about training. A policy
+has no field in it for a rule, so it cannot be told. Its training set contained
+no refusals, because the teacher refused those glasses and what remains are
+recordings of pushes that happened. And the cost of being wrong is not
+symmetric: a glass left standing with a reason can be revisited by anything
+later, while a glass that went over is finished.
 
 Two qualifications keep that from sounding safer than it is. The check needs
-the friction coefficient, nobody has it, and the limit it computes is only as
-good as the guess. And the guard against a guess that was too generous — the
-early abort that reads the jaw's force while the push is happening and stops it
-when the contact stops behaving like a slide — **is a design and not code**.
-The examiner stops a push at a jam, which is far more force than a glass needs to
-begin tipping, and nothing reads the force as it develops. So the only thing
-protecting a glass in either half of this pair is the limit computed before the
-jaw moves, and a 5 mm test push where that limit is undecided.
+the friction, nobody has it, and the limit is only as good as the guess. And
+the guard against a guess that was too generous — the early abort that reads
+the jaw's force as the push happens — **is a design and not code**. So the only
+thing protecting a glass in either half of this pair is the limit computed
+before the jaw moves.
 
 ## A worked example
 

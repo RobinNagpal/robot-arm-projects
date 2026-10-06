@@ -776,78 +776,36 @@ the arithmetic and both surviving checks need the two kinds of pixel kept apart.
 
 ## When the glasses are completely hidden
 
-Every document in this set has to answer this, and this one answers it twice,
-because the second way moves the boundary without removing it.
+A glass can be covered completely, and then it contributes no pixel to any
+picture. [What is asked for](../problem.md) gives
+the geometry and says how close two glasses have to stand for it, and [looking
+again at what was
+hidden](../hidden-glasses.md) is the shared
+answer: work out from arithmetic where a glass could have been standing unseen,
+and go and look there. **No method that reads pictures can do better**, because
+the arrangement with the hidden glass and the same arrangement with it removed
+produce the same picture, pixel for pixel. What follows is only what is this
+solution's own.
 
-A glass can be missing from a picture altogether. It is standing on the table,
-it is solid, the depth camera is pointed straight at the part of the table it
-stands on, and not one pixel of it comes back. From the top that happens through
-splay: the tall end of this kind is more than twice the height of its short end,
-so a tall glass's outline is thrown much further out than a short one's, and
-standing the short glass beyond the tall one along the line running out from the
-point below the camera lets the tall glass's stretched outline cover it
-entirely.
-
-**A glass with no pixels fills no slot.** The queries read the picture, and what
-the picture holds where the hidden glass stands is the tall glass in front of it
-and the table around it. Nothing in that part of the picture came from the
-hidden glass, so one slot is filled with the tall glass, correctly, with a
-correct mask over the tall glass's pixels, and the hidden glass appears nowhere.
-
-**Nothing in the output is wrong.** There is no low score, because the glass
-that was found really is a glass. There is no impossible width either, because
-the surviving pixels back-project to the tall glass's own real footprint: splay
-decides which pixels exist and not where they land, so every pixel returns to
-its own true place on the table. Every check prescribed above is a check on
-something that was found, and there is nothing to check.
-
-**No amount of training helps, and this can be put more strongly than "it does
-not work".** Take the scene with the hidden glass, and the same scene with that
-glass taken away. The renderer produces the same picture for both, pixel for
-pixel. A model is a function of its input, so no model of any size, trained by
-any method for any length of time, can return different answers for two
-identical inputs. What differs between the two scenes left no trace in the
-input, so this is a fact about the input rather than about the model, and
-training cannot change facts about the input.
-
-The second way does not escape that, and the reason is what completion is.
-**Completion extends evidence.** The model sees a boundary that stops, sees a
-surface in front of where it stopped, and continues the boundary behind that
-surface in the way a glass of this kind would continue. Every part of that
-description begins with something in the picture: the visible sliver says where
-the glass is, how wide it is, and how far the completion has to reach. Take the
-sliver away and there is no boundary that stops, no partial outline to continue
-and no scrap of surface to say which glass of the kind's range this is. There is
-nothing to extend, and a model that extends nothing produces nothing.
-
-A model *could* be trained to mark a glass that **might** be behind this one,
-since the examiner can supply that label too, and it is worth saying what such a
-model would be doing. It would be reporting where glasses tend to stand in
-arrangements like this one, which is a statement about the range of arrangements
-rather than about this arrangement. That is **inventing a scene rather than
-reading a picture**, and it would mark a glass behind every tall glass,
-including all the times there is nothing there. Trading a silent miss for a
-confident invention is a bad trade where the next step is an arm moving, and it
-is the trade this project's rules refuse: anything doubtful is reported, never
-guessed.
-
-What the second way does contribute is a boundary further out. Completion needs
-less of a glass than anything else in this set, so the point at which hiding
-becomes complete is further away with it than without it, and a glass that would
-have gone missing entirely is reported from the sliver that is left. **The
-boundary moves; it does not disappear.** Beyond wherever it now sits, this
-solution has nothing to say, and should say so.
+**This solution moves the boundary without removing it**, and that is the one
+thing its second way contributes here. Completion extends evidence: the model
+sees a boundary that stops, sees a surface in front of where it stopped, and
+continues the boundary behind that surface the way a glass of this kind would
+continue. Every part of that begins with something in the picture. Take the
+sliver away and there is no boundary that stops and nothing to extend, so a
+model that extends nothing produces nothing. What completion does buy is that
+it needs less of a glass than anything else here, so the point at which hiding
+becomes complete is further out with it than without it.
 
 ![A partly covered glass still reaches the picture, so it fills a slot of its own and leaves an edge to carry on from, while a glass whose outline is swallowed whole reaches it nowhere and leaves nothing to extend, which is the way at which completion stops.](../../../images/02-segment-glasses/06-where-it-stops.png)
 
-So the completely hidden case has to be handed on, and what is handed on is not
-a glass but a region: the part of the table this picture could not have seen.
-Working that region out is arithmetic on splay and on the glasses that *were*
-found, and going to look at it is a move of the arm. Both belong to the shared
-part of this problem described in [looking again at what was
-hidden](../hidden-glasses.md), which every one of the six points at rather than
-restating. This solution contributes the masks that argument starts from, and
-none of the argument.
+A model **could** be trained to mark a glass that might be behind this one,
+since the examiner can supply that label too, and it is worth saying what such
+a model would be doing. It would report where glasses tend to stand in
+arrangements like this one, which is a statement about the range of
+arrangements rather than about this one — **inventing a scene rather than
+reading a picture** — and it would mark a glass behind every tall glass,
+including all the times there is nothing there.
 
 ## A worked example
 

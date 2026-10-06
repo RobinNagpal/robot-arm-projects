@@ -462,31 +462,22 @@ removes every lever that would normally be pulled to fix the problems above.
 
 ## When the glasses are completely hidden
 
-Every solution document in this folder answers this question, and the answers
-differ in a way worth comparing. This one's answer is **no, from either of the
-camera's two places**, and the reason is the same reason as for the other
-mask-producing solutions.
+A glass can be covered completely, and then it contributes no pixel to any
+picture. [What is asked for](../problem.md) gives
+the geometry and says how close two glasses have to stand for it, and [looking
+again at what was
+hidden](../hidden-glasses.md) is the shared
+answer: work out from arithmetic where a glass could have been standing unseen,
+and go and look there. **No method that reads pictures can do better**, because
+the arrangement with the hidden glass and the same arrangement with it removed
+produce the same picture, pixel for pixel. What follows is only what is this
+solution's own.
 
-**Looking from the top**, a tall glass's outline can sweep over a short one and
-cover it completely, so the short glass appears in no picture at all. A model
-that finds objects in a picture can only find objects the picture contains.
-There would be nothing at those pixels but the tall glass, so one outline would
-come back, correctly describing the glass the camera could see, and the covered
-glass would not merely be mis-measured but absent from the model's output
-entirely. No bar on the confidence number and no change of model size alters
-this, because the evidence is not weak, it is missing.
-
-**Looking from the side**, the situation is cleaner and worse. Two arrangements,
-one with a far glass standing behind a near one and one with the far glass taken
-away, produce the same picture pixel for pixel. The model is a function of the
-picture, so it would return the same outlines with the same names and the same
-numbers for both. Nothing the model could be asked would distinguish them.
-
-The cure for both lies outside this solution, in [looking again at what was
-hidden](../hidden-glasses.md), which every one of the six points at. It works
-out which parts of the table nobody could have seen and sends the camera to
-cover them from new positions. This solution would contribute the outlines that
-argument starts from, and would contribute nothing to the argument itself.
+**This solution has the least to add**, because it fits nothing and has no
+check of its own to fire. The borrowed model returns one outline per object it
+believes it found, the hidden glass is not an object in the picture, and so no
+candidate is produced and no entry appears. The confidence number is about the
+objects that were found, and they really are glasses.
 
 ## A worked example
 

@@ -841,66 +841,34 @@ keep therefore becomes a doubtful report rather than a wrong glass.
 
 ## When the glasses are completely hidden
 
-A glass can be missing from a picture altogether. It stands on the table, it is
-opaque, the camera is pointed at the part of the table it stands on, and not one
-pixel of it comes back, because a taller glass's outline has been thrown
-outwards by splay until it sweeps right over the shorter one. This is the most
-dangerous of the three difficulties in [problem 2](../problem.md), every
-solution has to say what it does about it, and this solution's answer is a clean
-and complete no.
+A glass can be covered completely, and then it contributes no pixel to any
+picture. [What is asked for](../problem.md) gives
+the geometry and says how close two glasses have to stand for it, and [looking
+again at what was
+hidden](../hidden-glasses.md) is the shared
+answer: work out from arithmetic where a glass could have been standing unseen,
+and go and look there. **No method that reads pictures can do better**, because
+the arrangement with the hidden glass and the same arrangement with it removed
+produce the same picture, pixel for pixel. What follows is only what is this
+solution's own.
 
-Being exact about why takes five steps, and each one closes a different escape
-route.
-
-**There is no region to propose.** The borrowed model grows a mask from the
-picture's own content at the place the prompt points at. A prompt point anywhere
-over the piece of picture where the hidden glass ought to be lands on the
-covering glass, so what comes back is the covering glass, and that answer is
-*correct*. Nothing has malfunctioned.
-
-**Prompting harder does not help**, and this is where the property named earlier
-matters. A prompt selects; it does not add information. There is no point, no
-box and no rough mask that makes the model return a glass which cast no pixels,
-because a prompt works on the pixels that are there. A box drawn round the empty
-stretch of table returns the table, or the covering glass, depending on where
-its edges fall.
-
-**The keeper is never consulted**, because it only ever sees proposals and there
-is no proposal for this glass. All three of its answers are about a region that
-exists.
-
-**No check can fire.** Every check here is a check on a proposal: the measured
-width, how round it is, how far it stands above the table, how many prompts
-agreed on it, how it sits among the other proposals. What comes back for the
-covering glass is one proposal with a legal width, a round footprint, a proper
-height above the table and the agreement of many prompts. **Nothing about it is
-wrong.** The picture is one believable glass where two are standing, which is
-the shape this difficulty always takes.
+**The keeper is never consulted**, which is worth following because it closes
+the escape route this solution seems to offer. The borrowed model grows a mask
+from the picture's own content at the place the prompt points at, so a prompt
+anywhere over the hidden glass lands on the covering glass and returns the
+covering glass — and that answer is correct. Prompting harder does not help,
+because **a prompt selects and does not add information**: there is no point,
+no box and no rough mask that makes a model return a glass which cast no
+pixels. With no proposal for the hidden glass, the keeper's three answers are
+never asked for, and every check here is a check on a proposal.
 
 ![A prompt point over the piece of table where the hidden glass stands lands on the covering glass, so the mask that comes back is the covering glass's, no proposal for the hidden glass ever exists, and the keeper is never consulted about it.](../../../images/02-segment-glasses/05-where-it-stops.png)
 
-**And more model does not help either.** The arrangement with the hidden glass
-and the same arrangement with that glass removed produce the same picture, pixel
-for pixel. No function of the picture can tell them apart, whatever its size and
-however it was fitted, because the thing that differs between the two left no
-trace in the input. A larger checkpoint changes nothing, a text prompt on the
-second way changes nothing, and neither would training the borrowed model if
-training it were allowed.
-
-One more thing is worth saying, because it is the temptation this solution
-invites. A foundation model's strength is that it generalises to objects it
-never saw, and it is easy to hope that this covers the hidden case as well. It
-does not. The difficulty here is not an unfamiliar object but **an absent one**,
-and generalisation handles evidence of a new kind, while here there is no
-evidence of any kind.
-
-So this solution cannot handle the completely hidden case and has to hand it on,
-and what it hands on is not a glass but a **region**: the part of the table it
-could not have seen. Working out that region is arithmetic on splay and on the
-glasses that *were* found, and moving the camera to look again is the shared
-part of this problem, described once in [looking again at what was
-hidden](../hidden-glasses.md), which every solution points at. This solution
-contributes the masks those two argue from, and none of the argument.
+One temptation is worth naming, because this solution invites it. A foundation
+model's strength is that it generalises to objects it never saw, and it is easy
+to hope that covers this. It does not. The difficulty is not an unfamiliar
+object but **an absent one**, and generalisation handles evidence of a new
+kind, while here there is no evidence of any kind.
 
 ## A worked example
 

@@ -808,68 +808,41 @@ scorecard cannot be compared.
 
 ## When a glass cannot be pushed safely
 
-Every solution in this set has to answer this question, and this one answers it
-twice over, which makes it the most interesting place to look at what learning
-the physics really buys.
+A glass slides while the jaw touches it below half its foot width divided by
+the friction, and tips above that. The height that counts is the jaw's **top
+edge** at 65 mm, not the 50 mm its middle rides at, and for a glass whose foot
+is narrow enough there is no contact height the arm can offer below the limit.
+The only correct answer for such a glass is to refuse, with the reason
+recorded, which marks the run *correct but incomplete* rather than wrong.
+[Pushing without toppling](../pushing-without-toppling.md)
+sets all of that out once, including what is done when the unknown friction
+leaves the limit undecided, and it is **arithmetic applied before any model is
+consulted** in five of the six solutions. What follows is only what is this
+solution's own.
 
-[Pushing without toppling](../pushing-without-toppling.md) gives the written
-rule, and it is shared by all six without exception: a glass slides while the
-contact height is below half its foot width divided by the friction
-coefficient, and tips above it. A glass whose limit is below the jaw's top edge
-cannot be pushed safely at any height the gripper can reach, and the only
-correct answer for it is to refuse. That arithmetic is applied before any model
-is consulted, so no model here can cause the failure this problem cares most
-about, and because the friction in it is a guess it is evaluated across the
-range a glass on a dry wooden top plausibly covers rather than at one value.
+**This is the one solution that does not apply that arithmetic, and that is a
+gap in it rather than a second opinion.** The built planner holds no friction
+value and no tipping formula, so the shared rule belongs in front of it and is
+not there yet.
 
-**The built planner does not evaluate that rule, and that is a gap in it rather
-than a second opinion.** It holds no friction value and no tipping formula, so
-the shared gate belongs in front of it and is not there yet. What it adds —
-and this is what learning the physics buys — is a **second** refusal, which
-comes from the evidence rather than from the rule: a glass is refused when
-**every push the search asked about was turned down**, and the planner reports
-which kind of rejection dominated. If most candidates died on the topple limit,
-the glass is reported as one where every push the model was asked about might
-tip something over. If most died on the map, it is reported as having nowhere
-inside the zone and within reach to push it to. Two further refusals come from
-the loop rather than the model: a glass that has been pushed its allowed number
-of times and still has no room, and a table whose push budget is spent.
+What learning the physics adds is a **second** refusal, from the evidence
+rather than from the rule: a glass is refused when every push the search asked
+about was turned down, and the planner reports which kind of rejection
+dominated. That is a stronger statement than it first appears, because of how
+it was reached. Fifteen hundred candidate pushes are examined, each by five
+independently trained copies of the model, each on four copies of the table
+shifted by the camera's error. **A glass refused here is one for which no push
+survived all of that** — a different claim from a one-line inequality with a
+guessed number in it, and an addition to it rather than a replacement.
 
-A refusal reached this way is a stronger statement than it first appears,
-because of how it was reached. Fifteen hundred candidate pushes were examined,
-each by five independently trained copies of the model, each also on four copies
-of the table shifted by the camera's error. "No push survived" means no push
-survived all of that. **A glass refused here is a glass for which the search
-could not find a single push that five separately trained models and five
-slightly different tables all agreed was safe**, which is a different claim
-from the one-line inequality with a guessed number in it, and an addition to
-that inequality rather than a replacement for it.
-
-The honest weakness has to be stated with it, because it is this solution's
-worst one. **The model can be confidently wrong.** The ensemble measures
-disagreement, and disagreement only appears where the training data was thin in
-a way the copies noticed. A kind of failure that is absent from the training
-data altogether can produce five copies that agree, agree confidently, and agree
-wrongly. The first way's own results record exactly this: one glass went over on the
-fifty held-out tables and one on a hundred tuning tables, and the model had
-rated as safe every topple it missed. The three causes recorded there are
-instructive, because all three are
-things the thirty-four numbers cannot express — the jaw meeting a stemmed glass
-at its stem and lifting under the bowl, the jaw's body clipping a neighbour
-behind the target, and a tapered glass tipping on its own.
-
-Lowering the topple limit does not fix that. A limit only moves the line among
-pushes the model has an opinion about, and these are pushes the model is
-confident about. What fixes it is more examples of exactly those situations,
-which is an argument for more data collection and, for the body clipping a
-neighbour, an argument for telling the model that the jaw has a body at all.
-
-And the limit that cannot be fixed by either is the one [pushing without
-toppling](../pushing-without-toppling.md) states for all six: **nothing in this
-loop stands a toppled glass back up.** That is why the topple test is a veto
-rather than a cost to be weighed against the value of moving the glass. A risk
-worth taking is one whose bad outcome the system can absorb, and this one it
-cannot.
+The weakness has to be stated with it. **The model can be confidently wrong**,
+because the ensemble only disagrees where the training data was thin in a way
+the copies noticed, and a kind of failure absent from the data altogether
+produces five copies that agree wrongly. The record shows exactly that: one
+glass went over on the fifty held-out tables and one on a hundred tuning
+tables, and **the model had rated as safe every topple it missed.** Lowering a
+limit does not fix that, because these are pushes the model is confident about;
+more examples of those situations does.
 
 ## A worked example
 

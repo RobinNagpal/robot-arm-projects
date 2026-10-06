@@ -607,58 +607,35 @@ exactly one of those levers is [solution
 
 ## When a glass cannot be pushed safely
 
-Every solution document in this folder answers this question, and this one's
-answer is the shortest of the six, because **the answer does not involve the
-model at all**.
+A glass slides while the jaw touches it below half its foot width divided by
+the friction, and tips above that. The height that counts is the jaw's **top
+edge** at 65 mm, not the 50 mm its middle rides at, and for a glass whose foot
+is narrow enough there is no contact height the arm can offer below the limit.
+The only correct answer for such a glass is to refuse, with the reason
+recorded, which marks the run *correct but incomplete* rather than wrong.
+[Pushing without toppling](../pushing-without-toppling.md)
+sets all of that out once, including what is done when the unknown friction
+leaves the limit undecided, and it is **arithmetic applied before any model is
+consulted** in five of the six solutions. What follows is only what is this
+solution's own.
 
-[Pushing without toppling](../pushing-without-toppling.md) sets out the rule. A
-glass slides while the height the jaw touches it is below half its foot width
-divided by the friction coefficient, and tips above it. The height that counts
-is the top edge of the jaw, which is 65 mm rather than the 50 mm the middle of
-the jaw rides at, because a glass that is wider higher up meets the top edge
-first. For a glass whose limit falls below that, there is no contact height the
-arm can offer that is safe, and the only correct answer is to refuse — the run
-ends as *correct but incomplete*, the glass stays where it was, and the reason
-is reported.
+**It is just as well that the refusal is arithmetic, and the reason is the
+point of this whole document.** Nothing in a borrowed model's pretraining knows
+this cell. The limit depends on a foot width the camera work measures, on a jaw
+height that is this gripper's own number, and on a friction coefficient nothing
+in this cell measures at all. A model fitted on other people's robots has met
+none of the three and cannot acquire them from a picture of plain shapes.
+Asking it to respect a limit it cannot compute would be asking it to guess, and
+a toppled glass is the one mistake this problem cannot absorb.
 
-That check is **applied on the measurements, before any model is consulted.**
-A glass that fails it is removed from the task and reported, so the model is
-never asked to move it. The arithmetic is shared rather than rewritten here:
-it is solution 1's `slides`, in `01-one-fixed-nudge/plan.py`, which solutions
-2, 3, 6 and this one import rather than rewrite, so those five refuse exactly
-the same glasses. [Solution 4](04-a-world-model.md) is the exception: it judges
-toppling with its own learned model and says that the shared gate in front of
-it is not there yet. It does not live in the examiner, which the second half of
-this section comes back to.
-
-**That arrangement is just as well, and the reason is the point of this whole
-document.** Nothing in a borrowed model's pretraining knows this cell's jaw or
-this kind's foot width. The limit depends on a foot width that problem 2
-measures here, on a jaw height that is this gripper's own number, and on a
-friction coefficient that nothing in this cell measures at all. A model fitted
-on other people's robots has met none of those three quantities, and it has no
-way to acquire them from a picture of plain shapes. Asking it to respect a limit
-it cannot compute would be asking it to guess, and the one mistake this problem
-cannot absorb is a toppled glass. So the refusal is taken out of the model's
-hands entirely and made arithmetic that runs first.
-
-There is a second half to this. Removing a glass from the task does not remove
-it from the picture, so a model that reads the picture can still aim at a
-refused glass, and a solution that emits waypoints freely is also free to emit
-a contact higher than the lowest the gripper reaches. Nothing in the model's
-pretraining would warn it against either. So the trajectory that comes back is
-read rather than trusted: one that would reach a refused glass is thrown away,
-and the heights in the rest are bounded into the range the jaw rides at.
-
-Both of those checks are built, in `05-smolvla-as-it-downloads/clear.py` and
-`joining.py`. This document expected them to sit in the examiner beside the
-refusal, so that they would be identical for all six and not something a model
-can argue with. They do not: the examiner grew the straight-down view and the
-waypoint path but no shared guard, and the tipping refusal lives in solution
-1's folder rather than in the examiner either. So the checks are this solution's
-own, written to the same rule, and solution 6 should import them from here
-rather than write them again. Between them, this solution cannot topple a
-refused glass by choosing badly.
+There is a second half. Removing a glass from the task does not remove it from
+the picture, so a model that reads the picture can still aim at a refused
+glass, and a solution that emits waypoints freely can emit a contact higher
+than the jaw rides at. **So the trajectory that comes back is read rather than
+trusted**: one that would reach a refused glass is thrown away, and the heights
+in the rest are bounded into the range the jaw rides at. Both checks are built
+— and they sit in this solution's own folder rather than in the examiner, which
+is where a thing five solutions need would belong.
 
 ## A worked example
 

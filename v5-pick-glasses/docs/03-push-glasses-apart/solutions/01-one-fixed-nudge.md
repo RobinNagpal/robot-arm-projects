@@ -614,59 +614,33 @@ spent, or when every glass that is left has been refused.
 
 ## When a glass cannot be pushed safely
 
-Step 5 of that loop is the one that can end a glass's part in the run without
-touching it, and it is worth taking slowly, because a refusal here is a correct
-answer rather than a failure.
+A glass slides while the jaw touches it below half its foot width divided by
+the friction, and tips above that. The height that counts is the jaw's **top
+edge** at 65 mm, not the 50 mm its middle rides at, and for a glass whose foot
+is narrow enough there is no contact height the arm can offer below the limit.
+The only correct answer for such a glass is to refuse, with the reason
+recorded, which marks the run *correct but incomplete* rather than wrong.
+[Pushing without toppling](../pushing-without-toppling.md)
+sets all of that out once, including what is done when the unknown friction
+leaves the limit undecided, and it is **arithmetic applied before any model is
+consulted** in five of the six solutions. What follows is only what is this
+solution's own.
 
-A pushed glass slides while the jaw touches it below a height set by half the
-width of its foot divided by the friction between the glass and the table, and
-tips above that height. The arm cannot choose that height freely. The middle of
-the jaw rides as low as the gripper goes, which is 50 mm above the table,
-and the jaw is 30 mm tall, so its **top edge** stands at 65 mm. The height that
-counts in the rule is the top edge and not the middle, because a glass that is
-wider higher up meets the top edge before any other part of the jaw touches it,
-and the tapered glass is wider higher up by definition. So the limit is checked
-against 65 mm, and the 15 mm difference is not a rounding question: it falls
-entirely in the direction that topples glasses, since every glass the lenient
-check wrongly admits is a glass that will be touched above its limit.
+**This solution has a second reason to refuse, and it is the one that costs it
+most.** The jaw pushes along the direction it points, so the approach runs
+along the same line as the push, and pushing a glass straight away from its
+neighbour means coming in from the neighbour's side. The tool behind the
+fingertips is 270 mm long and 90 mm across, all of it at the height of the
+push, so all of it has to miss everything on the table — and in a tight group
+the blocking neighbour is standing exactly where the tool would have to be.
+
+This method has one heading to offer and no way of choosing another, so when
+that heading is blocked the only honest answer is that there is nowhere clear
+to push the glass from. **Every solution that searches over headings can ask
+for a different approach; this one cannot**, and that is the sharpest statement
+of what the simplicity costs.
 
 ![The height at which a push starts tipping a glass, drawn against the foot it stands on, with the jaw's middle at 50 mm and its top edge at 65 mm ruled across it: the push lands on the top edge, those 15 mm cost most of the glasses that the jaw's middle would have been allowed to touch, and the three friction lines, one of which is the simulator's own and none of which the arm is told, give three different answers about the same glass.](../../../images/03-push-glasses-apart/01-the-friction-ceiling.png)
-
-The friction in that rule is the number nobody has, so the check is made at
-both ends of the range that glass on a dry wooden top plausibly covers, and the
-three possible answers are the three the built code already distinguishes. A
-glass whose foot is wide enough to slide even at the high end of the range is
-safe to push. A glass that tips even at the low end **is refused**, with the
-reason that it tips before it slides, and no amount of looking again helps,
-because the refusal is a statement about that glass rather than about the
-arrangement. A glass that the range cannot settle is given a small test push
-and looked at: a glass that slid has moved, and a glass that leaned and fell
-back where it stood has not, so the test answers directly a question no
-arithmetic in the cell can answer. That test is the one place in this entire
-method where the arm reads the world before committing to a decision rather
-than after it.
-
-This method has a second reason to refuse, and it is the one that costs it
-most, because it follows from the very decision that makes it simple. The jaw
-pushes along the direction it points, so **the approach runs along the same
-line as the push**, and pushing a glass straight away from its neighbour means
-coming in from the neighbour's side. The tool behind the fingertips is 270 mm
-long and its body is 90 mm across, and all of it sits at the height of the
-push, so all of it has to miss everything standing on the table. In a tight
-group the blocking neighbour is standing exactly where the tool would have to
-be. This method has one heading to offer and no way of choosing another, so
-when that heading is blocked the only honest answer is to refuse with the
-reason that there is nowhere clear to push the glass from. Every solution that
-searches over headings can ask for a different approach; this one cannot, and
-that is the sharpest statement of what the simplicity costs.
-
-Two rules complete the refusal path, and both are shared with every other
-solution. A glass that is already lying on its side ends the run, because
-nothing in this project stands a glass back up and the arm does not work next
-to one. And **no refusal has a fallback that tries anyway.** A glass that was
-refused is still a glass standing on a table, and something later may yet move
-it or be told to leave it. A glass that was pushed and went over is finished,
-and the arm carries on working beside it.
 
 ## A worked example
 

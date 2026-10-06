@@ -742,46 +742,33 @@ the model's position after the refusal matters more than the model's accuracy.
 
 ## When a glass cannot be pushed safely
 
-Every solution document answers this question, and this one's answer is that
-**the refusal belongs entirely to the arithmetic and the model is never
-consulted about it.**
+A glass slides while the jaw touches it below half its foot width divided by
+the friction, and tips above that. The height that counts is the jaw's **top
+edge** at 65 mm, not the 50 mm its middle rides at, and for a glass whose foot
+is narrow enough there is no contact height the arm can offer below the limit.
+The only correct answer for such a glass is to refuse, with the reason
+recorded, which marks the run *correct but incomplete* rather than wrong.
+[Pushing without toppling](../pushing-without-toppling.md)
+sets all of that out once, including what is done when the unknown friction
+leaves the limit undecided, and it is **arithmetic applied before any model is
+consulted** in five of the six solutions. What follows is only what is this
+solution's own.
 
-There are two reasons a glass is refused here, and they are the two [the
-problem](../problem.md) names.
+**The refusal belongs entirely to the arithmetic and the model is never
+consulted about it.** The topple test runs inside the filter, so a glass it
+refuses produces no candidates at all, and the second reason — every candidate
+along every heading clashed with a neighbour, left the glass zone or left the
+arm's reach — leaves the candidate set empty. **A ranking over an empty set is
+still empty.**
 
-**It tips before it slides.** The limit `a / μ` is small when the foot is
-narrow or the friction is high, and it can come out below the 65 mm at which
-the jaw's top edge touches the glass — which is already the lowest contact the
-gripper can offer, since the middle of the jaw rides at 50 mm and cannot go
-lower without fouling the table. For such a glass there is no contact height
-the arm can offer below the limit, so it tips whatever the arm does. Because the
-friction is a guess rather than a measurement, the test is made at both ends of
-the believed range: safe if the limit clears the jaw's top edge even at the most
-pessimistic friction, refused if it fails even at the most generous one, and
-settled by a 5 mm push and a look when the two ends disagree — and refused even
-then if the lean such a push could cause is not small compared with the angle
-the glass would fall past. That test runs inside the filter, so a glass it
-refuses produces no candidates and the model is handed nothing.
-
-**There is nowhere clear to push it to.** Every candidate along every heading
-clashed with a neighbour, left the glass zone or left the arm's reach. The
-candidate set is empty, and **a ranking over an empty set is still empty**. This
-is the commoner refusal by a wide margin in the record this solution extends:
-all 56 of the glasses that run left on the table were refused for this reason,
-and not one for tipping. This folder reports the same glasses in two groups
-rather than one, separating those that had no candidate at all from those whose
-candidates were all too slight to be worth making, so its own results file
-spells the reason differently and counts the same refusals.
+Which of the two does the work was measured, and the answer is lopsided: in the
+record this solution extends, **all 56 of the glasses left on the table were
+refused for having nowhere clear to go, and not one for tipping.** This
+solution's own run separates the glasses that had no candidate at all from
+those whose candidates were all too slight to be worth making, so it spells the
+reason differently and counts the same refusals.
 
 ![The topple limit is evaluated at the jaw's top edge across the whole believed range of friction, and on the held-out tables it refuses nothing: every refusal in the record is a glass with nowhere clear to push it to.](../../../images/03-push-glasses-apart/02-where-the-refusals-come-from.png)
-
-Both refusals are reported with their reason, which makes the run **correct but
-incomplete** rather than wrong. That distinction is the project's position
-wherever contact is involved: a glass that was refused is still a glass
-standing on a table, and anything later may yet move it or measure it, while a
-glass that was pushed over is finished and the arm carries on working beside
-it. So no fallback may be added that tries anyway, and the model is not a
-fallback: it has no input through which to disagree with a refusal.
 
 ## A worked example
 
