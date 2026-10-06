@@ -9,9 +9,9 @@ The point is to be able to compare them and then choose, knowing what the
 choice costs. By the end of this document you will understand what all six
 share, what single thing each one changes, and which pair to look at first.
 
-The arrangement is the same one problem 2 uses: six cars driven to one
-destination, over the same road, so that when one arrives sooner you know it
-was the car.
+The arrangement is the same one problem 2 uses. All six are asked the same
+question, given the same arrangements and marked the same way, so the method is
+the only difference left between any two of them.
 
 ## What all six share
 

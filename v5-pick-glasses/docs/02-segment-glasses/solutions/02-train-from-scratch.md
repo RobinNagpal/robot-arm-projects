@@ -244,8 +244,8 @@ simulator's own record of which glass each pixel shows. Its votes are piled up
 into a tally and the peaks of that tally are picked off one at a time, largest
 first, and the pixels that voted near a peak are that peak's glass.
 
-Running it as one of the six cars on the shared [examiner](../the-examiner.md)
-is built too. The training set is drawn from the examiner's own arrangements, half
+Running it as one of the six solutions on the shared
+[examiner](../the-examiner.md) is built too. The training set is drawn from the examiner's own arrangements, half
 of them crowded and all of them below the examiner's dividing line, and the
 solution is scored on held-out arrangements above that line and writes its own
 `results.json` beside itself.
