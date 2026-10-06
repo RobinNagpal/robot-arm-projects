@@ -18,7 +18,7 @@ changes — so when one arrives sooner, you know it was the car.
 ## What all six share
 
 Three things are held still for every solution, and they are described in full
-by [the test bench](../the-bench.md). In short:
+by [the examiner](../the-examiner.md). In short:
 
 **The same input.** One fixed set of arrangements, in the same order. For each
 picture, a solution may read the grey picture shaded from depth, the depth
@@ -29,13 +29,13 @@ particular never the simulator's record of what it put out.
 table, a rough width, and whether the picture held the whole glass — and beside
 those records the two honest statements the problem asks for, which glasses
 could not be separated and which parts of the table could not have been seen.
-The last of the four is a fact about the view, which the bench reports and every
+The last of the four is a fact about the view, which the examiner reports and every
 solution may read: a footprint fitted to a glass the frame cut in half is part
 of a footprint, and a solution that refuses a report on its width needs to know
 which it has.
 
 **The same final step.** Turning a mask into a place and a width belongs to the
-bench. Every solution hands over masks and the bench does the arithmetic.
+examiner. Every solution hands over masks and the examiner does the arithmetic.
 
 That last point is the one that makes the whole comparison mean something, so it
 is worth saying plainly what follows from it. **Every solution contributes only
@@ -71,7 +71,7 @@ table reads downwards from nothing fitted to everything fitted.
 Three of them carry a **second rung** inside themselves, which keeps a real idea
 without spending a whole document on it:
 
-- **Solution 2** takes its labels either from the bench's answer key, or from
+- **Solution 2** takes its labels either from the examiner's answer key, or from
   the arm's own movement with no answer key at all.
 - **Solution 5** either prompts with a grid of points and fits a keeper to pick
   the glasses, or prompts the next generation of the same model with a word and
@@ -86,15 +86,15 @@ holds everything still except one thing.
 
 | Question | Compare | What is held still |
 |---|---|---|
-| Does a model beat a written rule at all? | 1 against the rest | the bench |
-| Is it better to fit here, or to borrow? | 2 against 3–6 | the bench |
+| Does a model beat a written rule at all? | 1 against the rest | the examiner |
+| Is it better to fit here, or to borrow? | 2 against 3–6 | the examiner |
 | **What does training actually buy?** | **3 against 4** | **the library, the model, the starting weights** |
 | Is a small fitted head enough, or must the whole model move? | 5 against 4 and 6 | that a model is borrowed |
 | Does the architecture matter once both are trained? | 4 against 6 | the amount of fitting, the free labels and the single class — the licence changes with the architecture |
 | Does predicting the hidden part help? | inside 6 | everything but the training target |
 
 **Start with solution 3 against solution 4.** It is the sharpest comparison in
-the set: same library, same model, same downloaded weights, same bench. The
+the set: same library, same model, same downloaded weights, same examiner. The
 training also replaces the borrowed list of everyday categories with a single
 class, which cannot be had separately from the training itself, so nothing
 varies between the two that the training did not bring. Whatever gap appears
@@ -149,18 +149,18 @@ so that the reading transfers to whichever model is licensed conveniently.
 
 ## What is built
 
-**All six are built and all six have been run on the bench.** Each has code in
+**All six are built and all six have been run by the examiner.** Each has code in
 a folder named after the document you are reading about it, and the numbers the
 six produced are set side by side in
 [`02-segment-glasses/results/`](../../../02-segment-glasses/results/). No number
 in this project is an estimate: where something could not be run, the result is
 absent and the reason is written down instead.
 
-The bench was built before the solutions, which was deliberate rather than
+The examiner was built before the solutions, which was deliberate rather than
 accidental, because a comparison whose yardstick arrives after the results is a
 comparison nobody can trust. Building the solutions then tested the yardstick in
 return, and twice it was the yardstick that was wrong: the mask measurement had
-to be rewritten after the bench's own perfect masks failed it, and two of the
+to be rewritten after the examiner's own perfect masks failed it, and two of the
 six turned out to have been scored on different pictures from the other four.
 Both are fixed, and both were found by measuring rather than by reading.
 
@@ -173,7 +173,7 @@ amodal target of solution 6 is the third.
 ## Where to go next
 
 - [The problem](../problem.md) — what is asked for, and the three difficulties.
-- [The test bench](../the-bench.md) — the shared input, output and marking.
+- [The examiner](../the-examiner.md) — the shared input, output and marking.
   **Read this before any solution document.**
 - [Looking again at what was hidden](../hidden-glasses.md) — the part all six
   share.

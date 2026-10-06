@@ -2,7 +2,7 @@
 
 > **What it uses** — NumPy for the arithmetic over a handful of positions and
 > widths, and nothing else. Carrying the jaw to the places the arithmetic names
-> belongs to the cell rather than to this solution: on the test bench the
+> belongs to the cell rather than to this solution: on the examiner's tables the
 > physics engine does it, and in the real cell MoveIt does.
 > There is no model, no weights file, no training set and no licence
 > condition, because not one number in this solution was fitted to anything.
@@ -24,7 +24,7 @@
 > point the jaw along the line that runs from the neighbour's middle through
 > the glass's middle; set the travel to a fixed fraction of the shortfall; put
 > the start point on that same line, a little outside the glass's widest part;
-> and hand the result over as one parameterised push, which the bench's own
+> and hand the result over as one parameterised push, which the examiner's own
 > macro expands into a jaw trajectory. Then look again and start over.
 
 > **What it costs** — no data, because nothing learns; no training time, for
@@ -73,7 +73,7 @@ produces no scored candidates, so it is the teacher for nobody.
 
 **Part of this solution is built and part of it is a design**, and the two are
 separated plainly in [what is built and what is a
-design](#what-is-built-and-what-is-a-design). The bench, the room test, the
+design](#what-is-built-and-what-is-a-design). The examiner, the room test, the
 tipping rule and the loop all exist in this repository and have been run. The
 particular rule for choosing a direction and a distance that this document
 describes is a design that would sit inside them.
@@ -259,7 +259,7 @@ anybody can measure how much room it is short of, and the rule that makes that
 smaller is to push it away from whatever is crowding it.
 
 The three parts map onto the cell directly. The measurement is `look()`, which
-the bench provides. The error is the shortfall. The correction is the nudge,
+the examiner provides. The error is the shortfall. The correction is the nudge,
 and the fraction that turns the error into the correction is called the
 **gain**, which is the standard word for it. A correction that is the error
 multiplied by a fixed gain is a **proportional controller**, and that is the
@@ -281,7 +281,7 @@ To close on a glass the open jaw has to get round it: a finger and a pad on
 each side, with the jaw opened wider than the glass before it closes. Added up
 from the glass's middle outwards, that comes to about **70 mm of clear room in
 every direction**. Those are the gripper's own numbers, so the project is
-allowed to write them down, and the bench holds the 70 mm as a constant and
+allowed to write them down, and the examiner holds the 70 mm as a constant and
 applies the test like this: **a glass has room when every other glass's edge is
 at least 70 mm from its middle.**
 
@@ -437,9 +437,9 @@ Before the output and the refusals, it is worth saying plainly which of all
 this exists as code, because this is one of the few solutions in the set where
 real code is involved and it would be easy to over-claim.
 
-**Built, in the repository, and run against the bench:**
+**Built, in the repository, and run against the examiner:**
 
-- the bench itself, in [`03-push-glasses-apart/bench/`](../../../03-push-glasses-apart/bench/), with the
+- the examiner itself, in [`03-push-glasses-apart/bench/`](../../../03-push-glasses-apart/bench/), with the
   crowded tables, the measurement error, `look()`, `push()`, `take()` and the
   scorecard;
 - the room test, as `has_room()` in
@@ -472,7 +472,7 @@ real code is involved and it would be easy to over-claim.
 - the shared target layout, which this solution does not use in any case;
 - the rendered view of the table from the top, and the path for a chunk of
   waypoints, neither of which this solution needs;
-- the repeats and the compute column that [the bench](../the-bench.md)
+- the repeats and the compute column that [the examiner](../the-examiner.md)
   describes for the scorecard.
 
 One measurement from the built code is worth quoting, with its attribution
@@ -481,12 +481,12 @@ made clear. The programmed run reports in
 that its pushed glasses stopped a median of 1.0 mm, and at worst 3.9 mm, from
 where they were aimed. **That run uses the searching planner rather than this
 solution's rule**, so the figure is not this solution's score. What it does say
-is something about the bench rather than about any rule: in this simulator, a
+is something about the examiner rather than about any rule: in this simulator, a
 glass that is pushed follows the jaw closely, so the unknown factor `g` of the
 previous section sits near one here. No solution is told that, nothing in the
 cell would reveal it, and on a real table with a real cloth or a real spill it
 would not hold. It is a reason to expect this method to converge in few pushes
-on the bench, and not a reason to trust it anywhere else.
+on the examiner's tables, and not a reason to trust it anywhere else.
 
 ## It produces nothing anybody can learn from
 
@@ -522,15 +522,15 @@ would then have to carry.
 ## The pushes are what this contributes
 
 With the method, its loop and its honest extent all stated, what remains is the
-thing it actually hands over, and the bench is strict about the shape of that.
+thing it actually hands over, and the examiner is strict about the shape of that.
 
-**The shared output is a jaw trajectory**, as [the bench](../the-bench.md)
+**The shared output is a jaw trajectory**, as [the examiner](../the-examiner.md)
 explains, and a solution that thinks in whole pushes does not have to produce
 one itself. This solution thinks in whole pushes. What it emits is a
 **parameterised push**: which glass is meant to move, where the fingertips come
 down, which way the jaw points and travels, how far forward to feel before
 giving up on finding the glass, how far to push once it is touching, and where
-the glass is expected to arrive. The bench owns the macro that turns those
+the glass is expected to arrive. The examiner owns the macro that turns those
 numbers into the descent, the feel, the push, the retreat and the lift, and
 every parameterised push from every solution is expanded by that same macro. So
 the simplicity of this solution costs it nothing in the comparison and gains it
@@ -538,7 +538,7 @@ nothing either.
 
 The field that names where the glass is expected to arrive deserves a word,
 because it looks like a prediction and this document has insisted there is
-none. The bench asks for it so that it can measure how far each glass ended
+none. The examiner asks for it so that it can measure how far each glass ended
 from where it was sent, which is a reading on every solution's own model of
 pushing. This solution fills it with the place its fingertips are carried to,
 on the assumption that the glass travels with the jaw and no further. That is a
@@ -563,7 +563,7 @@ jammed, the most force it felt, and how far it moved after touching. **This
 solution reads almost none of that report.** It uses only whether the jaw
 touched anything at all. That is a deliberate omission rather than an
 oversight, and it is the deepest reason this solution is the floor of the set:
-[the bench](../the-bench.md) points out that the force reading is the only
+[the examiner](../the-examiner.md) points out that the force reading is the only
 channel through which the friction is observable at all, and every solution
 that does better than a blind nudge does so by reading that channel, either by
 reasoning about it or by learning from it. This one throws it away and relies on
@@ -792,7 +792,7 @@ and then frozen. That is the entire configuration of the method.
 **One library, and it is NumPy.** The arithmetic over a handful of positions
 and widths is all this solution does for itself. Carrying the jaw to the place
 that arithmetic names is not part of it, because every solution here hands the
-same kind of instruction to the same cell: the test bench carries the jaw with
+same kind of instruction to the same cell: the examiner carries the jaw with
 its physics engine, and the real cell carries it with MoveIt. Both libraries
 are permissively licensed, and because nothing is fitted there is no weights
 file to redistribute and no licence inherited from somebody else's training
@@ -804,7 +804,7 @@ the number of glasses, and there are four to six of them. The shortfall, the
 heading and the travel are a few arithmetic operations each. The whole decision
 is a few hundred floating-point operations, it needs no accelerator, and it
 finishes in far less time than the arm takes to move anywhere. On the compute
-column that [the bench](../the-bench.md) describes for the scorecard, this
+column that [the examiner](../the-examiner.md) describes for the scorecard, this
 solution is the zero against which the others are read, and solutions that plan
 through a learned model at run time or evaluate a large neural network sit
 hundreds or thousands of times above it.
@@ -829,7 +829,7 @@ and every refusal has a reason that can be checked with a ruler.
 
 **One run of it is a measurement.** Nothing in it was fitted and nothing in it
 is drawn at random, so it behaves the same way on the hundredth table as on the
-first. The repeats that [the bench](../the-bench.md) requires of the trained
+first. The repeats that [the examiner](../the-examiner.md) requires of the trained
 solutions, because their training and their actions both vary, are not needed
 here, and that makes it the one solution in the set whose number carries no
 spread.
@@ -992,7 +992,7 @@ exactly one place where that could happen, which is the gain, and that is why
 the gain is argued rather than swept over the training tables. The discipline
 also requires that the baseline be measured on the same tables with the same
 scoring as the methods meant to beat it, which is what [the
-bench](../the-bench.md) is for.
+examiner](../the-examiner.md) is for.
 
 ## Where it sits among the other five
 

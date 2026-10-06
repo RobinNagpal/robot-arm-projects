@@ -19,7 +19,7 @@ upright, so its pose is a position.
 Three things are shared, and nothing else is. This is what makes the six
 comparable.
 
-**Same input.** One fixed set of held-out scenes from the shared bench, same
+**Same input.** One fixed set of held-out scenes from the shared examiner, same
 seeds for every car. Per scene, the survey pictures from the overlapping
 stations: the grey picture shaded from depth, the depth reading per pixel, and
 the camera pose. Nothing else. **No car may read the spawn record at run time.**
@@ -43,7 +43,7 @@ ceiling any car could reach.
 Documents:
 
 - `problem.md` — the problem, the input, the output
-- `the-bench.md` — scenes, pictures, scorecard, floor. The setup.
+- `the-examiner.md` — scenes, pictures, scorecard, floor. The setup.
 - `hidden-glasses.md` — blind regions, pose vetoes, learned ranker. Shared.
 - `solutions/overview.md` — the comparison
 - `solutions/01-rules-on-the-table.md`
@@ -141,16 +141,16 @@ one solution 2 describes as already written, and `problem-4-learned` imports it.
 **`02-segment-glasses/results` is cited from outside.** Problem 4's documents
 point at its comparison in three places.
 
-**The bench is used by three problems**, not one: problems 2, 3 and 4 all put
+**The examiner is used by three problems**, not one: problems 2, 3 and 4 all put
 it on their path. Deleting it would change the input the six are compared on,
 which is the one thing this plan holds fixed.
 
 ### Splitting `02-segment-glasses/05-sam2-with-a-keeper`
 
 It holds the shared pieces as well as two superseded models. The shared ones
-belong in the bench; only the models go.
+belong in the examiner; only the models go.
 
-| Move to the bench | Why |
+| Move to the examiner | Why |
 |---|---|
 | the mask-to-place arithmetic | the shared final step; a difference must belong to the mask |
 | the station layout and picture assembly | the shared input |
@@ -217,14 +217,14 @@ New pictures are needed only where the material is new:
 
 1. Plan, naming, deletion scope. **Check:** dependencies proven.
 2. Rename docs and images. Fix every link. **Check:** links resolve, tests pass.
-3. `problem.md` and `the-bench.md`. **Check:** input and output stated once.
+3. `problem.md` and `the-examiner.md`. **Check:** input and output stated once.
 4. The six solution documents, by agents. **Check:** each against the code and
    against the other five.
 5. `hidden-glasses.md`, `overview.md`, `README.md`, by hand. **Check:** the
    comparison table agrees with all six.
 6. Diagrams: remap and renumber what exists, then draw only the gaps.
    **Check:** no document points at a picture that contradicts it.
-7. Move the shared pieces into the bench. **Check:** the floor still runs.
+7. Move the shared pieces into the examiner. **Check:** the floor still runs.
 8. Delete the car code, rename the folders. **Check:** problem 4 still runs.
 
 ## How the documents get written
@@ -234,4 +234,4 @@ reading documents it did not write, checking against the code and against each
 other.
 
 Written by hand, because they must agree with all six: `problem.md`,
-`the-bench.md`, `hidden-glasses.md`, `overview.md`, `README.md`.
+`the-examiner.md`, `hidden-glasses.md`, `overview.md`, `README.md`.

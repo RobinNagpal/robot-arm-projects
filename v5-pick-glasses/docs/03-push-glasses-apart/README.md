@@ -18,7 +18,7 @@ share is described once in [the cell](../the-cell.md).
 1. [**The problem**](problem.md) — what is on the table, what goes in and what
    must come out, the height limit that decides whether a glass slides or tips,
    and what "done" means.
-2. [**The test bench**](the-bench.md) — the crowded tables, what a solution is
+2. [**The examiner**](the-examiner.md) — the crowded tables, what a solution is
    given and never given, and how a run is marked. **Every solution document
    assumes this one.**
 3. [**The target layout**](the-target-layout.md) — where the glasses should end
@@ -51,7 +51,7 @@ foundation model.
 
 ## What is built, and what it costs to run
 
-**All six are built and all six have been run on the bench**, and the numbers
+**All six are built and all six have been run by the examiner**, and the numbers
 are set side by side in
 [`03-push-glasses-apart/results/`](../../03-push-glasses-apart/results/). Each
 document says which of its own second rungs was built and which was not, and no
@@ -59,7 +59,7 @@ number anywhere is an estimate: where something could not be run, the result is
 absent and the reason is given instead.
 
 One thing worth knowing before the results. The two solutions that borrow a
-large model needed the bench to grow first, and one prescription that would
+large model needed the examiner to grow first, and one prescription that would
 have helped them both was never built: an early abort, which would stop a push
 while the glass is still moving rather than report the topple afterwards. That
 absence is measured rather than assumed, because the fine-tuned solution topples
@@ -73,5 +73,5 @@ the price of reproducing it. Solutions 1 and 2 need nothing rented at all.
 ## The plan behind the six
 
 [The plan](solutions-plan.md) records the decisions in short form: the contract
-all six share, why these six and not others, what the bench grew in order to mark them,
+all six share, why these six and not others, what the examiner grew in order to mark them,
 and what the scorecard needs that problem 2's did not.

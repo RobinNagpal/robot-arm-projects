@@ -17,7 +17,7 @@ produces the least movement the task could possibly need — which turns out to
 be the most valuable thing in here — and what the layout still does not tell
 you.
 
-Read this after [the problem](problem.md) and [the test bench](the-bench.md),
+Read this after [the problem](problem.md) and [the examiner](the-examiner.md),
 because it uses the clear room the gripper needs and the measurements `look()`
 hands over, and both are explained there.
 
@@ -63,7 +63,7 @@ level, and the arm is offered a ring of places on that circle, which problem
 has to have no other glass standing in it.
 
 This fourth condition is the one to treat with care, because **nothing in
-problem 3 tests it.** The bench has no line-of-sight check and no solution here
+problem 3 tests it.** The examiner has no line-of-sight check and no solution here
 chooses a viewpoint, so a layout that satisfies the first three conditions is
 accepted whether or not a camera could later see each glass from the side. The
 condition is stated because the layout exists to make the next step possible,
@@ -239,7 +239,7 @@ chosen and then frozen, for reasons the cautions below make plain.
 ![The travel each of the four methods asks for, as a multiple of the floor for the same table, over fifty tables: the constrained optimisation is 1x by definition, assignment to slots and repulsive relaxation sit near five times it, Lloyd's algorithm near nine and is the only one that leaves tables illegal, and the same solver started 40 mm away settles in a worse local optimum on five of the fifty.](../../images/03-push-glasses-apart/target-four-methods-against-the-floor.png)
 
 **None of this is written yet, and it is worth being plain about that.** The
-bench exists, and so does the programmed geometry that picks a landing spot one
+examiner exists, and so does the programmed geometry that picks a landing spot one
 push at a time, which is a different thing: it answers *where can this glass go
 next* rather than *where should every glass finish*. The layout described in
 this document is a design for shared machinery, not code that runs today.
@@ -268,11 +268,11 @@ rather than towards a place, and one of the six does; what that costs it is
 visible on the same scale, as travel against the floor described below.
 
 This is precisely the argument problem 2 makes about its own shared step. There,
-the step that turns a mask into a place and a width belongs to the bench rather
+the step that turns a mask into a place and a width belongs to the examiner rather
 than to any of the six, because if each solution did its own arithmetic a
 difference in the result might be a difference in the arithmetic rather than in
 the mask. Here, the step that turns a set of measurements into a set of
-destinations belongs to the bench for exactly the same reason. In both problems
+destinations belongs to the examiner for exactly the same reason. In both problems
 the rule is the same: **the shared part is everything that is not the thing
 being compared.**
 
@@ -299,7 +299,7 @@ comes from the measurements and the constants and nothing else — no model, no
 training, no run. It cannot flatter a solution because it never saw one.
 
 Over the fifty held-out tables the floor comes to **2,534 mm in total**, and
-that is the number the bench's travel figure is divided by. The six solutions
+that is the number the examiner's travel figure is divided by. The six solutions
 land between a fifth of it and nearly four times it, which is recorded in
 [the comparison](../../03-push-glasses-apart/results/README.md).
 
@@ -311,7 +311,7 @@ further cleverness in choosing pushes could have spent less. That is the signal
 to stop optimising this part and look elsewhere, because effort put into a
 solution already at its floor buys nothing.
 
-Problem 2 has the same instrument and uses it the same way. Its bench runs its
+Problem 2 has the same instrument and uses it the same way. Its examiner runs its
 own exact masks through the shared arithmetic to find the best place and width
 that step could ever produce, and a solution within a hair of that floor of
 error is, in that document's words, not a good solution so much as one whose
@@ -345,7 +345,7 @@ applied to wherever the glasses actually are, and it must never be the distance
 from each glass to its assigned target. **The computed layout is the reference
 and the floor, not the pass mark.** Scoring the distance to the targets would
 quietly punish a solution for finding a different good answer, which is the
-opposite of what a bench is for.
+opposite of what an examiner is for.
 
 ## What the layout does not tell you
 
@@ -363,7 +363,7 @@ two different things.
 **The motions that can be achieved depend on friction, and nobody knows it.**
 The relation between a push and the slide it produces runs through the
 coefficient between the glass and the table. No sensor in this cell measures it,
-and the bench does not tell any solution what it is. So which pushes are even
+and the examiner does not tell any solution what it is. So which pushes are even
 available is uncertain before the first one is made.
 
 **A glass may tip instead of sliding.** A push above a certain height tips the
@@ -393,7 +393,7 @@ six solutions, say how.
 
 - [The problem](problem.md) — why dragging rather than lifting, the three
   distances that matter, and what "done" means.
-- [The test bench](the-bench.md) — the shared input, output and marking, and
+- [The examiner](the-examiner.md) — the shared input, output and marking, and
   the travel each solution reports, which is what the floor is read against.
 - [Pushing without toppling](pushing-without-toppling.md) — how low a push has
   to be, why that is a property of the glass, and the refusal path.

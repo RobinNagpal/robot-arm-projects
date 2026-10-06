@@ -17,7 +17,7 @@ the layout, the two places the camera works from, the sensors and the vocabulary
 
 1. [**The problem**](problem.md) — what is on the table, exactly what goes in
    and what must come out, the three difficulties, and what "done" means.
-2. [**The test bench**](the-bench.md) — the arrangements, the pictures handed to
+2. [**The examiner**](the-examiner.md) — the arrangements, the pictures handed to
    every solution, the shared step that turns a mask into a place, and how a run
    is marked. **Every solution document assumes this one.**
 3. [**Looking again at what was hidden**](hidden-glasses.md) — the part all six
@@ -56,9 +56,9 @@ and what is deliberately left for later.
 
 ## What is built
 
-The bench is built, including the shared arithmetic and the measurement of the
+The examiner is built, including the shared arithmetic and the measurement of the
 best answer any method could possibly give. **None of the six is built as a
-solution on the bench**, and each document says so rather than describing code
+solution on the examiner**, and each document says so rather than describing code
 that does not exist. One of them starts from something that exists: the network
 solution 2 describes is already written in this project's code, and that
 document separates what exists from what the design adds around it.

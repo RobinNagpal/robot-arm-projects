@@ -1,14 +1,14 @@
-# The test bench — the same question for every answer
+# The examiner — the same question for every answer
 
 ## Introduction
 
 This problem is answered six different ways, and six answers are only
 comparable if they were asked the same question and marked by the same
-examiner. The test bench is that examiner. It draws the crowded tables, holds
+examiner. The examiner is that examiner. It draws the crowded tables, holds
 the physics the glasses slide and tip in, hands each solution the same
 measurements, carries out whatever push comes back, and then marks the result
 against what it knows really happened. By the end of this document you will
-understand what a solution is given, what the bench keeps to itself, why the
+understand what a solution is given, what the examiner keeps to itself, why the
 shared output is a jaw trajectory rather than a push, why the marking looks at
 the outcome and never at the action, and which two things this scorecard needs
 that problem 2's did not.
@@ -16,14 +16,14 @@ that problem 2's did not.
 Read this before any of the solution documents, because every one of them
 assumes it.
 
-The bench is built. It lives in `03-push-glasses-apart/bench/`, and all six
+The examiner is built. It lives in `03-push-glasses-apart/bench/`, and all six
 solutions run on it, as does problem 4.
 
-## Why there is a bench at all
+## Why there is an examiner at all
 
 Without one, each of the six would arrive with its own tables, its own idea of
 a good push and its own way of counting success, and nothing could be concluded
-by setting their results side by side. The bench exists to remove every
+by setting their results side by side. The examiner exists to remove every
 difference between the six except the one being studied.
 
 It does that by holding three things fixed. The **input** is the same
@@ -35,7 +35,7 @@ want to compare. So when a learned policy clears more tables than a fixed
 nudge, the difference belongs to the policy and not to a kinder table or a
 gentler scorecard.
 
-## What the bench draws
+## What the examiner draws
 
 The tables are the first of those three fixed things, so they come first.
 
@@ -47,7 +47,7 @@ zone, and none of them touch: there is always a little daylight between any
 two.
 
 **The crowding comes from where the glasses are stood, not from their
-shapes.** When the bench places a glass, it mostly stands it deliberately
+shapes.** When the examiner places a glass, it mostly stands it deliberately
 close to a glass already down — closer than the gripper can work with, but
 still not touching. The rest go anywhere on the glass zone they fit, which
 crowds some of them as well by accident. A table is only accepted if at least
@@ -71,11 +71,11 @@ here more than it did in problem 2, because four of the six solutions are
 trained.
 
 **The physics is MuJoCo, standing in for Gazebo.** There are two reasons, and
-the bench's own description gives both. The first is speed: a learned approach
+the examiner's own description gives both. The first is speed: a learned approach
 needs thousands of pushes, and Gazebo runs each one at the speed of real time,
 so a training set that MuJoCo produces in hours would take weeks. The second
 reason is fairness, and it is the more interesting one. MuJoCo is physics that
-neither approach wrote. If the bench pushed glasses around using a push model
+neither approach wrote. If the examiner pushed glasses around using a push model
 written for this project, then a programmed solution built on that same model
 would win by knowing the answer, and the comparison would measure nothing. A
 contact solver nobody here authored is a thing both sides are equally ignorant
@@ -86,13 +86,13 @@ cylinders, each cylinder as wide as the glass is at its widest anywhere inside
 it, so the collision shape is never thinner than the real glass. The bottom
 cylinder is the foot, which is the edge the glass tips over.
 
-![Every glass the bench stands on a table is a stack of cylinders, each one as wide as the glass is anywhere inside it, and the bottom cylinder is the foot it would tip over; the height at which a push starts tipping a glass rather than sliding it follows from that foot and from a friction the bench keeps to itself.](../../images/03-push-glasses-apart/bench-the-model-that-was-built.png)
+![Every glass the examiner stands on a table is a stack of cylinders, each one as wide as the glass is anywhere inside it, and the bottom cylinder is the foot it would tip over; the height at which a push starts tipping a glass rather than sliding it follows from that foot and from a friction the examiner keeps to itself.](../../images/03-push-glasses-apart/examiner-the-model-that-was-built.png)
 
 ## What a solution is given
 
 Given those tables, the next fixed thing is what a solution may read off them.
 
-The bench offers exactly three calls and nothing else: `look()`, `push()` and
+The examiner offers exactly three calls and nothing else: `look()`, `push()` and
 `take()`.
 
 **`look()` returns one reading per glass still on the table.** For each glass:
@@ -102,7 +102,7 @@ the same list of facts problem 2's camera work produces, which is why this
 problem can begin where that one ended.
 
 **Each reading carries problem 2's measured error.** The numbers are not the
-true ones. The bench adds a small random error to the position, to both widths
+true ones. The examiner adds a small random error to the position, to both widths
 and to the height, with sizes taken from what problem 2's programmed solution
 actually scored — the width error being the largest of the three, and the
 position error the smallest. The error is fresh on every look, so looking twice
@@ -114,21 +114,21 @@ solutions. Nobody gets an easier first measurement than anybody else.
 table.** Three of the six read pictures rather than numbers — an imitation
 policy trained on images, and the two vision-language models — so a list of
 numbers is not an input they can use. Giving them a picture rendered by the
-bench, of the same table at the same moment, keeps the input the same
+examiner, of the same table at the same moment, keeps the input the same
 information in a different form. This is now built, in `bench/top_view.py`: a
 camera fixed 750 mm above the middle of the glass zone, looking straight down,
 returning a 384 by 384 RGB picture that frames the whole zone. It is separate
 from the camera `film.py` uses, which looks steeply down from the arm's side
 and exists only for watching a run by eye.
 
-**What a solution is never given is the simulator's record.** The bench knows
+**What a solution is never given is the simulator's record.** The examiner knows
 each glass's true position, its true shape and its mass, and it keeps all of
 it. Only the scoring code reads those, and only after a run has finished. A
 learned solution may use them as training labels on the training tables, but
 nothing reads them while answering, because a solution that read the truth
 would not be answering this problem.
 
-**It is also never given the friction.** The bench holds three coefficients
+**It is also never given the friction.** The examiner holds three coefficients
 privately: glass on the table, glass on glass, and the jaw's own aluminium and
 silicone on glass. Every table uses the same three. They are hidden because
 hiding them is honest — **nothing in the cell measures friction**. There is no
@@ -174,11 +174,11 @@ far the glass went for that push, are consequences of the friction, so they are
 indirect evidence about it. A glass that leaned and fell back where it stood
 felt different from one that slid. Every solution that does better than a blind
 nudge does so by reading that channel, either by reasoning about it or by
-learning from it, which is why a bench that reported only success or failure
+learning from it, which is why an examiner that reported only success or failure
 would have made the interesting half of this problem invisible.
 
 `take()` is the third call. It lifts a glass off the table and racks it, which
-is problem 1's job done for free here, and the bench quietly records whether
+is problem 1's job done for free here, and the examiner quietly records whether
 the glass really had room at the moment it was taken. That recording is how the
 marking later knows whether the arm's own belief about room was correct.
 
@@ -193,21 +193,21 @@ arrangement, because the six do not naturally hand back the same kind of thing.
 Some of the six do not think in trajectories at all. A geometric solution
 thinks in a **parameterised push** — a handful of numbers saying which glass
 to move, where to put the fingertips down, which way to point, how far to feel
-forward and how far to push. That is exactly what the bench's `push()` already
+forward and how far to push. That is exactly what the examiner's `push()` already
 accepts today, and `push()` itself is the machinery that turns those numbers
 into the descend, feel, push, back off and lift described above. So **the
-expansion from a push into a trajectory is a macro the bench owns**, not
+expansion from a push into a trajectory is a macro the examiner owns**, not
 something a solution writes. Every parameterised push is expanded the same way,
 by the same code, so no solution gains or loses anything in that step.
 
 Other solutions think in trajectories natively. A modern imitation policy does
 not emit one target at a time; it emits an **action chunk**, which is a short
 run of consecutive waypoints predicted together in one forward pass. Those
-solutions emit their waypoints directly, and the bench carries them out without
+solutions emit their waypoints directly, and the examiner carries them out without
 an expansion step, because there is nothing to expand.
 
 It is worth saying plainly why the obvious alternative would be worse. The
-bench could insist that every solution emit the same small set of push
+examiner could insist that every solution emit the same small set of push
 parameters, which sounds like the fairest possible rule. It would in fact be
 the unfair one, because **it would destroy the action chunking that makes those
 policies work**. Predicting a chunk is not a convenience in these
@@ -221,7 +221,7 @@ itself.
 Both paths are now built. `push()` takes the parameterised push and owns its
 expansion; `follow()` takes a `Chunk` of jaw waypoints and carries them out in
 the same physics, reporting the same `Felt` into the same record, so the
-scorecard cannot tell which door an action came through. The bench also writes
+scorecard cannot tell which door an action came through. The examiner also writes
 down the path the jaw really followed on every action, sampled at a fixed rate,
 which is what turns a parameterised push into a demonstration a policy that
 emits waypoints can be trained on.
@@ -232,7 +232,7 @@ Allowing two different kinds of output raises an obvious objection: if one
 solution hands over three numbers and another hands over twenty waypoints, how
 can their results be compared at all?
 
-The answer is that **the bench never marks the action**. It does not ask
+The answer is that **the examiner never marks the action**. It does not ask
 whether a push was the push it would have chosen, whether the heading was
 sensible, or whether the waypoints were smooth. It looks only at the state of
 the table afterwards: which glasses have room, which are still standing, where
@@ -246,7 +246,7 @@ table is the same table either way. Both solutions are asked the one question
 that the problem actually cares about: are the glasses far enough apart now,
 and is everything still standing?
 
-## What the bench measures
+## What the examiner measures
 
 The scoring code reads the simulator's record after a run has finished and
 turns it into one scorecard, in the same shape for every solution.
@@ -262,17 +262,17 @@ all.
 A glass may have been racked; or refused with a reason; or it may have gone
 wrong in one of several ways. The problem names three wrong endings — a glass
 **toppled**, a glass **pushed off the table**, and a glass **pushed into the
-rack** — and the bench detects all three with two tests. Toppling it decides
+rack** — and the examiner detects all three with two tests. Toppling it decides
 by how far the glass leans from upright. The other two are the same thing
 geometrically, because in both the glass has ended up outside the region it
 was allowed to be in, so one test covers them: the glass **left the glass
-zone**. The bench adds two more wrong endings of its own. A glass **picked
+zone**. The examiner adds two more wrong endings of its own. A glass **picked
 without room** is one the arm believed it could grip when it could not, which
 is a mistake the arm would not otherwise notice. A glass **left with no
 reason** is one abandoned on the table in silence.
 
 **Glasses grippable at the end** is the measurement the problem is really
-about, and the bench gets it from racking rather than by measuring gaps. A
+about, and the examiner gets it from racking rather than by measuring gaps. A
 glass is only counted as racked if it had genuine room at the moment it was
 taken, so a run that clears the table has demonstrated grippability rather than
 asserted it.
@@ -283,7 +283,7 @@ pushed, and how many went wrong in each of the ways a push can: blocked on the
 way down, never touching anything, or jamming. The budget itself — a fixed
 maximum per glass and per table, after which the remaining glasses must be
 refused — used to live in the code that drives each run, so the counts were not
-comparable. It now lives in the bench, as `PUSHES_PER_GLASS` and
+comparable. It now lives in the examiner, as `PUSHES_PER_GLASS` and
 `PUSHES_PER_TABLE`, so all six are given the same number. One solution predates
 it: the fixed nudge spends 3 and 15 rather than 4 and 16, because its committed
 scorecard was measured at those and would change under the shared budget.
@@ -291,15 +291,15 @@ scorecard was measured at those and would change under the shared budget.
 **Refusals are counted with their reason, and a refusal is a result rather
 than a failure.** Some glasses cannot be pushed safely at all, because they tip
 before they slide, and for those the only correct answer is to refuse. So the
-bench groups refusals by the reason given and reports the groups. A solution
+examiner groups refusals by the reason given and reports the groups. A solution
 that refuses the glasses it should refuse scores *correct but incomplete*,
 which is a good outcome; a solution that quietly leaves those same glasses with
 no reason scores *wrong*. Saying "I cannot do this, and here is why" is part of
 the answer.
 
-**Finally, the bench records how far each glass ended from where the push aimed
+**Finally, the examiner records how far each glass ended from where the push aimed
 it.** Every push carries the place the solution expected the glass to arrive,
-and once the glass has settled the bench measures the real distance between the
+and once the glass has settled the examiner measures the real distance between the
 two, reporting the middle value and the worst. For most of the six that
 expected place comes from [the target layout](the-target-layout.md), which
 computes where the glasses should end up. This number is a **reference and not
@@ -311,7 +311,7 @@ what a push does, and a method whose glasses scatter is succeeding by looking
 again rather than by predicting, which is a real strategy but a different
 one.
 
-**The bench also adds up how far the glasses were really moved**, over every
+**The examiner also adds up how far the glasses were really moved**, over every
 push and every table. On its own that total says little, because a solution
 that pushes nothing scores best on it, and pushing nothing is useless. It
 becomes meaningful next to the **displacement floor**, which
@@ -325,7 +325,7 @@ than necessary is extra risk taken for nothing.
 
 ## Two things this scorecard needs that problem 2's did not
 
-Problem 2's bench could run each solution once and read the result. This one
+Problem 2's examiner could run each solution once and read the result. This one
 cannot, and there are two reasons. Both are consequences of four of the six
 solutions being trained rather than written, and both are now in `scoring.py`:
 `Repeats` holds several evaluation runs and reports the spread across every

@@ -21,7 +21,7 @@
 > still has to pass a width check against the kind, which is known; and the
 > proposals that survive all of that are the masks this solution reports.
 
-> **What it costs** — no hand labelling, because the bench's own answer key
+> **What it costs** — no hand labelling, because the examiner's own answer key
 > turns a proposal into a training label by arithmetic. Fitting the keeper is
 > seconds of processor time with no graphics card; what takes real time is
 > running SAM 2 over the arrangements to collect the proposals to fit it on. At
@@ -202,7 +202,7 @@ first cleanup is called a **proposal** from here on. The **keeper** is a small
 model which is shown a handful of measurements about one proposal and answers
 whether that proposal is one glass. The keeper is the only thing fitted in this
 solution, it would fit in seconds, and the examples it would learn from cost
-nothing, because the bench already knows which pixels belong to which glass in
+nothing, because the examiner already knows which pixels belong to which glass in
 the arrangements it draws.
 
 So, in the plainest terms: **everything that finds objects is borrowed whole,
@@ -377,7 +377,7 @@ One thing stands between the input this problem defines and the input the
 borrowed model expects, and it is the riskiest choice in the whole design, so it
 belongs before the keeper rather than after it.
 
-The bench hands over a grey picture shaded from how far away each surface is,
+The examiner hands over a grey picture shaded from how far away each surface is,
 the depth reading at every pixel, and the camera's own pose. SAM 2, like every
 model of its kind, was fitted on ordinary colour photographs. So what it is
 shown here is a picture of distances dressed up as a photograph, and the single
@@ -573,7 +573,7 @@ solution 1. The question this solution exists to answer is how little has to be
 written down, so the last decision is fitted rather than written.
 
 The third part is that **the labels are free**, which is what makes the second
-part affordable. The bench's answer key says which glass owns each pixel, so the
+part affordable. The examiner's answer key says which glass owns each pixel, so the
 overlap between a proposal and each real glass's pixels is a subtraction and a
 division: overlapping one glass well and no other is one glass, overlapping none
 is not a glass, and overlapping two of them well is more than one glass. That is
@@ -695,7 +695,7 @@ proposal.** At the cell's own survey height one picture does not hold the glass
 zone, so a glass at the edge of a station's frame shows part of its footprint
 and the width measured off that part is part of a width. Refusing on it refuses
 the view, and that was measured on masks nothing can improve on: handed the
-bench's own exact masks, one station at a time over 20 held-out spawned
+examiner's own exact masks, one station at a time over 20 held-out spawned
 arrangements, the kind's range of footprints refuses 66 of 297 glass sightings,
 and **every one of those 66 reaches the frame edge**. So the check is not put to
 a proposal whose mask reaches that edge. What answers such a proposal instead is
@@ -785,15 +785,15 @@ invented for it: only the lower rung has been measured.
 So the recommendation is still not to choose once. Fit the keeper, because it is
 small and it fits in seconds, and run both rungs on the same held-out
 arrangements on a machine whose account has been granted the newer weights. The
-bench makes that comparison honest, and if the text prompt wins, the keeper is
+examiner makes that comparison honest, and if the text prompt wins, the keeper is
 still the thing that explains why a region was refused.
 
 ## The masks are what this contributes
 
 Everything above produces masks, and nothing above produces a place or a width.
 
-Turning a mask into a place on the table and a rough width is the bench's job,
-described once in [the test bench](../the-bench.md) and shared by all six
+Turning a mask into a place on the table and a rough width is the examiner's job,
+described once in [the examiner](../the-examiner.md) and shared by all six
 solutions: every mask pixel carries a depth reading, so it becomes a point in
 the room, the axis comes from the points at the top of the glass, and the width
 is how far the cloud reaches from that axis. **So this solution contributes only
@@ -958,7 +958,7 @@ difference from solutions 2, 4 and 6, whose weights are produced here and can be
 produced again at any time. These cannot be produced here at all, so they have
 to be fetched, pinned to a version, and stored where a run can find them.
 
-It needs **arrangements for the keeper**, which the bench renders and labels for
+It needs **arrangements for the keeper**, which the examiner renders and labels for
 nothing, and far fewer of them than a network fitted from scratch needs, because
 the keeper learns from a short table of numbers rather than from pictures. The
 calibration needs no arrangements beyond those, because it is fitted in folds of
@@ -1234,7 +1234,7 @@ which is a different and narrower virtue.
 
 What this solution is genuinely for is to find out how far borrowed weights get
 in this cell with almost nothing fitted behind them, and to find out at what
-point an explainable decision is worth more than a shorter program. The bench
+point an explainable decision is worth more than a shorter program. The examiner
 answers the first question by running it beside the other five on the same
 arrangements. The second question is the one the two rungs of this solution ask
 of each other, and it is a judgement rather than a measurement.

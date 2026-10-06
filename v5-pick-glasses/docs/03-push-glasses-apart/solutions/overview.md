@@ -15,7 +15,7 @@ was the car.
 
 ## What all six share
 
-Three things are held still, and [the test bench](../the-bench.md) describes
+Three things are held still, and [the examiner](../the-examiner.md) describes
 them in full. In short:
 
 **The same input.** What the camera work hands over for each standing glass —
@@ -26,7 +26,7 @@ what the jaw felt on the last push. Never the simulator's record, and never
 the friction it is using.
 
 **The same output.** A jaw trajectory. A solution that thinks in whole pushes
-emits one and the bench expands it through a macro the bench owns; a solution
+emits one and the examiner expands it through a macro the examiner owns; a solution
 that produces waypoints emits them directly.
 
 **The same marking.** One scorecard, and the displacement floor from [the
@@ -73,8 +73,8 @@ Three carry a **second rung** rather than a document of their own:
 
 | Question | Compare | What is held still |
 |---|---|---|
-| Does any learning beat a fixed nudge? | 1 against the rest | the bench |
-| Is ranking hand-made candidates enough? | 2 against 3–6 | the bench |
+| Does any learning beat a fixed nudge? | 1 against the rest | the examiner |
+| Is ranking hand-made candidates enough? | 2 against 3–6 | the examiner |
 | Build the world model, or take one off the shelf? | inside 4 | that the push is chosen by planning against a learned model |
 | Plan with a model, or learn the push directly? | 4 against 3 | that everything is fitted here, from nothing |
 | **What does fine-tuning a foundation model buy?** | **5 against 6** | **the model and its weights** |
@@ -107,7 +107,7 @@ toppling](../pushing-without-toppling.md) sets out both arrangements.
 ### Where the demonstrations come from
 
 Solutions 3 and 6 learn by copying, and what they copy is solution 2's ranked
-geometric pushes. That is cheap, because a push on the bench costs
+geometric pushes. That is cheap, because a push on the examiner's tables costs
 milliseconds — and it has a consequence worth stating plainly rather than
 softening.
 
@@ -115,13 +115,13 @@ softening.
 filtering the demonstrations to successes trains them on a biased sample of
 what solution 2 does well. So **solutions 3 and 6 are the only ones whose score
 depends on another solution's**. Solution 2 labels its own candidates from the
-bench, and solution 4 collects its own pushes — random ones first, then its own
+examiner, and solution 4 collects its own pushes — random ones first, then its own
 planner's — so neither owes anything to a sibling. That is a real asymmetry in
 the comparison, not a detail.
 
 ## What is built
 
-**All six are built, and all six have been run on the bench.** Each has code in
+**All six are built, and all six have been run by the examiner.** Each has code in
 a folder named after the document you are reading about it, and the numbers they
 produced are set side by side in
 [`03-push-glasses-apart/results/`](../../../03-push-glasses-apart/results/).
@@ -130,7 +130,7 @@ written down rather than estimated.
 
 Solutions 1 and 2 were built first, and that order mattered more than expected.
 Solution 2 is the teacher whose pushes solutions 3 and 6 learn from, so until it
-worked there was nothing for them to learn from. The bench also had to grow
+worked there was nothing for them to learn from. The examiner also had to grow
 before the three that read pictures could run at all: the view from above and
 the path that accepts waypoints are both recent, and
 [the plan](../solutions-plan.md) says what they cost to add.
@@ -144,7 +144,7 @@ what its absence costs.
 ## Where to go next
 
 - [The problem](../problem.md) — what is asked for, and what makes it hard.
-- [The test bench](../the-bench.md) — the shared input, output and marking.
+- [The examiner](../the-examiner.md) — the shared input, output and marking.
   **Read this before any solution.**
 - [The target layout](../the-target-layout.md) — where the glasses should end
   up, and the least movement the task needs.

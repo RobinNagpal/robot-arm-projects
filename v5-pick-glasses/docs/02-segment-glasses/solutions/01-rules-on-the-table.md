@@ -74,7 +74,7 @@ rule the introduction describes is written out in
 the whole method: the circle fitted to a
 group, and the question the fit is asked again of every part a split produces.
 Everything else in the folder is the arithmetic that turns pixels into dots and
-the plumbing that hands masks to the bench.
+the plumbing that hands masks to the examiner.
 
 This is the fit, from ``01-rules-on-the-table/find.py``. The first function is
 the one-shot least-squares solve, which is NumPy's `lstsq` and nothing else;
@@ -133,7 +133,7 @@ Two things are worth reading off that. The borrowed work is two library calls,
 one solve and one hull, and everything around them is this project's own; and
 the fitted width never leaves these functions, because the only thing it is
 allowed to decide is whether a patch comes apart. The width that goes into the
-record is measured by the bench, from the pixels these functions hand back.
+record is measured by the examiner, from the pixels these functions hand back.
 
 ## The problem this solves
 
@@ -452,8 +452,8 @@ unknowns instead, it becomes linear. So the fit has a direct solution: no
 iteration, no starting guess, and the radius recovered at the end.
 
 **This fitted width is for the check only, and not for the answer.** The test
-bench computes the place and the width that go into the record, from the mask
-pixels this solution hands back, and the same bench step does it for all six
+examiner computes the place and the width that go into the record, from the mask
+pixels this solution hands back, and the same examiner step does it for all six
 solutions. So the circle fitted here never leaves this solution. It earns its
 place because of what it changes: when it says a group is too wide to be one
 glass, the group is split, and splitting a group changes which pixels go into
@@ -481,7 +481,7 @@ frame, and a refusal when they do not. And if any part cannot be settled either
 way, the whole group is reported as doubtful, with which side of the range it
 failed, rather than guessed at.
 
-![One circle fitted to the whole group comes out wider than any glass of this kind can be, so the group is rejected as one glass and two circles are fitted instead; both of those lie inside the widths the kind allows, so the group is split in two, and the fitted width decides only the split, because the width that goes into the record is measured by the bench.](../../../images/02-segment-glasses/01-circle-fit-decides.png)
+![One circle fitted to the whole group comes out wider than any glass of this kind can be, so the group is rejected as one glass and two circles are fitted instead; both of those lie inside the widths the kind allows, so the group is split in two, and the fitted width decides only the split, because the width that goes into the record is measured by the examiner.](../../../images/02-segment-glasses/01-circle-fit-decides.png)
 
 Splitting a group in two is done with a simple and well-known method called
 k-means with two centres: put one seed at each end of the group's longest
@@ -499,7 +499,7 @@ and that difference is the whole reason a written rule can be trusted here.
 ### Why one split is not enough
 
 Splitting once answers two glasses run together, and two is not what the
-difficult arrangements hold. The bench's crowded family stands **three** glasses
+difficult arrangements hold. The examiner's crowded family stands **three** glasses
 to a line and two lines to an arrangement, closer together than the cell's own
 layout rule allows, so a chain of three or more glasses in one group is the
 ordinary case there rather than the exception. It was counted: over 20 held-out
@@ -532,7 +532,7 @@ runs out on its own, and it runs out in one of three ways. Every part is a width
 the kind allows, which is the answer. Or a part comes back narrower than the
 kind allows, which splitting cannot repair. Or a part cannot be divided at all —
 the halving puts every dot on one side of it, or a half holds too few depth
-readings for the bench to fit a footprint to.
+readings for the examiner to fit a footprint to.
 
 A group with any part left over at the end is handed over **whole**, and not in
 pieces. Reporting the parts that happened to fit while dropping the one that did
@@ -555,7 +555,7 @@ and the further the splitting goes the less disc-like the parts become.
 
 Every one of the six solutions is given the same input and judged on the same
 output, and the step that turns a mask into a place and a rough width belongs to
-the [test bench](../the-bench.md) rather than to any solution. So this solution
+the [examiner](../the-examiner.md) rather than to any solution. So this solution
 contributes **only the masks**, and a difference in its score belongs to the
 mask. It cannot win by measuring more cleverly and it cannot lose by measuring
 worse.
@@ -573,7 +573,7 @@ simply the picture pixels that fed one group, collected afterwards. Nobody chose
 its edge.
 
 That has a good consequence and a bad one, and they land on the two different
-numbers the bench takes for mask quality.
+numbers the examiner takes for mask quality.
 
 **How much of the mask was not that glass** should be very good, which is the
 good consequence. A pixel is put in the wrong glass's mask only if its dot
@@ -581,7 +581,7 @@ chained into the wrong group, and the two groups are a whole strip of bare table
 apart, so it takes a line of stray dots across that strip for this to happen at
 all. The method also never asserts a pixel it did not see. Every pixel in every
 mask carried a real depth reading, which means this solution never falls into
-the trap the bench warns about, where a mask claims pixels the camera never saw
+the trap the examiner warns about, where a mask claims pixels the camera never saw
 the glass at and the depth reading at such a pixel belongs to whatever stood in
 front. There is nothing for this solution to declare, because it claims nothing.
 
@@ -602,7 +602,7 @@ rather than about the method.
 The first is that the shortfall is **the same shape for every kind of glass**.
 The band lost at the base of a glass with no stem and the band lost at the foot
 of a stemmed glass are both bands at the bottom of the glass, so the per-kind
-breakdown the bench computes will spread this solution's coverage much less than
+breakdown the examiner computes will spread this solution's coverage much less than
 it spreads a model's. A model can learn an outline that follows the glass right
 down to the table, so a model has room to beat this solution on coverage. A
 model can also learn an outline that wanders onto the table or swallows a
@@ -638,7 +638,7 @@ flowchart TD
     CHK -- "no, narrower" --> EDGE{"do its pixels reach the frame edge?"}
     EDGE -- yes --> MK
     EDGE -- no --> DB["report the group as doubtful, and do not guess"]
-    MK --> OUT["the masks, handed to the bench"]
+    MK --> OUT["the masks, handed to the examiner"]
     MK --> SH["from the glasses found: each taller one hides a wedge"]
     SH --> BL["the blind region for this camera position"]
     BL --> PAT{"could any blind patch hold the smallest glass of the kind?"}
@@ -839,7 +839,7 @@ table several times wider than the grouping distance. The chain cannot cross a
 strip of nothing, so G1 and G2 come back as two separate groups. Every other
 pair in the arrangement stands further apart than that pair, so every other pair
 is separate too. Five groups come out of the one picture that would have given
-four patches, and five masks go back to the bench.
+four patches, and five masks go back to the examiner.
 
 | | the group | the mask it gives |
 | --- | --- | --- |
@@ -905,7 +905,7 @@ The first of those is wrong and silent. The second is incomplete and says so.
 
 ### The case the rule cannot answer
 
-The bench never draws the next case, because it always keeps the glasses a legal
+The examiner never draws the next case, because it always keeps the glasses a legal
 distance apart. The rule still has to behave sensibly in it, because [problem
 3](../../03-push-glasses-apart/problem.md) is about exactly this.
 
@@ -936,7 +936,7 @@ it is the honest edge of this method.
 
 ## What it needs
 
-**No labelled data.** Nothing in the method is fitted, so the bench's training
+**No labelled data.** Nothing in the method is fitted, so the examiner's training
 half of the arrangements is never read.
 
 **No training time and no weights file.** There is nothing to train and nothing
@@ -1104,7 +1104,7 @@ file, and the rule inside that file was fitted on somebody else's photographs
 for somebody else's purpose, so nobody using it can say what the rule is. **This
 solution's rule is one sentence, and that is the difference.**
 
-That is what makes it the baseline. The test bench holds the input, the output
+That is what makes it the baseline. The examiner holds the input, the output
 and the marking fixed, so a model's score can be compared with this one's
 directly, and the comparison has a plain reading: **if a model cannot beat a
 written rule, it has earned nothing.**

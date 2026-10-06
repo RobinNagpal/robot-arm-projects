@@ -6,13 +6,13 @@
 > library,
 > the same model and the same downloaded weights as [solution
 > 5](05-smolvla-as-it-downloads.md), with its training continued on pushes
-> made on this bench by low-rank adaptation, so that the actions it emits are
+> made on the examiner's tables by low-rank adaptation, so that the actions it emits are
 > fitted to this cell's own range rather than left to the range the borrowed
 > recordings happened to use.
 > **What it does** — a model that arrives fitted to real teleoperation of
 > other robots is neither thrown away nor used as it arrives. Its numbers are
 > kept, and a small correction to them is learned from pushes made on this
-> bench, so that it stops being a general copier of robot motion and becomes a
+> examiner, so that it stops being a general copier of robot motion and becomes a
 > pusher of glasses on this table. The action chunks it then emits are this
 > solution's answer to problem 3.
 > **How the output is produced** — a rendered view of the table from the top
@@ -22,7 +22,7 @@
 > consecutive jaw waypoints predicted together in one pass. The shared
 > geometry refuses the glasses that tip before they slide, and a chunk whose
 > path would reach one of those is not carried out.
-> The bench then carries the waypoints out directly, because a chunk needs no
+> The examiner then carries the waypoints out directly, because a chunk needs no
 > expansion. The arm looks again, and the loop repeats until the table is done
 > or the push budget is spent.
 > **How it differs from the other five** — [solution
@@ -41,7 +41,7 @@
 > training in this cell at all, which makes it this solution's matched
 > partner.
 > **What it costs** — the demonstrations are free, because solution 2
-> generates them and the bench executes them without anybody holding a
+> generates them and the examiner executes them without anybody holding a
 > controller. The training is a low-rank fine-tune, and it fits in 1.02 GiB on
 > a laptop, so nothing was rented; hours of a small rented accelerator, of
 > order tens of dollars, is what it would take to spend real compute on it.
@@ -71,7 +71,7 @@ pair.** [Solution 5](05-smolvla-as-it-downloads.md) is this model with no
 training in this cell. This is the same model with training in this cell.
 Everything else between the two is held still, and the list of what
 "everything else" covers is the argument, so it is worth setting out one item
-at a time. The [test bench](../the-bench.md) holds the input still, so both
+at a time. The [examiner](../the-examiner.md) holds the input still, so both
 are shown the same rendered view of the same tables in the same order, with
 the same instruction and the same joint readings, and the same measurements
 reach the shared checks in both. It holds the output still, so both hand back a
@@ -105,13 +105,13 @@ needs a sense of what a push does, and nothing in a picture contains that.
 **Most of this is built, and the parts that are not are named where they
 appear.** The solution lives in `03-push-glasses-apart/06-smolvla-fine-tuned/`:
 it records its demonstrations from the teacher, fits the correction, and has
-been run on the bench's held-out tables, with its numbers in that folder's
-README. The two parts of the shared contract it waited on are in the bench
+been run by the examiner's held-out tables, with its numbers in that folder's
+README. The two parts of the shared contract it waited on are in the examiner
 now — a rendered view looking straight down in `bench/top_view.py`, and
 `Bench.follow()`, which carries a chunk of waypoints out as an action — so
 nothing below is blocked on them. Three things here are still prescriptions
 rather than code, and each says so where it is described: **DAgger**, the
-**second rung on π0.5**, and the **several training seeds** the bench asks for,
+**second rung on π0.5**, and the **several training seeds** the examiner asks for,
 of which one was fitted. Everything else in this document describes a program
 that has run.
 
@@ -129,7 +129,7 @@ glass scores better than one that reaches the wrong part of it. The last
 section of this document reads that gap in full, and nothing between here and
 there should be taken to promise otherwise.
 
-![The bench places the jaw clear above a chunk's first waypoint and brings it straight down onto that waypoint before carrying out any of the rest, so a first waypoint behind a glass gives a push and a first waypoint over one puts the jaw on the rim, which is reported as blocked and sends it straight back up with nothing pushed; that is where 247 of this solution's 400 pushes in a run end, against none at all for solution 5, which never came down, and from it follow 46 glasses over against 6 and 39 tables wrong against 5, with a few more tables finished and a third more glasses racked on the other side of the ledger.](../../../images/03-push-glasses-apart/06-the-jaw-comes-down-on-the-glass.png)
+![The examiner places the jaw clear above a chunk's first waypoint and brings it straight down onto that waypoint before carrying out any of the rest, so a first waypoint behind a glass gives a push and a first waypoint over one puts the jaw on the rim, which is reported as blocked and sends it straight back up with nothing pushed; that is where 247 of this solution's 400 pushes in a run end, against none at all for solution 5, which never came down, and from it follow 46 glasses over against 6 and 39 tables wrong against 5, with a few more tables finished and a third more glasses racked on the other side of the ledger.](../../../images/03-push-glasses-apart/06-the-jaw-comes-down-on-the-glass.png)
 
 By the end you will understand what fine-tuning is and why it is far cheaper
 than fitting a model of this size from random numbers, what low-rank
@@ -214,7 +214,7 @@ about 70 mm of clear room around it or the glasses that are left have been
 refused with a reason. [The problem](../problem.md) explains why that is hard,
 and the hardest part of it is a missing number: whether a pushed glass slides
 or tips depends on the friction between the glass and the table, **nothing in
-the cell measures friction**, and the bench never tells any solution what it
+the cell measures friction**, and the examiner never tells any solution what it
 is using.
 
 A learned policy answers that difficulty in the only way available to anything
@@ -247,7 +247,7 @@ all three at once, and that is what this solution does.
 ## The main idea
 
 The idea is one sentence long: keep the borrowed numbers, and learn a small
-correction to them from pushes made on this bench.
+correction to them from pushes made on the examiner's tables.
 
 Three things follow from that sentence, and most of this document is those
 three things.
@@ -259,11 +259,11 @@ an edge in a picture is worth noticing and that a motion should be smooth. The
 borrowed weights already hold all of that, so the training continues from them
 rather than beginning beside them.
 
-**The pushes are this bench's pushes.** This is the part that makes the
+**The pushes are this examiner's pushes.** This is the part that makes the
 difference to solution 5. Solution 5 asks a model fitted on real teleoperation
 to act on a rendered view of a simulated table, which is a different kind of
 input leading to a different kind of outcome. Fine-tuning does not ask that.
-It shows the model this bench's views and this bench's pushes during training,
+It shows the model this examiner's views and this examiner's pushes during training,
 so at run time the model is being shown the kind of thing it was fitted on.
 The difference between the two kinds of input is called the **domain gap**, and
 fine-tuning is how a domain gap is closed.
@@ -278,7 +278,7 @@ pair's result should be read.
 Everything else about the model is unchanged, including the things that limit
 it. It still takes one instruction in words, and the task still has one
 instruction, so that channel still carries nothing. It still takes the arm's
-own pose, and the bench parks the jaw between actions, so that channel carries
+own pose, and the examiner parks the jaw between actions, so that channel carries
 nothing either: the same six numbers go in at every ask. It still predicts a
 chunk of waypoints and commits to the whole of it before looking again, because
 the number of actions SmolVLA emits in a pass and the number it is configured
@@ -427,11 +427,11 @@ helps.
 
 [Solution 2](02-geometry-ranked.md) generates pushes by geometry and ranks them
 with a fitted ranker, and it is a working chooser of pushes. Run it on the
-bench over the training half of the tables and almost every push it makes is a
+examiner over the training half of the tables and almost every push it makes is a
 demonstration. The observation is what this model takes as its input: the
 rendered view of the table from the top taken at the moment the push was
 chosen, the one instruction, and the arm's own pose. The action is the path the
-jaw really followed, which the bench writes down on every action, so a
+jaw really followed, which the examiner writes down on every action, so a
 demonstration is a recording of the shared contract being satisfied and nothing
 in it had to be drawn, labelled or judged by a person.
 
@@ -443,7 +443,7 @@ glass slides, and those belong to the shared tipping check rather than to the
 chooser, so none of them is a target. And of the remaining 2,021 real pushes,
 **only 9 had to be thrown away** — 8 toppled a glass and 1 pushed one out of
 the zone. The section below warns at length about what filtering to successes
-throws out, and on this bench the answer is four tenths of one per cent. That
+throws out, and on this examiner the answer is four tenths of one per cent. That
 is a quantity worth having rather than a worry worth carrying.
 
 Two things about that recording are worth noticing, because they decide what
@@ -487,7 +487,7 @@ therefore fitted on the easy half of its teacher's own experience, and the hard
 half — the glass that stuck, the jaw that met a neighbour first, the push that
 went nowhere — is missing from its training by construction.
 
-**On this bench that half is tiny, and knowing the size changes what the
+**On this examiner that half is tiny, and knowing the size changes what the
 argument is worth.** Solution 2 is good enough that 9 pushes in 2,021 had to be
 discarded. So the missing hard half is not a hole in the training set; it is
 nine examples. What this really says is something less comfortable than the
@@ -572,7 +572,7 @@ What the training changes is not that convention but whether the model has
 ever been asked to speak in it. Solution 5 depends on the borrowed model
 happening to emit numbers that, read through the agreed convention, make sense
 for this table; nothing fitted them, so nothing guarantees their scale. This
-solution's training targets are recordings of real pushes on this bench,
+solution's training targets are recordings of real pushes on this examiner,
 already expressed in that same convention, so the ranges the model is trained
 to produce are this cell's ranges. **That is a property of the trained weights
 rather than a second thing changed beside them.** Problem 2 needed its
@@ -589,15 +589,15 @@ and the pair is a clean measurement.
 **One thing the convention settles turned out to reach into the physics, and it
 is worth naming because it was not obvious until the code was written.** A
 chunk holds the number of waypoints the borrowed model emits in one pass, which
-is fifty, and the bench consumes waypoints a fixed period apart, so a chunk is
+is fifty, and the examiner consumes waypoints a fixed period apart, so a chunk is
 two and a half seconds of motion whatever it contains. The teacher's push, once
-the bench has sampled it, is a hundred waypoints or more, because the teacher
+the examiner has sampled it, is a hundred waypoints or more, because the teacher
 feels forward at 10 mm/s and pushes at 20. Fitting that push into a chunk means
 resampling it, and resampling it means the student's jaw travels about 36 mm/s
 where its teacher travelled at 10 and 20. So **the student does not merely
 imitate its teacher's pushes; it makes them faster**, and the glasses are
 pushed by a jaw with more momentum behind it. It is not free to go as fast as
-it likes: the bench holds a commanded path to the jaw's top speed of 200 mm/s,
+it likes: the examiner holds a commanded path to the jaw's top speed of 200 mm/s,
 past which a leg simply takes longer, so spacing buys speed only up to the
 speed the arm has. A demonstration's 36 mm/s is nowhere near that, but a
 chunk the model invents can be, and then the cap decides how fast the push
@@ -651,7 +651,7 @@ set looked like.
 
 **The scale of the actions stops being left to chance**, for the reason the
 previous section gives. The model is trained towards recordings of real pushes
-on this bench, so the size of the motion it proposes is the size this table
+on this examiner, so the size of the motion it proposes is the size this table
 needs, rather than the size the borrowed recordings happened to use.
 
 **That turns out to be two claims, and only one of them held.** The *height*
@@ -659,7 +659,7 @@ was learned, and convincingly. Solution 5 measures its own chunks and reports
 that they come no lower than 209 mm above the table: the borrowed model
 essentially never brings the jaw down to the glasses at all. The fine-tuned
 model's chunks come down to 50 mm, which is the height the gripper pushes at.
-That is the model having learned from this bench's own pushes that a push
+That is the model having learned from this examiner's own pushes that a push
 happens on the table rather than above it, and it is the clearest single sign
 in these measurements that the domain gap closed.
 
@@ -675,25 +675,25 @@ partly, and the part that was left is the part that topples glasses.
 ![Measured the same way by the same code, the borrowed model's chunks come no lower than 209 mm above the table while the fitted model's come down to 50 mm, which is exactly the height its teacher's pushes were recorded at and the height the gripper pushes at, so the height was learned; the length was not, because one fitted chunk still covers 315 mm of a glass zone that is only 320 mm across, against the teacher's 89 mm, and it travels at 90 mm/s where the teacher's recorded pushes run at 20 and even their resampled chunks at 36.](../../../images/03-push-glasses-apart/06-the-height-was-learned-the-length-was-not.png)
 
 **Something like friction is absorbed, and this one needs care rather than
-celebration.** Nothing in the cell measures friction and the bench never
-reveals it, so neither solution can know it. But the bench holds the same three
+celebration.** Nothing in the cell measures friction and the examiner never
+reveals it, so neither solution can know it. But the examiner holds the same three
 coefficients on every table, and every demonstration was produced under them.
-So a fine-tuned policy can absorb this bench's own friction into its weights
+So a fine-tuned policy can absorb this examiner's own friction into its weights
 without any term in it standing for friction: it learns how far a glass of this
 kind tends to go for a push of this length, which is a consequence of the
-friction it was never told. That is a real gain on this bench and a liability
+friction it was never told. That is a real gain on this examiner and a liability
 anywhere else. What the model holds is a constant, not a way of measuring one.
 Change the table and the policy is confidently wrong in exactly the direction
 that topples a glass, because the height at which a glass slides rather than
 tips is set by that same coefficient. So part of whatever this solution gains
-over its partner is a memorised property of the bench, and that part would not
+over its partner is a memorised property of the examiner, and that part would not
 survive the move to a real table. Solution 5 has no such memory — and no such
 ability either.
 
 Now the weaknesses that survive.
 
 **The force reading still has nowhere to go.** [The test
-bench](../the-bench.md) calls the jaw's report of what it felt the only channel
+examiner](../the-examiner.md) calls the jaw's report of what it felt the only channel
 through which friction is observable at all, and this model's inputs are a
 picture, a sentence and the joint readings. Training cannot add a fourth input,
 so that channel stays closed in both halves of the pair, exactly as [solution
@@ -742,7 +742,7 @@ in both halves of the pair.
 **A surprise in the middle of a chunk is still carried out.** The model commits
 to a short run of waypoints at once, which is the mechanism that keeps it
 steady over a motion rather than wobbling from one step to the next, and it is
-the reason [the bench](../the-bench.md) accepts waypoints at all instead of
+the reason [the examiner](../the-examiner.md) accepts waypoints at all instead of
 forcing every solution down to three numbers. The cost of committing is that
 something unexpected during the chunk — a glass that sticks, a neighbour met
 earlier than the readings implied — is met by a policy that is still executing
@@ -754,7 +754,7 @@ happens when one does.
 early abort — the monitor that reads the jaw's force as the push develops and
 stops it the moment the contact stops behaving like a slide — is a design in
 [pushing without toppling](../pushing-without-toppling.md) and nothing in the
-bench does it. What the bench does is stop at a jam, which is a much higher
+examiner does it. What the examiner does is stop at a jam, which is a much higher
 force than a glass beginning to tip, and `follow()` is explicit that below that
 level the chunk is carried out as it was given, because carrying it out as
 given is the point of accepting one. So a surprise inside a chunk is not caught
@@ -789,7 +789,7 @@ time it describes a world of rendered tables with one kind of glass to a table.
 It would be a poor policy for any other robot or any other task, and asking it
 for one would be asking it about a world it was trained away from. Within this
 project that is not a loss, because the only tables this model will be shown
-are this bench's. It does mean the correction is a narrow asset that has to be
+are this examiner's. It does mean the correction is a narrow asset that has to be
 kept in step with the cell, and that is one more thing to maintain rather than
 a fixed file to keep.
 
@@ -797,9 +797,9 @@ a fixed file to keep.
 examples instead of the thing the examples are of. Here that would mean
 learning the tables rather than the pushing: which parts of the glass zone tend
 to hold a glass, how many glasses tend to be present, which crowded pairs the
-bench likes to draw, and in the worst case which push follows which table. Such
+examiner likes to draw, and in the worst case which push follows which table. Such
 a policy scores well on the tables it was trained on and poorly on new ones.
-Two things guard against it, and the bench already provides both. The tables
+Two things guard against it, and the examiner already provides both. The tables
 are numbered and the numbers are split, so no solution is ever marked on a
 table it learned from, and overfitting appears as a gap between the two halves
 rather than hiding inside one number. And the demonstrations cost only
@@ -807,7 +807,7 @@ simulator time, so the training set can be made large and varied for nothing,
 which is the cheapest defence against overfitting there is.
 
 The two risks pull in opposite directions in one respect, and knowing that
-saves confusion. Training longer and harder on this bench's pushes closes the
+saves confusion. Training longer and harder on this examiner's pushes closes the
 domain gap further while making both forgetting and overfitting more likely. So
 there is a sensible amount of training rather than a maximum, and the held-out
 half of the tables is what decides where it is.
@@ -819,7 +819,7 @@ here because it decides how this solution is measured at all. A policy of this
 kind is stochastic: asked the same question twice it may act differently,
 because the action is drawn rather than computed. Training itself varies with
 its own random seed, so the same recipe run twice gives two policies of
-different quality. [The bench](../the-bench.md) requires several training seeds
+different quality. [The examiner](../the-examiner.md) requires several training seeds
 and several evaluation runs for exactly this reason, and the scorecard carries
 the spread. **This matters most to this document of any in the folder**, because
 the thing being measured is the gap between two solutions, and a gap smaller
@@ -832,7 +832,7 @@ one model cannot answer: would a markedly larger foundation model do better?
 That question is this solution's second rung.
 
 **The rung is the same fine-tune on π0.5.** The same demonstrations, the same
-low-rank adaptation, the same bench, the same marking, with a much larger
+low-rank adaptation, the same examiner, the same marking, with a much larger
 borrowed model in the middle. Because everything except the model is held
 still, the gap between the two rungs measures what size is worth on this task,
 in the same way the gap between this solution and solution 5 measures what
@@ -855,7 +855,7 @@ reason is about where mistakes are found.** Almost everything that will go
 wrong in this solution is in the pipeline rather than in the model: rendering
 the view from the top, recording the demonstrations in a form the training loop
 accepts, carrying the action space across, choosing how long to train, and
-getting the evaluation to run the trained policy against the bench at all. Each
+getting the evaluation to run the trained policy against the examiner at all. Each
 of those is found by a run that fails. SmolVLA uses a few gigabytes at
 inference and runs on a laptop, so on the small model every one of those
 mistakes is found for nothing, and only a training run that is already correct
@@ -882,14 +882,14 @@ to all six, so that no solution can look good at pushing by having aimed at an
 easier arrangement. It does not own the topple check, which is shared. It does
 not own the loop of plan, feel and look again, which is shared. And it does not
 own the macro that turns a parameterised push into a jaw trajectory, because it
-never produces a parameterised push; it emits waypoints, and the bench carries
+never produces a parameterised push; it emits waypoints, and the examiner carries
 them out as they are.
 
 That last point is worth one more sentence, because it is the reason this
-solution is allowed to be itself. The bench could have insisted that every
+solution is allowed to be itself. The examiner could have insisted that every
 solution hand back the same handful of push parameters, which sounds fairer and
 is not, because squeezing a chunked policy down to three numbers destroys the
-action chunking that makes it work. What the bench does instead is score the
+action chunking that makes it work. What the examiner does instead is score the
 outcome and never the action: which glasses have room, which are standing,
 where each one ended up, and how many pushes it took. So a three-number push
 and a chunk of fifty waypoints are compared on the only thing problem 3
@@ -972,7 +972,7 @@ the friction coefficient, nobody has it, and the limit it computes is only as
 good as the guess. And the guard against a guess that was too generous — the
 early abort that reads the jaw's force while the push is happening and stops it
 when the contact stops behaving like a slide — **is a design and not code**.
-The bench stops a push at a jam, which is far more force than a glass needs to
+The examiner stops a push at a jam, which is far more force than a glass needs to
 begin tipping, and nothing reads the force as it develops. So the only thing
 protecting a glass in either half of this pair is the limit computed before the
 jaw moves, and a 5 mm test push where that limit is undecided.
@@ -984,11 +984,11 @@ recognise once both have been run over the same one.
 
 **The table.** Five tapered glasses stand in the glass zone, drawn at
 proportions from across the kind's range, so they are not all the same height.
-Two of them stand as close together as the bench allows, so neither has its
+Two of them stand as close together as the examiner allows, so neither has its
 70 mm of clear room measured to the other's edge, and because the test is to
 the edge rather than to the middle, the narrower of the two is crowded while
 the wider one may not be. A third glass, standing alone, is drawn with a foot
-narrow enough that its limit falls below the jaw's top edge. The bench renders
+narrow enough that its limit falls below the jaw's top edge. The examiner renders
 the view from the top and hands over the readings, each carrying problem 2's
 error.
 
@@ -1062,7 +1062,7 @@ file produced by continuing their training inherits whatever they carried, and
 no amount of training here relicenses it. It needs **PyTorch** underneath,
 which is what both the training and the forward pass run on.
 
-It needs **the two parts of the bench this solution waited on**, and both are
+It needs **the two parts of the examiner this solution waited on**, and both are
 there now. A rendered view looking straight down is the input this model takes,
 and `bench/top_view.py` is that view: a camera fixed 750 mm above the middle of
 the glass zone, looking straight down, returning a 384 by 384 picture that
@@ -1079,7 +1079,7 @@ It needs **solution 2 built**, because solution 2 is the teacher and its pushes
 are the training set. It needs **simulator time** to record those pushes over
 the training half of the tables, unattended, and a filter that discards the
 recordings in which something went wrong. It needs the **held-out half** of the
-tables, which the bench already enforces, for checking that the policy learned
+tables, which the examiner already enforces, for checking that the policy learned
 pushing rather than the tables.
 
 **It does not need a rented accelerator, and this is the place the document
@@ -1163,8 +1163,8 @@ training set was filtered to successes, so it was fitted on the easy half of
 its teacher's experience and has never seen the hard half. And it has seen no
 refusals at all, so it proposes pushes on glasses that must not be pushed.
 
-**What it owes to being trained on one bench.** It becomes good here and worse
-elsewhere. Part of what it gains over its partner is this bench's own friction
+**What it owes to being trained on one examiner's tables.** It becomes good here and worse
+elsewhere. Part of what it gains over its partner is this examiner's own friction
 absorbed into its weights, which is a memorised constant rather than an ability,
 and it would not survive a real table. A small or uniform training set would
 teach it the tables rather than the pushing, and only the held-out half would
@@ -1254,7 +1254,7 @@ randomisation**, is the usual answer when a policy trained in a simulator has
 to work on a real robot, and it is worth knowing here because the problem it
 solves is the mirror image of this one. It is also the thing that would have to
 be added before any of this reached a real table, since a policy that absorbed
-one bench's friction has learned a number rather than a skill.
+one examiner's friction has learned a number rather than a skill.
 
 ### Catastrophic forgetting
 
@@ -1267,7 +1267,7 @@ the old task (Kirkpatrick and colleagues,
 
 It matters a great deal when a model has to stay good at several things, which
 is why continual learning is a field at all. It matters little here, because the
-model is wanted for one bench and nothing else, and that is the honest reason
+model is wanted for one examiner and nothing else, and that is the honest reason
 the usual precautions are not taken: not that the effect is absent, but that its
 cost in this project is close to zero. Low-rank adaptation happens to soften it
 for free, since the borrowed weights are never overwritten and the correction
@@ -1298,9 +1298,9 @@ per decision.
 It is right for smooth contact-rich motions, which is what this problem has. It
 is wrong where a fast reaction inside the chunk is needed, because the chunk is
 already decided, and here nothing fills that gap: the early abort that would
-have filled it is a design and the bench only stops a push at a jam. For the
+have filled it is a design and the examiner only stops a push at a jam. For the
 same
-reason, the bench had to be designed to accept chunks: forcing a chunked policy
+reason, the examiner had to be designed to accept chunks: forcing a chunked policy
 down to three numbers would have measured a damaged version of the method rather
 than the method.
 

@@ -8,7 +8,7 @@
 > takes the list of objects the model reports, and keeps the outlines whose
 > name is a drinking vessel while dropping everything else the model named. A
 > survey is three pictures from three overlapping stations, and the model is
-> asked about each one on its own, which is the bench's arrangement rather than
+> asked about each one on its own, which is the examiner's arrangement rather than
 > this solution's.
 > Nothing whatsoever is fitted in this cell, so there is not a single number in
 > this solution that came from this project's own data.
@@ -17,7 +17,7 @@
 > name from a fixed list of categories, a confidence number and an outline; the
 > design keeps the outlines named as drinking vessels and discards the names
 > afterwards; the kept outlines are the masks, and the shared arithmetic in [the
-> test bench](../the-bench.md) turns each mask into a place on the table and a
+> examiner](../the-examiner.md) turns each mask into a place on the table and a
 > rough width.
 > **How it differs from the other five** — [solution
 > 1](01-rules-on-the-table.md) uses no model at all and reasons about depth with
@@ -197,7 +197,7 @@ model named would be dropped.
 
 **Third, hand the kept outlines to the shared arithmetic.** An outline is a set
 of pixels, and turning a set of pixels into a place on the table and a width is
-a job the test bench does, the same way, for every solution that produces masks.
+a job the examiner does, the same way, for every solution that produces masks.
 Nothing about that step changes here.
 
 So the whole of this solution is the first two steps, and the second step is a
@@ -205,7 +205,7 @@ filter on a list of names rather than anything fitted. That is the point to
 remember: **this solution would contain no numbers fitted in this cell at all**,
 not one.
 
-![The whole chain, with the one step this project wrote marked out: a grey picture from the top goes into the borrowed model exactly as it downloads, the model returns a box, a name, a score and an outline for every object it believes it found, a gate keeps an outline only when its name is one of five, the name is then thrown away and the bench's shared arithmetic turns what is left into a place and a width; the funnel underneath is the measured one, in which 180 glasses standing across 36 pictures produced 87 named outlines and five names on the list of five, every one of them the same name.](../../../images/02-segment-glasses/03-the-name-is-the-only-gate.png)
+![The whole chain, with the one step this project wrote marked out: a grey picture from the top goes into the borrowed model exactly as it downloads, the model returns a box, a name, a score and an outline for every object it believes it found, a gate keeps an outline only when its name is one of five, the name is then thrown away and the examiner's shared arithmetic turns what is left into a place and a width; the funnel underneath is the measured one, in which 180 glasses standing across 36 pictures produced 87 named outlines and five names on the list of five, every one of them the same name.](../../../images/02-segment-glasses/03-the-name-is-the-only-gate.png)
 
 ## What instance segmentation is, and the two kinds beside it
 
@@ -303,7 +303,7 @@ Two things follow for this cell.
 **A thin part of a glass is the first thing lost.** A stem is narrow compared
 with the bowl above it, so it is exactly the sort of detail a coarse pattern
 cannot hold, and the outline would tend either to thicken it into a stub or to
-drop it. The bench measures how much of each real glass a mask covered and
+drop it. The examiner measures how much of each real glass a mask covered and
 breaks that number down by kind for precisely this reason, and the expectation
 here is the one the problem statement already sets out from the shapes alone:
 the two kinds without a stem should be outlined almost exactly, and the two with
@@ -348,7 +348,7 @@ it a probability would be claiming a property nobody has measured.
 What the code does with that knob is the strictest thing it could do: it leaves
 it at the value the library itself uses when nobody chooses one. Nothing here
 looked at this cell's pictures and moved it, because the moment a bar is tuned
-on arrangements from the bench, this solution stops being a borrowed model used
+on arrangements from the examiner, this solution stops being a borrowed model used
 as it downloads and becomes a very small fitted one. The bar is therefore a
 borrowed number like the weights are borrowed, and the scorecard records that
 nothing at all was fitted here.
@@ -410,14 +410,14 @@ badly.
 It is worth stating plainly where this solution stops, because the boundary is
 the same for all six and is what makes them comparable.
 
-The input is fixed by the bench: for each survey picture, the grey picture
+The input is fixed by the examiner: for each survey picture, the grey picture
 shaded from depth, the depth reading at every pixel, and the camera's own pose,
 and nothing else. In particular no solution may read the simulator's record of
 what it spawned. The output is fixed too: one record per glass, holding its mask
 pixels, its place on the table and a rough width.
 
 The step between the mask and the place belongs to [the test
-bench](../the-bench.md) rather than to the solution. So **this solution
+examiner](../the-examiner.md) rather than to the solution. So **this solution
 contributes only the masks**, and any difference in its score belongs to the
 mask. It cannot win by measuring more cleverly and it cannot lose by measuring
 worse. One consequence is worth repeating because it removes a question that
@@ -428,10 +428,10 @@ to find.
 
 Two further points follow from that boundary. A single glass can be named twice,
 under two neighbouring drinking-vessel categories, and arrive as two outlines
-covering nearly the same pixels; the bench counts a real glass that collected
+covering nearly the same pixels; the examiner counts a real glass that collected
 two reports as a split, so the design should merge outlines that cover
 substantially the same pixels before it hands anything over, rather than leaving
-the bench to count one glass twice. And a mask that asserts pixels the camera
+the examiner to count one glass twice. And a mask that asserts pixels the camera
 never saw the glass at must say which ones, because the depth reading at such a
 pixel belongs to whatever stood in front; that case does not arise here, since
 the outlines this model returns mark only pixels where the object was actually
@@ -716,7 +716,7 @@ of fitting buys, and this one is the baseline the others are read against.
 One of those comparisons is sharper than the rest, and it is the reason this
 document and the next one should be read together. **Solution 4 is this same
 model, from this same library, starting from these same downloaded weights, with
-its training continued on this cell's own pictures.** The bench holds the input,
+its training continued on this cell's own pictures.** The examiner holds the input,
 the output and the marking still for both. One further thing changes with the
 training, and it is honest to name it: solution 4 replaces the borrowed list of
 category names with the single class "glass", because a model cannot be trained
@@ -728,7 +728,7 @@ nothing else. No other pair in the folder is that clean, and that is the main
 reason this solution is worth building even though it is unlikely to be the one
 carried forward.
 
-![What that pair measured: ten glasses of a hundred found on the spawned layouts and four of a hundred and one on the crowded ones, against the bench's floor at 100 and 83 and against solution 4, which is this same model with its training continued here, at 99 and 73; and the scorecard's five columns for this solution, in which merged, split and false are all zero, so every glass it reported was a real glass and the whole of the failure is the ninety glasses that got no report at all.](../../../images/02-segment-glasses/03-silence-against-the-floor.png)
+![What that pair measured: ten glasses of a hundred found on the spawned layouts and four of a hundred and one on the crowded ones, against the examiner's floor at 100 and 83 and against solution 4, which is this same model with its training continued here, at 99 and 73; and the scorecard's five columns for this solution, in which merged, split and false are all zero, so every glass it reported was a real glass and the whole of the failure is the ninety glasses that got no report at all.](../../../images/02-segment-glasses/03-silence-against-the-floor.png)
 
 ← [A network trained here from scratch](02-train-from-scratch.md) · [The same
 model, fine-tuned here](04-yolo-fine-tuned.md) →

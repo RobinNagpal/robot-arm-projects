@@ -61,7 +61,7 @@ but an answer that reads it is not answering this problem.
 This matters more here than in the other problems. Six quite different methods
 are compared on this question, and a comparison only means something when the
 question was identical, so the input is stated once here and the [test
-bench](the-bench.md) hands exactly it to every one of them.
+examiner](the-examiner.md) hands exactly it to every one of them.
 
 ## What must come out
 
@@ -166,7 +166,7 @@ every glass that could not be separated from its neighbour is listed with the
 reason; and when every region of table that could not have been seen is listed
 as unsearched rather than quietly treated as empty.
 
-The [test bench](the-bench.md) marks a run against the simulator's own record,
+The [examiner](the-examiner.md) marks a run against the simulator's own record,
 and it describes each measurement in full. Two of them are worth naming here,
 because they are what the six answers are compared on.
 
@@ -184,7 +184,7 @@ is what shows the difference.
 
 ## Where to go next
 
-- [The test bench](the-bench.md) — the scenes, the pictures, and how a run is
+- [The examiner](the-examiner.md) — the scenes, the pictures, and how a run is
   marked. Read this before any solution.
 - [Looking again at what was hidden](hidden-glasses.md) — the part every
   solution shares.

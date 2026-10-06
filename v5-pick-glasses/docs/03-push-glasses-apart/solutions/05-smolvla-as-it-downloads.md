@@ -16,7 +16,7 @@
 > collection and no fitted parameter anywhere in the design.
 > **How the output is produced** — the view from the top, the instruction and
 > the joint readings go into the model; the model returns a run of actions;
-> those actions are read as waypoints for the jaw and handed to the bench,
+> those actions are read as waypoints for the jaw and handed to the examiner,
 > which carries them out directly rather than through the push macro it owns.
 > So the chain is short: picture and words in, waypoints out, table changed,
 > look again.
@@ -60,7 +60,7 @@ Whatever it returns is carried out.
 and makes the pushes on the same held-out tables as the rest of the folder,
 and its folder's README carries the numbers. What follows was written before
 it ran, so where this document says what would probably happen, that is an
-argument from what the model was fitted on and what this bench offers it, and
+argument from what the model was fitted on and what this examiner offers it, and
 not a measurement. The measurements are in the README, and the one thing the
 design did not foresee is how much weight the reading between the model's
 action space and this jaw would have to carry.
@@ -81,7 +81,7 @@ By the end of this document you will understand what kind of model this is and
 what goes into it, where its competence comes from and why that competence is
 general rather than local, exactly what is borrowed and exactly what is not,
 why the difference between the pictures it learned from and the pictures this
-bench would show it is the central risk, why the instruction it is given
+examiner would show it is the central risk, why the instruction it is given
 carries almost no information in this problem, why the one channel that
 observes friction cannot reach it, and why a poor result here would still be
 the most useful thing in the folder.
@@ -153,13 +153,13 @@ Two things show from that. The only object in this solution that has both a
 metric extent and is seen by the model is the frame of the straight-down
 picture, so `ACTION_SPAN = 2.0` is the decision that two standard deviations of
 the model's output span that frame exactly — which is what lets the model put
-the jaw anywhere it can see and nowhere it cannot. And because the bench
+the jaw anywhere it can see and nowhere it cannot. And because the examiner
 consumes waypoints a fixed period apart, the spacing of the waypoints this
 function returns *is* the speed the jaw is asked to travel at, so the same
 constant fixes the speed as well as the reach, and the two cannot be chosen
 separately.
 
-![Three things go into the borrowed model and only one of them varies: the rendered view from the top changes with every table, while the instruction is the same sentence every time and the jaw's own pose is the same six numbers at all 2,260 asks, because the bench parks the jaw outside the picture's frame and the reading clips it to the edge of the range; what comes back is fifty waypoints of six numbers whose shipped normalisation statistics are saved under keys the normaliser never looks up, so both the normaliser and the un-normaliser do nothing and the numbers arrive as z-scores with no units in them, which is why four of the six slots have to be read as the jaw's x, y, height and heading by hand and the other two dropped.](../../../images/03-push-glasses-apart/05-the-join-at-both-ends.png)
+![Three things go into the borrowed model and only one of them varies: the rendered view from the top changes with every table, while the instruction is the same sentence every time and the jaw's own pose is the same six numbers at all 2,260 asks, because the examiner parks the jaw outside the picture's frame and the reading clips it to the edge of the range; what comes back is fifty waypoints of six numbers whose shipped normalisation statistics are saved under keys the normaliser never looks up, so both the normaliser and the un-normaliser do nothing and the numbers arrive as z-scores with no units in them, which is why four of the six slots have to be read as the jaw's x, y, height and heading by hand and the other two dropped.](../../../images/03-push-glasses-apart/05-the-join-at-both-ends.png)
 
 ## The problem this solves
 
@@ -194,9 +194,9 @@ The idea has three steps, and the first two are the whole of the solution.
 
 **First, download the model and run it on the table from the top.** The input
 is a picture of the table looking straight down, which [the test
-bench](../the-bench.md) specifies so that the solutions which read pictures get
+examiner](../the-examiner.md) specifies so that the solutions which read pictures get
 the same information as the solutions which read numbers. That picture is the
-model's view of the world. The bench renders it: a fixed camera 750 mm above
+model's view of the world. The examiner renders it: a fixed camera 750 mm above
 the middle of the glass zone, looking straight down, 384 by 384 pixels of
 red-green-blue, the same frame on every table.
 
@@ -208,7 +208,7 @@ exactly from its encoders.
 
 **Third, carry out what comes back.** The model returns actions. Read as
 waypoints for the jaw, those actions are already the shared output the contract
-asks for, so they go straight to the bench. The bench moves the jaw along them,
+asks for, so they go straight to the examiner. The examiner moves the jaw along them,
 the table changes, fresh measurements are taken, and the model is asked again
 from the new arrangement.
 
@@ -290,7 +290,7 @@ solution the baseline it is meant to be.
 
 **Nothing whatsoever is fitted here.** The weights are downloaded and used
 unchanged. There is no training run, no fine-tuning, no small correction fitted
-on this cell's data, and no threshold tuned on the bench's training tables. If
+on this cell's data, and no threshold tuned on the examiner's training tables. If
 a number in this solution came from somewhere, it came from somebody else's
 robots.
 
@@ -298,7 +298,7 @@ So the model has never seen this cell. It has never seen these glasses — not
 the straight glass, not the tapered glass, not the stemmed glass and not the
 short stemmed glass. It has never seen this jaw, which is two fingers and two
 pads held closed and level, 30 mm tall, riding as low as the gripper reaches.
-And it has never seen a table rendered the way this bench renders one.
+And it has never seen a table rendered the way this examiner renders one.
 
 What **is** borrowed is everything else: the architecture, the weights, the
 convention by which pictures are read, the convention by which words are read,
@@ -331,14 +331,14 @@ to be decided in it and why. It turned out to be a larger decision than this
 section expected, because the checkpoint settles less about its own action
 space than the section assumed.
 
-It is also worth noting that this is the step the bench's own arrangement was
-designed to allow. [The test bench](../the-bench.md) accepts a run of
+It is also worth noting that this is the step the examiner's own arrangement was
+designed to allow. [The examiner](../the-examiner.md) accepts a run of
 waypoints directly, without the push macro, precisely so that a policy which
 thinks in movement is not squeezed into three numbers describing a push. Both
-that path and the rendered view from the top now exist in the bench, and this
+that path and the rendered view from the top now exist in the examiner, and this
 solution uses them as they come.
 
-![The only object in this solution with both a size in millimetres and a place in the picture is the frame of the straight-down view, 717 mm across on the table top, so two standard deviations of the model's action space are made to span it exactly and anything beyond that clips back onto its edge; because the bench consumes one waypoint every 50 ms, the same constant also fixes the speed, and the median gap in the model's own chunks works out at 286 mm/s against the 20 mm/s the bench's own push macro moves at and the 200 mm/s the arm tops out at.](../../../images/03-push-glasses-apart/05-two-sigmas-span-the-frame.png)
+![The only object in this solution with both a size in millimetres and a place in the picture is the frame of the straight-down view, 717 mm across on the table top, so two standard deviations of the model's action space are made to span it exactly and anything beyond that clips back onto its edge; because the examiner consumes one waypoint every 50 ms, the same constant also fixes the speed, and the median gap in the model's own chunks works out at 286 mm/s against the 20 mm/s the examiner's own push macro moves at and the 200 mm/s the arm tops out at.](../../../images/03-push-glasses-apart/05-two-sigmas-span-the-frame.png)
 
 ## The instruction is nearly dead weight here
 
@@ -384,11 +384,11 @@ The third place the trade bites is the most interesting, because it is a
 mismatch between what this problem gives a solution and what this model is able
 to accept.
 
-[The test bench](../the-bench.md) is emphatic that the force reading is the
+[The examiner](../the-examiner.md) is emphatic that the force reading is the
 single most valuable thing it reports. Friction is never told to any solution
 and nothing in the cell measures it, so how much force it took to start a glass
 moving, and how far the glass travelled for that push, are the only evidence
-about friction that exists anywhere. The bench's own words are that every
+about friction that exists anywhere. The examiner's own words are that every
 solution which does better than a blind nudge does so by reading that channel,
 either by reasoning about it or by learning from it.
 
@@ -412,15 +412,15 @@ the new arrangement and answers again.
 This is also the clearest statement of what solution 6 has to gain, and of how
 little. Continuing the training here cannot add an input slot. What it can do
 is fit the model's response on pushes whose outcomes are known, so that this
-bench's own friction ends up absorbed into the weights as a constant. That is
+examiner's own friction ends up absorbed into the weights as a constant. That is
 not a way of observing friction, and [solution
-6](06-smolvla-fine-tuned.md) names it as a liability away from this bench
+6](06-smolvla-fine-tuned.md) names it as a liability away from this examiner
 rather than as a repair for the closed channel.
 
 ## The domain gap, which is the heart of this document
 
 Everything above assumes the borrowed model works at all on the pictures this
-bench would show it, and that assumption is the one most likely to fail. It
+examiner would show it, and that assumption is the one most likely to fail. It
 deserves the longest section here, because the difference between what the
 model was fitted on and what it would be given is large.
 
@@ -436,7 +436,7 @@ scenes, which are cluttered: a workbench with other objects on it, a background
 that is a room, texture everywhere, and the particular visual mess that tells a
 model what is near and what is far.
 
-**What this bench offers is a rendered view from the top of pale blue glasses
+**What this examiner offers is a rendered view from the top of pale blue glasses
 on a tan table.** The glasses are built as stacks of cylinders and shaded as
 solid objects, the table is a flat rectangle, there is nothing else in the
 frame, and nothing in the picture was produced by light passing through a
@@ -455,7 +455,7 @@ plausible, wrong actions**: movement that looks like a push, aimed somewhere
 reasonable, at a sensible speed, that is simply not the push this table needed.
 That is worse than nonsense for one specific reason — **nothing downstream
 looks suspicious.** The waypoints are well formed, the jaw follows them, the
-arm does not fault, the bench records a push, and the only sign that anything
+arm does not fault, the examiner records a push, and the only sign that anything
 went wrong is in the arrangement afterwards. There is no error to catch and no
 confidence number to put a bar on.
 
@@ -494,7 +494,7 @@ and this is the solution in the folder most likely to be doing exactly that.
 **And that is this solution's job.** It is the baseline for the sharpest
 comparison in the set, and a baseline is useful in proportion to how cleanly it
 isolates one variable, not in proportion to how well it scores. Solution 6 is
-the same library, the same weights and the same bench, with its training
+the same library, the same weights and the same examiner, with its training
 continued on this cell's own pushes. If this solution scored well, the pair
 would measure very little, because there would be little room for training to
 improve anything. A poor score here is what gives that comparison its range.
@@ -517,7 +517,7 @@ margin: the whole setup cost is a download.
 What it does cost is time per push, and that belongs on the scorecard. Every
 decision is a forward pass through a large network, which is a different kind
 of expense from solution 1's arithmetic and a different kind again from
-solution 4's run-time search. The bench carries a compute column for exactly
+solution 4's run-time search. The examiner carries a compute column for exactly
 this reason, because a solution that wins while taking a hundred times longer
 has not obviously won. The honest expectation here is a cost per push far above
 the hand-written solutions, and a different kind of expense from a planner that
@@ -542,7 +542,7 @@ model is worth it.
 It is worth stating plainly where this solution stops, because the boundary is
 the same for all six and is what makes them comparable.
 
-The input is fixed by [the test bench](../the-bench.md). This solution may read
+The input is fixed by [the examiner](../the-examiner.md). This solution may read
 what `look()` returns — where each glass stands, how tall it is, how wide it
 is at its widest and at its foot, and whether it is standing, each reading
 carrying problem 2's measured error — and the rendered view of the same table
@@ -553,7 +553,7 @@ a borrowed model.
 
 The output is fixed too: **a jaw trajectory**. This solution emits one
 directly, as a run of waypoints, rather than as a parameterised push expanded
-by the bench's macro. Both forms are accepted and the bench treats them alike,
+by the examiner's macro. Both forms are accepted and the examiner treats them alike,
 because **what is scored is the table afterwards rather than the push that
 changed it**. That is the only arrangement under which a push described by
 three numbers and a run of fifty waypoints can be compared at all.
@@ -567,7 +567,7 @@ cannot lose by having its movement squeezed into a shape that does not suit it,
 because waypoints are accepted as they come.
 
 One thing about the repeats is specific to this solution and worth noting. The
-bench requires every trained solution to be trained with several seeds and
+examiner requires every trained solution to be trained with several seeds and
 evaluated over several runs, because training varies with its seed and one run
 is not a measurement. **This solution has no training seed**, since it trains
 nothing, so the only variation it has is in how its actions are drawn when it
@@ -581,11 +581,11 @@ The pieces now connect into one picture, and it is a short picture because the
 solution is short.
 
 A model fitted on an enormous pool of real teleoperation across many robots and
-many tasks would be downloaded unchanged and shown this bench's rendered view
+many tasks would be downloaded unchanged and shown this examiner's rendered view
 of the table from the top, together with one unvarying English sentence and the
 arm's own joint readings. It would return actions, which somebody has to
 interpret as waypoints for this jaw, because the units and layout it emits were
-fixed for other robots. The bench would carry those waypoints out, the table
+fixed for other robots. The examiner would carry those waypoints out, the table
 would change, fresh measurements would be taken, and the model would be asked
 again.
 
@@ -628,7 +628,7 @@ it is solution 1's `slides`, in `01-one-fixed-nudge/plan.py`, which solutions
 2, 3, 6 and this one import rather than rewrite, so those five refuse exactly
 the same glasses. [Solution 4](04-a-world-model.md) is the exception: it judges
 toppling with its own learned model and says that the shared gate in front of
-it is not there yet. It does not live in the bench, which the second half of
+it is not there yet. It does not live in the examiner, which the second half of
 this section comes back to.
 
 **That arrangement is just as well, and the reason is the point of this whole
@@ -651,11 +651,11 @@ read rather than trusted: one that would reach a refused glass is thrown away,
 and the heights in the rest are bounded into the range the jaw rides at.
 
 Both of those checks are built, in `05-smolvla-as-it-downloads/clear.py` and
-`joining.py`. This document expected them to sit in the bench beside the
+`joining.py`. This document expected them to sit in the examiner beside the
 refusal, so that they would be identical for all six and not something a model
-can argue with. They do not: the bench grew the straight-down view and the
+can argue with. They do not: the examiner grew the straight-down view and the
 waypoint path but no shared guard, and the tipping refusal lives in solution
-1's folder rather than in the bench either. So the checks are this solution's
+1's folder rather than in the examiner either. So the checks are this solution's
 own, written to the same rule, and solution 6 should import them from here
 rather than write them again. Between them, this solution cannot topple a
 refused glass by choosing badly.
@@ -667,7 +667,7 @@ recognise, because they appear together rather than one at a time.
 
 Five glasses of the tapered kind stand in the glass zone. Two of them are
 standing deliberately close together, closer than the gripper can work with but
-not touching, which is how [the test bench](../the-bench.md) builds its tables.
+not touching, which is how [the examiner](../the-examiner.md) builds its tables.
 A third stands a little way off and is crowded by accident. The remaining two
 are clear of everything. One of the close pair is at the narrow-footed end of
 what its kind allows, and the tapered kind is wider higher up by definition, so
@@ -752,10 +752,10 @@ evaluation on rented hardware is at the cheap end of this folder.
 **Data.** None. No demonstrations, no labels, no held-out set, and nothing to
 keep in step with the cell when the cell changes.
 
-**What the bench had to grow.** Two things, and both were gates rather than
+**What the examiner had to grow.** Two things, and both were gates rather than
 conveniences: the rendered view of the table from the top, and the path that
 accepts a run of waypoints without the push macro. [The test
-bench](../the-bench.md) now provides both, and both are shared with solutions
+examiner](../the-examiner.md) now provides both, and both are shared with solutions
 3 and 6, so the cost was paid once for three solutions rather than for this
 one.
 
@@ -764,7 +764,7 @@ one.
 The strengths all come from the same source, which is that nothing is fitted.
 
 There is nothing to collect, nothing to train and nothing to keep in step with
-the cell, so this solution could be tried in an afternoon once the bench's two
+the cell, so this solution could be tried in an afternoon once the examiner's two
 missing parts exist. It needs no accelerator. It gives the folder a reading on
 what a borrowed robot model is worth before anybody spends a week recording
 pushes, which is a decision several of the other solutions depend on. It is a
@@ -854,7 +854,7 @@ Policies in this family emit a short run of future actions together rather than
 one action at a time, which [solution
 3](03-imitation-from-demonstrations.md) explains properly, since ACT is named
 for it. The reason it matters here is the contract: because these architectures
-produce movement in runs, [the test bench](../the-bench.md) accepts a run of
+produce movement in runs, [the examiner](../the-examiner.md) accepts a run of
 waypoints directly instead of demanding three numbers describing a push.
 
 Predicting a run is right when the motion is a smooth committed thing, as a
@@ -904,7 +904,7 @@ One of those comparisons is sharper than the rest, and it is the reason this
 document and the next one should be read together. **Solution 6 is this same
 model, from this same library, starting from these same downloaded weights,
 with its training continued on this cell's own pushes, running on this same
-bench.** The input is held still, the output is held still, the marking is held
+examiner.** The input is held still, the output is held still, the marking is held
 still, the interpretation that turns the model's actions into jaw waypoints is
 held still, and the topple refusal runs first in both. Nothing varies between
 the pair except the training. So the gap between their scores is a measurement

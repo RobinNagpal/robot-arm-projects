@@ -51,7 +51,7 @@ run is marked afterwards.
 
 This matters more here than in the other problems, because six quite different
 methods are compared on this question, and a comparison only means something
-when the question was identical. The [test bench](the-bench.md) hands exactly
+when the question was identical. The [examiner](the-examiner.md) hands exactly
 this to every one of them.
 
 ## What must come out
@@ -60,9 +60,9 @@ this to every one of them.
 is spent.
 
 Some answers think in whole pushes — a contact, a direction, a distance — and
-the bench expands one of those into a trajectory through a macro it owns. Other
+the examiner expands one of those into a trajectory through a macro it owns. Other
 answers produce the trajectory directly, a short run of waypoints at a time.
-Both are allowed, and the bench treats them alike, because **what is scored is
+Both are allowed, and the examiner treats them alike, because **what is scored is
 the table afterwards rather than the push that changed it**. That is the only
 way a push described by three numbers and a push described by fifty waypoints
 can be compared at all.
@@ -129,7 +129,7 @@ that top edge before anything else touches it, and the tapered kind is wider
 higher up by definition. So `h` in the rule above is 65 mm for these glasses,
 not 50. The difference is not a detail, and it bites hardest on exactly the
 kind that flares most: measured across the tapered kind at the friction this
-cell's bench actually uses, checking at the jaw's middle calls about seven
+cell's examiner actually uses, checking at the jaw's middle calls about seven
 glasses in ten safe to push, while checking at its top edge calls only about a
 quarter safe. The three kinds that flare less barely move. Every one of the
 mistakes is in the direction that topples a glass.
@@ -206,7 +206,7 @@ up from where the push aimed it, and how many were refused.
 Three documents describe what every answer shares, and they are worth reading
 before any of the six.
 
-- [The test bench](the-bench.md) — the crowded tables, what an answer is
+- [The examiner](the-examiner.md) — the crowded tables, what an answer is
   given, and how a run is marked.
 - [The target layout](the-target-layout.md) — where the glasses should end up,
   which is computed rather than learned, and the least movement the task needs.

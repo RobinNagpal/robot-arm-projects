@@ -14,12 +14,12 @@
 > answer to problem 2.
 > **How the output is produced** — a survey picture from the top goes in, and a
 > survey is three of them from three overlapping stations, each asked about on
-> its own because that is the bench's arrangement for all six. The
+> its own because that is the examiner's arrangement for all six. The
 > fitted model returns, for each thing it believes it has found, a box, a number
 > saying how sure it is, and an outline of the pixels inside that box which
 > belong to the object. Candidates that overlap a better-scoring candidate too
 > heavily are discarded, and the outlines scoring above a bar are kept. Each
-> kept outline is one mask, and the bench's shared arithmetic turns a mask into
+> kept outline is one mask, and the examiner's shared arithmetic turns a mask into
 > a place on the table and a rough width.
 > **How it differs from the other five** — [solution
 > 1](01-rules-on-the-table.md) uses no model at all, only rules on the table.
@@ -31,7 +31,7 @@
 > glasses. [Solution 6](06-rf-detr-fine-tuned.md) fine-tunes here as this one
 > does, but on a different architecture, which is what makes the two of them a
 > test of whether the architecture still matters once both are trained.
-> **What it costs** — labels are free, because the bench's own id image gives
+> **What it costs** — labels are free, because the examiner's own id image gives
 > an exact mask for every glass on the training half of the arrangements.
 > Training time is real but modest, because the model starts from somebody
 > else's numbers rather than from random ones, and it runs on this machine's
@@ -64,7 +64,7 @@ say so.
 pair.** [Solution 3](03-yolo-zero-shot.md) is this model with no training in
 this cell. This is the same model with training in this cell. Everything else
 between the two is held still, and it is worth listing exactly what "everything
-else" means, because the list is the argument. The [test bench](../the-bench.md)
+else" means, because the list is the argument. The [examiner](../the-examiner.md)
 holds the input still, so both are shown the same pictures of the same
 arrangements in the same order. It holds the output still, so both return the
 same record per glass. It holds the marking still, so both are measured by the
@@ -101,7 +101,7 @@ written down as a file of this project's own.
 The fitting step is in
 [`04-yolo-fine-tuned/yolo_fine_tuned.py`](../../../02-segment-glasses/04-yolo-fine-tuned/yolo_fine_tuned.py).
 `borrowed()` is the downloaded file, the same one solution 3 runs untouched;
-`dataset.build` writes the bench's scenes out as the directory of pictures and
+`dataset.build` writes the examiner's scenes out as the directory of pictures and
 label files Ultralytics reads a training set from; and `model.train` is the one
 line where the borrowed library does the work.
 
@@ -307,7 +307,7 @@ to one answer deals with them inside the model. The duplicate never leaves it.
 rendered glass seen from the top is a plain shaded shape, and a model fitted on
 photographs can reasonably call such a shape a bowl, a vase or a bottle. In
 solution 3 such an outline would be dropped and the glass missed. [The
-bench](../the-bench.md) says that **missed** is the count to watch hardest,
+examiner](../the-examiner.md) says that **missed** is the count to watch hardest,
 because a missed glass leaves no trace at all. With one class, a found object
 cannot be named out of the answer.
 
@@ -323,10 +323,10 @@ no part of problem 2 asks for it.
 Fine-tuning needs examples, which means pictures with every glass already
 outlined, and this is where this cell is unusually fortunate.
 
-[The bench](../the-bench.md) renders an **id image** beside every picture: at
-each pixel, which glass that pixel shows, or nothing. The bench keeps that image
+[The examiner](../the-examiner.md) renders an **id image** beside every picture: at
+each pixel, which glass that pixel shows, or nothing. The examiner keeps that image
 to itself at run time and never hands it to a solution, because a solution that
-read one would not be answering the problem. However, the bench does make it
+read one would not be answering the problem. However, the examiner does make it
 available as a **training label**, and only on the training half of the
 arrangements, so that nothing is ever tested on an arrangement it learned from.
 
@@ -350,7 +350,7 @@ different.
 Free labels are not the same as a good training set, and one choice still has to
 be made well. The cell's own placement rule keeps glasses a comfortable distance
 apart, so a training set drawn only from arrangements of that kind would never
-show the model a pair that was hard to separate. The bench also draws
+show the model a pair that was hard to separate. The examiner also draws
 **crowded** arrangements, which push the glasses as close as the cell allows,
 and the training set should hold those in proportion with the ordinary ones. The
 principle is general and worth remembering: **the edge of what the method will
@@ -404,7 +404,7 @@ the glass turns out to be enough on its own, and the coarseness of the outline
 machinery does not stand in the way of it.
 
 **The edge of the outline stays approximate, and the width is read from the
-edge.** The bench reads a glass's width from how far its mask's points reach out
+edge.** The examiner reads a glass's width from how far its mask's points reach out
 from its axis, so an outline that is slightly too generous reports a glass
 slightly too wide and one slightly too tight reports it slightly too narrow. The
 enlargement step tends to err the same way each time, so the error does not
@@ -420,7 +420,7 @@ the rule claims less of the glass and nothing that is not the glass.
 **A partly hidden glass stays a problem.** The outline this model returns is
 **modal**, which means it marks only the pixels where the camera actually saw
 the object. When one glass stands partly behind another, the outline of the one
-behind stops where the one in front begins, so the bench reads a glass whose
+behind stops where the one in front begins, so the examiner reads a glass whose
 visible part is a slice of its true silhouette. A slice is both narrower than
 the whole and sits off to one side, so the glass is reported as a smaller glass
 in the wrong place. Training on masks of visible pixels cannot repair that,
@@ -448,9 +448,9 @@ more.
 
 Here the number comes from weights fitted on this cell's own pictures, so it has
 a much better claim to mean something. That claim still has to be checked rather
-than assumed, and the bench makes the check easy: the bar should be chosen on
+than assumed, and the examiner makes the check easy: the bar should be chosen on
 the training half of the arrangements and measured on the test half, which is
-the split the bench already enforces. Where the bar sits is a trade, and it is
+the split the examiner already enforces. Where the bar sits is a trade, and it is
 the same trade in both solutions. Set it low and bare table is reported as
 glass; set it high and faint glasses are dropped.
 
@@ -485,7 +485,7 @@ examples instead of the thing the examples are of. Here that would mean learning
 the arrangements rather than the glasses: which parts of the frame tend to hold
 a glass, how many glasses tend to be present, which spacings are common. Such a
 model scores well on the pictures it was trained on and poorly on new ones. Two
-things guard against it, and both are already in place. The bench divides the
+things guard against it, and both are already in place. The examiner divides the
 arrangements into a training half and a test half and never marks a method on an
 arrangement it learned from, so overfitting appears as a gap between the two
 halves rather than hiding. And the labels being free means the training set can
@@ -503,15 +503,15 @@ arrangements is what decides where it is.
 One point about the output has to be clear, because it decides what the
 comparison with solution 3 is a comparison of.
 
-**Turning a mask into a place on the table and a rough width is the bench's job,
-not this solution's.** The bench takes each mask pixel with its depth reading,
+**Turning a mask into a place on the table and a rough width is the examiner's job,
+not this solution's.** The examiner takes each mask pixel with its depth reading,
 turns it into a point in the room, takes the axis from the points at the top of
 the glass and the width from how far the points reach out from that axis. Every
 solution in this folder is given that same step, so **a difference in the score
 belongs to the mask.** This solution contributes only the masks, and so does
 solution 3, which is exactly why the gap between the two is readable.
 
-**One check stands between the model and the bench, and solution 3 deliberately
+**One check stands between the model and the examiner, and solution 3 deliberately
 has none.** The kind of glass is known, so the narrowest and the widest
 footprint a glass of that kind could have are known too, and a candidate whose
 footprint falls outside that range is reported as a doubt rather than kept. That
@@ -523,19 +523,19 @@ flatter this side of the comparison.
 survey height one picture does not hold the glass zone, so a candidate whose
 mask reaches the edge of the picture is kept whatever its width: the picture ran
 out before the glass did, and a width read off part of a footprint is not the
-glass's width. Two measurements said so. Handed the bench's own exact masks, one
+glass's width. Two measurements said so. Handed the examiner's own exact masks, one
 station at a time over 20 held-out spawned scenes, the kind's own range refuses
 66 of 297 glass sightings, and every one of those 66 reaches the frame edge; and
 of this model's own refusals over eight of those scenes, all eleven too-narrow
 ones had a mask touching that edge. So the check was refusing the view rather
 than the mask. What makes standing down safe rather than generous is the
 survey's three overlapping stations: where a glass was seen squarely from
-another station, that is the report the bench keeps.
+another station, that is the report the examiner keeps.
 
 It follows that **this solution produces no pose.** Models produce masks. The
 place comes from depth and the camera's own pose, by arithmetic, and a glass
 standing upright on a flat table has no orientation left to find. [The
-bench](../the-bench.md) states this once so that no solution has to argue it
+examiner](../the-examiner.md) states this once so that no solution has to argue it
 again.
 
 ## How the concepts fit together
@@ -543,17 +543,17 @@ again.
 The pieces now join into one pipeline, and it is short, because almost
 everything in it was borrowed and only one thing was changed.
 
-A grey picture shaded from depth is rendered by the bench and handed over with
+A grey picture shaded from depth is rendered by the examiner and handed over with
 its depth readings and the camera's pose. Before any of that, and once, the
 model was fitted: weights that arrived from a large collection of everyday
 photographs had their training continued on the training half of these same
-arrangements, with labels taken from the bench's id image and with the general
+arrangements, with labels taken from the examiner's id image and with the general
 list of categories replaced by the single class "glass". At run time the fitted
 model is shown the picture and returns candidates, each with a box, a confidence
 number and an outline built as a weighted sum of coarse patterns. Candidates
 overlapping a better one too heavily are discarded, so one object leaves one
-answer. The outlines above the bar are the masks. The bench's shared arithmetic
-turns each mask into a place and a width, and the bench marks the result.
+answer. The outlines above the bar are the masks. The examiner's shared arithmetic
+turns each mask into a place and a width, and the examiner marks the result.
 
 Three things are worth holding on to from all of that.
 
@@ -566,7 +566,7 @@ here from labels that cost nothing.
 **The domain gap closed and the coarse outline did not.** Those are the two
 halves of solution 3's trouble, and training addresses exactly one of them. So
 this solution should be expected to find glasses far more reliably than its
-partner while measuring their edges in much the same way, and the bench's two
+partner while measuring their edges in much the same way, and the examiner's two
 mask numbers are where that expectation can be checked.
 
 **The comparison is the product.** Even if this solution were not the one
@@ -651,8 +651,8 @@ solution 3, since it is the one thing training does not change.
 
 **Where the two would still agree.** The nearer of the close pair covers part of
 the one behind it, so the mask of the one behind holds only the part the camera
-saw. Both solutions return modal masks, so both would hand the bench a slice of
-a silhouette rather than the whole of one. The bench would then report that
+saw. Both solutions return modal masks, so both would hand the examiner a slice of
+a silhouette rather than the whole of one. The examiner would then report that
 glass too narrow and at a place pulled towards the part that stayed visible. Its
 width might still fall inside the range a stemmed glass can have, in which case
 nothing would refuse it, and a wrong report would reach the marking with nothing
@@ -686,13 +686,13 @@ MPS backend. There is no separate graphics card here, and memory is shared
 between the graphics processor and the main processor, which is what lets a
 model this size be trained at all on this machine.
 
-It needs a **training set**, which the bench renders and labels for nothing from
+It needs a **training set**, which the examiner renders and labels for nothing from
 the training half of the arrangements, including the crowded arrangements the
 cell's own placement rule would never produce. It needs **time on the machine**
 for the training run, far less than a random start would need but not nothing.
 It needs a **held-out half** for setting the bar on the confidence number and
 for checking that the model learned the glasses rather than the arrangements,
-and the bench provides exactly that.
+and the examiner provides exactly that.
 
 And once fitted, it needs **a weights file kept in step with the cell**. Change
 the camera, the way depth is shaded into grey, or the range of proportions a
@@ -747,7 +747,7 @@ to be converted, and no step has to find a seam in a joined region.
 thing about it, and the thing its partner cannot claim. The domain gap is closed
 by construction rather than left to hope.
 
-**Its labels cost nothing.** The bench's id image gives exact masks for free, so
+**Its labels cost nothing.** The examiner's id image gives exact masks for free, so
 the usual reason not to fine-tune a model does not apply here.
 
 **It has little to set by hand.** There is no grouping distance and no seam

@@ -13,14 +13,14 @@
 > **What it does** — the arm is shown what a good push looks like, many times
 > over, and a network is trained to copy it. The demonstrations come from
 > [solution 2](02-geometry-ranked.md), which generates legal candidate pushes
-> and ranks them, so they cost nothing but arm time on the bench. The trained
+> and ranks them, so they cost nothing but arm time on the examiner's tables. The trained
 > policy then maps what the camera sees straight to a short run of jaw
 > waypoints, with no geometry, no friction model and no candidate list
 > anywhere inside it. Nobody writes down how to push a glass; the examples
 > carry that, and the fitting extracts it.
 > **How the output is produced** — a view of the table from the top goes in.
 > The policy returns an **action chunk**: a short run of consecutive jaw
-> waypoints, predicted together in one pass. The bench carries those waypoints
+> waypoints, predicted together in one pass. The examiner carries those waypoints
 > out directly, because there is nothing to expand — a chunk is already a jaw
 > trajectory. The arm then looks again, and the fresh picture is the next
 > input. One push is one chunk, and the loop runs until every glass has room,
@@ -41,7 +41,7 @@
 > else's weights instead of to random ones.
 > **What it costs** — the demonstrations are free in money and cheap in time,
 > because the teacher is a program and the tables are simulated, so the whole
-> dataset is arm time on the bench rather than human hours at a teleoperation
+> dataset is arm time on the examiner's tables rather than human hours at a teleoperation
 > rig. Training runs in hours — on this machine's own graphics processor, as
 > it turned out, so the rental this document first budgeted for was not
 > needed. The licence position is as simple as it gets here:
@@ -51,7 +51,7 @@
 > are used, the weights file this solution produces inherits no terms from
 > anybody. The real price is paid elsewhere, in two parts named plainly below:
 > the policy cannot be much better than its teacher, and it asks two things of
-> the bench that a push-parameter solution never needs: the table seen from
+> the examiner that a push-parameter solution never needs: the table seen from
 > straight above, and a path given as waypoints rather than as a push.
 
 > **The cell is described once, in [the cell](../../the-cell.md)** — the
@@ -71,10 +71,10 @@ with Diffusion Policy, which arrives at the same kind of answer by a different
 route.
 
 **This is built, and it is worth being exact about which parts.** [The test
-bench](../the-bench.md) is built, the programmed geometry that picks a landing
+examiner](../the-examiner.md) is built, the programmed geometry that picks a landing
 spot for one glass at a time is built, and so is the ranker that turns that
 geometry into [solution 2](02-geometry-ranked.md), which is this solution's
-teacher. The two things the bench was missing are built as well: the
+teacher. The two things the examiner was missing are built as well: the
 straight-down rendered view this policy reads, as `bench/top_view.py`, and the
 path that carries out a chunk of waypoints, as `Bench.follow`. ACT has been
 fitted here, from random numbers, on demonstrations recorded off solution 2's
@@ -109,10 +109,10 @@ costs this solution carries, none of which can be engineered away.
 ## The code at the heart of it
 
 This solution lives or dies on one join. A demonstration is the path the jaw
-really followed, written down waypoint by waypoint by the bench; a policy's
+really followed, written down waypoint by waypoint by the examiner; a policy's
 answer is an **action chunk**, a block of numbers of fixed shape. The code that
 turns the first into something the model can be fitted on, and turns the model's
-answer back into waypoints the bench will carry out, is this solution's own
+answer back into waypoints the examiner will carry out, is this solution's own
 contribution, and beside it sits the single call that reaches into the borrowed
 library.
 
@@ -121,7 +121,7 @@ The conversion is in
 which holds no model and no geometry of pushing. `push_segment` keeps the part
 of a recorded path at push height, from where the jaw started travelling across
 the table to the furthest point it reached, and drops the descent, the back-off
-and the lift, because the bench does all three itself. `to_action` then writes
+and the lift, because the examiner does all three itself. `to_action` then writes
 what is left as the five columns the policy is fitted on. The way back is the
 same file's `to_waypoints`, which turns the cosine-and-sine pair into an angle
 again and pulls every waypoint inside what the jaw can reach:
@@ -204,7 +204,7 @@ That function is hard to write down, and [pushing without
 toppling](../pushing-without-toppling.md) says exactly why. The relation
 between a push and the slide it produces runs through the friction coefficient
 between the glass and the table, **nothing in this cell measures friction**,
-and the bench never tells any solution what it is. On top of that, the contact
+and the examiner never tells any solution what it is. On top of that, the contact
 between a flat jaw and a curved glass is a small patch rather than a point, and
 a pushed glass turns as well as travels. Planar pushing is a well studied
 problem and the honest summary is that predicting an outcome precisely needs
@@ -219,8 +219,8 @@ pushing enters the method, and a person's model of pushing is the thing that is
 known to be incomplete.
 
 **This solution attacks the same difficulty from the other end.** Nobody can
-write the function from a crowded table to a good push. But a bench can tell
-afterwards whether a push was good, because [the test bench](../the-bench.md)
+write the function from a crowded table to a good push. But an examiner can tell
+afterwards whether a push was good, because [the examiner](../the-examiner.md)
 marks the outcome and not the action. So good pushes can be collected even
 though they cannot be derived, and a network can be fitted to the collection.
 The function is not written; it is measured into existence.
@@ -231,7 +231,7 @@ solution different in kind from its teacher rather than merely cheaper.
 **The policy learns the motion, not only the choice.** Solution 2 emits a
 parameterised push — which glass, where to put the jaw down, which way to
 point, how far to feel, how far to push — and [the test
-bench](../the-bench.md) owns the macro that expands those numbers into a
+examiner](../the-examiner.md) owns the macro that expands those numbers into a
 descent, a feel, a slide, a back-off and a lift. Every parameterised push is
 expanded the same way. A policy that emits waypoints is not limited to motions
 that macro can express. It can slow where a neighbour is close, lean the slide
@@ -241,7 +241,7 @@ exists to measure, but the freedom is real and only the trajectory solutions
 have it.
 
 **The policy reads the picture.** Solution 2 works from the numeric readings
-`look()` returns. A policy of this family takes an image, and the bench hands
+`look()` returns. A policy of this family takes an image, and the examiner hands
 one over for that reason. An image holds things the readings do not: the shape
 of the gap between two glasses, how a third glass sits behind them, where the
 edge of the glass zone is relative to all of it. None of that is in a list of
@@ -259,7 +259,7 @@ three things.
 
 **The teacher is a program.** The demonstrations are not recorded from a person
 driving the arm. They are produced by another one of the six, which generates
-candidate pushes and ranks them, running on the same bench, on tables drawn
+candidate pushes and ranks them, running on the same examiner, on tables drawn
 from numbers below the dividing line that separates training from testing. That
 single fact changes almost everything about the economics of this method, and
 the next section is about it.
@@ -351,11 +351,11 @@ candidate pushes from geometry — pushes that are legal by construction, aimed
 at destinations [the target layout](../the-target-layout.md) computed — and
 ranks them with a fitted model, taking the best. Run it on a table and it
 produces a push. Run it on many tables and it produces many pushes. Each one is
-carried out by the bench, which expands the parameterised push into the
+carried out by the examiner, which expands the parameterised push into the
 waypoints the jaw actually followed, and marks what happened to the table
 afterwards. So **every push solution 2 makes is a finished demonstration
 already**: a picture of the table before it, the waypoints that were followed,
-and the bench's own verdict on whether it worked.
+and the examiner's own verdict on whether it worked.
 
 ![One real training table seen from the top with the push the teacher chose on it, the path the jaw really followed written down waypoint by waypoint at half a millimetre apart while feeling and a millimetre apart while pushing, and the counts for the whole set: 22,846 pushes on 5,200 tables of which 12,656 were kept, where almost everything dropped is the teacher's own 5 mm test push rather than a failure.](../../../images/03-push-glasses-apart/03-where-the-demonstrations-come-from.png)
 
@@ -363,11 +363,11 @@ Five consequences follow, and they are the reason [the
 plan](../solutions-plan.md) says that supplying demonstrations is what earns
 solution 2 its place beyond being a baseline.
 
-**The cost is arm time on a simulated bench, and nothing else.** There is no
+**The cost is arm time on a simulated examiner, and nothing else.** There is no
 teleoperation rig, no operator, no scheduling of a person's hours, and no
-agreement to be reached about what a good push looks like. The bench is
+agreement to be reached about what a good push looks like. The examiner is
 MuJoCo, which is fast for exactly this reason, and [the test
-bench](../the-bench.md) records that a learned approach needs thousands of
+examiner](../the-examiner.md) records that a learned approach needs thousands of
 pushes while Gazebo would run each one at the speed of real time.
 
 **The demonstrations are reproducible.** Every table comes from a single
@@ -376,7 +376,7 @@ regenerated rather than archived. This is not a small thing. A demonstration
 set recorded from a person is a one-off artefact that can never be made again;
 this one is a function of a list of numbers.
 
-**Training and testing cannot be confused.** The bench's table numbers are
+**Training and testing cannot be confused.** The examiner's table numbers are
 split, with numbers above a fixed dividing line reserved for testing.
 Demonstrations are drawn only from below it, so no policy here is ever marked
 on a table it learned from.
@@ -412,7 +412,7 @@ has only a label to reproduce. If the set holds a push that toppled a glass,
 that push is a label like any other, and the fitting moves the weights towards
 producing it. Solution 2 is not perfect — no solution here is — so some of its
 pushes topple a glass, push one out of the glass zone, or jam. Keeping those
-teaches the student to make them. So the set is filtered by the bench's own
+teaches the student to make them. So the set is filtered by the examiner's own
 verdict, and only the pushes that worked are kept.
 
 That is clearly right, and it has a consequence that is clearly uncomfortable.
@@ -457,7 +457,7 @@ drawn from numbers and cost only time, a thin region can be filled by drawing
 more tables of that kind rather than by accepting the thinness. That is the
 cheapest defence available here and it is unavailable on real hardware.
 **Not done**: the demonstration set is drawn from consecutive table numbers,
-so it holds whatever mixture the bench produces.
+so it holds whatever mixture the examiner produces.
 
 None of the three removes the problem. The ceiling stays where the next
 sections put it.
@@ -473,7 +473,7 @@ sequence: this waypoint, then this one, then this one, several of them,
 produced together in a single pass. The arm then carries out that whole
 sequence before anything is asked again.
 
-![A parameterised push drawn from the side as the bench's macro expands it — down at 10 mm a waypoint, feeling at 0.5 mm, pushing at 1 mm, backing off and lifting — against the chunk the policy emits, a fixed block of 120 waypoints by five columns predicted in one pass, with the teacher's own pushes running from 25 to 246 waypoints and every one of them resampled to that fixed 120.](../../../images/03-push-glasses-apart/03-a-chunk-is-not-a-push.png)
+![A parameterised push drawn from the side as the examiner's macro expands it — down at 10 mm a waypoint, feeling at 0.5 mm, pushing at 1 mm, backing off and lifting — against the chunk the policy emits, a fixed block of 120 waypoints by five columns predicted in one pass, with the teacher's own pushes running from 25 to 246 waypoints and every one of them resampled to that fixed 120.](../../../images/03-push-glasses-apart/03-a-chunk-is-not-a-push.png)
 
 The programming comparison is exact and it is worth stating plainly, because
 the difference sounds smaller than it is. One way to write a controller is a
@@ -528,7 +528,7 @@ waypoints do not know. So the chunk's length is a real trade and not a
 formality: a long chunk is committed and blind, a short chunk is responsive and
 prone to dither. And it is a trade in speed as well as in length, because
 waypoints are consumed at a fixed rate: how far apart they are is how fast the
-jaw goes. The bench caps that at the fastest the cell ever moves the jaw, so a
+jaw goes. The examiner caps that at the fastest the cell ever moves the jaw, so a
 chunk whose waypoints are further apart than the arm can cover in one control
 period is taken slower rather than at a speed the arm does not have. A policy
 copying this teacher never meets the cap — the teacher's own waypoints are
@@ -537,20 +537,20 @@ emit coarser chunks would be slowed by it.
 
 What makes the trade bearable is set by `Bench.follow`, and it is worth being
 exact, because it is less than the loop gives a parameterised push. Coming
-down to the chunk's first waypoint is the bench's
+down to the chunk's first waypoint is the examiner's
 own move and it stops if the jaw touches anything on the way, so a chunk that
 starts over an obstacle comes back as blocked rather than being driven
-through. But **once the jaw is travelling across the table the bench does not
+through. But **once the jaw is travelling across the table the examiner does not
 feel for the glass.** A chunk is carried out as it was given, which is the
 whole point of accepting one, and the only thing that stops it is the jam
 threshold. So the slow approach to contact is not the cell's behaviour here;
 it is part of the chunk, copied from the teacher's own feel. That is the one
 place where this solution leans on the demonstrations for safety rather than
-on the bench.
+on the examiner.
 
-Finally, chunking is the reason [the test bench](../the-bench.md) accepts
+Finally, chunking is the reason [the examiner](../the-examiner.md) accepts
 waypoints at all, and that argument is worth repeating here because it is about
-this solution specifically. The bench could have required every solution to
+this solution specifically. The examiner could have required every solution to
 emit the same three or four push parameters, which sounds like the fairest
 possible rule. It would be the unfair one, because squeezing a chunking policy
 down to a handful of parameters removes the mechanism that makes it work, and
@@ -639,13 +639,13 @@ Two costs come with the second rung and both belong on the scorecard.
 
 **It costs more per push.** One chunk needs several denoising passes rather
 than one forward pass, so the run-time cost is some multiple of ACT's. [The
-test bench](../the-bench.md) carries a compute column for precisely this kind
+examiner](../the-examiner.md) carries a compute column for precisely this kind
 of difference, because a solution that wins while taking much longer has not
 obviously won.
 
 **It is one more thing that varies by seed.** A policy that draws its answer is
 stochastic by construction, so asked the same question twice it may act
-differently. The bench's requirement applies with full force: several training
+differently. The examiner's requirement applies with full force: several training
 seeds, several evaluation runs, and the spread reported, because a method that
 wins by less than its own spread has not been shown to win.
 
@@ -720,14 +720,14 @@ One point about the output has to be clear, because it decides what a
 comparison with this solution is a comparison of.
 
 **This solution emits waypoints directly, and nothing expands them.** [The test
-bench](../the-bench.md) owns a macro that turns a parameterised push into a
+examiner](../the-examiner.md) owns a macro that turns a parameterised push into a
 descent, a feel, a slide, a back-off and a lift, and the solutions that think
 in parameterised pushes go through it. A chunk is already a jaw trajectory, so
-there is nothing for the macro to do. The bench carries the waypoints out as
+there is nothing for the macro to do. The examiner carries the waypoints out as
 given, through `Bench.follow`, which is built.
 
 **Two small things travel beside the waypoints, and they are not the
-policy's.** The bench's chunk carries the glass it is meant to move and the
+policy's.** The examiner's chunk carries the glass it is meant to move and the
 place the solution expects that glass to arrive, because the scorecard counts
 pushes per glass and measures how far each glass ended from its aim. A policy
 whose output is a run of waypoints produces neither. Both are therefore read
@@ -738,7 +738,7 @@ reaches the policy or changes the motion. It is bookkeeping for the
 scorecard, and it is named here because it is the one place where this
 solution's output is not literally the whole answer.
 
-**The score is the outcome, not the action.** The bench does not ask whether the
+**The score is the outcome, not the action.** The examiner does not ask whether the
 chunk was the chunk it would have chosen, or whether the waypoints were smooth.
 It looks only at the table afterwards: which glasses have room, which are
 standing, where each one ended up, and how many pushes it took. That is what
@@ -749,8 +749,8 @@ side.
 ![Two fits compared: the first drove the training loss to 0.04, six times lower than the fit this solution shipped, and was memorising — 11 mm from the teacher on tables it had seen against 62 mm on tables it had not — while four times the demonstrations removed the memorising and left the error on unseen tables exactly where it was; and of the three shipped seeds the one that fitted closest to the teacher both racked the most glasses and toppled the most.](../../../images/03-push-glasses-apart/03-the-loss-was-not-the-score.png)
 
 **Everything else in the pipeline is shared, so a difference in the score
-belongs to the policy.** The tables are the bench's. The measurements are the
-bench's, carrying problem 2's measured error. The destinations come from [the
+belongs to the policy.** The tables are the examiner's. The measurements are the
+examiner's, carrying problem 2's measured error. The destinations come from [the
 target layout](../the-target-layout.md), computed once per arrangement and so
 every solution that aims at a destination aims at the same places, rather than
 at an easier arrangement than another. The topple limit and the refusal rule
@@ -762,7 +762,7 @@ There is a pleasing detail in how the shared parts reach this solution, and it
 is worth noticing because it explains what the policy is really learning. The
 target layout never appears inside the network. It reached the demonstrations,
 because the teacher aimed at it, and the demonstrations are all the policy ever
-saw. In the same way, the bench's macro never appears inside the network, but
+saw. In the same way, the examiner's macro never appears inside the network, but
 the waypoints it produced are the labels the network was fitted to, so **the
 student's action space is the teacher's macro, written down as motion.** The
 policy begins by being able to express only what the macro expressed, and
@@ -779,7 +779,7 @@ the second.
 **Offline, and once.** Tables are drawn from numbers below the dividing line.
 Solution 2 is run over them. For every push it chooses, three things are
 recorded: the view of the table from the top at that moment, the waypoints the
-bench's macro produced, and the bench's verdict on what happened to the table
+examiner's macro produced, and the examiner's verdict on what happened to the table
 afterwards. Pushes that failed are dropped and the dropping is counted, so the
 thinning is visible. Refusals are kept as refusals. What remains is a dataset of
 pairs — a picture, and a chunk of waypoints — which is exactly the shape
@@ -787,7 +787,7 @@ behaviour cloning needs. One detail of the shape is worth naming, because the
 document above does not settle it: a recorded path is a few hundred waypoints
 long and a chunk is a fixed, shorter run, so every demonstration is trimmed to
 the part at push height and resampled to the chunk's length. The trimming is
-free, because the bench does the descent and the lift itself. The resampling
+free, because the examiner does the descent and the lift itself. The resampling
 is not free: waypoints are consumed at a fixed rate, so squeezing a long push
 into a fixed chunk runs it faster than it was demonstrated. The chunk's length
 is therefore set near the median length of the teacher's own pushes, and a
@@ -804,7 +804,7 @@ glass still standing there, before the policy is asked anything, and a glass
 that fails it is refused with its reason and taken out of play. Only then does
 the straight-down view go into the policy, which returns one action chunk; the
 chunk is charged to one of the glasses the limit left in play, so a refused
-glass can never be pushed. The bench carries the chunk out: the closed jaw is
+glass can never be pushed. The examiner carries the chunk out: the closed jaw is
 placed clear above the first waypoint, comes down to it, follows the waypoints
 one control period apart, and lifts clear, reporting what it felt in the same
 words a parameterised push reports. The arm looks again. The loop repeats
@@ -851,10 +851,10 @@ correct answer is to refuse.
 
 **A policy of this kind has no way to say that.** Its output is a chunk of
 waypoints. There is no channel in it for "I cannot move this glass, and the
-reason is that it tips before it slides". The bench requires a refusal to carry
+reason is that it tips before it slides". The examiner requires a refusal to carry
 a reason — a glass abandoned in silence is marked **wrong**, while a glass
 refused with a reason is **correct but incomplete**, which is a good outcome —
-so the thing the bench wants is a kind of answer this policy cannot produce.
+so the thing the examiner wants is a kind of answer this policy cannot produce.
 
 It is tempting to hope the policy learns to refuse by itself, and it is worth
 being exact about why it does not. The teacher refuses those glasses, so the
@@ -889,7 +889,7 @@ can prevent a topple rather than report one. A chunking policy is open-loop
 while its chunk runs, so during that window such a monitor would be the only
 thing observing at all. **It is still a prescription rather than built code,
 and this solution is the one with the strongest reason to want it.** What the
-bench does have during a chunk is the jam threshold, which stops a chunk whose
+examiner does have during a chunk is the jam threshold, which stops a chunk whose
 jaw has wedged. That catches a blocked path; it does not recognise a glass
 beginning to tip, which is the failure the monitor was for.
 
@@ -903,12 +903,12 @@ abstract.
 proportions from across that kind's range, so they are not all the same size.
 Two of them stand deliberately close — closer than the gripper can work with,
 with a little daylight still between them — and one of that pair is also fairly
-near the edge of the glass zone. The other three have room. The bench accepted
+near the edge of the glass zone. The other three have room. The examiner accepted
 the table because at least one glass on it has no room, so there is work to do.
 
 **What happened offline.** Long before this table was drawn, solution 2 was run
 over many tables below the dividing line. On each, it generated legal candidate
-pushes, ranked them, pushed, and the bench recorded the picture, the waypoints
+pushes, ranked them, pushed, and the examiner recorded the picture, the waypoints
 and the verdict. The failures were dropped and counted. What was left was fitted
 into ACT, several times with different seeds. None of that involves this table,
 which comes from above the dividing line.
@@ -952,7 +952,7 @@ layout](../the-target-layout.md) says plainly that both are legal answers. The
 demonstration set will hold both kinds of example, taken from arrangements that
 look much alike. ACT must name one chunk, and the chunk that is least wrong on
 average over those examples is something between them: a short, hesitant motion
-that separates nothing. The bench would score that as a push spent with the
+that separates nothing. The examiner would score that as a push spent with the
 table unchanged, and a solution that repeats it would burn its push budget
 without failing in any way the counts call wrong. **This is the case the
 Diffusion Policy rung exists to test**, because a model that draws its chunk
@@ -980,7 +980,7 @@ is touched. Nothing in the example about leaning the slide or slowing near the
 end was reached, because the motion never got that far. The folder's
 `README.md` has the counts.
 
-![The same held-out table with the teacher's push and the policy's chunk side by side: the teacher brings the fingertips down 10 mm clear of the glass's rim and the 270 mm body of the jaw clears every other glass, while the policy brings them down 30 mm inside the rim of the glass it means to push, so the bench stops the descent and reports the chunk blocked with nothing moved; over the whole run 569 of 643 pushes end that way and 472 of them go to a glass that has already been pushed.](../../../images/03-push-glasses-apart/03-blocked-on-the-way-down.png)
+![The same held-out table with the teacher's push and the policy's chunk side by side: the teacher brings the fingertips down 10 mm clear of the glass's rim and the 270 mm body of the jaw clears every other glass, while the policy brings them down 30 mm inside the rim of the glass it means to push, so the examiner stops the descent and reports the chunk blocked with nothing moved; over the whole run 569 of 643 pushes end that way and 472 of them go to a glass that has already been pushed.](../../../images/03-push-glasses-apart/03-blocked-on-the-way-down.png)
 
 ## What it needs
 
@@ -999,10 +999,10 @@ program that chooses pushes well, there are no demonstrations, and with a
 teacher that chooses badly the student has nothing worth copying. [The
 plan](../solutions-plan.md) builds the two in that order for this reason.
 
-It needed **two things the bench did not have**, and that was the third of the
+It needed **two things the examiner did not have**, and that was the third of the
 honest costs. [The plan](../solutions-plan.md) recorded both in its audit of
 `bench.py`. The first was a **rendered view of the table from the top**: the
-bench returned numeric readings, and it did render the world, but from the
+examiner returned numeric readings, and it did render the world, but from the
 arm's side rather than straight down, and only for the films used to check a
 run by eye. The second was a **path that accepts a chunk of waypoints**:
 `push()` takes a parameterised push and *is* the macro that expands it, so
@@ -1011,14 +1011,14 @@ and `Bench.follow` — and both were the real price of going off the shelf,
 because every LeRobot policy expects pictures and a control-rate action space.
 Solutions 1 and 2 need neither, which is one more reason to build them first.
 
-It needs **demonstrations**, which cost arm time on the bench and nothing else,
+It needs **demonstrations**, which cost arm time on the examiner's tables's tables and nothing else,
 drawn only from table numbers below the dividing line. The prescription here
 is to over-represent the crowded corner cases deliberately, so that the edge
 of what the policy will face sits somewhere in the middle of what it was
 trained on. **That part is not done**: the demonstration set is drawn from
-consecutive table numbers, which is whatever mixture the bench's own table
+consecutive table numbers, which is whatever mixture the examiner's own table
 generator produces, and the crowded corners are therefore as rare in the
-training set as they are on the bench.
+training set as they are on the examiner's tables.
 
 It needs **compute**, and this is the cheapest entry in the folder. **Training
 runs in hours.** The reason it is so modest is worth stating, because it is
@@ -1045,7 +1045,7 @@ several passes per chunk for the denoising rung, against a push that takes the
 arm seconds to carry out. The compute column on the scorecard is where that
 difference between the two rungs becomes visible.
 
-And once fitted, it needs **a weights file kept in step with the bench**.
+And once fitted, it needs **a weights file kept in step with the examiner**.
 Change how the view from the top is rendered, or the macro whose waypoints
 became the labels, or the error the readings carry, and the file is quietly out
 of date in a way no test of the code would notice.
@@ -1060,7 +1060,7 @@ understanding of the task from whoever builds it.
 
 **The output is native.** This solution emits a chunk because a chunk is what
 it is built to emit, so nothing is squeezed or expanded on the way out, and the
-bench's decision to accept waypoints costs it nothing.
+examiner's decision to accept waypoints costs it nothing.
 
 **Labels are free and plentiful.** The usual reason not to attempt imitation
 learning — that somebody has to demonstrate the task by hand, many times — does
@@ -1081,7 +1081,7 @@ cannot beat solution 2 by much on the pushes it imitates.** It is worth being
 precise about the two narrow ways it might exceed its teacher, because they are
 real but small: it can smooth away some of the teacher's inconsistency, since a
 fitted function averages over many examples and so is steadier than any one of
-them; and it can express motions the bench's macro cannot, since its output is
+them; and it can express motions the examiner's macro cannot, since its output is
 waypoints rather than push parameters. What it cannot do is discover that a
 different glass should have been moved, or a different destination chosen,
 because no mechanism in it compares one outcome against another. [Solution
@@ -1094,10 +1094,10 @@ copies failures as readily as successes, and it thins the dataset exactly in
 the situations where the teacher struggled. So the student is fitted most
 densely where help was least needed.
 
-**It needed bench work the first two solutions did not.** A straight-down
+**It needed examiner work the first two solutions did not.** A straight-down
 rendered view and a waypoint path, both recorded in the plan as missing and
 both now built. That cost is paid, but two smaller ones are paid on every
-push rather than once. The bench's chunk wants a glass and an aim that the
+push rather than once. The examiner's chunk wants a glass and an aim that the
 policy does not produce, so both are read back off the waypoints outside it.
 And nothing stops a network emitting a coordinate the jaw cannot reach, so
 every chunk is pulled inside the jaw's limits before it is followed, and how
@@ -1120,7 +1120,7 @@ astray. When this policy is wrong you can look at the picture and guess. It has
 no confidence output, and the situation in which it is least reliable — a table
 unlike anything in its data — is indistinguishable in its output from the
 situation in which it is most reliable. Combined with it being stochastic and
-with training varying by seed, that is why the bench insists that one run is not
+with training varying by seed, that is why the examiner insists that one run is not
 a measurement and that a result quoted without a spread is not a result.
 
 ## The general ideas behind this
@@ -1256,7 +1256,7 @@ policy class is adequate and the remaining error belongs to the teacher's
 geometry, and a student that falls well short says the opposite. The two places
 this solution can legitimately exceed its teacher are narrow and worth watching
 for in the numbers — a steadier push, from averaging over many examples, and a
-motion the bench's macro could not have expressed.
+motion the examiner's macro could not have expressed.
 
 Against [solution 4](04-a-world-model.md), the comparison is the sharpest
 question in the folder after the foundation-model pair: plan with a model, or
@@ -1264,7 +1264,7 @@ learn the push directly? That solution learns how the world changes and
 searches over candidate actions at run time, simulating each one forward before
 committing, so **it can find a push nobody ever demonstrated** — which is
 exactly the thing this solution cannot do. It pays for that on every push, in
-run-time cost that [the test bench](../the-bench.md) puts at hundreds or
+run-time cost that [the examiner](../the-examiner.md) puts at hundreds or
 thousands of times the arithmetic a fixed nudge costs, and it pays again in
 needing a model of the world accurate enough to plan against,
 which is a harder thing to learn than a mapping. So the pair trades a ceiling
@@ -1278,7 +1278,7 @@ downloads, with about 450 million parameters and a pretraining set of 487
 community datasets of real teleoperation behind it, and fits nothing in this
 cell. So it brings a vast amount of experience of robot manipulation in general
 and none of this cell in particular, while this solution brings the opposite: a
-small network that has seen nothing but this bench, this jaw and these four
+small network that has seen nothing but this examiner, this jaw and these four
 kinds of glass. Which of those two is the better trade is precisely what the
 folder is for.
 

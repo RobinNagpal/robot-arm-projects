@@ -20,7 +20,7 @@
 > the model's body turns it into a description of every part of the picture; the
 > queries read that description and each returns a class, a rectangle and a mask
 > over the whole picture; the queries that report "nothing" are dropped; each
-> surviving mask is handed to the bench, which back-projects its pixels with
+> surviving mask is handed to the examiner, which back-projects its pixels with
 > their depth readings and the camera's own pose and returns a place and a rough
 > width.
 > **How it differs from the other five** — against [rules on the
@@ -38,7 +38,7 @@
 > Against [SAM 2 with a keeper](05-sam2-with-a-keeper.md), which leaves a large
 > borrowed model untouched and fits only a small decision on top of it, this
 > adjusts the whole model to the pictures the cell really renders.
-> **What it costs** — the labels cost nothing, because the bench renders which
+> **What it costs** — the labels cost nothing, because the examiner renders which
 > glass owns each pixel and a mask is a selection over that. The training time
 > is the time of a fine-tune rather than of a start from nothing, so it is far
 > less than building the same model from random numbers would take, and it is
@@ -72,7 +72,7 @@ in the picture shows, which is the **second rung** of this solution and is
 described in full below.
 
 One thing has to be said before the rest. **The first rung is built and has
-been scored on the bench; the second rung is not.** Its fine-tune was started
+been scored by the examiner; the second rung is not.** Its fine-tune was started
 with the same settings as the first and stopped unfinished when the machine
 filled up, so no number is claimed for it anywhere. This document quotes no
 scorecard of its own either: the first rung's numbers sit beside its code, in
@@ -395,11 +395,11 @@ produce without difficulty.
 
 The labels are where this cell is unusually fortunate. In the ordinary case a
 person draws every mask by hand, which is why labelled data is the scarce
-resource in this field. Here nothing is drawn. The bench renders, beside every
+resource in this field. Here nothing is drawn. The examiner renders, beside every
 picture, an image saying which glass owns each pixel, described in [the test
-bench](../the-bench.md), so one glass's mask is the set of pixels carrying its
+examiner](../the-examiner.md), so one glass's mask is the set of pixels carrying its
 identity and the class is always "glass". Every label is a selection over an
-array the bench produced anyway. The bench hands those labels out only for the
+array the examiner produced anyway. The examiner hands those labels out only for the
 training half of its arrangements and marks on the other half, so no model is
 ever tested on an arrangement it learned from.
 
@@ -560,8 +560,8 @@ computed place across the gap and onto the object in front.
 So the rule is absolute. **A mask that claims pixels the camera never saw the
 glass at must say which pixels those are**, handing on the observed part and the
 asserted part as two things rather than one silhouette with the join hidden. The
-bench then **excludes those readings rather than guessing values for them**, and
-that is the bench's own stated behaviour rather than something this solution has
+examiner then **excludes those readings rather than guessing values for them**, and
+that is the examiner's own stated behaviour rather than something this solution has
 to arrange. Nothing is inferred in their place either: what an asserted pixel
 would be worth is a question about geometry, and a guess at it inside a
 segmenter would be arithmetic nobody asked for.
@@ -576,10 +576,10 @@ mask would look like a better mask, the footprint fitted to it would still be
 round, and the width would still be inside the range the kind allows, so what
 comes out would be a plausible wrong answer of exactly the kind this rung exists
 to prevent, reached by the repair instead of by the failure the repair is for.
-[The test bench](../the-bench.md) reports the measurement that settles it, taken
+[The examiner](../the-examiner.md) reports the measurement that settles it, taken
 with exact masks and no model anywhere in the chain: naming the asserted pixels
 and leaving them out places a glass markedly closer to where it stands than
-feeding them in does. That measurement belongs to the bench's arithmetic rather
+feeding them in does. That measurement belongs to the examiner's arithmetic rather
 than to any model, so it applies here unchanged.
 
 ### What the completion actually buys
@@ -641,7 +641,7 @@ edge of the frame it is not. At the cell's own survey height one picture does
 not hold the glass zone, so a glass at the far side of a station's frame is cut
 in half and the width read off the half is not the glass's width; refusing on it
 refuses the view and not the mask. That was measured on masks nothing can
-improve on: handed the bench's own exact masks, one station at a time over 20
+improve on: handed the examiner's own exact masks, one station at a time over 20
 held-out spawned arrangements, the kind's range of footprints refuses 66 of 297
 glass sightings, and **every one of those 66 reaches the frame edge**. The three
 overlapping stations are the answer to such a report instead.
@@ -695,7 +695,7 @@ and for a glass with a clear view it is nothing, so the number mostly reports
 how well the visible boundary was traced, which is the first rung's job.
 
 So the measure to watch during training is the **overlap over the hidden part
-alone**, which the bench can supply exactly by subtracting one of its own masks
+alone**, which the examiner can supply exactly by subtracting one of its own masks
 from the other. That number ignores every pixel the model could have got right
 by tracing a visible edge. Beside it belong the counts of glasses found, missed
 and merged, because what this rung changes shows up in those counts before it
@@ -711,8 +711,8 @@ Everything above is about producing masks, and this section says plainly where
 this solution stops, because it is the same place all six stop and it is what
 makes the six comparable at all.
 
-Turning a mask into a place on the table and a rough width is **the bench's job,
-not this solution's**. [The test bench](../the-bench.md) describes that step in
+Turning a mask into a place on the table and a rough width is **the examiner's job,
+not this solution's**. [The examiner](../the-examiner.md) describes that step in
 full: each mask pixel carries a depth reading, so it becomes a point in the
 room, the axis comes from the points at the top of the glass, and the width
 comes from how far the cloud reaches out from that axis. The same function does
@@ -821,7 +821,7 @@ and no scrap of surface to say which glass of the kind's range this is. There is
 nothing to extend, and a model that extends nothing produces nothing.
 
 A model *could* be trained to mark a glass that **might** be behind this one,
-since the bench can supply that label too, and it is worth saying what such a
+since the examiner can supply that label too, and it is worth saying what such a
 model would be doing. It would be reporting where glasses tend to stand in
 arrangements like this one, which is a statement about the range of arrangements
 rather than about this arrangement. That is **inventing a scene rather than
@@ -885,7 +885,7 @@ the part behind the taller one as well, so the shorter glass is a region of its
 own and its visible slice is credited to it rather than absorbed into the taller
 glass's region. The mask is then split: the observed part is the slice, and the
 asserted part is the rest. The asserted pixels carry the taller glass's depth
-readings, so they are named and the bench leaves them out, and the place and the
+readings, so they are named and the examiner leaves them out, and the place and the
 width come from the slice alone. The place is good enough to send a camera to.
 The width is still under the truth, and the visible fraction travelling with the
 answer says so. The asserted part lies in the taller glass's own shadow, where
@@ -918,7 +918,7 @@ It needs a **downloaded file of weights**, which is large, which is fetched
 rather than committed with the code, and which this project cannot produce, so
 it comes from outside and is taken on trust.
 
-It needs a **training set**, which the bench renders and labels for nothing,
+It needs a **training set**, which the examiner renders and labels for nothing,
 including the crowded arrangements the cell's own rule would never produce. That
 is the genuinely cheap part and it is what makes fine-tuning reasonable here. It
 needs **time on the machine** for the fine-tune, far less than a start from
@@ -1113,7 +1113,7 @@ right on real photographs without care, because the label has to be drawn
 through a place nobody can see, so two careful annotators disagree with no way
 to settle who was right, and a model trained on such labels is fitted partly to
 the annotators' guesses. **None of that applies in a simulator**, which is why
-this rung is cheap here: the bench can render the arrangement again with the
+this rung is cheap here: the examiner can render the arrangement again with the
 other glasses taken away, and the mask that comes back is the whole silhouette
 exactly, with no guessing in it. For more, see [image
 segmentation](https://en.wikipedia.org/wiki/Image_segmentation).

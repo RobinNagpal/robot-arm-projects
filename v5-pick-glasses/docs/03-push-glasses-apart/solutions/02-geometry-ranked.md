@@ -21,8 +21,8 @@
 > heading round each crowded glass, steps the travel out along each heading,
 > applies its tests, and keeps what survives. Each survivor is described by a
 > short list of lengths, angles, counts and ratios, and the model turns that
-> list into one number. The highest-scoring push is handed to the bench as a
-> parameterised push, and the bench's own macro expands it into the jaw
+> list into one number. The highest-scoring push is handed to the examiner as a
+> parameterised push, and the examiner's own macro expands it into the jaw
 > trajectory that every solution here is judged on.
 > **How it differs from the other five** — [solution
 > 1](01-one-fixed-nudge.md) fits nothing at all and pushes a glass a fixed
@@ -40,9 +40,9 @@
 > geometric in front of it. [Solution 6](06-smolvla-fine-tuned.md) is that same
 > model with its training continued on this cell, so all of it is fitted, where
 > here only the ordering is.
-> **What it costs** — the labels are free, because the bench measures the table
+> **What it costs** — the labels are free, because the examiner measures the table
 > after every push in any case. The training set is a few thousand pairs of a
-> candidate and what happened to it, which is minutes of bench time, because a
+> candidate and what happened to it, which is minutes of examiner time, because a
 > push in MuJoCo is cheap. Training a few hundred shallow trees on a table of a
 > few thousand rows takes seconds to minutes on an ordinary processor, so there
 > is no accelerator to rent and the running cost per push is arithmetic.
@@ -122,7 +122,7 @@ two places, and they are small enough to read here. The first is the model
 itself: scikit-learn's boosted trees, fitted once and then asked for one number
 per candidate so that the candidates can be sorted. The second is the number
 those trees are asked to predict, which is measured by making the push on the
-bench and reading the table afterwards. Those two are the heart of this
+examiner and reading the table afterwards. Those two are the heart of this
 solution because the candidates themselves are not its own — they come from
 solution 1's enumerator unchanged — so the choosing is the only thing that
 differs, and the label is what the choosing is taught to want.
@@ -161,7 +161,7 @@ def ranked(
 ```
 
 What `labels` holds is the whole design decision, and it is produced by making
-one candidate on the bench and measuring what it did, in
+one candidate on the examiner's tables and measuring what it did, in
 `03-push-glasses-apart/02-geometry-ranked/rollout.py`:
 
 ```python
@@ -203,7 +203,7 @@ solution addresses is not how to find a safe push. It is **how to choose among
 safe pushes**, which is a different question and a smaller one.
 
 The complaint it is aimed at is therefore not safety. The geometry already in
-this repository toppled nothing at all over the bench's fifty held-out tables,
+this repository toppled nothing at all over the examiner's fifty held-out tables,
 as its results file records. The complaint is the number of attempts: that run
 spent **213 pushes on 251 glasses, and 90 of those were repeat pushes of a
 glass it had already moved once**. A repeat push is a push that did not achieve
@@ -336,7 +336,7 @@ not change from one glass to the next. What changes is `a`, because every glass
 has its own foot, so **the limit is computed for each glass from its measured
 foot width** rather than agreed once for the whole kind.
 
-The term nobody has is `μ`. Nothing in the cell measures friction and the bench
+The term nobody has is `μ`. Nothing in the cell measures friction and the examiner
 never tells any solution the coefficients it runs the physics with, so the
 limit a solution computes is only as good as a guessed number. The geometry
 already in this repository handles that by carrying the whole range it is
@@ -474,15 +474,15 @@ scene, or a property of the glass being moved, or a comparison against a limit.
 Not one of them is "this push happens at x = 430, y = −290".
 
 **That exclusion is deliberate, and the reason is what a position would teach
-the model.** The bench's crowded tables are drawn by standing most glasses
+the model.** The examiner's crowded tables are drawn by standing most glasses
 deliberately close to a glass already down and the rest anywhere they fit, as
-[the test bench](../the-bench.md) describes. Over many tables that produces a
+[the examiner](../the-examiner.md) describes. Over many tables that produces a
 distribution: crowds form more often in some parts of the zone than others,
 purely because of where the arm reaches, where the rack sits and how the
 placement rule happens to work. Give the model the position and it will find
 that distribution, because it is real and it predicts the training labels. The
 model would then be scoring a push by **where on this cell's table it happens
-to be**, which is a fact about this bench's placement rule and not a fact about
+to be**, which is a fact about this examiner's placement rule and not a fact about
 pushing. Change the rack, move the zone, or draw the tables by another rule,
 and the model is quietly describing a cell that no longer exists, while nothing
 errors and nothing looks suspicious.
@@ -511,17 +511,17 @@ the table's origin was put.
 The training set follows from the two halves above, and the pleasant part is
 that collecting it needs no extra work.
 
-**Generate the candidates geometrically, on the training tables.** The bench
+**Generate the candidates geometrically, on the training tables.** The examiner
 numbers its tables and splits those numbers, with everything above a fixed
 dividing line reserved for testing, so training draws only from below it and no
 solution is ever marked on a table it was fitted on. For each crowded table the
 enumerator produces its candidate set exactly as it would at run time.
 
-**Execute every candidate on the bench.** Reset the table, make the push,
+**Execute every candidate on the examiner's tables.** Reset the table, make the push,
 measure the result. This is the step that would be unaffordable on a real arm
-and costs almost nothing here, because a push in MuJoCo is cheap and the bench
+and costs almost nothing here, because a push in MuJoCo is cheap and the examiner
 runs faster than real time. **A few thousand candidate-and-outcome pairs is
-minutes of bench time**, which is the single reason this solution's data cost is
+minutes of examiner time**, which is the single reason this solution's data cost is
 near zero.
 
 **Label each one with what happened.** The label has two parts. The first is
@@ -548,11 +548,11 @@ pushes the arithmetic called safe. So the ratio of push height to topple limit
 earns its place in the input list: it is the input through which the model can
 express caution about a number nobody measured.
 
-**The label is only as honest as the bench**, and the honest part of that
-sentence is the friction. The bench's coefficients decide every topple in the
+**The label is only as honest as the examiner**, and the honest part of that
+sentence is the friction. The examiner's coefficients decide every topple in the
 training set, and they are three fixed numbers rather than a measurement of
 anything real. A model fitted on these labels has learned what topples on this
-bench, and carrying it to a different table would mean carrying an assumption
+examiner, and carrying it to a different table would mean carrying an assumption
 about friction that was never checked.
 
 One guard belongs on retraining, and it is the ordinary failure of every
@@ -629,11 +629,11 @@ expense is why imitation learning is often judged on how few demonstrations it
 needs.
 
 **Here they cost nothing.** This solution generates safe pushes geometrically
-and ranks them, so it can be run over as many training tables as the bench can
+and ranks them, so it can be run over as many training tables as the examiner can
 draw, and each run records a complete demonstration without a person present.
 The pushes in it are safe by construction, because the same filter that
 protects a real run protects a recorded one. So the cost of the demonstration
-set is bench time, which is minutes, and nothing else.
+set is examiner time, which is minutes, and nothing else.
 
 That is a real contribution and it has to be stated with its cost, because the
 cost is not obvious and it reaches both of the solutions that learn from it.
@@ -674,19 +674,19 @@ comparison with the other five is a comparison of.
 
 This solution thinks in **parameterised pushes**: which glass to move, where to
 put the fingertips down, which way to point the jaw, how far to feel forward
-and how far to push once it has touched. That is exactly what the bench's
+and how far to push once it has touched. That is exactly what the examiner's
 `push()` already accepts, and **the expansion of those numbers into a jaw
-trajectory is a macro the bench owns.** The bench brings the closed jaw down at
+trajectory is a macro the examiner owns.** The examiner brings the closed jaw down at
 the chosen start point, feels forward slowly until the force passes a small
 threshold, pushes the asked-for distance, backs off a couple of centimetres and
 lifts clear. Every parameterised push is expanded the same way by the same
 code, so this solution gains nothing and loses nothing in that step.
 
 It follows that **what this solution contributes is the choice of push and
-nothing else**. The trajectory is the bench's, the physics is MuJoCo's, and the
+nothing else**. The trajectory is the examiner's, the physics is MuJoCo's, and the
 marking reads the table afterwards rather than the action, which is what lets a
 three-number push and a chunk of waypoints from a learned policy be compared at
-all. [The test bench](../the-bench.md) states that once so that no solution has
+all. [The examiner](../the-examiner.md) states that once so that no solution has
 to argue it again.
 
 One consequence is worth drawing out, because it is a genuine limitation rather
@@ -704,7 +704,7 @@ toppling](../pushing-without-toppling.md) describes: plan, feel, look again.
 
 Before any of it, and once, the model is fitted. Candidates are generated
 geometrically on the training tables, every one of them is executed on the
-bench, each is labelled with the clear room the table gained and with whether
+examiner, each is labelled with the clear room the table gained and with whether
 the glass toppled, and a few hundred boosted regression trees are fitted to
 those labels on a table of a few thousand rows.
 
@@ -718,7 +718,7 @@ range is refused with the reason. For the glasses that remain, the enumerator
 sweeps the headings, steps the travel out, applies its four tests and keeps the
 survivors. Each survivor is turned into the short list of lengths, angles,
 counts and ratios described above, the model scores it, and the candidates are
-sorted. The highest-scoring push is handed to the bench, which expands it into
+sorted. The highest-scoring push is handed to the examiner, which expands it into
 a trajectory, carries it out, and reports what the jaw felt. Then the arm looks
 again, and the loop repeats with the arrangement as it now is rather than as it
 was planned to be.
@@ -858,10 +858,10 @@ the tipping rule have one definition in this repository. It is also the part
 that decides the ceiling.
 
 It needs a **training set**, which is a few thousand pairs of a candidate and
-what happened to it, generated on the training half of the bench's tables and
-executed there. That is minutes of bench time and no human labelling at all,
-because the bench measures the table after every push in any case. It needs the
-**held-out half** of the tables for marking, which the bench already enforces by
+what happened to it, generated on the training half of the examiner's tables and
+executed there. That is minutes of examiner time and no human labelling at all,
+because the examiner measures the table after every push in any case. It needs the
+**held-out half** of the tables for marking, which the examiner already enforces by
 splitting its table numbers.
 
 It needs **no accelerator**, and this is the clearest cost difference between
@@ -878,7 +878,7 @@ column on the scorecard is close to the fixed nudge's rather than to a
 foundation model's.
 
 And once fitted it needs **a model file kept in step with the cell**. Change
-the heading sweep, the step length, the glass zone or the way the bench draws
+the heading sweep, the step length, the glass zone or the way the examiner draws
 its crowded tables, and the fitted model quietly describes a cell that no
 longer exists, in a way no test of the code would notice.
 
@@ -904,7 +904,7 @@ which of its inputs mattered. When this solution is wrong, a person can find
 out why by reading a list.
 
 **It is cheap in every currency.** No accelerator, no licence condition, no
-human labelling, minutes of bench time, and a run-time cost that is arithmetic.
+human labelling, minutes of examiner time, and a run-time cost that is arithmetic.
 
 **And it is the teacher**, which is the contribution that survives even if its
 own score is unremarkable.
@@ -956,7 +956,7 @@ without occasionally taking the second-ranked candidate locks in an early
 mistake.
 Change the sweep or change the way tables are drawn, and the fitted model is
 out of date silently. And every label in the training set was decided by the
-bench's private friction, which was never measured against anything real.
+examiner's private friction, which was never measured against anything real.
 
 **How it fails, when it fails, is quietly.** A badly fitted ranker orders the
 candidates roughly at random. Nothing errors, nothing topples, and the run
@@ -1006,7 +1006,7 @@ produces. Pairwise and listwise match the real objective more closely, because
 the real objective is an order and not a set of values, and they are the usual
 choice where the groups are large and the differences within them are subtle.
 Pointwise is chosen here because it is the simplest thing that can work, because
-the label it needs is exactly the label the bench produces anyway, and because
+the label it needs is exactly the label the examiner produces anyway, and because
 nothing in the measured shape of these candidate sets suggests the extra
 machinery would be repaid. If the within-group spread of the label turned out to
 be large, pairwise fitting would be the next thing to try.

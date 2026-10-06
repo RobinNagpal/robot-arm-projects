@@ -188,6 +188,6 @@ anything that reads those pictures.
 ## Where to go next
 
 - [The problem](problem.md) — what is asked for, and the three difficulties.
-- [The test bench](the-bench.md) — the shared input, output and marking.
+- [The examiner](the-examiner.md) — the shared input, output and marking.
 - [The six solutions](solutions/overview.md) — what each one puts between the
   pictures and the masks.

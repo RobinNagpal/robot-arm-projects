@@ -1,13 +1,13 @@
-# The test bench — the same question for every answer
+# The examiner — the same question for every answer
 
 ## Introduction
 
 This problem is answered six different ways, and six answers are only
 comparable if they were asked the same question and marked by the same examiner.
-The test bench is that examiner. It draws the arrangements of glasses, renders
+The examiner is that examiner. It draws the arrangements of glasses, renders
 the pictures, hands exactly those pictures to whichever solution is being tried,
 and then marks what comes back against what it knows it put out. By the end of
-this document you will understand what the bench gives a solution, what it keeps
+this document you will understand what the examiner gives a solution, what it keeps
 to itself, how a report is matched to a real glass, which numbers decide whether
 one method beat another, and why one of those numbers matters far more than it
 first appears.
@@ -15,11 +15,11 @@ first appears.
 Read this before any of the solution documents, because every one of them
 assumes it.
 
-## Why there is a bench at all
+## Why there is an examiner at all
 
 Without one, each method would arrive with its own arrangements and its own
 idea of a good answer, and nothing could be concluded by putting their results
-side by side. The bench exists to remove every difference between the six
+side by side. The examiner exists to remove every difference between the six
 except the one being studied.
 
 It does that by holding three things fixed. The **input** is the same pictures
@@ -35,16 +35,16 @@ downloaded weights, and one of them has had its training continued on this
 cell's pictures. That training also cuts the borrowed list of everyday
 categories down to a single class, because a model cannot be trained towards
 this cell's labels while still being asked which household object it is looking
-at — so the two changes cannot be had separately. Because the bench holds
+at — so the two changes cannot be had separately. Because the examiner holds
 everything else still, nothing varies between those two that the training did
 not bring, which makes the gap between them a measurement of what training
 bought.
 
-## What the bench draws
+## What the examiner draws
 
 **It draws the arrangements, not Gazebo.** The real simulator would produce a
 slower picture of the same thing, and a few hundred arrangements are needed, so
-the bench renders them directly from the cell's own glass shapes, the cell's own
+the examiner renders them directly from the cell's own glass shapes, the cell's own
 table layout and the wrist camera's real lens. Nothing about the geometry is
 invented for convenience.
 
@@ -75,19 +75,19 @@ From each picture a solution may read three things:
 - the **camera's pose**, which the arm knows from its own joint encoders.
 
 That is the whole input. It is the same for all six, and it is handed over by
-the bench rather than fetched by the solution, so no solution can quietly read
+the examiner rather than fetched by the solution, so no solution can quietly read
 anything else.
 
-## What the bench keeps to itself
+## What the examiner keeps to itself
 
 Every picture also carries an **id image**: at each pixel, which glass that
-pixel shows, or nothing. The bench renders it alongside the depth and never
+pixel shows, or nothing. The examiner renders it alongside the depth and never
 gives it to a solution at run time.
 
-That image is the bench's whole power, and it is used for two different jobs
+That image is the examiner's whole power, and it is used for two different jobs
 which are worth keeping apart.
 
-**As the answer key**, it is how marking works. Because the bench knows which
+**As the answer key**, it is how marking works. Because the examiner knows which
 glass owns each pixel, it can decide what a returned mask is really a picture
 of.
 
@@ -102,14 +102,14 @@ One record per glass, holding its mask pixels, its place on the table, a rough
 width of its footprint, and **whether the picture held the whole glass** — that
 last one because a glass at the edge of a station's frame shows only part of its
 footprint, so a width read off it is part of a width, and a solution refusing a
-report on its width has to be able to tell which it has. The bench observes it;
+report on its width has to be able to tell which it has. The examiner observes it;
 what to do about it is the solution's own. Beside those records come the two
 honest statements [the problem](problem.md) asks for: which glasses could not be
 separated and why, and which parts of the table could not have been seen at
-all. Neither is a list of glasses, and the bench counts both rather than
+all. Neither is a list of glasses, and the examiner counts both rather than
 treating a reported doubt as a missing answer.
 
-**The step that turns a mask into a place and a width is the bench's, not the
+**The step that turns a mask into a place and a width is the examiner's, not the
 solution's.** This is the single most important decision in the whole
 arrangement, so it is worth being clear about why. Each mask pixel carries a
 depth reading, so it becomes a point in the room. The axis is taken from the
@@ -132,7 +132,7 @@ has no orientation left to find.
 
 ## How a report is matched to a real glass
 
-Before anything can be counted, the bench has to decide which real glass a
+Before anything can be counted, the examiner has to decide which real glass a
 report is talking about. It does this by pixels rather than by position: it
 looks at the pixels the report is made of, asks the id image which real glass
 owns most of them, and that majority owner is the glass the report refers to.
@@ -142,7 +142,7 @@ when a method is badly wrong about where the glass stands. A report whose mask
 is plainly a picture of glass number three is credited to glass number three,
 even if the place it computed is well off.
 
-## What the bench measures
+## What the examiner measures
 
 ### Did it separate the glasses?
 
@@ -168,7 +168,7 @@ hidden](hidden-glasses.md) is for.
 
 ### How far out was the place?
 
-For each glass that was found, the bench records how far the reported place is
+For each glass that was found, the examiner records how far the reported place is
 from the true one, and reports the middle value and the worst.
 
 **This number saturates, and knowing that saves a lot of confusion.** The step
@@ -184,7 +184,7 @@ measured as well.
 ### How good was the mask?
 
 This is the measurement that separates methods when the place cannot, and it is
-the reason the bench looks at the mask itself rather than only at what the
+the reason the examiner looks at the mask itself rather than only at what the
 arithmetic made of it.
 
 Two numbers per glass: **how much of the real glass the mask covered**, and
@@ -219,7 +219,7 @@ kinds, which is what a correct yardstick has to say about a perfect mask.
 
 ### The ceiling: what the best possible answer would be
 
-One more measurement is not about any method. The bench can run its own id
+One more measurement is not about any method. The examiner can run its own id
 images through the shared arithmetic, as though a method had returned perfect
 masks. What comes out is the **floor of error**, or equivalently the ceiling of
 achievable accuracy: the best place and width the shared step can produce even
@@ -236,7 +236,7 @@ the hidden part of a glass. The depth reading at such a pixel belongs to
 whatever stood in front, so feeding it in drags the computed place onto the
 object in front. Measured with exact masks, naming those pixels and leaving them
 out gives a place several times closer than feeding them in. So a mask that
-asserts pixels must say which ones, and the bench excludes their depth readings
+asserts pixels must say which ones, and the examiner excludes their depth readings
 rather than guessing a value for them.
 
 ## Where to go next

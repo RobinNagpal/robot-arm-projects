@@ -1,7 +1,7 @@
 # Solution 4 — a world model, then plan with it
 
 > **What it uses** — PyTorch, and MuJoCo through [the test
-> bench](../the-bench.md). Rung one is a small network written for this cell
+> examiner](../the-examiner.md). Rung one is a small network written for this cell
 > and trained here, five copies of it, with no downloaded weights of any kind.
 > Rung two would be TD-MPC2, the model-based entry in LeRobot, trained here as
 > well. **Rung two is not built**, so no number anywhere in this document is
@@ -25,8 +25,8 @@
 > each answer; a candidate is thrown away if any copy thinks it might topple
 > something, or if the predicted table breaks the map; the survivors are scored
 > by how much room is still missing afterwards; a sampling search refines the
-> good ones and returns the best push; that push is handed to the bench as a
-> parameterised push, and the bench's own macro expands it into a jaw
+> good ones and returns the best push; that push is handed to the examiner as a
+> parameterised push, and the examiner's own macro expands it into a jaw
 > trajectory.
 > **How it differs from the other five** — [one fixed
 > nudge](01-one-fixed-nudge.md) has no model at all and finds out what a push
@@ -84,7 +84,7 @@ document. And you will understand what the two rungs buy against each other:
 a small hand-built model that can be inspected, against a stronger off-the-shelf
 one that brings a maintained implementation.
 
-Read [the test bench](../the-bench.md) first, because what `look()` hands over
+Read [the examiner](../the-examiner.md) first, because what `look()` hands over
 and what `push()` accepts are assumed throughout, and read [pushing without
 toppling](../pushing-without-toppling.md), because the refusal rule this
 solution adds learned evidence to is stated there.
@@ -187,7 +187,7 @@ That half is hard for one reason above all others, and [pushing without
 toppling](../pushing-without-toppling.md) states it plainly. The rule that
 decides whether a glass slides or tips compares the contact height against half
 the foot width divided by the friction coefficient, and **nothing in this cell
-measures friction**. The bench holds the coefficients privately and never tells
+measures friction**. The examiner holds the coefficients privately and never tells
 anybody. So any solution that writes the rule down is writing down a rule with a
 guessed number in it, and the guess can be wrong by a factor that decides
 whether a glass should have been touched at all.
@@ -249,7 +249,7 @@ written, because this solution is unusual among the six in how much of it
 exists.
 
 **Rung one is built.** It lives in `03-push-glasses-apart/04-a-world-model/`, it
-trains on data it collects itself, and it has been run on the bench's held-out
+trains on data it collects itself, and it has been run by the examiner's held-out
 tables with its results recorded in that folder's own `results.json`, and set
 beside the other five in `03-push-glasses-apart/results/README.md`. The model is
 `model.py`, what it is shown is `features.py`, and the search and the loop
@@ -265,14 +265,14 @@ explains how that extension works and what it would buy. But the horizon in the
 built planner is one push, and the reason it is one push is given below under
 compounding error.
 
-**Rung two is a design, and it claims nothing.** It is not wired to this bench
+**Rung two is a design, and it claims nothing.** It is not wired to this examiner
 and it has not been trained or run here, so every number in this document
 belongs to rung one. One thing about it is worth settling before anybody starts:
 the library this project uses elsewhere ships **TD-MPC**, the earlier method,
 and not TD-MPC2. So rung two means fetching TD-MPC2 from its own project, and
 the convenience of everything living in one library, which solutions 3, 5 and 6
 enjoy, does not apply here. The
-two bench pieces an off-the-shelf policy needs are no longer the obstacle: the
+two examiner pieces an off-the-shelf policy needs are no longer the obstacle: the
 straight-down rendered view and the path that accepts waypoints were built for
 [imitation from demonstrations](03-imitation-from-demonstrations.md), as
 `bench/top_view.py` and `Bench.follow`. What is still missing is the wiring and
@@ -325,7 +325,7 @@ its foot — the three measurements `look()` reports, carrying problem 2's error
 The push itself as two numbers: how far across the glass the jaw meets it, and
 how far it pushes. And then up to five other glasses, nearest first, each as
 where it stands relative to the pushed glass, how wide it is and how tall it
-is. Six glasses on a table is the most the bench ever draws, so five others is
+is. Six glasses on a table is the most the examiner ever draws, so five others is
 everyone.
 
 **Out come fourteen numbers.** A displacement for the pushed glass. A
@@ -643,7 +643,7 @@ how far a rollout can be trusted, and for rung one's model that limit is low.
 Two pushes is defensible, three is optimistic, and anything deeper is planning
 against a story rather than a prediction.
 
-**On this bench a sequence saves pushes rather than rescuing runs.** The cases
+**On this examiner a sequence saves pushes rather than rescuing runs.** The cases
 where a sequence wins outright — where a one-at-a-time planner has to refuse and
 a two-deep planner succeeds — are real but uncommon on four to six glasses, and
 the more usual gain is finishing the same table in fewer pushes. That is worth
@@ -722,13 +722,13 @@ borrowed models' scores readable.
 ## The pushes are what this contributes
 
 Having chosen a push, this solution hands it over in the form [the test
-bench](../the-bench.md) defines, and it is worth being exact about where its
+examiner](../the-examiner.md) defines, and it is worth being exact about where its
 contribution stops.
 
 **It emits a parameterised push.** Which glass to move, where the fingertips
 come down, which way the jaw points, how far it feels forward and how far it
 pushes. That is what `push()` accepts, and **the expansion of those numbers
-into a jaw trajectory is a macro the bench owns**: the descend, the slow feel
+into a jaw trajectory is a macro the examiner owns**: the descend, the slow feel
 forward until contact, the push at a steady speed, the back-off and the lift.
 This solution does not write that expansion and gains nothing from it, and
 neither does any other solution that thinks in pushes.
@@ -792,7 +792,7 @@ predicted table, plus a small penalty per millimetre pushed. Keep the best
 thirty, draw the next round around them, and repeat four times in all.
 
 **Make one push.** The best push over every crowded glass on the table is
-expanded by the bench's macro and carried out. The jaw reports what it felt.
+expanded by the examiner's macro and carried out. The jaw reports what it felt.
 
 **Then look again**, and begin at the top with the arrangement as it now is.
 The loop ends when every glass has been racked, when the table's push budget is
@@ -873,7 +873,7 @@ cannot.
 
 ## A worked example
 
-The clearest way to see the whole arrangement run is on one of the bench's
+The clearest way to see the whole arrangement run is on one of the examiner's
 held-out tables, and rung one can be traced step by step on any of them.
 
 Take a table of six glasses of one kind. The first look reports six readings.
@@ -968,7 +968,7 @@ evaluated by five networks, repeated across five copies of the table for the
 topple check, for every crowded glass. That is cheap in absolute terms, because
 the networks are small and the batch goes through in one call, but it is
 hundreds of times the arithmetic a fixed nudge costs, and it is the reason [the
-test bench](../the-bench.md) puts a compute column on the scorecard. A
+examiner](../the-examiner.md) puts a compute column on the scorecard. A
 two-push search multiplies it again. On a real arm this still sits comfortably
 inside the time one arm movement takes, which is the comparison that matters.
 
@@ -979,12 +979,12 @@ camera's error, and the weights are quietly out of date in a way no test of the
 code will notice.
 
 **Libraries, and no borrowed model.** PyTorch for both rungs, MuJoCo through the
-bench, and LeRobot for rung two. Neither rung downloads trained weights from
+examiner, and LeRobot for rung two. Neither rung downloads trained weights from
 anybody, so there is no model licence to meet in either — the only conditions
 are the libraries' own, and LeRobot is Apache 2.0.
 
-**Two additions to the bench, both of which it now has.** [The test
-bench](../the-bench.md) listed them as missing: repeats with a spread on the
+**Two additions to the examiner, both of which it now has.** [The test
+examiner](../the-examiner.md) listed them as missing: repeats with a spread on the
 scorecard, because one run of a trained solution is not a measurement, and the
 time per push beside the counts. Both are in `bench/scoring.py` today, as
 `Repeats` and as the seconds-per-push the scorecard records. Rung one's runner
@@ -1149,7 +1149,7 @@ the measured ones. It is normally wrong, or at least wasteful, where the
 situation *can* be written down and already has been, which is the case here:
 problem 2 has measured the positions and widths, so a learned encoding is being
 asked to rediscover information the cell already supplies. That is the honest
-prior expectation for rung two on this bench, and it is exactly the expectation
+prior expectation for rung two on this examiner, and it is exactly the expectation
 the comparison exists to test.
 
 ### Where the push data of record comes from
@@ -1160,7 +1160,7 @@ Pushed*](https://arxiv.org/abs/1604.04038) (2016) recorded a robot pushing
 objects across several different surfaces with the pusher's path, the object's
 motion and the contact forces all logged. What it buys is pushes on *more than
 one surface*, which is the only way to ask whether a fitted push model transfers
-at all — the question this solution cannot ask, because its bench has one table
+at all — the question this solution cannot ask, because its examiner has one table
 with one friction. What it costs is a robot, a motion-capture rig and months.
 
 ## Where it sits among the other five

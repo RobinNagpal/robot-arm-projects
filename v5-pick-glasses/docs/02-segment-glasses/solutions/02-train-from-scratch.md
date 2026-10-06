@@ -15,7 +15,7 @@
 > into the network; the first head gives a glass-or-not score at every pixel
 > and the second head gives an arrow at every glass pixel; each glass pixel
 > casts one vote; the votes are piled up and the peaks are counted; the pixels
-> that voted into one peak are one glass's mask; the bench's shared arithmetic
+> that voted into one peak are one glass's mask; the examiner's shared arithmetic
 > turns each mask into a place and a width.
 > **How it differs from the other five** — [rules on the
 > table](01-rules-on-the-table.md) writes the grouping rule by hand, where this
@@ -225,7 +225,7 @@ what is a design, so that nothing later has to be read twice. Then what a
 network is and what training from scratch means. Then the shape of the network
 and the two heads in turn. Then the two rungs of this solution, which are the
 two places the training labels can come from. Then what the solution hands to
-the bench, the failure that no amount of training can fix, and where this sits
+the examiner, the failure that no amount of training can fix, and where this sits
 among the other five.
 
 ## What exists in code, and what is a design
@@ -244,9 +244,9 @@ simulator's own record of which glass each pixel shows. Its votes are piled up
 into a tally and the peaks of that tally are picked off one at a time, largest
 first, and the pixels that voted near a peak are that peak's glass.
 
-Running it as one of the six cars on the shared [test bench](../the-bench.md)
-is built too. The training set is drawn from the bench's own arrangements, half
-of them crowded and all of them below the bench's dividing line, and the
+Running it as one of the six cars on the shared [examiner](../the-examiner.md)
+is built too. The training set is drawn from the examiner's own arrangements, half
+of them crowded and all of them below the examiner's dividing line, and the
 solution is scored on held-out arrangements above that line and writes its own
 `results.json` beside itself.
 
@@ -286,7 +286,7 @@ here, and the next section is why.
 The usual argument for fine-tuning rests on labels being scarce, so the first
 thing to check is whether they are scarce here. They are not.
 
-**Labels in this cell are free and exact.** The bench renders every picture
+**Labels in this cell are free and exact.** The examiner renders every picture
 itself, so it also knows, for every pixel, which glass that pixel shows. Asking
 for that record costs no more than asking for the picture. There is no
 annotator, so there is no annotator's budget, no annotator's fatigue and no
@@ -571,7 +571,7 @@ are the same two heads, the votes are the same votes and the checks are the
 same checks. **Only the source of the labels changes**, which is why the two
 are two rungs of one solution rather than two solutions.
 
-The first rung takes its labels from the bench's answer key, which makes them
+The first rung takes its labels from the examiner's answer key, which makes them
 free and exact. The second rung takes its labels from the arm's own movement,
 which makes them neither free nor exact, and buys something else instead. The
 second rung is the point of this document, and the first is best read as the
@@ -579,9 +579,9 @@ thing it is a step up from.
 
 ## Rung one — labels from the answer key
 
-The bench renders every picture itself, so alongside the grey picture and the
+The examiner renders every picture itself, so alongside the grey picture and the
 depth reading it has an **id image**: at every pixel, which glass that pixel
-shows, or nothing. The [test bench](../the-bench.md) describes it in full,
+shows, or nothing. The [examiner](../the-examiner.md) describes it in full,
 including the rule that a method may be trained on id images from the training
 half of the arrangements and is never given one while answering. This rung is
 built on that permission.
@@ -594,7 +594,7 @@ There is nothing to judge and nothing to draw.
 
 **The second head's label is a subtraction.** For a pixel the id image assigns
 to one particular glass, the target arrow is that glass's middle minus the
-pixel's own position. The bench knows where each glass stands because it put it
+pixel's own position. The examiner knows where each glass stands because it put it
 there, so both ends of the subtraction are known exactly, and the arrow is a
 calculation rather than an opinion.
 
@@ -685,7 +685,7 @@ hardest case, which is the merge in a picture from the top, are the ones this
 rung is worst at producing**, because that is exactly where parallax is weak.
 The rung still trains the network that runs on pictures from the top, because
 training and running are separate, and only the trained network is used at run
-time, on exactly the input the bench hands every solution. But the supervision
+time, on exactly the input the examiner hands every solution. But the supervision
 it gets for the merge is weaker than the answer key's, and that is the price of
 not reading the answer key.
 
@@ -792,7 +792,7 @@ equally.
 distance apart, and a training set drawn only from that rule never once shows
 the network a pair that a page of arithmetic could not already separate. So the
 teaching has to happen on pairs standing far closer than the rule allows, which
-is what the bench's crowded family of arrangements is for. But keep the easy
+is what the examiner's crowded family of arrangements is for. But keep the easy
 case too, in proportion, or the network quietly learns that there is always a
 pair to find. As a general rule, **the edge of the specification should sit
 somewhere in the middle of the training set**, so that the network has met
@@ -819,8 +819,8 @@ and the picture size are facts about the camera this cell has rather than
 nuisances to be made robust against, and teaching the network to cope with
 lenses it will never meet would spend its limited capacity on nothing.
 
-And the split between learning and marking is the bench's, not this solution's.
-The bench divides its arrangements into a training half and a test half, so a
+And the split between learning and marking is the examiner's, not this solution's.
+The examiner divides its arrangements into a training half and a test half, so a
 network fitted on the first is marked on the second and is never tested on an
 arrangement it learned from.
 
@@ -831,9 +831,9 @@ happens to it.
 
 This solution contributes **only the masks**: which pixels in which picture are
 which glass. Turning a mask into a place on the table and a rough width is the
-bench's job, done by one shared piece of arithmetic that every one of the six
+examiner's job, done by one shared piece of arithmetic that every one of the six
 solutions goes through, and it is described in the [test
-bench](../the-bench.md). So a difference in the score belongs to the mask. This
+examiner](../the-examiner.md). So a difference in the score belongs to the mask. This
 solution cannot win by measuring more cleverly and it cannot lose by measuring
 worse.
 
@@ -858,7 +858,7 @@ its own position and casts a **vote**. The votes pile up, one pile per glass,
 and the piles are counted without anything having been told how many to expect.
 A pile with too few votes is doubted; a pile whose fitted width is not one this
 kind of glass could have would be turned down by the check prescribed above.
-What survives is one mask per glass, handed to the bench's shared arithmetic.
+What survives is one mask per glass, handed to the examiner's shared arithmetic.
 
 Three things in that chain are worth holding on to.
 
@@ -917,7 +917,7 @@ There is one qualification worth working out rather than waving at, because it
 is the obvious objection. A network *can* be trained to mark part of an object
 it cannot see, and the name for that is **amodal segmentation**, which means
 predicting an object's whole extent rather than only its visible pixels. The
-bench could label it, because it can render each glass's mask with the other
+examiner could label it, because it can render each glass's mask with the other
 glasses taken away. But amodal completion extends evidence, so it needs some of
 the object to be visible to extend from, and with no pixels at all there is
 nothing to extend. A model asked to mark a glass that *might* be standing
@@ -958,7 +958,7 @@ case the whole solution exists for.
 
 **What is on the table.** Two glasses of one kind stand much closer together
 than the cell's own rule allows, which is the crowded family of arrangements
-the bench draws deliberately. There is still bare table between their rims, but
+the examiner draws deliberately. There is still bare table between their rims, but
 only a little.
 
 **What the picture does to them.** From the top, each glass's outline is thrown
@@ -1007,7 +1007,7 @@ this machine's integrated graphics through the MPS backend. No dedicated
 graphics card is needed, and nothing is downloaded, so there is no licence
 condition on anything this solution uses.
 
-**A training set.** For rung one, arrangements rendered by the bench with their
+**A training set.** For rung one, arrangements rendered by the examiner with their
 id images, which costs render time and nothing else. For rung two, pairs of
 pictures with the camera's movement logged beside each one, which costs arm
 time.

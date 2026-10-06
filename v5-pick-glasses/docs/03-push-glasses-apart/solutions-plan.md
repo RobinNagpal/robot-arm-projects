@@ -15,7 +15,7 @@ problem 2's measured error. Plus a rendered top-down view of the same table,
 for the cars that read pictures. No car reads the simulator's record.
 
 **Same output.** A jaw trajectory. A car that thinks in parameterised pushes
-emits one, and **the bench owns the macro that expands it into a trajectory**,
+emits one, and **the examiner owns the macro that expands it into a trajectory**,
 so the simple cars get no advantage and the policy cars are not crippled.
 
 **Same yardstick.** One scorecard, plus the displacement floor from the target
@@ -72,7 +72,7 @@ beyond being a baseline.
 
 ## Three shared documents, not cars
 
-- **The bench** — the crowded tables, `look()`, `push()`, `take()`, the
+- **The examiner** — the crowded tables, `look()`, `push()`, `take()`, the
   scorecard. It already exists and problem 4 imports it.
 - **The target layout** — where the glasses should end up, computed rather
   than learned: discs of known foot width placed with the required clearance,
@@ -83,16 +83,16 @@ beyond being a baseline.
   again, with the learned change verifier and the learned early abort inside
   it.
 
-## The bench had to grow before cars 3 to 6 could run
+## The examiner had to grow before cars 3 to 6 could run
 
 Four parts of the contract above were missing, and they were the gate on every
 solution that reads pictures or emits waypoints. All four are now built.
 
-| What was needed | What the bench has |
+| What was needed | What the examiner has |
 |---|---|
 | a straight-down rendered view | a fixed camera above the middle of the glass zone, looking straight down |
 | a waypoint action path | `follow()` takes a chunk of jaw waypoints and reports what `push()` reports |
-| one shared push budget | the budget belongs to the bench, and every runner reads it from there |
+| one shared push budget | the budget belongs to the examiner, and every runner reads it from there |
 | repeats and a compute column | several evaluation runs with their spread, and the thinking time per push |
 
 The first two were the real cost of going off the shelf, because every LeRobot
@@ -100,7 +100,7 @@ policy expects pictures and an action space at control rate. Cars 1 and 2 need
 none of it, which is one reason they were built first.
 
 Building them also bought something that was not asked for and matters more
-than any of the four. The bench now records the path the jaw really followed on
+than any of the four. The examiner now records the path the jaw really followed on
 **every** action, including an ordinary parameterised push. So a demonstration
 is a picture together with a recorded path, and replaying a recorded path
 reproduces the push it came from. That means the solutions that learn from
@@ -128,7 +128,7 @@ price of reproducing it.
 
 | Folder | Holds | Decision |
 |---|---|---|
-| `03-push-glasses-apart/bench` | the bench; problem 4 imports it | keep, rename |
+| `03-push-glasses-apart/bench` | the examiner; problem 4 imports it | keep, rename |
 | `03-push-glasses-apart/01-one-fixed-nudge` | the geometry cars 1 and 2 need | keep |
 | `03-push-glasses-apart/04-a-world-model` | car 4's first rung, already written | keep |
 | `03-push-glasses-apart/results` | the two approaches compared; problem 4 cites it | keep |
@@ -159,9 +159,9 @@ had rated every topple it missed as safe**.
 
 ## Milestones
 
-1. Plan, naming, dependencies. **Check:** problem 4 still imports the bench.
+1. Plan, naming, dependencies. **Check:** problem 4 still imports the examiner.
 2. Rename documents and images. **Check:** links resolve, tests pass.
-3. `problem.md`, `the-bench.md`, and the two other shared documents.
+3. `problem.md`, `the-examiner.md`, and the two other shared documents.
 4. The six solution documents, by agents.
 5. Reviewers, cross-checking claims about siblings.
 6. Diagrams: remap what exists, draw the gaps.
