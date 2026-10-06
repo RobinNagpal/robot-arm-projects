@@ -609,6 +609,8 @@ and never guessed, and a pair the arm cannot tell apart is stated as the input
 to the next problem rather than turned into one wide glass that everything
 downstream would believe.
 
+![Eight proposals from one picture going into the keeper, and each coming out as one of three answers: four kept, one that is more than one glass, and three dropped.](../../../images/02-segment-glasses/05-the-keeper.png)
+
 ### What kind of model the keeper is
 
 The keeper's input is a short table of numbers of different kinds — widths,
@@ -619,7 +621,15 @@ of Statistics, 2001), and scikit-learn provides them.
 
 A tree asks threshold questions and lands in a leaf holding a prediction.
 Boosting fits one weak tree, then fits the next tree to whatever the first one
-got wrong, and adds them up. Trees suit this table for three reasons. They do
+got wrong, and adds them up.
+
+![One shallow tree asking two threshold questions and landing in one of four leaves, and under it the set of trees being added together into one score for each of the three answers.](../../../images/02-segment-glasses/05-the-keeper-trees.png)
+
+Every question in that tree is a threshold on one of the measurements tabled
+above, and every leaf holds a small push towards one of the three answers. A
+tree three questions deep is weak on its own and is meant to be: 60 rounds, one
+set of trees per answer, make 180 shallow trees in all, and added up they are
+the keeper. Trees suit this table for three reasons. They do
 not care that a width measured as a length and a ratio between zero and one are
 on different scales, so nothing has to be rescaled. They find combinations of
 conditions by themselves, which is the whole argument of the section above. And
@@ -678,7 +688,11 @@ with being wrong. That band is also where a glass half hidden behind another one
 should land, because a footprint fitted to a sliver of a glass is either
 narrower than the kind allows or less round than a whole one, or both.
 
-![The keeper gathered into one picture: each proposal is read as eight measurements by a short set of boosted trees, which answers keep, more than one glass, or drop, and the band between the two thresholds on its calibrated probability means take another picture.](../../../images/02-segment-glasses/05-the-keeper.png)
+![The keeper's calibrated probability as a line from certainly not one glass to certainly one glass, cut by two thresholds into drop, I cannot tell, and keep.](../../../images/02-segment-glasses/05-the-keeper-thresholds.png)
+
+The third answer is not a point on that line. More than one glass is not a
+doubtful glass, it is a different thing to do next, so it is a category of its
+own rather than a band of the probability.
 
 ### The arithmetic still decides
 
