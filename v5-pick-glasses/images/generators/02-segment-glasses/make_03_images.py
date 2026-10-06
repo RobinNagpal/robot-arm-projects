@@ -12,7 +12,7 @@ In the order the document shows them:
                                        against the disc this cell renders from the top
     03-what-it-named.png               every name the model offered, per kind, against
                                        the five names the filter was looking for
-    03-silence-against-the-floor.png   10 of 100, against the bench's floor and against
+    03-silence-against-the-floor.png   10 of 100, against the examiner's floor and against
                                        solution 4, with every error column empty
 
 Run from the problem folder:
@@ -22,7 +22,7 @@ Run from the problem folder:
 This document's result is a null result, so four of the five figures draw the
 measurement rather than a sketch. Every count in them is read at drawing time out
 of the solution's own files — ``results.json``, ``results-crowded.json`` and
-``results-names.json`` — and out of the bench's ``results-floor.json`` and
+``results-names.json`` — and out of the examiner's ``results-floor.json`` and
 solution 4's results beside them, so no number here can drift from the run that
 produced it. ``check_the_files`` re-derives the totals the figures lean on and
 refuses to draw if the files disagree with them, and the five accepted category
@@ -83,11 +83,11 @@ SIBLING_SPAWNED = json.loads((SIBLING / "results.json").read_text())
 SIBLING_CROWDED = json.loads((SIBLING / "results-crowded.json").read_text())
 
 # The sentence the finder returns when the filter kept nothing, counted by the
-# bench. Read from the results rather than retyped, because it is a key in a
+# examiner. Read from the results rather than retyped, because it is a key in a
 # dictionary the solution writes and a copy here would rot.
 SILENT = "the model named nothing in this picture a drinking vessel"
 
-# Three survey stations per arrangement, which is the bench's arrangement and not
+# Three survey stations per arrangement, which is the examiner's arrangement and not
 # this solution's. Taken from the results so the picture counts below are the
 # run's own arithmetic.
 STATIONS = SPAWNED["stations"]
@@ -98,9 +98,9 @@ HALO = {"facecolor": PAPER, "edgecolor": "none", "alpha": 0.90, "pad": 2.4}
 
 
 def floor_way(name: str, way: str = "exact visible masks") -> dict:
-    """One row of the bench's own floor: the shared arithmetic on exact masks.
+    """One row of the examiner's own floor: the shared arithmetic on exact masks.
 
-    The floor file holds several ways of feeding the bench perfect masks. The
+    The floor file holds several ways of feeding the examiner perfect masks. The
     visible-mask way is the one a segmenter could in principle match, since no
     model can outline a pixel the camera did not see, so it is the right thing
     to read this solution against.
@@ -257,7 +257,7 @@ def figure_the_name_is_the_only_gate() -> None:
 
     steps = (
         ("the survey picture\nfrom the top",
-         "grey, shaded from depth.\nthe bench's, not this solution's", MUTED),
+         "grey, shaded from depth.\nthe examiner's, not this solution's", MUTED),
         ("YOLO26-seg,\nexactly as it downloads",
          "the weights fetch themselves.\nnothing is fitted in this cell", GLASS),
         ("per object it finds:\na box, a name,\na score, an outline",
@@ -266,7 +266,7 @@ def figure_the_name_is_the_only_gate() -> None:
          " · ".join(ACCEPTED), WARN),
         ("throw the name away,\nkeep the outline",
          "a mask carrying no claim\nabout what was outlined", INK),
-        ("the bench's arithmetic:\na place and a rough width",
+        ("the examiner's arithmetic:\na place and a rough width",
          "the same step for all six\nsolutions. not this one's", MUTED),
     )
 
@@ -682,7 +682,7 @@ def figure_the_outlines_were_not_the_problem() -> None:
                   ls=(0, (4, 3)), zorder=2)
         note(axis, len(PREDICTED_ORDER) - 0.45,
              floor_at - ceiling * 0.014 if below else floor_at + ceiling * 0.014,
-             f"the bench's floor: {floor_at:.0f}%", colour=GOOD, size=NOTE_SIZE - 0.6, ha="right",
+             f"the examiner's floor: {floor_at:.0f}%", colour=GOOD, size=NOTE_SIZE - 0.6, ha="right",
              va="top" if below else "bottom")
 
         for offset, (report, colour) in zip((-0.19, 0.19), runs, strict=True):
@@ -741,7 +741,7 @@ def figure_the_outlines_were_not_the_problem() -> None:
         "Left bar of each pair: spawned layouts. Right bar: crowded. The pale number inside a bar "
         "is how many glasses that median is over. Both panels are medians over\nglasses from the "
         "solution's own `results.json` and `results-crowded.json`, broken down by kind exactly as "
-        "the bench records them, with the floor from `bench/results-floor.json`.",
+        "the examiner records them, with the floor from `bench/results-floor.json`.",
         ha="center", va="top", fontsize=NOTE_SIZE, color=MUTED,
     )
     save(figure, "03-the-outlines-were-not-the-problem.png")
@@ -752,7 +752,7 @@ def figure_the_outlines_were_not_the_problem() -> None:
 # --------------------------------------------------------------------------- #
 
 def figure_silence_against_the_floor() -> None:
-    """The null result beside the bench's floor and beside its own fine-tuned sibling."""
+    """The null result beside the examiner's floor and beside its own fine-tuned sibling."""
     figure, (left, right) = new(15.0, 7.0, columns=2)
 
     blank(left)
@@ -760,11 +760,11 @@ def figure_silence_against_the_floor() -> None:
 
     families = (
         ("spawned layouts — the spacing the cell's own layout rule gives",
-         ((FLOOR_SPAWNED, "the bench's floor: the same arithmetic on exact masks", GOOD),
+         ((FLOOR_SPAWNED, "the examiner's floor: the same arithmetic on exact masks", GOOD),
           (SPAWNED, "solution 3 — this one, nothing fitted here", WARN),
           (SIBLING_SPAWNED, "solution 4 — the same model, trained on this cell", GLASS))),
         ("crowded layouts — closer than the layout rule allows",
-         ((FLOOR_CROWDED, "the bench's floor", GOOD),
+         ((FLOOR_CROWDED, "the examiner's floor", GOOD),
           (CROWDED, "solution 3", WARN),
           (SIBLING_CROWDED, "solution 4", GLASS))),
     )
@@ -850,7 +850,7 @@ def figure_silence_against_the_floor() -> None:
          f"{find['found']} it did find, the places sit "
          f"{find['position_mm_median']:.1f} mm\nfrom the truth at the median against the floor's "
          f"{FLOOR_SPAWNED['find']['position_mm_median']:.1f} mm — a median over "
-         f"{find['found']} glasses, and the bench's own\nnote is that this number saturates, so "
+         f"{find['found']} glasses, and the examiner's own\nnote is that this number saturates, so "
          "read it as a sanity check rather than as a ranking.",
          colour=INK, size=NOTE_SIZE - 0.4, va="top")
 
@@ -864,7 +864,7 @@ def figure_silence_against_the_floor() -> None:
         0.5, -0.01,
         "Every number is read at drawing time out of `03-yolo-zero-shot/results.json` and "
         "`results-crowded.json`, `04-yolo-fine-tuned/`'s two results files and "
-        "`bench/results-floor.json`.\nThe floor row is the bench's shared arithmetic on the "
+        "`bench/results-floor.json`.\nThe floor row is the examiner's shared arithmetic on the "
         "renderer's own exact visible masks, which no segmenter can improve on; it misses 18 "
         "crowded glasses because a glass\nstanding wholly behind another is in no picture at all. "
         "The right-hand panel is the spawned run.",

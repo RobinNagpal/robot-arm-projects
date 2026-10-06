@@ -77,7 +77,7 @@ from work_cell.rack.layout import GLASS_ZONE as ZONE_M  # noqa: E402
 
 # --------------------------------------------------------------------------- #
 # The jaw, from 03-push-glasses-apart/bench/bench.py, in millimetres. These are the arm's own
-# numbers, taken from arm/gripper.urdf.xacro by the bench.
+# numbers, taken from arm/gripper.urdf.xacro by the examiner.
 # --------------------------------------------------------------------------- #
 
 FINGER_LENGTH = 120.0                   # bench.FINGER_LENGTH
@@ -92,7 +92,7 @@ TIP_TO_FLANGE = FINGERTIP_OFFSET * 1000.0                  # arm/dimensions.py
 # and the jaw is FINGER_HEIGHT tall, so its top edge is 15 mm higher, and that
 # top edge is what a glass which flares outwards meets first.
 
-# What the bench measures and what it hides, from bench.py.
+# What the examiner measures and what it hides, from bench.py.
 POSITION_NOISE = 0.5                    # bench.POSITION_NOISE, one standard deviation
 WIDTH_NOISE = 2.5                       # bench.WIDTH_NOISE
 FEEL_SPEED = 10.0                       # bench.FEEL_SPEED, mm/s
@@ -903,7 +903,7 @@ def study_the_feel() -> None:
     heading_line("8. Why the last millimetres are felt")
     table = scene(STORY["seed"])
     wall_error = math.hypot(POSITION_NOISE, WIDTH_NOISE / 2.0)
-    print(f"   the bench measures a position to {POSITION_NOISE} mm and a width to "
+    print(f"   the examiner measures a position to {POSITION_NOISE} mm and a width to "
           f"{WIDTH_NOISE} mm, one standard deviation each")
     print(f"   the wall is the middle minus half the width, so its error is "
           f"hypot({POSITION_NOISE}, {WIDTH_NOISE / 2}) = {wall_error:.2f} mm, and three of "

@@ -87,7 +87,7 @@ DIRECTIONS = tuple(40.0 * step for step in range(9))
 # is a rule about what may be drawn rather than any glass's size.
 TOUCHING_FLOOR = KIND_RANGES["tapered_glass"]["rim_diameter"][1]
 
-# What the peel is actually worth, measured on the bench's own crowded tables
+# What the peel is actually worth, measured on the examiner's own crowded tables
 # by 03-push-glasses-apart/01-one-fixed-nudge/measure_peel.py over bench.scene seeds 10000-10999 —
 # the held-out half of the scene space — using bench.has_room as the test.
 #
@@ -150,7 +150,7 @@ def separation_floor(metres: float):
 
     Problem 2's spawner guarantees 150 mm between centres, which is further
     apart than any of this problem's crowding thresholds, so it cannot produce a
-    crowded table at all. The rates in the document come from the bench's own
+    crowded table at all. The rates in the document come from the examiner's own
     scene generator instead; this is only for the two tables the pictures are
     drawn from, which have to be built here so that every glass in them is a
     real outline rather than a size written down. It is done in one place so

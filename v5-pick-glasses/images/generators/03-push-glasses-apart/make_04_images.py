@@ -23,7 +23,7 @@ crowded table says so.
 The authoritative crowded-table generator is ``bench.scene``, not this file.
 It is not imported here because it imports MuJoCo, which this project's root
 environment does not carry, and every generator in this repository has to run
-from the root. What ``bench`` was measured for instead is written down as the
+from the root. What ``examiner`` was measured for instead is written down as the
 ``BENCH_*`` constants below, with the script that produced them named.
 
 **Whether a glass has room is the asymmetric test**, ``diagram_style.has_room``:
@@ -118,7 +118,7 @@ MEASURED_ONE_PUSH_ERROR = 4.5
 
 # The same question asked of the geometry, which predicts a slide instead of
 # learning one: how far from its aim a pushed glass really stopped. Measured
-# here, by running 03-push-glasses-apart/01-one-fixed-nudge's planner over bench tables 10100 to
+# here, by running 03-push-glasses-apart/01-one-fixed-nudge's planner over examiner tables 10100 to
 # 10349 and comparing every push's ``aim`` with the simulator's record of where
 # the glass landed. 564 pushes that ran their full length, median 1.07 mm,
 # 3.00 mm at the ninetieth percentile, 34.40 mm at worst. The throwaway script
@@ -720,7 +720,7 @@ def picture_planning(crowded: list[dict], pair: tuple[int, int], plan: dict) -> 
            f"Measuring again after every push sets it\nback to zero, which is what makes a mediocre "
            f"model useful — and the green disc is what the geometry, which predicts a slide instead "
            f"of learning one, does\nwithout a model at all: {MEASURED_GEOMETRY_ERROR:.2f} mm, "
-           f"re-measured here over 564 pushes on 250 tables of this project's own bench.")
+           f"re-measured here over 564 pushes on 250 tables of this project's own examiner.")
     figure.subplots_adjust(bottom=0.36, top=0.93, wspace=0.10)
     save(figure, "04-planning-against-the-model.png")
     print(f"  round 1: {len(first['kept'])} kept, {len(first['dropped'])} dropped of {2 * DRAWS}")

@@ -75,7 +75,7 @@ SOLUTION = PROJECT / "03-push-glasses-apart" / "05-smolvla-as-it-downloads"
 # The two probes of how low a chunk reaches, from the solution's own README.
 # They are six asks on one picture rather than a run, which is why they are
 # drawn as marks beside the run's median and not instead of it. The point they
-# make is that the state the bench forces on the model raises its answers by
+# make is that the state the examiner forces on the model raises its answers by
 # about 60 mm, and that even the most favourable state this reading can
 # express leaves the jaw far above the height a push lands at.
 LOWEST_WITH_PARKED_STATE = 182.0
@@ -84,10 +84,10 @@ PROBE_ASKS = 6
 
 # SmolVLA's six action slots, and what joining.py reads each one as. The joint
 # names are the arm the checkpoint's statistics were recorded on; the two
-# without a reading are dropped, because this bench holds the jaw level and
+# without a reading are dropped, because this examiner holds the jaw level and
 # closed and offers no way to change either.
 SLOTS = (
-    ("0", "shoulder pan", "x, across the bench"),
+    ("0", "shoulder pan", "x, across the examiner"),
     ("1", "shoulder lift", "y, out and back"),
     ("2", "elbow flex", "the jaw's height"),
     ("3", "wrist flex", None),
@@ -207,7 +207,7 @@ def picture_the_join(asking: dict) -> None:
           "the same sentence on every table and every push, so",
           "knowing it says nothing about the situation"], WARN)
     card(shown, 4, 6, 92, 29, "the arm's own pose, six numbers",
-         [f"the bench parks the jaw at ({PARK[0]:.0f}, {PARK[1]:.0f}), {PARK[2]:.0f} mm up,",
+         [f"the examiner parks the jaw at ({PARK[0]:.0f}, {PARK[1]:.0f}), {PARK[2]:.0f} mm up,",
           "which is outside the picture's frame, so three of",
           "the four slots used clip to the edge of the range",
           f"and are the same number at all {asking['asked']:,} asks"], WARN)
@@ -329,8 +329,8 @@ def picture_the_scale(asking: dict) -> None:
                f"than a waypoint period, and the gap stops buying speed.",
                fontsize=NOTE_SIZE, color=WARN, ha="right", va="top")
     for gap, label, at in (
-        (FEEL_SPEED * WAYPOINT_PERIOD, f"the bench's own feeling forward,\n{FEEL_SPEED:.0f} mm/s", (7.4, 86)),
-        (PUSH_SPEED * WAYPOINT_PERIOD, f"the bench's own pushing,\n{PUSH_SPEED:.0f} mm/s", (7.4, 32)),
+        (FEEL_SPEED * WAYPOINT_PERIOD, f"the examiner's own feeling forward,\n{FEEL_SPEED:.0f} mm/s", (7.4, 86)),
+        (PUSH_SPEED * WAYPOINT_PERIOD, f"the examiner's own pushing,\n{PUSH_SPEED:.0f} mm/s", (7.4, 32)),
     ):
         speed.annotate(label, xy=(gap, gap / WAYPOINT_PERIOD), xytext=at, fontsize=NOTE_SIZE,
                        color=GOOD, ha="left", va="center",
@@ -351,7 +351,7 @@ def picture_the_scale(asking: dict) -> None:
     speed.set_xlim(0, 17)
     speed.set_ylim(0, 360)
     speed.text(0.5, 352,
-               f"The bench consumes one waypoint every {1000 * WAYPOINT_PERIOD:.0f} ms, so how far "
+               f"The examiner consumes one waypoint every {1000 * WAYPOINT_PERIOD:.0f} ms, so how far "
                f"apart two waypoints are\n*is* how fast the jaw is being asked to go. Fixing the "
                f"frame therefore fixes\nthe speed, and the two cannot be chosen separately.",
                fontsize=NOTE_SIZE, color=INK, ha="left", va="top")
@@ -363,11 +363,11 @@ def picture_the_scale(asking: dict) -> None:
            f"which is the one property a join must have if the score is to be about the model rather "
            f"than about the join \u2014 the model can put the jaw\nanywhere it can see and nowhere it "
            f"cannot. The price is in the second panel, and nothing clips it to something gentler, "
-           f"because a gentler limit would be a number fitted to this bench.")
+           f"because a gentler limit would be a number fitted to this examiner.")
     figure.subplots_adjust(bottom=0.185, top=0.93, wspace=0.14)
     save(figure, "05-two-sigmas-span-the-frame.png")
     print(f"  frame {2 * half:.1f} mm across; median gap {step:g} mm = {asked_speed:.0f} mm/s, "
-          f"against the bench's own {PUSH_SPEED:.0f} mm/s push and a {TOP_SPEED:.0f} mm/s cap")
+          f"against the examiner's own {PUSH_SPEED:.0f} mm/s push and a {TOP_SPEED:.0f} mm/s cap")
 
 
 # --------------------------------------------------------------------------- #
@@ -450,7 +450,7 @@ def picture_how_high(asking: dict, results: dict) -> None:
               f"Nothing was ever blocked coming down, because nothing ever came down. Of the "
               f"{touched} pushes that touched\na glass at all, {pushes['jammed']} jammed: when the "
               f"jaw does catch one it is travelling at the arm's top speed,\nwhich is ten times the "
-              f"speed the bench's own push macro moves at.",
+              f"speed the examiner's own push macro moves at.",
               fontsize=NOTE_SIZE, color=INK, ha="left", va="top")
     fate.set_xlim(-26, pushes["total"] + 26)
     fate.set_ylim(0, 112)
@@ -459,7 +459,7 @@ def picture_how_high(asking: dict, results: dict) -> None:
           f"The two dotted heights are {PROBE_ASKS} asks on one picture, from the solution's README, "
           f"rather than a run: {LOWEST_WITH_PARKED_STATE:.0f} mm when the\nmodel is handed the parked "
           f"pose and {LOWEST_WITH_ZERO_STATE:.0f} mm when it is handed an all-zero one. So the pose "
-          f"the bench forces on it raises\nits answers by about 60 mm \u2014 and even the most "
+          f"the examiner forces on it raises\nits answers by about 60 mm \u2014 and even the most "
           f"favourable pose this reading can express leaves the jaw far above\nthe height at which a "
           f"push lands. The state is why a poor result is worse; it is not why the result is poor.",
           y=0.21)

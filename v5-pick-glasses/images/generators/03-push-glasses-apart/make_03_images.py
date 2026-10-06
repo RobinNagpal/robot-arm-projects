@@ -4,7 +4,7 @@ Five pictures. Every one of them draws something the project has measured, and
 the four rules below are what keep them honest.
 
 **No glass's size is written down here.** The two tables these pictures are
-drawn on are ``bench.scene(1001)`` and ``bench.scene(10000)``, the bench's own
+drawn on are ``bench.scene(1001)`` and ``bench.scene(10000)``, the examiner's own
 generator, so every rim, foot and height is redrawn from the project's own
 drawer at the same table number. What is written down is where the jaw went,
 which is a policy's output and a push's parameters, never a glass.
@@ -13,7 +13,7 @@ which is a policy's output and a push's parameters, never a glass.
 teacher's push on each table is reconstructed from its glass, its heading and
 its travel through ``01-one-fixed-nudge/plan.py``'s own arithmetic — the
 fingertips come down ``APPROACH_GAP`` clear of the widest part of the glass —
-and ``check_the_examples`` asserts the rebuilt start against the one the bench
+and ``check_the_examples`` asserts the rebuilt start against the one the examiner
 really recorded. A silent drift between this file and the solution shows up as
 a failed check rather than as a wrong picture.
 
@@ -112,9 +112,9 @@ RETREAT = BENCH.RETREAT * 1000.0
 APPROACH_GAP = 10.0
 CLEARANCE = 8.0
 
-# How far a rebuilt push may land from the one the bench recorded before the
+# How far a rebuilt push may land from the one the examiner recorded before the
 # check below fails. The teacher planned from ``look()``, which carries the
-# bench's own measurement error, and the fingertips are put down a measured
+# examiner's own measurement error, and the fingertips are put down a measured
 # half-width behind the glass, so three standard deviations of the position
 # error and of the half-width error is the room a faithful rebuild needs.
 REBUILD_TOLERANCE = 3.0 * (BENCH.POSITION_NOISE + BENCH.WIDTH_NOISE / 2.0) * 1000.0
@@ -238,7 +238,7 @@ HELD_BACK = {
 
 # Script two — the first chunk on each of the fifty held-out tables, for each
 # fitted seed: how far the chunk's first waypoint is from the nearest glass's
-# measured edge, and what the bench felt when it followed the chunk. The
+# measured edge, and what the examiner felt when it followed the chunk. The
 # teacher's first push on the same fifty, measured the same way, is the row
 # below. A negative gap means the fingertips came down inside a glass.
 FIRST_CHUNK = {
@@ -255,7 +255,7 @@ FIRST_CHUNK = {
 # The two worked tables. Only the choices are written down — which glass, which
 # heading, how far — because those belong to the teacher and to the policy. The
 # glasses are redrawn from ``bench.scene`` at the same table number, and
-# ``check_the_examples`` asserts the rebuilt pushes against what the bench
+# ``check_the_examples`` asserts the rebuilt pushes against what the examiner
 # recorded.
 #
 # Script three captured both: it ran the fitted teacher on table 1001 and kept
@@ -267,7 +267,7 @@ DEMO = {
     "glass": 4,
     "heading_deg": 20.0,
     "travel": 48.0,
-    # What the bench recorded: how far the jaw felt forward before it touched,
+    # What the examiner recorded: how far the jaw felt forward before it touched,
     # where the fingertips came down, how far the glass ended from the aim, and
     # the path's own shape.
     "felt_forward": 20.3,
@@ -332,10 +332,10 @@ TEACHER = json.loads(
 )
 
 # --------------------------------------------------------------------------- #
-# The tables, from the bench's own generator.
+# The tables, from the examiner's own generator.
 # --------------------------------------------------------------------------- #
 def table(seed: int) -> list[dict]:
-    """One of the bench's crowded tables, in millimetres, with its room test."""
+    """One of the examiner's crowded tables, in millimetres, with its room test."""
     glasses = [
         {
             "id": i,
@@ -573,11 +573,11 @@ def picture_the_demonstrations() -> dict:
                 handlelength=1.6, labelcolor=INK)
     frame_on(path, [start, end, (pushed["x"], pushed["y"]), landed], pad=56.0)
     under(figure, 1, 3,
-          f"the bench writes the jaw's own path down on every action, one waypoint every "
+          f"the examiner writes the jaw's own path down on every action, one waypoint every "
           f"{WAYPOINT_PERIOD * 1000:.0f} ms, so how far apart they are is how fast it was going. "
           f"{DEMO['waypoints']} in all: {DEMO['coming_down']} coming down, "
           f"{DEMO['at_push_height']} at push height. push_segment keeps the {DEMO['kept']} from "
-          f"where it reached push height to the furthest it got; the bench does the rest itself.")
+          f"where it reached push height to the furthest it got; the examiner does the rest itself.")
 
     stage(set_of_them, "The set: every push the teacher made, kept or dropped")
     labels = ["kept, and fitted on"] + [name for name, _ in COLLECTED["dropped"]]
@@ -594,7 +594,7 @@ def picture_the_demonstrations() -> dict:
     footer(figure,
            f"The teacher is solution 2, in the folder next door, run unchanged on tables "
            f"{COLLECTED['first_table']:,} to "
-           f"{COLLECTED['first_table'] + COLLECTED['tables'] - 1:,} — all below the bench's "
+           f"{COLLECTED['first_table'] + COLLECTED['tables'] - 1:,} — all below the examiner's "
            f"dividing line at {BENCH.TEST_SEEDS:,}, so no policy here is ever marked on a table "
            f"it learned from. A demonstration is the pair in the first two panels: the picture, "
            f"and the path. Nothing in it was driven by a person, and "
@@ -618,7 +618,7 @@ def picture_a_chunk_is_not_a_push(demo: dict) -> None:
     macro, chunk = axes
 
     # --- the macro, from the side -------------------------------------------
-    stage(macro, "What a parameterised push is: six numbers, and the bench's macro")
+    stage(macro, "What a parameterised push is: six numbers, and the examiner's macro")
     macro.set_aspect("auto")
     feel_to = DEMO["felt_forward"]
     push_to = feel_to + DEMO["travel"]
@@ -645,10 +645,10 @@ def picture_a_chunk_is_not_a_push(demo: dict) -> None:
         macro.text(push_to + 22, height, name, fontsize=NOTE_SIZE, color=MUTED, ha="left",
                    va="center")
     macro.text(-10, PUSH_HEIGHT + 0.62 * (TRAVEL_HEIGHT - PUSH_HEIGHT),
-               f"coming down,\n{STEP_CAP:.0f} mm a waypoint:\nthe bench's own move",
+               f"coming down,\n{STEP_CAP:.0f} mm a waypoint:\nthe examiner's own move",
                fontsize=NOTE_SIZE, color=MUTED, ha="right", va="center")
     macro.text(push_to + 22, PUSH_HEIGHT + 0.62 * (TRAVEL_HEIGHT - PUSH_HEIGHT),
-               "lifting:\nthe bench's own move", fontsize=NOTE_SIZE, color=MUTED, ha="left",
+               "lifting:\nthe examiner's own move", fontsize=NOTE_SIZE, color=MUTED, ha="left",
                va="center")
     macro.annotate(f"feeling for the glass,\n{demo['feeling']} waypoints {FEEL_STEP:.1f} mm apart",
                    xy=(feel_to / 2, PUSH_HEIGHT), xytext=(-78, -26), textcoords="offset points",
@@ -658,7 +658,7 @@ def picture_a_chunk_is_not_a_push(demo: dict) -> None:
                    xy=(feel_to + DEMO["travel"] / 2, PUSH_HEIGHT), xytext=(96, -26),
                    textcoords="offset points", fontsize=NOTE_SIZE, color=GOOD, ha="center",
                    va="top", arrowprops={"arrowstyle": "-", "color": GOOD, "lw": 0.7})
-    macro.annotate(f"backing off, {demo['backing']} waypoints,\nand then lifting: the bench's "
+    macro.annotate(f"backing off, {demo['backing']} waypoints,\nand then lifting: the examiner's "
                    f"own moves again", xy=(push_to - RETREAT / 2, PUSH_HEIGHT),
                    xytext=(0, -72), textcoords="offset points", fontsize=NOTE_SIZE, color=WARN,
                    ha="center", va="top", arrowprops={"arrowstyle": "-", "color": WARN,
@@ -670,9 +670,9 @@ def picture_a_chunk_is_not_a_push(demo: dict) -> None:
     macro.set_ylim(PUSH_HEIGHT - 150, TRAVEL_HEIGHT + 34)
     under(figure, 0, 2,
           "which glass, where to put the jaw down, which way to point, how far to feel, how far "
-          "to push, and where the glass is expected to land. The bench owns the macro that turns "
+          "to push, and where the glass is expected to land. The examiner owns the macro that turns "
           "those six numbers into a motion, and it expands every parameterised push the same "
-          "way. The descent, the back-off and the lift are the bench's own, so a demonstration "
+          "way. The descent, the back-off and the lift are the examiner's own, so a demonstration "
           "keeps only the shaded part.", width=92)
 
     # --- the chunk ----------------------------------------------------------
@@ -729,7 +729,7 @@ def picture_a_chunk_is_not_a_push(demo: dict) -> None:
           f"a fitted wrap is a cliff.", width=92)
 
     footer(figure,
-           f"The legs and their waypoint spacings are the bench's own: the rate is fixed at one "
+           f"The legs and their waypoint spacings are the examiner's own: the rate is fixed at one "
            f"waypoint every {WAYPOINT_PERIOD * 1000:.0f} ms, so a speed is a spacing — "
            f"{FEEL_STEP:.1f} mm while feeling, {PUSH_STEP:.1f} mm while pushing, "
            f"{STEP_CAP:.0f} mm coming down, which is also the cap follow() holds a chunk to. "
@@ -834,7 +834,7 @@ def picture_blocked(results: dict) -> dict:
            f"The table is bench.scene({EXAMPLE['table']:,}) and both pushes are real. The "
            f"teacher's is the first push it made here, rebuilt from its glass, heading and "
            f"travel; the policy's is the first chunk seed {EXAMPLE['seed']} returned from this "
-           f"table's own straight-down picture, as captured, and blocked is the bench's own "
+           f"table's own straight-down picture, as captured, and blocked is the examiner's own "
            f"verdict on it. Across all fifty held-out tables the first chunk is blocked on "
            f"{', '.join(str(row['blocked']) for row in FIRST_CHUNK['seeds'])} of "
            f"{FIRST_CHUNK['tables']} for the three seeds, against none of fifty for the teacher, "
@@ -1081,25 +1081,25 @@ def picture_loss_is_not_the_score(results: dict) -> None:
 # The checks, and everything the document may quote.
 # --------------------------------------------------------------------------- #
 def check_the_examples(demo: dict, blocked: dict) -> None:
-    """The rebuilt pushes against what the bench recorded, and the path's own arithmetic."""
+    """The rebuilt pushes against what the examiner recorded, and the path's own arithmetic."""
     assert math.dist(demo["start"], DEMO["start"]) < REBUILD_TOLERANCE, (
-        f"the rebuilt fingertips {demo['start']} are not where the bench recorded them "
+        f"the rebuilt fingertips {demo['start']} are not where the examiner recorded them "
         f"{DEMO['start']}")
     glasses = table(EXAMPLE["table"])
     their_start = fingertips(one(glasses, EXAMPLE["teacher_glass"]),
                              EXAMPLE["teacher_heading_deg"])
     assert math.dist(their_start, EXAMPLE["teacher_start"]) < REBUILD_TOLERANCE, (
-        f"the rebuilt fingertips {their_start} are not where the bench recorded them "
+        f"the rebuilt fingertips {their_start} are not where the examiner recorded them "
         f"{EXAMPLE['teacher_start']}")
     assert demo["at_push_height"] == DEMO["at_push_height"], (
-        f"{demo['at_push_height']} waypoints at push height, and the bench recorded "
+        f"{demo['at_push_height']} waypoints at push height, and the examiner recorded "
         f"{DEMO['at_push_height']}")
     assert demo["kept"] == DEMO["kept"], (
         f"push_segment would keep {demo['kept']}, and it kept {DEMO['kept']}")
     assert abs(demo["net"] - DEMO["net"]) < REBUILD_TOLERANCE, (
         f"the rebuilt push travels {demo['net']:.1f} mm and the recorded one {DEMO['net']}")
     assert blocked["gap"] < 0.0, "the drawn chunk is supposed to come down inside a glass"
-    print("checks passed: both worked pushes rebuild to what the bench recorded")
+    print("checks passed: both worked pushes rebuild to what the examiner recorded")
 
 
 def report(results: dict, demo: dict, blocked: dict, chunk: dict) -> None:
@@ -1147,7 +1147,7 @@ def report(results: dict, demo: dict, blocked: dict, chunk: dict) -> None:
 
 def main() -> None:
     results = json.loads(RESULTS.read_text())
-    print(f"table {DEMO['table']:,} and table {EXAMPLE['table']:,}, from the bench's own "
+    print(f"table {DEMO['table']:,} and table {EXAMPLE['table']:,}, from the examiner's own "
           f"generator")
     for seed in (DEMO["table"], EXAMPLE["table"]):
         glasses = table(seed)

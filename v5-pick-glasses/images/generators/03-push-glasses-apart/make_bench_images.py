@@ -66,7 +66,7 @@ SEED = 0
 # How far a push actually has to carry a glass, measured on the project's own
 # crowded tables rather than guessed. ``scene(seed)`` in 03-push-glasses-apart/bench/bench.py
 # was run for the sixty tapered-kind seeds below 400 — the seeds where
-# ``seed % 4 == 1``, which is 1 to 237 — and for every glass that bench's own
+# ``seed % 4 == 1``, which is 1 to 237 — and for every glass that examiner's own
 # ``has_room`` calls crowded, the shortfall is how far the nearest offending
 # neighbour's edge reaches inside GRIP_ROOM. That is the least the glass has to
 # travel to gain its room. 300 glasses, 210 of them crowded; the median
@@ -77,7 +77,7 @@ SEED = 0
 # one every generator in this repository runs under. To check them:
 #
 #   cd 03-push-glasses-apart/01-one-fixed-nudge && pixi run python -c "
-#   import sys; sys.path.insert(0, '../03-push-glasses-apart/bench'); import bench; ..."
+#   import sys; sys.path.insert(0, '../03-push-glasses-apart/examiner'); import examiner; ..."
 PUSH_TYPICAL = 11.8
 PUSH_LONGEST = 31.8
 CROWDED_OF = (210, 300, 60)
@@ -85,7 +85,7 @@ CROWDED_OF = (210, 300, 60)
 # The jaw, as 03-push-glasses-apart/bench/bench.py builds it. Its fingers are 30 mm tall and
 # ride with their middle at LOWEST_GRIP, so the face that meets the glass runs
 # from 35 to 65 mm. A tapered glass is wider higher up, so it touches the top
-# edge of that face first, and bench's JAW_TOP says so in as many words: this,
+# edge of that face first, and examiner's JAW_TOP says so in as many words: this,
 # not PUSH_HEIGHT, is how high the glass is really pushed.
 JAW_TOP = 65.0
 JAW_WIDTH = 28.0
@@ -415,12 +415,12 @@ def one_at_a_time(rows):
 
 
 # --------------------------------------------------------------------------- #
-# 6. What the working bench builds, and where its tipping edge is.
+# 6. What the working examiner builds, and where its tipping edge is.
 # --------------------------------------------------------------------------- #
 # The rule 03-push-glasses-apart/bench/bench.py uses to turn an outline into collision
 # shapes, copied here because bench.py imports MuJoCo and this script must run
 # in the root environment. Each cylinder is as wide as the glass is at its
-# widest inside it, so the shape is never thinner than the glass, and bench's
+# widest inside it, so the shape is never thinner than the glass, and examiner's
 # own docstring says of the bottom one: "the foot, which is the edge a glass
 # tips over".
 SLICE_TOLERANCE = 1.5
@@ -475,7 +475,7 @@ def picture_the_working_model() -> None:
                   fontsize=NOTE_SIZE, color=colour, ha="center", va="top")
     axis.text(1.5 * step, -72,
               f"Every topple height here is at the table's μ = {TABLE_FRICTION}, which is one of the "
-              f"three. It is ground truth the bench scores\na run against, and never an input to "
+              f"three. It is ground truth the examiner scores\na run against, and never an input to "
               f"anything the arm decides.",
               fontsize=NOTE_SIZE, color=MUTED, ha="center", va="top")
     axis.text(-258, LOWEST_GRIP - 3, f"the middle of the jaw,\n{LOWEST_GRIP:.0f} mm",
@@ -484,11 +484,11 @@ def picture_the_working_model() -> None:
               "glass really meets it", fontsize=NOTE_SIZE, color=WARN, ha="left", va="bottom")
     axis.set_xlim(-262, 3 * step + 112)
     axis.set_ylim(-86, 262)
-    axis.set_title("What the bench builds: the glass as stacked cylinders, and three friction "
+    axis.set_title("What the examiner builds: the glass as stacked cylinders, and three friction "
                    "coefficients it keeps to itself",
                    fontsize=LABEL_SIZE, color=INK, pad=8)
     figure.subplots_adjust(bottom=0.03, top=0.90)
-    save(figure, "bench-the-model-that-was-built.png")
+    save(figure, "examiner-the-model-that-was-built.png")
 
 
 # --------------------------------------------------------------------------- #

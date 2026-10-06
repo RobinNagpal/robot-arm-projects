@@ -237,7 +237,7 @@ def picture_the_correction(training: dict, mine: dict, theirs: dict) -> None:
     footer(figure,
            f"This is the whole of the difference between solution 5 and this one. Every borrowed "
            f"number stays where it is; {100 * share:.2f} per cent of them gain a correction learned "
-           f"on this bench's own pushes; and the correction\nis folded back in before anything is "
+           f"on this examiner's own pushes; and the correction\nis folded back in before anything is "
            f"scored. So nothing separating the two scores can be put down to one of them being "
            f"larger, slower, or given more computation at run time — which is what makes the "
            f"pair\nworth measuring at all. What it buys is the next picture.")
@@ -300,7 +300,7 @@ def picture_what_moved(mine: dict, theirs: dict, teacher: dict) -> None:
               f"leg simply takes longer\nthan one waypoint period",
               fontsize=NOTE_SIZE, color=WARN, ha="left", va="top")
     fast.axvline(PUSH_SPEED, color=MUTED, lw=1.0, ls=(0, (3, 3)), zorder=2)
-    fast.text(PUSH_SPEED - 10, -0.80, f"{PUSH_SPEED:.0f} mm/s: what the bench's\nown push macro "
+    fast.text(PUSH_SPEED - 10, -0.80, f"{PUSH_SPEED:.0f} mm/s: what the examiner's\nown push macro "
               f"really pushes at", fontsize=NOTE_SIZE, color=MUTED, ha="right", va="top")
     for index, (label, _lowest, _across, step, colour) in enumerate(rows):
         speed = step / WAYPOINT_PERIOD
@@ -326,7 +326,7 @@ def picture_what_moved(mine: dict, theirs: dict, teacher: dict) -> None:
            f"exactly the height a push lands at. The\nother two are what it did not buy. Its chunks "
            f"still cover {rows[1][2] / rows[2][2]:.1f} times the ground its teacher's chunks did, at "
            f"{rows[1][3] / rows[2][3]:.1f} times their speed and "
-           f"{rows[1][3] / WAYPOINT_PERIOD / PUSH_SPEED:.1f} times the speed the bench's own macro "
+           f"{rows[1][3] / WAYPOINT_PERIOD / PUSH_SPEED:.1f} times the speed the examiner's own macro "
            f"really pushes at,\nand on a crowded table a push three times too long is a push into a "
            f"neighbour. So the model learned where a push happens long "
            f"before it learned how far one goes — and the teacher's own chunks are already "

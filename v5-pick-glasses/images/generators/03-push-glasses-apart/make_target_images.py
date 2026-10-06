@@ -85,7 +85,7 @@ BENCH = _bench()
 MM = 1000.0
 
 # diagram_style took these from the project's own sources. The assertions keep
-# this file in step with the bench it is drawing, so a constant that moves
+# this file in step with the examiner it is drawing, so a constant that moves
 # shows up as a failed run rather than as a wrong picture.
 assert GRIP_ROOM == BENCH.GRIP_ROOM * MM, "diagram_style and bench.py disagree on the room"
 assert tuple(v * MM for v in BENCH.GLASS_ZONE) == GLASS_ZONE, "disagreement on the glass zone"
@@ -94,7 +94,7 @@ assert tuple(v * MM for v in BENCH.GLASS_ZONE) == GLASS_ZONE, "disagreement on t
 # solution folder, so a count here can be checked against a results.json.
 SEEDS = range(10000, 10050)
 
-# The bench's room test is ``>=``, so a layout that lands exactly on the line
+# The examiner's room test is ``>=``, so a layout that lands exactly on the line
 # fails it by a rounding error rather than by any real crowding. Both methods
 # that aim for the line are solved to this much clear of it: ten microns, a
 # hundredth of the 1.0 mm median error a real push lands with.
@@ -152,7 +152,7 @@ def need(rims, margin: float = MARGIN):
 
 
 def crowded(places, rims) -> list[int]:
-    """Which glasses have no room, asked of the bench itself. bench.py works in metres."""
+    """Which glasses have no room, asked of the examiner itself. bench.py works in metres."""
     out = []
     for i in range(len(places)):
         others = [(places[j, 0] / MM, places[j, 1] / MM, rims[j] / MM)
@@ -528,7 +528,7 @@ def zone_frame(axis, pad=(44.0, 44.0, 58.0, 62.0)) -> None:
 
 
 def draw_table(axis, places, rims, feet, colour=GLASS, alpha=0.26, labels=False) -> None:
-    """Every glass on a table, from the top, at the sizes the bench drew them."""
+    """Every glass on a table, from the top, at the sizes the examiner drew them."""
     for i, (place, rim, foot) in enumerate(zip(places, rims, feet, strict=True)):
         glass_from_above(axis, place, rim, base_fraction=foot / rim, colour=colour,
                          alpha=alpha, lw=1.0)
@@ -633,7 +633,7 @@ def picture_what_has_room_means(rows) -> None:
     tables_lopsided = sum(1 for r in rows if r["one_sided"])
 
     chart(counts, "What the symmetric version gets wrong")
-    bars = [("glasses without room,\nby the bench's own test", no_room, GOOD),
+    bars = [("glasses without room,\nby the examiner's own test", no_room, GOOD),
             ("called crowded by the test that\nmeasures out from its own middle", wrong, MUTED),
             ("really crowded, and that test\nsays they are fine", missed, WARN),
             ("fine, and that test says\nthey are crowded", added, WARN)]
@@ -660,7 +660,7 @@ def picture_what_has_room_means(rows) -> None:
            f"Measured over the {len(rows)} held-out tables of bench.scene, seeds {SEEDS.start} to "
            f"{SEEDS.stop - 1}: {glasses} glasses, {no_room} of them without room, which is the number "
            f"every solution's results.json also reports as crowded at the start.\nThe left two panels "
-           f"are table {PAIR_SEED} as the bench drew it, at the rims it drew; the circles are "
+           f"are table {PAIR_SEED} as the examiner drew it, at the rims it drew; the circles are "
            f"computed from those rims, not chosen.")
     figure.subplots_adjust(bottom=0.20, top=0.89, wspace=0.22)
     save(figure, "target-what-has-room-means.png")
@@ -750,7 +750,7 @@ def picture_which_conditions_bind(rows) -> None:
         verdicts.text(0.55, y - 0.14, why, fontsize=NOTE_SIZE, color=MUTED, ha="left", va="top")
     note(verdicts, 0.1, -4.0,
          "The document lists a fifth condition, a clear side-on\n"
-         "viewpoint. Problem 3's bench has no viewpoint test in it\n"
+         "viewpoint. Problem 3's examiner has no viewpoint test in it\n"
          "and none of the six solutions chooses a viewpoint, so\n"
          "there is nothing here to measure and nothing drawn.",
          INK, va="top", ha="left")
@@ -854,7 +854,7 @@ def picture_the_displacement_floor(rows) -> None:
     footer(figure,
            f"The floor is the objective of the constrained optimisation at its answer, computed here "
            f"by SLSQP over the {len(rows)} held-out tables, and it is drawn as the total distance that "
-           f"answer moves the glasses. Every one of\nthe {len(rows)} answers passes the bench's own "
+           f"answer moves the glasses. Every one of\nthe {len(rows)} answers passes the examiner's own "
            f"room test. The method is written in this generator for these figures; the document is "
            f"explicit that the project does not ship it yet.")
     figure.subplots_adjust(bottom=0.20, top=0.90, wspace=0.18)

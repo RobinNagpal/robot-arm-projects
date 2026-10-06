@@ -676,7 +676,7 @@ def figure_circle_fit() -> None:
         "  too narrow: doubtful, unless the picture cut the object short at its\n"
         "    edge, in which case the width is no evidence and the report stands.\n\n"
         "The fitted width decides only how a group is split. The width that goes\n"
-        "into the record is measured by the bench, from the mask, so this circle\n"
+        "into the record is measured by the examiner, from the mask, so this circle\n"
         "never leaves the solution.\n\n"
         "This check exists only because every object here is one known kind, so\n"
         "the range is one the project holds. Problem 4, with four kinds on the\n"

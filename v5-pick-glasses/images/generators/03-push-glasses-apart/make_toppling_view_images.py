@@ -9,7 +9,7 @@ chosen to make a picture work.
 
 A toppled glass is drawn as the real outline laid over, not as a rectangle. The
 lean is a parameter, so the same arithmetic draws a glass upright, a glass at
-the bench's own STANDING_TILT_DEG, and a glass flat on its wall. A tapered glass
+the examiner's own STANDING_TILT_DEG, and a glass flat on its wall. A tapered glass
 lying down rests on one slant line of its own wall, so its axis is tilted, and
 the tilt changes both the length it covers on the table and how tall it stands.
 
@@ -90,7 +90,7 @@ SURVEY_UP = SURVEY_HEIGHT * 1000.0       # mm above the table, looking straight 
 # and a tapered glass is wider higher up, so the top edge is where a tapered
 # glass meets it and therefore the height it is really pushed at. Both numbers
 # come from diagram_style, and the assertions below keep them in step with the
-# bench they were copied from.
+# examiner they were copied from.
 JAW_MIDDLE = LOWEST_GRIP
 
 # The simulator's own friction between glass and table. Ground truth a run is
@@ -258,16 +258,16 @@ HARDEST, MIDDLING, EASIEST = _ORDER[0], _ORDER[HOW_MANY // 2], _ORDER[-1]
 
 
 # --------------------------------------------------------------------------- #
-# The crowded tables, from the bench's own generator.
+# The crowded tables, from the examiner's own generator.
 # --------------------------------------------------------------------------- #
 
 def table(seed: int) -> list[dict[str, float]]:
-    """One of the bench's tables, in millimetres, with each glass's shortfall.
+    """One of the examiner's tables, in millimetres, with each glass's shortfall.
 
     The shortfall is how much closer a glass is to its worst neighbour than the
     room test allows. Positive means it cannot be gripped, and it is the
     distance a push has to make up. The room test is ``has_room`` from the
-    bench, and it is asymmetric: what a glass needs depends on how wide its
+    examiner, and it is asymmetric: what a glass needs depends on how wide its
     neighbour is, not on how wide it is.
     """
     glasses = []
@@ -367,7 +367,7 @@ def lying_patch(axis, polygon, offset=(0.0, 0.0), colour=WARN, alpha=0.30, lw=1.
 
 
 # --------------------------------------------------------------------------- #
-# 3. The three outcomes, on one of the bench's own crowded tables.
+# 3. The three outcomes, on one of the examiner's own crowded tables.
 # --------------------------------------------------------------------------- #
 
 def picture_what_the_overhead_view_reports() -> None:
@@ -471,7 +471,7 @@ def picture_what_the_overhead_view_reports() -> None:
             f"{measured['over_top'] - measured['height']:.0f} mm higher", WARN)
 
     footer(figure,
-           f"Table {DRAWN_TABLE} from the bench's own generator, drawn on the table rather than "
+           f"Table {DRAWN_TABLE} from the examiner's own generator, drawn on the table rather than "
            f"in the picture. The pushed glass is {target['height']:.0f} mm tall and "
            f"{target['widest']:.0f} mm across; its neighbour is {neighbour['widest']:.0f} mm "
            f"across and {apart:.0f} mm away, which the asymmetric room test leaves "
@@ -619,7 +619,7 @@ def numbers() -> None:
           f"{(np.abs(areas - 1) <= 0.2).sum()}/{HOW_MANY}")
 
     print()
-    print(f"at the bench's own line for fallen, a lean of {STANDING_TILT:.0f} degrees")
+    print(f"at the examiner's own line for fallen, a lean of {STANDING_TILT:.0f} degrees")
     tilted_long = np.array([m["tilted_long"] for m in MEASURED])
     tilted_top = np.array([m["tilted_top"] for m in MEASURED])
     print(f"  the blob grows by {(tilted_long - widest).min():.0f} to "
@@ -653,7 +653,7 @@ def numbers() -> None:
     print(f"  the same, at 30 mm and 20 mm: {softer.sum()}/{HOW_MANY} = {100 * softer.mean():.1f}%")
 
     print()
-    print(f"the bench's crowded tables: {HOW_MANY_TABLES} tapered tables from "
+    print(f"the examiner's crowded tables: {HOW_MANY_TABLES} tapered tables from "
           f"seed {TAPERED_SEEDS[0]}")
     short, crowded, counts = every_shortfall()
     print(f"  {sum(counts)} glasses, {len(short)} of them without room "
