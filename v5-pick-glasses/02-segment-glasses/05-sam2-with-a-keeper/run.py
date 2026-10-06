@@ -65,6 +65,12 @@ def main() -> None:
         action="store_true",
         help="score on crowded layouts, where one glass really does hide another",
     )
+    parser.add_argument(
+        "--from-seed",
+        type=int,
+        default=None,
+        help="first held-out seed, to score a different block of arrangements",
+    )
     given = parser.parse_args()
     solution = chosen(given.solution)
     scenes = how_many(given, 20)
@@ -79,8 +85,9 @@ def main() -> None:
         )
     finder = module(given.solution).load(fitted)
 
+    block = {} if given.from_seed is None else {"start": given.from_seed}
     card = Scorecard()
-    for example in data.held_out(scenes, hard=given.crowded):
+    for example in data.held_out(scenes, hard=given.crowded, **block):
         kept, station = marking.survey(finder, example, card)
         marking.score(card, example, kept, station)
         if given.show:
@@ -89,6 +96,8 @@ def main() -> None:
     result = summary(given.solution, card, scenes, given.crowded)
     marking.show(result)
     tail = "-crowded" if given.crowded else ""
+    if given.from_seed is not None:
+        tail += f"-from{given.from_seed}"
     save = Path(__file__).parent / f"results-{given.solution}{tail}.json"
     save.write_text(json.dumps(result, indent=2) + "\n")
     print(f"\nsaved to {save}")

@@ -353,8 +353,15 @@ def training(count: int, share: float = CROWDED_SHARE) -> Iterator[Example]:
         yield crowded(seed)
 
 
-def held_out(count: int, hard: bool = False) -> Iterator[Example]:
-    """The scenes a score may be claimed on, and which no training ever sees."""
+def held_out(count: int, hard: bool = False, start: int = render.TEST_SEEDS) -> Iterator[Example]:
+    """The scenes a score may be claimed on, and which no training ever sees.
+
+    ``start`` picks which block of held-out seeds to use. Every seed at or above
+    the dividing line is held out, so blocks of ``count`` starting at
+    ``TEST_SEEDS``, ``TEST_SEEDS + count`` and so on are different arrangements
+    that no training has seen either. Scoring the same solution on several
+    blocks is how a run-to-run spread is measured rather than guessed at.
+    """
     build = crowded if hard else spawned
-    for seed in held_out_seeds(count):
+    for seed in held_out_seeds(count, start):
         yield build(seed)
