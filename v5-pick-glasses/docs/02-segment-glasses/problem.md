@@ -38,10 +38,15 @@ centres, wide enough that even the two widest glasses of a kind leave bare table
 between their rims, so no two glasses ever touch. Separating glasses that touch
 is [problem 3](../03-push-glasses-apart/problem.md).
 
-**One kind's range of sizes is deliberately very wide.** The tapered kind runs
-from a small glass to one more than twice its height, which is the widest range
-of the four. That width is not decoration: it is what causes the first
-difficulty below, and a narrow range could not produce it at all.
+**The difficulties below are explained with the tapered kind, to keep the
+explaining simple.** A run meets all four kinds and a score is taken over all
+four, but setting out a difficulty four times over would say the same thing four
+times, so each one is told once, in the kind that shows it most clearly.
+
+That kind is the tapered one, because its range of sizes is deliberately very
+wide: it runs from a small glass to one more than twice its height, which is the
+widest range of the four. The width is not decoration. It is what causes the
+first difficulty below, and a narrow range could not produce it at all.
 
 ## What goes in
 

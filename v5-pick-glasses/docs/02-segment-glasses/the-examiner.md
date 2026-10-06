@@ -57,6 +57,14 @@ invented for convenience.
 from one arrangement to the next so that all four kinds are met in turn. The
 glasses stand far enough apart never to touch.
 
+That rotation is why **a score is an average over all four kinds** rather than a
+result for one. An ordinary run of 20 arrangements comes out at roughly a
+quarter of each kind, and the four are not equally hard to outline, so the
+examiner reports every measurement broken down by kind as well as over all of
+them. [The problem](problem.md) explains its difficulties with the tapered kind
+alone, to keep the explaining simple, but nothing is ever scored on that kind by
+itself.
+
 **There are two families of arrangement**, and the difference between them is
 only how far apart the glasses stand.
 

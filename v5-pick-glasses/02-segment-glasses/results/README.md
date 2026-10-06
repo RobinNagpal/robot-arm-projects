@@ -12,6 +12,14 @@ stations per arrangement, the same shared arithmetic turning a mask into a place
 and a width, and the same scorecard. None of the six was trained or tuned on
 these arrangements. Every number here comes from a folder's own `results.json`.
 
+**Both runs use all four kinds of glass**, not one. An arrangement holds four to
+six glasses of a single kind, and the kind changes from one arrangement to the
+next, so the 100 glasses of an ordinary run come out at roughly a quarter of
+each kind: 26 straight, 25 tapered, 25 short stemmed and 24 stemmed. Every
+number in the tables below is
+therefore an average over the four, which matters because they are not equally
+hard to outline.
+
 ## The results
 
 Each solution's own README explains its numbers; this page only sets them side
@@ -79,8 +87,26 @@ covered, and how much of the mask was not that glass. These are the
 measurements that separate methods when the places cannot. The first falls when
 an outline loses a thin stem; the second rises when an outline leaks onto the
 table or swallows a neighbour. Both are medians over glasses, measured in the
-picture the mask was drawn in, and each solution's README breaks them down by
-kind of glass.
+picture the mask was drawn in.
+
+**Those two numbers are the place where averaging over four kinds hides
+something**, so it is worth opening up once. The table below gives how much of
+the glass the mask covered at the middle glass, kind by kind, on the spawned
+layouts, for the written rule and for the fine-tuned model.
+
+| kind | rules on the table | the same model, fine-tuned |
+|---|---|---|
+| straight | 99.5% | 99.7% |
+| tapered | 100.0% | 99.8% |
+| short stemmed | 88.7% | 99.7% |
+| stemmed | 86.6% | 99.8% |
+
+The written rule covers the two kinds with no stem almost completely and loses
+an eighth of the two kinds with one, because what a bowl-only outline really
+misses is the foot and the sliver of stem beside it. The fitted model has no
+such gap. Neither of those facts is visible in the single figure of 98.9 per
+cent against 99.8, which is why each solution's README breaks the measurement
+down by kind.
 
 ## What the comparison says
 

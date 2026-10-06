@@ -76,6 +76,10 @@ Read the crowded column against 83 rather than against 101. No method could find
 all 101, because a glass standing wholly behind another appears in no picture at
 all, and the examiner's own perfect masks find 83 of them.
 
+Both columns are over **all four kinds of glass**, roughly a quarter each, so
+every mask figure below is an average across kinds that are not equally hard to
+outline. The results folder opens that average up.
+
 | Solution | Spaced: 100 glasses | Crowded: 101 glasses | Why those two results |
 |---|---|---|---|
 | **1. Rules on the table** | **100 found**, masks covered 98.9% and claimed no table at all | 71 found, 10 reports covering two glasses each, masks covered 94.6% | The rule needs a strip of bare table between two glasses. The ordinary spacing guarantees one, so it finds everything; crowding withdraws the guarantee, and where the strip is gone two glasses join into one group. |
