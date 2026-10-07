@@ -638,8 +638,11 @@ def picture_planning(crowded: list[dict], pair: tuple[int, int], plan: dict) -> 
     glass = crowded[index]
     first, last = plan["rounds"][0], plan["rounds"][-1]
 
-    figure, axes = new(13.4, 5.9, columns=3)
-    wide, narrow, done = axes
+    # Two panels, not three. Rounds 1 and 4 are the same table at two moments
+    # of one search, so they belong together. The error rings are a different
+    # claim about a different thing, and they get a picture of their own.
+    figure, axes = new(9.6, 5.9, columns=2)
+    wide, narrow = axes
 
     stage(wide, f"Round 1: {2 * DRAWS} candidate pushes")
     zone(wide, label=False)
@@ -649,7 +652,7 @@ def picture_planning(crowded: list[dict], pair: tuple[int, int], plan: dict) -> 
     for _cost, _heading, _travel, where in first["kept"]:
         wide.plot(*where, marker="o", ms=2.8, color=GLASS, zorder=5)
     frame_on(wide, crowded, pad=115.0)
-    under(figure, 0, 3,
+    under(figure, 0, 2,
           f"each mark is where the push would leave glass {name}.\n"
           f"the model answers every one of them. {len(first['dropped'])} are then\n"
           f"dropped on what it predicted: a topple, a landing off the\n"
@@ -664,14 +667,25 @@ def picture_planning(crowded: list[dict], pair: tuple[int, int], plan: dict) -> 
         narrow.plot(*where, marker="o", ms=4.0, color=GOOD, zorder=5)
     frame_on(narrow, crowded, pad=115.0)
     elite_spread = max(math.dist(a[3], b[3]) for a in last["elite"] for b in last["elite"])
-    under(figure, 1, 3,
+    under(figure, 1, 2,
           f"the draws have collapsed onto one spot {elite_spread:.0f} mm across.\n"
           f"The score is the room still missing on the table, plus\n"
           f"{TRAVEL_COST:.1f} mm of penalty per millimetre pushed, so the\n"
           f"shortest push that clears the pair wins")
 
+    footer(figure,
+           f"The candidates, the filter and the scoring are the real search: {2 * DRAWS} draws in "
+           f"the first round and {DRAWS} in each of the rest,\nbest {ELITES} kept, {ROUNDS} rounds, "
+           "as this solution's planner runs it.")
+    figure.subplots_adjust(bottom=0.36, top=0.93, wspace=0.10)
+    save(figure, "04-planning-against-the-model.png")
+    print(f"  round 1: {len(first['kept'])} kept, {len(first['dropped'])} dropped of {2 * DRAWS}")
+    print(f"  round {ROUNDS}: {len(last['kept'])} kept, elite {len(last['elite'])}, "
+          f"best cost {plan['cost']:.1f}")
+
     # The worst direction for the error to go: straight back towards the
     # neighbour the push was trying to get away from.
+    figure, done = new(6.4, 5.0)
     landing = plan["aim"]
     towards = crowded[pair[1]]
     span_aimed = math.dist(landing, (towards["x"], towards["y"]))
@@ -692,8 +706,8 @@ def picture_planning(crowded: list[dict], pair: tuple[int, int], plan: dict) -> 
     done.annotate("", xy=(-MEASURED_GEOMETRY_ERROR * 0.7, -MEASURED_GEOMETRY_ERROR * 0.7),
                   xytext=(-6.0, -5.0),
                   arrowprops={"arrowstyle": "->", "color": GOOD, "lw": 0.8}, zorder=8)
-    note(done, -2.6, -9.0, f"{MEASURED_GEOMETRY_ERROR:.2f} mm:\nthe geometry,\nno model at all",
-         GOOD, ha="right", va="top")
+    note(done, -14.0, -17.0, f"{MEASURED_GEOMETRY_ERROR:.2f} mm: the geometry,\nno model at all",
+         GOOD, ha="left", va="bottom")
     note(done, 0, 19.5, "+ is where the push was aimed", MUTED, va="bottom")
     frame_close(done, (0.0, 0.0), 23.0)
 
@@ -701,33 +715,20 @@ def picture_planning(crowded: list[dict], pair: tuple[int, int], plan: dict) -> 
     span = math.dist(real, neighbour)
     aimed = math.dist(landing, neighbour)
     room = both_need(crowded[pair[0]], crowded[pair[1]])
-    under(figure, 2, 3,
-          f"the push aimed to leave {name} {aimed:.1f} mm from {'ABCDEF'[pair[1]]}, where the jaw "
-          f"needs {room:.1f}.\nWith the learned model's median error in the worst direction it "
-          f"lands\n{span:.1f} — {room - span:.1f} mm short, and the next survey has to catch that. "
-          f"With the\ngeometry's it lands {aimed - MEASURED_GEOMETRY_ERROR:.1f}, which still has "
-          f"room to spare. The glass is\n{glass['rim']:.0f} mm across and the window is "
-          f"{2 * 23.0:.0f}, so the panel is drawn very close")
-
     footer(figure,
-           f"The candidates, the filter and the scoring are the real search: {2 * DRAWS} draws in "
-           f"the first round and {DRAWS} in each of the rest, "
-           f"best {ELITES} kept, {ROUNDS} rounds, as this solution's planner runs it. The "
-           f"{MEASURED_ONE_PUSH_ERROR:.1f} mm offset in\nthe third panel is the median one-push error "
-           f"that project's README records for its own model on unseen tables. The three rings are an "
-           f"illustration\nof why the horizon is one push: if that error simply added up, a plan "
-           f"rolled three deep would start step three {3 * MEASURED_ONE_PUSH_ERROR:.1f} mm out. "
-           f"Measuring again after every push sets it\nback to zero, which is what makes a mediocre "
-           f"model useful — and the green disc is what the geometry, which predicts a slide instead "
-           f"of learning one, does\nwithout a model at all: {MEASURED_GEOMETRY_ERROR:.2f} mm, "
-           f"re-measured here over 564 pushes on 250 tables of this project's own examiner.")
-    figure.subplots_adjust(bottom=0.36, top=0.93, wspace=0.10)
-    save(figure, "04-planning-against-the-model.png")
-    print(f"  round 1: {len(first['kept'])} kept, {len(first['dropped'])} dropped of {2 * DRAWS}")
-    print(f"  round {ROUNDS}: {len(last['kept'])} kept, elite {len(last['elite'])}, "
-          f"best cost {plan['cost']:.1f}")
+           f"The {MEASURED_ONE_PUSH_ERROR:.1f} mm ring is the median one-push error that project's "
+           "README records for its own model on unseen tables,\nand the green disc is what the "
+           "geometry, which predicts a slide instead of learning one, does without a model at all: "
+           f"{MEASURED_GEOMETRY_ERROR:.2f} mm,\nre-measured here over 564 pushes on 250 tables of "
+           "this project's own examiner.")
+    figure.subplots_adjust(bottom=0.20, top=0.92)
+    save(figure, "04-how-far-out-each-prediction-is.png")
     print(f"  landing aimed ({landing[0]:.1f}, {landing[1]:.1f}), reached ({real[0]:.1f}, {real[1]:.1f}), "
           f"pair {span:.1f} mm")
+    print(f"  the push aimed to leave {name} {aimed:.1f} mm from {'ABCDEF'[pair[1]]}, the jaw needs "
+          f"{room:.1f}; with the model's error in the worst direction it lands {span:.1f}, "
+          f"{room - span:.1f} mm short; with the geometry's it lands "
+          f"{aimed - MEASURED_GEOMETRY_ERROR:.1f}")
 
 
 # --------------------------------------------------------------------------- #

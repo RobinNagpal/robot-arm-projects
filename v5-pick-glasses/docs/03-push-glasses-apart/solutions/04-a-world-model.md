@@ -577,6 +577,22 @@ Compounding makes it worse than that straight sum, not better. **So a model
 that is good at one step can be useless at five**, and the quality of the
 one-step fit says almost nothing about it.
 
+The picture below draws those three sizes as rings round the place a push was
+aimed at. The inner ring is the model's own one-step error, and the two outside
+it are what a straight sum would give after two pushes and after three. The
+small green disc inside them all is what the geometry, which predicts a slide
+instead of learning one, achieves without any model at all.
+
+![Three dashed rings at 4.5, 9.0 and 13.5 millimetres round the point a push was aimed at, with a small green disc of 1.07 millimetres at the middle of them.](../../../images/03-push-glasses-apart/04-how-far-out-each-prediction-is.png)
+
+Those millimetres matter because the clearances are small. In the arrangement
+the planning picture above came from, the push aimed to leave glass B 120.9 mm
+from glass C, where the jaw needs 119.4 mm. With the learned model's median
+error falling in the worst direction, the glass lands at 116.4 mm, which is
+2.9 mm short of what the jaw needs, and the next survey has to catch that. With
+the geometry's error instead it lands at 119.9 mm, which still has room to
+spare.
+
 This is why the built planner's horizon is one push. It is the honest horizon
 for a model trained the way the first way's is: every training example is a single
 push, so the model was never asked to be right about a table that one of its own
