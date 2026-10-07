@@ -651,7 +651,11 @@ def figure_where_it_stops() -> None:
     gone_amodal, gone_modal = far_masks[HIDING_SHORT[0]]
     gone_area = area_of(gone_modal, far_step)
 
-    figure, (works, stops, ladder) = new(16.2, 5.6, columns=3)
+    # Two panels, not three. The two arrangements are the same question seen
+    # twice, so they belong in one picture. The third panel was a table and two
+    # paragraphs, which were never a picture, and they are prose in the
+    # document now.
+    figure, (works, stops) = new(11.6, 5.6, columns=2)
 
     window = mask_window(amodal, near_x, near_y, pad=26.0)
     plan_panel(works, window)
@@ -683,40 +687,6 @@ def figure_where_it_stops() -> None:
          f"{HIDING_SHORT[0]}, which stands "
          f"{np.hypot(*(HIDING_SHORT[1] - HIDING_TALL[1])):.0f} mm away.", colour=INK)
 
-    bare(ladder)
-    ladder.set_xlim(0, 100)
-    ladder.set_ylim(-34, 104)
-    panel_title(ladder, "What each case gives the model to work with")
-    rungs = (
-        ("pixels in the picture", f"{100.0 * kept:.0f}% of the glass", "none at all"),
-        ("a slot filled by it", "yes", "nothing fills a slot"),
-        ("a mask to complete", "yes", "no mask to extend"),
-        ("a place on the table", "from the pixels seen", "no glass is reported"),
-    )
-    ladder.text(46, 99, "partly covered", ha="center", va="bottom", fontsize=NOTE_SIZE, color=GOOD,
-                weight="bold")
-    ladder.text(84, 99, "covered completely", ha="center", va="bottom", fontsize=NOTE_SIZE,
-                color=WARN, weight="bold")
-    for index, (stage, good_text, bad_text) in enumerate(rungs):
-        y = 86 - index * 21
-        ladder.text(0, y, stage, ha="left", va="center", fontsize=NOTE_SIZE, color=INK)
-        ladder.text(46, y, good_text, ha="center", va="center", fontsize=NOTE_SIZE, color=GOOD)
-        ladder.text(84, y, bad_text, ha="center", va="center", fontsize=NOTE_SIZE, color=WARN)
-        ladder.plot([0, 100], [y - 10.5, y - 10.5], color=MUTED, lw=0.6, alpha=0.6)
-    note(ladder, 0, -6,
-         "Completion extends evidence, so it needs evidence to\n"
-         "extend. The first rung is where the completely covered\n"
-         "glass fails, and no amount of training reaches a rung\n"
-         "below the one it stands on.\n\n"
-         "This is why the checks in this project are checks on\n"
-         "something that was found, and why a glass that was\n"
-         "never found is the dangerous case. The way out is not\n"
-         "a better model but a second look from somewhere else,\n"
-         "which is what moving the camera is for: turn the pair\n"
-         "about the camera and the hiding is undone, because\n"
-         "splay acts along the direction out from the camera and\n"
-         "not across it.", colour=INK, va="top")
-
     figure.suptitle(
         "Amodal completion extends what was seen, so a glass that appears in no picture is beyond "
         "it.",
@@ -727,14 +697,8 @@ def figure_where_it_stops() -> None:
         0.5, -0.03,
         f"Both pairs are arrangements the cell allows: the centres are "
         f"{np.hypot(*(BITTEN[1] - OCCLUDER_FAR[1])):.0f} mm apart on the left and "
-        f"{np.hypot(*(HIDING_SHORT[1] - HIDING_TALL[1])):.0f} mm apart on the right, and the cell "
-        f"guarantees at least {MIN_APART:.0f} mm. Whether one silhouette covers another is decided "
-        "by the same test the rest of these\ndiagrams use, which walks the boundary of the covered "
-        "glass's silhouette and asks whether every point of it lies inside the covering one. On the "
-        "right that test is true, so the short glass contributes no pixels, no slot is filled with "
-        "it, and there is\nno mask to extend. The one glass that does come back is the tall glass "
-        "itself, with a correct mask over its own pixels and a width this kind is allowed to have, "
-        "so nothing anywhere says a glass is missing.",
+        f"{np.hypot(*(HIDING_SHORT[1] - HIDING_TALL[1])):.0f} mm apart on the right,\nand the cell "
+        f"guarantees at least {MIN_APART:.0f} mm.",
         ha="center", va="top", fontsize=NOTE_SIZE, color=INK,
     )
     print(f"  where it stops: partly covered keeps {100.0 * kept:.0f}%, "

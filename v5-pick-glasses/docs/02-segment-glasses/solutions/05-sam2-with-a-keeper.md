@@ -884,7 +884,16 @@ no box and no rough mask that makes a model return a glass which cast no
 pixels. With no proposal for the hidden glass, the keeper's three answers are
 never asked for, and every check here is a check on a proposal.
 
-![A prompt point over the piece of table where the hidden glass stands lands on the covering glass, so the mask that comes back is the covering glass's, no proposal for the hidden glass ever exists, and the keeper is never consulted about it.](../../../images/02-segment-glasses/05-where-it-stops.png)
+The first picture is the arrangement itself, seen from above. The short glass
+stands entirely inside the tall one's outline, so not one of the 464 prompt
+points can land on it.
+
+![A top view of two glasses, where the tall one's splayed outline covers the short one completely and every prompt point that falls on the pair lands on the tall glass.](../../../images/02-segment-glasses/05-where-it-stops.png)
+
+The second picture follows that geometry through the solution, one step at a
+time, to show that there is no stage at which anything could have noticed.
+
+![Five steps from the geometry to the keeper: no pixel, so no prompt, so no proposal, so the keeper is never shown the glass at all.](../../../images/02-segment-glasses/05-why-nothing-catches-it.png)
 
 One temptation is worth naming, because this solution invites it. A foundation
 model's strength is that it generalises to objects it never saw, and it is easy

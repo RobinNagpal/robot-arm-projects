@@ -575,7 +575,10 @@ def figure_circle_fit() -> None:
     produce, and it is the reason one split into two cannot be enough: whichever
     way a group of three is cut in two, one of the two parts still holds two.
     """
-    figure, (one, once, twice, ruler) = new(18.2, 5.4, columns=4)
+    # Three panels, not four. The three cuts are one process in three steps, so
+    # they belong in one picture. The ruler is a different claim and gets a
+    # picture of its own, and the six-line rule it carried is prose now.
+    figure, (one, once, twice) = new(13.6, 5.4, columns=3)
 
     # Three in a line, which is what the crowded tables stand up.
     blobs = (
@@ -628,11 +631,18 @@ def figure_circle_fit() -> None:
          "part. It stops when every part is in\nrange, or when a part cannot be cut any further.",
          colour=INK, ha="center", va="top")
 
+    figure.suptitle(
+        "Cutting a group until every part is a width this kind can have.",
+        fontsize=TITLE_SIZE, color=INK, y=1.02,
+    )
+    figure.tight_layout()
+    save(figure, "01-circle-fit-decides.png")
+
     # the ruler the decision is made against
+    figure, ruler = new(9.0, 3.2)
     bare(ruler)
     ruler.set_xlim(-22, 460)
-    ruler.set_ylim(-3.4, 2.0)
-    panel_title(ruler, "What this kind is allowed to be")
+    ruler.set_ylim(-1.1, 2.0)
     ruler.add_patch(Rectangle((KIND_NARROWEST, 0), KIND_WIDEST - KIND_NARROWEST, 0.34,
                               facecolor=GOOD, alpha=0.45, edgecolor=GOOD, lw=1.0))
     ruler.add_patch(Rectangle((0, 0), 440, 0.34, facecolor="none", edgecolor=INK, lw=1.0))
@@ -666,31 +676,12 @@ def figure_circle_fit() -> None:
         color=WARN,
         arrowprops={"arrowstyle": "->", "color": WARN, "lw": 1.0},
     )
-    ruler.text(
-        -20, -0.80,
-        "The rule, in full:\n"
-        "  one circle in range: one object.\n"
-        "  too wide, and the parts it is cut into are in range: that many objects.\n"
-        "  a part still too wide: cut that part again, and only that part.\n"
-        "  a part that cannot be cut into parts in range: reported doubtful.\n"
-        "  too narrow: doubtful, unless the picture cut the object short at its\n"
-        "    edge, in which case the width is no evidence and the report stands.\n\n"
-        "The fitted width decides only how a group is split. The width that goes\n"
-        "into the record is measured by the examiner, from the mask, so this circle\n"
-        "never leaves the solution.\n\n"
-        "This check exists only because every object here is one known kind, so\n"
-        "the range is one the project holds. Problem 4, with four kinds on the\n"
-        "table, takes it back.",
-        ha="left", va="top", fontsize=NOTE_SIZE, color=INK,
-    )
-
     figure.suptitle(
-        "The safety net: a footprint the kind cannot have is not one object, and that is arithmetic, "
-        "not judgement.",
+        "A footprint the kind cannot have is not one object, and that is arithmetic.",
         fontsize=TITLE_SIZE, color=INK, y=1.02,
     )
     figure.tight_layout()
-    save(figure, "01-circle-fit-decides.png")
+    save(figure, "01-the-widths-against-the-range.png")
 
 
 # --------------------------------------------------------------------------- #

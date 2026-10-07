@@ -797,7 +797,30 @@ model that extends nothing produces nothing. What completion does buy is that
 it needs less of a glass than anything else here, so the point at which hiding
 becomes complete is further out with it than without it.
 
-![A partly covered glass still reaches the picture, so it fills a slot of its own and leaves an edge to carry on from, while a glass whose outline is swallowed whole reaches it nowhere and leaves nothing to extend, which is the way at which completion stops.](../../../images/02-segment-glasses/06-where-it-stops.png)
+![Two arrangements side by side: on the left a glass two thirds of which reaches the picture, with the covered part marked, and on the right a glass whose outline is swallowed whole by a taller one in front of it.](../../../images/02-segment-glasses/06-where-it-stops.png)
+
+The table below sets the two cases against each other, one row for each thing
+the model needs before it can answer at all. Read a row as a question, and the
+two columns after it as the answer in each case.
+
+| what the model needs | partly covered | covered completely |
+| --- | --- | --- |
+| pixels in the picture | 67 per cent of the glass | none at all |
+| a slot filled by it | yes | nothing fills a slot |
+| a mask to complete | yes | no mask to extend |
+| a place on the table | from the pixels seen | no glass is reported |
+
+The first row is where the completely covered glass fails, and no amount of
+training reaches a row below the one it stands on. This is why every check in
+this project is a check on something that was found, and why a glass that was
+never found is the dangerous case. The one glass that does come back on the
+right is the tall glass itself, with a correct mask over its own pixels and a
+width this kind is allowed to have, so nothing anywhere says a glass is missing.
+
+The way out is not a better model but a second look from somewhere else, which
+is what moving the camera is for. Turn the pair about the camera and the hiding
+is undone, because splay acts along the direction out from the camera and not
+across it.
 
 A model **could** be trained to mark a glass that might be behind this one,
 since the examiner can supply that label too, and it is worth saying what such

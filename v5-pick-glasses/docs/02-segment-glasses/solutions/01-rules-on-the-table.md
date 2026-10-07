@@ -481,7 +481,15 @@ frame, and a refusal when they do not. And if any part cannot be settled either
 way, the whole group is reported as doubtful, with which side of the range it
 failed, rather than guessed at.
 
-![One circle fitted to the whole group comes out wider than any glass of this kind can be, so the group is rejected as one glass and two circles are fitted instead; both of those lie inside the widths the kind allows, so the group is split in two, and the fitted width decides only the split, because the width that goes into the record is measured by the examiner.](../../../images/02-segment-glasses/01-circle-fit-decides.png)
+![Three steps on one group of three objects: one circle round all of them is too wide, one cut leaves a part that is still too wide, and cutting that part again leaves three parts all inside the range.](../../../images/02-segment-glasses/01-circle-fit-decides.png)
+
+The picture below is the ruler those three steps are measured against. It is a
+line of footprint diameters from narrow to wide, with the band this kind is
+allowed to be marked on it. The two fitted widths that passed sit inside the
+band, and the two that failed, before any cut and after the first one, sit well
+to the right of it.
+
+![A line of footprint diameters with a narrow green band marking the widths this kind is allowed, two marks inside the band, and two marks far to the right of it.](../../../images/02-segment-glasses/01-the-widths-against-the-range.png)
 
 Splitting a group in two is done with a simple and well-known method called
 k-means with two centres: put one seed at each end of the group's longest
