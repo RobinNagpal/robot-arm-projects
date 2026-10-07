@@ -640,7 +640,29 @@ to push the glass from. **Every solution that searches over headings can ask
 for a different approach; this one cannot**, and that is the sharpest statement
 of what the simplicity costs.
 
-![The height at which a push starts tipping a glass, drawn against the foot it stands on, with the jaw's middle at 50 mm and its top edge at 65 mm ruled across it: the push lands on the top edge, those 15 mm cost most of the glasses that the jaw's middle would have been allowed to touch, and the three friction lines, one of which is the simulator's own and none of which the arm is told, give three different answers about the same glass.](../../../images/03-push-glasses-apart/01-the-friction-ceiling.png)
+The first picture draws that rule. The height at which a push starts tipping a
+glass rises with the foot the glass stands on, and it falls as the friction
+rises, so there is one line per friction. The jaw's two heights are ruled
+across them. A glass can be pushed when its line passes above the height the
+jaw touches it at, and the dot on each line is the narrowest foot that still
+slides at that friction.
+
+![Three rising lines, one for each friction, against the foot the glass stands on, with the jaw's middle at 50 mm and its top edge at 65 mm ruled across them.](../../../images/03-push-glasses-apart/01-the-friction-ceiling.png)
+
+Those 15 mm between the jaw's middle and its top edge cost far more than their
+size suggests, and the second picture is what they cost. It takes 400 glasses
+drawn from one kind and asks, at each of the three frictions, what share of them
+could be pushed at all. At the friction the simulator itself uses, the share
+falls from 77 in every 100 to 25. At the highest friction the rule asks for a
+wider foot than this kind of glass is ever drawn with, so not one of the 400 may
+be pushed.
+
+![Two bars at each of three frictions, one for a push at 50 mm and one for a push at the real 65 mm, showing what share of 400 drawn glasses could be pushed at all.](../../../images/03-push-glasses-apart/01-what-15-mm-of-jaw-costs.png)
+
+The arm is never told which of the three frictions is the real one, and nothing
+in the cell measures it. So the three lines are three different answers about
+the same glass, and the solution has to behave safely without knowing which
+answer is true.
 
 ## A worked example
 

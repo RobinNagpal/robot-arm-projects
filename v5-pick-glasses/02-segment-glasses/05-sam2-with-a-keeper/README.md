@@ -117,40 +117,60 @@ borrowed weights are never trained.
 
 ## Results
 
-`results-sam2.json` and `results-sam2-crowded.json` were written by `run.py` on
-this machine, on 20 held-out scenes each, with the keeper fitted on 12 training
-scenes (36 pictures, 208 proposals, calibrated with a fitted sigmoid over three
-folds). The upper rung has no row here because it could not be run.
+`run.py` scores the solution on arrangements no training has seen. One run
+scores 20 of them, which is a small enough sample that a score read off a single
+run carries a sampling wobble the file itself cannot show. So the solution was
+run over **five blocks of 20 arrangements each**, seeds 10000 to 10099 in blocks
+of 20, and the table below is those five blocks together. The keeper was fitted
+once, on 12 training scenes (36 pictures, 208 proposals, calibrated with a
+fitted sigmoid over three folds), and every block was scored with those same
+weights. So the spread in the table is "which arrangements did we draw" and not
+"which training run did we get".
 
-| on 20 held-out scenes | spawned | crowded |
+Counts are given per 100 glasses, because the blocks hold slightly different
+numbers of glasses. A median cannot be averaged honestly, so the median rows are
+the mean of the five blocks' own medians, and the worst rows are the worst any
+block saw. Read a row as the average first and the range in brackets as how far
+the blocks moved around it. The upper rung has no column here because it could
+not be run.
+
+| five blocks, 100 arrangements, per 100 glasses | spawned | crowded |
 | --- | --- | --- |
-| glasses on the table | 100 | 101 |
-| found | 81 | 73 |
-| missed | 19 | 28 |
-| merged / split / false | 0 / 0 / 0 | 0 / 0 / 0 |
-| position error, median · worst | 3.0 · 43.1 mm | 1.0 · 28.7 mm |
-| mask covered, median · worst | 96.8% · 68.8% | 98.4% · 78.8% |
-| mask not the glass, median · worst | 0.0% · 1.0% | 0.0% · 11.7% |
-| handed over, cannot tell | 120 | 108 |
-| handed over, width the kind cannot have, whole of it in frame | 0 | 1 |
-| handed over, a pair that did not come apart | 0 | 0 |
+| glasses on the table | 499 | 485 |
+| found | 83.0 (78.0–86.1) | 73.6 (71.9–76.6) |
+| missed | 17.0 | 26.4 |
+| merged / split / false | 0.0 / 0.2 / 0.0 | 0.0 / 0.0 / 0.0 |
+| position error, mean of block medians · worst block | 5.6 · 47.6 mm | 0.8 · 37.3 mm |
+| mask covered, mean of block medians · worst block | 97.2% · 42.7% | 98.3% · 63.7% |
+| mask not the glass, mean of block medians · worst block | 0.0% · 1.1% | 0.0% · 14.9% |
+| handed over, cannot tell | 127.1 | 108.9 |
+| handed over, width the kind cannot have, whole of it in frame | 0.8 | 1.6 |
+| handed over, a pair that did not come apart | 0.0 | 0.4 |
 
-Nothing wrong is reported: no glass is invented, none is merged with another
-and none is split in two. What it misses, it misses, and what it cannot settle
-it hands over — which is the shape this project asks a doubtful answer to take.
-Most of what it hands over is proposals that fell in the band between the
-keeper's two thresholds — 120 of them on the spawned scenes against 19 glasses
-missed. The keeper behind those answers was fitted on 208 rows, and more rows
-is the one lever this solution has on them: `make train SCENES=40`, at about
-eight seconds a picture.
+Almost nothing wrong is reported: no glass is invented and none is merged with
+another, and one glass in all 499 spaced sightings was split in two. What it
+misses, it misses, and what it cannot settle it hands over — which is the shape
+this project asks a doubtful answer to take. Most of what it hands over is
+proposals that fell in the band between the keeper's two thresholds, and there
+are more of those than there are glasses: 127 per 100 glasses on the spawned
+scenes against 17 glasses missed. The keeper behind those answers was fitted on
+208 rows, and more rows is the one lever this solution has on them:
+`make train SCENES=40`, at about eight seconds a picture.
+
+`bench/average_blocks.py` prints this table from the block files, and
+`--from-seed 10020` and its fellows are how the later blocks were run.
 
 ### What not refusing on a cut-off region was worth
 
-`reports.legal` used to put every report to the width check. These are the same
-keeper, the same weights and the same scenes, with it reading
-`masks_to_glasses.Found.cut_off` first:
+`reports.legal` used to put every report to the width check. The two columns
+below are the same keeper, the same weights and the same scenes, with the only
+difference being that the later version reads `masks_to_glasses.Found.cut_off`
+first. These are counts from one block of 20 arrangements rather than the
+five-block averages above, because the point here is the difference between two
+versions on identical scenes, and that difference is clearest when nothing else
+changes:
 
-| | spawned: before · after | crowded: before · after |
+| one block of 20 arrangements | spawned: before · after | crowded: before · after |
 | --- | --- | --- |
 | **found, of the glasses put out** | 76 · **81** of 100 | 71 · **73** of 101 |
 | missed | 24 · **19** | 30 · **28** |

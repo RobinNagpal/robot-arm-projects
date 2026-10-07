@@ -405,7 +405,10 @@ def picture_the_friction_ceiling(jobs) -> None:
     drawn = [outline.diameter_at(0.0) * 1000.0 for outline, _ in family("tapered_glass", 400, 0)]
     chosen = [t["base"][pushed_first(t, c, n)[0]] for t, c, n in jobs]
 
-    figure, (line, bars) = new_figure(13.8, 5.8, columns=2)
+    # Two charts, two pictures. The line chart is the rule, and the bar chart is
+    # what the rule costs on the glasses this kind actually draws. They were one
+    # picture, which put two separate arguments side by side and halved both.
+    figure, line = new_figure(7.6, 5.6)
 
     width = np.linspace(min(drawn) - 2.0, max(drawn) + 2.0, 400)
     for mu, colour, style in ((MU_LOW, GOOD, "-"), (TABLE_FRICTION, MUTED, (0, (4, 3))),
@@ -446,6 +449,15 @@ def picture_the_friction_ceiling(jobs) -> None:
     line.legend(fontsize=NOTE_SIZE, loc="upper left", frameon=False)
     plain(line)
 
+    footer(figure, (
+        "A push at height h slides a glass while h is under a / mu, where a is half the foot and mu "
+        f"is the friction with the table.\nEach dot is where a friction's line crosses the jaw's top "
+        "edge: the narrowest foot that still slides at it."))
+    figure.subplots_adjust(bottom=0.24, top=0.90)
+    save(figure, "01-the-friction-ceiling.png")
+
+    figure, bars = new_figure(7.2, 5.6)
+
     shares = {}
     for label, feet in (("400 glasses drawn from the kind", drawn),
                         (f"the {len(chosen)} the nudge picks", chosen)):
@@ -477,17 +489,12 @@ def picture_the_friction_ceiling(jobs) -> None:
     plain(bars)
 
     footer(figure, (
-        "A push at height h slides a glass while h is under a / mu, where a is half the foot and mu "
-        f"is the friction with the table. The jaw's middle rides at {LOWEST_GRIP:.0f} mm, but a "
-        f"tapered glass is wider higher up and meets the jaw's top edge first, so the push lands at "
-        f"{JAW_TOP:.0f} mm and the foot has to be wider than 2 x {JAW_TOP:.0f} x mu. Each dot is "
-        f"where a friction's line crosses that height: the narrowest foot that still slides at "
-        f"it.\nThose 15 mm cost more than they look. The simulator uses {TABLE_FRICTION} and "
-        f"scores the run against it; the arm is never told it and nothing in the cell measures "
-        f"it. At {MU_HIGH} the rule asks for a wider foot than this kind ever draws, so at the "
-        f"real {JAW_TOP:.0f} mm not one of the 400 may be pushed at all."))
-    figure.subplots_adjust(bottom=0.26, top=0.90, wspace=0.24)
-    save(figure, "01-the-friction-ceiling.png")
+        f"The jaw's middle rides at {LOWEST_GRIP:.0f} mm, but a tapered glass is wider higher up and "
+        f"meets the jaw's top edge first, so the push lands at {JAW_TOP:.0f} mm."
+        f"\nAt mu {MU_HIGH} the rule asks for a wider foot than this kind ever draws, so not one of "
+        "the 400 may be pushed at all."))
+    figure.subplots_adjust(bottom=0.24, top=0.90)
+    save(figure, "01-what-15-mm-of-jaw-costs.png")
     for (label, height, mu), share in shares.items():
         print(f"  {label}, mu {mu}, pushed at {height:.0f} mm: {share:.1f}% can be pushed at all")
     print(f"  the foot a glass needs at {JAW_TOP:.0f} mm: "

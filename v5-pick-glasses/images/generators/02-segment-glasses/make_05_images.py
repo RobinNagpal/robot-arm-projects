@@ -474,15 +474,13 @@ BORROWED_PER_FITTED = BORROWED / FITTED_NUMBERS
 # 1. what promptable means
 # --------------------------------------------------------------------------- #
 
-def figure_what_promptable_means() -> None:
-    """A fixed class list answers a question chosen in advance; a prompt does not."""
-    figure, (left, middle, right) = new(15.4, 6.0, columns=3)
+def figure_a_fixed_list_of_classes() -> None:
+    """One idea: a model whose question was chosen when its weights were fitted."""
+    figure, left = new(8.4, 5.4)
 
-    # ---- a model with a fixed list of classes ----------------------------
     bare(left)
     left.set_xlim(0, 1)
     left.set_ylim(0, 1)
-    panel_title(left, "A model with a fixed list of classes", colour=WARN)
 
     box(left, 0.24, 0.80, 0.34, 0.13, "the picture", tint(GLASS, 0.14), edge=GLASS, size=LABEL_SIZE)
     box(left, 0.24, 0.58, 0.34, 0.13, "weights, as fitted", tint(MUTED, 0.18), edge=MUTED, size=LABEL_SIZE)
@@ -502,14 +500,25 @@ def figure_what_promptable_means() -> None:
     for index, name in enumerate(listed):
         note(left, 0.67, 0.685 - index * 0.062, name, colour=INK, size=NOTE_SIZE, va="center")
     note(
-        left, 0.02, 0.12,
-        "The question was chosen when the weights were fitted, so the answer is\n"
-        "a score for each of those names and nothing else. To ask about\n"
-        "something the list does not hold, the weights have to be changed.",
+        left, 0.02, 0.13,
+        "The question was chosen when the weights were fitted, so the answer is a score for\n"
+        "each of those names and nothing else. To ask about something the list does not\n"
+        "hold, the weights have to be changed.",
         colour=INK, va="top",
     )
 
-    # ---- the same picture, prompted twice --------------------------------
+    figure.suptitle(
+        "A fixed list of classes: the question is settled before the picture arrives.",
+        fontsize=TITLE_SIZE, color=INK, y=1.01,
+    )
+    figure.tight_layout()
+    save(figure, "05-a-fixed-list-of-classes.png")
+
+
+def figure_what_promptable_means() -> None:
+    """One idea: the same picture and the same weights, two prompts, two masks."""
+    figure, (middle, right) = new(11.4, 6.0, columns=2)
+
     for axis, target, ordinal in ((middle, "C", "first"), (right, "D", "second")):
         plan_axis(axis, EXTENT)
         draw_glasses(axis, SHAPES, SCENE, strong=(target,))
@@ -540,10 +549,8 @@ def figure_what_promptable_means() -> None:
     figure.text(
         0.5, -0.03,
         "The same picture and the same weights give two different masks, because the prompt changed and "
-        "nothing else did. That is the whole reason this\nsolution can use a model that was never shown a "
-        "drinking glass of this kind: it is not asked what the object is, only which pixels belong to "
-        "whatever\nthe point landed on. Deciding which of those masks is a glass is a separate job, and it "
-        "is the only job this solution fits any weights for.",
+        "nothing else did.\nThe model is not asked what the object is, only which pixels belong to whatever "
+        "the point landed on.",
         ha="center", va="top", fontsize=NOTE_SIZE, color=INK,
     )
     save(figure, "05-what-promptable-means.png")
@@ -1002,7 +1009,7 @@ def figure_the_domain_gap() -> None:
 
 def figure_borrowed_against_trained() -> None:
     """What SAM 2 brings, against what is fitted here, against solution 2."""
-    figure, (left, right) = new(15.4, 7.2, columns=2)
+    figure, left = new(9.6, 5.6)
 
     bars = (
         (
@@ -1027,7 +1034,7 @@ def figure_borrowed_against_trained() -> None:
     high = 10.0 ** np.ceil(np.log10(max(value for _, _, value, _ in bars)))
     left.set_xscale("log")
     left.set_xlim(low, high * 4.0)
-    left.set_ylim(-2.35, len(bars) - 0.05)
+    left.set_ylim(-2.05, len(bars) - 0.05)
     bare(left)
     left.tick_params(which="both", bottom=False, top=False, left=False, right=False,
                      labelbottom=False, labelleft=False)
@@ -1062,63 +1069,6 @@ def figure_borrowed_against_trained() -> None:
         colour=INK, va="top",
     )
 
-    # ---- the two solutions side by side ---------------------------------
-    bare(right)
-    right.set_xlim(0, 1)
-    right.set_ylim(0, 1)
-    panel_title(right, "The same question asked two ways")
-
-    box(right, 0.37, 0.940, 0.36, 0.072, "solution 5\nborrow almost everything",
-        tint(GOOD, 0.14), edge=GOOD, size=NOTE_SIZE, weight="bold")
-    box(right, 0.79, 0.940, 0.36, 0.072, "solution 2\nfit everything from scratch",
-        tint(GLASS, 0.14), edge=GLASS, size=NOTE_SIZE, weight="bold")
-
-    rows = (
-        (
-            "what it brings in,\nfitted somewhere else",
-            f"{BORROWED:,} weights, used\nexactly as downloaded",
-            "nothing",
-        ),
-        (
-            "what is fitted here",
-            f"{TREES} shallow trees:\n{FITTED_NUMBERS:,} thresholds and leaf values",
-            f"{SOLUTION_TWO:,} weights,\nevery one of them",
-        ),
-        (
-            "what kind of thing\nis fitted",
-            "threshold questions and leaves,\nfitted on the processor in seconds",
-            "weights, fitted by following\na gradient through a picture",
-        ),
-        (
-            "what the fitted part\nhas to learn",
-            "which measurements of a\nproposal go with a glass",
-            "which pixels are glass, and\nwhere each centre is",
-        ),
-        (
-            "training scenes needed",
-            "a few, because so little\nis being fitted",
-            "many, because everything\nis being fitted",
-        ),
-        (
-            "what it was fitted on",
-            "everyday photographs, for\nthe part that finds objects",
-            "this cell's own pictures,\nand nothing else",
-        ),
-        (
-            "where the risk sits",
-            "the borrowed part has never\nseen a picture like this one",
-            "the fitted part has seen\nnothing but pictures like it",
-        ),
-    )
-    top, step = 0.815, 0.121
-    for index, (question, borrowing, fitting) in enumerate(rows):
-        y = top - index * step
-        note(right, 0.175, y, question, colour=INK, size=NOTE_SIZE, ha="right", va="center")
-        box(right, 0.37, y, 0.36, 0.098, borrowing, tint(GOOD, 0.07), edge=GOOD,
-            size=NOTE_SIZE - 1.0)
-        box(right, 0.79, y, 0.36, 0.098, fitting, tint(GLASS, 0.07), edge=GLASS,
-            size=NOTE_SIZE - 1.0)
-
     figure.suptitle(
         "This solution is the least trained and the most borrowed of them all.",
         fontsize=TITLE_SIZE, color=INK, y=1.01,
@@ -1126,14 +1076,9 @@ def figure_borrowed_against_trained() -> None:
     figure.tight_layout()
     figure.text(
         0.5, -0.05,
-       "The borrowed count is arithmetic on the model's published widths and depths, so it is the right size "
-        " rather than a measurement of a file, and the keeper's count is\narithmetic on the shape of the set "
-        "of trees. What the picture is for is the gap between them, and the gap is not close: for every "
-        f"number fitted in this cell, about {BORROWED_PER_FITTED:,.0f} are brought in\nalready fitted from "
-       "somewhere else. That is what buys the small training set, and it is also what buys the risk, because "
-        " a borrowed weight cannot be corrected here.\nSolution 2 makes the opposite trade: nothing "
-        "borrowed, "
-        "nothing unexamined, and every one of its numbers paid for with rendered scenes.",
+       "The two outer counts are arithmetic on the models' published widths and depths, and the "
+        "keeper's count is arithmetic on the shape of its set of trees.\nFor every number fitted in "
+        f"this cell, about {BORROWED_PER_FITTED:,.0f} are brought in already fitted somewhere else.",
         ha="center", va="top", fontsize=NOTE_SIZE, color=INK,
     )
     save(figure, "05-borrowed-against-trained.png")
@@ -1269,6 +1214,7 @@ def main() -> None:
         f"fitted here: {TREES} trees, {FITTED_THRESHOLDS:,} thresholds + {FITTED_LEAVES:,} leaves "
         f"= {FITTED_NUMBERS:,} numbers; solution 2 fits {SOLUTION_TWO:,} weights"
     )
+    figure_a_fixed_list_of_classes()
     figure_what_promptable_means()
     figure_the_prompt_grid()
     figure_everything_is_proposed()
