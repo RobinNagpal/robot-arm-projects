@@ -322,12 +322,13 @@ def bars(axis, labels, values, colours, span: float, note_of=None) -> None:
 # ---------------------------------------------------------------------------
 def picture_how_alike() -> None:
     """The two sets the geometry produces, and which of them holds any signal."""
-    figure, (sizes, margins, flat) = new(14.6, 4.8, columns=3)
-
-    # ------------------------------- panel 1: safe pushes against freeing ones
+    # These used to be three panels of one figure. They are three separate
+    # questions with three sets of axes, so one picture apiece is what the
+    # rules ask for and what a reader on a small screen needs.
+    figure, sizes = new(6.4, 3.0)
     stage(sizes, "What the enumerator produces, per crowded glass")
     sizes.set_xlim(0.0, 10.0)
-    sizes.set_ylim(-5.6, 2.2)
+    sizes.set_ylim(-2.4, 2.2)
     rows = [
         (f"safe pushes: median {SWEEP['safe_median']}", 1.3, GLASS,
          f"mean {SWEEP['safe_mean']}, most {SWEEP['safe_max']};\n"
@@ -343,14 +344,14 @@ def picture_how_alike() -> None:
                                   facecolor=to_rgba(colour, 0.45), edgecolor=colour, lw=1.1))
         sizes.text(0.4, y + 0.40, label, fontsize=LABEL_SIZE, color=INK, ha="left", va="bottom")
         sizes.text(0.4, y - 0.40, tail, fontsize=NOTE_SIZE, color=MUTED, ha="left", va="top")
-    note(sizes, 5.0, -2.75,
-         f"The gap between those two bars is the whole story of\n"
-         f"this cell. The geometry can almost always find a push\n"
-         f"that is safe. It can rarely find one that finishes the job,\n"
-         f"so {SWEEP['free_none_pct']:.0f}% of the time the planner falls back on a push\n"
-         f"that only helps a little.", INK, va="top")
 
-    # --------------------------- panel 2: the survivors land in the same place
+    footer(figure,
+           f"Measured over the {SWEEP['tables']} held-out tables of bench.scene, "
+           f"{SWEEP['glasses']} glasses,\n{SWEEP['crowded']} of them without room at the start.")
+    figure.subplots_adjust(bottom=0.20, top=0.90)
+    save(figure, "02-what-the-enumerator-produces.png")
+
+    figure, margins = new(6.4, 3.2)
     chart(margins, "How much the freeing pushes differ")
     items = [
         ("room left over,\nbest minus worst", SWEEP["free_margin_spread_median_mm"], GOOD),
@@ -364,19 +365,20 @@ def picture_how_alike() -> None:
                      ha="left", va="center")
         margins.text(0.0, y + 0.42, label, fontsize=NOTE_SIZE, color=INK, ha="left", va="bottom")
     margins.set_xlim(0.0, 44.0)
-    margins.set_ylim(-4.6, 1.6)
+    margins.set_ylim(-2.4, 1.6)
     margins.set_yticks([])
     margins.spines["left"].set_visible(False)
     margins.set_xlabel("millimetres of spread inside one candidate set, median",
                        fontsize=LABEL_SIZE, color=INK)
-    note(margins, 22.0, -2.55,
-         "A freeing push stops at the first travel that\n"
-         "works, so every survivor comes to rest within a\n"
-         "millimetre of the same room margin. They differ\n"
-         "in how far the glass travels to get there, and\n"
-         "the geometry prints that number for nothing.", INK, va="top")
 
-    # ---------------------------------------- panel 3: the label does not vary
+    footer(figure,
+           "Every member of a freeing set comes to rest within "
+           f"{SWEEP['free_margin_spread_median_mm']} mm of the same room margin.\nThey differ only "
+           "in how far the glass travels to get there.")
+    figure.subplots_adjust(bottom=0.20, top=0.90)
+    save(figure, "02-how-much-the-freeing-pushes-differ.png")
+
+    figure, flat = new(6.0, 4.6)
     chart(flat, "Does the label vary inside a candidate set?")
     names = ["the pushes that\nfinish the job", "every push\nworth making"]
     tied = [SWEEP["free_label_tied_pct"], SWEEP["ranked_label_tied_pct"]]
@@ -403,13 +405,10 @@ def picture_how_alike() -> None:
          "the label is how many glasses have room after the push", INK, va="top")
 
     footer(figure,
-           f"Measured over the {SWEEP['tables']} held-out tables of bench.scene, {SWEEP['glasses']} "
-           f"glasses, {SWEEP['crowded']} of them without room at the start. Where the geometry can "
-           f"finish the job, every way of finishing it scores the\nsame: the freeing set is a complete "
-           f"tie in {SWEEP['free_label_tied_pct']:.0f}% of the {SWEEP['free_sets']} sets there are, and "
-           f"its members come to rest within {SWEEP['free_margin_spread_median_mm']} mm of each other. "
-           f"The variation is in the wider ranked set, where most candidates do not finish the job.")
-    figure.subplots_adjust(bottom=0.28, top=0.90, wspace=0.24)
+           f"The freeing set is a complete tie in {SWEEP['free_label_tied_pct']:.0f}% of the "
+           f"{SWEEP['free_sets']} sets there are.\nThe variation is in the wider ranked set, where "
+           "most candidates do not finish the job.")
+    figure.subplots_adjust(bottom=0.26, top=0.90)
     save(figure, "02-how-alike-the-survivors-are.png")
     print("  how alike: freeing sets tied on the label in "
           f"{SWEEP['free_label_tied_pct']:.0f}% of {SWEEP['free_sets']}; "

@@ -309,7 +309,31 @@ lives in the wider set of pushes that only ease the crowding, where the
 candidates genuinely differ from one another, and where the geometry is
 guessing at a sequence of pushes rather than finishing the job in one.
 
-![The enumerator almost always finds a safe push for a crowded glass and rarely finds one that finishes the job; the job-finishing candidates score identically in every set there is, while the wider set of pushes that only ease the crowding is where the candidates differ.](../../../images/03-push-glasses-apart/02-how-alike-the-survivors-are.png)
+Three measurements over fifty held-out tables say how far that goes, and the
+three pictures below take them one at a time.
+
+The first counts what the enumerator produces for each crowded glass. The gap
+between the two bars is the whole story of this cell: the geometry can almost
+always find a push that is safe, and it can rarely find one that finishes the
+job, so 72 per cent of the time the planner falls back on a push that only helps
+a little.
+
+![Two bars, one for safe pushes with a median of 193 per crowded glass and one for the pushes that leave the glass with room, whose median is zero.](../../../images/03-push-glasses-apart/02-what-the-enumerator-produces.png)
+
+The second asks how much the job-finishing pushes differ from one another when
+there are several. A freeing push stops at the first travel that works, so every
+survivor comes to rest within a millimetre of the same room margin. They differ
+only in how far the glass travels to get there, and the geometry prints that
+number for nothing.
+
+![Two bars of spread inside one candidate set: one millimetre of difference in the room left over, and thirty millimetres of difference in travel.](../../../images/03-push-glasses-apart/02-how-much-the-freeing-pushes-differ.png)
+
+The third asks whether the thing a ranker would be fitted to varies inside a
+candidate set at all. In the job-finishing set it never does. In the wider set
+of pushes that only ease the crowding it does, which is the only place a ranker
+could find anything to learn.
+
+![Two bars: every candidate scores the same in 100 per cent of the 55 job-finishing sets, and in 34 per cent of the 117 wider sets.](../../../images/03-push-glasses-apart/02-how-alike-the-survivors-are.png)
 
 That is a sharp conclusion to reach before the model has been described, and it
 is the honest shape of this solution. The arrangement is excellent. The
