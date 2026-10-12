@@ -127,6 +127,9 @@ def where(table: bench.Bench, glass: int) -> tuple[float, float] | None:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--tables", type=int, default=50)
+    parser.add_argument(
+        "--first", type=int, default=bench.TEST_SEEDS, help="first table's seed"
+    )
     parser.add_argument("--rule", action="store_true", help="the printed rule, with the model deleted")
     parser.add_argument("--show", action="store_true", help="print each table")
     parser.add_argument("--film", type=int, default=0, help="film this many of the tables")
@@ -135,7 +138,7 @@ def main() -> None:
     card = Scorecard()
 
     started = time.time()
-    for i, seed in enumerate(range(bench.TEST_SEEDS, bench.TEST_SEEDS + arguments.tables)):
+    for i, seed in enumerate(range(arguments.first, arguments.first + arguments.tables)):
         filmed = i < arguments.film
         table = FilmedBench(seed, "ranked") if filmed else bench.Bench(seed)
         if arguments.show:
@@ -154,9 +157,11 @@ def main() -> None:
     print(f"\n{time.time() - started:.0f}s for {arguments.tables} tables")
     if arguments.film:
         print(f"videos of the first {min(arguments.film, arguments.tables)} in {VIDEOS}/")
-    # Only the full held-out run is a result; anything shorter must not overwrite one.
+    # Only the full held-out run is a result; anything else must not overwrite
+    # one. Starting elsewhere counts as something else, not only running short:
+    # fifty tables from another seed are fifty different tables.
     name = "rule.json" if arguments.rule else "results.json"
-    if arguments.tables != 50:
+    if arguments.tables != 50 or arguments.first != bench.TEST_SEEDS:
         name = "partial.json"
     card.report(Path(__file__).parent / name)
 

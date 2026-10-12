@@ -8,3 +8,9 @@ partial.json
 videos/
 # One table written out step by step: `make trace`.
 traces/
+
+# The scorecard now writes a per-table sibling beside whatever it saves, so the
+# scratch runs have scratch siblings. results-tables.json is kept, because the
+# choice of a representative table for the film rests on it.
+partial-tables.json
+tuning-tables.json

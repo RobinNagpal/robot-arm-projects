@@ -2,3 +2,9 @@
 videos/
 # A run shorter than the 50 held-out tables.
 partial.json
+
+# The scorecard now writes a per-table sibling beside whatever it saves, so the
+# scratch runs have scratch siblings. results-tables.json is kept, because the
+# choice of a representative table for the film rests on it.
+partial-tables.json
+tuning-tables.json

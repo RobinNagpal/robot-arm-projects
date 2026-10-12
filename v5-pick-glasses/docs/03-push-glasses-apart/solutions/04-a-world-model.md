@@ -89,6 +89,23 @@ and what `push()` accepts are assumed throughout, and read [pushing without
 toppling](../pushing-without-toppling.md), because the refusal rule this
 solution adds learned evidence to is stated there.
 
+## A film of one table
+
+Before the explanation, here is this solution clearing one table, recorded from
+the simulator and running at three times real speed.
+
+[Watch the film (19 s)](../../../videos/03-push-glasses-apart/04-a-world-model.mp4)
+
+The table is number 10003 of the held-out fifty, and it was chosen to be
+**typical rather than flattering**. It holds five glasses, which is the average,
+and on it this solution reaches its commonest outcome with about its usual
+number of pushes. In the film all five are racked in two pushes, which is this
+solution's economy in one table.
+
+All six solutions are filmed on this same table, so the six films can be watched
+against each other. How each one does over all fifty tables is in
+[the comparison](../../../03-push-glasses-apart/results/README.md).
+
 ## The code at the heart of it
 
 Two pieces of the first way carry the whole idea, and they are short enough to read

@@ -84,6 +84,23 @@ wider than its neighbour, standing on the narrowest foot its kind allows — and
 quotes numbers only where they belong to the gripper, to the cell, or to a
 results file in the repository.
 
+## A film of one table
+
+Before the explanation, here is this solution clearing one table, recorded from
+the simulator and running at three times real speed.
+
+[Watch the film (30 s)](../../../videos/03-push-glasses-apart/01-one-fixed-nudge.mp4)
+
+The table is number 10003 of the held-out fifty, and it was chosen to be
+**typical rather than flattering**. It holds five glasses, which is the average,
+and on it this solution reaches its commonest outcome with about its usual
+number of pushes. In the film every one of the five glasses is pushed clear and
+racked, in seven pushes, with none knocked over.
+
+All six solutions are filmed on this same table, so the six films can be watched
+against each other. How each one does over all fifty tables is in
+[the comparison](../../../03-push-glasses-apart/results/README.md).
+
 ## The code at the heart of it
 
 Two pieces of this solution are written and running in the repository, and they

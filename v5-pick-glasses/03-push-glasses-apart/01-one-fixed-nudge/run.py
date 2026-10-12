@@ -102,12 +102,15 @@ def where(table: bench.Bench, glass: int) -> tuple[float, float] | None:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--scenes", type=int, default=50)
+    parser.add_argument(
+        "--first", type=int, default=bench.TEST_SEEDS, help="first table's seed"
+    )
     parser.add_argument("--show", action="store_true", help="print each table")
     parser.add_argument("--film", type=int, default=0, help="film this many of the tables")
     arguments = parser.parse_args()
     card = Scorecard()
 
-    for i, seed in enumerate(range(bench.TEST_SEEDS, bench.TEST_SEEDS + arguments.scenes)):
+    for i, seed in enumerate(range(arguments.first, arguments.first + arguments.scenes)):
         filmed = i < arguments.film
         table = FilmedBench(seed, "programmed") if filmed else bench.Bench(seed)
         if arguments.show:
@@ -123,8 +126,11 @@ def main() -> None:
 
     if arguments.film:
         print(f"videos of the first {min(arguments.film, arguments.scenes)} in {VIDEOS}/")
-    # Only the full held-out run is the result; anything shorter must not overwrite it.
-    card.report(Path(__file__).parent / ("results.json" if arguments.scenes == 50 else "partial.json"))
+    # Only the full held-out run is the result; anything else must not overwrite
+    # it. Starting elsewhere counts as something else, not only running short:
+    # fifty tables from another seed are fifty different tables.
+    full = arguments.scenes == 50 and arguments.first == bench.TEST_SEEDS
+    card.report(Path(__file__).parent / ("results.json" if full else "partial.json"))
 
 
 if __name__ == "__main__":

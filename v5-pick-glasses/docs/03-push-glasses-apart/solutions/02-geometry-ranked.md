@@ -115,6 +115,23 @@ two solutions that learn from it inherit its ceiling, and keeping only the
 demonstrations that succeeded trains them on a biased sample of what this
 solution happens to do well.
 
+## A film of one table
+
+Before the explanation, here is this solution clearing one table, recorded from
+the simulator and running at three times real speed.
+
+[Watch the film (33 s)](../../../videos/03-push-glasses-apart/02-geometry-ranked.mp4)
+
+The table is number 10003 of the held-out fifty, and it was chosen to be
+**typical rather than flattering**. It holds five glasses, which is the average,
+and on it this solution reaches its commonest outcome with about its usual
+number of pushes. In the film all five are racked in seven pushes with none
+knocked over, which is the same result the printed rule reaches on this table.
+
+All six solutions are filmed on this same table, so the six films can be watched
+against each other. How each one does over all fifty tables is in
+[the comparison](../../../03-push-glasses-apart/results/README.md).
+
 ## The code at the heart of it
 
 Everything this solution adds to [solution 1](01-one-fixed-nudge.md) sits in

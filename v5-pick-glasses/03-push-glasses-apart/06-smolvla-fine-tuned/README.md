@@ -198,16 +198,13 @@ that was doing its best to cause them.
 | | 1 — fixed nudge | 4 — world model | 5 — untrained | 6 — this |
 |---|---|---|---|---|
 | Tables done | **33** | 31 | 0 | 4 |
-| Tables wrong | **0** | 1 | 3 | 38 |
-| Glasses racked | 195 | **202** | 55 | 77 |
-| Glasses toppled | **0** | 1 | 4 | 46 |
-| Pushes | 213 | **114** | 771 asks | 400 |
+| Tables wrong | **0** | 1 | 5 | 38 |
+| Glasses racked | 195 | **202** | 56 | 77 |
+| Glasses toppled | **0** | 1 | 6 | 46 |
+| Pushes | 213 | **114** | 754 | 400 |
 
-Solutions 1 and 4 are from their committed `results.json`. **Solution 5's
-column is from its `partial.json`** — one run of the 50 tables, taken before
-the bench capped a commanded path to the jaw's top speed — because its own
-result was not committed when this was written. Treat it as the shape of the
-untrained baseline and read solution 5's README for its number.
+Every column is from that solution's own committed `results.json`, and the two
+that are run several times, 5 and 6, show the middle run.
 
 **The pair's answer is the uncomfortable one.** Fine-tuning plainly worked as
 training: the chunk error against the teacher fell by three quarters, and the
