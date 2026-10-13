@@ -53,6 +53,7 @@ from diagram_style import (
     ROBOT_BASE,
     TITLE_SIZE,
     WARN,
+    agrees,
     bare,
     glass_from_above,
     new,
@@ -87,7 +88,7 @@ MM = 1000.0
 # diagram_style took these from the project's own sources. The assertions keep
 # this file in step with the examiner it is drawing, so a constant that moves
 # shows up as a failed run rather than as a wrong picture.
-assert GRIP_ROOM == BENCH.GRIP_ROOM * MM, "diagram_style and bench.py disagree on the room"
+assert agrees(GRIP_ROOM, BENCH.GRIP_ROOM * MM), "diagram_style and bench.py disagree on the room"
 assert tuple(v * MM for v in BENCH.GLASS_ZONE) == GLASS_ZONE, "disagreement on the glass zone"
 
 # The fifty held-out tables. The same range run.py is scored on in every

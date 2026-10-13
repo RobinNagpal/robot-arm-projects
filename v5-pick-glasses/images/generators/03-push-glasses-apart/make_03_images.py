@@ -62,6 +62,7 @@ from diagram_style import (
     TRAVEL_HEIGHT,
     WARN,
     WAYPOINT_PERIOD,
+    agrees,
     bare,
     glass_from_above,
     has_room,
@@ -119,13 +120,13 @@ CLEARANCE = 8.0
 # error and of the half-width error is the room a faithful rebuild needs.
 REBUILD_TOLERANCE = 3.0 * (BENCH.POSITION_NOISE + BENCH.WIDTH_NOISE / 2.0) * 1000.0
 
-assert PUSH_HEIGHT == BENCH.PUSH_HEIGHT * 1000.0, "diagram_style and bench.py disagree on the jaw"
-assert TRAVEL_HEIGHT == BENCH.TRAVEL_HEIGHT * 1000.0, "diagram_style and bench.py disagree on travel"
+assert agrees(PUSH_HEIGHT, BENCH.PUSH_HEIGHT * 1000.0), "diagram_style and bench.py disagree on the jaw"
+assert agrees(TRAVEL_HEIGHT, BENCH.TRAVEL_HEIGHT * 1000.0), "diagram_style and bench.py disagree on travel"
 assert WAYPOINT_PERIOD == BENCH.WAYPOINT_PERIOD, "diagram_style and bench.py disagree on the rate"
-assert FEEL_SPEED == BENCH.FEEL_SPEED * 1000.0, "diagram_style and bench.py disagree on feeling"
-assert PUSH_SPEED == BENCH.PUSH_SPEED * 1000.0, "diagram_style and bench.py disagree on pushing"
-assert TOP_SPEED == BENCH.TOP_SPEED * 1000.0, "diagram_style and bench.py disagree on the top speed"
-assert GRIP_ROOM == BENCH.GRIP_ROOM * 1000.0, "diagram_style and bench.py disagree on the room"
+assert agrees(FEEL_SPEED, BENCH.FEEL_SPEED * 1000.0), "diagram_style and bench.py disagree on feeling"
+assert agrees(PUSH_SPEED, BENCH.PUSH_SPEED * 1000.0), "diagram_style and bench.py disagree on pushing"
+assert agrees(TOP_SPEED, BENCH.TOP_SPEED * 1000.0), "diagram_style and bench.py disagree on the top speed"
+assert agrees(GRIP_ROOM, BENCH.GRIP_ROOM * 1000.0), "diagram_style and bench.py disagree on the room"
 
 # How far apart the waypoints of a recorded path are, by leg: the rate is
 # fixed, so a speed *is* a spacing. The cap is what follow() will not exceed.

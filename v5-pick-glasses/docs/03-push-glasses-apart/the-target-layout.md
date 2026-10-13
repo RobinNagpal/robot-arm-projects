@@ -236,7 +236,7 @@ legal layout is wanted instantly and optimality is not the point, and Lloyd's
 algorithm is a starting layout and a sanity check. One of them has to be
 chosen and then frozen, for reasons the cautions below make plain.
 
-![The travel each of the four methods asks for, as a multiple of the floor for the same table, over fifty tables: the constrained optimisation is 1x by definition, assignment to slots and repulsive relaxation sit near five times it, Lloyd's algorithm near nine and is the only one that leaves tables illegal, and the same solver started 40 mm away settles in a worse local optimum on five of the fifty.](../../images/03-push-glasses-apart/target-four-methods-against-the-floor.png)
+![The travel each of the four methods asks for, as a multiple of the floor for the same table, over fifty tables: the constrained optimisation is 1x by definition, assignment to slots sits near four times it and repulsive relaxation near five, Lloyd's algorithm near seven and is the only one that leaves tables illegal, and the same solver started 40 mm away settles in a worse local optimum on five of the fifty.](../../images/03-push-glasses-apart/target-four-methods-against-the-floor.png)
 
 **None of this is written yet, and it is worth being plain about that.** The
 examiner exists, and so does the programmed geometry that picks a landing spot one
@@ -288,7 +288,7 @@ task imposes, **no arrangement that satisfies the task needs less movement than
 this**. It is the least the task can possibly cost in travel, and it is called
 the **displacement floor**.
 
-![One table whose six glasses all start without room, and the smallest set of moves that gives every one of them its room, each arrow labelled with its length and totalling 148 mm; across fifty tables the floor runs from 2 to 148 mm with a median of 48 mm, and it reads as a scale on which a solution at twice the floor spent twice the travel the task demanded.](../../images/03-push-glasses-apart/target-the-displacement-floor.png)
+![One table whose six glasses all start without room, and the smallest set of moves that gives every one of them its room, each arrow labelled with its length; across fifty tables the floor runs from 3 to 171 mm with a median of 61 mm, and it reads as a scale on which a solution at twice the floor spent twice the travel the task demanded.](../../images/03-push-glasses-apart/target-the-displacement-floor.png)
 
 That makes every solution readable on a scale that means something. A solution
 does not just move the glasses some number of millimetres; it moves them some
@@ -298,10 +298,20 @@ wandering. And the scale is available **before any solution exists**, because it
 comes from the measurements and the constants and nothing else — no model, no
 training, no run. It cannot flatter a solution because it never saw one.
 
-Over the fifty held-out tables the floor comes to **2,534 mm in total**, and
-that is the number the examiner's travel figure is divided by. The six solutions
-land between a fifth of it and nearly four times it, which is recorded in
+Over the fifty held-out tables the floor comes to **3,284 mm in total**, and
+that is the number the examiner's travel figure is divided by. How the six
+solutions land against it is recorded in
 [the comparison](../../03-push-glasses-apart/results/README.md).
+
+The floor rose from 2,534 mm when the invented jaw became a real Robotiq 2F-85,
+and the reason is worth following because it is not about pushing at all. The
+floor is set by how much room each glass needs, and that is how far the *open*
+hand reaches from its own middle. On the 2F-85 the fingers stand 76 mm out
+where the old assumption was 70, so every glass needs 6 mm more daylight, and
+a legal layout is correspondingly harder to reach. It is still reachable on all
+fifty tables, which is worth checking rather than assuming: a few more
+millimetres each would have made some of these tables impossible to finish, and
+then no solution could have cleared them.
 
 The most useful reading is at the bottom of that scale, and it needs saying
 carefully. A solution close to the floor is not thereby a *good* solution.

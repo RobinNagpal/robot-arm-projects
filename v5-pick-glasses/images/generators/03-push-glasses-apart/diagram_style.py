@@ -53,31 +53,41 @@ NOTE_SIZE = 8.4
 # that a reader can check it.
 # --------------------------------------------------------------------------- #
 
-GRIPPER_MAX_OPENING = 95.0   # arm/dimensions.py
-LOWEST_GRIP = 50.0           # arm/dimensions.py: below this the gripper body is through the table
-PAD_HEIGHT = 14.0            # arm/dimensions.py
+GRIPPER_MAX_OPENING = 85.0   # arm/dimensions.py: the Robotiq 2F-85's stroke
+GRIPPER_MAX_GRIP = 80.4      # arm/dimensions.py: the widest glass it can hold
+LOWEST_GRIP = 50.0           # arm/dimensions.py: below this the force sensor is through the table
+PAD_HEIGHT = 22.0            # arm/dimensions.py: the 2F-85's pad
 
-# The height a glass is really pushed at, which is NOT LOWEST_GRIP.
+# The height a glass is really pushed at, which is NOT where the jaw's middle
+# rides.
 #
-# The middle of the jaw rides at LOWEST_GRIP, but the jaw is 30 mm tall, so its
-# top edge is 15 mm higher. A glass that is wider higher up — which every
-# tapered glass is, by definition — meets that top edge first, and that is
-# where the push lands. 03-push-glasses-apart/bench/bench.py says so in as many words:
-# "A glass that is wider higher up meets the jaw here first, so this, not
+# A glass that is wider higher up — which every tapered glass is, by
+# definition — meets the jaw's top edge first, and that is where the push
+# lands. 03-push-glasses-apart/bench/bench.py says so in as many words: "A
+# glass that is wider higher up meets the jaw here first, so this, not
 # PUSH_HEIGHT, is how high it is pushed."
 #
-# Fifteen millimetres sounds like a detail and is not. Pushing a tapered glass
-# at 65 mm rather than 50 mm takes the share that can be pushed at all from
-# 92% to 52% at mu = 0.3, and from 14% to nothing whatever at mu = 0.5.
-FINGER_HEIGHT = 30.0         # 03-push-glasses-apart/bench/bench.py
-JAW_TOP = LOWEST_GRIP + FINGER_HEIGHT / 2.0   # 65 mm
+# Both numbers grew when the invented blade became a real Robotiq 2F-85. The
+# hand has to be turned on its side to fit between the glasses at all, and on
+# its side it reaches 69 mm below its own middle, so it rides at 75 mm rather
+# than 50. Its leading stretch is also 63 mm tall where the blade was 30, so
+# the top edge stands 32 mm above the middle rather than 15.
+#
+# The consequence is not a detail. Pushing at the top edge rather than the
+# middle takes the share of tapered glasses that can be pushed at all from a
+# tenth to nothing, and it now moves every other kind as much: straight from
+# 57% to 7%, stemmed from 86% to 22%, short-stemmed from 55% to nothing, all at
+# the simulator's own friction.
+FINGER_HEIGHT = 63.4         # 03-push-glasses-apart/bench/bench.py, rolled
+PUSH_HEIGHT = 75.0           # the middle of the jaw, as low as the rolled hand goes
+JAW_TOP = PUSH_HEIGHT + FINGER_HEIGHT / 2.0   # 106.7 mm
 MIN_SEPARATION = 150.0       # glasses/spawn.py: guaranteed between centres when problem 2 ended
 
-# How much clear room the open jaw needs round a glass's middle before it can
-# close on it. Problem 3's own statement rounds this to "about 70 mm in every
-# direction"; it is kept as one number here so that eleven documents quote the
-# same one.
-GRIP_ROOM = 70.0
+# How much clear room the open hand needs round a glass's middle before it can
+# close on it. It is how far the widest part of the open hand reaches from its
+# own middle, which on a 2F-85 is the fingers and not the pads. Kept as one
+# number here so that eleven documents quote the same one.
+GRIP_ROOM = 76.2
 TOUCHING_APART = 75.0                    # rims in contact, for the widest pair
 
 # The symmetric worst case: two of the widest glasses of the kind. Useful as a
@@ -104,7 +114,6 @@ RACK_AREA = (320.0, 380.0, 340.0, 380.0)     # rack/layout.py, on the arm's othe
 TOP_VIEW_HEIGHT = 750.0        # the camera, directly above the middle of the zone
 TOP_VIEW_SIZE = (384, 384)     # rows, columns. Square, because the frame is
 TRAVEL_HEIGHT = 300.0          # where the jaw travels between pushes
-PUSH_HEIGHT = LOWEST_GRIP      # the middle of the jaw rides as low as the gripper goes
 
 # The middle of the picture, and half its frame measured on the table top.
 # bench.py derives the half frame this same way, and the reason is worth
@@ -160,6 +169,20 @@ CAST = (STURDY, TIPPY, MIDDLING, SHORT_ONE)
 # picture drawing anything narrower claims more than the project knows.
 MU_LOW = 0.2
 MU_HIGH = 0.5
+
+
+def agrees(shown: float, actual: float, places: int = 1) -> bool:
+    """Whether a figure quoted in this file matches the bench's own.
+
+    The constants above are written to a tenth of a millimetre, because that
+    is the precision a label on a diagram can carry. The bench works several
+    of them out from the gripper's linkage instead of writing them down, so
+    they come with a long decimal tail, and comparing exactly would fail on
+    the tail rather than on a real disagreement. Comparing at the precision
+    this file quotes catches the drift the guards are there for and nothing
+    else.
+    """
+    return round(shown, places) == round(actual, places)
 
 
 def base_width(rim: float, base_fraction: float) -> float:

@@ -33,15 +33,16 @@ from diagram_style import (
     INK,
     JAW_TOP,
     LABEL_SIZE,
-    LOWEST_GRIP,
     MU_HIGH,
     MU_LOW,
     MUTED,
     NOTE_SIZE,
+    PUSH_HEIGHT,
     STURDY,
     TABLE_FRICTION,
     TIPPY,
     WARN,
+    agrees,
     bare,
     base_width,
     glass_from_above,
@@ -91,16 +92,19 @@ SURVEY_UP = SURVEY_HEIGHT * 1000.0       # mm above the table, looking straight 
 # glass meets it and therefore the height it is really pushed at. Both numbers
 # come from diagram_style, and the assertions below keep them in step with the
 # examiner they were copied from.
-JAW_MIDDLE = LOWEST_GRIP
+# The middle of the jaw. It is no longer the lowest the gripper can reach:
+# the real hand has to be turned on its side to fit between the glasses, and
+# on its side its fingers would strike the table below 75 mm.
+JAW_MIDDLE = PUSH_HEIGHT
 
 # The simulator's own friction between glass and table. Ground truth a run is
 # scored against, never an input to any decision the arm makes.
 TRUE_FRICTION = TABLE_FRICTION
 
-assert JAW_MIDDLE == BENCH.PUSH_HEIGHT * 1000.0, "diagram_style and bench.py disagree on the jaw"
-assert JAW_TOP == BENCH.JAW_TOP * 1000.0, "diagram_style and bench.py disagree on the jaw"
+assert agrees(JAW_MIDDLE, BENCH.PUSH_HEIGHT * 1000.0), "diagram_style and bench.py disagree on the jaw"
+assert agrees(JAW_TOP, BENCH.JAW_TOP * 1000.0), "diagram_style and bench.py disagree on the jaw"
 assert TRUE_FRICTION == BENCH.TABLE_FRICTION, "diagram_style and bench.py disagree on the friction"
-assert GRIP_ROOM == BENCH.GRIP_ROOM * 1000.0, "diagram_style and bench.py disagree on the room"
+assert agrees(GRIP_ROOM, BENCH.GRIP_ROOM * 1000.0), "diagram_style and bench.py disagree on the room"
 
 # The project's own definition of toppled, from bench.py: a glass leaning
 # further than this from upright has fallen over.
