@@ -69,6 +69,11 @@ PAD_FAR_Z = 0.05102
 PAD_HEIGHT = 0.022
 PAD_LENGTH = PAD_FAR_Z - PAD_NEAR_Z
 
+# How far the rubber stands proud of the metal behind it. The collision mesh
+# does not separate the pad from the fingertip, so this one number is an
+# estimate rather than a reading, and nothing but a drawing uses it.
+PAD_THICKNESS = 0.003
+
 
 def _swing(angle: float) -> np.ndarray:
     """Where the pad frame sits for a knuckle angle, from the gripper's base.
@@ -295,6 +300,105 @@ def _part(box, origin) -> tuple[np.ndarray, np.ndarray]:
     return box[0] + origin, box[1] + origin
 
 
+def _placed(angle: float) -> tuple:
+    """Where the three moulded parts sit at this knuckle angle.
+
+    Shared by ``parts()`` and ``jaw()`` so that the two can never disagree
+    about where the hand is, which they would if each worked the swing out for
+    itself.
+    """
+    turn = np.array(
+        [
+            [np.cos(angle), 0.0, -np.sin(angle)],
+            [0.0, 1.0, 0.0],
+            [np.sin(angle), 0.0, np.cos(angle)],
+        ]
+    )
+    finger = _part(FINGER_BOX, KNUCKLE + turn @ KNUCKLE_TO_FINGER)
+    tip = _part(TIP_BOX, KNUCKLE + turn @ (KNUCKLE_TO_FINGER + FINGER_TO_TIP))
+    body = _part(BODY_BOX, np.zeros(3))
+    return tip, finger, body
+
+
+def parts(angle: float = SHUT_ANGLE) -> list[dict]:
+    """Every piece of the hand on its own, with the gap between the fingers left open.
+
+    ``jaw()`` below answers the question a push asks, which is what shape the
+    hand fills, so it folds each pair of fingers into a single box covering both
+    of them and the space between them. That is the right answer for a push,
+    because a glass standing in that space would be swept along just the same.
+
+    A drawing needs the opposite answer, and that is what this function is for.
+    Shut, the two fingertips sit one millimetre apart and really are one solid
+    stub, but the fingers behind them stand about 82 mm apart, so a picture
+    built from ``jaw()`` shows a brick where a hand should be. With the pieces
+    listed separately a picture can show the fingers, the gap between them, and
+    the fingers opening and closing.
+
+    Each piece is measured the same way as in ``jaw()``: ``back`` and ``depth``
+    run along the approach and are measured from the fingertips, and ``tall`` is
+    the thickness across the finger. Two fields are new. ``span`` is how far this
+    one piece reaches along the direction the fingers open, rather than how far
+    the pair reaches, and ``offset`` is how far the piece's middle sits from the
+    hand's own middle. A pair appears twice, once at each offset, because the
+    second finger is the same moulding turned around, and ``side`` says which of
+    the two a piece is.
+    """
+    tip, finger, body = _placed(angle)
+    reach = tip[1][2]
+    pieces = []
+    for name, (low, high), sides in (
+        ("fingertips", tip, (1, -1)),
+        ("fingers", finger, (1, -1)),
+        ("body", body, (0,)),
+    ):
+        middle = float((high[0] + low[0]) / 2.0)
+        for side in sides:
+            pieces.append(
+                {
+                    "name": name,
+                    "side": side,
+                    "back": float(reach - high[2]),
+                    "depth": float(high[2] - low[2]),
+                    "tall": float(high[1] - low[1]),
+                    "span": float(high[0] - low[0]),
+                    "offset": middle if side >= 0 else -middle,
+                }
+            )
+    return pieces
+
+
+def pads(angle: float = SHUT_ANGLE) -> list[dict]:
+    """The two rubber pads, measured the same way as ``parts()``.
+
+    The pads are the only part of the hand that is meant to touch anything, so
+    a picture of the hand holding a glass is wrong without them: the glass has
+    to be seen resting against the pads and not against the metal. They are kept
+    out of ``parts()`` because they are not a separate moulding — each one is a
+    face of the fingertip it sits on — and adding them there would change what
+    ``jaw()`` reports the hand's shape to be.
+
+    ``PAD_THICKNESS`` is the only number here that is not read out of the
+    description. It is how far the rubber stands off the metal, which the
+    collision mesh does not separate out, and it is used for drawing only.
+    """
+    tip, _, _ = _placed(angle)
+    reach = tip[1][2]
+    inner = float(tip[0][0])
+    return [
+        {
+            "name": "pads",
+            "side": side,
+            "back": float(reach - pad_reach(angle)) + PAD_LENGTH / 2.0,
+            "depth": PAD_LENGTH,
+            "tall": PAD_HEIGHT,
+            "span": PAD_THICKNESS,
+            "offset": (inner + PAD_THICKNESS / 2.0) * (1.0 if side >= 0 else -1.0),
+        }
+        for side in (1, -1)
+    ]
+
+
 def jaw(angle: float = SHUT_ANGLE) -> list[dict]:
     """The gripper as a stack of boxes, seen from the side, at one angle.
 
@@ -324,25 +428,15 @@ def jaw(angle: float = SHUT_ANGLE) -> list[dict]:
     A jaw described as one long thin blade, which is what this project assumed
     before it had a real gripper, can reach into gaps this one cannot.
     """
-    turn = np.array(
-        [
-            [np.cos(angle), 0.0, -np.sin(angle)],
-            [0.0, 1.0, 0.0],
-            [np.sin(angle), 0.0, np.cos(angle)],
-        ]
-    )
-    finger = _part(FINGER_BOX, KNUCKLE + turn @ KNUCKLE_TO_FINGER)
-    tip = _part(TIP_BOX, KNUCKLE + turn @ (KNUCKLE_TO_FINGER + FINGER_TO_TIP))
-    body = _part(BODY_BOX, np.zeros(3))
-
+    tip, finger, body = _placed(angle)
     reach = tip[1][2]
-    parts = []
+    folded = []
     for name, (low, high) in (("fingertips", tip), ("fingers", finger), ("body", body)):
         # Mirrored about the middle, because the other finger is the same part
         # the other way round, so the width is twice the outer edge. The body
         # straddles the middle already and is taken as it is.
         across = 2.0 * high[0] if name != "body" else high[0] - low[0]
-        parts.append(
+        folded.append(
             {
                 "name": name,
                 "back": reach - high[2],
@@ -351,7 +445,7 @@ def jaw(angle: float = SHUT_ANGLE) -> list[dict]:
                 "tall": high[1] - low[1],
             }
         )
-    return parts
+    return folded
 
 
 # How far the fingertips stick out in front of the fingers behind them. The

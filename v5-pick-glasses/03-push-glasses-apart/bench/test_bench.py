@@ -2,6 +2,7 @@
 
 import math
 
+import mujoco
 import numpy as np
 import pytest
 from work_cell.glasses.shapes import family
@@ -116,3 +117,56 @@ def test_taking_a_crowded_glass_is_recorded_as_wrong():
     table.take(crowded)
     assert table.taken[crowded] is False
     assert crowded not in [s.id for s in table.look()]
+
+
+def _one_table(table):
+    """One push and two takes, and where everything ended up.
+
+    What it does does not matter, only that it does the same thing twice. It
+    has to include both a push and a take, because those are the two places the
+    filmed bench does work of its own: a push is where it captures frames
+    between steps, and a take is where it draws a pick.
+    """
+    seen = table.look()[0]
+    radius = seen.widest / 2
+    table.push(bench.Push(seen.id, (seen.x - radius - 0.01, seen.y), 0.0, radius + 0.04, 0.04, (0, 0)))
+    for other in table.look()[:2]:
+        table.take(other.id)
+    return [(i, table.taken[i], tuple(np.round(table.position(i), 9))) for i in sorted(table.taken)]
+
+
+def test_filming_a_table_changes_nothing_about_it(tmp_path):
+    """The whole comparison rests on this.
+
+    Three of the six solutions decide from an overhead picture of the table, so
+    if filming added anything to the world they are scored in, a filmed table
+    could be a different table. The drawn hand lives in a second world for that
+    reason, and this checks it stayed there: the same seed scored with and
+    without a camera has to leave every glass in the same place.
+    """
+    import film
+
+    plain = bench.Bench(bench.TEST_SEEDS)
+    filmed = film.FilmedBench(bench.TEST_SEEDS, "test")
+    assert _one_table(plain) == _one_table(filmed)
+    assert np.array_equal(plain.data.qpos, filmed.data.qpos)
+    assert bench._world(plain.glasses) == bench._world(filmed.glasses)
+    # Saving finishes the video and closes the renderer, so it is done here
+    # rather than left open for the rest of the run.
+    filmed.save(tmp_path / "one-table.mp4", "test")
+    assert (tmp_path / "one-table.mp4").stat().st_size > 0
+
+
+def test_the_drawn_hand_is_never_part_of_the_scored_world():
+    """A drawn piece must not exist in the world the bench scores in, and must
+    not be able to touch anything in the world it is drawn in."""
+    glasses = bench.scene(bench.TEST_SEEDS)
+    scored = mujoco.MjModel.from_xml_string(bench._world(glasses))
+    drawn = mujoco.MjModel.from_xml_string(bench.drawing_world(glasses))
+    names = [mujoco.mj_id2name(drawn, mujoco.mjtObj.mjOBJ_GEOM, i) for i in range(drawn.ngeom)]
+    pieces = [i for i, name in enumerate(names) if name and name.startswith("drawn_")]
+    assert pieces, "the drawing world has no drawn hand in it"
+    assert not any(mujoco.mj_id2name(scored, mujoco.mjtObj.mjOBJ_GEOM, i) or "" for i in range(scored.ngeom)
+                   if (mujoco.mj_id2name(scored, mujoco.mjtObj.mjOBJ_GEOM, i) or "").startswith("drawn_"))
+    assert all(drawn.geom_contype[i] == 0 and drawn.geom_conaffinity[i] == 0 for i in pieces)
+    assert drawn.nq == scored.nq and drawn.nbody == scored.nbody

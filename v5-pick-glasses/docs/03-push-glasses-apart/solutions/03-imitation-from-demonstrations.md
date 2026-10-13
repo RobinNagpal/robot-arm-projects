@@ -109,9 +109,9 @@ costs this solution carries, none of which can be engineered away.
 ## A film of one table
 
 Before the explanation, here is this solution working on one table,
-recorded from the simulator and running at three times real speed.
+recorded from the simulator and running at one and a half times real speed.
 
-[Watch the film (13 s)](../../../videos/03-push-glasses-apart/03-imitation-from-demonstrations.mp4)
+[Watch the film (22 s)](../../../videos/03-push-glasses-apart/03-imitation-from-demonstrations.mp4)
 
 The table is number 10025 of the held-out fifty, and it was chosen to be
 **typical rather than flattering**. The rule for choosing it was written down
@@ -135,6 +135,24 @@ were fitted, so the film is one draw from one seed rather than an average. It is
 seed 0. On this table the three seeds racked 1, 1 and 3 glasses in 14, 14 and 11
 pushes, so the film shows the commoner of the two behaviours;
 `results-tables.json` holds all three rows.
+
+Two things in the film are not what a first viewing suggests. The first is
+that **the hand never opens while it is pushing**. This problem holds the
+gripper shut and uses the whole hand as a pusher, which is what the parallel
+locking kit on a Robotiq 2F-85 is for, so nothing is gripped and nothing is
+lifted during a push. The second is that **the pick at the end of a take is
+drawn rather than simulated**. The bench racks a glass by moving it off the
+table in one instant, so instead of showing a glass vanish the film draws what
+a real pick-up would be: the wrist turns the hand upright, the fingers open to
+the width the glass was measured to be, the hand comes down around it, the
+fingers close and the glass is carried off. The label on screen says so while
+it happens.
+
+The hand itself is drawn twice, and both drawings are worth looking at. Its
+real pieces are solid, and around them, as a faint shell, is the larger shape
+the bench collides with. That shell fills in the gap between the two fingers,
+because a glass standing in the gap would be swept along just the same, so it
+is the shape every solution has to plan around even though no metal is there.
 
 All six solutions are filmed on this same table, so the six films can be
 watched against each other. How each one does over all fifty tables is in

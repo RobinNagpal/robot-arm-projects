@@ -119,7 +119,15 @@ def above(
 
 
 def picture(scene: np.ndarray, drawing: np.ndarray, title: str, lines: list[str]) -> np.ndarray:
-    """The film's view and the drawing side by side, with what happened written underneath."""
+    """The film's view and the drawing side by side, with what happened written underneath.
+
+    The film is rendered larger than these pictures need, because it is watched
+    on its own as well, so the scene is brought down to the drawing's height
+    rather than the drawing being blown up to the film's.
+    """
+    if scene.shape[0] != drawing.shape[0]:
+        across = round(scene.shape[1] * drawing.shape[0] / scene.shape[0])
+        scene = cv2.resize(scene, (across, drawing.shape[0]), interpolation=cv2.INTER_AREA)
     words = np.full(
         (MARGIN + LINE_HEIGHT * (1 + len(lines)), scene.shape[1] + drawing.shape[1], 3), PAPER, np.uint8
     )

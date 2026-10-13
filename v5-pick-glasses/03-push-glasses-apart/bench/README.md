@@ -11,11 +11,38 @@ judged by the same scorecard.
 - `scoring.py` — judges a run against what the physics really did. No
   approach reads it to decide anything.
 - `film.py` — a bench that also records a video, for checking by eye what the
-  jaw did. The physics is the same; it only looks after each step. A take
-  is shown as the jaw lifting the glass and carrying it off towards the
-  rack, drawn on a copy of the world, so a glass never just vanishes and the
-  results are the same filmed or not. There is still no arm: the jaw moves on
-  its own. Both approaches use it for `make film`.
+  hand did. The physics is the same, because the film is drawn in a second
+  world of its own and the scored one is never added to. There is still no
+  arm: the hand moves on its own. `make comparison-films` uses it to film one table
+  with each of the six solutions, which is what the documents link to.
+
+## What a film shows, and what it does not
+
+The films are worth one paragraph of warning, because two things in them are
+not what a first viewing suggests.
+
+**The hand never opens during a push.** This problem shoves glasses apart with
+the gripper held shut, which is what the parallel locking kit on a Robotiq
+2F-85 is for, so a push is the whole hand driven sideways into a glass.
+Nothing is gripped and nothing is lifted. If the fingers opened on film during
+a push, the film would be wrong.
+
+**A pick is drawn rather than simulated.** `take()` racks a glass by moving it
+off the table in one instant, which on film would look like the glass
+vanishing, so the film draws what a real pick-up is instead: the wrist turns
+the hand upright, the fingers open to the width the glass was measured to be,
+the hand comes down around it, the fingers close and the glass is carried off.
+The label on screen says so while it happens. Nothing there is stepped, and
+`test_bench.py` checks that a filmed table ends exactly where the same
+unfilmed table ends.
+
+One more thing is visible and is deliberate. The hand is drawn twice: its real
+pieces solid, and around them, as a faint shell, the larger shape the bench
+collides with. The bench treats each pair of fingers as one box covering both
+fingers and the 82 mm gap between them, which is the safe assumption for a
+push, because a glass standing in that gap would be swept along just the same.
+Seeing both at once is the point: the shell is what the solutions must plan
+around, and the pieces are what a real hand looks like.
 
 ## What an approach gets
 

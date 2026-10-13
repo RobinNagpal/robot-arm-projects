@@ -368,6 +368,63 @@ def _jaw_xml(surface: str) -> str:
     return "\n      ".join(boxes)
 
 
+# The drawn hand's own axes, before it is turned into the world: x runs forward
+# along the approach with the fingertips at zero, y is the direction the fingers
+# open, and z is the thickness of a finger. The hand is described once in these
+# axes and then turned, which is what lets the same description be shown rolled
+# on its side for a push and upright for a pick.
+DRAWN_PIECES = {
+    "fingertips": "0.80 0.82 0.85 1",
+    "fingers": "0.80 0.82 0.85 1",
+    "body": "0.62 0.64 0.68 1",
+    "pads": "0.20 0.20 0.22 1",
+}
+# How the hand is turned for a push: a quarter turn about the approach, which
+# stands the opening direction on its end so the two fingers stack one above the
+# other. This is the roll the whole of this problem is built on.
+ROLLED = f"{math.cos(math.pi / 4):.8f} {math.sin(math.pi / 4):.8f} 0 0"
+
+
+def _drawn_hand_xml() -> str:
+    """The hand as it really is, for the film to look at. It touches nothing.
+
+    Every box here has ``contype`` and ``conaffinity`` of zero, so the simulator
+    never collides it with anything, and it hangs off the jaw's mocap body,
+    which has no dynamics of its own. So these boxes can be drawn, moved and
+    hidden without changing a single result. That is the whole point of them:
+    the film can show the fingers opening around a glass even though the bench
+    itself only ever pushes with them shut.
+
+    They are the pieces ``robotiq_2f85.parts()`` lists rather than the boxes
+    above, so the gap between the two fingers is left open instead of being
+    filled in. ``film.py`` moves them by name.
+    """
+    boxes = []
+    for piece in robotiq_2f85.parts() + robotiq_2f85.pads() + [
+        {
+            "name": "wrist",
+            "side": 0,
+            "back": max(p["back"] + p["depth"] for p in robotiq_2f85.parts()),
+            "depth": WRIST_LENGTH,
+            "span": WRIST_ACROSS,
+            "tall": WRIST_ACROSS,
+            "offset": 0.0,
+        }
+    ]:
+        side = "left" if piece["side"] > 0 else "right" if piece["side"] < 0 else "middle"
+        name = f"drawn_{piece['name']}_{side}"
+        forward = -(piece["back"] + piece["depth"] / 2.0)
+        # Rolled, the opening direction points up, so a piece's offset from the
+        # middle of the hand becomes a height rather than a sideways step.
+        boxes.append(
+            f'<geom name="{name}" type="box" contype="0" conaffinity="0" '
+            f'size="{piece["depth"] / 2:.5f} {piece["span"] / 2:.5f} {piece["tall"] / 2:.5f}" '
+            f'pos="{forward:.5f} 0 {piece["offset"]:.5f}" quat="{ROLLED}" '
+            f'rgba="{DRAWN_PIECES.get(piece["name"], "0.42 0.43 0.46 1")}"/>'
+        )
+    return "\n      ".join(boxes)
+
+
 def _glass_xml(index: int, glass: SpawnedGlass) -> str:
     mass, centre, across, spin = glass.mass_properties
     x, y, _ = glass.position
@@ -384,9 +441,15 @@ def _glass_xml(index: int, glass: SpawnedGlass) -> str:
     )
 
 
-def _world(glasses: list[SpawnedGlass]) -> str:
+def _world(glasses: list[SpawnedGlass], draw_hand: bool = False) -> str:
     half_x, half_y = TABLE_SIZE[0] / 2, TABLE_SIZE[1] / 2
-    jaw = f'friction="{JAW_FRICTION} 0.005 0.0001" priority="2" rgba="0.6 0.6 0.62 1"'
+    # Drawn, the colliding boxes go nearly see-through and the real pieces are
+    # drawn inside them, so a viewer sees both the hand and the larger shape the
+    # simulator actually collides. Scored, they are plain solid grey and the
+    # drawn pieces are not there at all.
+    skin = "0.6 0.6 0.62 0.16" if draw_hand else "0.6 0.6 0.62 1"
+    jaw = f'friction="{JAW_FRICTION} 0.005 0.0001" priority="2" rgba="{skin}"'
+    hand = "\n      " + _drawn_hand_xml() if draw_hand else ""
     zone_x, zone_y = (GLASS_ZONE[0] + GLASS_ZONE[1]) / 2, (GLASS_ZONE[2] + GLASS_ZONE[3]) / 2
     # The camera top_view.py renders from. Its axes are the table's own: the
     # picture's right is +x and the picture's up is +y. It is a camera and not
@@ -403,10 +466,23 @@ def _world(glasses: list[SpawnedGlass]) -> str:
           friction="{TABLE_FRICTION} 0.005 0.0001" priority="1" rgba="0.75 0.6 0.45 1"/>
     {"".join(_glass_xml(i, g) for i, g in enumerate(glasses))}
     <body name="jaw" mocap="true" pos="0 0.5 1.3">
-      {_jaw_xml(jaw)}
+      {_jaw_xml(jaw)}{hand}
     </body>
   </worldbody>
 </mujoco>"""
+
+
+def drawing_world(glasses: list[SpawnedGlass]) -> str:
+    """The same world with the real hand drawn in it, for film.py and nothing else.
+
+    It is a second world rather than a setting on the scored one on purpose.
+    Three of the six solutions read an overhead picture of the table and decide
+    from it, so anything added to the world they are scored in could change
+    what they do. Keeping the drawn hand in a world of its own means the scored
+    world is the same object whether a table is filmed or not, and the film can
+    be made as clear as it likes.
+    """
+    return _world(glasses, draw_hand=True)
 
 
 @dataclass(frozen=True)

@@ -121,6 +121,15 @@ returning a 384 by 384 RGB picture that frames the whole zone. It is separate
 from the camera `film.py` uses, which looks steeply down from the arm's side
 and exists only for watching a run by eye.
 
+Keeping the two apart matters more than it first appears, because a solution
+that reads a picture decides from what is in it. If filming a table added
+anything to the world, a filmed table could be a different table from the one
+the same solution was scored on, and the comparison would quietly stop being a
+comparison. So the film is drawn in a second world of its own, built beside the
+scored one and never stepped, and the scored world is the same whether a table
+is filmed or not. The bench's tests check it by running one table both ways and
+requiring every glass to end in the same place.
+
 **What a solution is never given is the simulator's record.** The examiner knows
 each glass's true position, its true shape and its mass, and it keeps all of
 it. Only the scoring code reads those, and only after a run has finished. A

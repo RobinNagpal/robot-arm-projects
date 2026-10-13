@@ -34,7 +34,7 @@ from work_cell.arm.dimensions import COMFORTABLE_REACH
 from work_cell.table.layout import ROBOT_BASE
 
 from bench import GLASS_ZONE, GRIP_ROOM, KINDS, TEST_SEEDS, Felt, Push, Seen, has_room
-from film import FPS, TAKE_MOVES, FilmedBench
+from film import FPS, FilmedBench
 from scoring import Scorecard
 
 TRACES = Path(__file__).parent / "traces"
@@ -128,14 +128,9 @@ class TracedBench(FilmedBench):
         super().__init__(seed, "learned")
 
     def _add(self, step: dict) -> dict:
-        step = {"number": len(self.trace) + 1, **step, "video_seconds": round(len(self.frames) / FPS, 2)}
+        step = {"number": len(self.trace) + 1, **step, "video_seconds": round(self.captured / FPS, 2)}
         self.trace.append(step)
         return step
-
-    def _view(self) -> np.ndarray:
-        """The table as the film sees it now, with nothing written on it."""
-        self.renderer.update_scene(self.data, self.camera)
-        return self.renderer.render()[:, :, ::-1].copy()
 
     def _picture(
         self, step: dict, name: str, scene: np.ndarray, drawing: np.ndarray, title: str, lines: list
@@ -169,16 +164,16 @@ class TracedBench(FilmedBench):
                 f"The camera reads {len(seen)} glasses, and none has room for the gripper.",
                 f"Room missing on the whole table: {step['room_missing']} mm. A push has to be found.",
             ]
-        self._picture(step, "look", self._view(), picture.above(self.readings, rings=True), "look", lines)
+        self._picture(step, "look", self.view(), picture.above(self.readings, rings=True), "look", lines)
         return seen
 
     def take(self, glass: int) -> None:
         step = self._add({"step": "take", "glass": glass})
         drawing = picture.above(self.readings, taking=glass)
-        first = len(self.frames)
         super().take(glass)
-        # The film's own frame from while the glass is being lifted.
-        lifted = self.frames[first + round(0.6 * sum(TAKE_MOVES.values()) * FPS)]
+        # The film's own frame from halfway up the lift, which it keeps for
+        # exactly this.
+        lifted = self.lifted
         lines = [
             f"Glass {glass} has room, so the arm picks it up and racks it.",
             "The model is not used for this.",
@@ -187,7 +182,7 @@ class TracedBench(FilmedBench):
         self.readings = [g for g in self.readings if g["id"] != glass]
 
     def _back_off(self, at: np.ndarray, u: np.ndarray) -> None:
-        self.pushing = self._view()
+        self.pushing = self.view()
         super()._back_off(at, u)
 
     def search_picture(self, chosen: int | None) -> None:
@@ -220,7 +215,7 @@ class TracedBench(FilmedBench):
                 (reading[row["glass"]], row["best"]["lands_at"], row["glass"] == chosen) for row in found
             ],
         )
-        self._picture(step, "search", self._view(), drawing, "search", lines)
+        self._picture(step, "search", self.view(), drawing, "search", lines)
 
     def verdict(self, target: Seen, verdict: plan.Verdict, tried: dict) -> None:
         """One glass's search is over: what it tried, and the best it found."""
@@ -318,7 +313,7 @@ class TracedBench(FilmedBench):
         self._picture(
             step,
             "push-1-expected",
-            self._view(),
+            self.view(),
             drawing,
             f"push glass {push.glass}, as the model expects",
             lines,
@@ -372,7 +367,7 @@ class TracedBench(FilmedBench):
             f"Toppled: {'yes' if real['toppled'] else 'no'}.",
             "The readings before, the push, and the readings after are what one training example holds.",
         ]
-        self._picture(step, "push-3-happened", self._view(), drawing, "what really happened", lines)
+        self._picture(step, "push-3-happened", self.view(), drawing, "what really happened", lines)
 
 
 def trace(seed: int) -> Path:
@@ -424,7 +419,7 @@ def trace(seed: int) -> Path:
         f"Refused {len(refused)}."
     ]
     lines += [f"  glass {glass}: {why}" for glass, why in refused.items()]
-    bench._picture(step, "end", bench._view(), picture.above(bench.readings, rings=True), outcome, lines)
+    bench._picture(step, "end", bench.view(), picture.above(bench.readings, rings=True), outcome, lines)
 
     bench.save(folder / "video.mp4", f"{outcome}: racked {racked}, refused {len(refused)}")
     document = {
