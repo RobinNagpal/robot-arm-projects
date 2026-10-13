@@ -145,7 +145,7 @@ numbers together say what is happening, and they changed the design once:
 
 The first row is memorising: near-perfect on what it saw, useless on what it
 did not. Four times the tables closed most of that gap, and the error on unseen
-tables came down by only a quarter. The policy stopped memorising and started
+tables came down by only about a fifth. The policy stopped memorising and started
 predicting something close to the average demonstration instead. More steps do
 not fix the first row and more data does not fix the second.
 

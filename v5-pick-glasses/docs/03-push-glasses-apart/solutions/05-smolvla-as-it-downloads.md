@@ -88,20 +88,36 @@ the most useful thing in the folder.
 
 ## A film of one table
 
-Before the explanation, here is this solution clearing one table, recorded from
-the simulator and running at three times real speed.
+Before the explanation, here is this solution working on one table,
+recorded from the simulator and running at three times real speed.
 
-[Watch the film (32 s)](../../../videos/03-push-glasses-apart/05-smolvla-as-it-downloads.mp4)
+[Watch the film (38 s)](../../../videos/03-push-glasses-apart/05-smolvla-as-it-downloads.mp4)
 
-The table is number 10003 of the held-out fifty, and it was chosen to be
-**typical rather than flattering**. It holds five glasses, which is the average,
-and on it this solution reaches its commonest outcome with about its usual
-number of pushes. In the film the jaw sweeps across the table sixteen times
-without reaching a glass, and one of the five is racked only because it already
-had room.
+The table is number 10025 of the held-out fifty, and it was chosen to be
+**typical rather than flattering**. The rule for choosing it was written down
+before it was applied: the table had to be one where every one of the six
+solutions reaches its own commonest outcome and racks at least one glass.
+Exactly one table of the fifty satisfies both, which is this one. It holds six
+glasses where the average is five, so it is one glass above average, and that
+is the one way in which it is not typical.
 
-All six solutions are filmed on this same table, so the six films can be watched
-against each other. How each one does over all fifty tables is in
+Five of its six glasses have no room at the start, which is the usual state of
+these tables: over the fifty, 203 of the 251 glasses begin without room.
+
+In the film the jaw sweeps across the table sixteen times without ever
+reaching a glass, because the borrowed model's chunks come back about 200 mm
+above the table. One of the six glasses is racked, and only because it already
+had room. This film is the longest of the six and the emptiest, which is the
+result rather than a fault in the recording.
+
+This solution draws its answer rather than computing it, so the film is one
+draw rather than an average. The scored runs on this table racked one glass each
+and spent thirteen pushes on average, against the film's sixteen, so the film
+is a slightly busier draw than the middle one; `results-tables.json` holds every
+row.
+
+All six solutions are filmed on this same table, so the six films can be
+watched against each other. How each one does over all fifty tables is in
 [the comparison](../../../03-push-glasses-apart/results/README.md).
 
 ## The code that does the work

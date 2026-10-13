@@ -176,25 +176,37 @@ below is the middle with the spread across the three.
 
 | | |
 |---|---|
-| Tables | 4 done, 8 not finished, **38 wrong** |
-| Glasses | 77 racked (±5.7), 115 refused (±5.0), **46 toppled** (±5.7), 13 pushed out of the zone (±5.0) |
+| Tables | 1 done, 14 not finished, **36 wrong** |
+| Glasses | 56 racked (±7.6), 138 refused (±1.0), **40 toppled** (±5.6), 15 pushed out of the zone (±4.4) |
 | Glasses picked without room, or left with no reason | **0** and **0** |
-| Pushes | 400 (±40), of which 280 repeats |
-| Pushes that went wrong, in the middle run | **247 blocked on the way down**, 45 jammed, 39 never touched, of 400 |
-| Where the glass stopped, from where the chunk ended | 60.6 mm median, 917 mm worst |
-| Thinking per push | 283 ms (±1) on an idle machine |
+| Pushes | 369 (±12), of which 260 repeats |
+| Pushes that went wrong, in the middle run | **223 blocked on the way down**, 66 jammed, 33 never touched, of 369 |
+| Travel | 5,518 mm, which is 1.68 times the displacement floor |
+| Where the glass stopped, from where the chunk ended | 57.3 mm median, 784 mm worst |
+| Thinking per push | 404 ms (±16) on an idle machine |
 
-**This is a bad score, and it is a bad score for one reason.** Nearly two
-thirds of its pushes — 247 of the 400 in the middle run — were **blocked on
-the way down**: the chunk's first waypoint is over a glass, so the jaw comes
-down onto one instead of behind it. The share is taken from one run rather
-than from the spread above, because the spread reports a median for each field
-on its own, and those medians come from different runs: 400 pushes from one and
-259 blocked from another, which together describe no run that happened.
+**This is a bad score, and it is a bad score for one reason.** Three fifths of
+its pushes — 223 of the 369 in the middle run — were **blocked on the way
+down**: the chunk's first waypoint is over a glass, so the jaw comes down onto
+one instead of behind it. The share is taken from one run rather than from the
+spread above, because the spread reports a median for each field on its own,
+and those medians come from different runs: 369 pushes from one and 227 blocked
+from another, which together describe no run that happened.
 The model learned the height a push happens at and the kind of motion a push
 is, and did not learn where to put the jaw down. From there everything else
-follows: 46 glasses over, 38 tables wrong, and 79 of the refusals reading
+follows: 40 glasses over, 36 tables wrong, and 66 of the refusals reading
 "stopped: a glass fell over" rather than anything about the glass.
+
+**Of the four learned solutions, this is the one the real gripper changed
+least, and the reason is instructive.** With the invented blade it toppled
+about 46 glasses a run and ended 38 tables wrong, against 40 and 36 now, so the
+score barely moved. The other three were each hurt badly by the new hand, and
+this one was not, because its failure never depended on the hand's size: a jaw
+that comes down on top of a glass breaks it whether the jaw is a thin blade or
+a 2F-85. The correction was refitted on the new hand's demonstrations and it
+did learn the new height — its chunks now reach exactly 75 mm, where the
+earlier fit reached exactly 50 — so what the fitting can learn, it learned
+again, and what it cannot learn stayed exactly where it was.
 
 **What it did get right is not nothing**, and it is worth separating out,
 because the shared machinery and the model are doing different jobs here. No

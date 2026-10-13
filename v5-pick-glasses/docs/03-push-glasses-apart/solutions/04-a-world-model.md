@@ -91,19 +91,30 @@ solution adds learned evidence to is stated there.
 
 ## A film of one table
 
-Before the explanation, here is this solution clearing one table, recorded from
-the simulator and running at three times real speed.
+Before the explanation, here is this solution working on one table,
+recorded from the simulator and running at three times real speed.
 
-[Watch the film (19 s)](../../../videos/03-push-glasses-apart/04-a-world-model.mp4)
+[Watch the film (25 s)](../../../videos/03-push-glasses-apart/04-a-world-model.mp4)
 
-The table is number 10003 of the held-out fifty, and it was chosen to be
-**typical rather than flattering**. It holds five glasses, which is the average,
-and on it this solution reaches its commonest outcome with about its usual
-number of pushes. In the film all five are racked in two pushes, which is this
-solution's economy in one table.
+The table is number 10025 of the held-out fifty, and it was chosen to be
+**typical rather than flattering**. The rule for choosing it was written down
+before it was applied: the table had to be one where every one of the six
+solutions reaches its own commonest outcome and racks at least one glass.
+Exactly one table of the fifty satisfies both, which is this one. It holds six
+glasses where the average is five, so it is one glass above average, and that
+is the one way in which it is not typical.
 
-All six solutions are filmed on this same table, so the six films can be watched
-against each other. How each one does over all fifty tables is in
+Five of its six glasses have no room at the start, which is the usual state of
+these tables: over the fifty, 203 of the 251 glasses begin without room.
+
+In the film all six glasses are racked in three pushes, and nothing is
+toppled. This is the one solution of the six that finishes most of its tables,
+and this table is one of them. It is worth knowing while watching that the same
+planner topples a glass on nineteen of the fifty tables; this film shows what
+it does when its guesses about toppling are right.
+
+All six solutions are filmed on this same table, so the six films can be
+watched against each other. How each one does over all fifty tables is in
 [the comparison](../../../03-push-glasses-apart/results/README.md).
 
 ## The code at the heart of it

@@ -148,25 +148,26 @@ ACTION_COLUMNS = ("x", "y", "z", "cos heading", "sin heading")
 COLLECTED = {
     "tables": 5_200,
     "first_table": 1_000,
-    "pushes": 22_846,
-    "kept": 12_656,
-    "glasses_refused": 5_389,
-    "minutes": 14,
+    "pushes": 17_816,
+    "kept": 6_659,
+    "glasses_refused": 14_098,
+    "minutes": 19,
     "dropped": [
-        ("a 5 mm test push, not a push at the task", 9_783),
-        ("the table gained no room", 263),
-        ("a glass toppled", 125),
-        ("a glass left the glass zone", 18),
-        ("blocked on the way down", 1),
+        ("a 5 mm test push, not a push at the task", 10_645),
+        ("a glass toppled", 278),
+        ("the table gained no room", 180),
+        ("a glass left the glass zone", 21),
+        ("blocked on the way down", 18),
+        ("jammed", 15),
     ],
     # Tables above the fitting band and below the dividing line, kept back to
     # say how far the student is from the teacher on pictures it never saw.
     "check_tables": 300,
-    "check_kept": 728,
+    "check_kept": 399,
     # What push_segment leaves, over the whole set, in waypoints.
     "waypoints_least": 25,
-    "waypoints_median": 112,
-    "waypoints_most": 246,
+    "waypoints_median": 91,
+    "waypoints_most": 220,
 }
 # Everything but the test pushes is a real push at the task.
 REAL_PUSHES = COLLECTED["pushes"] - COLLECTED["dropped"][0][1]
@@ -180,20 +181,22 @@ DROPPED_REAL = REAL_PUSHES - COLLECTED["kept"]
 # on and on tables it never saw.
 # --------------------------------------------------------------------------- #
 FITS = [
-    {"seed": 0, "minutes": 53.5, "loss": 0.2485, "fitted_mm": 53.3, "unseen_mm": 55.1,
-     "unseen_heading_deg": 26.3},
-    {"seed": 1, "minutes": 53.7, "loss": 0.2895, "fitted_mm": 64.4, "unseen_mm": 63.8,
-     "unseen_heading_deg": 38.0},
-    {"seed": 2, "minutes": 53.2, "loss": 0.1684, "fitted_mm": 36.7, "unseen_mm": 54.8,
-     "unseen_heading_deg": 21.3},
+    {"seed": 0, "minutes": 78.4, "loss": 0.0980, "fitted_mm": 20.7, "unseen_mm": 50.7,
+     "unseen_heading_deg": 24.2},
+    {"seed": 1, "minutes": 56.0, "loss": 0.0900, "fitted_mm": 20.6, "unseen_mm": 48.1,
+     "unseen_heading_deg": 26.5},
+    {"seed": 2, "minutes": 54.3, "loss": 0.0952, "fitted_mm": 20.4, "unseen_mm": 52.4,
+     "unseen_heading_deg": 22.0},
 ]
 FIT_STEPS, FIT_BATCH = 10_000, 16
 
 # The fit this folder's README records and threw away, because it is the
-# clearest thing in the whole solution: a quarter of the demonstrations, four
-# times as many passes over them, a training loss six times lower, and useless.
-# The weights were not kept, so these four numbers are the README's and are
-# quoted rather than re-measured.
+# clearest thing in the whole solution: fewer demonstrations, four times as many
+# passes over them, a much lower training loss, and useless. The weights were
+# not kept, so these four numbers are the README's and are quoted rather than
+# re-measured. They were also taken before the examiner was given a real
+# Robotiq 2F-85, so the comparison below is of two shapes rather than of
+# millimetres that can be put side by side; the caption says so.
 EARLY_FIT = {"demonstrations": 3_144, "tables": 1_300, "passes": 51, "loss": 0.04,
              "fitted_mm": 11.0, "unseen_mm": 62.0}
 
@@ -218,17 +221,17 @@ EARLY_FIT = {"demonstrations": 3_144, "tables": 1_300, "passes": 51, "loss": 0.0
 HELD_BACK = {
     "chunks": 200,
     "tables": (8_000, 8_299),
-    "teacher_net_mm": 87.2,
-    "teacher_path_mm": 87.2,
-    "teacher_net_least_mm": 22.9,
-    "teacher_net_most_mm": 155.3,
+    "teacher_net_mm": 78.7,
+    "teacher_path_mm": 78.7,
+    "teacher_net_least_mm": 19.8,
+    "teacher_net_most_mm": 154.7,
     "seeds": [
-        {"seed": 0, "first_mm": 66.2, "first_90th_mm": 130.0, "net_mm": 60.8, "path_mm": 160.4,
-         "pulled": 112, "worst_z_mm": 0.82},
-        {"seed": 1, "first_mm": 78.5, "first_90th_mm": 136.7, "net_mm": 39.8, "path_mm": 152.7,
-         "pulled": 59, "worst_z_mm": 0.43},
-        {"seed": 2, "first_mm": 67.7, "first_90th_mm": 149.6, "net_mm": 84.1, "path_mm": 186.3,
-         "pulled": 137, "worst_z_mm": 1.67},
+        {"seed": 0, "first_mm": 62.9, "first_90th_mm": 155.8, "net_mm": 73.7, "path_mm": 120.0,
+         "pulled": 115, "worst_z_mm": 1.21},
+        {"seed": 1, "first_mm": 54.0, "first_90th_mm": 155.6, "net_mm": 75.8, "path_mm": 108.1,
+         "pulled": 97, "worst_z_mm": 1.42},
+        {"seed": 2, "first_mm": 62.2, "first_90th_mm": 159.3, "net_mm": 74.9, "path_mm": 147.1,
+         "pulled": 168, "worst_z_mm": 2.25},
     ],
     # Every waypoint that had to be pulled in was pulled in on the height
     # column alone. Not one chunk, of the 600 asked for, put x or y outside
@@ -245,11 +248,15 @@ HELD_BACK = {
 FIRST_CHUNK = {
     "tables": 50,
     "seeds": [
-        {"seed": 0, "gap_mm": 6.3, "worst_gap_mm": -32.8, "inside_a_glass": 13, "blocked": 34},
-        {"seed": 1, "gap_mm": 11.0, "worst_gap_mm": -32.7, "inside_a_glass": 14, "blocked": 36},
-        {"seed": 2, "gap_mm": 14.3, "worst_gap_mm": -30.0, "inside_a_glass": 8, "blocked": 22},
+        {"seed": 0, "gap_mm": 11.7, "worst_gap_mm": -20.7, "inside_a_glass": 11, "blocked": 17},
+        {"seed": 1, "gap_mm": 8.2, "worst_gap_mm": -28.0, "inside_a_glass": 18, "blocked": 30},
+        {"seed": 2, "gap_mm": 10.6, "worst_gap_mm": -27.7, "inside_a_glass": 13, "blocked": 18},
     ],
-    "teacher": {"gap_mm": 10.2, "worst_gap_mm": 5.4, "inside_a_glass": 0, "blocked": 0},
+    # The teacher found a push on 43 of the fifty and refused the other seven
+    # outright, and on every one of the 43 it came down exactly 10.0 mm clear,
+    # because that clearance is written into the approach rather than chosen.
+    "teacher": {"tables": 43, "gap_mm": 10.0, "worst_gap_mm": 10.0, "inside_a_glass": 0,
+                "blocked": 0},
 }
 
 # --------------------------------------------------------------------------- #
@@ -323,8 +330,8 @@ EXAMPLE = {
 # many chunks were asked for, and how many had at least one waypoint outside
 # what the jaw can reach and were pulled back inside. Both are in this folder's
 # README; they are not in results.json, because they are not a score.
-CHUNKS_ASKED = 1_900
-PULLED_CHUNKS = 814
+CHUNKS_ASKED = 1_349
+PULLED_CHUNKS = 1_027
 
 # What the teacher scored on the same fifty tables, read from
 # 03-push-glasses-apart/02-geometry-ranked/results.json, which is in git.
@@ -838,7 +845,8 @@ def picture_blocked(results: dict) -> dict:
            f"table's own straight-down picture, as captured, and blocked is the examiner's own "
            f"verdict on it. Across all fifty held-out tables the first chunk is blocked on "
            f"{', '.join(str(row['blocked']) for row in FIRST_CHUNK['seeds'])} of "
-           f"{FIRST_CHUNK['tables']} for the three seeds, against none of fifty for the teacher, "
+           f"{FIRST_CHUNK['tables']} for the three seeds, against none of the "
+           f"{FIRST_CHUNK['teacher']['tables']} the teacher found a push on, "
            f"and the fingertips come down inside a glass on "
            f"{', '.join(str(row['inside_a_glass']) for row in FIRST_CHUNK['seeds'])} of them. The "
            f"other blocked descents are the long body of the jaw over a neighbour rather than "
@@ -989,16 +997,17 @@ def picture_loss_is_not_the_score(results: dict) -> None:
     loss.text(1, shipped_loss[1] + 0.012, f"{shipped_loss[0]:.2f} to {shipped_loss[1]:.2f}",
               fontsize=NOTE_SIZE, color=GOOD, ha="center", va="bottom")
     loss.set_xticks([0, 1])
-    loss.set_xticklabels(["the first fit", "the fit it shipped"], fontsize=NOTE_SIZE, color=INK)
+    loss.set_xticklabels(["an early fit", "the fit it shipped"], fontsize=NOTE_SIZE, color=INK)
     loss.set_xlim(-0.6, 1.6)
     loss.set_ylim(0, shipped_loss[1] * 1.3)
     loss.set_ylabel("training loss at the end of the fit", fontsize=NOTE_SIZE, color=INK)
     under(figure, 0, 3, y=0.26, text=
-          f"the first fit drove the loss to {EARLY_FIT['loss']:.2f}, which is "
-          f"{shipped_loss[0] / EARLY_FIT['loss']:.0f} to "
-          f"{shipped_loss[1] / EARLY_FIT['loss']:.0f} times lower than the fit this solution "
+          f"an early fit drove the loss to {EARLY_FIT['loss']:.2f}, which is "
+          f"{shipped_loss[0] / EARLY_FIT['loss']:.1f} to "
+          f"{shipped_loss[1] / EARLY_FIT['loss']:.1f} times lower than the fit this solution "
           f"shipped. On the quantity the fitting was actually minimising, the useless fit is the "
-          f"clear winner.")
+          f"winner. It was measured before the real gripper, so read the shape, not the exact "
+          f"millimetres.")
 
     chart(distance, "What the fitted chunk was worth")
     places = np.arange(2)
@@ -1030,10 +1039,10 @@ def picture_loss_is_not_the_score(results: dict) -> None:
     distance.set_ylim(0, max(shipped_unseen[1], EARLY_FIT["unseen_mm"]) * 1.35)
     distance.legend(loc="upper left", fontsize=NOTE_SIZE - 0.8, frameon=False, labelcolor=INK)
     under(figure, 1, 3, y=0.26, text=
-          f"the first fit was memorising: {EARLY_FIT['fitted_mm']:.0f} mm from the teacher on "
+          f"the early fit was memorising: {EARLY_FIT['fitted_mm']:.0f} mm from the teacher on "
           f"tables it had seen and {EARLY_FIT['unseen_mm']:.0f} mm on tables it had not. Four "
-          f"times the demonstrations removed the memorising and left the error on unseen tables "
-          f"where it was. That is the number a push has to live with.")
+          f"times the tables removed the memorising and brought the unseen error down by "
+          f"about a fifth. That remaining error is what a push has to live with.")
 
     chart(outcome, "And what happened on the table")
     losses = [fit["loss"] for fit in FITS]
@@ -1051,7 +1060,8 @@ def picture_loss_is_not_the_score(results: dict) -> None:
     outcome.axhline(TEACHER["glasses_end"]["racked"], color=GOOD, lw=1.0, ls=(0, (4, 3)),
                     zorder=2)
     outcome.text(max(losses), TEACHER["glasses_end"]["racked"] - 4,
-                 f"the teacher: {TEACHER['glasses_end']['racked']} racked, none toppled",
+                 f"the teacher: {TEACHER['glasses_end']['racked']} racked, "
+                 f"{TEACHER['glasses_end']['toppled']} toppled",
                  fontsize=NOTE_SIZE, color=GOOD, ha="right", va="top")
     outcome.set_xlim(min(losses) - 0.04, max(losses) + 0.04)
     outcome.set_ylim(min(racked) - 14, TEACHER["glasses_end"]["racked"] + 16)

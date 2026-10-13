@@ -76,10 +76,10 @@ SOLUTION = PROJECT / "03-push-glasses-apart" / "05-smolvla-as-it-downloads"
 # They are six asks on one picture rather than a run, which is why they are
 # drawn as marks beside the run's median and not instead of it. The point they
 # make is that the state the examiner forces on the model raises its answers by
-# about 60 mm, and that even the most favourable state this reading can
+# about 70 mm, and that even the most favourable state this reading can
 # express leaves the jaw far above the height a push lands at.
-LOWEST_WITH_PARKED_STATE = 182.0
-LOWEST_WITH_ZERO_STATE = 122.0
+LOWEST_WITH_PARKED_STATE = 205.0
+LOWEST_WITH_ZERO_STATE = 137.9
 PROBE_ASKS = 6
 
 # SmolVLA's six action slots, and what joining.py reads each one as. The joint

@@ -120,10 +120,10 @@ rather than only at the end: the fitting made the score worse.** The training
 did what training is supposed to do, and the model learned the height at which
 a push happens — its chunks come down to the height the gripper pushes at,
 where the borrowed model's never came near the glasses. What it did not learn
-is where to put the jaw down. So **259 of its 400 pushes a run are blocked on
-the way down**, the jaw descending onto a glass instead of behind one, and from
-there follow **46 toppled glasses a run** and 38 of the 50 tables marked
-*wrong*, against solution 5's 6 toppled and 5 wrong. Nothing in this project
+is where to put the jaw down. So **223 of the 369 pushes in its middle run are
+blocked on the way down**, the jaw descending onto a glass instead of behind one, and from
+there follow **40 toppled glasses a run** and 36 of the 50 tables marked
+*wrong*, against solution 5's 12 toppled and 9 wrong. Nothing in this project
 stands a glass back up, so on this scorecard a policy that never reaches a
 glass scores better than one that reaches the wrong part of it. The last
 section of this document reads that gap in full, and nothing between here and
@@ -142,19 +142,36 @@ second way here rather than the main line.
 
 ## A film of one table
 
-Before the explanation, here is this solution clearing one table, recorded from
-the simulator and running at three times real speed.
+Before the explanation, here is this solution working on one table,
+recorded from the simulator and running at three times real speed.
 
-[Watch the film (10 s)](../../../videos/03-push-glasses-apart/06-smolvla-fine-tuned.mp4)
+[Watch the film (7 s)](../../../videos/03-push-glasses-apart/06-smolvla-fine-tuned.mp4)
 
-The table is number 10003 of the held-out fifty, and it was chosen to be
-**typical rather than flattering**. It holds five glasses, which is the average,
-and on it this solution reaches its commonest outcome with about its usual
-number of pushes. In the film the jaw now comes down to the right height but
-onto the glasses, and the table ends with one glass racked and one on its side.
+The table is number 10025 of the held-out fifty, and it was chosen to be
+**typical rather than flattering**. The rule for choosing it was written down
+before it was applied: the table had to be one where every one of the six
+solutions reaches its own commonest outcome and racks at least one glass.
+Exactly one table of the fifty satisfies both, which is this one. It holds six
+glasses where the average is five, so it is one glass above average, and that
+is the one way in which it is not typical.
 
-All six solutions are filmed on this same table, so the six films can be watched
-against each other. How each one does over all fifty tables is in
+Five of its six glasses have no room at the start, which is the usual state of
+these tables: over the fifty, 203 of the 251 glasses begin without room.
+
+In the film the jaw comes down to the right height, which is what the
+fine-tuning bought, and it comes down onto a glass, which is what the
+fine-tuning did not fix. Four pushes are made, one glass is racked, one is
+knocked over, and the table is therefore marked *wrong*. That is this
+solution's commonest outcome: 36 of its fifty tables end the same way.
+
+This solution draws its answer rather than computing it, so the film is one
+draw rather than an average. The scored runs on this table all ended *wrong*
+and averaged six pushes and two glasses racked, against the film's four pushes
+and one glass, so the film is a shorter draw than the middle one;
+`results-tables.json` holds every row.
+
+All six solutions are filmed on this same table, so the six films can be
+watched against each other. How each one does over all fifty tables is in
 [the comparison](../../../03-push-glasses-apart/results/README.md).
 
 ## The code that does the work
@@ -1328,11 +1345,12 @@ that too. **If this document is read for one reason, it should be that one.**
 did not anticipate.** The folder's README has the numbers; what they say is
 that training worked and the score got worse. The fine-tuned model's chunks
 are much closer to the teacher's than the borrowed model's, and it brings the
-jaw down to the table where the borrowed model never did — but two thirds of
-its pushes are blocked coming down, because it never learned where to put the
-jaw down, and 46 glasses a run go over. Solution 5 stays out of the *wrong*
-column by never reaching a glass at all: it hovers, refuses nearly everything,
-and is marked correct but incomplete. So the gap between the two is not a
+jaw down to the table where the borrowed model never did — but about three
+fifths of its pushes are blocked coming down, because it never learned where to
+put the jaw down, and 40 glasses a run go over. Solution 5 mostly stays out of
+the *wrong* column by never reaching a glass at all: it hovers, refuses nearly
+everything, and is usually marked correct but incomplete, ending 9 of fifty
+tables wrong against this solution's 36. So the gap between the two is not a
 measurement of training buying nothing. It is a measurement of training buying
 enough competence to act and not enough to act safely, on a scorecard where a
 toppled glass cannot be undone. **A policy that does nothing scores better

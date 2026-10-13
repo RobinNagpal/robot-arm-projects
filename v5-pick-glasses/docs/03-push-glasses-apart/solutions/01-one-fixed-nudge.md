@@ -86,28 +86,31 @@ results file in the repository.
 
 ## A film of one table
 
-Before the explanation, here is this solution working on one table, recorded
-from the simulator and running at three times real speed.
+Before the explanation, here is this solution working on one table,
+recorded from the simulator and running at three times real speed.
 
-[Watch the film (17 s)](../../../videos/03-push-glasses-apart/01-one-fixed-nudge.mp4)
+[Watch the film (8 s)](../../../videos/03-push-glasses-apart/01-one-fixed-nudge.mp4)
 
-The table is number 10003 of the held-out fifty, and it was chosen to be
-**typical rather than flattering**. It holds five glasses, which is the
-average, and on it this solution reaches its commonest outcome: the table ends
-*incomplete*, which is now what happens on 35 of the fifty.
+The table is number 10025 of the held-out fifty, and it was chosen to be
+**typical rather than flattering**. The rule for choosing it was written down
+before it was applied: the table had to be one where every one of the six
+solutions reaches its own commonest outcome and racks at least one glass.
+Exactly one table of the fifty satisfies both, which is this one. It holds six
+glasses where the average is five, so it is one glass above average, and that
+is the one way in which it is not typical.
 
-In the film three of the five glasses are racked in four pushes, and the other
-two are refused because the test push found they tip rather than slide. Nothing
-is knocked over. That is the shape of nearly every table with this gripper —
-some glasses moved, some turned down, none broken.
+Five of its six glasses have no room at the start, which is the usual state of
+these tables: over the fifty, 203 of the 251 glasses begin without room.
 
-The film was recorded again when the examiner was given a real Robotiq 2F-85
-in place of the invented blade, so what the jaw does here is what it does in
-the measurements on this page. **The films for solutions 3 to 6 are still the
-old blade's** and are being redone; until they are, only the first two films
-can be watched against each other.
+In the film the arm racks the one glass that already had room, makes two
+pushes, and then refuses the other five, each with its reason: two tip before
+they slide, two tipped when the push was tried, and one has nowhere clear to be
+pushed to. Nothing is knocked over. That is the shape of nearly every table
+with this gripper — one or two glasses taken, the rest turned down, none
+broken.
 
-How each solution does over all fifty tables is in
+All six solutions are filmed on this same table, so the six films can be
+watched against each other. How each one does over all fifty tables is in
 [the comparison](../../../03-push-glasses-apart/results/README.md).
 
 ## The code at the heart of it

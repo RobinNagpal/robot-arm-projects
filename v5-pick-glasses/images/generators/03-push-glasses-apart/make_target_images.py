@@ -142,7 +142,7 @@ def denied(rim: float) -> float:
 
 
 def need(rims, margin: float = MARGIN):
-    """The least centre-to-centre distance for every pair: 70 mm plus half the wider rim."""
+    """The least centre-to-centre distance for every pair: GRIP_ROOM plus half the wider rim."""
     count = len(rims)
     wanted = np.zeros((count, count))
     for i in range(count):

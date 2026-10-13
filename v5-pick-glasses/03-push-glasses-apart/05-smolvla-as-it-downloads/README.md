@@ -140,14 +140,17 @@ The one convention the checkpoint does not settle is which way each slot runs.
 `results.json` untouched — so that a reader can see how much of the result
 hangs on a bit nothing could read off the weights.
 
-**Very little hangs on it.** Turned over, the trajectories come back *higher*
-rather than lower, so the jaw's median lowest point rises by about 40 mm and
-gets further from the glasses rather than nearer. The score hardly moves: the
-same number of glasses racked, no table finished either way, and fewer glasses
-toppled, which follows from the jaw spending even more of its time above
-everything. So the convention nothing could read off the weights is not what
-makes this solution fail. The state being pinned at one end of its range is,
-and it is pinned at one end whichever way the slot runs.
+**Very little hangs on it, and what does hang on it goes the wrong way.**
+Turned over, the trajectories come back *higher* rather than lower: the jaw's
+median lowest point rises from 217 mm to 254 mm, so it gets further from the
+glasses rather than nearer. Three fewer glasses are racked, 45 against 48, and
+no table is finished either way. The one figure that moves a long way is the
+toppling, which falls from 12 glasses to 1, and that is not an improvement in
+the pushing — it follows from the jaw spending even more of its time above
+everything, so it touches almost nothing and therefore breaks almost nothing.
+So the convention nothing could read off the weights is not what makes this
+solution fail. The state being pinned at one end of its range is, and it is
+pinned at one end whichever way the slot runs.
 
 ## The join, which is the whole of the work here
 
@@ -266,11 +269,13 @@ absolute targets and stays near the state it is given, so it answers high.
 
 That is part of the explanation of the result above but not all of it, and the
 difference is worth measuring. Asked the same picture six times with the
-parked jaw's state, the chunks' lowest point has a median of 182 mm; asked
-with an all-zero state, 122 mm. So the state does raise the answers, by about
-60 mm. But 122 mm is still far above the 75 mm the jaw rides at and above most
-of a glass, so **even the most favourable state this reading can express does
-not get the model to produce low, table-level motion on these pictures.**
+parked jaw's state, the chunks' lowest point has a median of 205 mm; asked
+with an all-zero state, which is the middle of every slot and so the most
+favourable reading this join can express, 138 mm. So the state does raise the
+answers, by about 70 mm. But 138 mm is still far above the 75 mm the jaw rides
+at and above most of a glass, so **even the most favourable state this reading
+can express does not get the model to produce low, table-level motion on these
+pictures.**
 Turning the height slot over does not help either, for the same reason: the
 state sits at one end of the slot whichever way it runs.
 

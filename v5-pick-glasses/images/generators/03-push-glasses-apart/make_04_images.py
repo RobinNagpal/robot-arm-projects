@@ -114,22 +114,25 @@ TRAVEL_COST = 0.1
 # would, median. It is train.py's ``landing_mm_median``, printed at the end of
 # a training run; it is in that README and nowhere else, and it was not
 # re-derived here, because the training data is not kept in the repository.
-MEASURED_ONE_PUSH_ERROR = 4.5
+MEASURED_ONE_PUSH_ERROR = 6.5
 
 # The same question asked of the geometry, which predicts a slide instead of
-# learning one: how far from its aim a pushed glass really stopped. Measured
-# here, by running 03-push-glasses-apart/01-one-fixed-nudge's planner over examiner tables 10100 to
-# 10349 and comparing every push's ``aim`` with the simulator's record of where
-# the glass landed. 564 pushes that ran their full length, median 1.07 mm,
-# 3.00 mm at the ninetieth percentile, 34.40 mm at worst. The throwaway script
-# is measure_programmed.py; re-run it from 03-push-glasses-apart/01-one-fixed-nudge.
-MEASURED_GEOMETRY_ERROR = 1.07
+# learning one: how far from its aim a pushed glass really stopped. This is
+# solution 1's own ``aim_mm_median`` over the fifty held-out tables, read from
+# the results file git keeps, so it is the same quantity measured on the same
+# tables rather than a separate throwaway run.
+PROGRAMMED = json.loads(
+    (PROJECT / "03-push-glasses-apart/01-one-fixed-nudge" / "results.json").read_text()
+)
+MEASURED_GEOMETRY_ERROR = PROGRAMMED["pushes"]["aim_mm_median"]
+PROGRAMMED_PUSHES = PROGRAMMED["pushes"]["total"]
+PROGRAMMED_TABLES = PROGRAMMED["scenes"]
 
 # What that README records about the training set. These are read here rather
 # than recomputed, because collecting them again takes a physics engine this
 # environment does not have.
-ROUND_ONE = (4_000, 24_759)      # tables, pushes
-ROUND_TWO = (5_000, 13_253)
+ROUND_ONE = (4_000, 7_686)       # tables, pushes
+ROUND_TWO = (5_000, 7_693)
 PUSHES_PER_TABLE = 12            # 03-push-glasses-apart/04-a-world-model/collect.py
 
 # Measured against 03-push-glasses-apart/bench/bench.py, which is the crowded-table generator
@@ -138,14 +141,17 @@ PUSHES_PER_TABLE = 12            # 03-push-glasses-apart/04-a-world-model/collec
 # throwaway script run from 03-push-glasses-apart/04-a-world-model (which has MuJoCo) over the first
 # 300 seeds whose kind is the tapered glass — that is, seed % 4 == 1 — and the
 # numbers are written here rather than recomputed. Re-measure by building a
-# Bench and timing Bench.push on those seeds.
+# Bench and timing Bench.push on those seeds. The push that is timed has to be
+# one solution 1's enumerator passed as legal: with the real gripper most other
+# directions out of a crowded glass are stopped on the way down after a few
+# hundred steps, and timing those would time a refusal rather than a push.
 BENCH_TABLES = 300
 BENCH_GLASSES = 1_500
-BENCH_WITHOUT_ROOM = 1_083       # 72.2 per cent, 3.61 a table, between 1 and 6
-BENCH_BUILD_MS = 5.0             # building one table's model
-BENCH_PUSH_MS = 78.0             # one push, median, one core
-BENCH_PUSH_STEPS = 4_331         # physics steps in that push, median
-BENCH_PUSH_SECONDS = 8.66        # what those steps are, as simulated time
+BENCH_WITHOUT_ROOM = 1_132       # 75.5 per cent, 3.77 a table, between 1 and 6
+BENCH_BUILD_MS = 5.2             # building one table's model
+BENCH_PUSH_MS = 60.6             # one push, median, one core
+BENCH_PUSH_STEPS = 3_191         # physics steps in that push, median
+BENCH_PUSH_SECONDS = 6.38        # what those steps are, as simulated time
 
 RESULTS = PROJECT / "03-push-glasses-apart/04-a-world-model" / "results.json"
 
@@ -719,8 +725,8 @@ def picture_planning(crowded: list[dict], pair: tuple[int, int], plan: dict) -> 
            f"The {MEASURED_ONE_PUSH_ERROR:.1f} mm ring is the median one-push error that project's "
            "README records for its own model on unseen tables,\nand the green disc is what the "
            "geometry, which predicts a slide instead of learning one, does without a model at all: "
-           f"{MEASURED_GEOMETRY_ERROR:.2f} mm,\nre-measured here over 564 pushes on 250 tables of "
-           "this project's own examiner.")
+           f"{MEASURED_GEOMETRY_ERROR:.2f} mm, over solution 1's own {PROGRAMMED_PUSHES} pushes\n"
+           f"on the same {PROGRAMMED_TABLES} held-out tables.")
     figure.subplots_adjust(bottom=0.20, top=0.92)
     save(figure, "04-how-far-out-each-prediction-is.png")
     print(f"  landing aimed ({landing[0]:.1f}, {landing[1]:.1f}), reached ({real[0]:.1f}, {real[1]:.1f}), "

@@ -108,20 +108,36 @@ costs this solution carries, none of which can be engineered away.
 
 ## A film of one table
 
-Before the explanation, here is this solution clearing one table, recorded from
-the simulator and running at three times real speed.
+Before the explanation, here is this solution working on one table,
+recorded from the simulator and running at three times real speed.
 
-[Watch the film (16 s)](../../../videos/03-push-glasses-apart/03-imitation-from-demonstrations.mp4)
+[Watch the film (13 s)](../../../videos/03-push-glasses-apart/03-imitation-from-demonstrations.mp4)
 
-The table is number 10003 of the held-out fifty, and it was chosen to be
-**typical rather than flattering**. It holds five glasses, which is the average,
-and on it this solution reaches its commonest outcome with about its usual
-number of pushes. In the film one glass of the five is racked and the other four
-are refused, after sixteen pushes of which most are stopped while the jaw is
-still coming down.
+The table is number 10025 of the held-out fifty, and it was chosen to be
+**typical rather than flattering**. The rule for choosing it was written down
+before it was applied: the table had to be one where every one of the six
+solutions reaches its own commonest outcome and racks at least one glass.
+Exactly one table of the fifty satisfies both, which is this one. It holds six
+glasses where the average is five, so it is one glass above average, and that
+is the one way in which it is not typical.
 
-All six solutions are filmed on this same table, so the six films can be watched
-against each other. How each one does over all fifty tables is in
+Five of its six glasses have no room at the start, which is the usual state of
+these tables: over the fifty, 203 of the 251 glasses begin without room.
+
+In the film the policy spends fourteen pushes and racks one glass, and the
+glass it racks is the one that already had room. Most of those pushes end while
+the jaw is still coming down, because the chunk puts the jaw over a neighbour
+rather than behind the target, so the arm touches something, goes back up and
+asks for another chunk from the same unchanged picture.
+
+This solution draws its answer rather than computing it, and three seeds of it
+were fitted, so the film is one draw from one seed rather than an average. It is
+seed 0. On this table the three seeds racked 1, 1 and 3 glasses in 14, 14 and 11
+pushes, so the film shows the commoner of the two behaviours;
+`results-tables.json` holds all three rows.
+
+All six solutions are filmed on this same table, so the six films can be
+watched against each other. How each one does over all fifty tables is in
 [the comparison](../../../03-push-glasses-apart/results/README.md).
 
 ## The code at the heart of it
@@ -1094,10 +1110,10 @@ And nothing stops a network emitting a coordinate the jaw cannot reach, so
 every chunk is pulled inside the jaw's limits before it is followed, and how
 often that happens has to be counted and reported rather than hidden. When it
 was counted, the character of it was milder than this warning suggests: every
-waypoint that had to be pulled in was pulled in **height** alone, by less than
-two millimetres, and not one chunk ever asked for a place off the table. So the
-limit that bites is the one the jaw has below the table top, not the reach
-across it.
+waypoint that had to be pulled in was pulled in **height** alone, by at most
+2.3 millimetres, and not one of the six hundred chunks measured ever asked for
+a place off the table. So the limit that bites is the one the jaw has below the
+table top, not the reach across it.
 
 **It is open-loop inside a chunk, and it cannot refuse.** During a chunk
 nothing is read, and the monitor that would watch the force is not built, so
