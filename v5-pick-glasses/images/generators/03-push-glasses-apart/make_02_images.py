@@ -42,9 +42,13 @@ as a failed check rather than as a wrong picture.
 
 from __future__ import annotations
 
+import importlib.util
+import json
 import math
 import random
 import sys
+import types
+from collections import Counter
 from pathlib import Path
 
 import numpy as np
@@ -60,6 +64,7 @@ from diagram_style import (
     LOWEST_GRIP,
     MUTED,
     NOTE_SIZE,
+    PUSH_HEIGHT,
     TABLE_FRICTION,
     TITLE_SIZE,
     WARN,
@@ -76,9 +81,33 @@ from diagram_style import (
 from matplotlib.colors import to_rgba
 from matplotlib.patches import Circle, Rectangle
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src" / "work_cell"))
+ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(ROOT / "src" / "work_cell"))
 
 from work_cell.glasses.shapes import draw  # noqa: E402
+
+
+def _bench_and_plan():
+    """The examiner's tables and solution 1's tipping rule.
+
+    Both are wanted for one measurement only — what the rule says about each
+    glass on the held-out tables — and that measurement used to be a number
+    typed into this file from a script that no longer exists. Importing them
+    is the cheaper of the two mistakes. Written the way
+    ``make_target_images.py`` does it, with a placeholder for MuJoCo, because
+    neither ``scene`` nor the rule touches the physics.
+    """
+    sys.path.insert(0, str(ROOT / "03-push-glasses-apart/bench"))
+    sys.path.insert(0, str(ROOT / "03-push-glasses-apart/01-one-fixed-nudge"))
+    if importlib.util.find_spec("mujoco") is None:
+        sys.modules["mujoco"] = types.ModuleType("mujoco")
+    import bench
+    import plan
+
+    return bench, plan
+
+
+BENCH, PLAN = _bench_and_plan()
 
 # ---------------------------------------------------------------------------
 # The jaw and the friction. Numbers belonging to the gripper and to the table,
@@ -129,9 +158,14 @@ SWEEP = {
     "median_neighbour_mm": 94,
     # plan.slides() over the crowded glasses: it slides at both frictions, it
     # tips at both, or it depends and a probe settles it.
-    "slides_yes": 36,
-    "slides_no": 0,
-    "slides_try": 157,
+    # The three slides_* counts below are filled in once the bench can be
+    # imported, further down. They used to be typed in from a script that no
+    # longer exists, and by the time the examiner had a real gripper they were
+    # wrong in the direction that mattered: they said 36 glasses were certainly
+    # safe to push when the answer is none.
+    "slides_yes": None,
+    "slides_no": None,
+    "slides_try": None,
     # Safe pushes per crowded glass: every heading and travel that passes the
     # corridor, zone, reach and tipping tests.
     "safe_median": 193,
@@ -164,6 +198,14 @@ SWEEP = {
     "table_label_max_spread": 2,
 }
 
+# Measured rather than remembered: what plan.py's tipping rule says about each
+# of the glasses on the held-out tables, at the jaw's real top edge.
+_SAYS = Counter(PLAN.slides(glass) for seed in range(BENCH.TEST_SEEDS, BENCH.TEST_SEEDS + SWEEP["tables"])
+                for glass in BENCH.Bench(seed).look())
+SWEEP["slides_yes"] = _SAYS["yes"]
+SWEEP["slides_try"] = _SAYS["try"]
+SWEEP["slides_no"] = _SAYS["no"]
+
 # The run carried forward in geometry, thirty tables, four ways of choosing
 # which candidate to push, from measure_06.py section C. A push is taken to
 # land where it aimed, which results.json says is true to 1.0 mm at the median.
@@ -183,13 +225,34 @@ ORACLE = {"tables": 12, "glasses": 60,
           "plan_racked": 44, "plan_refused": 16, "plan_pushes": 29,
           "best_racked": 46, "best_refused": 14, "best_pushes": 29}
 
-# What the two reference implementations scored on the fifty held-out tables,
-# read from their own results.json files.
+# What the two reference implementations scored on the fifty held-out tables.
+#
+# These used to be typed in, under a comment claiming they were read from the
+# results files. They were not, and when the examiner was given a real gripper
+# they went stale without anything noticing: the figures said 199 glasses
+# racked where the run said 107. They are read now, so a picture cannot
+# disagree with the run it describes.
+def _scored(folder: str) -> dict:
+    """The headline figures from one solution's own results.json."""
+    with (ROOT / "03-push-glasses-apart" / folder / "results.json").open() as handle:
+        result = json.load(handle)
+    pushes, end = result["pushes"], result["glasses_end"]
+    return {
+        "racked": end["racked"],
+        "refused": end["refused"],
+        "toppled": end["toppled"],
+        "pushes": pushes["total"],
+        "repeats": pushes["repeats"],
+        "aim_median_mm": pushes["aim_mm_median"],
+        "aim_worst_mm": pushes["aim_mm_worst"],
+        "done": result["outcome"]["done"],
+        "because": result["refused_because"],
+    }
+
+
 SCORED = {
-    "programmed": {"racked": 199, "refused": 52, "toppled": 0, "pushes": 212, "repeats": 90,
-                   "aim_median_mm": 1.0, "aim_worst_mm": 3.9, "done": 35},
-    "learned": {"racked": 208, "refused": 43, "toppled": 0, "pushes": 113, "repeats": 15,
-                "aim_median_mm": 1.7, "aim_worst_mm": 24.8, "done": 34},
+    "programmed": _scored("01-one-fixed-nudge"),
+    "learned": _scored("04-a-world-model"),
 }
 
 # ---------------------------------------------------------------------------
@@ -444,39 +507,45 @@ def picture_the_refusals() -> None:
     limit.text(21.0, JAW_TOP + 3.0,
                f"{JAW_TOP:.0f} mm, the top edge of the jaw: where a glass is really pushed",
                fontsize=NOTE_SIZE, color=INK, ha="left", va="bottom")
-    limit.axhline(LOWEST_GRIP, color=MUTED, lw=1.1, ls=(0, (3, 3)))
-    limit.text(21.0, LOWEST_GRIP - 3.0, f"{LOWEST_GRIP:.0f} mm, where the middle of the jaw rides",
+    limit.axhline(PUSH_HEIGHT, color=MUTED, lw=1.1, ls=(0, (3, 3)))
+    limit.text(21.0, PUSH_HEIGHT - 3.0, f"{PUSH_HEIGHT:.0f} mm, where the middle of the jaw rides",
                fontsize=NOTE_SIZE, color=MUTED, ha="left", va="top")
     limit.set_xlim(20.0, 132.0)
     limit.set_ylim(0.0, top)
     limit.set_xlabel("the glass's foot, millimetres across", fontsize=LABEL_SIZE, color=INK)
     limit.set_ylabel("the height a push starts tipping it, mm", fontsize=LABEL_SIZE, color=INK)
-    note(limit, 131.0, 44.0,
-         f"A glass slides while the jaw meets it below\nits curve. plan.py calls a glass safe when "
-         f"even\n{MU_HIGHEST:g} clears the line, refuses it when even {MU_LOWEST:g}\ndoes not, and "
-         f"probes when the two disagree.\nOver the {SWEEP['crowded']} crowded glasses of the "
-         f"held-out\ntables that came to {SWEEP['slides_yes']} safe, "
-         f"{SWEEP['slides_try']} to probe, {SWEEP['slides_no']} refused.", INK, va="top", ha="right")
+    note(limit, 130.0, 58.0,
+         f"plan.py calls a glass safe when even {MU_HIGHEST:g}\nclears the line, refuses it when "
+         f"even {MU_LOWEST:g} does\nnot, and probes in between. Over the 251\nglasses of the "
+         f"held-out tables: {SWEEP['slides_yes']} safe,\n{SWEEP['slides_try']} to probe, "
+         f"{SWEEP['slides_no']} refused.", INK, va="top", ha="right")
 
     # ---------------------------------- panel 2: what the refusals really are
     stage(refusals, f"Why {SCORED['programmed']['refused']} glasses were refused")
     refusals.set_xlim(-0.3, 10.0)
-    refusals.set_ylim(-4.3, 1.1)
+    refusals.set_ylim(-5.0, 1.1)
+    reasons = SCORED["programmed"]["because"]
+    width = [reasons.get("nowhere clear to push it to", 0),
+             reasons.get("tipped when tried", 0),
+             reasons.get("tips before it slides", 0),
+             reasons.get("still without room after pushing", 0)
+             + reasons.get("stopped: a glass fell over", 0)]
     bars(refusals,
-         ["nowhere clear to push it to",
-          "it tips before it slides",
-          "toppled, pushed out of the zone, or picked without room"],
-         [SCORED["programmed"]["refused"], SWEEP["slides_no"], 0],
-         [WARN, MUTED, MUTED], 8.6,
-         note_of=lambda i: [f"{SCORED['programmed']['refused']}", "0", "0"][i])
-    refusals.text(0.0, -2.75,
-                  f"Read the two panels together. The tipping arithmetic is real and it is inside the\n"
-                  f"filter, so a glass that would go over never reaches a ranker. On these tables it\n"
-                  f"refuses nothing, because the jaw meets a glass low enough that the foot usually\n"
-                  f"wins. Every refusal the one fixed nudge made on the {SWEEP['tables']} held-out "
-                  f"tables was the other\nkind: {SWEEP['safe_none_pct']:.0f}% of crowded glasses have "
-                  f"no safe push at all, and most of the rest have\nnone that finishes the job. That "
-                  f"is a shortage of candidates, and no ranking repairs it.",
+         ["nowhere clear to push it to — the hand is too wide",
+          "the test push said it tipped — too tall",
+          "it tips before it slides — too tall",
+          "still crowded after pushing, or a glass fell over"],
+         width, [WARN, WARN, WARN, MUTED], 8.6,
+         note_of=lambda i: [f"{n}" for n in width][i])
+    tall = width[1] + width[2]
+    refusals.text(0.0, -3.45,
+                  f"Read the two panels together. The tipping arithmetic is inside the filter, so a "
+                  f"glass\nthat would go over never reaches a ranker — and with a real gripper it is "
+                  f"doing most\nof the work. {tall} of the {SCORED['programmed']['refused']} refusals "
+                  f"are the hand being too tall to push a glass safely,\nagainst "
+                  f"{width[0]} for its being too wide to get behind one. Neither is a shortage of "
+                  f"ranking.\nBoth are the shape of the hand, and no ordering of candidates repairs "
+                  f"either.",
                   fontsize=NOTE_SIZE, color=INK, ha="left", va="top")
 
     footer(figure,
@@ -490,7 +559,7 @@ def picture_the_refusals() -> None:
     save(figure, "02-where-the-refusals-come-from.png")
     print(f"  refusals: slides() gave {SWEEP['slides_yes']} yes, {SWEEP['slides_try']} try, "
           f"{SWEEP['slides_no']} no; results.json refused "
-          f"{SCORED['programmed']['refused']}, all for nowhere to push to")
+          f"{SCORED['programmed']['refused']}: {SCORED['programmed']['because']}")
 
 
 # ---------------------------------------------------------------------------
