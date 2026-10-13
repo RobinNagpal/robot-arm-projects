@@ -191,6 +191,22 @@ is problem 1's job done for free here, and the examiner quietly records whether
 the glass really had room at the moment it was taken. That recording is how the
 marking later knows whether the arm's own belief about room was correct.
 
+**"For free" is doing real work in that sentence, and it is worth saying what
+it hides.** `take()` asks one question — did this glass have room around it? —
+and if the answer is yes the glass leaves the table. It never asks whether this
+gripper could have closed on it. Drawing the pick for the films made that
+assumption visible, because a drawing has to put the pads somewhere. Two of the
+gripper's own measurements decide where. The fingers reach only about 33 mm past
+the pads before the palm is in the way, so a glass has to be held within 33 mm
+of its own rim, and a tapered glass is widest there. The pads open 85 mm. Put
+together, **22 of the 251 held-out glasses are wider at the only height the palm
+allows than the gripper opens**, so they could not be picked up at all, and
+almost all of them are tapered glasses. The examiner racks them anyway, and the
+films say on screen when a glass being taken is one of them. This is a limit of
+the problem as it is set rather than a fault in any of the six solutions, and
+none of their scores depends on it, because every one of them is marked the
+same way.
+
 ## The shared output, and why it is a jaw trajectory
 
 The input is now fixed and the physics is fixed, so the remaining question is

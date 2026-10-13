@@ -12,7 +12,7 @@ between the two runs is which weights were loaded.
     pixi run python 06-smolvla-fine-tuned/run.py --tables 3 --film 3   # videos of the first 3
 
 Two things vary and both have to be run several times, which is what [the
-bench](../../docs/03-push-glasses-apart/the-bench.md) asks of a trained
+bench](../../docs/03-push-glasses-apart/the-examiner.md) asks of a trained
 policy. The policy draws its chunk from fresh noise, so the same table asked
 twice is answered twice; ``--runs`` varies that. And the training itself
 varies with its seed, so the same recipe gives two corrections of different

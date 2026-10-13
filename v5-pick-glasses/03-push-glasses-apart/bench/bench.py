@@ -83,7 +83,7 @@ JAW_FRICTION = 0.6
 #
 # Rolled a quarter turn, the two fingers stack one above the other and the hand
 # is **27 mm across** — narrower than the blade it replaces. The task becomes
-# possible again. docs/03-push-glasses-apart/the-bench.md carries the
+# possible again. docs/03-push-glasses-apart/pushing-without-toppling.md carries the
 # measurement both ways round, because the comparison is the most useful thing
 # the real gripper turned up.
 #

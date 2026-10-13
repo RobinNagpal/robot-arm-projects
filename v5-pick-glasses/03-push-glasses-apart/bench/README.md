@@ -36,6 +36,15 @@ The label on screen says so while it happens. Nothing there is stepped, and
 `test_bench.py` checks that a filmed table ends exactly where the same
 unfilmed table ends.
 
+Drawing that pick has to decide where the pads go, and the gripper's own
+measurements decide it. The fingers reach about 33 mm past the pads before the
+palm is in the way, so the glass is held within 33 mm of its own rim, which on
+a tapered glass is its widest part; and the pads open 85 mm. Some glasses are
+wider than that at the only height the palm allows, so no grip closes on them
+and the film says so on screen. `take()` racks them all the same, because it
+only asks whether a glass had room. [the-examiner.md](../../docs/03-push-glasses-apart/the-examiner.md)
+counts them.
+
 One more thing is visible and is deliberate. The hand is drawn twice: its real
 pieces solid, and around them, as a faint shell, the larger shape the bench
 collides with. The bench treats each pair of fingers as one box covering both

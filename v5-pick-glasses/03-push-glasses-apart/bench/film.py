@@ -171,7 +171,7 @@ class FilmedBench(Bench):
         self.steps = 0
         self.label = f"{approach}  table {seed}  {KINDS[seed % len(KINDS)].replace('_', ' ')}".strip()
         self.doing = "first look"
-        self.note = ""
+        self.note: tuple[str, ...] = ()
         # How many frames have been written, and the one frame from a pick
         # worth keeping, which is the glass halfway up off the table.
         self.captured = 0
@@ -184,7 +184,7 @@ class FilmedBench(Bench):
 
     def push(self, push: Push):
         self.doing = f"push {len(self.records) + 1}: glass {push.glass}, {1000 * push.travel:.0f} mm"
-        self.note = ""
+        self.note = ()
         return super().push(push)
 
     def take(self, glass: int) -> None:
@@ -210,19 +210,24 @@ class FilmedBench(Bench):
         this glass is at that height.
 
         The fraction alone is not enough, because the fingers are only so long.
-        Between the pads and the palm behind them there is about 35 mm, so a glass
-        held low enough would have its rim inside the gripper's body, which cannot
-        happen and would look wrong on film. Whichever is higher wins: the
-        fraction, or the lowest hold that leaves the rim clear of the palm. On a
-        tall glass that is the palm, and the hand takes it near the top.
+        Between the pads and the palm behind them there are about 33 mm, so a
+        glass held lower than that below its own rim would have the rim inside
+        the gripper's body, which cannot happen and would look wrong on film.
+        Whichever is higher wins: the fraction, or the lowest hold that leaves
+        the rim clear of the palm. On a tall glass that is the palm, and the hand
+        has to take the glass near its top, where a tapered glass is widest.
+        That is a real cost of this gripper and not a drawing's shortcut.
         """
         cuts = slices(self.glasses[glass].outline)
         top = max(high for _, high, _ in cuts)
         body = next(p for p in robotiq_2f85.parts() if p["name"] == "body")["back"]
         clear = body - robotiq_2f85.pads()[0]["back"] - robotiq_2f85.PALM_CLEARANCE
         height = min(max(GRIP_FRACTION * top, top - clear), top)
-        radius = min(cuts, key=lambda cut: abs((cut[0] + cut[1]) / 2 - height))[2]
-        return height, 2.0 * radius
+        # The slice the pads land in, which is the one the height falls inside.
+        # Only if the height falls in no slice is the nearest one used.
+        inside = [cut for cut in cuts if cut[0] <= height <= cut[1]]
+        cut = inside[0] if inside else min(cuts, key=lambda c: abs((c[0] + c[1]) / 2 - height))
+        return height, 2.0 * cut[2]
 
     def _hold_hand(self, turn: float, angle: float) -> float:
         """Place every drawn piece for a knuckle angle and a quarter-turn of wrist.
@@ -269,15 +274,29 @@ class FilmedBench(Bench):
         # The collided shell means nothing here, because nothing is being
         # collided, and left on it would hang through the glass as a brick.
         model.geom_rgba[self.shell, 3] = 0.0
-        self.note = "drawn: the bench racks a glass in one instant"
+        self.note = ("drawn: the bench racks a glass in one instant",)
 
         x, y = self.position(glass)
         address = model.jnt_qposadr[model.body_jntadr[self.bodies[glass]]]
         glass_start = world.qpos[address : address + 3].copy()
         height, width = self._grip(glass)
-        held = min(max(width, robotiq_2f85.MIN_OPENING), robotiq_2f85.MAX_GRIP)
+        # How far the pads can be apart is the stroke and nothing narrower.
+        # MAX_GRIP is not the limit here, although it looks like it: it is the
+        # same palm clearance worked out for a ball, whose reach along the
+        # fingers is its own width. A glass stands with its axis along the
+        # fingers, so what reaches the palm is the glass above the pads, and
+        # _grip has already answered that with a height. Using both would be
+        # the one limit counted twice.
+        held = min(max(width, robotiq_2f85.MIN_OPENING), robotiq_2f85.MAX_OPENING)
         opened = min(width + GRIP_CLEARANCE, robotiq_2f85.MAX_OPENING)
         wide, shut = robotiq_2f85.angle_for(opened), robotiq_2f85.angle_for(held)
+        if width > robotiq_2f85.MAX_OPENING:
+            # The bench racked it anyway, because it only asks whether the glass
+            # had room. Saying so is the honest drawing: the fingers stay at
+            # their widest and nothing closes on the glass.
+            self.note += (
+                f"this glass is {1000 * width:.0f} mm across here, wider than the gripper opens",
+            )
 
         was = self.data.mocap_quat[0].copy()
         turned = math.atan2(was[3], was[0]) * 2.0
@@ -340,7 +359,7 @@ class FilmedBench(Bench):
 
         model.geom_pos[:], model.geom_quat[:], model.geom_rgba[:] = kept
         self._watch(np.zeros(3), 0.0)
-        self.note = ""
+        self.note = ()
 
     def _watch(self, glass: np.ndarray, close: float) -> None:
         """Ease the camera between the standing view and the close one on a pick.
@@ -381,7 +400,7 @@ class FilmedBench(Bench):
 
     def _capture(self, extra: str = "", sync: bool = True) -> np.ndarray:
         frame = self.view(sync)
-        lines = [self.label, extra or self.doing] + ([self.note] if self.note else [])
+        lines = [self.label, extra or self.doing, *self.note]
         for row, text in enumerate(lines):
             scale = 1.1 if row == 0 else 1.0
             place, font = (20, 46 + 44 * row), cv2.FONT_HERSHEY_SIMPLEX
@@ -417,7 +436,7 @@ class FilmedBench(Bench):
 
     def save(self, path: Path, outcome: str = "") -> None:
         """Finish the video, holding the last picture with ``outcome`` on it."""
-        self.note = ""
+        self.note = ()
         for _ in range(int(HOLD * FPS)):
             self._capture(outcome)
         self._pipe.stdin.close()
