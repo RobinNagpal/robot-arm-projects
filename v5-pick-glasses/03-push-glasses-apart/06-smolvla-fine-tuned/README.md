@@ -38,7 +38,7 @@ the training needs the model before the correction is attached to it.
 ## Running it
 
 ```
-make demonstrations   # the teacher over 800 training tables (about 20 minutes)
+make demonstrations   # the teacher over 800 training tables (about 19 minutes)
 make tuning           # the same on 50 tuning tables, which say when to stop
 make train            # fits the correction (downloads the weights once)
 make run              # the 50 held-out tables, 3 evaluation runs
@@ -60,8 +60,9 @@ correction's four million numbers carry gradients and optimiser state, so what
 has to be held is the model plus a little: **1.02 GiB of the Mac's unified
 memory**, measured while it ran, against the 22 GB the document quotes for a
 low-rank fine-tune of π0. Memory was never the obstacle at this size. Time is:
-a step took 4 seconds on Metal — and that was on a laptop shared with three
-other training runs — where an NVIDIA card would take a fraction of a second.
+the 1,000 steps took 47 minutes on Metal, which is about 3 seconds a step — and
+that was on a laptop shared with other training runs — where an NVIDIA card
+would take a fraction of a second.
 So the committed correction is 1,000 steps at a batch of 4, which is a small
 fraction of the compute LeRobot's own SmolVLA recipe spends (twenty thousand
 steps at a batch of sixty-four), and that is the honest caveat on every number
@@ -77,16 +78,22 @@ solution 5's cost exactly because the correction is folded into the weights.
 
 ## The demonstrations
 
-800 training tables, 22 minutes of simulator time, **2,012 demonstrations from
-740 of those tables**; the other 60 gave the teacher nothing to push. Of the
-3,554 pushes the teacher made, 1,533 were the 5 mm test pushes that belong to
-the shared tipping check rather than to the chooser, and of the 2,021 real
-pushes only **9 were discarded** — 8 toppled a glass, 1 pushed one out of the
-zone. So the bias from filtering to successes, which the document spends a page
-on, is four tenths of one per cent here. `demonstrations/collected.json`
-records all of it.
+800 training tables, 19 minutes of simulator time, **1,074 demonstrations from
+430 of those tables**; the other 370 gave the teacher nothing it could push
+with the real hand. Of the 2,766 pushes the teacher made, 1,663 were the 5 mm
+test pushes that belong to the shared tipping check rather than to the chooser,
+and of the 1,103 real pushes **29 were discarded** — 13 toppled a glass, 12
+jammed, 3 pushed one out of the zone and 1 was blocked coming down. So the bias
+from filtering to successes, which the document spends a page on, is 2.6 per
+cent here. `demonstrations/collected.json` records all of it.
 
-A chunk covers 89 mm of table in 49 waypoint periods, 1.8 mm a waypoint.
+**The real gripper halved the demonstration set**, and it did so by refusing
+tables rather than by failing on them: the teacher found nothing worth pushing
+on 370 of the 800 tables, where with the invented blade it found something on
+all but 60. That matters more than the discard rate, because a table the
+teacher never pushes on is a table the student never sees.
+
+A chunk covers 78 mm of table in 49 waypoint periods, 1.6 mm a waypoint.
 
 ## Three things to know before reading the numbers
 
@@ -124,21 +131,24 @@ fitted on.
 
 | Step | Fitting loss | Tuning error, median | Worst |
 |---|---|---|---|
-| 0 — the correction is zero, so this is solution 5 | — | **320 mm** | 658 mm |
-| 500 | 0.299 | **84 mm** | 270 mm |
-| 1000 | 0.159 | 90 mm | 196 mm |
+| 0 — the correction is zero, so this is solution 5 | — | **331 mm** | 574 mm |
+| 500 | 0.291 | 107 mm | 283 mm |
+| 1000 | 0.150 | **85 mm** | 255 mm |
 
 The glass zone is 320 mm by 360 mm, so the borrowed model's untrained answer
 is not a push aimed at the wrong glass — it is a smooth motion somewhere else
-on the table entirely. Five hundred steps cut that by three quarters.
+on the table entirely. Five hundred steps cut that by two thirds, and the
+second five hundred took another fifth off it.
 
-**Training stopped at 1,000 steps because the tuning column said to.** Between
-500 and 1,000 the fitting loss halved while the held-out error did not improve,
-which is the shape that says the extra training is going into the examples
-rather than into the pushing. Read it with the caution it deserves: each
-tuning figure is 16 chunks from a policy that draws its answer, so the step
-from 84 mm to 90 mm is inside the noise. What is outside the noise is that the
-fall stopped.
+**Training stopped at 1,000 steps because that was the budget, not because the
+curve had flattened.** The held-out error was still falling when the fitting
+stopped, which is the opposite of the picture an earlier fit showed, and it
+means this correction is **under-trained rather than over-trained**. Read the
+column with the caution it deserves, because each tuning figure is a handful of
+chunks from a policy that draws its answer rather than computing it, so a step
+of twenty millimetres is near the noise. What is clear is the direction: more
+steps would very likely have helped, and the results below should be read as
+what a thousand steps buys rather than as what this method can do.
 
 **And the chunks changed shape in a way that is easier to see than the loss.**
 Each solution's `asking.json` records what its answers looked like:
@@ -159,7 +169,7 @@ the bench capped a commanded path to the jaw's top speed, so its *outcome*
 counts are not comparable with these; the shape of a chunk is the model's own
 output and is.)
 
-## Results — 50 held-out tables, 251 glasses, 193 without room at the start
+## Results — 50 held-out tables, 251 glasses, 203 without room at the start
 
 Three evaluation runs of one training seed. `results.json` holds every run;
 below is the middle with the spread across the three.

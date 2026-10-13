@@ -14,52 +14,52 @@
       "most": 251.0
     },
     "crowded_at_start": {
-      "median": 193.0,
+      "median": 203.0,
       "sd": 0.0,
-      "least": 193.0,
-      "most": 193.0
+      "least": 203.0,
+      "most": 203.0
     },
     "outcome.done": {
-      "median": 0.0,
-      "sd": 0.0,
+      "median": 1.0,
+      "sd": 0.577,
       "least": 0.0,
-      "most": 0.0
+      "most": 1.0
     },
     "outcome.incomplete": {
-      "median": 45.0,
-      "sd": 0.577,
-      "least": 44.0,
-      "most": 45.0
+      "median": 41.0,
+      "sd": 2.0,
+      "least": 39.0,
+      "most": 43.0
     },
     "outcome.wrong": {
-      "median": 5.0,
-      "sd": 0.577,
-      "least": 5.0,
-      "most": 6.0
+      "median": 9.0,
+      "sd": 2.082,
+      "least": 6.0,
+      "most": 10.0
     },
     "glasses_end.racked": {
-      "median": 56.0,
-      "sd": 2.646,
-      "least": 52.0,
-      "most": 57.0
+      "median": 48.0,
+      "sd": 2.517,
+      "least": 46.0,
+      "most": 51.0
     },
     "glasses_end.refused": {
-      "median": 189.0,
-      "sd": 1.155,
-      "least": 189.0,
-      "most": 191.0
+      "median": 190.0,
+      "sd": 3.0,
+      "least": 187.0,
+      "most": 193.0
     },
     "glasses_end.toppled": {
-      "median": 6.0,
-      "sd": 1.528,
-      "least": 5.0,
-      "most": 8.0
+      "median": 12.0,
+      "sd": 2.0,
+      "least": 10.0,
+      "most": 14.0
     },
     "glasses_end.pushed_out_of_the_zone": {
-      "median": 0.0,
-      "sd": 0.0,
+      "median": 1.0,
+      "sd": 0.577,
       "least": 0.0,
-      "most": 0.0
+      "most": 1.0
     },
     "glasses_end.picked_without_room": {
       "median": 0.0,
@@ -74,28 +74,34 @@
       "most": 0.0
     },
     "refused_because.push budget spent": {
-      "median": 177.0,
-      "sd": 6.658,
-      "least": 168.0,
-      "most": 181.0
+      "median": 134.0,
+      "sd": 9.866,
+      "least": 118.0,
+      "most": 136.0
+    },
+    "refused_because.tips before it slides": {
+      "median": 38.0,
+      "sd": 3.055,
+      "least": 36.0,
+      "most": 42.0
     },
     "refused_because.stopped: a glass fell over": {
-      "median": 13.0,
-      "sd": 6.028,
-      "least": 8.0,
-      "most": 20.0
+      "median": 18.0,
+      "sd": 7.81,
+      "least": 17.0,
+      "most": 31.0
     },
     "pushes.total": {
-      "median": 754.0,
-      "sd": 13.013,
-      "least": 740.0,
-      "most": 766.0
+      "median": 620.0,
+      "sd": 26.16,
+      "least": 589.0,
+      "most": 641.0
     },
     "pushes.repeats": {
-      "median": 642.0,
-      "sd": 12.014,
-      "least": 631.0,
-      "most": 655.0
+      "median": 520.0,
+      "sd": 25.541,
+      "least": 492.0,
+      "most": 543.0
     },
     "pushes.blocked_on_the_way_down": {
       "median": 0.0,
@@ -104,143 +110,144 @@
       "most": 0.0
     },
     "pushes.never_touched": {
-      "median": 674.0,
-      "sd": 15.1,
-      "least": 662.0,
-      "most": 692.0
+      "median": 506.0,
+      "sd": 14.978,
+      "least": 498.0,
+      "most": 527.0
     },
     "pushes.jammed": {
-      "median": 63.0,
-      "sd": 5.508,
-      "least": 58.0,
-      "most": 69.0
+      "median": 79.0,
+      "sd": 9.609,
+      "least": 67.0,
+      "most": 86.0
     },
     "pushes.aim_mm_median": {
-      "median": 74.0,
-      "sd": 4.956,
-      "least": 71.7,
-      "most": 81.2
+      "median": 71.5,
+      "sd": 2.155,
+      "least": 70.6,
+      "most": 74.7
     },
     "pushes.aim_mm_worst": {
-      "median": 239.2,
-      "sd": 7.85,
-      "least": 234.6,
-      "most": 249.9
+      "median": 356.0,
+      "sd": 198.097,
+      "least": 352.4,
+      "most": 697.3
     },
     "travel_mm": {
-      "median": 468.9,
-      "sd": 68.462,
-      "least": 463.9,
-      "most": 584.9
+      "median": 1365.5,
+      "sd": 348.371,
+      "least": 955.0,
+      "most": 1647.8
     },
     "seconds_per_push": {
-      "median": 0.283,
+      "median": 0.286,
       "sd": 0.001,
-      "least": 0.283,
-      "most": 0.284
+      "least": 0.285,
+      "most": 0.288
     }
   },
   "each": [
     {
       "scenes": 50,
       "glasses": 251,
-      "crowded_at_start": 193,
+      "crowded_at_start": 203,
       "outcome": {
-        "done": 0,
-        "incomplete": 44,
+        "done": 1,
+        "incomplete": 43,
         "wrong": 6
       },
       "glasses_end": {
-        "racked": 52,
-        "refused": 191,
-        "toppled": 8,
+        "racked": 48,
+        "refused": 193,
+        "toppled": 10,
         "pushed_out_of_the_zone": 0,
         "picked_without_room": 0,
         "left_with_no_reason": 0
       },
       "refused_because": {
-        "push budget spent": 177,
-        "tips before it slides": 1,
-        "stopped: a glass fell over": 13
+        "push budget spent": 134,
+        "tips before it slides": 42,
+        "stopped: a glass fell over": 17
       },
       "pushes": {
-        "total": 740,
-        "repeats": 631,
+        "total": 620,
+        "repeats": 520,
         "blocked_on_the_way_down": 0,
-        "never_touched": 662,
-        "jammed": 63,
-        "aim_mm_median": 81.2,
-        "aim_mm_worst": 234.6
+        "never_touched": 506,
+        "jammed": 79,
+        "aim_mm_median": 70.6,
+        "aim_mm_worst": 697.3
       },
-      "travel_mm": 584.9,
-      "seconds_per_push": 0.2841
+      "travel_mm": 1647.8,
+      "seconds_per_push": 0.2877
     },
     {
       "scenes": 50,
       "glasses": 251,
-      "crowded_at_start": 193,
+      "crowded_at_start": 203,
       "outcome": {
-        "done": 0,
-        "incomplete": 45,
-        "wrong": 5
+        "done": 1,
+        "incomplete": 39,
+        "wrong": 10
       },
       "glasses_end": {
-        "racked": 57,
-        "refused": 189,
-        "toppled": 5,
-        "pushed_out_of_the_zone": 0,
+        "racked": 51,
+        "refused": 187,
+        "toppled": 12,
+        "pushed_out_of_the_zone": 1,
         "picked_without_room": 0,
         "left_with_no_reason": 0
       },
       "refused_because": {
-        "push budget spent": 168,
-        "stopped: a glass fell over": 20,
-        "tips before it slides": 1
+        "stopped: a glass fell over": 31,
+        "tips before it slides": 38,
+        "push budget spent": 118
       },
       "pushes": {
-        "total": 766,
-        "repeats": 655,
+        "total": 589,
+        "repeats": 492,
         "blocked_on_the_way_down": 0,
-        "never_touched": 692,
-        "jammed": 58,
-        "aim_mm_median": 74.0,
-        "aim_mm_worst": 249.9
+        "never_touched": 498,
+        "jammed": 67,
+        "aim_mm_median": 71.5,
+        "aim_mm_worst": 352.4
       },
-      "travel_mm": 463.9,
-      "seconds_per_push": 0.2831
+      "travel_mm": 955.0,
+      "seconds_per_push": 0.2849
     },
     {
       "scenes": 50,
       "glasses": 251,
-      "crowded_at_start": 193,
+      "crowded_at_start": 203,
       "outcome": {
         "done": 0,
-        "incomplete": 45,
-        "wrong": 5
+        "incomplete": 41,
+        "wrong": 9
       },
       "glasses_end": {
-        "racked": 56,
-        "refused": 189,
-        "toppled": 6,
-        "pushed_out_of_the_zone": 0,
+        "racked": 46,
+        "refused": 190,
+        "toppled": 14,
+        "pushed_out_of_the_zone": 1,
         "picked_without_room": 0,
         "left_with_no_reason": 0
       },
       "refused_because": {
-        "stopped: a glass fell over": 8,
-        "push budget spent": 181
+        "stopped: a glass fell over": 18,
+        "tips before it slides": 36,
+        "push budget spent": 136
       },
       "pushes": {
-        "total": 754,
-        "repeats": 642,
+        "total": 641,
+        "repeats": 543,
         "blocked_on_the_way_down": 0,
-        "never_touched": 674,
-        "jammed": 69,
-        "aim_mm_median": 71.7,
-        "aim_mm_worst": 239.2
+        "never_touched": 527,
+        "jammed": 86,
+        "aim_mm_median": 74.7,
+        "aim_mm_worst": 356.0
       },
-      "travel_mm": 468.9,
-      "seconds_per_push": 0.2826
+      "travel_mm": 1365.5,
+      "seconds_per_push": 0.286
     }
   ]
 }

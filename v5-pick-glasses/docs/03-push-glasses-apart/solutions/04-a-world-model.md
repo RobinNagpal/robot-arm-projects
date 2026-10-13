@@ -923,20 +923,26 @@ their reasons and the table finishes **correct but incomplete**, which [the
 problem](../problem.md) counts as a correct outcome rather than a failure.
 
 Across the fifty held-out tables as a whole, the first way's recorded results — read
-from its own `results.json` — are two hundred and two of two hundred and
-fifty-one glasses racked in a hundred and fourteen pushes, thirty-one tables
+from its own `results.json` — are one hundred and forty-six of two hundred and
+fifty-one glasses racked in two hundred and twenty-one pushes, twenty tables
 finished, and the glasses that were left all reported with a reason. **That is
-the most glasses any of the six racks, and it is done in the fewest pushes.**
-It is also the one line where this solution is worse than the geometry it is
-measured against: **one glass went over**, which makes that table wrong and
-makes this the only one of the three push-parameter solutions to topple
-anything at all — [one fixed nudge](01-one-fixed-nudge.md) and [geometry
-generates, a model ranks](02-geometry-ranked.md) both topple none. The section
-above on refusals says why it can happen: the model can be confidently wrong,
-and the shared topple gate that would have caught the rest is not in front of
-this planner yet. Those numbers are read against the other solutions on
-the shared scorecard, and against the displacement floor from [the target
-layout](../the-target-layout.md), which says how little movement the task
+the most glasses any of the six racks.** It is also, by a long way, the one that
+breaks the most: **twenty glasses went over**, and because a glass on its side
+stops the table it is on, nineteen of the fifty tables end wrong. [One fixed
+nudge](01-one-fixed-nudge.md) and [geometry generates, a model
+ranks](02-geometry-ranked.md) topple one glass each on the same tables.
+
+The section above on refusals says why that can happen, and the real gripper
+made it much worse than it was. The model can be confidently wrong about
+toppling, because toppling is the one thing it has to guess rather than
+calculate; and the shared topple gate that stands in front of the other
+planners is not in front of this one. With the earlier invented blade the same
+planner toppled about one glass, because a thin blade that came down in the
+wrong place usually missed. The real Robotiq 2F-85 reaches much further back
+and cannot be brought as low, so the same wrong guess now lifts or clips a
+glass instead of passing beside it. Those numbers are read against the other
+solutions on the shared scorecard, and against the displacement floor from [the
+target layout](../the-target-layout.md), which says how little movement the task
 needed in the first place.
 
 ## What it needs
@@ -1027,9 +1033,10 @@ learned policy would have to be trained again.
 
 **It can be confidently wrong, and that is its worst failure.** Where the
 training data is thin in a way the copies did not notice, five copies agree and
-are wrong together. The topples recorded on the tuning tables were exactly
-this: the model had rated every one of them safe, and a lower limit does not
-catch that.
+are wrong together. The twenty glasses it toppled on the held-out tables were
+exactly this: the model had rated every one of those pushes safe enough to
+make, and a lower limit does not catch a push the model is sure about, it only
+refuses more of the pushes the model is unsure about.
 
 **Its model is only as wide as its encoding.** Five neighbours, four
 measurements each, and no representation of the jaw's body. Anything the

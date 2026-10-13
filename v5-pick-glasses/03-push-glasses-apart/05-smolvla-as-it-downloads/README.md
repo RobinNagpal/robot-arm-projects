@@ -36,16 +36,17 @@ holds what the asking cost.
 
 | | This solution | [Solution 4](../04-a-world-model/) | [Solution 1](../01-one-fixed-nudge/) |
 |---|---|---|---|
-| Glasses racked | **56** of 251 (±2.6) | 202 of 251 | 195 of 251 |
-| Glasses refused | 189 (±1.2) | 48 | 56 |
-| Glasses toppled | 6 (±1.5) | 1 | **0** |
-| Tables finished | **0** of 50 | 31 of 50 | 33 of 50 |
-| Tables scored *wrong* | 5 of 50 (±0.6) | 1 | **0** |
-| Pushes | 754 (±13.0) | 114 | 213 |
-| Pushes that never touched anything | 674 of 754 (±15.1) | 0 | 0 |
-| Pushes that jammed | 69 of the same 754 (±5.5) | 3 | **0** |
-| Landing, median / worst | 74.0 / 239 mm | 1.6 / 48.2 mm | 1.0 / 3.9 mm |
-| Thinking per push | **283 ms** | 401 ms | 59 ms |
+| Glasses racked | **48** of 251 (±2.5) | 146 of 251 | 107 of 251 |
+| Glasses refused | 190 (±3.0) | 85 | 143 |
+| Glasses toppled | 12 (±2.0) | 20 | **1** |
+| Tables finished | **1** of 50 (±0.6) | 20 of 50 | 14 of 50 |
+| Tables scored *wrong* | 9 of 50 (±2.1) | 19 | **1** |
+| Pushes | 620 (±26.2) | 221 | 173 |
+| Pushes that never touched anything | 506 of 620 (±15.0) | 0 | 0 |
+| Pushes that jammed | 79 of the same 620 (±9.6) | 7 | 1 |
+| Travel against the floor | 0.42x | 1.98x | 0.87x |
+| Landing, median / worst | 71.5 / 356 mm | 6.9 / 532 mm | **1.7 / 58 mm** |
+| Thinking per push | **286 ms** | 374 ms | 93 ms |
 
 Where this column gives a share of the pushes, both parts come from the same
 run, the middle one by push count. That is worth stating because the spread
@@ -72,27 +73,31 @@ lies in its answers and not in its speed.
 Nothing was tuned to improve it; the only run ever made with a different
 reading is the sensitivity check below, and it is not the scored result.
 
-**Put the racking beside the crowding and there is nothing left over.** 193
-of the 251 glasses were crowded at the start, so 58 had room; 56 were racked.
-Racking a glass loosens its neighbours, so a solution that freed anything
-would rack more than 58. This one racks fewer, and no table was finished.
+**Put the racking beside the crowding and nothing at all is left over.** 203
+of the 251 glasses were crowded at the start, so **48 had room; 48 were
+racked.** Racking a glass loosens its neighbours, so any solution that freed
+even one glass would rack more than 48. This one racks exactly the glasses that
+were already free, which is the clearest possible statement that its pushes
+achieve nothing: the arm could have skipped every push and scored the same.
 
-Of the 189 glasses left on the table, 177 per run are reported with "push
-budget spent" — the correct refusal when a glass has been pushed at and still
-has no room — and 13 with "a glass fell over", which is what the loop reports
-about the glasses still standing on a table where a push has toppled one.
-**Exactly one glass in 50 tables was refused for tipping**, so the shared
-refusal rule hardly binds on these tables and almost none of the shortfall is
-explained by it.
+Of the 190 glasses left on the table, 134 are reported with "push budget
+spent" — the correct refusal when a glass has been pushed at and still has no
+room — 38 with "tips before it slides", and 18 with "a glass fell over", which
+is what the loop reports about the glasses still standing on a table where a
+push has toppled one. **The tipping refusal now binds hard**, where with the
+invented blade it refused about one glass in the whole fifty tables. That is
+not this solution's doing; it is the shared rule reacting to a real hand that
+cannot be brought lower than 75 mm, and it holds back 38 glasses before the
+model is asked about them.
 
 **The failure is not the one the document predicted, and that is the most
 useful thing here.** The document expects "confident, plausible, wrong
 actions": well-formed pushes aimed at the wrong glass. What actually happens
-is that **about nine pushes in ten never touch anything at all.** The
-trajectories come back high: the median chunk's lowest point is a little over
-200 mm above the table, well above these glasses, while the chunk travels most
-of a metre across the table in fifty waypoints. So the jaw sweeps through the
-air above the glasses rather than at them.
+is that **more than four pushes in five never touch anything at all** — 506 of
+620. The trajectories come back high: the median chunk's lowest point is 217 mm
+above the table, well above these glasses, while the chunk travels 868 mm
+across the table in fifty waypoints. So the jaw sweeps through the air above
+the glasses rather than at them.
 
 It also asks to move far faster than this arm can. The bench consumes one
 waypoint every fixed period, so how far apart they are is how fast the jaw is
@@ -106,14 +111,19 @@ have been easy to assume the speed was the whole story.
 When it does catch one it is moving as fast as the arm can go, which is ten
 times a push macro's speed, and that is where the jams and the toppled glasses
 come from and why a glass lands tens of millimetres from the aim rather than a
-millimetre or two.
+millimetre or two. The real gripper made that worse in the one place it could:
+the hand is far bigger than the blade it replaced, so the few chunks that do
+reach table level now sweep something, and 12 glasses go over where the blade
+knocked over 6.
 
 Part of why the trajectories come back high is in the join, under "the state"
 below: the bench parks the jaw above travel height between actions, the
 reading clips that to the top of the model's range, and SmolVLA emits absolute
 targets near the state it is given. That part is measured there and it is
 about 60 mm — real, but not enough to account for the gap. The rest is simply
-that the model does not produce table-level motion on these pictures.
+that the model does not produce table-level motion on these pictures. The gap
+also grew with the real gripper, because the height a push happens at rose from
+50 mm to 75 mm while the model's answers did not move.
 
 **What this does and does not establish.** It establishes that SmolVLA, taken
 as it downloads, with nothing fitted, is not usable on this cell — and it
@@ -258,7 +268,7 @@ That is part of the explanation of the result above but not all of it, and the
 difference is worth measuring. Asked the same picture six times with the
 parked jaw's state, the chunks' lowest point has a median of 182 mm; asked
 with an all-zero state, 122 mm. So the state does raise the answers, by about
-60 mm. But 122 mm is still far above the 50 mm the jaw rides at and above most
+60 mm. But 122 mm is still far above the 75 mm the jaw rides at and above most
 of a glass, so **even the most favourable state this reading can express does
 not get the model to produce low, table-level motion on these pictures.**
 Turning the height slot over does not help either, for the same reason: the

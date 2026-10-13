@@ -36,9 +36,9 @@
   "revision": null,
   "target_modules": [
     "q_proj",
-    "k_proj",
     "v_proj",
-    "o_proj"
+    "o_proj",
+    "k_proj"
   ],
   "target_parameters": null,
   "task_type": null,

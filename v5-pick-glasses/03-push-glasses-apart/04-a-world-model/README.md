@@ -17,32 +17,40 @@ solutions](../../docs/03-push-glasses-apart/solutions/overview.md) sets out what
 each one changes and [what is
 built](../../docs/03-push-glasses-apart/solutions/overview.md#what-is-built).
 
-| | Learned (this folder) | Programmed |
+| | Learned (this folder) | Programmed (solution 1) |
 |---|---|---|
-| Glasses racked | **202** of 251 | 195 of 251 |
-| Glasses toppled | 1 | **0** |
-| Pushes | **114** | 213 |
-| Pushes repeated because the first fell short | **14** | 90 |
-| Tables finished | 31 of 50 | **33 of 50** |
-| Landing, median / worst | 1.6 / 48.2 mm | **1.0 / 3.9 mm** |
-| Pushes that went wrong (blocked, never touched, jammed) | 10 | **0** |
+| Glasses racked | **146** of 251 | 107 of 251 |
+| Tables finished | **20** of 50 | 14 of 50 |
+| Tables wrong | 19 | **1** |
+| Glasses toppled | 20 | **1** |
+| Pushes | 221 | **173** |
+| Pushes repeated because the first fell short | 102 | **63** |
+| Travel against the floor | 1.98x | **0.87x** |
+| Landing, median / worst | 6.9 / 532.3 mm | **1.7 / 57.6 mm** |
+| Pushes that went wrong (blocked, never touched, jammed) | 15 | **1** |
+| Thinking per push | 374 ms | **93 ms** |
 
-It racks more glasses in about half the pushes. Fewer pushes matter most,
-because touching a glass is the only step that can topple one.
+**It racks the most glasses of any approach here, and it breaks the most.** It
+gets 146 glasses off the table against the programmed approach's 107, which is
+more than a third again, and it finishes 20 tables against 14. Then it topples
+20 glasses against 1, and because a toppled glass stops the table it happens
+on, 19 of its fifty tables end *wrong* against the programmed approach's 1.
 
-It is not better on every line, and the lines it loses are worth reading. It
-toppled one glass where the programmed approach toppled none, and it finished
-two fewer tables even while racking seven more glasses, because a toppled glass
-stops the table it happens on. So the two are not ordered on one number: this
-one clears more glasses with far less handling, and the programmed one is the
-one that never breaks anything.
+So the two cannot be put in order on one number, and the choice between them is
+a choice about what a mistake costs. If a dropped glass is a wiped floor, this
+one is clearly ahead. If a dropped glass is broken glass in a kitchen, it is
+not usable at all, and the programmed approach is the only one of the pair that
+can be run unattended.
 
-It wins while being less accurate about where a glass lands. The reason is what
-it predicts. The programmed planner knows where the pushed glass will land, but
-not whether the push will make room. So it pushes, looks, and often has to push
-again. The model predicts what the task needs: where *every* glass ends up, and
-the chance of a topple or a blocked jaw. The search can therefore pick the push
-that makes the most room, instead of the one that lands most exactly.
+The reason it both wins and loses is the same reason, and it is what the model
+predicts. The programmed planner knows where the pushed glass will land, but it
+does not know whether the push will make room, so it pushes, looks, and often
+has to push again. The model predicts what the task actually needs: where
+*every* glass ends up, and the chance of a topple or a blocked jaw. This means
+the search can pick the push that makes the most room rather than the one that
+lands most exactly — and it also means that every push it makes rests on a
+guessed chance of toppling, which with the real gripper is a guess the model
+gets wrong twenty times in fifty tables.
 
 It also needs no written-down physics. There is no friction value, no tipping
 formula and no rule about where the jaw fits. Friction is not measured anywhere
@@ -55,20 +63,25 @@ again.
 
 ### What it costs
 
-- **Training.** 38,012 pushes in the simulator and 5 trained networks, about 31
-  minutes on a laptop CPU. The programmed approach needs none.
-- **Ten pushes went wrong** (7 blocked on the way down, 3 jammed) where the
-  programmed approach had none. Each was caught by looking again.
-- **Toppling is the weak point, and it is not hypothetical.** One glass went
-  over on the 50 held-out tables, and one more on the tuning tables, and in
-  each case the model had rated the push that did it as safe. The programmed
-  approach topples nothing at all, so this is the trade this solution makes:
-  it clears more glasses with half the handling, and it is the one approach
-  here built out of push parameters that breaks something. See
-  [the results](#results--50-held-out-tables-251-glasses).
+- **Training.** 15,379 pushes really made in the simulator, 30,758 once each is
+  used mirrored as well, and 5 trained networks, which is about half an hour on
+  a laptop processor. The programmed approach needs none of this.
+- **Fifteen pushes went wrong** (8 blocked on the way down, 7 jammed) where the
+  programmed approach had one. Each was caught by looking again, so none of
+  them is a hidden failure, but each one spent a push from the table's budget.
+- **Toppling is the weak point, and it is now the headline rather than a
+  footnote.** 20 glasses went over on the 50 held-out tables, and in every case
+  the model had rated the push that did it as safe enough to make. The model is
+  not blind to toppling — on validation pushes it catches 158 of the 192 that
+  really topple something — but it reaches that recall by flagging 172 of 436
+  safe pushes as well, so it is working at the edge of what it can tell apart.
+  See [the results](#results--50-held-out-tables-251-glasses).
+- **It thinks four times longer than it did.** 374 ms a push, against the
+  programmed approach's 93 ms, because the search asks five networks about
+  1,500 pushes for every crowded glass.
 - **The comparison is not fully controlled.** The two approaches differ in
   their search and in how they check the jaw's path, not only in the model. So
-  not all of the gain can be charged to the model.
+  not all of the difference can be charged to the model.
   [Solution 4's document](../../docs/03-push-glasses-apart/solutions/04-a-world-model.md)
   has the full comparison.
 
@@ -111,12 +124,17 @@ push, look again. The question is the table and the push. The answer is what
 the second look found. Nobody tells the model whether a push was good; a push
 that toppled a glass teaches it as much as one that worked. The labels come
 from the camera's readings, not from the simulator's record.
-- Round 1: 24,759 random pushes on 4,000 tables.
-- Round 2: 13,253 pushes on 5,000 new tables, mostly chosen by the planner
+- Round 1: 7,686 random pushes on 4,000 tables.
+- Round 2: 7,693 pushes on 5,000 new tables, mostly chosen by the planner
   using the round 1 model. The planner finds the pushes where the model is
   wrong in its favour. Making those pushes and recording what really happened
   fills exactly those holes.
-- Every push is also used mirrored left to right, which is still a true push.
+- Every push is also used mirrored left to right, which is still a true push,
+  so the 15,379 pushes become 30,758 examples.
+- **27.3% of them toppled something.** With the real gripper the training set
+  is nearly a third topples, which is why the model can see toppling at all;
+  it is also why it cannot see it sharply, because a quarter of everything
+  looks dangerous.
 
 **Choosing a push.** For each crowded glass, the cross-entropy method (CEM)
 tries 1,500 pushes, varying the heading, where across the glass to push, and
@@ -154,10 +172,13 @@ make train             # again, on both rounds
 ```
 
 `train` ends by printing how far out the model is on validation tables it never
-saw (`make collect` draws 200 of them; the stored set has 300).
-The model behind the results below printed 4.5 mm median for where the pushed
-glass lands, and blocked guessed right 96% of the time. A fresh training run
-gives close numbers, not identical ones.
+saw. The model behind the results below was checked on 628 such pushes. It puts
+the pushed glass **6.5 mm** from where it really lands at the median, and 38.9
+mm at the worst tenth, against a median real movement of 35 mm; it guesses
+*blocked on the way down* right 96% of the time; and at a 0.1 chance it catches
+158 of the 192 pushes that really topple something, while flagging 172 of the
+436 that are safe. A fresh training run gives close numbers, not identical
+ones.
 
 Then test it:
 
@@ -221,23 +242,53 @@ pixi run python examples.py --round validation --count 100
 
 ## Results — 50 held-out tables, 251 glasses
 
+203 of the 251 glasses have no room at the start, so they must be pushed before
+they can be taken.
+
 | | Result |
 |---|---|
-| Tables | done 31, incomplete 18, wrong 1 |
-| Glasses | racked 202, refused 48, toppled 1 |
-| Pushes | 114 (14 repeats); 7 blocked on the way down, 0 never touched, 3 jammed |
-| Landing | 1.6 mm from where the model aimed it, median; 48.2 mm worst |
-| Model, on unseen tables | pushed glass lands 4.5 mm from its prediction, median; blocked guessed right 96% of the time |
+| Tables | done 20, incomplete 11, wrong 19 |
+| Glasses | racked 146, refused 85, toppled 20 |
+| Pushes | 221 (102 repeats); 8 blocked on the way down, 0 never touched, 7 jammed |
+| Travel | 6,496 mm, which is 1.98 times the displacement floor |
+| Landing | 6.9 mm from where the model aimed it, median; 532.3 mm worst |
+| Thinking | 374 ms a push |
+| Model, on unseen tables | pushed glass lands 6.5 mm from its prediction, median; blocked guessed right 96% of the time |
 
-**Toppling is the weak point, even though none happened here.** On 100 tuning
-tables the same settings toppled 1 glass. The model rated every topple it
-missed as safe:
-- the jaw met a stemmed glass's stem under the bowl, then lifted and tipped it;
-- the jaw's 90 mm body clipped a neighbour behind;
-- a tapered glass tipped on its own.
+Why each refused glass was refused:
 
-A lower topple limit does not remove these; it only refuses more. They need
-more examples than 40 minutes of pushing gives.
+| Reason | Glasses |
+|---|---|
+| stopped: a glass on the table has fallen over | 53 |
+| no push the model expects to make room | 14 |
+| the table's 16 pushes are spent | 10 |
+| pushed 4 times and still without room | 8 |
+
+**Read those two tables together, because the second explains the first.** The
+largest single reason a glass is left on the table is not that the search could
+not find a push for it. It is that some *other* glass had already fallen over,
+which stops the table, so 53 glasses are refused as a consequence of the 20
+topples rather than on their own merits. Remove the toppling and this solution
+would clear far more than 146.
+
+**The worst landing is 532 mm, which is not a mis-estimate but a different kind
+of event.** A push that catches a glass badly can send it sliding most of the
+way across the zone, and the model, which was fitted on pushes that mostly move
+a glass about 35 mm, has no way to predict that. These are the same pushes that
+topple, seen from the other side.
+
+**The hand is why this got worse rather than the model.** The same search and
+the same topple limit toppled about one glass when the examiner used a thin
+invented blade. The real Robotiq 2F-85, rolled on its side, reaches 266 mm back
+behind its fingertips, is 89 mm across at the wrist, and cannot be brought
+lower than 75 mm, so a push that was previously a clean slide now often lifts
+or clips. The model learns that from examples rather than from a rule, and 27%
+of its examples now topple something, which is too blunt a signal to separate
+the safe pushes from the unsafe ones.
+
+A lower topple limit does not remove this; it only refuses more glasses. What
+would help is examples of the specific ways this hand topples a glass, and that
+costs more pushing than half an hour gives.
 
 The tables, the physics and the scoring are in `../03-push-glasses-apart/bench`, shared with
 `../03-push-glasses-apart/01-one-fixed-nudge`, so both approaches are tested on the same tables.

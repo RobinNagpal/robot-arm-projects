@@ -1,34 +1,35 @@
 {
   "scenes": 50,
   "glasses": 251,
-  "crowded_at_start": 193,
+  "crowded_at_start": 203,
   "outcome": {
-    "done": 31,
-    "incomplete": 18,
-    "wrong": 1
+    "done": 20,
+    "incomplete": 11,
+    "wrong": 19
   },
   "glasses_end": {
-    "racked": 202,
-    "refused": 48,
-    "toppled": 1,
+    "racked": 146,
+    "refused": 85,
+    "toppled": 20,
     "pushed_out_of_the_zone": 0,
     "picked_without_room": 0,
     "left_with_no_reason": 0
   },
   "refused_because": {
-    "no push the model expects to make room": 44,
-    "pushed 4 times and still without room": 1,
-    "stopped: a glass on the table has fallen over": 3
+    "stopped: a glass on the table has fallen over": 53,
+    "pushed 4 times and still without room": 8,
+    "no push the model expects to make room": 14,
+    "the table's 16 pushes are spent": 10
   },
   "pushes": {
-    "total": 114,
-    "repeats": 14,
-    "blocked_on_the_way_down": 7,
+    "total": 221,
+    "repeats": 102,
+    "blocked_on_the_way_down": 8,
     "never_touched": 0,
-    "jammed": 3,
-    "aim_mm_median": 1.6,
-    "aim_mm_worst": 48.2
+    "jammed": 7,
+    "aim_mm_median": 6.9,
+    "aim_mm_worst": 532.3
   },
-  "travel_mm": 3503.2,
-  "seconds_per_push": 0.4006
+  "travel_mm": 6496.3,
+  "seconds_per_push": 0.3739
 }

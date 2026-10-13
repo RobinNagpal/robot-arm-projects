@@ -31,26 +31,30 @@ Every drop is counted by its reason and by the kind of glass, in
 `data/collection.json`, because filtering by outcome thins the data exactly on
 the tables the teacher found hard.
 
-**5,200 training tables, 22,846 pushes, 12,656 kept** (14 minutes, 8 workers).
+**5,200 training tables, 17,816 pushes, 6,659 kept** (19 minutes, 8 workers).
 What was dropped:
 
 | Dropped | Pushes |
 |---|---|
-| a 5 mm test push, not a push at the task | 9,783 |
-| the table gained no room | 263 |
-| a glass toppled | 125 |
-| a glass left the glass zone | 18 |
-| blocked on the way down | 1 |
+| a 5 mm test push, not a push at the task | 10,645 |
+| a glass toppled | 278 |
+| the table gained no room | 180 |
+| a glass left the glass zone | 21 |
+| blocked on the way down | 18 |
+| jammed | 15 |
 
-**The thinning the document warns about is small here, and that is worth
-saying.** Almost everything dropped is the teacher's own 5 mm test push, which
-is not a push at the task at all. Of the 13,063 real pushes, 407 were dropped —
-3%. The teacher is clean enough on these tables that filtering by outcome
-barely biases which tables are covered. The per-kind share does vary: the
-tapered glass keeps 2,622 of 5,619 pushes against the straight glass's 3,582 of
-5,998, because tapered glasses need more test pushes.
+**The thinning the document warns about is still small in total, but it is very
+uneven across the kinds of glass.** Most of what is dropped is the teacher's
+own 5 mm test push, which is not a push at the task at all. Of the 7,171 real
+pushes, 512 were dropped, which is 7%. The uneven part is which glass they came
+from: the straight glass keeps 3,940 of its 7,131 pushes, while the tapered
+glass keeps only 360 of its 1,656. The reason is in the teacher's own refusals,
+where 3,057 of the tapered glass's 4,783 say "tips before it slides", so the
+teacher rarely gets as far as making a real push on one. This means the
+demonstration set is mostly straight glasses, and the policy therefore sees the
+hardest kind of glass the least.
 
-A further **300 tables above the training band** give 728 demonstrations that
+A further **300 tables above the training band** give 399 demonstrations that
 are never fitted on. They are what the training diagnostic is measured against.
 
 ## Where the code is
@@ -75,8 +79,8 @@ The bench, the tables, the physics and the scoring are
 
 ```
 make teacher             # fit solution 2, which is the teacher    (seconds)
-make collect             # run it on 5200 training tables         (14 minutes)
-make train SEED=0        # fit one seed of ACT                     (55 minutes)
+make collect             # run it on 5200 training tables         (19 minutes)
+make train SEED=0        # fit one seed of ACT                     (about an hour)
 make train SEED=1        # and the next, because one is not a measurement
 make train SEED=2
 make run                 # the 50 held-out tables; writes results.json
@@ -108,23 +112,26 @@ roughly three times faster per step. One pixel then covers about 3.7 mm of
 table, against the 1.9 mm the bench renders, which is still finer than
 anything the policy has to resolve.
 
-**It needs enough demonstrations, which cost minutes rather than money.** The
-first fit used 3,144 demonstrations from 1,300 tables and 51 passes over them.
+**It needs enough demonstrations, which cost minutes rather than money.** An
+early fit used 3,144 demonstrations from 1,300 tables and 51 passes over them.
 It drove the training loss to 0.04 and was useless: 11 mm from the teacher's
 chunk on tables it had been fitted on, 62 mm on tables it had not. Collecting
-four times as many took another 14 minutes of arm time and removed that gap
-entirely. The fit below is 12,656 demonstrations and 10,000 steps at batch 16,
-about 13 passes over them.
+four times as many tables removed most of that gap. Those two figures were
+taken before the examiner was given a real Robotiq 2F-85, so they are history
+rather than a measurement of the fit below, and they are kept because it was
+the shape of that lesson, rather than its exact millimetres, that changed the
+design. The fit below is 6,659 demonstrations and 10,000 steps at batch 16,
+which is about 24 passes over them.
 
 Every figure quoted here was measured on this machine while several other jobs
 were running on it, so the minutes are an upper bound rather than a benchmark.
 
 ## What the fitting cost, and what it bought
 
-Three seeds, 10,000 steps each at batch 16, about **55 minutes a seed** on the
-M4's graphics processor — so under three hours for the lot, which is what the
-document meant by "hours". `weights/act-training.json` has every seed's loss
-curve.
+Three seeds, 10,000 steps each at batch 16, between **54 and 78 minutes a
+seed** on the M4's graphics processor — so about three hours for the lot, which
+is what the document meant by "hours". `weights/act-training.json` has every
+seed's loss curve.
 
 The diagnostic `train.py` prints is how far the fitted chunk is from the
 teacher's own chunk, per waypoint, on tables the fit saw and on tables it did
@@ -133,64 +140,85 @@ numbers together say what is happening, and they changed the design once:
 
 | Demonstrations | Passes over them | Fitted tables | Unseen tables |
 |---|---|---|---|
-| 3,144 | 51 | 11 mm | 62 mm |
-| 12,656 | 13 | 53-64 mm | 55-64 mm |
+| 3,144, with the old blade | 51 | 11 mm | 62 mm |
+| 6,659, with the real hand | 24 | 20-21 mm | 48-52 mm |
 
 The first row is memorising: near-perfect on what it saw, useless on what it
-did not. Four times the demonstrations closed that gap — and the error on
-unseen tables barely moved. The policy stopped memorising and started
+did not. Four times the tables closed most of that gap, and the error on unseen
+tables came down by only a quarter. The policy stopped memorising and started
 predicting something close to the average demonstration instead. More steps do
 not fix the first row and more data does not fix the second.
+
+The heading tells the same story more sharply than the millimetres do. On
+tables each seed was fitted on, its chunk points within **3.5 to 3.9 degrees**
+of where the teacher pointed; on tables it never saw, it is **22 to 27 degrees**
+out. A push that is 25 degrees off does not arrive late, it arrives somewhere
+else, and that is what the results below are made of.
 
 ## Results — 50 held-out tables, 251 glasses, 3 fitted seeds
 
 Every figure is the median across the three seeds, with the standard deviation
-and the range, as `results.json` holds them. 193 of the 251 glasses have no
+and the range, as `results.json` holds them. 203 of the 251 glasses have no
 room at the start.
 
 | | ACT | Teacher (solution 2) |
 |---|---|---|
-| Tables done | **3** +/- 1.7 (3 to 6) | 31 |
-| Tables correct but incomplete | 46 +/- 4.4 (39 to 47) | 19 |
-| Tables wrong | 1 +/- 2.6 (0 to 5) | 0 |
-| Glasses racked | **68** +/- 8.4 (67 to 82) | 185 |
-| Glasses refused, with a reason | 182 +/- 11.6 (163 to 184) | 66 |
-| Glasses toppled | 1 +/- 2.6 (0 to 5) | 0 |
+| Tables done | **2** +/- 1.0 (1 to 3) | 14 |
+| Tables correct but incomplete | 36 +/- 3.8 (35 to 42) | 35 |
+| Tables wrong | 11 +/- 3.1 (7 to 13) | 1 |
+| Glasses racked | **63** +/- 7.2 (51 to 64) | 107 |
+| Glasses refused, with a reason | 175 +/- 10.7 (174 to 193) | 143 |
+| Glasses toppled | 12 +/- 3.2 (7 to 13) | 1 |
+| Glasses pushed out of the zone | 0 +/- 0.6 (0 to 1) | 0 |
 | Glasses left with no reason | 0 | 0 |
-| Pushes spent | 643 +/- 40 (589 to 668) | 229 |
-| Pushes blocked on the way down | 569 +/- 67 (492 to 625) | 0 |
-| Pushes that never touched anything | 38 +/- 7 (27 to 41) | 0 |
-| Pushes jammed | 0 | 0 |
-| Landed from its aim, median / worst | 44.9 / 113.7 mm | 1.0 / 3.9 mm |
-| Thinking per push | **11 ms** | 75 ms |
+| Pushes spent | 438 +/- 43 (414 to 497) | 182 |
+| Pushes blocked on the way down | 331 +/- 68 (323 to 445) | 0 |
+| Pushes that never touched anything | 19 +/- 3.2 (18 to 24) | 0 |
+| Pushes jammed | 4 +/- 2.5 (2 to 7) | 0 |
+| Travel against the floor | 0.87x | 1.32x |
+| Landed from its aim, median / worst | 41.4 / 211.8 mm | 1.6 / 32.8 mm |
+| Thinking per push | **11 ms** | 102 ms |
 
-Of the 1,900 chunks the three runs produced, **814 had at least one waypoint
-outside what the jaw can reach** and were pulled back inside it.
+Of the 1,349 chunks the three runs produced, **1,027 had at least one waypoint
+outside what the jaw can reach** and were pulled back inside it. The shared gate
+in front of the policy refused 555 glasses before the policy was reached at
+all, because they tip before they slide.
 
-**The student falls a long way short of its teacher**: 3 tables cleared against
-31, and 68 glasses racked against 185. It spends nearly three times the
-teacher's pushes to do it, because almost every push achieves nothing and the
-budget runs out.
+**The student falls a long way short of its teacher**, and with the real hand it
+now falls short in a way that costs glasses. It clears 2 tables against the
+teacher's 14 and racks 63 glasses against 107, and it spends more than twice the
+pushes doing it. The important change is the bottom of the table: it topples
+**12 glasses where the teacher topples 1**, which makes 11 of its fifty tables
+wrong. Under the invented blade this solution was clumsy but safe; the real hand
+turns the same clumsiness into broken glass, because the hand is now 266 mm long
+behind its fingertips and 89 mm across at the wrist, so a chunk that is 25
+degrees off no longer misses harmlessly.
 
-**The seeds disagree about more than the score.** Seed 2 fitted closest to the
-teacher (37 mm against 53 and 64 per waypoint) and it both racked the most
-glasses — 82 — and toppled the most, 5, making 5 tables wrong. The other two
-toppled one between them. A closer fit does not make this solution safer; it
-makes its pushes real, and a real push on a crowded table is the only thing
-here that can knock a glass over.
+**It is also now travelling less than the floor**, at 0.87 times the least
+displacement any legal arrangement of these fifty tables needs. That is not
+efficiency. It is the signature of a solution that mostly does not move
+anything: three quarters of its pushes are stopped on the way down, so the
+glasses that do move are the few it reached.
+
+**The seeds disagree about the score but agree about the shape.** The three sit
+between 1 and 3 tables cleared and between 7 and 13 glasses toppled, and the
+seed that fitted closest to the teacher per waypoint is not the safest one. A
+closer fit does not make this solution safer, because it makes its pushes real,
+and a real push on a crowded table is the only thing here that can knock a
+glass over.
 
 ## Why it scores that way
 
-**Almost every push ends before a glass is touched.** The policy's starting
-point lands in roughly the right neighbourhood, but no closer than that:
-measured over held-back demonstrations its first waypoint sits 66 to 79 mm
-from where the teacher put the fingertips at the median, and 130 to 150 mm at
-the worst tenth. Its heading is around 30 degrees out. The jaw is 270 mm long
-behind its fingertips and its body is 90 mm wide,
-so on a crowded table a heading that far off puts that body over a neighbour.
-`follow()` brings the jaw down to the chunk's first waypoint and stops if it
-touches anything on the way, which it does, and the push is reported blocked
-with nothing moved.
+**Three quarters of its pushes end before a glass is touched.** The policy's
+chunk lands in roughly the right neighbourhood, but no closer than that:
+measured over held-back demonstrations its waypoints sit 48 to 52 mm from the
+teacher's own at the median, and 152 to 157 mm at the worst tenth, with the
+heading 22 to 27 degrees out. The hand reaches 266 mm back behind its
+fingertips and is 89 mm across at the wrist, so on a crowded table a heading
+that far off puts that wrist over a neighbour. After that, `follow()` brings
+the jaw down to the chunk's first waypoint and stops if it touches anything on
+the way, which it does on 331 of the 438 pushes, and the push is reported
+blocked with nothing moved.
 
 Solution 1's enumeration checks exactly this: for every candidate it tests the
 fingertip path, the finger segment and the wrist-and-body segment against every
@@ -199,14 +227,17 @@ only pushes that happened to clear, never the ones the geometry rejected, and
 "the absence of an example is not a label" applies to jaw clearance as much as
 to refusals.
 
-**It topples almost nothing and leaves no glass unexplained.** Every table ends
-*correct but incomplete* or, once in three runs, wrong. The shared gate in
-front of the policy refuses the glasses that tip before they slide, and the
-budget accounts for the rest, so the counts the problem calls wrong stay near
-zero. That is the gate working, not the policy.
+**It leaves no glass unexplained, but it no longer leaves them standing.**
+Every glass that is not racked has a reason written against it, which is the
+shared gate and the push budget doing their work rather than the policy doing
+its. What the gate cannot do is make a blind push safe: 12 glasses go over, and
+each one stops its table, which is why 11 of the fifty end *wrong*. Under the
+invented blade this same policy toppled about one glass in three runs. The
+policy did not get worse; the hand got real, and a 266 mm hand swung 25 degrees
+off centre hits things that a thin blade passed beside.
 
 **It is cheap to run.** 11 ms of thinking per push, which is one forward pass,
-against the teacher's 75 ms of enumerating and ranking candidates. That is
+against the teacher's 102 ms of enumerating and ranking candidates. That is
 the one column where this solution beats solution 2, and it is worth nothing
 on its own: distilling a program into a policy for speed only pays when the
 program is the bottleneck, and here the arm is.
@@ -244,8 +275,8 @@ change what the comparison measures.
 ## Known gaps
 
 - **The denoising rung is not fitted**, as above.
-- **Three training seeds**, and they disagree by more than a little: 3 to 6
-  tables cleared, 0 to 5 glasses toppled. Every number above carries its
+- **Three training seeds**, and they disagree by more than a little: 1 to 3
+  tables cleared, 7 to 13 glasses toppled. Every number above carries its
   spread, and nothing here should be read without it.
 - **The crowded corner cases are not over-represented.** The document
   prescribes it; `collect.py` draws consecutive table numbers instead, so the
