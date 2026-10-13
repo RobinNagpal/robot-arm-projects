@@ -40,7 +40,7 @@ A search tries 1,500 pushes per crowded glass, drops any that any of the five
 copies gives more than a 1% chance of toppling something, and makes the one
 that leaves least room missing. Then the arm looks again and plans afresh.
 
-It was trained on 38,012 pushes made in MuJoCo, about 31 minutes on a laptop.
+It was trained on 15,379 pushes made in MuJoCo, about half an hour on a laptop.
 
 ## What has to change in the model
 

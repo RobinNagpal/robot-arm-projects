@@ -372,7 +372,7 @@ thinks in movement is not squeezed into three numbers describing a push. Both
 that path and the rendered view from the top now exist in the examiner, and this
 solution uses them as they come.
 
-![The only object in this solution with both a size in millimetres and a place in the picture is the frame of the straight-down view, 717 mm across on the table top, so two standard deviations of the model's action space are made to span it exactly and anything beyond that clips back onto its edge; because the examiner consumes one waypoint every 50 ms, the same constant also fixes the speed, and the median gap in the model's own chunks works out at 286 mm/s against the 20 mm/s the examiner's own push macro moves at and the 200 mm/s the arm tops out at.](../../../images/03-push-glasses-apart/05-two-sigmas-span-the-frame.png)
+![The only object in this solution with both a size in millimetres and a place in the picture is the frame of the straight-down view, 727 mm across on the table top, so two standard deviations of the model's action space are made to span it exactly and anything beyond that clips back onto its edge; because the examiner consumes one waypoint every 50 ms, the same constant also fixes the speed, and the median gap in the model's own chunks works out at 292 mm/s against the 20 mm/s the examiner's own push macro moves at and the 200 mm/s the arm tops out at.](../../../images/03-push-glasses-apart/05-two-sigmas-span-the-frame.png)
 
 ## The instruction is nearly dead weight here
 
@@ -501,7 +501,7 @@ producing plausible wrong actions is not merely inaccurate; it is inaccurate in
 the one way this problem cannot absorb, which is the whole reason the next
 section but one takes the topple limit out of the model's hands entirely.
 
-![Measured, the failure across the gap is blunter than confident wrong pushes: the lowest point of a chunk has a median of 209 mm above the table over 2,260 answers, which is more than three times the 65 mm at which a push really lands and clear over the top of all but the tallest glass the kind is drawn at, so 674 of one run's 754 pushes never touched anything at all, nothing was ever blocked coming down because nothing ever came down, and 69 of the 80 pushes that did reach a glass jammed.](../../../images/03-push-glasses-apart/05-the-chunks-come-back-high.png)
+![Measured, the failure across the gap is blunter than confident wrong pushes: the lowest point of a chunk has a median of 217 mm above the table over 1,855 answers, which is twice the 107 mm at which a push really lands and clear over the top of all but the tallest glass the kind is drawn at, so 506 of one run's 620 pushes never touched anything at all, nothing was ever blocked coming down because nothing ever came down, and 79 of the 114 pushes that did reach a glass jammed.](../../../images/03-push-glasses-apart/05-the-chunks-come-back-high.png)
 
 ## The honest expectation
 
@@ -533,7 +533,7 @@ continued on this cell's own pushes. If this solution scored well, the pair
 would measure very little, because there would be little room for training to
 improve anything. A poor score here is what gives that comparison its range.
 
-![Put the racking beside the crowding and nothing is left over: 58 of the 251 glasses already had their room at the start and 56 were racked, where any solution that freed a glass would have racked more than 58, because racking one loosens its neighbours; no table of the fifty was finished in any of the three runs, 642 of 754 pushes were repeats, and the one or two glasses a run refused for tipping show that the shared rule hardly binds on these tables, so what is left to explain the shortfall is the pushes.](../../../images/03-push-glasses-apart/05-nothing-is-left-over.png)
+![Put the racking beside the crowding and nothing at all is left over: 48 of the 251 glasses already had their room at the start and exactly 48 were racked, where any solution that freed a glass would have racked more than 48, because racking one loosens its neighbours; one table of the fifty was finished in each of the three runs, 520 of 620 pushes were repeats, and the 36 to 42 glasses a run refused for tipping show that the shared rule holds back about a sixth of them before the model is asked, so what is left to explain the shortfall is the pushes.](../../../images/03-push-glasses-apart/05-nothing-is-left-over.png)
 
 ## The price of the model, and why this model
 

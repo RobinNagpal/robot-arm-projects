@@ -50,6 +50,7 @@ from pathlib import Path
 
 import numpy as np
 from diagram_style import (
+    FINGER_HEIGHT,
     GLASS,
     GLASS_ZONE,
     GOOD,
@@ -58,11 +59,11 @@ from diagram_style import (
     INK,
     JAW_TOP,
     LABEL_SIZE,
-    LOWEST_GRIP,
     MU_HIGH,
     MU_LOW,
     MUTED,
     NOTE_SIZE,
+    PUSH_HEIGHT,
     TABLE_FRICTION,
     WARN,
     bare,
@@ -533,22 +534,28 @@ def gap_line(axis, a: dict, b: dict, colour: str, above: float = 0.0) -> float:
 # --------------------------------------------------------------------------- #
 # The example table every picture but the last two is drawn on.
 # --------------------------------------------------------------------------- #
-def can_be_pushed(glass: dict, mu: float = TABLE_FRICTION) -> bool:
-    """Whether this glass has any height the jaw can reach and still slide it.
+def can_be_pushed(glass: dict) -> bool:
+    """Whether solution 1's own rule would let this glass be pushed at all.
 
-    The height that matters is the jaw's *top* edge, not the middle of it. A
-    tapered glass is wider higher up, so it meets the top edge of the 30 mm jaw
-    before it meets the middle, and that is where the push is applied.
+    The height that matters is the jaw's *top* edge, not the middle of it,
+    because a glass that is wider higher up meets the top edge first and that
+    is where the push is applied. With the real gripper that edge is 107 mm up,
+    and at the friction the simulator really uses almost no glass is *certain*
+    to slide from there. The planner therefore does not demand certainty: it
+    refuses only the glasses that tip even at the most favourable friction it
+    believes in, which is the lowest one, and settles the rest with a 5 mm test
+    push. This asks the same question, so the worked example below is a push
+    the arm would really try.
     """
-    return pushable(glass["foot"], mu, JAW_TOP)
+    return pushable(glass["foot"], MU_LOW, JAW_TOP)
 
 
 def example_table() -> tuple[int, list[dict], list[dict], tuple[int, int]]:
     """A five-glass layout crowded into exactly one pair, one of which can be pushed.
 
-    "Can be pushed" is asked at the simulator's own friction, which is the
-    honest test even though the arm does not know that number: a worked example
-    whose glass tips before it slides would be a worked example of a refusal.
+    "Can be pushed" is ``can_be_pushed`` above, which is the planner's own
+    question rather than a stricter one: a worked example of a glass the
+    planner would refuse outright would be a worked example of a refusal.
     """
     for seed in range(400):
         glasses = table(5, seed)
@@ -574,9 +581,13 @@ def picture_what_it_predicts(seed: int, crowded: list[dict], pair: tuple[int, in
     plan = search(crowded, index, rng)
     landing = predict(glass, plan["heading"], plan["travel"])
     after = moved(crowded, index, landing)
-    middle = ((crowded[pair[0]]["x"] + crowded[pair[1]]["x"]) / 2,
-              (crowded[pair[0]]["y"] + crowded[pair[1]]["y"]) / 2)
-    close = 110.0
+    # Centred on the three places that matter — the pair, and where the pushed
+    # glass lands — because the two close-up panels share one window and a
+    # glass that leaves it cannot be compared with where it started.
+    points = [(crowded[pair[0]]["x"], crowded[pair[0]]["y"]),
+              (crowded[pair[1]]["x"], crowded[pair[1]]["y"]), landing]
+    middle = (sum(p[0] for p in points) / len(points), sum(p[1] for p in points) / len(points))
+    close = 150.0
 
     figure, axes = new(13.4, 5.9, columns=3)
     state, action, result = axes
@@ -591,7 +602,7 @@ def picture_what_it_predicts(seed: int, crowded: list[dict], pair: tuple[int, in
           f"five glasses, four numbers each: where it stands,\n"
           f"how wide at the rim, how wide at the foot.\n"
           f"{span:.0f} mm between {first} and {second}, where the jaw needs {room:.0f} —\n"
-          f"70 mm clear of one middle, with the wider of the\n"
+          f"{GRIP_ROOM:.0f} mm clear of one middle, with the wider of the\n"
           f"two rims outside that. So neither can be picked up")
 
     stage(action, f"In: one push on {first}, as three numbers")
@@ -602,7 +613,10 @@ def picture_what_it_predicts(seed: int, crowded: list[dict], pair: tuple[int, in
     touch = (glass["x"] - math.cos(plan["heading"]) * glass["rim"] / 2,
              glass["y"] - math.sin(plan["heading"]) * glass["rim"] / 2)
     push_arrow(action, reach, touch, INK)
-    note(action, reach[0], reach[1] - 16, "the jaw comes down here", INK, va="top")
+    # Below and to the left of the descent, because the descent comes in from
+    # the top right and the label would otherwise run off the panel's edge.
+    note(action, reach[0] - 10, reach[1] - 16, "the jaw comes\ndown here", INK, va="top",
+         ha="right")
     push_arrow(action, (glass["x"], glass["y"]), landing, GOOD, lw=1.8)
     note(action, landing[0], landing[1] + glass["rim"] / 2 + 8,
          f"{plan['travel']:.0f} mm at {math.degrees(plan['heading']):.0f}°", GOOD, va="bottom")
@@ -621,7 +635,7 @@ def picture_what_it_predicts(seed: int, crowded: list[dict], pair: tuple[int, in
     frame_close(result, middle, close)
     new_span = gap_line(result, after[pair[0]], after[pair[1]], GOOD)
     under(figure, 2, 3,
-          f"a displacement for every glass on the table — {second} and the three out of shot\n"
+          f"a displacement for every glass on the table — {second} and the others\n"
           f"do not move — and two yes-or-no answers: did anything topple, was the jaw\n"
           f"blocked coming down. The pair ends {new_span:.0f} mm apart, past the {room:.0f} mm it needs")
 
@@ -674,7 +688,7 @@ def picture_planning(crowded: list[dict], pair: tuple[int, int], plan: dict) -> 
     frame_on(narrow, crowded, pad=115.0)
     elite_spread = max(math.dist(a[3], b[3]) for a in last["elite"] for b in last["elite"])
     under(figure, 1, 2,
-          f"the draws have collapsed onto one spot {elite_spread:.0f} mm across.\n"
+          f"the draws have gathered, {elite_spread:.0f} mm apart at the widest.\n"
           f"The score is the room still missing on the table, plus\n"
           f"{TRAVEL_COST:.1f} mm of penalty per millimetre pushed, so the\n"
           f"shortest push that clears the pair wins")
@@ -710,12 +724,15 @@ def picture_planning(crowded: list[dict], pair: tuple[int, int], plan: dict) -> 
                           edgecolor=GOOD, lw=1.0, zorder=7))
     done.plot(0, 0, marker="+", ms=10, mew=1.3, color=MUTED, zorder=8)
     done.annotate("", xy=(-MEASURED_GEOMETRY_ERROR * 0.7, -MEASURED_GEOMETRY_ERROR * 0.7),
-                  xytext=(-6.0, -5.0),
+                  xytext=(-9.0, -8.0),
                   arrowprops={"arrowstyle": "->", "color": GOOD, "lw": 0.8}, zorder=8)
-    note(done, -14.0, -17.0, f"{MEASURED_GEOMETRY_ERROR:.2f} mm: the geometry,\nno model at all",
+    note(done, -20.0, -25.0, f"{MEASURED_GEOMETRY_ERROR:.2f} mm: the geometry,\nno model at all",
          GOOD, ha="left", va="bottom")
-    note(done, 0, 19.5, "+ is where the push was aimed", MUTED, va="bottom")
-    frame_close(done, (0.0, 0.0), 23.0)
+    note(done, 0, 3.6 * MEASURED_ONE_PUSH_ERROR, "+ is where the push was aimed", MUTED,
+         va="bottom")
+    # The frame follows the widest ring, which follows the measured error, so a
+    # bigger error does not push its own labels off the picture.
+    frame_close(done, (0.0, 0.0), 4.6 * MEASURED_ONE_PUSH_ERROR)
 
     neighbour = (crowded[pair[1]]["x"], crowded[pair[1]]["y"])
     span = math.dist(real, neighbour)
@@ -748,9 +765,9 @@ def picture_friction(draws: int = 400, seed: int = 11) -> None:
     share_low = float(np.mean([pushable(f, MU_LOW, JAW_TOP) for f in feet]))
     share_high = float(np.mean([pushable(f, MU_HIGH, JAW_TOP) for f in feet]))
     share_true = float(np.mean([pushable(f, TABLE_FRICTION, JAW_TOP) for f in feet]))
-    middle_low = float(np.mean([pushable(f, MU_LOW, LOWEST_GRIP) for f in feet]))
-    middle_true = float(np.mean([pushable(f, TABLE_FRICTION, LOWEST_GRIP) for f in feet]))
-    middle_high = float(np.mean([pushable(f, MU_HIGH, LOWEST_GRIP) for f in feet]))
+    middle_low = float(np.mean([pushable(f, MU_LOW, PUSH_HEIGHT) for f in feet]))
+    middle_true = float(np.mean([pushable(f, TABLE_FRICTION, PUSH_HEIGHT) for f in feet]))
+    middle_high = float(np.mean([pushable(f, MU_HIGH, PUSH_HEIGHT) for f in feet]))
 
     widest, narrowest = int(np.argmax(feet)), int(np.argmin(feet))
 
@@ -758,7 +775,9 @@ def picture_friction(draws: int = 400, seed: int = 11) -> None:
     side, spread = axes
 
     stage(side, f"The window a push has to fit into, at μ = {TABLE_FRICTION}")
-    gap = 250.0
+    # Wide enough that the two glasses' notes, which run a line each, do not
+    # meet in the middle.
+    gap = 360.0
     for column, which in enumerate((widest, narrowest)):
         slot = column * gap
         glass_from_the_side(side, slot, heights[which], rims[which], feet[which] / rims[which],
@@ -770,25 +789,31 @@ def picture_friction(draws: int = 400, seed: int = 11) -> None:
             side.add_patch(Rectangle((slot - 74, JAW_TOP), 148, top - JAW_TOP,
                                      facecolor=to_rgba(GOOD, 0.22), edgecolor="none", zorder=4))
         side.plot([slot - 74, slot + 74], [top, top], color=colour, lw=1.4, zorder=5)
-        side.text(slot, top + (7 if usable else -7), f"tips above {top:.0f} mm",
-                  fontsize=NOTE_SIZE, color=colour, ha="center",
-                  va="bottom" if usable else "top")
+        # Beside the line rather than under it when the glass cannot be pushed:
+        # under it is where the jaw's middle is drawn.
+        side.text(slot + (0 if usable else 82), top + (7 if usable else 0),
+                  f"tips above {top:.0f} mm", fontsize=NOTE_SIZE, color=colour,
+                  ha="center" if usable else "left",
+                  va="bottom" if usable else "center",
+                  bbox={"facecolor": "white", "edgecolor": "none", "pad": 1.0})
         side.text(slot, -30, f"foot {feet[which]:.0f} mm across", fontsize=NOTE_SIZE, color=INK,
                   ha="center", va="top")
         side.text(slot, -80, f"{top - JAW_TOP:.0f} mm of room" if usable else "no safe height",
                   fontsize=NOTE_SIZE, color=colour, ha="center", va="top")
         side.text(slot, -118,
-                  f"{top - LOWEST_GRIP:.0f} mm at the middle" if top > LOWEST_GRIP
+                  f"{top - PUSH_HEIGHT:.0f} mm at the middle" if top > PUSH_HEIGHT
                   else "none at the middle either",
                   fontsize=NOTE_SIZE, color=MUTED, ha="center", va="top")
-    side.axhline(LOWEST_GRIP, color=MUTED, lw=1.0, ls=(0, (4, 3)), zorder=6)
+    side.axhline(PUSH_HEIGHT, color=MUTED, lw=1.0, ls=(0, (4, 3)), zorder=6)
     side.axhline(JAW_TOP, color=INK, lw=1.3, zorder=6)
     side.text(-230, JAW_TOP + 10, f"{JAW_TOP:.0f} mm: the jaw's top edge,\nwhich a glass that is "
               f"wider\nhigher up meets first", fontsize=NOTE_SIZE, color=INK, ha="center",
               va="bottom")
-    side.text(-230, LOWEST_GRIP - 10, f"{LOWEST_GRIP:.0f} mm: its middle",
+    side.text(-230, PUSH_HEIGHT - 10, f"{PUSH_HEIGHT:.0f} mm: its middle",
               fontsize=NOTE_SIZE, color=MUTED, ha="center", va="top")
-    side.set_xlim(-360, gap + 130)
+    # Room on the right for the second glass's "tips above" label, which sits
+    # beside its line rather than under it.
+    side.set_xlim(-360, gap + 250)
     side.set_ylim(-190, max(heights[widest], heights[narrowest]) + 40)
 
     stage(spread, f"Every one of {draws} drawn glasses")
@@ -806,9 +831,9 @@ def picture_friction(draws: int = 400, seed: int = 11) -> None:
                     color=colour, va="center")
         spread.plot(feet[order], [topple_height(f, mu) for f in feet[order]], ls="none",
                     marker="o", ms=2.2, color=colour, alpha=0.40)
-    spread.axhline(LOWEST_GRIP, color=MUTED, lw=1.0, ls=(0, (4, 3)))
-    spread.text(feet.max(), LOWEST_GRIP - 2, f"the jaw's middle, {LOWEST_GRIP:.0f} mm ",
-                fontsize=NOTE_SIZE, color=MUTED, va="top", ha="right")
+    spread.axhline(PUSH_HEIGHT, color=MUTED, lw=1.0, ls=(0, (4, 3)))
+    spread.text(feet.min(), PUSH_HEIGHT - 2, f" the jaw's middle, {PUSH_HEIGHT:.0f} mm",
+                fontsize=NOTE_SIZE, color=MUTED, va="top", ha="left")
     spread.axhline(JAW_TOP, color=INK, lw=1.3)
     spread.text(feet.max(), JAW_TOP + 2, f"the jaw's top edge, {JAW_TOP:.0f} mm ",
                 fontsize=NOTE_SIZE, color=INK, va="bottom", ha="right")
@@ -825,7 +850,7 @@ def picture_friction(draws: int = 400, seed: int = 11) -> None:
          f"how many can be pushed at all, at the jaw's top edge:\n"
          f"{share_low * 100:.1f}% at μ = {MU_LOW},  {share_true * 100:.1f}% at μ = {TABLE_FRICTION},"
          f"  {share_high * 100:.1f}% at μ = {MU_HIGH}\n"
-         f"fifteen millimetres lower it would be {middle_low * 100:.1f}%, "
+         f"at its middle instead it would be {middle_low * 100:.1f}%, "
          f"{middle_true * 100:.1f}% and {middle_high * 100:.1f}%", INK, va="top")
 
     footer(figure,
@@ -834,9 +859,10 @@ def picture_friction(draws: int = 400, seed: int = 11) -> None:
            f"the share\nof these glasses that may be pushed at all moves from "
            f"{share_low * 100:.1f}% to {share_high * 100:.1f}%. And the height h is the jaw's top "
            f"edge rather than its middle, because a tapered glass is wider higher up and\nmeets the "
-           f"top edge first; that fifteen millimetres alone takes the μ = {MU_LOW} share from "
-           f"{middle_low * 100:.1f}% to {share_low * 100:.1f}%. A written-down push model gets that "
-           f"wrong until somebody notices the jaw\nis 30 mm tall. A model fitted to real pushes "
+           f"top edge first; that {JAW_TOP - PUSH_HEIGHT:.0f} mm alone takes the μ = {MU_LOW} "
+           f"share from {middle_low * 100:.1f}% to {share_low * 100:.1f}%. A written-down push "
+           f"model gets that wrong until somebody\nnotices the hand is {FINGER_HEIGHT:.0f} mm "
+           f"tall on its side. A model fitted to real pushes "
            f"absorbs it without anybody noticing — and leaves it in the weights, where nobody can "
            f"read it back out again.")
     figure.subplots_adjust(bottom=0.27, top=0.93, wspace=0.18)
@@ -846,7 +872,7 @@ def picture_friction(draws: int = 400, seed: int = 11) -> None:
     print(f"  pushable at the jaw's top edge ({JAW_TOP:.0f} mm): {share_low * 100:.1f}% at "
           f"mu={MU_LOW}, {share_true * 100:.1f}% at mu={TABLE_FRICTION}, {share_high * 100:.1f}% "
           f"at mu={MU_HIGH}")
-    print(f"  at the jaw's middle ({LOWEST_GRIP:.0f} mm) it would be {middle_low * 100:.1f}%, "
+    print(f"  at the jaw's middle ({PUSH_HEIGHT:.0f} mm) it would be {middle_low * 100:.1f}%, "
           f"{middle_true * 100:.1f}% and {middle_high * 100:.1f}%")
     return share_low, share_high
 

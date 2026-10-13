@@ -157,7 +157,8 @@ def along(axis, start, end, colour=INK, lw=1.3) -> None:
 # --------------------------------------------------------------------------- #
 # 1. The shape of the correction, and what it leaves alone.
 # --------------------------------------------------------------------------- #
-def picture_the_correction(training: dict, mine: dict, theirs: dict) -> None:
+def picture_the_correction(training: dict, mine: dict, theirs: dict,
+                           mine_asking: dict, theirs_asking: dict) -> None:
     moving, total = training["moving_numbers"], training["total_numbers"]
     share = moving / total
     figure, axes = new(14.6, 6.6, columns=3)
@@ -226,13 +227,20 @@ def picture_the_correction(training: dict, mine: dict, theirs: dict) -> None:
         after.text(6, y + 13, label, fontsize=NOTE_SIZE, color=colour, ha="left", va="bottom")
         after.text(value / 400.0 * 80.0 + 9, y + 5.5, f"{value:.0f} ms", fontsize=NOTE_SIZE,
                    color=colour, ha="left", va="center")
+    # A push can cost more than one forward pass, because an answer aimed at a
+    # glass the loop has already refused is thrown away and the model is asked
+    # again. Dividing by that gives the price of one pass, which is the
+    # quantity a low-rank correction is supposed to leave alone.
+    mine_passes = mine_asking["asked"] / max(mine_asking["followed"], 1)
+    theirs_passes = theirs_asking["asked"] / max(theirs_asking["followed"], 1)
     note(after, 50, 26,
-         "Thinking per push, median of three runs, with the\nbench's own share taken off and both "
-         "measured on an\nidle machine. The two are the same price, which is\nwhat a low-rank "
-         "correction guarantees rather than\nmerely permits: it changes which weights are used,\n"
-         "not how many. Timed instead on a laptop busy with\nother training, the same two read "
-         "about a second\nand 0.82 s — a compute column measured under load\ncompares the load "
-         "and not the methods.", INK, va="top")
+         f"Thinking per push, median of three runs, with the\nbench's own share taken off and "
+         f"both measured on an\nidle machine. The two look different, and one forward\npass "
+         f"costs the same in each: {theirs_ms / theirs_passes:.0f} ms against "
+         f"{mine_ms / mine_passes:.0f} ms. What\ndiffers is how many passes a push costs — "
+         f"{theirs_passes:.1f}\nagainst {mine_passes:.1f} — because an answer aimed at a glass\n"
+         f"already refused is thrown away and the model is\nasked again. The correction changes "
+         f"which weights are\nused, not how many.", INK, va="top")
 
     footer(figure,
            f"This is the whole of the difference between solution 5 and this one. Every borrowed "
@@ -327,7 +335,8 @@ def picture_what_moved(mine: dict, theirs: dict, teacher: dict) -> None:
            f"still cover {rows[1][2] / rows[2][2]:.1f} times the ground its teacher's chunks did, at "
            f"{rows[1][3] / rows[2][3]:.1f} times their speed and "
            f"{rows[1][3] / WAYPOINT_PERIOD / PUSH_SPEED:.1f} times the speed the examiner's own macro "
-           f"really pushes at,\nand on a crowded table a push three times too long is a push into a "
+           f"really pushes at,\nand on a crowded table a push {rows[1][2] / rows[2][2]:.0f} times "
+           f"too long is a push into a "
            f"neighbour. So the model learned where a push happens long "
            f"before it learned how far one goes — and the teacher's own chunks are already "
            f"faster than the teacher, because fitting a recorded push into fifty\nwaypoints "
@@ -432,25 +441,35 @@ def picture_coming_down(mine: dict, theirs: dict) -> None:
                      fontsize=NOTE_SIZE, color=MUTED, ha="left", va="center")
         follows.text(42.0 * mine_count / biggest + 1.6, y - 0.20, f"{mine_count}  this solution",
                      fontsize=NOTE_SIZE, color=colour, ha="left", va="center")
+    # Every ratio in this note is worked out from the two runs rather than
+    # written down, because the two runs change whenever either is measured
+    # again and a remembered ratio would quietly stop being true.
+    racked_more = run["glasses_end"]["racked"] / max(other["glasses_end"]["racked"], 1)
+    topple_cost = run["glasses_end"]["toppled"] / max(other["glasses_end"]["toppled"], 1)
+    wrong_cost = run["outcome"]["wrong"] / max(other["outcome"]["wrong"], 1)
     follows.text(0, -1.6,
-                 "Each pair is drawn to its own larger value, so compare within a pair\n"
-                 "and not between them; the same middle run of three in both columns.\n\n"
-                 "The fitting bought a few more tables finished and a third more glasses\n"
-                 "racked, and it cost seven times the toppled glasses and nearly eight\n"
-                 "times the tables marked wrong. Nothing in this project stands a glass\n"
-                 "back up, so on this scorecard a policy that never reaches a glass scores\n"
-                 "better than one that reaches the wrong part of it. That is the pair's\n"
-                 "answer, and it is not that training bought nothing: it is that a thousand\n"
-                 "steps bought enough competence to act and not enough to act safely.",
+                 f"Each pair is drawn to its own larger value, so compare within a pair\n"
+                 f"and not between them; the same middle run of three in both columns.\n\n"
+                 f"The fitting bought a few more tables finished and {racked_more:.1f} times the\n"
+                 f"glasses racked, and it cost {topple_cost:.1f} times the toppled glasses and "
+                 f"{wrong_cost:.1f}\ntimes the tables marked wrong. Nothing in this project "
+                 f"stands a glass\n"
+                 f"back up, so on this scorecard a policy that never reaches a glass scores\n"
+                 f"better than one that reaches the wrong part of it. That is the pair's\n"
+                 f"answer, and it is not that training bought nothing: it is that a thousand\n"
+                 f"steps bought enough competence to act and not enough to act safely.",
                  fontsize=NOTE_SIZE, color=INK, ha="left", va="top")
     follows.set_xlim(-2, 76)
     follows.set_ylim(-6.6, 4.8)
 
     footer(figure,
-           "The model learned the height a push happens at, and did not learn where to put the jaw "
-           "down. Those are different things, and the demonstrations could only teach the first: a "
-           "teacher that always comes\ndown behind a glass never produces an example of coming down "
-           "on one, so the state the learner spends two thirds of its pushes in is precisely the "
+           f"The model learned the height a push happens at, and did not learn where to put the "
+           f"jaw down. Those are different things, and the demonstrations could only teach the "
+           f"first: a teacher that always comes\ndown behind a glass never produces an example of "
+           f"coming down "
+           f"on one, so the state the learner spends "
+           f"{run['pushes']['blocked_on_the_way_down'] / run['pushes']['total']:.0%} of its pushes "
+           f"in is precisely the "
            "state its training set has nothing to say about. That is\nwhat DAgger exists to repair, "
            "and it is a prescription in this folder rather than code.")
     figure.subplots_adjust(bottom=0.12, top=0.92, wspace=0.12)
@@ -488,7 +507,8 @@ def picture_the_compute(training: dict, collected: dict) -> None:
                      arrowprops={"arrowstyle": "-", "color": GOOD, "lw": 0.8})
     note(compute, 50, -8,
          f"Both squares are drawn by area, so the small one is one part in {part:.0f}.\n"
-         f"{training['minutes']:.0f} minutes of this laptop's Metal, about four seconds a step, on a "
+         f"{training['minutes']:.0f} minutes of this laptop's Metal, about "
+         f"{training['minutes'] * 60 / training['steps_done']:.0f} seconds a step, on a "
          f"machine\nalso running three other solutions' training; {training['memory_gib']:.2f} GiB "
          f"held. Memory was\nnever the obstacle at this size and time was, so every number this "
          f"solution\nreports carries this square as its caveat.", INK, va="top")
@@ -527,15 +547,15 @@ def picture_the_compute(training: dict, collected: dict) -> None:
     curve.set_xlim(-80, 1180)
     curve.set_ylim(0, 770)
     under(figure, 1, 2,
-          f"Each point is {16} chunks from a policy that draws its answer, so "
-          f"{history[1]['tuning_mm']['median']:.0f} mm to "
-          f"{history[2]['tuning_mm']['median']:.0f} mm is inside the noise. What is outside it is "
-          f"that the fall stopped: between {history[1]['step']}\nand {history[2]['step']} the "
-          f"fitting loss halved, from {history[1]['loss']:.3f} to {history[2]['loss']:.3f}, while "
-          f"the held-out distance did not improve \u2014 which is the\nshape that says the extra "
-          f"training is going into the examples rather than into the pushing. That is why the\n"
-          f"training stopped where it did, and it is also why the square on the left is not simply "
-          f"an argument for more of it.", y=0.215)
+          f"Each point is {16} chunks from a policy that draws its answer, so a step of twenty "
+          f"millimetres is near the noise.\nWhat is clear is the direction. Between "
+          f"{history[1]['step']} and {history[2]['step']} the fitting loss fell from "
+          f"{history[1]['loss']:.3f} to {history[2]['loss']:.3f} and the\nheld-out distance fell "
+          f"with it, from {history[1]['tuning_mm']['median']:.0f} mm to "
+          f"{history[2]['tuning_mm']['median']:.0f} mm, so the training was still buying something "
+          f"when it stopped.\nIt stopped because the step budget ran out, which is why the square "
+          f"on the left is the caveat on every\nnumber this solution reports: the correction is "
+          f"under-trained rather than over-trained.", y=0.215)
 
     footer(figure,
            f"Both halves of this picture have to be read together. The correction was fitted on "
@@ -562,7 +582,7 @@ def main() -> None:
     print(f"solution 6: rank {training['rank']} on {', '.join(training['tables'])}; "
           f"{training['steps_done']} steps at a batch of {training['batch']}; "
           f"{training['demonstrations']} demonstrations")
-    picture_the_correction(training, mine, theirs)
+    picture_the_correction(training, mine, theirs, mine_asking, theirs_asking)
     picture_what_moved(mine_asking, theirs_asking, collected)
     picture_coming_down(mine, theirs)
     picture_the_compute(training, collected)

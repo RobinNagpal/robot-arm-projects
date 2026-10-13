@@ -247,8 +247,8 @@ one learned part is the one problem 3 already chose and measured. Solution 5
 costs nothing at all: it changes only the order of work the arm does anyway.
 
 **What it gives up.** A second training run for the push model, on mixed
-tables, of unknown size. Problem 3's took 38,012 pushes and 31 minutes for one
-kind per table. And three new numbers that are fractions of a glass's own
+tables, of unknown size. Problem 3's took 15,379 pushes and about half an hour
+for one kind per table. And three new numbers that are fractions of a glass's own
 height or degrees — the doubt bands and the shortest stem — each of which was
 set by looking at generated glasses, the same way the two naming lines were.
 

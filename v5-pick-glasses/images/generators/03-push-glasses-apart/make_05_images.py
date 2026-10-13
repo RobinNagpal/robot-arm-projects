@@ -48,10 +48,10 @@ from diagram_style import (
     JAW_TOP,
     KIND_TALLEST,
     LABEL_SIZE,
-    LOWEST_GRIP,
     MUTED,
     NOTE_SIZE,
     PARK,
+    PUSH_HEIGHT,
     PUSH_SPEED,
     TOP_SPEED,
     TOP_VIEW_HALF_FRAME,
@@ -230,11 +230,11 @@ def picture_the_join(asking: dict) -> None:
     note(back, 50, 59 - 5.3 * cell_h, "\u22ee", MUTED, size=NOTE_SIZE + 8, va="center")
     note(back, 50, 62.5, "50 waypoints, six numbers each", INK, va="bottom")
     note(back, 50, 33, "and what the six numbers mean is the problem", WARN, va="bottom")
-    card(back, 4, 1, 92, 28, "the statistics ship, and they do not apply themselves",
-         ["the checkpoint saves its mean and spread under keys like",
-          "so100.buffer.action.mean; the normaliser looks up action",
-          "and passes a key it cannot find through unchanged, so",
-          "the numbers arrive as z-scores with no units in them"], WARN)
+    card(back, 4, 1, 92, 28, "the statistics ship, but do not apply",
+         ["the checkpoint saves its mean and spread under keys",
+          "like so100.buffer.action.mean; the normaliser looks",
+          "up action, cannot find that key, and passes the",
+          "numbers through as z-scores with no units in them"], WARN)
 
     stage(join, "The join, which is the only code this solution wrote")
     span_used = action_span()
@@ -257,7 +257,7 @@ def picture_the_join(asking: dict) -> None:
     note(join, 50, 35,
          f"The jaw is held level and closed, so two slots have\nnowhere to go. The other four are "
          f"divided by\nACTION_SPAN = {span_used:g} and clipped to \u00b11, which puts x and y\ninside "
-         f"the picture's frame, the height between\n{LOWEST_GRIP:.0f} and {TRAVEL_HEIGHT:.0f} mm, "
+         f"the picture's frame, the height between\n{PUSH_HEIGHT:.0f} and {TRAVEL_HEIGHT:.0f} mm, "
          f"and the heading round the circle.", INK, va="top")
     note(join, 50, 7,
          f"Then the guards: a path that would reach a glass refused\nfor tipping is thrown away, "
@@ -389,7 +389,7 @@ def picture_how_high(asking: dict, results: dict) -> None:
     for slot, (height, rim, fraction) in zip((250.0, 370.0, 490.0), CAST[:3], strict=False):
         glass_from_the_side(side, slot, height, rim, fraction, alpha=0.20)
     side.plot([-320, 580], [0, 0], color=INK, lw=1.6, zorder=4)
-    side.axhline(LOWEST_GRIP, color=MUTED, lw=1.0, ls=(0, (4, 3)), zorder=4)
+    side.axhline(PUSH_HEIGHT, color=MUTED, lw=1.0, ls=(0, (4, 3)), zorder=4)
     side.axhline(JAW_TOP, color=INK, lw=1.3, zorder=4)
     side.axhline(TRAVEL_HEIGHT, color=MUTED, lw=1.0, ls=(0, (4, 3)), zorder=4)
     side.axhline(KIND_TALLEST, color=GLASS, lw=1.0, ls=(0, (2, 3)), zorder=4)
@@ -400,24 +400,31 @@ def picture_how_high(asking: dict, results: dict) -> None:
               fontsize=NOTE_SIZE, color=GLASS, ha="left", va="bottom")
     side.text(left, JAW_TOP + 7, f"{JAW_TOP:.0f} mm: the jaw's top edge, where a push really lands",
               fontsize=NOTE_SIZE, color=INK, ha="left", va="bottom")
-    side.text(left, LOWEST_GRIP - 9, f"{LOWEST_GRIP:.0f} mm: the jaw's middle", fontsize=NOTE_SIZE,
-              color=MUTED, ha="left", va="top")
+    side.text(left, PUSH_HEIGHT - 9, f"{PUSH_HEIGHT:.0f} mm: the jaw's middle",
+              fontsize=NOTE_SIZE, color=MUTED, ha="left", va="top")
     # One chunk, sketched: the shape is not measured, only the height it reaches,
     # so it is drawn clear of the labels and starts and ends at that height.
     sweep = np.linspace(-20.0, 560.0, 240)
     side.plot(sweep, lowest + 44.0 * (1.0 - np.cos((sweep + 20.0) / 580.0 * 2.0 * np.pi)) / 2.0,
               color=WARN, lw=1.5, zorder=6)
     side.axhline(lowest, color=WARN, lw=1.4, zorder=5)
-    side.text(left, lowest - 4,
-              f"{lowest:.0f} mm \u2014 the lowest point of a chunk, median over {asking['asked']:,} answers",
-              fontsize=NOTE_SIZE, color=WARN, ha="left", va="top")
+    side.text(-322, lowest - 8,
+              f"{lowest:.0f} mm \u2014 the lowest point of a chunk,\nmedian over "
+              f"{asking['asked']:,} answers",
+              fontsize=NOTE_SIZE, color=WARN, ha="left", va="top", zorder=9,
+              bbox={"facecolor": "white", "edgecolor": "none", "pad": 1.0})
     # The two probes go on the right-hand edge, short, because the note under
     # the panel is where they are explained and leaders across the heights
     # would cross every label on the left.
-    for value in (LOWEST_WITH_PARKED_STATE, LOWEST_WITH_ZERO_STATE):
+    # The higher probe sits within twenty millimetres of the measured median, so
+    # its label goes under its line and the other's above, and neither shares a
+    # line with the median's.
+    for value, side_of in ((LOWEST_WITH_PARKED_STATE, "below"),
+                           (LOWEST_WITH_ZERO_STATE, "above")):
         side.plot([-330, 525], [value, value], color=MUTED, lw=0.9, ls=(0, (2, 3)), zorder=5)
-        side.text(525, value + 5, f"{value:.0f} mm", fontsize=NOTE_SIZE, color=MUTED,
-                  ha="right", va="bottom")
+        side.text(525, value + (5 if side_of == "above" else -5), f"{value:.0f} mm",
+                  fontsize=NOTE_SIZE, color=MUTED, ha="right",
+                  va="bottom" if side_of == "above" else "top")
     side.set_xlim(-330, 530)
     side.set_ylim(-150, 352)
 
@@ -468,7 +475,8 @@ def picture_how_high(asking: dict, results: dict) -> None:
            f"The document expected confident, plausible, wrong pushes: well-formed motion aimed at "
            f"the wrong glass, with nothing downstream looking suspicious. The measured failure is "
            f"blunter and easier to see.\nA chunk travels {across:.0f} mm across the table and never "
-           f"comes near it, so nine pushes in ten touch nothing at all. The document's reasoning "
+           f"comes near it, so {run['pushes']['never_touched'] / run['pushes']['total']:.0%} of "
+           f"its pushes touch nothing at all. The document's reasoning "
            f"about the domain gap stands; its guess about which way\nthe gap would show does not, "
            f"and that is the most useful thing this solution produced.")
     figure.subplots_adjust(bottom=0.27, top=0.93, wspace=0.10)
@@ -510,8 +518,8 @@ def picture_nothing_left_over(results: dict) -> None:
                f"Racked across the three runs: {span(racked)}.\n"
                f"Racking a glass loosens its neighbours, so a solution that freed\n"
                f"anything at all would rack more than the {with_room} that started with room.\n"
-               f"This one racks fewer. Put the racking beside the crowding and\n"
-               f"there is nothing left over to credit to the pushes.",
+               f"This one racks exactly {with_room}. Put the racking beside the crowding\n"
+               f"and there is nothing at all left over to credit to the pushes.",
                fontsize=NOTE_SIZE, color=INK, ha="left", va="top")
     rooms.set_xlim(-12, glasses + 12)
     rooms.set_ylim(0, 108)
@@ -540,9 +548,10 @@ def picture_nothing_left_over(results: dict) -> None:
                 f"which glass it meant: the label is read back off the path afterwards, as the\n"
                 f"glass the jaw came nearest while low enough to touch it. So this counts the\n"
                 f"jaw coming nearest the same glass again, which is as much as the record knows.\n\n"
-                f"Refused for tipping: {', '.join(str(t) for t in tipping)} across the three runs, so "
-                f"the shared rule hardly\nbinds on these tables and almost none of the shortfall is "
-                f"it. What is left is the pushes.",
+                f"Refused for tipping: {', '.join(str(t) for t in tipping)} across the three runs. "
+                f"That shared rule holds back\nabout a sixth of the glasses before the model is "
+                f"asked, so it explains part of the shortfall\nand nothing like all of it. What is "
+                f"left is the pushes.",
                 fontsize=NOTE_SIZE, color=INK, ha="left", va="top")
     tables.set_xlim(-12, 62)
     tables.set_ylim(0, 108)
@@ -550,8 +559,9 @@ def picture_nothing_left_over(results: dict) -> None:
     footer(figure,
            "This is the baseline doing its job rather than failing at it. A matched pair measures "
            "what training bought in proportion to the room there was to improve, and a solution "
-           "that finishes no table at all leaves\nnothing that training could fail to show up "
-           "against. The value here is the comparison it makes possible, and not the score.")
+           "that finishes one table of fifty leaves\nalmost nothing that training could fail to "
+           "show up against. The value here is the comparison it makes possible, and not the "
+           "score.")
     figure.subplots_adjust(bottom=0.11, top=0.93, wspace=0.10)
     save(figure, "05-nothing-is-left-over.png")
     print(f"  {with_room} glasses had room at the start, {span(racked)} racked; "

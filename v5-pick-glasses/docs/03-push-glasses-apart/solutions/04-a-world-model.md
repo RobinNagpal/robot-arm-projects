@@ -507,7 +507,7 @@ hundred candidate pushes examined per crowded glass. That sounds extravagant
 and costs almost nothing, because a candidate push is one row of thirty-four
 numbers through five small networks, and the batch goes through in one call.
 
-![An early round spreads its candidates over the whole range and most are struck out by the filters, on the table the model predicts for them; by round four the draws have collapsed onto one small region, and the score is the room still missing on the table plus a small penalty per millimetre pushed.](../../../images/03-push-glasses-apart/04-planning-against-the-model.png)
+![An early round spreads its candidates over the whole range and most are struck out by the filters, on the table the model predicts for them; by round four the draws have gathered into a couple of small regions, and the score is the room still missing on the table plus a small penalty per millimetre pushed.](../../../images/03-push-glasses-apart/04-planning-against-the-model.png)
 
 Two properties make this search the right one here, and both are worth
 remembering for other problems.
@@ -611,7 +611,7 @@ it are what a straight sum would give after two pushes and after three. The
 small green disc inside them all is what the geometry, which predicts a slide
 instead of learning one, achieves without any model at all.
 
-![Three dashed rings at 4.5, 9.0 and 13.5 millimetres round the point a push was aimed at, with a small green disc of 1.07 millimetres at the middle of them.](../../../images/03-push-glasses-apart/04-how-far-out-each-prediction-is.png)
+![Three dashed rings at 6.5, 13.0 and 19.5 millimetres round the point a push was aimed at, with a small green disc of 1.70 millimetres at the middle of them.](../../../images/03-push-glasses-apart/04-how-far-out-each-prediction-is.png)
 
 Those millimetres matter because the clearances are small. In the arrangement
 the planning picture above came from, the push aimed to leave glass B 120.9 mm
@@ -969,7 +969,7 @@ answer to every example is what the second look found, so the data costs
 simulator time and no human time at all, which is the single biggest practical
 advantage this family has over anything trained on demonstrations.
 
-![One training table yields a dozen examples, because the table is built once and the state after each push starts the next and no push has to be a useful one; a real run makes as few pushes as it can, so gathering the same thirty-eight thousand rows from ordinary runs would take thousands of them, where the simulator produces them in under an hour of processor time and nobody labels any of it.](../../../images/03-push-glasses-apart/04-the-data-it-takes.png)
+![One training table yields a dozen examples, because the table is built once and the state after each push starts the next and no push has to be a useful one; a real run makes as few pushes as it can, so gathering the same fifteen thousand rows from ordinary runs would take thousands of them, where the simulator produces them in a quarter of an hour of processor time and nobody labels any of it.](../../../images/03-push-glasses-apart/04-the-data-it-takes.png)
 
 **A training run, before the solution can answer anything.** The first way trains
 five small networks, and its README records the whole of that — the pushes and

@@ -129,7 +129,7 @@ glass scores better than one that reaches the wrong part of it. The last
 section of this document reads that gap in full, and nothing between here and
 there should be taken to promise otherwise.
 
-![The examiner places the jaw clear above a chunk's first waypoint and brings it straight down onto that waypoint before carrying out any of the rest, so a first waypoint behind a glass gives a push and a first waypoint over one puts the jaw on the rim, which is reported as blocked and sends it straight back up with nothing pushed; that is where 247 of this solution's 400 pushes in a run end, against none at all for solution 5, which never came down, and from it follow 46 glasses over against 6 and 39 tables wrong against 5, with a few more tables finished and a third more glasses racked on the other side of the ledger.](../../../images/03-push-glasses-apart/06-the-jaw-comes-down-on-the-glass.png)
+![The examiner places the jaw clear above a chunk's first waypoint and brings it straight down onto that waypoint before carrying out any of the rest, so a first waypoint behind a glass gives a push and a first waypoint over one puts the jaw on the rim, which is reported as blocked and sends it straight back up with nothing pushed; that is where 223 of this solution's 369 pushes in a run end, against none at all for solution 5, which never came down, and from it follow 33 glasses over against 10 and 31 tables wrong against 6, with one more table finished and half again as many glasses racked on the other side of the ledger.](../../../images/03-push-glasses-apart/06-the-jaw-comes-down-on-the-glass.png)
 
 By the end you will understand what fine-tuning is and why it is far cheaper
 than fitting a model of this size from random numbers, what low-rank
@@ -469,16 +469,24 @@ jaw really followed, which the examiner writes down on every action, so a
 demonstration is a recording of the shared contract being satisfied and nothing
 in it had to be drawn, labelled or judged by a person.
 
-What that came to, measured: **800 training tables, 22 minutes of simulator
-time on this laptop, 2,012 demonstrations.** Two things about the count are
-worth knowing. **Most of the teacher's pushes are not demonstrations**: of the
-3,554 pushes it made, 1,533 were the 5 mm test pushes that settle whether a
-glass slides, and those belong to the shared tipping check rather than to the
-chooser, so none of them is a target. And of the remaining 2,021 real pushes,
-**only 9 had to be thrown away** — 8 toppled a glass and 1 pushed one out of
-the zone. The section below warns at length about what filtering to successes
-throws out, and on this examiner the answer is four tenths of one per cent. That
-is a quantity worth having rather than a worry worth carrying.
+What that came to, measured: **800 training tables, 19 minutes of simulator
+time on this laptop, 1,074 demonstrations from 430 of those tables.** Three
+things about the count are worth knowing. **Most of the teacher's pushes are not
+demonstrations**: of the 2,766 pushes it made, 1,663 were the 5 mm test pushes
+that settle whether a glass slides, and those belong to the shared tipping check
+rather than to the chooser, so none of them is a target. Of the remaining 1,103
+real pushes, **29 had to be thrown away** — 13 toppled a glass, 12 jammed, 3
+pushed one out of the zone and 1 was blocked coming down. The section below
+warns at length about what filtering to successes throws out, and on this
+examiner the answer is 2.6 per cent, which is a quantity worth having rather
+than a worry worth carrying.
+
+The third thing matters more than either, and it is the real gripper's doing.
+**On 370 of the 800 tables the teacher found nothing it could push at all**,
+where with the earlier invented blade it found something on all but 60. A table
+the teacher never pushes on is a table the student never sees, so the real hand
+did not thin the demonstrations by rejecting bad ones. It halved them by
+refusing whole tables.
 
 Two things about that recording are worth noticing, because they decide what
 the policy can and cannot learn. The teacher works from the numeric readings
@@ -706,7 +714,7 @@ neighbour. The toppled count in the folder's README is that. The honest answer
 to "does the scale of the actions stop being left to chance" is therefore:
 partly, and the part that was left is the part that topples glasses.
 
-![Measured the same way by the same code, the borrowed model's chunks come no lower than 209 mm above the table while the fitted model's come down to 50 mm, which is exactly the height its teacher's pushes were recorded at and the height the gripper pushes at, so the height was learned; the length was not, because one fitted chunk still covers 315 mm of a glass zone that is only 320 mm across, against the teacher's 89 mm, and it travels at 90 mm/s where the teacher's recorded pushes run at 20 and even their resampled chunks at 36.](../../../images/03-push-glasses-apart/06-the-height-was-learned-the-length-was-not.png)
+![Measured the same way by the same code, the borrowed model's chunks come no lower than 217 mm above the table while the fitted model's come down to 75 mm, which is exactly the height its teacher's pushes were recorded at and the height the gripper pushes at, so the height was learned; the length was not, because one fitted chunk still covers 320 mm of a glass zone that is only 320 mm across, against the teacher's 78 mm, and it travels at 92 mm/s where the teacher's recorded pushes run at 20 and even their resampled chunks at 32.](../../../images/03-push-glasses-apart/06-the-height-was-learned-the-length-was-not.png)
 
 **Something like friction is absorbed, and this one needs care rather than
 celebration.** Nothing in the cell measures friction and the examiner never

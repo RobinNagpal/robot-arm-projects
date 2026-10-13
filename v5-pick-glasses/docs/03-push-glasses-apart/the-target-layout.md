@@ -46,7 +46,7 @@ condition that only looks at the distance between two middles misses exactly the
 case where a narrow glass is crowded by a wide neighbour that is not crowded
 itself.
 
-![The clear room is measured from a glass's middle in to its neighbour's edge, so the distance two middles need is 70 mm plus half the neighbour's rim; on one real table that makes a narrow glass 10.0 mm short of the room a wide neighbour denies it while the wide one has 3.1 mm to spare, and the symmetric version of the test, which measures out from each glass's own middle, misses 8 crowded glasses and invents 11 that are not.](../../images/03-push-glasses-apart/target-what-has-room-means.png)
+![The clear room is measured from a glass's middle in to its neighbour's edge, so the distance two middles need is 76 mm plus half the neighbour's rim; on one real table that makes a narrow glass 11.5 mm inside the room a wide neighbour denies it while the wide one has 1.6 mm to spare, and the symmetric version of the test, which measures out from each glass's own middle, misses 8 crowded glasses and invents 10 that are not.](../../images/03-push-glasses-apart/target-what-has-room-means.png)
 
 **Every glass stands inside the glass zone**, the 320 by 360 mm rectangle of
 table where glasses are allowed to be, and **outside the rack**, the 60 by
