@@ -53,10 +53,25 @@ GLASS_ON_GLASS = 0.4
 # Aluminium finger and silicone pad, on glass.
 JAW_FRICTION = 0.6
 
-# The closed jaw, as arm/gripper.urdf.xacro declares it, held level with the
-# fingers pointing the way it pushes. Two 10 mm fingers and two 4 mm pads side
-# by side, 120 mm long and 30 mm tall; the 90 mm body behind them; and the
-# wrist behind that, drawn as a box the size of the body.
+# The closed jaw, held level with the fingers pointing the way it pushes. Two
+# 10 mm fingers and two 4 mm pads side by side, 120 mm long and 30 mm tall; the
+# 90 mm body behind them; and the wrist behind that, drawn as a box the size of
+# the body.
+#
+# **These are not the gripper the cell now has, and that is deliberate for the
+# moment.** They describe the two-finger gripper this project used to assume,
+# which has since been replaced by a real Robotiq 2F-85: the real closed jaw is
+# a different shape, 31 by 27 mm across each fingertip rather than 28 by 30,
+# reaching 149 mm past the gripper's base rather than 120, with a body 85 by
+# 75 mm rather than a 90 mm cube.
+#
+# Changing these numbers changes the physics of every push, so it would make
+# every result and every film in this problem a measurement of something the
+# code no longer does. All six solutions would have to be run again, and the
+# four that are trained would have to be trained again first, because they
+# learned against this jaw. That is a deliberate piece of work rather than a
+# tidy-up, and until it is done this bench is honest about measuring the old
+# jaw rather than quietly mixing the two.
 FINGER_LENGTH = 0.12
 FINGER_HEIGHT = 0.03
 JAW_THICKNESS = 2 * (0.010 + 0.004)

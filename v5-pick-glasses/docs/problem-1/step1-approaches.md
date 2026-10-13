@@ -178,9 +178,9 @@ have to move at all to take it.
 ### Bad
 
 - **Each pixel covers more table.** A camera further away sees more, but in
-  less detail. With today's 320 × 240 camera at 1.5 m, one pixel covers about
-  5 mm of table, which is too coarse. It needs a sharper camera, for example
-  1280 × 960, to get down to about 1.4 mm per pixel. In Gazebo that is a
+  less detail. With the wrist camera's 640 × 360 at 1.5 m, one pixel covers
+  about 4.4 mm of table, which is too coarse. It needs a sharper camera, for
+  example 2032 × 1143, to get down to about 1.4 mm per pixel. In Gazebo that is a
   setting. The cost is a slower simulation.
 - **It still cannot see a stem.** Side-on measuring is still needed.
 - **It adds a fact to the cell.** The problem statement says the arm knows

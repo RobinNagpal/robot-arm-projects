@@ -41,6 +41,7 @@ from .arm.dimensions import (
     GRASP_DEPTH,
     GRASP_NUDGE_LIMIT,
     GRASP_OFFSET,
+    GRIPPER_MAX_GRIP,
     GRIPPER_MAX_OPENING,
     GRIPPER_WEIGHT_N,
     LIFT_HEIGHT,
@@ -55,6 +56,7 @@ from .arm.dimensions import (
     SURVEY_HEIGHT,
     TURNING_ROOM,
     WEIGH_LIFT,
+    grasp_depth,
     survey_stations,
 )
 from .arm.motion import DESCENT_LIMIT, Arm, MotionFailed
@@ -395,7 +397,7 @@ class PickGlassesTask:
         )
         try:
             grip = find_grip(
-                profile, kind, gripper_max_opening=GRIPPER_MAX_OPENING, lowest_grip=LOWEST_GRIP
+                profile, kind, gripper_max_opening=GRIPPER_MAX_GRIP, lowest_grip=LOWEST_GRIP
             )
         except NoGrip as why:
             self._report.doing("run the rule on the measured profile", f"**no grip**: {why}")
@@ -700,12 +702,19 @@ class PickGlassesTask:
             "enough to put the glass upside down afterwards",
         )
         self._arm.set_gripper(min(grip.opening + 0.020, GRIPPER_MAX_OPENING))
-        rotation = self._hover_and_choose_grasp(grip_point, approaches, with_it, without_it)
+        rotation = self._hover_and_choose_grasp(
+            grip_point, grip.opening, approaches, with_it, without_it
+        )
         self._report.doing(
             "take the first the arm can reach and turn",
             f"coming in along ({rotation[0, 2]:.2f}, {rotation[1, 2]:.2f})",
         )
-        position = grip_point - rotation[:, 2] * GRASP_DEPTH
+        # grasp_depth() of the gap the fingers will *finish* at, not of the
+        # gap they come in at. On this gripper the pads swing forward as they
+        # close, so placing the tool for the open gripper would leave the
+        # glass's axis behind the middle of the pads by as much as 13 mm once
+        # they were shut, which on a 38 mm pad is most of the way to its edge.
+        position = grip_point - rotation[:, 2] * grasp_depth(grip.opening)
 
         # Take up the slack gently. The width when contact arrives is the true
         # width of the glass, measured by touch rather than by camera.
@@ -862,7 +871,7 @@ class PickGlassesTask:
             weighed = find_grip(
                 profile,
                 kind,
-                gripper_max_opening=GRIPPER_MAX_OPENING,
+                gripper_max_opening=GRIPPER_MAX_GRIP,
                 lowest_grip=LOWEST_GRIP,
                 mass=mass,
             )
@@ -1026,6 +1035,7 @@ class PickGlassesTask:
     def _hover_and_choose_grasp(
         self,
         grip_point: np.ndarray,
+        opening: float,
         approaches: list[np.ndarray],
         with_it: dict,
         without_it: dict,
@@ -1052,7 +1062,9 @@ class PickGlassesTask:
         tried = 0
         for approach in approaches:
             for rotation in grasp_options(_grasp_rotation(approach)):
-                grasp = grip_point - rotation[:, 2] * GRASP_DEPTH
+                # The same depth the real grasp will use, so that a way round
+                # rejected here is rejected for the pose that would be flown.
+                grasp = grip_point - rotation[:, 2] * grasp_depth(opening)
                 hover = grasp + UP * LIFT_HEIGHT
                 tried += 1
                 self._scene.set_glasses(with_it)
@@ -1109,7 +1121,12 @@ class PickGlassesTask:
         # the far side, and a grip sized for a glass held still threw it off.
         try:
             self._arm.move_linear(
-                [make_pose(ROBOT_BASE + np.array(TURNING_ROOM) - rotation[:, 2] * GRASP_DEPTH, rotation)]
+                [
+                    make_pose(
+                        ROBOT_BASE + np.array(TURNING_ROOM) - rotation[:, 2] * self._pad_depth(),
+                        rotation,
+                    )
+                ]
             )
         except MotionFailed as why:
             # Not worth losing a held glass over: the turn may still be
@@ -1235,7 +1252,8 @@ class PickGlassesTask:
         for facing in facings:
             try:
                 self._arm.move_linear(
-                    [make_pose(glass_at - facing[:, 2] * GRASP_DEPTH, facing)], speed=CARRY_SPEED
+                    [make_pose(glass_at - facing[:, 2] * self._pad_depth(), facing)],
+                    speed=CARRY_SPEED,
                 )
                 return facing
             except MotionFailed:
@@ -1243,12 +1261,24 @@ class PickGlassesTask:
         self._log.info("no straight line over the slot, planning one instead")
         for index, facing in enumerate(facings):
             try:
-                self._arm.move_to_pose(glass_at - facing[:, 2] * GRASP_DEPTH, facing)
+                self._arm.move_to_pose(glass_at - facing[:, 2] * self._pad_depth(), facing)
                 return facing
             except MotionFailed:
                 if index == len(facings) - 1:
                     raise
         raise MotionFailed("no way of facing was offered")
+
+    def _pad_depth(self) -> float:
+        """How far the middle of the pads is from the tool, as the fingers are now.
+
+        A fixed number would do for a gripper whose fingers slide. These swing,
+        so the pads sit further forward the tighter the gripper is closed, and
+        where they are depends on how far shut it is. The gap is read back off
+        the gripper rather than assumed, which also means a glass that stopped
+        the fingers early — the usual case, since the width is measured by
+        touch — is turned about the point the pads are really holding.
+        """
+        return grasp_depth(self._arm.gripper_gap)
 
     def _grip_point(self) -> np.ndarray:
         """Where the pads are gripping, in world coordinates, right now.
@@ -1259,7 +1289,7 @@ class PickGlassesTask:
         glass through an arc as wide as the fingers are long.
         """
         position, rotation = self._arm.current_pose()
-        return position + rotation[:, 2] * GRASP_DEPTH
+        return position + rotation[:, 2] * self._pad_depth()
 
     # ---------------------------------------------------------------- pieces
 
@@ -1514,9 +1544,18 @@ class PickGlassesTask:
         if self._survey_stations is None:
             view = self._camera.capture()
             rows, columns = view.rgb.shape[:2]
+            # How high the *camera* is, which is not where the tool was sent.
+            # The camera rides on the gripper, well along the way the tool
+            # points, and for the survey the tool points straight down, so the
+            # camera ends up that much nearer the table. On this cell it is
+            # about 104 mm nearer, and using the tool's height instead would
+            # claim nearly a third more table in each picture than the camera
+            # really sees — which would leave gaps between the stations with
+            # glasses in them.
+            height = SURVEY_HEIGHT - CAMERA_OFFSET[2]
             footprint = (
-                SURVEY_HEIGHT * columns / view.intrinsics.fx,
-                SURVEY_HEIGHT * rows / view.intrinsics.fy,
+                height * columns / view.intrinsics.fx,
+                height * rows / view.intrinsics.fy,
             )
 
             # A station is only worth as much as the part of the table both of
@@ -1546,6 +1585,10 @@ class PickGlassesTask:
         # side is a coin toss with a glass in hand. If none qualify the list
         # is left alone: a slot that might not work beats refusing a glass
         # that is already held.
+        # The open-gripper depth, deliberately. This is about whether a slot is
+        # within reach at all, which wants one number for every glass rather
+        # than one per glass, and the open gripper is the shallower of the two
+        # so it is the cautious choice.
         within = slots_within_stretch(candidates, ROBOT_BASE, COMFORTABLE_REACH, GRASP_DEPTH)
         if within:
             candidates = within

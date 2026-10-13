@@ -189,10 +189,31 @@ re-gripping and lifting again costs two seconds.
 
 ## Refusing is part of the design
 
-Each kind has a `force_cap_n` — 6 N for thin-walled, 12 for normal, 20 for
-thick. If the weight that comes back demands more than the cap,
-`force_for_measured_mass()` raises `TooHeavyToHold` and the glass goes in the
-refused column. That cap is the *other* bound on the squeeze, and
+Each kind has a `force_cap_n` — 20 N for thin-walled, 30 for normal, 40 for
+thick. If the squeeze the gripper will really be set to demands more than the
+cap, `force_for_measured_mass()` raises `TooHeavyToHold` and the glass goes in
+the refused column.
+
+Those three numbers are written against the gripper rather than against glass,
+and it is worth knowing why before trusting them. They used to be 6, 12 and
+20 N, which were guesses with nothing measured behind them. Fitting a real
+Robotiq 2F-85 made the guesses impossible to keep, because **that gripper
+cannot be set below 20 N at all** — 20 N is the bottom of its adjustable range,
+not a recommendation. Against the old caps the gripper's own minimum broke the
+rating of every thin and normal glass, so the arm would have refused nearly
+everything. So the scale now starts at the gripper's floor and keeps the
+ordering, which is the part there was ever an argument for: a thicker wall
+takes more squeezing than a thinner one.
+
+The consequence to keep hold of is that the sums on this page no longer decide
+the squeeze. They decide what *ought* to happen, and they come out in single
+newtons; the hardware then applies at least twenty. `over_squeeze()` reports
+the ratio for exactly that reason, so a run says how far apart the two are
+instead of leaving it to be discovered. Measuring what force really breaks a
+glass is the first thing to do on real hardware, and
+[known gaps](../known-gaps.md) says so.
+
+That cap is the *other* bound on the squeeze, and
 [for anything fragile it is the binding one](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/03_choosing-a-grip.md#42-the-other-bound-which-is-the-one-that-actually-bites):
 the lower bound comes from friction, the upper one from what the walls can
 take, and clamping to the cap and lifting anyway turns a clean refusal into a

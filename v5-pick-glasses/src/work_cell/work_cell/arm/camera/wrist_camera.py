@@ -100,7 +100,10 @@ class WristCamera:
         image_topic: str = "/wrist_camera/image",
         depth_topic: str = "/wrist_camera/depth_image",
         info_topic: str = "/wrist_camera/camera_info",
-        optical_frame: str = "wrist_camera_optical_frame",
+        # Intel's own name for the frame depth pixels project in. On this
+        # camera the colour sensor sits at no offset from the depth sensor, so
+        # one frame serves for both pictures.
+        optical_frame: str = "wrist_camera_depth_optical_frame",
     ) -> None:
         self._node = node
         self._optical_frame = optical_frame

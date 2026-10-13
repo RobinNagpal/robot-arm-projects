@@ -2,12 +2,21 @@
 <robot xmlns:xacro="http://wiki.ros.org/xacro" name="work_cell">
 
   <!--
-    The whole robot: a UR5e standing on the table, a two-finger gripper on its
-    flange, and an RGB-D camera beside the gripper.
+    The whole robot: a UR5e standing on the table, a Robotiq FT 300-S force
+    sensor and a Robotiq 2F-85 gripper on its flange, and an Intel RealSense
+    D405 depth camera beside the gripper.
 
-    Universal Robots publish the arm itself, so ur_description supplies the
-    links, the joint limits and the calibrated link lengths for the UR5e. What
-    is added here is the tooling and the wiring to ros2_control.
+    Every part of it is a real product whose maker publishes its own robot
+    description, and this file's job is only to stack them and wire them to
+    ros2_control. `ur_description` supplies the UR5e's links, joint limits and
+    calibrated link lengths; `robotiq_description` supplies the gripper and
+    the coupling that bolts it to a UR flange; `realsense2_description`
+    supplies the camera. Nothing about their shapes is written here.
+
+    See arm/gripper.urdf.xacro for why this particular gripper and this
+    particular sensor, and arm/robotiq_2f85.py for the one thing that follows
+    from using a real gripper: it is driven by a single knuckle angle rather
+    than by a finger width.
   -->
 
   <xacro:arg name="ur_type" default="ur5e"/>
@@ -39,7 +48,10 @@
   </xacro:ur_robot>
 
   <xacro:parallel_gripper prefix="" parent="tool0"/>
-  <xacro:wrist_camera prefix="" parent="gripper_body"/>
+  <!-- On the gripper's own body, which is the link Robotiq's description calls
+       robotiq_85_base_link, so the camera rides with the gripper rather than
+       with the sensor under it. -->
+  <xacro:wrist_camera prefix="" parent="robotiq_85_base_link"/>
 
   <!--
     ros2_control describes the joints a controller is allowed to touch and who
@@ -58,7 +70,7 @@
   </xacro:macro>
 
   <!--
-    The fingers offer two ways of being commanded, and the task uses both.
+    The gripper offers two ways of being commanded, and the task uses both.
 
     Position is for opening the gripper and for closing it to a width the
     measurement has worked out. Effort is for holding: once the pads are on the
@@ -68,13 +80,24 @@
 
     Only one controller may hold a joint at a time, so the two are swapped
     between during the run. arm/motion.py does the swapping.
+
+    There is only **one** joint to command, which is the difference the real
+    gripper makes here. The 2F-85 has a single motor on a single knuckle, and
+    both fingers follow it through a linkage, which Robotiq's description
+    expresses as mimic joints. So this is a one-joint gripper that happens to
+    have two fingers, and the width the task thinks in is a number
+    arm/robotiq_2f85.py works out from the angle.
+
+    The effort limits are the ones Robotiq's description declares for that
+    joint, in newton metres at the knuckle rather than newtons at the
+    fingertip. arm/robotiq_2f85.py converts between them.
   -->
   <xacro:macro name="finger_joint" params="name initial:=0.0">
     <joint name="${name}">
       <command_interface name="position"/>
       <command_interface name="effort">
-        <param name="min">-25.0</param>
-        <param name="max">25.0</param>
+        <param name="min">-50.0</param>
+        <param name="max">50.0</param>
       </command_interface>
       <state_interface name="position">
         <param name="initial_value">${initial}</param>
@@ -97,12 +120,14 @@
     <xacro:position_joint name="wrist_2_joint" initial="-1.5708"/>
     <xacro:position_joint name="wrist_3_joint" initial="0.0"/>
 
-    <xacro:finger_joint name="left_finger_joint" initial="0.0475"/>
-    <xacro:finger_joint name="right_finger_joint" initial="0.0475"/>
+    <!-- Wide open, which is zero on this joint and grows as it shuts. -->
+    <xacro:finger_joint name="robotiq_85_left_knuckle_joint" initial="0.0"/>
 
-    <!-- The wrist force sensor, as ros2_control sees it. The broadcaster reads
-         these and publishes a WrenchStamped; the sensor itself is declared on
-         the gripper mount in arm/gripper.urdf.xacro. -->
+    <!-- The FT 300-S, as ros2_control sees it. The broadcaster reads these and
+         publishes a WrenchStamped. The frame is the sensor's own link, because
+         that is where the real sensor reads: it sits on the flange and senses
+         everything bolted beyond it, which is the coupling, the gripper, the
+         camera, and whatever the fingers are holding. -->
     <sensor name="wrist_force">
       <state_interface name="force.x"/>
       <state_interface name="force.y"/>
@@ -110,7 +135,7 @@
       <state_interface name="torque.x"/>
       <state_interface name="torque.y"/>
       <state_interface name="torque.z"/>
-      <param name="frame_id">gripper_body</param>
+      <param name="frame_id">force_sensor_link</param>
     </sensor>
   </ros2_control>
 

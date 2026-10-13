@@ -404,6 +404,16 @@ configuration was read by nobody while the arm listened on it. And the gripper
 was in collision with itself before it had moved, because each pad is bolted
 flat to its fingertip and the planner had never been told that this is normal.
 
+That last one came back, larger, when the invented gripper was replaced by the
+real Robotiq 2F-85, and the fix had to become a statement rather than a list.
+The 2F-85 is a closed linkage: two fingers, two knuckles and two inner knuckles
+on each side, all driven by one motor, all in contact with each other by
+design. There is no arrangement of its parts for a planner to avoid, so the
+SRDF now disables every pair among the tool's links rather than naming the few
+that touch. Writing them out by hand and missing one would mean the arm plans
+nothing at all, and the failure says only that the start state is in
+collision.
+
 Two habits came out of all this and have paid for themselves. Moves are
 planned up to three times before being called impossible, because the planner
 grows its tree from samples that fall at random and a move it fails once it
@@ -427,12 +437,21 @@ Worth being honest about, because the whole project runs in a simulator.
   one means a trained segmentation model or one of the other methods compared
   in step 1 — none of which are as simple as the height test used here.
 - **Contact with a curved, slippery, brittle surface is the weakest part of any
-  physics engine.** The friction and softness numbers in
-  `gripper.urdf.xacro` are plausible, not measured.
+  physics engine.** The shapes, masses and joint limits of the tool are no
+  longer guesses — the gripper, its coupling, the force sensor and the camera
+  are real products and the first three come from the descriptions Robotiq and
+  Intel publish. Friction does not, because friction is not a property of a
+  shape, so the pad-on-glass numbers in `gripper.urdf.xacro` are still
+  plausible rather than measured, and they are the ones to check first.
 - **Nothing here can tell you what force actually breaks a wine glass stem.**
-  The force caps are conservative guesses. On real hardware they would be the
-  first thing to calibrate, and the second would be the margin in
-  `load_transferred()`.
+  This was already the least certain thing in the project when the force caps
+  were conservative guesses, and fitting a real gripper made it matter more
+  rather than less. A Robotiq 2F-85 cannot squeeze more gently than 20 N, which
+  is several times what the sums ask for, so the caps are now written against
+  that floor and every glass is held at it. On real hardware this is the first
+  thing to calibrate, and the second would be the margin in
+  `load_transferred()`. `glasses/force.py` reports how much harder the gripper
+  squeezed than the sums wanted, so the gap is visible in every run.
 
 What simulation does tell you, and what this project is really for, is whether
 the *reasoning* holds: whether a rule stated as a sentence about a shape

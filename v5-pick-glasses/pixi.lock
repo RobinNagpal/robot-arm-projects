@@ -583,6 +583,8 @@ environments:
       - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-ament-pep257-0.17.5-np2py312h2ed9cc7_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-ament-uncrustify-0.17.5-np2py312h2ed9cc7_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-builtin-interfaces-2.0.4-np2py312h2ed9cc7_21.conda
+      - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-class-loader-2.7.1-hb0f4dca_25.conda
+      - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-composition-interfaces-2.0.4-hb0f4dca_25.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-cv-bridge-4.1.0-np2py312h3b5449b_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-cyclonedds-0.10.5-np2py312h2ed9cc7_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-desktop-0.11.0-hb0f4dca_21.conda
@@ -598,6 +600,7 @@ environments:
       - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-iceoryx-binding-c-2.0.6-np2py312h2ed9cc7_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-iceoryx-hoofs-2.0.6-np2py312h2ed9cc7_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-iceoryx-posh-2.0.6-np2py312h2ed9cc7_21.conda
+      - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-launch-ros-0.26.12-hb0f4dca_22.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-libstatistics-collector-1.7.4-np2py312h2ed9cc7_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-libyaml-vendor-1.6.4-np2py312h2ed9cc7_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-moveit-2.12.4-hb0f4dca_21.conda
@@ -609,8 +612,11 @@ environments:
       - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-rcl-logging-spdlog-3.1.1-np2py312h918b84f_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-rcl-yaml-param-parser-9.2.11-np2py312h2ed9cc7_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-rclcpp-28.1.21-np2py312h2ed9cc7_21.conda
+      - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-rclcpp-components-28.1.21-np2py312h2ed9cc7_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-rcpputils-2.11.4-np2py312h2ed9cc7_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-rcutils-6.7.6-np2py312h2ed9cc7_21.conda
+      - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-realsense2-camera-msgs-4.58.3-np2py312h2ed9cc7_21.conda
+      - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-realsense2-description-4.58.3-np2py312h2ed9cc7_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-rmw-7.3.3-np2py312h2ed9cc7_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-rmw-connextdds-0.22.3-np2py312h2ed9cc7_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-rmw-connextdds-common-0.22.3-np2py312h2ed9cc7_21.conda
@@ -621,6 +627,7 @@ environments:
       - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-rmw-fastrtps-shared-cpp-8.4.4-np2py312h2ed9cc7_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-rmw-implementation-2.15.6-np2py312h2ed9cc7_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-rmw-implementation-cmake-7.3.3-np2py312h2ed9cc7_21.conda
+      - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-robotiq-description-0.0.1-hb0f4dca_25.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-ros-environment-4.2.1-np2py312h2ed9cc7_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-ros-gz-1.0.23-hb0f4dca_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-ros-workspace-1.0.3-np2py312h2ed9cc7_21.conda
@@ -662,6 +669,7 @@ environments:
       - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-uncrustify-vendor-3.0.1-np2py312h2ed9cc7_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-unique-identifier-msgs-2.5.1-np2py312h2ed9cc7_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-ur-description-3.5.1-hb0f4dca_21.conda
+      - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-xacro-2.1.1-hb0f4dca_25.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros2-ackermann-msgs-2.0.2-np2py312h2ed9cc7_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros2-ackermann-steering-controller-4.42.1-np2py312h2ed9cc7_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros2-action-msgs-2.0.4-np2py312h2ed9cc7_21.conda
@@ -935,6 +943,7 @@ environments:
       - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros2-rmw-implementation-2.15.6-np2py312h2ed9cc7_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros2-rmw-implementation-cmake-7.3.3-np2py312h2ed9cc7_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros2-robot-state-publisher-3.3.4-np2py312h2ed9cc7_21.conda
+      - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros2-robotiq-description-0.0.1-np2py312h2ed9cc7_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros2-ros-base-0.11.0-np2py312h2ed9cc7_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros2-ros-core-0.11.0-np2py312h2ed9cc7_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros2-ros-environment-4.2.1-np2py312h2ed9cc7_21.conda
@@ -1597,6 +1606,8 @@ environments:
       - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-ament-pep257-0.17.5-np2py312haf4906a_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-ament-uncrustify-0.17.5-np2py312haf4906a_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-builtin-interfaces-2.0.4-np2py312haf4906a_21.conda
+      - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-class-loader-2.7.1-h60d57d3_25.conda
+      - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-composition-interfaces-2.0.4-h60d57d3_25.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-cv-bridge-4.1.0-np2py312h9857102_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-cyclonedds-0.10.5-np2py312haf4906a_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-desktop-0.11.0-h60d57d3_21.conda
@@ -1612,6 +1623,7 @@ environments:
       - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-iceoryx-binding-c-2.0.6-np2py312haf4906a_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-iceoryx-hoofs-2.0.6-np2py312haf4906a_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-iceoryx-posh-2.0.6-np2py312haf4906a_21.conda
+      - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-launch-ros-0.26.12-h60d57d3_22.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-libstatistics-collector-1.7.4-np2py312haf4906a_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-libyaml-vendor-1.6.4-np2py312haf4906a_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-moveit-2.12.4-h60d57d3_21.conda
@@ -1623,8 +1635,11 @@ environments:
       - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-rcl-logging-spdlog-3.1.1-np2py312h88edd79_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-rcl-yaml-param-parser-9.2.11-np2py312haf4906a_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-rclcpp-28.1.21-np2py312haf4906a_21.conda
+      - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-rclcpp-components-28.1.21-np2py312haf4906a_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-rcpputils-2.11.4-np2py312haf4906a_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-rcutils-6.7.6-np2py312haf4906a_21.conda
+      - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-realsense2-camera-msgs-4.58.3-np2py312haf4906a_21.conda
+      - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-realsense2-description-4.58.3-np2py312haf4906a_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-rmw-7.3.3-np2py312haf4906a_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-rmw-connextdds-0.22.3-np2py312haf4906a_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-rmw-connextdds-common-0.22.3-np2py312haf4906a_21.conda
@@ -1635,6 +1650,7 @@ environments:
       - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-rmw-fastrtps-shared-cpp-8.4.4-np2py312haf4906a_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-rmw-implementation-2.15.6-np2py312haf4906a_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-rmw-implementation-cmake-7.3.3-np2py312haf4906a_21.conda
+      - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-robotiq-description-0.0.1-h60d57d3_25.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-ros-environment-4.2.1-np2py312haf4906a_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-ros-gz-1.0.23-h60d57d3_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-ros-workspace-1.0.3-np2py312haf4906a_21.conda
@@ -1676,6 +1692,7 @@ environments:
       - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-uncrustify-vendor-3.0.1-np2py312haf4906a_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-unique-identifier-msgs-2.5.1-np2py312haf4906a_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-ur-description-3.5.1-h60d57d3_21.conda
+      - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-xacro-2.1.1-h60d57d3_25.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros2-ackermann-msgs-2.0.2-np2py312haf4906a_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros2-ackermann-steering-controller-4.42.1-np2py312haf4906a_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros2-action-msgs-2.0.4-np2py312haf4906a_21.conda
@@ -1948,6 +1965,7 @@ environments:
       - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros2-rmw-implementation-2.15.6-np2py312haf4906a_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros2-rmw-implementation-cmake-7.3.3-np2py312haf4906a_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros2-robot-state-publisher-3.3.4-np2py312haf4906a_21.conda
+      - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros2-robotiq-description-0.0.1-np2py312haf4906a_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros2-ros-base-0.11.0-np2py312haf4906a_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros2-ros-core-0.11.0-np2py312haf4906a_21.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros2-ros-environment-4.2.1-np2py312haf4906a_21.conda
@@ -16842,6 +16860,20 @@ packages:
   license: Apache-2.0
   size: 81843
   timestamp: 1788191410404
+- conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-class-loader-2.7.1-hb0f4dca_25.conda
+  sha256: 684732bed61944031e6d0281f416a0cce14306a27462dc2c41bea9898e7d340c
+  md5: 995a47ef87d9541b20aa21b3a746d6cf
+  depends:
+  - ros2-class-loader ==2.7.1
+  size: 2036
+  timestamp: 1791431442033
+- conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-composition-interfaces-2.0.4-hb0f4dca_25.conda
+  sha256: cc3908efa7f38b97e15235c141ea2262903eb54c7940b04fa29a5439ee80dddb
+  md5: d579c3472117a2319988065d11a4a081
+  depends:
+  - ros2-composition-interfaces ==2.0.4
+  size: 2070
+  timestamp: 1791433032991
 - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-cv-bridge-4.1.0-np2py312h3b5449b_21.conda
   sha256: 76ac43cd75ff98d035948833707851b5ae13c3c0fe8d730b8d2b14698c4e889c
   md5: 75bf5094817d3b45381949032bc967df
@@ -17100,6 +17132,13 @@ packages:
   license: Apache-2.0
   size: 575625
   timestamp: 1788188875161
+- conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-launch-ros-0.26.12-hb0f4dca_22.conda
+  sha256: be02700a1681727175b22ecbd9f9aad6353b17de07bf6d19b31dbf1c1480d2fa
+  md5: 911c619c9a1d56cf81dcb0c0dfe8f9e7
+  depends:
+  - ros2-launch-ros ==0.26.12
+  size: 2035
+  timestamp: 1790076703304
 - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-libstatistics-collector-1.7.4-np2py312h2ed9cc7_21.conda
   sha256: c18e5fafe9b1bdb28bea4041effc3de52168d493b2cc1e4bba1f4b1edba4597b
   md5: 3959fde030df31485314ac508f03b73d
@@ -17320,6 +17359,26 @@ packages:
   license: Apache-2.0
   size: 1156574
   timestamp: 1788193149064
+- conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-rclcpp-components-28.1.21-np2py312h2ed9cc7_21.conda
+  sha256: 3fa4162fc9f2bc258102ee94de8f348d7bc9adc2eca1687a62fcdfdd04ca7a7b
+  md5: a77dc7627162770a7825d2193ba2c024
+  depends:
+  - python
+  - ros-jazzy-ament-index-cpp
+  - ros-jazzy-class-loader
+  - ros-jazzy-composition-interfaces
+  - ros-jazzy-rclcpp
+  - ros-jazzy-ros-workspace
+  - ros2-distro-mutex 0.16.* jazzy_*
+  - __glibc >=2.17,<3.0.a0
+  - libgcc >=14
+  - libstdcxx >=14
+  - numpy >=1.25,<3
+  - ros2-distro-mutex >=0.16.0,<0.17.0a0
+  - python_abi 3.12.* *_cp312
+  license: Apache-2.0
+  size: 143554
+  timestamp: 1788193373225
 - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-rcpputils-2.11.4-np2py312h2ed9cc7_21.conda
   sha256: d9d0f4347d9f3435afce064ad34a80e1a0cf54e1ecf38f07e021bc065d1a8797
   md5: a3a426b807ef1a07402e17666459043a
@@ -17353,6 +17412,48 @@ packages:
   license: Apache-2.0
   size: 122556
   timestamp: 1788190663326
+- conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-realsense2-camera-msgs-4.58.3-np2py312h2ed9cc7_21.conda
+  sha256: b66ed6de8dc9484d7727bd11920e7c61429f1ad1cada8dafefa086da4f19e0d6
+  md5: fbc2f68b91c35970a3b2b1997fb43d87
+  depends:
+  - python
+  - ros-jazzy-action-msgs
+  - ros-jazzy-builtin-interfaces
+  - ros-jazzy-ros-workspace
+  - ros-jazzy-rosidl-default-runtime
+  - ros-jazzy-sensor-msgs
+  - ros-jazzy-std-msgs
+  - ros2-distro-mutex 0.16.* jazzy_*
+  - libstdcxx >=14
+  - libgcc >=14
+  - __glibc >=2.17,<3.0.a0
+  - ros2-distro-mutex >=0.16.0,<0.17.0a0
+  - python_abi 3.12.* *_cp312
+  - numpy >=1.25,<3
+  license: Apache-2.0
+  size: 595345
+  timestamp: 1788192352039
+- conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-realsense2-description-4.58.3-np2py312h2ed9cc7_21.conda
+  sha256: 48ab8d4565961c514c7116a53ecd82533a33064d24bedd1a0ae07fe6fc2e2902
+  md5: 78163095358fd20667dbea2a88486a4f
+  depends:
+  - python
+  - ros-jazzy-launch-ros
+  - ros-jazzy-rclcpp
+  - ros-jazzy-rclcpp-components
+  - ros-jazzy-realsense2-camera-msgs
+  - ros-jazzy-ros-workspace
+  - ros-jazzy-xacro
+  - ros2-distro-mutex 0.16.* jazzy_*
+  - libstdcxx >=14
+  - libgcc >=14
+  - __glibc >=2.17,<3.0.a0
+  - python_abi 3.12.* *_cp312
+  - numpy >=1.25,<3
+  - ros2-distro-mutex >=0.16.0,<0.17.0a0
+  license: Apache-2.0
+  size: 19332054
+  timestamp: 1788212441142
 - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-rmw-7.3.3-np2py312h2ed9cc7_21.conda
   sha256: 24c97a434ba4143a9e903de356cf9ceabc7855311436063377b2b6cf2c3f7b6b
   md5: 7f32a93b529fb09a7e103d3133dd44f0
@@ -17592,6 +17693,13 @@ packages:
   license: Apache-2.0
   size: 29534
   timestamp: 1788190537040
+- conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-robotiq-description-0.0.1-hb0f4dca_25.conda
+  sha256: 2e6d2ae19b2d49c4d5c9858f58cc82a83d46955382c85ecb702e42eb7c263748
+  md5: 1aaaa4eda0aa5b2d8dd6dfd9b3e51848
+  depends:
+  - ros2-robotiq-description ==0.0.1
+  size: 2061
+  timestamp: 1791443381104
 - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-ros-environment-4.2.1-np2py312h2ed9cc7_21.conda
   sha256: a5f447febe224ac3877b9d25160abe2b34e4d3d76941799dacee68516990489b
   md5: 303000d63daf25ae5d75aa573663cb96
@@ -18376,6 +18484,13 @@ packages:
   - ros2-ur-description ==3.5.1
   size: 2040
   timestamp: 1788268949184
+- conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-xacro-2.1.1-hb0f4dca_25.conda
+  sha256: de00a661699940a1009f954fd5c8ab830cbf358464178e84f15679557e7c3ed5
+  md5: d6b546c4f54e836d142ed24f91c40379
+  depends:
+  - ros2-xacro ==2.1.1
+  size: 1988
+  timestamp: 1791429424326
 - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros2-ackermann-msgs-2.0.2-np2py312h2ed9cc7_21.conda
   sha256: 3b1963afb021c5bc4693550764bb0940153e494c881d2a35f84593098adcae57
   md5: c79b603b85ba976e26baf267385e5f10
@@ -24514,6 +24629,29 @@ packages:
   license: BSD-3-Clause
   size: 270990
   timestamp: 1788266023333
+- conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros2-robotiq-description-0.0.1-np2py312h2ed9cc7_21.conda
+  sha256: 7260a3f708aeae2d1e9869cd596de454d6e783abe37ad4c2a98ff7432aa5aaeb
+  md5: baa7337786fd9a95bc3064669970c466
+  depends:
+  - python
+  - ros2-distro-mutex 0.16.* jazzy_*
+  - ros2-joint-state-publisher-gui
+  - ros2-launch
+  - ros2-launch-ros
+  - ros2-robot-state-publisher
+  - ros2-ros-workspace
+  - ros2-rviz2
+  - ros2-urdf
+  - ros2-xacro
+  - libstdcxx >=14
+  - libgcc >=14
+  - __glibc >=2.17,<3.0.a0
+  - python_abi 3.12.* *_cp312
+  - ros2-distro-mutex >=0.16.0,<0.17.0a0
+  - numpy >=1.25,<3
+  license: BSD-3-Clause
+  size: 981088
+  timestamp: 1788268323478
 - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros2-ros-base-0.11.0-np2py312h2ed9cc7_21.conda
   sha256: ae5723a244587e0dc08caad4d3224ab8e2b460887d77d4e83218c53ac36a2296
   md5: 00986b367dd0c3a448810b453c5ad7fd
@@ -28844,6 +28982,20 @@ packages:
   license: Apache-2.0
   size: 78588
   timestamp: 1788194873290
+- conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-class-loader-2.7.1-h60d57d3_25.conda
+  sha256: 07b31521ee24a4e2ad977eab75e8afb394fc48ccb4828dc77e3b435a5bbbe631
+  md5: 440d40f1bc56fd41aefab0120e4644b6
+  depends:
+  - ros2-class-loader ==2.7.1
+  size: 2012
+  timestamp: 1791432764292
+- conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-composition-interfaces-2.0.4-h60d57d3_25.conda
+  sha256: 469d52b66056f7fac3ec128f74216f8a0d24541eff3c549ed3f16e648b787725
+  md5: 49ceba9b90ed35d760a157a910a05589
+  depends:
+  - ros2-composition-interfaces ==2.0.4
+  size: 2060
+  timestamp: 1791435093498
 - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-cv-bridge-4.1.0-np2py312h9857102_21.conda
   sha256: fa7342eaa8b57d02af2b12ae5654b0b89c467e9e956af5ab2caac7be3407163c
   md5: 4688308f7d92c3c2c7b818afab7c98f4
@@ -29083,6 +29235,13 @@ packages:
   license: Apache-2.0
   size: 435396
   timestamp: 1788190711280
+- conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-launch-ros-0.26.12-h60d57d3_22.conda
+  sha256: 1001367a7f1e86ae1af94fa9ddd2fb43afe62d788bb2bd8d59d0693e8e90b2c3
+  md5: 6687c03c0389417b092e00236667732e
+  depends:
+  - ros2-launch-ros ==0.26.12
+  size: 2016
+  timestamp: 1790076882441
 - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-libstatistics-collector-1.7.4-np2py312haf4906a_21.conda
   sha256: f75ad57c335182d3ebccd39f8f0503487aea92142e3668c00018326a9a242ffe
   md5: cb62cab0f941804cdccddf65ee66033a
@@ -29294,6 +29453,25 @@ packages:
   license: Apache-2.0
   size: 819562
   timestamp: 1788198105034
+- conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-rclcpp-components-28.1.21-np2py312haf4906a_21.conda
+  sha256: f15aaefd64120f87d7c424754a5e449f08b7ea45d7186a0baae1c8da79f580be
+  md5: aff9ee1a8cd8ac883e4faade20f802c8
+  depends:
+  - python
+  - ros-jazzy-ament-index-cpp
+  - ros-jazzy-class-loader
+  - ros-jazzy-composition-interfaces
+  - ros-jazzy-rclcpp
+  - ros-jazzy-ros-workspace
+  - ros2-distro-mutex 0.16.* jazzy_*
+  - __osx >=12.0
+  - libcxx >=19
+  - python_abi 3.12.* *_cp312
+  - ros2-distro-mutex >=0.16.0,<0.17.0a0
+  - numpy >=1.25,<3
+  license: Apache-2.0
+  size: 120513
+  timestamp: 1788198607211
 - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-rcpputils-2.11.4-np2py312haf4906a_21.conda
   sha256: c3c308795f7d9974a7d21eaf36a19fda972d35881778ae14e3c5ac27c4d44acf
   md5: 2c6fbd20b6538f6ee49d625cbd164415
@@ -29325,6 +29503,46 @@ packages:
   license: Apache-2.0
   size: 116302
   timestamp: 1788193512905
+- conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-realsense2-camera-msgs-4.58.3-np2py312haf4906a_21.conda
+  sha256: 10bab330963179e7c33d2371aaa1264cfacdc63529108f686cec2a7a937e84db
+  md5: 97bd1f83523a5a311bdf4d67ecdf320d
+  depends:
+  - python
+  - ros-jazzy-action-msgs
+  - ros-jazzy-builtin-interfaces
+  - ros-jazzy-ros-workspace
+  - ros-jazzy-rosidl-default-runtime
+  - ros-jazzy-sensor-msgs
+  - ros-jazzy-std-msgs
+  - ros2-distro-mutex 0.16.* jazzy_*
+  - __osx >=12.0
+  - libcxx >=19
+  - python_abi 3.12.* *_cp312
+  - ros2-distro-mutex >=0.16.0,<0.17.0a0
+  - numpy >=1.25,<3
+  license: Apache-2.0
+  size: 501482
+  timestamp: 1788197036273
+- conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-realsense2-description-4.58.3-np2py312haf4906a_21.conda
+  sha256: 59dcaf8a399578d7b8bfac6a349cd14e3dbc27a9a6574e8e75b5fba4b4bdd9e4
+  md5: 578efcb5818d05205b8aea16e647df23
+  depends:
+  - python
+  - ros-jazzy-launch-ros
+  - ros-jazzy-rclcpp
+  - ros-jazzy-rclcpp-components
+  - ros-jazzy-realsense2-camera-msgs
+  - ros-jazzy-ros-workspace
+  - ros-jazzy-xacro
+  - ros2-distro-mutex 0.16.* jazzy_*
+  - __osx >=12.0
+  - libcxx >=19
+  - ros2-distro-mutex >=0.16.0,<0.17.0a0
+  - numpy >=1.25,<3
+  - python_abi 3.12.* *_cp312
+  license: Apache-2.0
+  size: 19331252
+  timestamp: 1788198954495
 - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-rmw-7.3.3-np2py312haf4906a_21.conda
   sha256: d082a9492bf18200ae6a8f90abffbab89ceb80bb696cd466627ceb44bab8e559
   md5: 4628f42fe94a4db7c0b265f06683f8d8
@@ -29554,6 +29772,13 @@ packages:
   license: Apache-2.0
   size: 30343
   timestamp: 1788193196387
+- conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-robotiq-description-0.0.1-h60d57d3_25.conda
+  sha256: 8e9354f8e3a7733cdc4d29946c07920a401702782d20bc02ec938e3c608829d7
+  md5: 01a06acf51f681072cccef84942f462c
+  depends:
+  - ros2-robotiq-description ==0.0.1
+  size: 2046
+  timestamp: 1791447510531
 - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-ros-environment-4.2.1-np2py312haf4906a_21.conda
   sha256: 6c88919e0855831fa47d8cef9dc1f9f8b5a7c36629a055183cc0545a0175d847
   md5: db224d9257fa21e4185d13ac025bffd8
@@ -30300,6 +30525,13 @@ packages:
   - ros2-ur-description ==3.5.1
   size: 2020
   timestamp: 1788466044247
+- conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-xacro-2.1.1-h60d57d3_25.conda
+  sha256: 61d5416bebb7fa63cade6663cd2751f4d9f27749a6c9e953e1825afeb216f885
+  md5: a66510e3b294924185de8e2c46eeb82a
+  depends:
+  - ros2-xacro ==2.1.1
+  size: 1976
+  timestamp: 1791430033682
 - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros2-ackermann-msgs-2.0.2-np2py312haf4906a_21.conda
   sha256: 2f246b671b51620656b6541dddf153f509b29cdbd8b87a46b6f5f1078cb4661e
   md5: 1acbb3b836d16d681ac5c5d41b3fda2a
@@ -36061,6 +36293,28 @@ packages:
   license: BSD-3-Clause
   size: 218607
   timestamp: 1788461145599
+- conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros2-robotiq-description-0.0.1-np2py312haf4906a_21.conda
+  sha256: d0542b05068248ded4d52d3c9e80119f5c38ce09463233d5b01b702926cb7f4d
+  md5: 4cb2428aa9ec5841e04bd91642e58271
+  depends:
+  - python
+  - ros2-distro-mutex 0.16.* jazzy_*
+  - ros2-joint-state-publisher-gui
+  - ros2-launch
+  - ros2-launch-ros
+  - ros2-robot-state-publisher
+  - ros2-ros-workspace
+  - ros2-rviz2
+  - ros2-urdf
+  - ros2-xacro
+  - libcxx >=19
+  - __osx >=12.0
+  - python_abi 3.12.* *_cp312
+  - ros2-distro-mutex >=0.16.0,<0.17.0a0
+  - numpy >=1.25,<3
+  license: BSD-3-Clause
+  size: 982707
+  timestamp: 1788464834757
 - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros2-ros-base-0.11.0-np2py312haf4906a_21.conda
   sha256: 52fe5b86d64ded36021c9f038ee2bf8c90c32e74864ab2fe8ea1fb3e97ff54c4
   md5: d67a087e3be1273e7d32bc61f8a0fd74

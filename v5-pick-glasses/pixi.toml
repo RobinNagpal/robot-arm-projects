@@ -50,6 +50,8 @@ setuptools = ">=68,<80"
 pytest = ">=7,<8"
 pip = "*"
 ruff = "*"
+ros-jazzy-robotiq-description = ">=0.0.1,<0.0.2"
+ros-jazzy-realsense2-description = ">=4.58.3,<5"
 
 [tasks]
 # The Makefile is the entry point for people; these are the primitives it builds

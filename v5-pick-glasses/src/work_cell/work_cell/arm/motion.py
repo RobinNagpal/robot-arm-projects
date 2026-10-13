@@ -46,8 +46,12 @@ from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 
 from ..table.layout import WORLD_FRAME
 from ..transforms import make_pose
+from . import robotiq_2f85
 
-FINGER_JOINTS = ("left_finger_joint", "right_finger_joint")
+# The gripper's one driven joint. A Robotiq 2F-85 has a single motor on a
+# single knuckle and both fingers follow it through a linkage, so there is one
+# name here where a sliding gripper would have had two.
+KNUCKLE_JOINT = "robotiq_85_left_knuckle_joint"
 ARM_JOINTS = (
     "shoulder_pan_joint",
     "shoulder_lift_joint",
@@ -58,8 +62,9 @@ ARM_JOINTS = (
 )
 
 # The link the wrist force sensor is bolted to, used when the reading does not
-# say for itself. See arm/gripper.urdf.xacro.
-WRIST_SENSOR_LINK = "gripper_body"
+# say for itself. It is the FT 300-S's own link, which sits on the flange under
+# the gripper. See arm/gripper.urdf.xacro.
+WRIST_SENSOR_LINK = "force_sensor_link"
 
 # How many readings the weight is taken over. The sensor reports at 100 Hz, so
 # this is about a third of a second: long enough to ride out the spike from the
@@ -143,14 +148,15 @@ class Arm:
         node.create_subscription(
             Contacts, "/fingertip_contacts", self._on_contacts, 10, callback_group=sensors
         )
-        self._finger_positions = (0.0, 0.0)
+        # Wide open, which is zero on this joint.
+        self._knuckle_angle = 0.0
         self._arm_positions: dict[str, float] = {}
         self._joints_lock = threading.Lock()
         node.create_subscription(
             JointState, "/joint_states", self._on_joint_states, 10, callback_group=sensors
         )
         self._wrist_recent: list[np.ndarray] = []
-        self._wrist_frame = "gripper_body"
+        self._wrist_frame = WRIST_SENSOR_LINK
         self._hanging_sign = 1.0
         node.create_subscription(
             WrenchStamped, "/wrist_force", self._on_wrist_force, 10, callback_group=sensors
@@ -302,7 +308,21 @@ class Arm:
     # --------------------------------------------------------------- gripper
 
     def set_gripper(self, opening: float, *, seconds: float = 1.0) -> None:
-        """Command the total gap between the fingers, in metres.
+        """Command the total gap between the pads, in metres.
+
+        The gripper does not take a gap. It takes the angle of its one knuckle,
+        and the gap follows from the linkage, so the gap asked for here is
+        turned into an angle on the way out. The rest of this project is
+        allowed to go on thinking in millimetres of glass, which is the right
+        unit for the job, and this is the one place the two meet.
+
+        A gap outside the stroke is clamped rather than refused, which is the
+        opposite of what the grip rules do, and the difference is deliberate.
+        Here the caller is moving the fingers — "open up", "shut" — and the
+        honest answer to "shut" is for the gripper to go as far as it shuts.
+        When the caller is instead about to *hold* a glass at a measured width,
+        quietly gripping at a different width would be wrong, so
+        robotiq_2f85.angle_for refuses it there.
 
         This is also how the fingers are taken back off force control, which is
         why letting go of a glass is a call to this and not to a force of zero.
@@ -310,13 +330,13 @@ class Arm:
         """
         self._use_controller(POSITION_CONTROLLER)
         self._force_held = 0.0
-        half = max(0.0, opening) / 2.0
+        reachable = min(max(opening, robotiq_2f85.MIN_OPENING), robotiq_2f85.MAX_OPENING)
 
         point = JointTrajectoryPoint()
-        point.positions = [half, half]
+        point.positions = [robotiq_2f85.angle_for(reachable)]
         point.time_from_start = DurationMsg(sec=int(seconds), nanosec=int((seconds % 1) * 1e9))
 
-        trajectory = JointTrajectory(joint_names=list(FINGER_JOINTS), points=[point])
+        trajectory = JointTrajectory(joint_names=[KNUCKLE_JOINT], points=[point])
 
         if not self._gripper.wait_for_server(timeout_sec=10.0):
             raise MotionFailed("the gripper controller is not available")
@@ -329,17 +349,19 @@ class Arm:
         by_name = dict(zip(msg.name, msg.position, strict=False))
         with self._joints_lock:
             self._arm_positions.update({n: p for n, p in by_name.items() if n in ARM_JOINTS})
-        if all(joint in by_name for joint in FINGER_JOINTS):
-            self._finger_positions = tuple(by_name[joint] for joint in FINGER_JOINTS)
+        if KNUCKLE_JOINT in by_name:
+            self._knuckle_angle = float(by_name[KNUCKLE_JOINT])
 
     @property
     def gripper_gap(self) -> float:
-        """The gap the fingers are actually at, which is not always the one asked for.
+        """The gap the pads are actually at, which is not always the one asked for.
 
-        Closing on a box stops the fingers early, so this is how the arm can
+        Closing on a glass stops the fingers early, so this is how the arm can
         tell it has hold of something from how it can tell it closed on air.
+        Read back through the linkage, for the same reason set_gripper writes
+        through it: the joint reports an angle and the caller wants a width.
         """
-        return float(sum(self._finger_positions))
+        return robotiq_2f85.opening_at(self._knuckle_angle)
 
     # --------------------------------------------------------------- contact
 
@@ -369,13 +391,21 @@ class Arm:
         effort one, because the two cannot both hold the joints. After that,
         changing the force is one message.
 
-        The sign is negative because a finger's travel is measured outwards
-        from closed, so pushing inwards is pushing against increasing travel.
+        The force asked for is in newtons at the pads, which is what
+        glasses/force.py works in and what a data sheet quotes. The joint takes
+        a torque at the knuckle, so the two are converted between in
+        arm/robotiq_2f85.py, where the assumption behind the conversion is
+        written down once.
+
+        The sign is positive because this joint's angle grows as the gripper
+        shuts, so squeezing is pushing the angle up. A sliding gripper measured
+        travel the other way round.
         """
         self._use_controller(FORCE_CONTROLLER)
-        effort = -abs(float(newtons))
-        self._force_command.publish(Float64MultiArray(data=[effort, effort]))
-        self._force_held = abs(float(newtons))
+        wanted = abs(float(newtons))
+        effort = robotiq_2f85.effort_for(wanted)
+        self._force_command.publish(Float64MultiArray(data=[effort]))
+        self._force_held = wanted
 
     @property
     def wrist_load(self) -> float:

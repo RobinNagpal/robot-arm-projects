@@ -21,9 +21,11 @@ joint_limits:
   wrist_1_joint: *arm_limits
   wrist_2_joint: *arm_limits
   wrist_3_joint: *arm_limits
-  left_finger_joint: &finger_limits
+  # The gripper's one driven joint. It turns rather than slides, so the
+  # velocity is in radians per second and it is the figure Robotiq's own
+  # description declares for the joint.
+  robotiq_85_left_knuckle_joint:
     has_velocity_limits: true
-    max_velocity: 0.1
+    max_velocity: 0.5
     has_acceleration_limits: true
-    max_acceleration: 0.5
-  right_finger_joint: *finger_limits
+    max_acceleration: 2.0

@@ -64,15 +64,26 @@ doubt has to end the attempt rather than be pushed through.
 - **One UR5e arm**, the same arm as the earlier projects, bolted to the table
   at the middle of one long edge and 400 mm in from it. Everything happens
   within about 780 mm of its base, which is what it can reach comfortably.
-- **A two-finger parallel gripper** with silicone pads, defined in this repo.
-  It opens to 95 mm and the pads are 14 mm tall. It is the commonest kind of
-  gripper there is, and what its datasheet numbers mean is
-  [how to read a gripper datasheet](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/02_grippers-and-hardware.md#1-how-to-read-a-gripper-datasheet). The pads are not a detail. A
-  rigid pad touches a curved glass at a single point. A soft one spreads over a
-  patch. That is the difference between holding a glass and polishing it.
+- **A Robotiq 2F-85 gripper**, the best-selling gripper for collaborative
+  robots and plug-and-play on a UR flange. It opens to 85 mm, holds a round
+  glass up to about 80 mm, and its pads are 22 mm tall. What its datasheet
+  numbers mean is
+  [how to read a gripper datasheet](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/02_grippers-and-hardware.md#1-how-to-read-a-gripper-datasheet).
+  Two things about it are not details. The pads are silicone: a rigid pad
+  touches a curved glass at a single point, a soft one spreads over a patch,
+  and that is the difference between holding a glass and polishing it. And the
+  gripper is *adaptive* — its fingers curl to wrap what they hold — so it is
+  fitted with Robotiq's parallel locking kit, which pins them so the pads stay
+  flat against an upright wall. Every grip rule in this project assumes they
+  do.
 - **Three sensors**, each one there because a particular thing cannot be seen.
-  An RGB-D camera on the wrist. A contact sensor in each pad. And a force
-  sensor between the flange and the gripper.
+  An Intel RealSense D405 depth camera on the wrist, chosen because it is the
+  short-range model and the arm works between 70 and 450 mm. The gripper's own
+  grip detection, which reports when the fingers have stopped on something. And
+  a Robotiq FT 300-S force sensor between the flange and the gripper. The UR5e
+  has a force sensor built into its flange, which would have been free, but
+  Universal Robots publish ±4.0 N of accuracy for it and a wine glass weighs
+  about 2 N, so it cannot weigh one.
 - **The glasses**, standing on the arm's right. How many, of how many kinds,
   and how close together is what the five problems below vary. They are opaque and each is a different
   solid colour, which is an assumption rather than an accident — see below. Each run draws them fresh from four kinds —

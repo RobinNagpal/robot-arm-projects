@@ -39,11 +39,11 @@ these documents comes from mixing them up.
 
 | | the survey view | the level view |
 |---|---|---|
-| where | 450 mm above the table | 120 mm above the table |
+| where | tool at 450 mm, camera at 381 mm | 120 mm above the table |
 | looking | straight down | level |
-| how far from the glass | directly overhead | about 380 mm |
-| one pixel covers | 1.62 mm | 1.37 mm |
-| the frame covers | 519 by 390 mm of table | 439 by 329 mm |
+| how far from the glass | directly overhead | 300 mm |
+| one pixel covers | 1.13 mm | 0.89 mm |
+| the frame covers | 723 by 407 mm of table | 569 by 320 mm |
 | what it is for | finding everything, roughly | measuring one glass, precisely |
 
 These two have three more beside them — over the rack, down the fingers, and the
@@ -52,11 +52,15 @@ stands](#where-the-camera-stands-and-what-each-place-is-called). Older documents
 call these two the *survey pose* and the *side-on pose*; they are the same two
 places.
 
-The 380 mm is **not a constant**. `MEASURE_STANDOFF` fixes only a floor of
-300 mm — nearer than that and a glass fills the frame before it is all in it.
-The distance actually used is worked out per run from the lens and the tallest
-glass the cell handles, and comes to about 380 mm. `MEASURE_VIEW_HEIGHT` is a
-fixed 120 mm, deliberately: the overhead view cannot tell how tall a glass is,
+The 300 mm is **not a constant**, even though it happens to equal one.
+`MEASURE_STANDOFF` fixes a floor of 300 mm — nearer than that and a glass fills
+the frame before it is all in it. The distance actually used is worked out per
+run from the lens and the tallest glass the cell handles, and with the
+RealSense D405's wide view that sum comes to only 265 mm. So the floor is what
+decides it, and the arm stands at 300 mm. With the narrower camera this project
+used to assume, the sum came to 380 mm and the floor never mattered; a wider
+lens fits the same glass in from closer. `MEASURE_VIEW_HEIGHT` is a fixed
+120 mm, deliberately: the overhead view cannot tell how tall a glass is,
 which is what the side view is for, so aiming at a fixed height is the only
 option available.
 
@@ -104,11 +108,18 @@ what it can be asked to do.
 Four, and that is the whole list. Everything else the cell believes is
 arithmetic on these.
 
+Every one of them is a real product, and so is the gripper and the arm. The
+cell is a UR5e with a **Robotiq FT 300-S** force sensor on the flange, a
+**Robotiq 2F-85** gripper on the sensor, and an **Intel RealSense D405** depth
+camera beside the gripper. That matters for reading the numbers below: they are
+taken from what the makers publish, not chosen to suit this task, so where one
+of them is awkward it is awkward in the way the real cell would be.
+
 | sensor | where | rate | what it returns |
 |---|---|---|---|
-| **RGB-D camera** | on the wrist, 85 mm off the flange | 15 Hz | colour and aligned depth, 320 × 240, 1.047 rad across, usable from 0.05 to 3.0 m |
-| **wrist force-torque** | between the flange and the gripper | 100 Hz | three forces and three torques |
-| **pad contact** × 2 | one in each fingertip pad | 60 Hz | whether that pad is touching something |
+| **RealSense D405 depth camera** | on the wrist, 70 mm to the side of the flange | 15 Hz | colour and aligned depth, 640 × 360, 1.518 rad across, usable from 0.07 to 0.50 m |
+| **Robotiq FT 300-S force-torque** | between the flange and the gripper | 100 Hz | three forces and three torques, to about 0.1 N |
+| **grip detection** | the gripper's own status | 60 Hz | whether the fingers have stopped on something |
 
 There is a fourth thing that is not a sensor but is easy to mistake for one: an
 **ArUco marker**, 70 mm square, printed on the rack. It is how the camera works
@@ -134,37 +145,45 @@ run. These are their names, and the rest of the documents use them.
 |---|---|---|---|
 | **the survey view** | over a station in the glass zone, 450 mm up | straight down | what is on the table, and roughly where |
 | **the rack view** | straight over the middle of the rack, 450 mm up | straight down | reading the marker, once, before anything else |
-| **the level view** | 380 mm out from one glass, 120 mm up | level, at the glass | measuring that one glass |
-| **the finger view** | 135 mm back from the glass and 85 mm to one side, at the height of the grip | along the fingers | is the glass between the pads, or beside them |
+| **the level view** | 300 mm out from one glass, 120 mm up | level, at the glass | measuring that one glass |
+| **the finger view** | 109 mm back from the glass and 71 mm to one side, at the height of the grip | along the fingers | is the glass between the pads, or beside them |
 | **the parking spot** | 500 mm out from the base, 450 mm up | straight down | where the arm waits with nothing to do |
 
-**The survey view.** The camera is taken up to 450 mm and pointed straight down.
-One picture from there covers 519 by 390 mm of table, but a station takes two
+**The survey view.** The tool is taken up to 450 mm and pointed straight down.
+One picture from there covers 722 by 406 mm of table, but a station takes two
 pictures 120 mm apart and only the part in *both* is worth anything, which
-leaves 424 by 175 mm. The glass zone is 320 by 360 mm, so it takes **three
+leaves 637 by 201 mm. The glass zone is 320 by 360 mm, so it takes **three
 stations** in a line to cover it, and the stations overlap.
 
-One honest detail. The 450 mm is where the *tool* is sent. The camera sits
-85 mm to one side of the tool and 15 mm along the way it points, so it is
-actually about 435 mm up and a hand's breadth off to the side. The code does
-not guess this. It reads where the camera really was from the joint angles, and
-that reading is what the pair of pictures is measured against.
+One honest detail, and on this cell it is a large one. The 450 mm is where the
+*tool* is sent, not where the camera ends up. The camera sits 71 mm to one side
+of the tool and 69 mm along the way it points, and in this pose the tool points
+straight down, so the camera is about **381 mm** up rather than 450. That is
+nearly 70 mm nearer the table than the tool, and a picture taken from 381 mm
+holds about a fifth less table than one taken from 450 would. Working the
+footprint out from the tool's height instead of the camera's would therefore
+claim ground that is not in the picture, and leave gaps between the stations
+with glasses standing in them. The code takes the offset off first, and then
+reads where the camera really was from the joint angles, and that reading is
+what the pair of pictures is measured against.
 
 **The rack view.** The same height and the same straight-down aim, over the
 middle of the rack instead of over the glasses. It happens once, at the start of
 a run, and all it does is read the ArUco marker. Here the code *does* take the
-85 mm out of the tool's position first, so the camera itself ends up over the
+offset out of the tool's position first, so the camera itself ends up over the
 middle of the rack.
 
 **The level view.** The camera comes down to 120 mm above the table, points
-level, and stands 380 mm back from the glass. This is the view that measures a
+level, and stands 300 mm back from the glass. This is the view that measures a
 glass, and the view [looking again at what was
 hidden](02-segment-glasses/hidden-glasses.md)
 sends the camera to.
 
-The 380 mm is worked out, not stored. The frame has to reach from the table at
-the bottom to the rim of the tallest glass the cell handles at the top. Both of
-those are angles, so how far back that puts the camera depends on the lens.
+The 300 mm is worked out, not stored, and it is the floor rather than the sum.
+The frame has to reach from the table at the bottom to the rim of the tallest
+glass the cell handles at the top. Both of those are angles, so how far back
+that puts the camera depends on the lens, and this lens is wide enough to
+manage it from 265 mm — closer than the arm is willing to stand.
 
 The arm can stand anywhere on a circle round the glass, and it is offered
 **nine places on that circle, 40° apart**. The first one it tries is straight in
@@ -174,8 +193,14 @@ in the mask and the two measure as one wide glass — or if the pose is too far
 out for the arm to reach.
 
 **The finger view.** This one is not chosen at all. It is wherever the camera
-ends up once the fingers are round the glass: 135 mm back from the glass's axis,
-85 mm off to one side, at whatever height the grip was fixed at. Everything
+ends up once the fingers are round the glass: 109 mm back from the glass's axis,
+71 mm off to one side, at whatever height the grip was fixed at. It is the one
+view the camera's own near limit has a say in, because a RealSense D405 cannot
+focus closer than about 70 mm and this look is taken from inside a closed hand.
+Measured to the *wall* of the glass rather than to its axis, the lens is between
+71 mm and 119 mm away depending on how wide the glass is, so every width fits —
+but only just at the wide end, and only because the camera is mounted at the
+back of the gripper's body rather than level with its middle. Everything
 before it aimed the fingers from pictures taken half a metre away. This is the
 one look taken from where the fingers actually are, and at this range a
 millimetre on the table is worth many pixels. It is used for one thing only —
@@ -293,7 +318,8 @@ the room rather than by adjacency in the picture.
 Two different quantities get called by the same name:
 
 - the **contact patch**, where the glass actually touches the table, which is
-  25–95 mm across over the four kinds;
+  25–95 mm across over the four kinds — and note that the top of that range is
+  wider than the gripper can hold, which is why some tumblers are refused;
 - the **flattened disc**, what you get when every point of a glass is dropped
   straight down onto the table, which is the glass's *widest* part and is
   45–105 mm across.
@@ -323,19 +349,34 @@ rather than a second copy.
 | survey overlap | 35 per cent | `arm/dimensions.py` `SURVEY_OVERLAP` |
 | side-on standoff, floor | 300 mm | `arm/dimensions.py` `MEASURE_STANDOFF` |
 | side-on view height | 120 mm above the table | `arm/dimensions.py` `MEASURE_VIEW_HEIGHT` |
-| camera offset from the flange | 85 mm out, 15 mm up | `arm/dimensions.py` `CAMERA_OFFSET` |
-| gripper opening | up to 95 mm | `arm/dimensions.py` `GRIPPER_MAX_OPENING` |
+| camera offset from the flange | 9 mm across, 70 mm to the side, 104 mm along the tool | `arm/dimensions.py` `CAMERA_OFFSET` |
+| gripper opening | up to 85 mm | `arm/dimensions.py` `GRIPPER_MAX_OPENING` |
+| widest glass it can hold | 80 mm | `arm/dimensions.py` `GRIPPER_MAX_GRIP` |
+| fingertips past the flange | 198 mm | `arm/dimensions.py` `FINGERTIP_OFFSET` |
 | lowest the fingers reach | 50 mm above the table | `arm/dimensions.py` `LOWEST_GRIP` |
-| pad | 14 × 40 mm | `arm/dimensions.py` `PAD_HEIGHT`, `PAD_LENGTH` |
-| camera | 320 × 240, 1.047 rad, 15 Hz | `arm/camera/wrist_camera.urdf.xacro` |
+| pad | 22 × 38 mm | `arm/dimensions.py` `PAD_HEIGHT`, `PAD_LENGTH` |
+| how far the pads swing forward | up to 13.7 mm | `arm/robotiq_2f85.py` `PAD_TRAVEL` |
+| squeeze the gripper can be set to | 20 to 235 N | `arm/robotiq_2f85.py` `MIN_FORCE_N`, `MAX_FORCE_N` |
+| camera | 640 × 360, 1.518 rad, 15 Hz | `arm/camera/wrist_camera.urdf.xacro` |
 | the kinds and their ranges | see above | `glasses/shapes.py` `KIND_RANGES` |
 | smallest gap between two glasses | 150 mm centre to centre | `glasses/spawn.py` `MIN_SEPARATION` |
 
 Two useful numbers are **derived**, not stored, and are recomputed every run:
 
-- the **focal length in pixels**, `fx = (320 / 2) / tan(1.047 / 2) ≈ 277.1`,
+- the **focal length in pixels**, `fx = (640 / 2) / tan(1.518 / 2) ≈ 337.4`,
   which turns every angle into pixels;
-- the **side-on standoff**, about 380 mm, from the lens and the tallest glass.
+- the **side-on standoff**, 300 mm, from the lens and the tallest glass.
+
+The second one changed when the camera became a real one, and the reason is
+worth following because it is the same reason twice. The D405 sees 87 degrees
+across where the camera this project used to assume saw 60, so one picture
+holds much more table. That is good for the standoff: fitting the tallest glass
+in the frame now needs only 265 mm, where the narrower lens needed 380, so the
+arm no longer has to back away and `MEASURE_STANDOFF` becomes the thing that
+decides it. It is bad for the resolution, because the same pixels are spread
+over more ground, which is why the camera is read at 640 × 360 rather than the
+320 × 240 that was enough before. A wide lens buys coverage and pays for it in
+detail, and both halves of that trade show up here.
 
 ## Where to go next
 

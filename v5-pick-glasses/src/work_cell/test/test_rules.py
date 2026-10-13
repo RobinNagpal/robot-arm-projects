@@ -1,5 +1,5 @@
 import pytest
-from work_cell.arm.dimensions import LOWEST_GRIP
+from work_cell.arm.dimensions import GRIPPER_MAX_GRIP, LOWEST_GRIP
 from work_cell.glasses import spec
 from work_cell.glasses.profile import Profile, profile_from_outline
 from work_cell.glasses.rules import BELOW_CENTRE, NoGrip, find_grip
@@ -13,13 +13,36 @@ from work_cell.glasses.shapes import (
 )
 from work_cell.glasses.spawn import SpawnedGlass
 
-# What the gripper can do. The real number lives in arm/dimensions.py; the
-# tests pass their own so that the rules can be exercised without the arm.
-MAX_OPENING = 0.095
+# What the gripper can do. Taken from the arm rather than chosen here, because
+# this is the number that decides which glasses exist as far as the rules are
+# concerned, and a test that picked its own would be testing a gripper nobody
+# has. It is the widest a glass may be, which on the real gripper is a little
+# under how far the fingers part.
+MAX_OPENING = GRIPPER_MAX_GRIP
 
 
 def grip_for(outline, kind_name, max_opening=MAX_OPENING):
     return find_grip(profile_from_outline(outline), spec.kind(kind_name), gripper_max_opening=max_opening)
+
+
+def holdable(kind_name, count, seed):
+    """The drawn glasses of a kind that this gripper could pick up at all.
+
+    ``family()`` draws across the whole plausible range of a kind, and part of
+    that range is simply too wide for a Robotiq 2F-85: a straight tumbler is
+    as wide at the grip as it is at the rim, and real tumblers run to 90 mm.
+    Such a glass is refused, and a refusal is a result rather than a failure,
+    so the tests about what a *rule* does are given the glasses the rule can
+    be asked about. How many get left out is not swept away with them: it is
+    the subject of its own test below.
+    """
+    for outline, props in family(kind_name, count, seed):
+        try:
+            grip_for(outline, kind_name)
+        except NoGrip as why:
+            if "apart" in str(why) or "only open" in str(why):
+                continue
+        yield outline, props
 
 
 # ------------------------------------------------- the opening is measured
@@ -44,7 +67,9 @@ def test_two_wine_glasses_of_different_sizes_give_different_openings():
 
 def test_a_shot_glass_and_a_pint_glass_use_the_same_rule():
     shot = grip_for(straight(height=0.055, rim_diameter=0.045), "straight_glass")
-    pint = grip_for(straight(height=0.170, rim_diameter=0.090), "straight_glass")
+    # 80 mm, because the pint this test used to use was 90 mm and the real
+    # gripper cannot hold it. See the test below, which is about exactly that.
+    pint = grip_for(straight(height=0.170, rim_diameter=0.080), "straight_glass")
     assert shot.opening < pint.opening
     # Both gripped low, as a fraction of their own height.
     for grip, outline in ((shot, 0.055), (pint, 0.170)):
@@ -84,7 +109,10 @@ def test_the_rule_works_on_forty_glasses_of_its_kind(kind_name):
             continue
         assert kind.min_opening_m <= grip.opening <= kind.max_opening_m
         assert grip.height < 0.5 * outline.total_height
-    assert not failures, f"{len(failures)} of 40 failed, first: {failures[:1]}"
+    # A glass too wide for the fingers is refused by the gripper, not by the
+    # rule, so it is not evidence against the rule. Anything else is.
+    rule_failures = [f for f in failures if "apart" not in f[1] and "only open" not in f[1]]
+    assert not rule_failures, f"{len(rule_failures)} of 40 failed, first: {rule_failures[:1]}"
 
 
 def _weighed(outline):
@@ -108,7 +136,7 @@ def test_a_weighed_straight_glass_is_held_just_below_its_centre_of_mass():
     than the estimate the rule used.
     """
     kind = spec.kind("straight_glass")
-    for outline, _ in family("straight_glass", 40, seed=8):
+    for outline, _ in holdable("straight_glass", 40, seed=8):
         grip = _straight_grip(profile_from_outline(outline), _weighed(outline))
         centre = centre_height(outline, kind.wall_thickness_m)
         assert grip.height < centre
@@ -122,7 +150,7 @@ def test_the_grip_stays_below_the_centre_with_the_errors_the_camera_makes():
     # to 10 mm too tall, and the wrist sensor has read 5% light. Both push the
     # estimate up, which is the dangerous way.
     kind = spec.kind("straight_glass")
-    for outline, _ in family("straight_glass", 40, seed=9):
+    for outline, _ in holdable("straight_glass", 40, seed=9):
         exact = profile_from_outline(outline)
         stretch = (exact.total_height + 0.010) / exact.total_height
         seen = Profile(exact.height * stretch, exact.width)
@@ -140,7 +168,7 @@ def test_a_glass_that_can_only_be_held_above_its_centre_is_refused():
 
 def test_weighing_moves_the_grip_down_and_never_up():
     # The outline alone cannot see the solid base, so its guess is high.
-    for outline, _ in family("straight_glass", 40, seed=8):
+    for outline, _ in holdable("straight_glass", 40, seed=8):
         profile = profile_from_outline(outline)
         before = _straight_grip(profile)
         after = _straight_grip(profile, _weighed(outline))
@@ -149,7 +177,7 @@ def test_weighing_moves_the_grip_down_and_never_up():
 
 def test_the_grip_stays_low_however_tall_the_glass_is():
     # Rule one: what the fingers hold ends up in the air after the turn.
-    for outline, _ in family("straight_glass", 25, seed=4):
+    for outline, _ in holdable("straight_glass", 25, seed=4):
         grip = grip_for(outline, "straight_glass")
         assert grip.height < 0.5 * outline.total_height
 
@@ -158,9 +186,34 @@ def test_the_grip_stays_low_however_tall_the_glass_is():
 
 
 def test_a_glass_wider_than_the_gripper_is_refused():
-    outline = straight(height=0.120, rim_diameter=0.090)
+    # 70 mm is a width a tumbler is allowed to be, so the kind lets it past and
+    # it is the gripper that turns it down. Offering something wider than the
+    # kind allows would be refused a step earlier and would not test this.
+    outline = straight(height=0.120, rim_diameter=0.070)
     with pytest.raises(NoGrip, match="fingers only open"):
         grip_for(outline, "straight_glass", max_opening=0.040)
+
+
+def test_some_real_tumblers_are_too_wide_for_this_gripper():
+    """The clearest price of fitting a real gripper, stated rather than hidden.
+
+    A Robotiq 2F-85 parts its fingers 85 mm and can hold about 80. A straight
+    tumbler is no narrower at the grip than at its rim, and real ones run past
+    that, so some of them simply cannot be picked up. The arm leaves them
+    standing and says why, which is the right answer and not a fault.
+
+    The count is checked loosely from both sides. If it ever became zero the
+    drawn family would have stopped covering real sizes; if it ever became most
+    of them, something would have gone wrong with the gripper's numbers.
+    """
+    too_wide = 0
+    for outline, _ in family("straight_glass", 40, seed=2):
+        try:
+            grip_for(outline, "straight_glass")
+        except NoGrip as why:
+            assert "apart" in str(why) or "only open" in str(why), why
+            too_wide += 1
+    assert 1 <= too_wide <= 12, f"{too_wide} of 40 straight glasses are too wide"
 
 
 def test_a_straight_glass_offered_to_the_stem_rule_is_refused():

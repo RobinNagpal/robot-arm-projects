@@ -9,6 +9,11 @@
 # position controller cannot say that. So the task swaps to the effort
 # controller once the pads are on the glass, and swaps back to let go.
 # arm/motion.py does the swapping, through /controller_manager/switch_controller.
+#
+# Both gripper controllers drive a single joint, because a Robotiq 2F-85 has
+# one motor. Its other joints follow that one through the linkage and are
+# declared as mimic joints in Robotiq's description, so a controller must not
+# be given them: they are not free to command.
 
 controller_manager:
   ros__parameters:
@@ -47,8 +52,7 @@ arm_controller:
 gripper_controller:
   ros__parameters:
     joints:
-      - left_finger_joint
-      - right_finger_joint
+      - robotiq_85_left_knuckle_joint
     command_interfaces:
       - position
     state_interfaces:
@@ -64,15 +68,17 @@ gripper_controller:
 gripper_force_controller:
   ros__parameters:
     joints:
-      - left_finger_joint
-      - right_finger_joint
+      - robotiq_85_left_knuckle_joint
+    # Newton metres at the knuckle, not newtons at the pads. arm/robotiq_2f85.py
+    # converts, because the pads are what glasses/force.py reasons about.
     interface_name: effort
 
 wrist_force_broadcaster:
   ros__parameters:
     sensor_name: wrist_force
-    # The reading is in the gripper's own frame, so its z axis is the direction
-    # the gripper reaches in. A glass hanging below the fingers pulls along it.
-    frame_id: gripper_body
+    # The reading is in the sensor's own frame, which is turned the same way as
+    # the gripper, so its z axis is the direction the gripper reaches in. A
+    # glass hanging below the fingers pulls along it.
+    frame_id: force_sensor_link
     # The topic is not set here. This broadcaster has no topic_name parameter
     # and always publishes on ~/wrench, so the launch remaps it to /wrist_force.

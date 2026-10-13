@@ -24,13 +24,23 @@ simulator loads, the settings it needs, and the code that works with it.
 
 **The arm** is in `work_cell/arm/`.
 
-- `arm.urdf.xacro` is the whole robot. It pulls the UR5e in from Universal
-  Robots' own package, bolts the gripper and the camera on, and lists which
-  joints and sensors `ros2_control` may touch.
-- `gripper.urdf.xacro` is the two-finger gripper: the silicone pads, the
-  contact sensors on them, and the force sensor at the wrist.
+- `arm.urdf.xacro` is the whole robot. Every part of it is a real product
+  whose maker publishes its own description, so this file only stacks them and
+  lists which joints and sensors `ros2_control` may touch: the UR5e from
+  Universal Robots' package, the Robotiq 2F-85 and its UR coupling from
+  Robotiq's, and the RealSense D405 from Intel's.
+- `gripper.urdf.xacro` is the tool as a whole: the FT 300-S force sensor on the
+  flange, Robotiq's gripper on top of it, and the friction of a silicone pad on
+  glass, which is the only part of it this project has to supply, because
+  friction is not a property of a shape.
+- `robotiq_2f85.py` is the gripper's linkage. It exists because the real
+  gripper has **one** driven joint and is told an angle, while the rest of the
+  project thinks in millimetres of glass, and this is where the two meet. It
+  also works out the thing a swinging finger does that a sliding one does not:
+  the pads move forward as they close, so where they grip depends on how far
+  shut the gripper is.
 - `controllers.yaml` says which controllers run the joints. Two of them want
-  the fingers, and only one runs at a time.
+  the gripper's one knuckle, and only one runs at a time.
 - `dimensions.py` is the numbers the model does not carry: how far the
   fingertips reach past the flange, where the camera sits, how far to stand off
   a glass to measure it, and how far to lift it before weighing it.
@@ -38,10 +48,11 @@ simulator loads, the settings it needs, and the code that works with it.
   do.
   - `move_to_pose()` plans a free move and `move_linear()` moves in a straight
     line.
-  - `set_gripper()` opens and closes the fingers to a width;
-    `set_gripper_force()` swaps to the force controller and squeezes;
-    `gripper_gap` says how far apart the fingers actually are, which is how
-    slip is noticed.
+  - `set_gripper()` opens and closes the fingers to a width, turning it into
+    a knuckle angle on the way out; `set_gripper_force()` swaps to the force
+    controller and squeezes, turning newtons at the pads into torque at the
+    knuckle; `gripper_gap` says how far apart the pads actually are, read back
+    through the same linkage, which is how slip is noticed.
   - `wrist_force_z` is the pull along the gripper's own axis, and
     `load_transferred()` asks whether something else has taken the weight.
   - `rotate_tool()` turns the tool about one of its own axes, in place, about a

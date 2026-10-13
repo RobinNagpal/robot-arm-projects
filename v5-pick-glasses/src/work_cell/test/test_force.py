@@ -1,4 +1,5 @@
 import pytest
+from work_cell.arm import robotiq_2f85
 from work_cell.glasses import spec
 from work_cell.glasses.force import (
     CONTACT_FORCE_N,
@@ -9,6 +10,7 @@ from work_cell.glasses.force import (
     holding_force,
     is_slipping,
     mass_from_wrist,
+    over_squeeze,
     required_force,
     starting_force,
 )
@@ -69,22 +71,40 @@ def test_a_negative_mass_is_refused():
 
 
 def test_a_heavy_thin_walled_glass_is_refused_rather_than_crushed():
-    # A kilogram on a thin-walled stem is not something to squeeze harder at.
+    # Two kilograms on a thin-walled stem is not something to squeeze harder
+    # at. The weight it takes to reach the cap is large now, because the cap
+    # starts at the gentlest squeeze the gripper has rather than at a guess.
     with pytest.raises(TooHeavyToHold, match="rated to"):
-        force_for_measured_mass(1.0, spec.kind("stemmed_glass"))
+        force_for_measured_mass(2.0, spec.kind("stemmed_glass"))
 
 
-def test_a_glass_inside_its_rating_gives_back_the_force_to_use():
-    force = force_for_measured_mass(0.180, spec.kind("stemmed_glass"))
-    assert force == pytest.approx(required_force(0.180))
-    assert force <= spec.kind("stemmed_glass").force_cap_n
+def test_a_glass_inside_its_rating_is_held_at_the_gentlest_the_gripper_has():
+    """What the sum asks for and what the gripper does are not the same.
+
+    A 180 g wine glass needs about 3 N per pad. The 2F-85 cannot be set below
+    20 N, so 20 N is what it gets, and the function says so rather than
+    returning a force that will not be used.
+    """
+    kind = spec.kind("stemmed_glass")
+    force = force_for_measured_mass(0.180, kind)
+    assert required_force(0.180) < robotiq_2f85.MIN_FORCE_N
+    assert force == pytest.approx(robotiq_2f85.MIN_FORCE_N)
+    assert force <= kind.force_cap_n
+
+
+def test_how_much_harder_the_gripper_squeezes_than_it_needs_to_is_reported():
+    """The gap between the sum and the hardware is the least certain thing in
+    this project, so it is printed rather than buried."""
+    assert over_squeeze(required_force(0.180)) > 5.0
+    # A squeeze the gripper can really deliver is not inflated.
+    assert over_squeeze(25.0) == pytest.approx(1.0)
 
 
 def test_the_refusal_says_what_it_weighed_and_what_the_rating_is():
     with pytest.raises(TooHeavyToHold) as caught:
-        force_for_measured_mass(1.0, spec.kind("stemmed_glass"))
+        force_for_measured_mass(2.0, spec.kind("stemmed_glass"))
     message = str(caught.value)
-    assert "1000 g" in message and "thin" in message
+    assert "2000 g" in message and "thin" in message
 
 
 def test_the_starting_force_never_exceeds_the_cap():
@@ -140,7 +160,18 @@ def test_a_weighed_glass_is_held_at_its_walls_rating():
 
 def test_a_glass_too_heavy_for_its_rating_is_still_refused():
     with pytest.raises(TooHeavyToHold):
-        holding_force(1.0, spec.kind("stemmed_glass"))
+        holding_force(2.0, spec.kind("stemmed_glass"))
+
+
+def test_no_cap_is_gentler_than_the_gripper_can_be_set():
+    """If one were, that kind of glass could not legally be held at all.
+
+    This is the assertion that forced the caps to be rewritten: against the
+    old ones the gripper's own minimum broke every thin and normal glass's
+    rating, so the arm would have refused nearly every glass on the table.
+    """
+    for kind_name in spec.LIBRARY:
+        assert spec.kind(kind_name).force_cap_n >= robotiq_2f85.MIN_FORCE_N
 
 
 def _weighed(outline):

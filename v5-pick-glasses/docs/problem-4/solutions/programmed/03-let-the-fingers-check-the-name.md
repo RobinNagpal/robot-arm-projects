@@ -89,8 +89,8 @@ Check the name against things the name predicts and the one picture did not
 decide.
 
 1. **Before moving: the fingers must clear the glass over the whole pad.** A
-   pad is 14 mm tall. The rule chooses one height, but the pad covers 7 mm
-   either side of it. So the widest the profile gets over that span must be
+   pad is 22 mm tall, which is the 2F-85's. The rule chooses one height, but
+   the pad covers 11 mm either side of it. So the widest the profile gets over that span must be
    less than the opened fingers.
 2. **After closing: the width at contact.** Already built, unchanged.
 3. **After the lift: the weight must fit the named kind's wall.** Each wall
@@ -233,8 +233,8 @@ existing check — the 20 N case — is caught before the 20 N is applied.
 
 **Breaks.**
 
-- **A notch taller than the pad.** The first check looks 7 mm either side of
-  the grip. A reflection band more than 14 mm tall, centred on the grip, has no
+- **A notch taller than the pad.** The first check looks 11 mm either side of
+  the grip. A reflection band more than 22 mm tall, centred on the grip, has no
   wider wall inside the span. The touch check then decides, and only if the
   fingers fit.
 - **Two kinds with the same wall.** The weighing names the wall, not the kind.

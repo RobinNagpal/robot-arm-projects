@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import numpy as np
 
+from ..arm import robotiq_2f85
 from .profile import Profile
 from .spec import Kind
 
@@ -45,8 +46,17 @@ GRIP_FACTOR = 0.6
 # Squeeze this much harder than the sum says, to cover a knock on the way.
 SAFETY_FACTOR = 2.0
 
-# The gentlest squeeze that will still register as contact on the way in. Used
-# for taking up the slack before the real force is applied.
+# The smallest push the wrist sensor can be trusted to notice, which is how
+# the arm knows the pads have reached the glass. Robotiq recommend 1 N as the
+# smallest contact worth acting on with the FT 300-S, and the sensor's own
+# noise is about a tenth of that.
+#
+# This used to be a force the fingers were *commanded* with, to take up the
+# slack gently before the real squeeze. A real gripper cannot do that, because
+# the 2F-85's gentlest setting is 20 N, so there is no such thing as closing on
+# a glass at one newton. Contact is therefore something the arm *detects*
+# rather than something it applies: the fingers close under position control
+# until the sensor sees this much, and only then is a force commanded at all.
 CONTACT_FORCE_N = 1.0
 
 
@@ -112,24 +122,63 @@ def required_force(mass: float, *, grip_factor: float = GRIP_FACTOR) -> float:
     return weight * SAFETY_FACTOR / (2.0 * grip_factor)
 
 
+def commanded_force(newtons: float) -> float:
+    """What the gripper will actually be set to, given what the sums asked for.
+
+    The sums above work in single newtons, because that is genuinely all it
+    takes to hold a drinking glass between two silicone pads. The gripper does
+    not have single newtons. The 2F-85's adjustable range starts at 20 N, so
+    anything gentler than that is simply not a setting it has, and asking for
+    it would mean asking for something and getting something else.
+
+    So the force is raised to the floor and the fact is not hidden. It is the
+    single biggest difference between what this project computes and what the
+    hardware does, and ``over_squeeze()`` is how the size of it gets reported.
+    """
+    return max(newtons, robotiq_2f85.MIN_FORCE_N)
+
+
+def over_squeeze(newtons: float) -> float:
+    """How many times harder the gripper squeezes than the sums asked for.
+
+    One means the gripper did exactly what was wanted. Seven means a glass
+    that needed about three newtons was held with twenty, because twenty is
+    the gentlest this gripper has. Reported rather than buried, because a
+    number nobody prints is a number nobody checks, and this is the one most
+    worth checking against real glass.
+    """
+    if newtons <= 0:
+        return 1.0
+    return commanded_force(newtons) / newtons
+
+
 def starting_force(profile: Profile, kind: Kind) -> float:
     """What to squeeze with before the glass has been weighed.
 
     Capped, because an overshooting estimate must not be allowed to crack a
-    glass before the weighing step has had a chance to correct it.
+    glass before the weighing step has had a chance to correct it, and raised
+    to what the gripper can actually be set to.
     """
-    return min(required_force(estimate_mass(profile, kind)), kind.force_cap_n)
+    wanted = min(required_force(estimate_mass(profile, kind)), kind.force_cap_n)
+    return commanded_force(wanted)
 
 
 def force_for_measured_mass(mass: float, kind: Kind) -> float:
     """The force to hold a glass that has now been weighed properly.
 
     Raises TooHeavyToHold if that force is past what the walls are rated for.
+
+    The force checked against the cap is the one the gripper will really be
+    set to, not the one the sum asked for. That distinction is the whole point
+    of using a real gripper: a glass needing 3 N is going to be squeezed at
+    20 N whatever the sum says, so 20 N is what has to be safe for it. Testing
+    the ideal force against the cap would pass glasses the hardware then
+    squeezes far harder.
     """
-    needed = required_force(mass)
+    needed = commanded_force(required_force(mass))
     if needed > kind.force_cap_n:
         raise TooHeavyToHold(
-            f"holding {mass * 1000:.0f} g needs {needed:.1f} N per pad, and a "
+            f"holding {mass * 1000:.0f} g means squeezing at {needed:.1f} N per pad, and a "
             f"{kind.wall}-walled {kind.name} is only rated to {kind.force_cap_n:.1f} N"
         )
     return needed

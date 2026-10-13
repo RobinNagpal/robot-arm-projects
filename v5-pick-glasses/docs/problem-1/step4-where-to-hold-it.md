@@ -216,7 +216,9 @@ than with the arm already moving:
 
 1. **The opening is outside what this kind should ever need.** A stem 60 mm
    across is not a stem; the rule found something else.
-2. **The opening is wider than the gripper opens at all** (95 mm).
+2. **The opening is wider than the gripper can hold** (80 mm, a little under
+   the 85 mm the fingers part, because a glass filling the last few
+   millimetres of the stroke would touch the gripper's body).
 3. **The band is shorter than the pads need.**
 4. **The grip is more than halfway up the glass**, which after the turn puts
    the fingers among the rack pegs.

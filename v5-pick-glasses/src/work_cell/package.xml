@@ -15,6 +15,11 @@
 
   <exec_depend>rclpy</exec_depend>
   <exec_depend>ur_description</exec_depend>
+  <!-- Robotiq publish the 2F-85 gripper and the coupling that bolts it to a UR
+       flange; Intel publish the RealSense D405. The simulator loads their
+       models rather than any drawn here. -->
+  <exec_depend>robotiq_description</exec_depend>
+  <exec_depend>realsense2_description</exec_depend>
   <exec_depend>xacro</exec_depend>
   <exec_depend>robot_state_publisher</exec_depend>
   <exec_depend>ros_gz_sim</exec_depend>

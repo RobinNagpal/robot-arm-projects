@@ -311,7 +311,7 @@ would be written down, and the rule would still be broken — just somewhere
 nobody can read it.
 
 And a rule can say why it refused. "The rule wants the fingers 246 mm apart,
-outside the 20 to 95 mm a straight glass should ever need" is a sentence that
+outside the 20 to 80 mm a straight glass should ever need" is a sentence that
 sends you to the bug. A policy that does not grasp a glass has no reason to
 offer, and a project whose refusals are results needs its refusals to be
 legible.
