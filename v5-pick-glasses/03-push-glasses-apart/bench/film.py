@@ -25,11 +25,13 @@ hand and the volume the simulator treats as solid.
 
 **The pick at the end of a take is drawn, not simulated.** The bench racks a
 glass by moving it off the table in one instant, which on film would look like
-the glass vanishing. So the film draws what a real pick-up is: the wrist turns
-the hand upright, the fingers open to the width the glass was measured to be,
-the hand comes down around it, the fingers close, and the glass is carried off.
-That is drawn on a copy of the world and never stepped, so the physics, and
-every result, are the same filmed or not. ``test_bench.py`` checks it.
+the glass vanishing. So the film draws a stand-in for a pick: the wrist rolls
+back level, the fingers open to the width the glass was measured to be, the
+hand reaches in so that the pads pass either side of it, the fingers close, and
+the glass is carried off. It is a stand-in and not problem 1's grip rule, which
+is a harder question and mostly answers no on these glasses; ``_grip`` says why.
+It is drawn in the second world and never stepped, so the physics, and every
+result, are the same filmed or not. ``test_bench.py`` checks it.
 """
 
 from __future__ import annotations
@@ -38,6 +40,7 @@ import math
 import shutil
 import subprocess
 import tempfile
+import textwrap
 import time
 from pathlib import Path
 
@@ -45,6 +48,7 @@ import cv2
 import mujoco
 import numpy as np
 from work_cell.arm import robotiq_2f85
+from work_cell.arm.dimensions import LOWEST_GRIP
 from work_cell.rack.layout import GLASS_ZONE, RACK_AREA
 from work_cell.table.layout import TABLE_TOP_Z
 
@@ -73,38 +77,50 @@ PARK = np.array([0.0, 0.5, 1.3])
 # How long each part of a drawn pick lasts on film, in seconds. A pick is drawn
 # rather than simulated, so these are a reader's pace and not a measurement.
 PICK_MOVES = {
-    "turning the wrist upright": 0.5,
-    "over the glass": 0.6,
-    "down around it": 0.5,
+    "unrolling the wrist": 0.5,
+    "across to it": 0.6,
+    "down beside it": 0.5,
+    "in around it": 0.4,
     "closing on it": 0.4,
     "lifting": 0.4,
     "to the rack": 0.7,
 }
 # How high a taken glass is lifted before it is carried off.
 LIFT = 0.25
-# Where up the glass the pads are put, as a fraction of the glass's own height.
-# A fraction rather than a height, because no glass's size may be written down
-# anywhere in this project. Where a real grip would go is problem 1's business
-# and is decided from the glass's shape; this only has to look right.
-GRIP_FRACTION = 0.45
-# How much wider than the glass the fingers open before coming down around it.
+# Where up the glass the drawn pick holds it, as a fraction of the glass's own
+# height. A fraction rather than a height, because no glass's size may be
+# written down anywhere in this project.
+GRIP_FRACTION = 0.40
+# How much wider than the glass the fingers open before they come in around it.
 GRIP_CLEARANCE = 0.030
+# How far short of the glass the hand stops before reaching in, so that the pads
+# pass either side of it rather than arriving on top of it.
+STAND_OFF = 0.12
 
 # The two ways the hand is held, as quaternions. Pushing, it is rolled a quarter
-# turn about the approach so the fingers stack one above the other and the hand
-# is only 27 mm wide. Picking, it points straight down with the fingers opening
-# sideways. A pick begins by turning from the first to the second, which is a
-# real cost of pushing with a gripper and is worth seeing.
+# turn about the approach, so the two fingers stack one above the other and the
+# hand is only 27 mm wide, which is the whole reason this problem can be solved
+# at all. Gripping, it is level, so the fingers sit either side of the glass.
+# A pick begins by rolling back from the first to the second, and that turn is a
+# real cost of pushing with a gripper rather than with a blade.
 ROLLED = np.array([math.cos(math.pi / 4), math.sin(math.pi / 4), 0.0, 0.0])
-POINTING_DOWN = np.array([math.cos(math.pi / 4), 0.0, math.sin(math.pi / 4), 0.0])
-# The hand is turned to face this way for a drawn pick. The camera looks along
-# the table's x axis, so fingers opening along y are seen from the side, which
-# is the one direction from which both fingers and the gap are visible.
-PICK_HEADING = 0.0
+LEVEL = np.array([1.0, 0.0, 0.0, 0.0])
+# The hand reaches in along this heading for a drawn pick, which is away from
+# the camera. The gripper's body trails behind its fingertips, so a hand coming
+# the other way would put its own body between the camera and the glass and hide
+# the one thing the pick is there to show. Reaching away leaves the body behind
+# the glass, and the fingers open across the view, which is the one direction
+# from which both fingers and the gap between them show. The bench has no arm,
+# so no approach is more correct than another.
+PICK_HEADING = math.pi
+# How many characters of a line fit across the picture, at the size the writing
+# is drawn. A refusal from the grip rule is a whole sentence and has to be
+# broken over several lines rather than run off the edge.
+LINE_LENGTH = 62
 # Where the camera goes to watch a drawn pick: closer, and much less steeply
 # down. From the standing view the gripper's own body is between the camera and
 # the glass, so the one thing the pick is there to show would be hidden behind
-# it. The camera eases in as the wrist turns and eases out as the glass is
+# it. The camera eases in as the wrist rolls and eases out as the glass is
 # carried off, so the move is part of the pick rather than a cut.
 PICK_DISTANCE = 0.62
 PICK_ELEVATION = -30.0
@@ -202,29 +218,26 @@ class FilmedBench(Bench):
     # ------------------------------------------------------------- the drawn pick
 
     def _grip(self, glass: int) -> tuple[float, float]:
-        """How high up the glass the pads go, and how far apart they must be.
+        """Where the drawn pick holds this glass, and how far apart the pads go.
 
-        Both come from the glass standing in front of the arm rather than from a
-        table of sizes, which is the rule the whole project is built on. The
-        height is a fraction of this glass's own height, and the width is how wide
-        this glass is at that height.
+        This is a stand-in and not problem 1's grip rule. Problem 1 chooses where
+        to hold a glass from its shape, and on these glasses it usually chooses
+        nothing at all: it comes in level and cannot reach below 50 mm, so it
+        refuses most of what problem 3 leaves standing. That is a real and
+        documented gap, and the-examiner.md counts it, but it is problem 1's gap
+        rather than anything these films are about. Drawing it here would turn
+        every pick in every film into a notice about another problem.
 
-        The fraction alone is not enough, because the fingers are only so long.
-        Between the pads and the palm behind them there are about 33 mm, so a
-        glass held lower than that below its own rim would have the rim inside
-        the gripper's body, which cannot happen and would look wrong on film.
-        Whichever is higher wins: the fraction, or the lowest hold that leaves
-        the rim clear of the palm. On a tall glass that is the palm, and the hand
-        has to take the glass near its top, where a tapered glass is widest.
-        That is a real cost of this gripper and not a drawing's shortcut.
+        So the drawing keeps problem 1's two bounds, because they decide what the
+        hand can be drawn doing — no lower than the force sensor can go without
+        meeting the table, and no higher than halfway up, which is where the
+        fingers would foul the rack after the turn — and inside them it simply
+        holds the glass where it can be seen. The width is this glass's own
+        width there, measured rather than written down.
         """
         cuts = slices(self.glasses[glass].outline)
         top = max(high for _, high, _ in cuts)
-        body = next(p for p in robotiq_2f85.parts() if p["name"] == "body")["back"]
-        clear = body - robotiq_2f85.pads()[0]["back"] - robotiq_2f85.PALM_CLEARANCE
-        height = min(max(GRIP_FRACTION * top, top - clear), top)
-        # The slice the pads land in, which is the one the height falls inside.
-        # Only if the height falls in no slice is the nearest one used.
+        height = min(max(GRIP_FRACTION * top, LOWEST_GRIP), top / 2)
         inside = [cut for cut in cuts if cut[0] <= height <= cut[1]]
         cut = inside[0] if inside else min(cuts, key=lambda c: abs((c[0] + c[1]) / 2 - height))
         return height, 2.0 * cut[2]
@@ -233,7 +246,7 @@ class FilmedBench(Bench):
         """Place every drawn piece for a knuckle angle and a quarter-turn of wrist.
 
         ``turn`` runs from 0, the hand rolled on its side as it pushes, to 1,
-        the hand upright as it picks. Returns how far the middle of the pads sits
+        the hand level as it grips. Returns how far the middle of the pads sits
         behind the fingertips, which is what the caller needs to put the pads on
         the glass rather than the fingertips.
 
@@ -243,7 +256,7 @@ class FilmedBench(Bench):
         visible on film.
         """
         model = self.drawn_model
-        rotation = _matrix(_slerp(ROLLED, POINTING_DOWN, turn))
+        rotation = _matrix(_slerp(ROLLED, LEVEL, turn))
         pieces = robotiq_2f85.parts(angle)
         pieces = pieces + robotiq_2f85.pads(angle) + [
             {
@@ -263,7 +276,7 @@ class FilmedBench(Bench):
         return robotiq_2f85.pads(angle)[0]["back"]
 
     def _show_pick(self, glass: int) -> None:
-        """The hand turns upright, opens, comes down around the glass and carries it off.
+        """The hand rolls level, opens, reaches in around the glass and carries it off.
 
         Drawn on the second world: nothing here moves the scored one, and the
         pieces it moves are the ones no solution ever sees.
@@ -274,81 +287,78 @@ class FilmedBench(Bench):
         # The collided shell means nothing here, because nothing is being
         # collided, and left on it would hang through the glass as a brick.
         model.geom_rgba[self.shell, 3] = 0.0
-        self.note = ("drawn: the bench racks a glass in one instant",)
+        self.note = tuple(
+            textwrap.wrap(
+                "drawn: the bench racks a glass in one instant, and problem 1 does "
+                "the real pick",
+                LINE_LENGTH,
+            )
+        )
 
         x, y = self.position(glass)
         address = model.jnt_qposadr[model.body_jntadr[self.bodies[glass]]]
         glass_start = world.qpos[address : address + 3].copy()
         height, width = self._grip(glass)
-        # How far the pads can be apart is the stroke and nothing narrower.
-        # MAX_GRIP is not the limit here, although it looks like it: it is the
-        # same palm clearance worked out for a ball, whose reach along the
-        # fingers is its own width. A glass stands with its axis along the
-        # fingers, so what reaches the palm is the glass above the pads, and
-        # _grip has already answered that with a height. Using both would be
-        # the one limit counted twice.
-        held = min(max(width, robotiq_2f85.MIN_OPENING), robotiq_2f85.MAX_OPENING)
+        # Held level, what the pads can close on is MAX_GRIP rather than the
+        # full stroke: coming in from the side, the glass reaches back towards
+        # the gripper's own body by its own width, and past about 80 mm it
+        # touches. That is what grips_clear_of_the_palm answers.
+        held = min(max(width, robotiq_2f85.MIN_OPENING), robotiq_2f85.MAX_GRIP)
         opened = min(width + GRIP_CLEARANCE, robotiq_2f85.MAX_OPENING)
         wide, shut = robotiq_2f85.angle_for(opened), robotiq_2f85.angle_for(held)
-        if width > robotiq_2f85.MAX_OPENING:
-            # The bench racked it anyway, because it only asks whether the glass
-            # had room. Saying so is the honest drawing: the fingers stay at
-            # their widest and nothing closes on the glass.
-            self.note += (
-                f"this glass is {1000 * width:.0f} mm across here, wider than the gripper opens",
-            )
 
         was = self.data.mocap_quat[0].copy()
         turned = math.atan2(was[3], was[0]) * 2.0
-        # Where the pads must finish, which is what the hand is placed by. The
-        # fingertips reach past the pads, so they end up lower than this.
-        on_the_glass = TABLE_TOP_Z + height
-        over = np.array([x, y, TABLE_TOP_Z + TRAVEL_HEIGHT])
-        down = np.array([x, y, on_the_glass])
+        # The hand comes in level, so the pads pass either side of the glass and
+        # finish on its middle. It is placed by where its pads are rather than by
+        # its fingertips, which reach further on than the pads do.
+        along = np.array([math.cos(PICK_HEADING), math.sin(PICK_HEADING), 0.0])
+        grip = np.array([x, y, TABLE_TOP_Z + height])
+        beside = grip - along * STAND_OFF
+        over = np.array([*beside[:2], TABLE_TOP_Z + TRAVEL_HEIGHT])
+        rack = np.array(
+            [
+                (RACK_AREA[0] + RACK_AREA[1]) / 2,
+                (RACK_AREA[2] + RACK_AREA[3]) / 2,
+                grip[2] + LIFT,
+            ]
+        )
 
         moves = list(PICK_MOVES)
         for move, length in PICK_MOVES.items():
             frames = max(1, round(length * FPS))
             for frame in range(1, frames + 1):
                 part = frame / frames
-                # The camera comes in as the wrist turns and goes back out as
+                # The camera comes in as the wrist rolls and goes back out as
                 # the glass is carried away, so it is never moving while the
                 # fingers are doing something worth watching.
                 close = part if move == moves[0] else 1.0 - part if move == moves[-1] else 1.0
                 self._watch(np.array([x, y, TABLE_TOP_Z + PICK_RISE]), close)
-                turn, angle, where = 1.0, wide, down
-                if move == "turning the wrist upright":
+                turn, angle, where = 1.0, wide, grip
+                if move == "unrolling the wrist":
                     turn, where = part, PARK
                     angle = robotiq_2f85.angle_for(
                         robotiq_2f85.MIN_OPENING + part * (opened - robotiq_2f85.MIN_OPENING)
                     )
-                elif move == "over the glass":
+                elif move == "across to it":
                     where = PARK + (over - PARK) * part
-                elif move == "down around it":
-                    where = over + (down - over) * part
+                elif move == "down beside it":
+                    where = over + (beside - over) * part
+                elif move == "in around it":
+                    where = beside + (grip - beside) * part
                 elif move == "closing on it":
                     angle = robotiq_2f85.angle_for(opened + (held - opened) * part)
                 elif move == "lifting":
-                    angle, where = shut, down + [0.0, 0.0, LIFT * part]
+                    angle, where = shut, grip + [0.0, 0.0, LIFT * part]
                 else:
-                    rack = np.array(
-                        [
-                            (RACK_AREA[0] + RACK_AREA[1]) / 2,
-                            (RACK_AREA[2] + RACK_AREA[3]) / 2,
-                            on_the_glass + LIFT,
-                        ]
-                    )
-                    carry = down + [0.0, 0.0, LIFT]
+                    carry = grip + [0.0, 0.0, LIFT]
                     angle, where = shut, carry + (rack - carry) * part
-                # The hand is placed by where its pads are rather than by where
-                # its fingertips are, so the pads land on the glass. They creep
-                # forward as the fingers close, which lifts the hand a little.
                 pads = self._hold_hand(turn, angle)
                 heading = turned + (PICK_HEADING - turned) * turn
-                world.mocap_pos[0] = where - [0.0, 0.0, pads]
+                world.mocap_pos[0] = where + along * pads
                 world.mocap_quat[0] = [math.cos(heading / 2), 0.0, 0.0, math.sin(heading / 2)]
                 if move in ("lifting", "to the rack"):
-                    world.qpos[address : address + 3] = glass_start + (where - down)
+                    world.qpos[address : address + 3] = glass_start + (where - grip)
                 mujoco.mj_forward(model, world)
                 shot = self._capture(sync=False)
                 # Halfway up, which is where a picture of a glass being picked

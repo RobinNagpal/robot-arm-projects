@@ -193,19 +193,24 @@ marking later knows whether the arm's own belief about room was correct.
 
 **"For free" is doing real work in that sentence, and it is worth saying what
 it hides.** `take()` asks one question — did this glass have room around it? —
-and if the answer is yes the glass leaves the table. It never asks whether this
-gripper could have closed on it. Drawing the pick for the films made that
-assumption visible, because a drawing has to put the pads somewhere. Two of the
-gripper's own measurements decide where. The fingers reach only about 33 mm past
-the pads before the palm is in the way, so a glass has to be held within 33 mm
-of its own rim, and a tapered glass is widest there. The pads open 85 mm. Put
-together, **22 of the 251 held-out glasses are wider at the only height the palm
-allows than the gripper opens**, so they could not be picked up at all, and
-almost all of them are tapered glasses. The examiner racks them anyway, and the
-films say on screen when a glass being taken is one of them. This is a limit of
-the problem as it is set rather than a fault in any of the six solutions, and
-none of their scores depends on it, because every one of them is marked the
-same way.
+and if the answer is yes the glass leaves the table. It never asks the other
+question, which is whether problem 1 could have picked that glass up at all.
+Those are not the same question, and the gap between them is large. Problem 1's
+own grip rule, asked about each of the 251 held-out glasses with the real
+gripper's measurements, **finds somewhere to hold only 97 of them**. The
+commonest reason it gives is not width but reach: the tool comes in level, the
+force sensor behind the fingers hangs below the tool's axis, and so the pads
+cannot be put lower than 50 mm up the glass without the sensor meeting the
+table. A glass with nothing to hold between 50 mm and halfway up is refused.
+
+This is a limitation of problem 1 rather than of problem 3, and
+[known-gaps.md](../known-gaps.md) already records it: the grip search only
+chooses a height and always comes in level from the side, so short glasses fall
+between two limits that cancel each other out. It is noted here because the
+scorecard's word *racked* quietly assumes a pick that often could not happen.
+No solution's score depends on it, because all six are marked the same way, and
+the films draw the pick as a plain stand-in and say on screen that problem 1
+does the real one.
 
 ## The shared output, and why it is a jaw trajectory
 

@@ -29,21 +29,23 @@ a push, the film would be wrong.
 
 **A pick is drawn rather than simulated.** `take()` racks a glass by moving it
 off the table in one instant, which on film would look like the glass
-vanishing, so the film draws what a real pick-up is instead: the wrist turns
-the hand upright, the fingers open to the width the glass was measured to be,
-the hand comes down around it, the fingers close and the glass is carried off.
-The label on screen says so while it happens. Nothing there is stepped, and
+vanishing, so the film draws a stand-in for a pick instead: the wrist rolls
+back level, the fingers open to the width the glass was measured to be, the
+hand reaches in so that the pads pass either side of it, the fingers close and
+the glass is carried off. The label on screen says so while it happens, and
+says that problem 1 does the real pick. Nothing there is stepped, and
 `test_bench.py` checks that a filmed table ends exactly where the same
 unfilmed table ends.
 
-Drawing that pick has to decide where the pads go, and the gripper's own
-measurements decide it. The fingers reach about 33 mm past the pads before the
-palm is in the way, so the glass is held within 33 mm of its own rim, which on
-a tapered glass is its widest part; and the pads open 85 mm. Some glasses are
-wider than that at the only height the palm allows, so no grip closes on them
-and the film says so on screen. `take()` racks them all the same, because it
-only asks whether a glass had room. [the-examiner.md](../../docs/03-push-glasses-apart/the-examiner.md)
-counts them.
+That drawn pick is a stand-in and not problem 1's grip rule. It keeps problem
+1's two bounds, because they decide what the hand can be drawn doing — no lower
+than 50 mm, where the force sensor behind the fingers would meet the table, and
+no higher than halfway up the glass — and inside them it simply holds the glass
+where it can be seen. Problem 1's real rule, asked about these glasses, refuses
+most of them for the first of those reasons;
+[the-examiner.md](../../docs/03-push-glasses-apart/the-examiner.md) counts how
+many, and [known-gaps.md](../../docs/known-gaps.md) explains why that is a gap
+in problem 1 rather than in problem 3.
 
 One more thing is visible and is deliberate. The hand is drawn twice: its real
 pieces solid, and around them, as a faint shell, the larger shape the bench

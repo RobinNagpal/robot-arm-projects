@@ -148,11 +148,11 @@ gripper shut and uses the whole hand as a pusher, which is what the parallel
 locking kit on a Robotiq 2F-85 is for, so nothing is gripped and nothing is
 lifted during a push. The second is that **the pick at the end of a take is
 drawn rather than simulated**. The bench racks a glass by moving it off the
-table in one instant, so instead of showing a glass vanish the film draws what
-a real pick-up would be: the wrist turns the hand upright, the fingers open to
-the width the glass was measured to be, the hand comes down around it, the
-fingers close and the glass is carried off. The label on screen says so while
-it happens.
+table in one instant, so instead of showing a glass vanish the film draws a
+stand-in for a pick: the wrist rolls back level, the fingers open to the width
+the glass was measured to be, the hand reaches in so that the pads pass either
+side of it, the fingers close and the glass is carried off. The label on screen
+says so while it happens, and says that problem 1 does the real pick.
 
 The hand itself is drawn twice, and both drawings are worth looking at. Its
 real pieces are solid, and around them, as a faint shell, is the larger shape
