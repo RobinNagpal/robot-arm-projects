@@ -186,9 +186,11 @@ A drawn hand cannot collide with anything, so which side it comes in from is
 checked before it is drawn. The hand is 266 mm long from its fingertips to the
 back of its force sensor, so having room around a glass is not the same as
 having a way in to it: every side is tried, and if none is clear the hand is
-drawn stopping where it would have touched, with a line saying so. Watch for
-that, because it happens more often than the clear space around a glass
-suggests.
+drawn stopping where it would have touched, with a line saying so. Across the
+six films that happens once, in the world model's, because it is the only
+solution that racks enough glasses for the question to come up twice. It is
+rare here for a reason worth noticing: these glasses have just been pushed
+apart, which is what makes a way in exist.
 
 The hand itself is drawn twice, and both drawings are worth looking at. Its
 real pieces are solid, and around them, as a faint shell, is the larger shape

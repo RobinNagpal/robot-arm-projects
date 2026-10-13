@@ -228,7 +228,9 @@ pick, come in from a side that is clear when one is, and when none is, draw the
 hand stopping where it would have touched and say so on the picture. A drawn
 hand cannot collide with anything, so without that check a film would show the
 hand sliding through a glass and a viewer would read it as room that is not
-there.
+there. Across the six films eleven picks are drawn and one of them stops short,
+which is lower than the figure above because by the time a glass is racked the
+solution has already pushed its neighbours away from it.
 
 ## The shared output, and why it is a jaw trajectory
 

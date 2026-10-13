@@ -203,6 +203,11 @@ class FilmedBench(Bench):
         # worth keeping, which is the glass halfway up off the table.
         self.captured = 0
         self.lifted: np.ndarray | None = None
+        # How many picks were drawn, and how many of those had to stop short
+        # because the hand could not reach the glass from any side. Reported
+        # when the film is saved, because whether it happens is a fact about
+        # the table and not about the drawing.
+        self.picks = self.stopped_short = 0
         self._pipe: subprocess.Popen | None = None
         self._file: Path | None = None
         self._capture()
@@ -378,7 +383,9 @@ class FilmedBench(Bench):
         # Which side the hand comes from, and how far in it can get without
         # passing through a glass it is not holding.
         facing, got = self._way_in(glass, opened)
+        self.picks += 1
         if got < 1.0:
+            self.stopped_short += 1
             # Nothing closes, because the pads never arrive. The glass still
             # leaves the table, because the bench racked it, and the note is
             # there so that is not read as the hand having picked it up.
@@ -535,5 +542,9 @@ class FilmedBench(Bench):
             raise RuntimeError("ffmpeg could not write the film")
         path.parent.mkdir(parents=True, exist_ok=True)
         shutil.move(self._file, path)
+        print(
+            f"filmed {path.name}: {self.picks} picks drawn, "
+            f"{self.stopped_short} of them stopping short for want of a way in"
+        )
         shutil.rmtree(self._file.parent, ignore_errors=True)
         self.renderer.close()
