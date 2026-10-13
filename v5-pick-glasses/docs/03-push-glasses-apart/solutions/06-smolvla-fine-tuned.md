@@ -227,7 +227,7 @@ one of them was fitted.
 ## The problem this solves
 
 Problem 3 asks for a jaw trajectory, and then another, until every glass has
-about 70 mm of clear room around it or the glasses that are left have been
+about 76 mm of clear room around it or the glasses that are left have been
 refused with a reason. [The problem](../problem.md) explains why that is hard,
 and the hardest part of it is a missing number: whether a pushed glass slides
 or tips depends on the friction between the glass and the table, **nothing in
@@ -945,7 +945,7 @@ time.
 
 A glass slides while the jaw touches it below half its foot width divided by
 the friction, and tips above that. The height that counts is the jaw's **top
-edge** at 65 mm, not the 50 mm its middle rides at, and for a glass whose foot
+edge** at 107 mm, not the 75 mm its middle rides at, and for a glass whose foot
 is narrow enough there is no contact height the arm can offer below the limit.
 The only correct answer for such a glass is to refuse, with the reason
 recorded, which marks the run *correct but incomplete* rather than wrong.
@@ -985,7 +985,7 @@ recognise once both have been run over the same one.
 **The table.** Five tapered glasses stand in the glass zone, drawn at
 proportions from across the kind's range, so they are not all the same height.
 Two of them stand as close together as the examiner allows, so neither has its
-70 mm of clear room measured to the other's edge, and because the test is to
+76 mm of clear room measured to the other's edge, and because the test is to
 the edge rather than to the middle, the narrower of the two is crowded while
 the wider one may not be. A third glass, standing alone, is drawn with a foot
 narrow enough that its limit falls below the jaw's top edge. The examiner renders
@@ -1031,7 +1031,7 @@ What differs is whether the model had ever seen this situation at all.
 
 **And the case neither can answer.** The third glass, with the narrow foot,
 cannot be pushed safely. The shared check computes the limit from the glass's
-measured foot width and the jaw's top edge, finds it below 65 mm, and refuses
+measured foot width and the jaw's top edge, finds it below 107 mm, and refuses
 that glass with that reason before either model is asked anything. The glass is
 left standing and the table is marked *correct but incomplete*. The refusal,
 its reason and its correctness belong entirely to the shared geometry.

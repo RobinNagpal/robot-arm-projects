@@ -238,7 +238,7 @@ The main idea is a separation, and the whole of this solution follows from it.
 function that answers *given this table and this push, what is the table
 afterwards*. Keep it completely free of any opinion about what a good push is.
 Then write the opinion separately, as plain arithmetic over tables: a table
-where every glass has its 70 mm of clear room is good, a table where something
+where every glass has its 76 mm of clear room is good, a table where something
 has fallen over is unacceptable, and a shorter push is better than a longer
 one. Finally, put a search between the two: propose pushes, ask the model what
 each one leads to, score the answers with the arithmetic, and make the best
@@ -249,7 +249,7 @@ completely different sources of truth. What will happen is a fact about the
 world, and it can only be learned from the world — which here means pushing
 glasses in the simulator and recording the result. What counts as good is a
 fact about the task, and it is already written down in [the
-problem](../problem.md): 70 mm of clear room, nothing knocked over, as few
+problem](../problem.md): 76 mm of clear room, nothing knocked over, as few
 pushes as possible. Mixing them produces a thing that has to be retrained when
 the task changes. Keeping them apart means **the same model serves a different
 goal by changing only the arithmetic**. If the task later became spreading the
@@ -521,7 +521,7 @@ convenience but the deciding property.
 The score itself is deliberately plain arithmetic over the predicted table, and
 it is short enough to state in full. Add up, over every glass, how much clear
 room is still missing at the end — how far each neighbour's edge reaches inside
-the 70 mm that glass needs. Add a small penalty for each millimetre pushed, so
+the 76 mm that glass needs. Add a small penalty for each millimetre pushed, so
 that the shortest push that does the job wins. Throw the candidate away
 entirely if any copy of the model gives it more than the topple limit, if the
 predicted table puts a moved glass outside the glass zone or outside the arm's
@@ -843,7 +843,7 @@ scorecard cannot be compared.
 
 A glass slides while the jaw touches it below half its foot width divided by
 the friction, and tips above that. The height that counts is the jaw's **top
-edge** at 65 mm, not the 50 mm its middle rides at, and for a glass whose foot
+edge** at 107 mm, not the 75 mm its middle rides at, and for a glass whose foot
 is narrow enough there is no contact height the arm can offer below the limit.
 The only correct answer for such a glass is to refuse, with the reason
 recorded, which marks the run *correct but incomplete* rather than wrong.
@@ -883,7 +883,7 @@ The clearest way to see the whole arrangement run is on one of the examiner's
 held-out tables, and the first way can be traced step by step on any of them.
 
 Take a table of six glasses of one kind. The first look reports six readings.
-Several pairs are closer than the 70 mm of clear room the gripper needs, so
+Several pairs are closer than the 76 mm of clear room the gripper needs, so
 nothing can be taken yet, and the planner goes to work on every crowded glass
 in turn.
 

@@ -86,7 +86,7 @@ Only one step uses the model. Everything else is plain code:
 | Step | Done by |
 |---|---|
 | Read where each glass stands and how big it is | the camera (problem 2); here `look()` in the bench |
-| Decide which glasses have room | a distance rule: no neighbour's edge within 70 mm of the glass's middle |
+| Decide which glasses have room | a distance rule: no neighbour's edge within 76 mm of the glass's middle |
 | Pick up a glass with room | the arm |
 | Make up pushes to try | the search |
 | **Say what each push would do** | **the model** |

@@ -55,7 +55,7 @@ one glass on it has no room, so there is never a table where the right answer
 is to do nothing.
 
 **Having room is a test on a pair, and it is not symmetric.** A glass has room
-when no other glass's edge lies within 70 mm of its middle. That 70 mm is the
+when no other glass's edge lies within 76 mm of its middle. That 76 mm is the
 gripper's own number, described in [the problem](problem.md): half the widest
 jaw opening, a finger and a pad on each side, and a little to spare. Because
 the test measures to the neighbour's *edge*, a narrow glass standing beside a

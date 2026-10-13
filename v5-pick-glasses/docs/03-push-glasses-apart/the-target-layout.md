@@ -23,7 +23,7 @@ hands over, and both are explained there.
 
 ## The question, written out
 
-Problem 3 is finished when every glass has about 70 mm of clear room in every
+Problem 3 is finished when every glass has about 76 mm of clear room in every
 direction, at least one usable viewpoint for a side-on photograph, and nothing
 has been knocked over. That is a statement about **where the glasses are**, so
 before anything can be pushed, somebody has to decide where each glass is
@@ -347,7 +347,7 @@ remove returns by the side door. So the layout is computed once per
 arrangement, stored with it, and reused by every solution tried on it.
 
 **Success stays defined on the clearance, not on the layout.** A solution that
-gives every glass its 70 mm of clear room has done what the problem asked, even
+gives every glass its 76 mm of clear room has done what the problem asked, even
 if the arrangement it reached is nothing like the computed one. There is more
 than one way to uncrowd a table, and the alternatives are not wrong. So the
 check that decides whether a run is done has to be the clearance condition
