@@ -212,6 +212,24 @@ No solution's score depends on it, because all six are marked the same way, and
 the films draw the pick as a plain stand-in and say on screen that problem 1
 does the real one.
 
+**Room around a glass is also not the same as a way in for the hand**, and that
+is the examiner's own assumption rather than problem 1's. `has_room()` asks
+whether anything stands within a radius of the glass, which is the right
+question for an open hand coming straight down on it. The hand does not come
+straight down. It comes in level, and from fingertips to the back of the force
+sensor it is 266 mm long, so it occupies a corridor reaching right across the
+table rather than a circle around one glass. Whether that corridor is clear
+depends on which side the hand comes from, and on a crowded table most sides
+are blocked by something far outside the radius `has_room()` looks at. Checking
+every side for the glasses the examiner says have room, over twenty of the
+fifty tables, **a clear way in exists for 14 of 19 and the hand would have to
+stop short for the other 5**. The films check the same thing before drawing a
+pick, come in from a side that is clear when one is, and when none is, draw the
+hand stopping where it would have touched and say so on the picture. A drawn
+hand cannot collide with anything, so without that check a film would show the
+hand sliding through a glass and a viewer would read it as room that is not
+there.
+
 ## The shared output, and why it is a jaw trajectory
 
 The input is now fixed and the physics is fixed, so the remaining question is

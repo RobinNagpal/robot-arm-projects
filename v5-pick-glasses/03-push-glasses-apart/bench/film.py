@@ -55,11 +55,14 @@ from work_cell.table.layout import TABLE_TOP_Z
 from bench import (
     KINDS,
     TIMESTEP,
+    TOOL_LENGTH,
     TRAVEL_HEIGHT,
+    WRIST_ACROSS,
     WRIST_LENGTH,
     Bench,
     Push,
     drawing_world,
+    segment_distance,
     slices,
 )
 
@@ -96,6 +99,14 @@ GRIP_CLEARANCE = 0.030
 # How far short of the glass the hand stops before reaching in, so that the pads
 # pass either side of it rather than arriving on top of it.
 STAND_OFF = 0.12
+# How many ways in are tried before giving up on finding a clear one. The hand
+# is long, so whether it can reach a glass depends on which side it comes from,
+# and on a crowded table most sides are blocked.
+WAYS_IN = 24
+# How much daylight the hand is drawn keeping from a glass it is not holding.
+# The same figure solution 1 keeps when it decides whether a push would drag the
+# hand through a neighbour.
+CLEARANCE = 0.008
 
 # The two ways the hand is held, as quaternions. Pushing, it is rolled a quarter
 # turn about the approach, so the two fingers stack one above the other and the
@@ -148,9 +159,9 @@ def _matrix(quaternion: np.ndarray) -> np.ndarray:
 class FilmedBench(Bench):
     """A bench that writes a video of what it did. Identical to Bench otherwise."""
 
-    def __init__(self, seed: int, approach: str = "") -> None:
+    def __init__(self, seed: int, approach: str = "", glasses: list | None = None) -> None:
         self.renderer = None
-        super().__init__(seed)
+        super().__init__(seed, glasses)
         # A second world, with the real hand drawn in it. Nothing is ever
         # stepped here: every frame copies the scored world's positions across
         # and this one is only looked at. See bench.drawing_world.
@@ -216,6 +227,61 @@ class FilmedBench(Bench):
         super().take(glass)
 
     # ------------------------------------------------------------- the drawn pick
+
+    def _way_in(self, glass: int, opening: float) -> tuple[float, float]:
+        """Which side to reach in from, and how far in the hand can get.
+
+        The drawn hand is drawn and not simulated, so nothing stops it passing
+        through a glass it is not holding. That would be a lie of exactly the
+        kind these films exist to avoid, because a viewer would read it as the
+        arm having somewhere to put its hand when it has not. So the way in is
+        checked here instead, with the same geometry solution 1 uses to decide
+        whether a push would drag the hand through a neighbour: the hand's
+        silhouette as a list of stretches back from the fingertips, each against
+        its own half width, swept along the approach.
+
+        The hand is long — about 266 mm from fingertips to the back of the wrist
+        — so whether a glass can be reached depends heavily on which side the
+        hand comes from. Every side is tried, nearest the camera's own first so
+        that the framing stays the same when it can. Returns the heading chosen
+        and how far along the reach the hand can go, 1 being all the way in. A
+        fraction below 1 means the hand stops where it would have touched
+        something, which is what the film then draws.
+        """
+        here = self.position(glass)
+        others = [
+            (self.position(other), self.glasses[other].outline.max_diameter / 2)
+            for other in self.on_table()
+            if other != glass
+        ]
+        # The open hand, held level: each stretch's half width across the
+        # approach, with the force sensor and wrist behind as one more stretch.
+        parts = robotiq_2f85.jaw(robotiq_2f85.angle_for(opening))
+        reach_back = max(p["back"] + p["depth"] for p in parts)
+        stretches = [(p["back"], p["back"] + p["depth"], p["across"] / 2.0) for p in parts]
+        stretches.append((reach_back, TOOL_LENGTH, WRIST_ACROSS / 2.0))
+        pads = robotiq_2f85.pads(robotiq_2f85.angle_for(opening))[0]["back"]
+
+        def reaches(heading: float, part: float) -> bool:
+            u = np.array([math.cos(heading), math.sin(heading)])
+            tip = here + u * pads - u * STAND_OFF * (1.0 - part)
+            return all(
+                segment_distance(centre, tip - far * u, tip - near * u) >= half + radius + CLEARANCE
+                for centre, radius in others
+                for near, far, half in stretches
+            )
+
+        ways = sorted(
+            (PICK_HEADING + turn * 2.0 * math.pi / WAYS_IN for turn in range(WAYS_IN)),
+            key=lambda heading: abs(math.remainder(heading - PICK_HEADING, 2.0 * math.pi)),
+        )
+        best = (PICK_HEADING, 0.0)
+        for heading in ways:
+            if reaches(heading, 1.0):
+                return heading, 1.0
+            got = max((k / 20.0 for k in range(21) if reaches(heading, k / 20.0)), default=0.0)
+            best = max(best, (heading, got), key=lambda pair: pair[1])
+        return best
 
     def _grip(self, glass: int) -> tuple[float, float]:
         """Where the drawn pick holds this glass, and how far apart the pads go.
@@ -309,12 +375,27 @@ class FilmedBench(Bench):
 
         was = self.data.mocap_quat[0].copy()
         turned = math.atan2(was[3], was[0]) * 2.0
+        # Which side the hand comes from, and how far in it can get without
+        # passing through a glass it is not holding.
+        facing, got = self._way_in(glass, opened)
+        if got < 1.0:
+            # Nothing closes, because the pads never arrive. The glass still
+            # leaves the table, because the bench racked it, and the note is
+            # there so that is not read as the hand having picked it up.
+            held, shut = opened, wide
+            self.note += tuple(
+                textwrap.wrap(
+                    "the hand cannot reach this glass from any side without touching "
+                    "another, so it is drawn stopping where it would have",
+                    LINE_LENGTH,
+                )
+            )
         # The hand comes in level, so the pads pass either side of the glass and
         # finish on its middle. It is placed by where its pads are rather than by
         # its fingertips, which reach further on than the pads do.
-        along = np.array([math.cos(PICK_HEADING), math.sin(PICK_HEADING), 0.0])
-        grip = np.array([x, y, TABLE_TOP_Z + height])
-        beside = grip - along * STAND_OFF
+        along = np.array([math.cos(facing), math.sin(facing), 0.0])
+        grip = np.array([x, y, TABLE_TOP_Z + height]) - along * STAND_OFF * (1.0 - got)
+        beside = np.array([x, y, TABLE_TOP_Z + height]) - along * STAND_OFF
         over = np.array([*beside[:2], TABLE_TOP_Z + TRAVEL_HEIGHT])
         rack = np.array(
             [
@@ -354,7 +435,7 @@ class FilmedBench(Bench):
                     carry = grip + [0.0, 0.0, LIFT]
                     angle, where = shut, carry + (rack - carry) * part
                 pads = self._hold_hand(turn, angle)
-                heading = turned + (PICK_HEADING - turned) * turn
+                heading = turned + (facing - turned) * turn
                 world.mocap_pos[0] = where + along * pads
                 world.mocap_quat[0] = [math.cos(heading / 2), 0.0, 0.0, math.sin(heading / 2)]
                 if move in ("lifting", "to the rack"):

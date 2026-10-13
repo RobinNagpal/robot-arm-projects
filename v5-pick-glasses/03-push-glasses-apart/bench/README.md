@@ -37,6 +37,15 @@ says that problem 1 does the real pick. Nothing there is stepped, and
 `test_bench.py` checks that a filmed table ends exactly where the same
 unfilmed table ends.
 
+A drawn hand cannot collide with anything, because its boxes have collision
+switched off and the pick is never stepped. So the way in is checked before it
+is drawn, with the same geometry solution 1 uses to decide whether a push would
+drag the hand through a neighbour. The hand is 266 mm long, so whether it can
+reach a glass depends on which side it comes from; every side is tried, and if
+none is clear the hand is drawn stopping where it would have touched, with a
+line on screen saying so. Without that check a film would show the hand sliding
+through a glass, which a viewer would read as room that is not there.
+
 That drawn pick is a stand-in and not problem 1's grip rule. It keeps problem
 1's two bounds, because they decide what the hand can be drawn doing — no lower
 than 50 mm, where the force sensor behind the fingers would meet the table, and

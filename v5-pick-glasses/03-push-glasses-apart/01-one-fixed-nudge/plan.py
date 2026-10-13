@@ -27,6 +27,7 @@ from bench import (
     Seen,
     has_room,
     in_zone,
+    segment_distance,
 )
 
 # Glass on a dry wooden top is somewhere in here. Nothing in the cell measures
@@ -97,13 +98,6 @@ def room(glass: Seen, seen: list[Seen], margin: float = 0.0) -> bool:
 
 def reachable(point: np.ndarray) -> bool:
     return COMFORTABLE_REACH[0] <= float(np.linalg.norm(point - ROBOT_BASE[:2])) <= COMFORTABLE_REACH[1]
-
-
-def segment_distance(point: np.ndarray, a: np.ndarray, b: np.ndarray) -> float:
-    """How close a line from a to b comes to a point."""
-    along = b - a
-    t = float(np.clip((point - a) @ along / max(along @ along, 1e-12), 0.0, 1.0))
-    return float(np.linalg.norm(point - (a + t * along)))
 
 
 def shortfall(layout: list[tuple[float, float, float]]) -> float:

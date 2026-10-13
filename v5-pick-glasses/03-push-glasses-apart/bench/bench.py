@@ -265,6 +265,19 @@ CROWD_SHARE = 0.6
 START_GAP = 0.005
 
 
+def segment_distance(point: np.ndarray, a: np.ndarray, b: np.ndarray) -> float:
+    """How close a line from a to b comes to a point.
+
+    Here rather than in a solution because the shape of the hand is the bench's,
+    and everything that has to ask whether the hand would be dragged through a
+    glass asks it the same way: solution 1 when it enumerates pushes, and
+    film.py when it draws a pick.
+    """
+    along = b - a
+    t = float(np.clip((point - a) @ along / max(along @ along, 1e-12), 0.0, 1.0))
+    return float(np.linalg.norm(point - (a + t * along)))
+
+
 def has_room(x: float, y: float, others: list[tuple[float, float, float]], margin: float = 0.0) -> bool:
     """Whether a glass at (x, y) can be gripped: no other glass's edge inside GRIP_ROOM.
 

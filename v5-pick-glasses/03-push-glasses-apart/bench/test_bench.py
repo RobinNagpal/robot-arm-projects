@@ -170,3 +170,46 @@ def test_the_drawn_hand_is_never_part_of_the_scored_world():
                    if (mujoco.mj_id2name(scored, mujoco.mjtObj.mjOBJ_GEOM, i) or "").startswith("drawn_"))
     assert all(drawn.geom_contype[i] == 0 and drawn.geom_conaffinity[i] == 0 for i in pieces)
     assert drawn.nq == scored.nq and drawn.nbody == scored.nbody
+
+
+def test_a_glass_standing_on_its_own_has_a_clear_way_in(tmp_path):
+    """Nothing is in the way, so the hand reaches all the way to it."""
+    import film
+
+    outline = next(iter(family("straight_glass", 1, seed=4)))[0]
+    here = (0.48, -0.26, bench.TABLE_TOP_Z)
+    alone = [SpawnedGlass("glass_0", "straight_glass", outline, here, 0.0)]
+    table = film.FilmedBench(0, "test", alone)
+    _, got = table._way_in(0, 0.085)
+    assert got == 1.0
+    table.save(tmp_path / "one.mp4", "test")
+
+
+def test_a_glass_ringed_by_others_has_none(tmp_path):
+    """The hand is 266 mm long, so a glass can have room around it and still be
+    unreachable. Without this check a film would draw the hand sliding through
+    one of the neighbours, because a drawn hand cannot collide."""
+    import film
+
+    outline = next(iter(family("straight_glass", 1, seed=4)))[0]
+    middle = (0.48, -0.26)
+    ring = [SpawnedGlass("glass_0", "straight_glass", outline, (*middle, bench.TABLE_TOP_Z), 0.0)]
+    for n in range(8):
+        angle = n * math.pi / 4
+        ring.append(
+            SpawnedGlass(
+                f"glass_{n + 1}",
+                "straight_glass",
+                outline,
+                (
+                    middle[0] + 0.12 * math.cos(angle),
+                    middle[1] + 0.12 * math.sin(angle),
+                    bench.TABLE_TOP_Z,
+                ),
+                0.0,
+            )
+        )
+    table = film.FilmedBench(0, "test", ring)
+    _, got = table._way_in(0, 0.085)
+    assert got < 1.0
+    table.save(tmp_path / "ringed.mp4", "test")
