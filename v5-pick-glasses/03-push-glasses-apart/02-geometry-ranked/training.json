@@ -6,7 +6,7 @@
   "room_gained_mm_median": 15.66,
   "trees": 200,
   "depth": 3,
-  "fitting_seconds": 2.2,
+  "fitting_seconds": 0.9,
   "importances": [
     [
       "push height over the topple limit",

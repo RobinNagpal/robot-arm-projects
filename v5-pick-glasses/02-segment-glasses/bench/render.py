@@ -23,7 +23,27 @@ from work_cell.glasses.spawn import random_glasses
 from work_cell.rack.layout import GLASS_ZONE
 from work_cell.table.layout import TABLE_CENTRE_XY, TABLE_SIZE, TABLE_TOP_Z
 
-# The wrist camera, as arm/camera/wrist_camera.urdf.xacro declares it.
+# The camera these fields are drawn with: 320 by 240 pixels across 60 degrees.
+#
+# **It is a simpler camera than the cell now has, on purpose.** The cell's
+# wrist camera is an Intel RealSense D405, which sees 87 degrees across and is
+# read at 640 by 360, so it covers more table in less detail per pixel. This
+# bench keeps the narrower, smaller one for two reasons.
+#
+# The first is that every result in this problem was measured through this
+# lens. Changing it changes every picture, so it would change every mask,
+# every width and every score already committed, and nothing would be
+# comparable with anything.
+#
+# The second is that it does not matter to the question. This problem asks how
+# well six methods find glasses in a picture, and they are all given the
+# *same* picture, so the lens cancels out of the comparison. A wider lens
+# would make every method's job slightly harder in the same way.
+#
+# What would be wrong is leaving a reader to assume this is the cell's camera.
+# It is a stand-in chosen to keep the explanation simple, and where a number
+# here is compared with the real cell, say which camera it came from. The real
+# one is described in docs/the-cell.md.
 WIDTH, HEIGHT = 320, 240
 HORIZONTAL_FOV = 1.047
 FOCAL = (WIDTH / 2.0) / math.tan(HORIZONTAL_FOV / 2.0)

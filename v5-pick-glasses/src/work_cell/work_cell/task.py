@@ -32,6 +32,7 @@ from dataclasses import dataclass, replace
 
 import numpy as np
 
+from .arm import robotiq_2f85
 from .arm.camera import WristCamera
 from .arm.dimensions import (
     CAMERA_OFFSET,
@@ -1709,7 +1710,13 @@ def _fingers_clear(target: Detection, others: list[Detection], approach: np.ndar
         if not -(past + other.rough_width / 2.0) < along < FINGERTIP_OFFSET + GRASP_OFFSET:
             continue
         across = float(np.linalg.norm(offset - along * -approach[:2]))
-        if across < (other.rough_width + GRIPPER_MAX_OPENING) / 2.0:
+        # Half the neighbour, plus how far the open hand reaches from its own
+        # middle. That second part used to be half the gripper's opening,
+        # which is the gap between the pads and not the width of the hand: on
+        # the real gripper the fingers stand 76 mm out while the pads are only
+        # 42 mm out, so the old sum cleared an approach that would have driven
+        # 34 mm of finger through a neighbouring glass.
+        if across < other.rough_width / 2.0 + robotiq_2f85.OPEN_HALF_WIDTH:
             return False
     return True
 

@@ -94,19 +94,22 @@ allows, rather than assume a tolerance that has to cover every case at once.
 The arm does not get to choose `h` freely either, and the value to put in the
 rule is not the obvious one.
 
-The jaw is a solid object with a height of its own. Its middle rides as low as
-the gripper can go, which is 50 mm above the table, and the fingers are 30 mm
-tall, so the jaw's top edge stands at 65 mm. Those are the gripper's own
-numbers and they do not change between glasses. What changes is which part of
-the jaw the glass meets, and **a glass that is wider higher up meets the top
-edge before any other part of the jaw touches it**. The tapered kind is wider
-higher up by definition, so for those glasses the contact is at the top edge.
+The jaw is a solid object with a height of its own. Its middle rides at 75 mm
+above the table and its leading stretch is 63 mm tall, so the jaw's top edge
+stands at 107 mm. Those are the gripper's own numbers and they do not change
+between glasses. What changes is which part of the jaw the glass meets, and
+**a glass that is wider higher up meets the top edge before any other part of
+the jaw touches it**. The tapered kind is wider higher up by definition, so for
+those glasses the contact is at the top edge.
 
-So `h` is 65 mm for a glass of that shape, not the 50 mm the arm aims at. The
-difference is 15 mm on a limit that is itself often only a few tens of
+So `h` is 107 mm for a glass of that shape, not the 75 mm the arm aims at. The
+difference is 32 mm on a limit that is itself often only a few tens of
 millimetres, so it is not a rounding question: checking the rule at the middle
-of the jaw declares far more glasses safe than really are. And the mistakes all
-point the same way.
+of the jaw declares far more glasses safe than really are. Measured across the
+four families at the simulator's own friction, checking at the middle calls
+between a tenth and nine tenths of each kind safe to push, and checking at the
+top edge calls between none and a fifth — a difference of a factor of three or
+more for every kind. And the mistakes all point the same way.
 Every glass that the lenient check wrongly admits is a glass that will be
 touched above its limit and will go over, while the stricter check's mistakes
 are glasses left alone that could have been moved. One of those two errors
@@ -120,9 +123,16 @@ Put the two previous sections together and a third consequence follows that is
 easy to miss, because it looks like a gap rather than an answer.
 
 The limit `a / μ` is small when the foot is narrow or the friction is high. It
-can be smaller than 65 mm, and it can even be smaller than the 50 mm the jaw
-rides at, which is already the lowest the gripper reaches without fouling the
-table. For such a glass there is no contact height the arm can offer that is
+can be smaller than 107 mm, and it can even be smaller than the 75 mm the jaw
+rides at, which is already the lowest the hand reaches without its fingers
+fouling the table.
+
+With a real gripper this stopped being a corner case. Two of the four kinds —
+the tapered and the short-stemmed — have **no** member that is certainly safe
+to push at the top edge, so for those kinds the arm is relying on the friction
+being kinder than its worst case, or on refusing. That is a fact about the
+hand rather than about the glasses: the hand must be turned on its side to fit
+between them, and on its side it is both taller and higher off the table. For such a glass there is no contact height the arm can offer that is
 below the limit. The glass tips before it slides, whatever the arm does.
 
 **The only correct answer for that glass is to refuse it**, and a refusal is a

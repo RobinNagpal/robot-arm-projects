@@ -11,9 +11,8 @@ this page only says which file holds which part of it.
 Nothing here imports a solution. A solution imports from here.
 
 - `render.py` — the numbered scenes, four to six glasses of one kind, and depth
-  pictures of them from any camera pose, drawn with the wrist camera's lens. It
-  stands in for Gazebo. Scenes from one number upwards are for testing only, and
-  no training may draw from them.
+  pictures of them from any camera pose. It stands in for Gazebo. Scenes from
+  one number upwards are for testing only, and no training may draw from them.
 - `data.py` — what a solution is actually handed: the three overlapping survey
   stations, the pictures taken from them, and the training labels. It also keeps
   the id images, which say which glass owns each pixel and which a solution
@@ -41,3 +40,32 @@ Nothing here imports a solution. A solution imports from here.
   renderer's own masks through the same arithmetic and the same marking, so
   every result in this folder can be read against what is actually achievable.
 - `device.py` — which processor the work runs on.
+
+## This bench's camera is simpler than the cell's, on purpose
+
+Worth knowing before any number here is set beside a number from the cell. The
+cell's wrist camera is an **Intel RealSense D405**: it sees 87 degrees across
+and is read at 640 by 360 pixels. This bench draws its pictures through a
+simpler lens — 60 degrees across at 320 by 240 — and keeps its own margin for
+how much of a picture's edge to give up, rather than reading the cell's
+gripper.
+
+There are two reasons, and the second is the important one.
+
+The first is simply that every result in this problem was measured through this
+lens, and through stations placed with that margin. Changing either changes
+every picture, so it would change every mask, every width and every score
+already committed, and nothing would be comparable with anything.
+
+The second is that **none of it changes the question this problem asks.** The
+question is how well six methods find glasses in a picture, and the
+[comparability contract](../../docs/02-segment-glasses/the-bench.md) gives all
+six the *same* picture. So the lens cancels out of the comparison: a wider one
+would make every method's job harder in the same way, and the ranking is what
+this problem is for. Problem 2 and the cell therefore do not have to agree
+about the camera, and this problem is better off holding still.
+
+What would be wrong is letting a reader assume this is the cell's camera. It is
+a stand-in chosen to keep the explanation simple. Where a number here is
+compared with one from the cell, the document says which camera it came from,
+and the real one is described in [the cell](../../docs/the-cell.md).

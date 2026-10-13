@@ -267,3 +267,111 @@ def effort_for(newtons: float) -> float:
 # Worked out down here rather than beside _widest_grip, because the search it
 # runs needs angle_for, which needs the position step defined above it.
 MAX_GRIP = _widest_grip()
+
+
+# --------------------------------------------------------------- the closed jaw
+
+# The axis-aligned box each moving link fills, in its own frame, read off the
+# collision meshes that ship with the description. Same provenance as
+# PAD_FACE_X above, and for the same reason: the shape of a moulded part is not
+# something to approximate by eye. Each entry is (low corner, high corner).
+#
+# The links never turn, because every one of their joints mimics the knuckle in
+# a way that cancels the knuckle's own rotation, so a link's box can be shifted
+# with the link instead of being rotated with it. That is what makes these
+# numbers usable at any angle.
+FINGER_BOX = (np.array([-0.01450, -0.01440, -0.00626]), np.array([0.01408, 0.01280, 0.05315]))
+TIP_BOX = (np.array([-0.02526, -0.01430, -0.00598]), np.array([0.00596, 0.01270, 0.05102]))
+BODY_BOX = (np.array([-0.04244, -0.03755, -0.00335]), np.array([0.04251, 0.03749, 0.09000]))
+
+# Where the two fixed hops along the finger put each link, so the boxes above
+# can be placed. ARM is their sum, which is all the linkage needs; the jaw
+# needs them apart, because the finger and the fingertip are different widths.
+KNUCKLE_TO_FINGER = np.array([0.03152616, 0.0, -0.00376347])
+FINGER_TO_TIP = np.array([0.00563134, 0.0, 0.04718515])
+
+
+def _part(box, origin) -> tuple[np.ndarray, np.ndarray]:
+    return box[0] + origin, box[1] + origin
+
+
+def jaw(angle: float = SHUT_ANGLE) -> list[dict]:
+    """The gripper as a stack of boxes, seen from the side, at one angle.
+
+    The linkage above answers where the pads are. This answers what shape the
+    whole hand is, which is a different question and the one that matters
+    whenever the hand has to fit somewhere: pushing a glass along a table with
+    the fingers shut, or coming down around a glass with them open.
+
+    At the shut angle this is how 03-push-glasses-apart uses the gripper —
+    fingers closed, hand held level, and the whole thing driven forward to
+    shove a glass sideways. What that needs is not the linkage but the
+    silhouette, so that is what this returns.
+
+    Each box is measured **back from the fingertips**, because the fingertips
+    are what reaches a glass first, and across and up, because the hand is held
+    level. ``back`` and ``depth`` run along the push, ``across`` is the width
+    the hand sweeps, and ``tall`` is its height.
+
+    The shape is worth looking at rather than summarising, because it is not a
+    blade and a blade is what a reader would assume. The two fingertips meet in
+    the middle and make a stub about 63 mm across and 57 mm long. Behind that
+    the fingers flare out to about 139 mm, more than twice as wide, and they
+    begin only 35 mm back from the tip. So the hand can put 35 mm of itself
+    into a gap the width of the stub and no more; going deeper needs a gap
+    twice as wide. Behind the fingers again is the 85 by 75 mm body.
+
+    A jaw described as one long thin blade, which is what this project assumed
+    before it had a real gripper, can reach into gaps this one cannot.
+    """
+    turn = np.array(
+        [
+            [np.cos(angle), 0.0, -np.sin(angle)],
+            [0.0, 1.0, 0.0],
+            [np.sin(angle), 0.0, np.cos(angle)],
+        ]
+    )
+    finger = _part(FINGER_BOX, KNUCKLE + turn @ KNUCKLE_TO_FINGER)
+    tip = _part(TIP_BOX, KNUCKLE + turn @ (KNUCKLE_TO_FINGER + FINGER_TO_TIP))
+    body = _part(BODY_BOX, np.zeros(3))
+
+    reach = tip[1][2]
+    parts = []
+    for name, (low, high) in (("fingertips", tip), ("fingers", finger), ("body", body)):
+        # Mirrored about the middle, because the other finger is the same part
+        # the other way round, so the width is twice the outer edge. The body
+        # straddles the middle already and is taken as it is.
+        across = 2.0 * high[0] if name != "body" else high[0] - low[0]
+        parts.append(
+            {
+                "name": name,
+                "back": reach - high[2],
+                "depth": high[2] - low[2],
+                "across": across,
+                "tall": high[1] - low[1],
+            }
+        )
+    return parts
+
+
+# How far the fingertips stick out in front of the fingers behind them. The
+# depth of the only gap the shut hand can enter at its narrowest width.
+JAW_LEAD = jaw()[1]["back"]
+
+# The narrowest the shut hand ever is, across the push, and the widest.
+JAW_TIP_ACROSS = jaw()[0]["across"]
+JAW_WIDEST_ACROSS = max(part["across"] for part in jaw())
+
+# How tall the fingertips are, which is what decides how high up a glass is
+# shoved and therefore whether it slides or topples.
+JAW_TALL = jaw()[0]["tall"]
+
+# How far the *open* hand reaches either side of its own middle. This is what
+# decides whether there is room to grip a glass at all: the hand has to come
+# down around it, so everything within this of the glass's middle has to be
+# clear, and a neighbour whose edge is inside it is in the way.
+#
+# It is the fingers rather than the fingertips that set it. Open, the fingers
+# stand further out than the pads do, so the widest part of the hand is not the
+# part that touches the glass.
+OPEN_HALF_WIDTH = max(part["across"] for part in jaw(OPEN_ANGLE)) / 2.0

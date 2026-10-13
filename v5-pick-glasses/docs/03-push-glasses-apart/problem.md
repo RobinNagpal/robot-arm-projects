@@ -79,10 +79,12 @@ Two glasses with a centimetre of daylight between them are not touching. A
 person would call them separate. The gripper cannot pick up either of them, and
 the reason is that the gripper is not a point.
 
-To close on a glass, the open jaw has to be **around** it: a finger either side,
-each finger a little thicker than nothing, with the jaw opened wider than the
-glass before it closes. Add that up from the glass's middle outwards and it
-comes to about **70 mm of clear room in every direction**.
+To close on a glass, the open hand has to be **around** it: a finger either
+side, with the hand opened wider than the glass before it closes. How much room
+that needs is not half the opening, which is a common mistake — it is how far
+the widest part of the open hand reaches from its own middle, and on a Robotiq
+2F-85 the fingers stand further out than the pads do. It comes to **76 mm of
+clear room in every direction**.
 
 That room is measured to the **neighbour's edge**, not to its middle, and the
 consequence is easy to miss: the test is **not symmetric**. A narrow glass
@@ -95,8 +97,8 @@ So there are three different distances in play and they are easy to confuse:
 | | What it is | Roughly |
 | --- | --- | --- |
 | glasses touching | the failure problem 2 could not even see | the two rims meet |
-| glasses grippable | the jaw fits round one of them | 70 mm clear of the neighbour's **edge** |
-| glasses measurable | a clear line of sight from 380 mm back | depends on the angle |
+| glasses grippable | the hand fits round one of them | 76 mm clear of the neighbour's **edge** |
+| glasses measurable | a clear line of sight from 300 mm back | depends on the angle |
 
 Problem 3's job is to get every glass over the second line. The third is
 problem 2's, and moving a glass changes it too.
@@ -123,16 +125,33 @@ table — and a glass like that cannot be pushed safely at all, so the only
 correct answer for it is to refuse.
 
 **The height to compare against is the top edge of the jaw, not the bottom.**
-The middle of the jaw rides as low as the gripper goes, 50 mm, but the jaw is
-30 mm tall, so its top edge is at 65 mm. A glass that is wider higher up meets
-that top edge before anything else touches it, and the tapered kind is wider
-higher up by definition. So `h` in the rule above is 65 mm for these glasses,
-not 50. The difference is not a detail, and it bites hardest on exactly the
-kind that flares most: measured across the tapered kind at the friction this
-cell's examiner actually uses, checking at the jaw's middle calls about seven
-glasses in ten safe to push, while checking at its top edge calls only about a
-quarter safe. The three kinds that flare less barely move. Every one of the
-mistakes is in the direction that topples a glass.
+The middle of the jaw rides at 75 mm, and the jaw is 63 mm tall, so its top
+edge is at 107 mm. A glass that is wider higher up meets that top edge before
+anything else touches it, and the tapered kind is wider higher up by
+definition. So `h` in the rule above is 107 mm for these glasses, not 75.
+
+The difference is large, and with a real gripper it is large for **every** kind
+rather than only the flaring one. Measured across each family at the friction
+this cell's examiner actually uses, the share safe to push is:
+
+| kind | checking at the jaw's middle | checking at its top edge |
+|---|---|---|
+| straight | 57% | 7% |
+| tapered | 10% | none |
+| stemmed | 86% | 22% |
+| short stemmed | 55% | none |
+
+Every one of the mistakes is in the direction that topples a glass, so checking
+at the middle is not a harmless simplification: it would declare most of these
+glasses safe to shove when they are not.
+
+It is worth knowing *why* this got so much worse than it used to be, because
+the answer is the gripper and not the rule. The hand has to be turned on its
+side to fit between the glasses at all, and turned on its side its leading
+stretch is 63 mm tall where the blade this problem used to assume was 30 mm.
+The gap between the jaw's middle and its top edge therefore doubled, and the
+hand also has to ride 25 mm higher to keep its fingers off the table. Both
+changes push `h` up, and `h` is the thing the rule is most sensitive to.
 
 Three things follow, and they are the shape of the problem:
 
@@ -185,7 +204,7 @@ to end up far enough apart.
 
 ## What "done" means
 
-A run is **done** when every glass on the table has at least 70 mm of clear
+A run is **done** when every glass on the table has at least 76 mm of clear
 room around it, at least one usable viewpoint for a side-on photograph, and
 nothing has been knocked over.
 

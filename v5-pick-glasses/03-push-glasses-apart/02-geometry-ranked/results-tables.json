@@ -9,19 +9,19 @@
         "racked": 5,
         "refused": 0,
         "toppled": 0,
-        "pushes": 5,
-        "travel_mm": 215.6
+        "pushes": 9,
+        "travel_mm": 248.2
       },
       {
         "seed": 10001,
         "kind": "tapered_glass",
         "glasses": 6,
-        "outcome": "done",
-        "racked": 6,
-        "refused": 0,
+        "outcome": "incomplete",
+        "racked": 2,
+        "refused": 4,
         "toppled": 0,
-        "pushes": 5,
-        "travel_mm": 208.5
+        "pushes": 1,
+        "travel_mm": 0.1
       },
       {
         "seed": 10002,
@@ -31,19 +31,19 @@
         "racked": 2,
         "refused": 2,
         "toppled": 0,
-        "pushes": 1,
-        "travel_mm": 40.9
+        "pushes": 5,
+        "travel_mm": 122.4
       },
       {
         "seed": 10003,
         "kind": "short_stemmed_glass",
         "glasses": 5,
-        "outcome": "done",
-        "racked": 5,
-        "refused": 0,
+        "outcome": "incomplete",
+        "racked": 3,
+        "refused": 2,
         "toppled": 0,
-        "pushes": 7,
-        "travel_mm": 287.8
+        "pushes": 4,
+        "travel_mm": 32.7
       },
       {
         "seed": 10004,
@@ -53,8 +53,8 @@
         "racked": 6,
         "refused": 0,
         "toppled": 0,
-        "pushes": 8,
-        "travel_mm": 336.2
+        "pushes": 9,
+        "travel_mm": 341.5
       },
       {
         "seed": 10005,
@@ -64,30 +64,30 @@
         "racked": 0,
         "refused": 4,
         "toppled": 0,
-        "pushes": 1,
-        "travel_mm": 4.1
+        "pushes": 0,
+        "travel_mm": 0.0
       },
       {
         "seed": 10006,
         "kind": "stemmed_glass",
         "glasses": 5,
         "outcome": "incomplete",
-        "racked": 2,
-        "refused": 3,
+        "racked": 1,
+        "refused": 4,
         "toppled": 0,
-        "pushes": 1,
-        "travel_mm": 54.0
+        "pushes": 3,
+        "travel_mm": 51.1
       },
       {
         "seed": 10007,
         "kind": "short_stemmed_glass",
         "glasses": 6,
         "outcome": "incomplete",
-        "racked": 4,
-        "refused": 2,
+        "racked": 1,
+        "refused": 5,
         "toppled": 0,
-        "pushes": 8,
-        "travel_mm": 239.0
+        "pushes": 6,
+        "travel_mm": 47.1
       },
       {
         "seed": 10008,
@@ -97,41 +97,41 @@
         "racked": 4,
         "refused": 0,
         "toppled": 0,
-        "pushes": 1,
-        "travel_mm": 75.6
+        "pushes": 4,
+        "travel_mm": 135.7
       },
       {
         "seed": 10009,
         "kind": "tapered_glass",
         "glasses": 5,
         "outcome": "incomplete",
-        "racked": 1,
-        "refused": 4,
+        "racked": 0,
+        "refused": 5,
         "toppled": 0,
-        "pushes": 2,
-        "travel_mm": 71.0
+        "pushes": 0,
+        "travel_mm": 0.0
       },
       {
         "seed": 10010,
         "kind": "stemmed_glass",
         "glasses": 6,
         "outcome": "incomplete",
-        "racked": 3,
-        "refused": 3,
+        "racked": 1,
+        "refused": 5,
         "toppled": 0,
-        "pushes": 3,
-        "travel_mm": 189.5
+        "pushes": 1,
+        "travel_mm": 0.3
       },
       {
         "seed": 10011,
         "kind": "short_stemmed_glass",
         "glasses": 4,
-        "outcome": "done",
-        "racked": 4,
-        "refused": 0,
+        "outcome": "incomplete",
+        "racked": 0,
+        "refused": 4,
         "toppled": 0,
-        "pushes": 7,
-        "travel_mm": 284.4
+        "pushes": 2,
+        "travel_mm": 0.2
       },
       {
         "seed": 10012,
@@ -141,41 +141,41 @@
         "racked": 5,
         "refused": 0,
         "toppled": 0,
-        "pushes": 9,
-        "travel_mm": 406.9
+        "pushes": 7,
+        "travel_mm": 243.6
       },
       {
         "seed": 10013,
         "kind": "tapered_glass",
         "glasses": 6,
         "outcome": "incomplete",
-        "racked": 4,
-        "refused": 2,
+        "racked": 1,
+        "refused": 5,
         "toppled": 0,
-        "pushes": 7,
-        "travel_mm": 305.4
+        "pushes": 1,
+        "travel_mm": 0.1
       },
       {
         "seed": 10014,
         "kind": "stemmed_glass",
         "glasses": 4,
-        "outcome": "done",
-        "racked": 4,
-        "refused": 0,
+        "outcome": "incomplete",
+        "racked": 1,
+        "refused": 3,
         "toppled": 0,
         "pushes": 4,
-        "travel_mm": 202.2
+        "travel_mm": 66.2
       },
       {
         "seed": 10015,
         "kind": "short_stemmed_glass",
         "glasses": 5,
         "outcome": "incomplete",
-        "racked": 2,
-        "refused": 3,
+        "racked": 0,
+        "refused": 5,
         "toppled": 0,
-        "pushes": 7,
-        "travel_mm": 241.5
+        "pushes": 4,
+        "travel_mm": 4.4
       },
       {
         "seed": 10016,
@@ -186,40 +186,40 @@
         "refused": 0,
         "toppled": 0,
         "pushes": 4,
-        "travel_mm": 148.1
+        "travel_mm": 109.6
       },
       {
         "seed": 10017,
         "kind": "tapered_glass",
         "glasses": 4,
-        "outcome": "done",
-        "racked": 4,
-        "refused": 0,
+        "outcome": "incomplete",
+        "racked": 2,
+        "refused": 2,
         "toppled": 0,
-        "pushes": 2,
-        "travel_mm": 73.4
+        "pushes": 0,
+        "travel_mm": 0.0
       },
       {
         "seed": 10018,
         "kind": "stemmed_glass",
         "glasses": 5,
-        "outcome": "done",
-        "racked": 5,
-        "refused": 0,
+        "outcome": "incomplete",
+        "racked": 3,
+        "refused": 2,
         "toppled": 0,
-        "pushes": 2,
-        "travel_mm": 90.8
+        "pushes": 5,
+        "travel_mm": 182.7
       },
       {
         "seed": 10019,
         "kind": "short_stemmed_glass",
         "glasses": 6,
-        "outcome": "done",
-        "racked": 6,
-        "refused": 0,
+        "outcome": "incomplete",
+        "racked": 1,
+        "refused": 5,
         "toppled": 0,
-        "pushes": 9,
-        "travel_mm": 394.1
+        "pushes": 6,
+        "travel_mm": 12.4
       },
       {
         "seed": 10020,
@@ -230,29 +230,29 @@
         "refused": 0,
         "toppled": 0,
         "pushes": 5,
-        "travel_mm": 211.7
+        "travel_mm": 193.2
       },
       {
         "seed": 10021,
         "kind": "tapered_glass",
         "glasses": 5,
-        "outcome": "done",
-        "racked": 5,
-        "refused": 0,
+        "outcome": "incomplete",
+        "racked": 1,
+        "refused": 4,
         "toppled": 0,
-        "pushes": 2,
-        "travel_mm": 71.1
+        "pushes": 0,
+        "travel_mm": 0.0
       },
       {
         "seed": 10022,
         "kind": "stemmed_glass",
         "glasses": 6,
         "outcome": "incomplete",
-        "racked": 1,
-        "refused": 5,
+        "racked": 0,
+        "refused": 6,
         "toppled": 0,
-        "pushes": 0,
-        "travel_mm": 0.0
+        "pushes": 1,
+        "travel_mm": 0.8
       },
       {
         "seed": 10023,
@@ -262,8 +262,8 @@
         "racked": 4,
         "refused": 0,
         "toppled": 0,
-        "pushes": 5,
-        "travel_mm": 199.3
+        "pushes": 7,
+        "travel_mm": 240.1
       },
       {
         "seed": 10024,
@@ -274,18 +274,18 @@
         "refused": 0,
         "toppled": 0,
         "pushes": 10,
-        "travel_mm": 450.5
+        "travel_mm": 422.9
       },
       {
         "seed": 10025,
         "kind": "tapered_glass",
         "glasses": 6,
         "outcome": "incomplete",
-        "racked": 4,
-        "refused": 2,
+        "racked": 1,
+        "refused": 5,
         "toppled": 0,
-        "pushes": 4,
-        "travel_mm": 145.2
+        "pushes": 2,
+        "travel_mm": 0.1
       },
       {
         "seed": 10026,
@@ -296,18 +296,18 @@
         "refused": 0,
         "toppled": 0,
         "pushes": 2,
-        "travel_mm": 66.3
+        "travel_mm": 90.9
       },
       {
         "seed": 10027,
         "kind": "short_stemmed_glass",
         "glasses": 5,
-        "outcome": "done",
-        "racked": 5,
-        "refused": 0,
-        "toppled": 0,
-        "pushes": 7,
-        "travel_mm": 247.0
+        "outcome": "wrong",
+        "racked": 1,
+        "refused": 3,
+        "toppled": 1,
+        "pushes": 3,
+        "travel_mm": 47.2
       },
       {
         "seed": 10028,
@@ -317,41 +317,41 @@
         "racked": 3,
         "refused": 3,
         "toppled": 0,
-        "pushes": 5,
-        "travel_mm": 239.7
+        "pushes": 6,
+        "travel_mm": 197.9
       },
       {
         "seed": 10029,
         "kind": "tapered_glass",
         "glasses": 4,
-        "outcome": "done",
-        "racked": 4,
-        "refused": 0,
+        "outcome": "incomplete",
+        "racked": 2,
+        "refused": 2,
         "toppled": 0,
-        "pushes": 3,
-        "travel_mm": 146.4
+        "pushes": 0,
+        "travel_mm": 0.0
       },
       {
         "seed": 10030,
         "kind": "stemmed_glass",
         "glasses": 5,
-        "outcome": "done",
-        "racked": 5,
-        "refused": 0,
+        "outcome": "incomplete",
+        "racked": 2,
+        "refused": 3,
         "toppled": 0,
-        "pushes": 1,
-        "travel_mm": 62.5
+        "pushes": 3,
+        "travel_mm": 1.0
       },
       {
         "seed": 10031,
         "kind": "short_stemmed_glass",
         "glasses": 6,
         "outcome": "incomplete",
-        "racked": 3,
-        "refused": 3,
+        "racked": 4,
+        "refused": 2,
         "toppled": 0,
-        "pushes": 3,
-        "travel_mm": 17.5
+        "pushes": 6,
+        "travel_mm": 240.3
       },
       {
         "seed": 10032,
@@ -361,19 +361,19 @@
         "racked": 4,
         "refused": 0,
         "toppled": 0,
-        "pushes": 3,
-        "travel_mm": 167.7
+        "pushes": 6,
+        "travel_mm": 193.8
       },
       {
         "seed": 10033,
         "kind": "tapered_glass",
         "glasses": 5,
-        "outcome": "done",
-        "racked": 5,
-        "refused": 0,
+        "outcome": "incomplete",
+        "racked": 1,
+        "refused": 4,
         "toppled": 0,
-        "pushes": 5,
-        "travel_mm": 215.9
+        "pushes": 2,
+        "travel_mm": 0.2
       },
       {
         "seed": 10034,
@@ -383,19 +383,19 @@
         "racked": 6,
         "refused": 0,
         "toppled": 0,
-        "pushes": 2,
-        "travel_mm": 73.2
+        "pushes": 3,
+        "travel_mm": 73.3
       },
       {
         "seed": 10035,
         "kind": "short_stemmed_glass",
         "glasses": 4,
-        "outcome": "done",
-        "racked": 4,
-        "refused": 0,
+        "outcome": "incomplete",
+        "racked": 1,
+        "refused": 3,
         "toppled": 0,
-        "pushes": 4,
-        "travel_mm": 165.2
+        "pushes": 2,
+        "travel_mm": 0.1
       },
       {
         "seed": 10036,
@@ -405,19 +405,19 @@
         "racked": 5,
         "refused": 0,
         "toppled": 0,
-        "pushes": 2,
-        "travel_mm": 76.0
+        "pushes": 7,
+        "travel_mm": 225.4
       },
       {
         "seed": 10037,
         "kind": "tapered_glass",
         "glasses": 6,
         "outcome": "incomplete",
-        "racked": 2,
-        "refused": 4,
+        "racked": 1,
+        "refused": 5,
         "toppled": 0,
-        "pushes": 4,
-        "travel_mm": 90.4
+        "pushes": 1,
+        "travel_mm": 0.1
       },
       {
         "seed": 10038,
@@ -427,19 +427,19 @@
         "racked": 4,
         "refused": 0,
         "toppled": 0,
-        "pushes": 3,
-        "travel_mm": 164.6
+        "pushes": 5,
+        "travel_mm": 52.1
       },
       {
         "seed": 10039,
         "kind": "short_stemmed_glass",
         "glasses": 5,
-        "outcome": "done",
-        "racked": 5,
-        "refused": 0,
+        "outcome": "incomplete",
+        "racked": 1,
+        "refused": 4,
         "toppled": 0,
-        "pushes": 5,
-        "travel_mm": 198.9
+        "pushes": 2,
+        "travel_mm": 0.2
       },
       {
         "seed": 10040,
@@ -449,30 +449,30 @@
         "racked": 0,
         "refused": 6,
         "toppled": 0,
-        "pushes": 6,
-        "travel_mm": 242.7
+        "pushes": 0,
+        "travel_mm": 0.0
       },
       {
         "seed": 10041,
         "kind": "tapered_glass",
         "glasses": 4,
         "outcome": "incomplete",
-        "racked": 2,
-        "refused": 2,
+        "racked": 0,
+        "refused": 4,
         "toppled": 0,
-        "pushes": 7,
-        "travel_mm": 249.3
+        "pushes": 2,
+        "travel_mm": 19.1
       },
       {
         "seed": 10042,
         "kind": "stemmed_glass",
         "glasses": 5,
         "outcome": "incomplete",
-        "racked": 2,
-        "refused": 3,
+        "racked": 0,
+        "refused": 5,
         "toppled": 0,
-        "pushes": 4,
-        "travel_mm": 226.0
+        "pushes": 2,
+        "travel_mm": 4.2
       },
       {
         "seed": 10043,
@@ -482,52 +482,52 @@
         "racked": 0,
         "refused": 6,
         "toppled": 0,
-        "pushes": 5,
-        "travel_mm": 136.2
+        "pushes": 0,
+        "travel_mm": 0.0
       },
       {
         "seed": 10044,
         "kind": "straight_glass",
         "glasses": 4,
-        "outcome": "done",
-        "racked": 4,
-        "refused": 0,
+        "outcome": "incomplete",
+        "racked": 2,
+        "refused": 2,
         "toppled": 0,
-        "pushes": 6,
-        "travel_mm": 293.1
+        "pushes": 7,
+        "travel_mm": 141.1
       },
       {
         "seed": 10045,
         "kind": "tapered_glass",
         "glasses": 5,
         "outcome": "incomplete",
-        "racked": 2,
-        "refused": 3,
+        "racked": 0,
+        "refused": 5,
         "toppled": 0,
-        "pushes": 5,
-        "travel_mm": 65.9
+        "pushes": 3,
+        "travel_mm": 0.4
       },
       {
         "seed": 10046,
         "kind": "stemmed_glass",
         "glasses": 6,
-        "outcome": "done",
-        "racked": 6,
-        "refused": 0,
+        "outcome": "incomplete",
+        "racked": 0,
+        "refused": 6,
         "toppled": 0,
-        "pushes": 7,
-        "travel_mm": 436.5
+        "pushes": 4,
+        "travel_mm": 42.2
       },
       {
         "seed": 10047,
         "kind": "short_stemmed_glass",
         "glasses": 4,
-        "outcome": "done",
-        "racked": 4,
-        "refused": 0,
+        "outcome": "incomplete",
+        "racked": 2,
+        "refused": 2,
         "toppled": 0,
-        "pushes": 5,
-        "travel_mm": 230.5
+        "pushes": 4,
+        "travel_mm": 62.1
       },
       {
         "seed": 10048,
@@ -537,8 +537,8 @@
         "racked": 5,
         "refused": 0,
         "toppled": 0,
-        "pushes": 13,
-        "travel_mm": 668.9
+        "pushes": 11,
+        "travel_mm": 477.9
       },
       {
         "seed": 10049,
@@ -548,8 +548,8 @@
         "racked": 0,
         "refused": 6,
         "toppled": 0,
-        "pushes": 3,
-        "travel_mm": 51.3
+        "pushes": 1,
+        "travel_mm": 0.1
       }
     ]
   ]

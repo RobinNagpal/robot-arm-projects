@@ -34,19 +34,66 @@ def test_the_collision_shape_is_never_thinner_than_the_glass(kind):
         assert bench.slices(outline)[0][0] == 0.0
 
 
-@pytest.mark.parametrize("kind", bench.KINDS)
-def test_a_low_push_slides_a_glass_about_as_far_as_asked(kind):
-    for outline, _ in family(kind, 3, seed=2):
-        table = _alone(kind, outline)
-        seen = table.look()[0]
-        radius = seen.widest / 2
-        felt = table.push(bench.Push(0, (seen.x - radius - 0.01, seen.y), 0.0, radius + 0.04, 0.04, (0, 0)))
+def _push_once(kind, outline):
+    """One square push of 40 mm against a glass standing on its own."""
+    table = _alone(kind, outline)
+    seen = table.look()[0]
+    radius = seen.widest / 2
+    felt = table.push(bench.Push(0, (seen.x - radius - 0.01, seen.y), 0.0, radius + 0.04, 0.04, (0, 0)))
+    return table, felt
+
+
+def test_a_push_slides_a_straight_glass_about_as_far_as_asked():
+    """A tumbler is the clean case: straight walls and its weight low down, so
+    the jaw meets it square and it goes where it is sent."""
+    for outline, _ in family("straight_glass", 3, seed=2):
+        table, felt = _push_once("straight_glass", outline)
         assert felt.touched is not None and not felt.blocked
         moved = table.position(0) - table.start[0]
-        # The contact takes up a little before the glass moves; most on a
-        # thin stem, which leans before it slides.
+        # The contact takes up a little before the glass moves.
         assert 0.030 < moved[0] < 0.041 and abs(moved[1]) < 0.003
         assert table.tilt(0) < 1.0
+
+
+def test_a_push_at_this_height_tips_a_third_of_glasses_pushed_carelessly():
+    """The price of holding the hand rolled, and the reason this problem is
+    harder than it used to look.
+
+    The hand has to be turned on its side to fit between the glasses at all,
+    and turned on its side it cannot ride lower than 75 mm, because its fingers
+    would strike the table. Pushed 75 mm up, a glass whose weight sits high —
+    a tapered one, a short-stemmed one — tips over instead of sliding.
+
+    This is not a fault to fix in the bench. It is the physics the six
+    solutions are being asked to cope with, and coping with it is most of what
+    separates them: a solution that pushes whatever it likes will topple
+    glasses, and a toppled glass is a *wrong* outcome and not merely an
+    unfinished one. Solution 1's probe exists for exactly this.
+
+    The bound is loose on purpose. What is being asserted is that the risk is
+    real and not universal, because a bench where nothing tipped would not be
+    testing the thing that matters and one where everything tipped would leave
+    nothing to measure.
+    """
+    toppled = standing = 0
+    for kind in bench.KINDS:
+        for outline, _ in family(kind, 12, seed=2):
+            table, _ = _push_once(kind, outline)
+            if table.tilt(0) >= bench.STANDING_TILT_DEG:
+                toppled += 1
+            else:
+                standing += 1
+    total = toppled + standing
+    assert 0.15 * total <= toppled <= 0.55 * total, f"{toppled} of {total} toppled"
+
+
+def test_a_straight_glass_is_the_one_kind_a_careless_push_never_tips():
+    """Its walls are upright and its weight is low, so the jaw pushes it below
+    its own centre of mass however tall it is. Worth stating because it is why
+    the tables of tumblers are the ones every solution does best on."""
+    for outline, _ in family("straight_glass", 12, seed=2):
+        table, _ = _push_once("straight_glass", outline)
+        assert table.tilt(0) < bench.STANDING_TILT_DEG
 
 
 def test_the_first_look_is_the_same_for_every_approach():

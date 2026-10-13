@@ -193,14 +193,21 @@ def test_a_table_of_glasses_that_tip_is_refused_without_asking_the_model(monkeyp
 def test_a_model_that_never_frees_anything_is_stopped_by_the_table_budget():
     # A path parked in one corner, well clear of the glass zone: it touches
     # nothing, so no glass is ever freed and the shared budget is what ends
-    # the table. Every answer is carried out, because none of them reaches a
-    # glass refused for tipping.
+    # the table. Every answer is carried out, because the loop never runs out
+    # of asks.
     table = _table()
     model = Stand_in(a_path(0.15, -0.60, TRAVEL_HEIGHT))
     refused, tally = clear(table, model, Blind_camera())
     assert tally.asked == tally.followed == bench.PUSHES_PER_TABLE
     assert tally.ran_out_of_asks == 0
-    assert refused and set(refused.values()) == {"push budget spent"}
+    # The budget is what ends it, and that is what is being tested. Some
+    # glasses are turned down before it for tipping instead, which is a second
+    # correct reason rather than a competing one: the hand pushes 75 mm up now,
+    # and at that height a glass on a narrow foot tips before it slides however
+    # much budget is left. Those two are the only reasons allowed here, because
+    # a path that never reaches a glass cannot produce any other.
+    assert "push budget spent" in set(refused.values())
+    assert set(refused.values()) <= {"push budget spent", "tips before it slides"}
 
 
 def test_no_table_is_pushed_more_often_than_the_shared_budget_allows():

@@ -20,12 +20,9 @@ from work_cell.arm.dimensions import COMFORTABLE_REACH, FINGERTIP_OFFSET
 from work_cell.table.layout import ROBOT_BASE
 
 from bench import (
-    BODY_SIZE,
-    FINGER_LENGTH,
     GRIP_ROOM,
-    JAW_THICKNESS,
+    JAW_SEGMENTS,
     JAW_TOP,
-    TOOL_LENGTH,
     Push,
     Seen,
     has_room,
@@ -140,7 +137,6 @@ def along(glass: Seen, others: list[Seen], heading: float) -> list[Push]:
     middle = np.array([glass.x, glass.y])
     radius = glass.widest / 2
     start = middle - (radius + APPROACH_GAP) * u
-    wrist = start - TOOL_LENGTH * u
     # The reach is the flange's, and the flange is behind the fingertips.
     if not (reachable(start - FINGERTIP_OFFSET * u) and reachable(middle - FINGERTIP_OFFSET * u)):
         return []
@@ -158,13 +154,21 @@ def along(glass: Seen, others: list[Seen], heading: float) -> list[Push]:
             # A glass may start closer to a neighbour than CLEARANCE. Moving
             # it is fine as long as it gets no closer.
             passing = min(radius + other_radius + CLEARANCE, float(np.linalg.norm(centre - middle)) - 0.001)
-            if (
-                segment_distance(centre, middle, end) < passing
-                or segment_distance(centre, start - FINGER_LENGTH * u, end)
-                < JAW_THICKNESS / 2 + other_radius + CLEARANCE
-                or segment_distance(centre, wrist, end - FINGER_LENGTH * u)
-                < BODY_SIZE / 2 + other_radius + CLEARANCE
-            ):
+            # Every stretch of the hand against its own width. The hand is
+            # not one shape: rolled, it is about 27 mm wide for the first
+            # 132 mm and then widens to the body, so one figure for all of it
+            # would be either needlessly cautious or quietly dangerous.
+            #
+            # A stretch sits between ``near`` and ``far`` behind the
+            # fingertips, so while the tips travel from ``start`` to ``end``
+            # that stretch sweeps the ground from ``start - far`` to
+            # ``end - near``.
+            swept = any(
+                segment_distance(centre, start - far * u, end - near * u)
+                < half + other_radius + CLEARANCE
+                for near, far, half in JAW_SEGMENTS
+            )
+            if segment_distance(centre, middle, end) < passing or swept:
                 clash = True
                 break
         if clash:

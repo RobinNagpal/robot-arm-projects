@@ -57,7 +57,6 @@ from functools import cache, cached_property
 
 import numpy as np
 from work_cell.arm.dimensions import (
-    GRIPPER_MAX_OPENING,
     SURVEY_BASELINE,
     SURVEY_HEIGHT,
     survey_stations,
@@ -130,18 +129,37 @@ def frame() -> tuple[float, float]:
     )
 
 
+# How much of each edge of a picture is given up so that no glass is caught
+# half out of frame. It is the widest glass the cell will ever pick up, because
+# a silhouette cut off at the edge has its middle in the wrong place.
+#
+# This problem keeps its own number rather than reading the cell's gripper, and
+# that is deliberate. The figure is 95 mm because that is what the cell's
+# gripper opened to when these fifty fields were laid out and measured. The
+# cell has since been fitted with a real Robotiq 2F-85, which opens to 85, and
+# importing that would quietly move every station by a few millimetres — which
+# would mean every committed result in this problem described a camera standing
+# somewhere it no longer stands.
+#
+# Keeping it fixed is the honest choice for a segmentation study, because the
+# margin decides only where the camera is parked and nothing about the
+# segmenting. What the problem must not do is pretend the two are linked when
+# they are not, so the number lives here, under its own name, with its own
+# reason. See bench/README.md.
+EDGE_MARGIN = 0.095
+
+
 def shared() -> tuple[float, float]:
     """How much of one picture a station can actually be credited with.
 
     A station is worth the part of the table both of its pictures show, because
     a glass in one and not the other cannot be placed. Sliding sideways for the
     second picture costs the baseline off that axis, and a glass has to be
-    inside far enough not to be cut off at the edge, which costs the widest
-    glass the gripper could ever close on off both. The same arithmetic as
-    ``work_cell/task.py``, so these are the cell's stations.
+    inside far enough not to be cut off at the edge, which costs EDGE_MARGIN
+    off both.
     """
     across, down = frame()
-    return (across - GRIPPER_MAX_OPENING, down - SURVEY_BASELINE - GRIPPER_MAX_OPENING)
+    return (across - EDGE_MARGIN, down - SURVEY_BASELINE - EDGE_MARGIN)
 
 
 @cache
