@@ -27,6 +27,7 @@ what ``bench.scene`` calls.
 
 from __future__ import annotations
 
+import json
 import math
 import random
 import statistics as st
@@ -69,7 +70,8 @@ from diagram_style import (
 from matplotlib.lines import Line2D
 from matplotlib.patches import Rectangle
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src" / "work_cell"))
+ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(ROOT / "src" / "work_cell"))
 
 from work_cell.arm.dimensions import FINGERTIP_OFFSET  # noqa: E402
 from work_cell.glasses.shapes import KIND_RANGES, draw  # noqa: E402
@@ -125,11 +127,31 @@ LONGEST_PUSH = 150.0                    # plan.LONGEST_PUSH
 # What only the physics can say. Both blocks are recorded output, not guesses.
 # --------------------------------------------------------------------------- #
 
-# 03-push-glasses-apart/01-one-fixed-nudge/results.json, the full held-out run of 50 tables.
-SCORED = dict(scenes=50, glasses=251, crowded_at_start=190, done=35, incomplete=15, wrong=0,
-              racked=199, refused=52, toppled=0, out_of_zone=0, picked_without_room=0,
-              pushes=212, repeats=90, aim_median=1.0, aim_worst=3.9,
-              refused_because="nowhere clear to push it to")
+def _scored() -> dict:
+    """The full held-out run of 50 tables, from solution 1's own results.json.
+
+    Read rather than written down. These figures used to be typed in under a
+    comment naming that file, and they drifted from it twice: once quietly,
+    and once completely, when the examiner was given a real gripper and the
+    glasses racked went from 199 to 107 without anything here noticing.
+    """
+    path = ROOT / "03-push-glasses-apart" / "01-one-fixed-nudge" / "results.json"
+    result = json.loads(path.read_text())
+    end, pushes, outcome = result["glasses_end"], result["pushes"], result["outcome"]
+    return dict(
+        scenes=result["scenes"], glasses=result["glasses"],
+        crowded_at_start=result["crowded_at_start"],
+        done=outcome["done"], incomplete=outcome["incomplete"], wrong=outcome["wrong"],
+        racked=end["racked"], refused=end["refused"], toppled=end["toppled"],
+        out_of_zone=end["pushed_out_of_the_zone"],
+        picked_without_room=end["picked_without_room"],
+        pushes=pushes["total"], repeats=pushes["repeats"],
+        aim_median=pushes["aim_mm_median"], aim_worst=pushes["aim_mm_worst"],
+        refused_because=result["refused_because"],
+    )
+
+
+SCORED = _scored()
 
 # One real run of 03-push-glasses-apart/01-one-fixed-nudge on table 10001, six tapered glasses,
 # recorded by the throwaway measurement script under that directory. Positions
