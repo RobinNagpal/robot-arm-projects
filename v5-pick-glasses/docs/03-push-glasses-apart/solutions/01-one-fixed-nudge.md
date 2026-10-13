@@ -86,19 +86,28 @@ results file in the repository.
 
 ## A film of one table
 
-Before the explanation, here is this solution clearing one table, recorded from
-the simulator and running at three times real speed.
+Before the explanation, here is this solution working on one table, recorded
+from the simulator and running at three times real speed.
 
-[Watch the film (30 s)](../../../videos/03-push-glasses-apart/01-one-fixed-nudge.mp4)
+[Watch the film (17 s)](../../../videos/03-push-glasses-apart/01-one-fixed-nudge.mp4)
 
 The table is number 10003 of the held-out fifty, and it was chosen to be
-**typical rather than flattering**. It holds five glasses, which is the average,
-and on it this solution reaches its commonest outcome with about its usual
-number of pushes. In the film every one of the five glasses is pushed clear and
-racked, in seven pushes, with none knocked over.
+**typical rather than flattering**. It holds five glasses, which is the
+average, and on it this solution reaches its commonest outcome: the table ends
+*incomplete*, which is now what happens on 35 of the fifty.
 
-All six solutions are filmed on this same table, so the six films can be watched
-against each other. How each one does over all fifty tables is in
+In the film three of the five glasses are racked in four pushes, and the other
+two are refused because the test push found they tip rather than slide. Nothing
+is knocked over. That is the shape of nearly every table with this gripper —
+some glasses moved, some turned down, none broken.
+
+The film was recorded again when the examiner was given a real Robotiq 2F-85
+in place of the invented blade, so what the jaw does here is what it does in
+the measurements on this page. **The films for solutions 3 to 6 are still the
+old blade's** and are being redone; until they are, only the first two films
+can be watched against each other.
+
+How each solution does over all fifty tables is in
 [the comparison](../../../03-push-glasses-apart/results/README.md).
 
 ## The code at the heart of it
@@ -296,14 +305,14 @@ everybody.
 
 To close on a glass the open jaw has to get round it: a finger and a pad on
 each side, with the jaw opened wider than the glass before it closes. Added up
-from the glass's middle outwards, that comes to about **70 mm of clear room in
+from the glass's middle outwards, that comes to about **76 mm of clear room in
 every direction**. Those are the gripper's own numbers, so the project is
-allowed to write them down, and the examiner holds the 70 mm as a constant and
+allowed to write them down, and the examiner holds the 76 mm as a constant and
 applies the test like this: **a glass has room when every other glass's edge is
-at least 70 mm from its middle.**
+at least 76 mm from its middle.**
 
 Read that sentence twice, because the word *edge* is what makes the test
-asymmetric. The 70 mm is measured from one glass's middle out to another
+asymmetric. The 76 mm is measured from one glass's middle out to another
 glass's **edge**, and a glass's edge is half its own widest width out from its
 own middle. So what a glass needs from a neighbour depends on **how wide the
 neighbour is, not on how wide it is itself**. A narrow glass standing beside a
@@ -311,12 +320,12 @@ wide one can be badly short of room while the wide one, at the very same
 distance, has room to spare, because the wide one's rim reaches much further
 into the gap than the narrow one's does.
 
-![The same pair of glasses from the top at four separations, showing that the wide one comes free before the narrow one does: each glass carries the 70 mm ring the open jaw needs, and a glass is blocked while its neighbour's edge is inside that ring, so the narrow glass, whose neighbour's edge reaches further in, is still blocked at a distance where the wide one already has its room.](../../../images/03-push-glasses-apart/01-four-distances-one-pair.png)
+![The same pair of glasses from the top at four separations, showing that the wide one comes free before the narrow one does: each glass carries the 76 mm ring the open hand needs, and a glass is blocked while its neighbour's edge is inside that ring, so the narrow glass, whose neighbour's edge reaches further in, is still blocked at a distance where the wide one already has its room.](../../../images/03-push-glasses-apart/01-four-distances-one-pair.png)
 
 From that, the error falls out. The shortfall of one glass against one
 neighbour is
 
-    70 mm  +  half the neighbour's widest width  −  the distance between
+    76 mm  +  half the neighbour's widest width  −  the distance between
     their middles
 
 and it is zero or less when that neighbour is not in the way. The glass's own
@@ -461,7 +470,7 @@ real code is involved and it would be easy to over-claim.
   scorecard;
 - the room test, as `has_room()` in
   [`03-push-glasses-apart/bench/bench.py`](../../../03-push-glasses-apart/bench/bench.py), which holds the
-  70 mm as the gripper's constant and applies it to the neighbour's edge;
+  76 mm as the gripper's constant and applies it to the neighbour's edge;
 - the shortfall, as `shortfall()` in
   [`03-push-glasses-apart/01-one-fixed-nudge/plan.py`](../../../03-push-glasses-apart/01-one-fixed-nudge/plan.py);
 - the tipping rule, as `slides()` in the same file, evaluated at the top edge
@@ -633,7 +642,7 @@ spent, or when every glass that is left has been refused.
 
 A glass slides while the jaw touches it below half its foot width divided by
 the friction, and tips above that. The height that counts is the jaw's **top
-edge** at 65 mm, not the 50 mm its middle rides at, and for a glass whose foot
+edge** at 107 mm, not the 75 mm its middle rides at, and for a glass whose foot
 is narrow enough there is no contact height the arm can offer below the limit.
 The only correct answer for such a glass is to refuse, with the reason
 recorded, which marks the run *correct but incomplete* rather than wrong.
@@ -647,9 +656,17 @@ solution's own.
 most.** The jaw pushes along the direction it points, so the approach runs
 along the same line as the push, and pushing a glass straight away from its
 neighbour means coming in from the neighbour's side. The tool behind the
-fingertips is 270 mm long and 90 mm across, all of it at the height of the
-push, so all of it has to miss everything on the table — and in a tight group
-the blocking neighbour is standing exactly where the tool would have to be.
+fingertips is 266 mm long, all of it at the height of the push, so all of it
+has to miss everything on the table — and in a tight group the blocking
+neighbour is standing exactly where the tool would have to be.
+
+How much of it has to miss is not one number, because the hand is not one
+shape. Turned on its side to fit between the glasses, a real Robotiq 2F-85 is
+27 mm across for the first 132 mm behind its fingertips and then 75 mm where
+its body begins, with the force sensor behind that at 89 mm. So the arm can
+reach a hand's breadth into a gap and no further, which is why the width of
+the stretch each part of the push sweeps is checked against that part's own
+width rather than against one figure for the whole tool.
 
 This method has one heading to offer and no way of choosing another, so when
 that heading is blocked the only honest answer is that there is nowhere clear
@@ -664,7 +681,7 @@ across them. A glass can be pushed when its line passes above the height the
 jaw touches it at, and the dot on each line is the narrowest foot that still
 slides at that friction.
 
-![Three rising lines, one for each friction, against the foot the glass stands on, with the jaw's middle at 50 mm and its top edge at 65 mm ruled across them.](../../../images/03-push-glasses-apart/01-the-friction-ceiling.png)
+![Three rising lines, one for each friction, against the foot the glass stands on, with the jaw's middle at 75 mm and its top edge at 107 mm ruled across them.](../../../images/03-push-glasses-apart/01-the-friction-ceiling.png)
 
 Those 15 mm between the jaw's middle and its top edge cost far more than their
 size suggests, and the second picture is what they cost. It takes 400 glasses
@@ -674,7 +691,7 @@ falls from 77 in every 100 to 25. At the highest friction the rule asks for a
 wider foot than this kind of glass is ever drawn with, so not one of the 400 may
 be pushed.
 
-![Two bars at each of three frictions, one for a push at 50 mm and one for a push at the real 65 mm, showing what share of 400 drawn glasses could be pushed at all.](../../../images/03-push-glasses-apart/01-what-15-mm-of-jaw-costs.png)
+![Two bars at each of three frictions, one for a push at the jaw's middle at 75 mm and one for a push at its real top edge at 107 mm, showing what share of 400 drawn glasses could be pushed at all.](../../../images/03-push-glasses-apart/01-what-the-jaws-height-costs.png)
 
 The arm is never told which of the three frictions is the real one, and nothing
 in the cell measures it. So the three lines are three different answers about
@@ -700,18 +717,21 @@ Three glasses stand in the glass zone. Call them A, B and C.
 | B | close beside A, further from the arm | the widest the kind allows, on a broad foot |
 | C | the far corner of the zone, clear of both | middling |
 
-**The room test.** A needs 70 mm plus half of B's widest width, and B is as
+**The room test.** A needs 76 mm plus half of B's widest width, and B is as
 wide as the kind allows, so B's rim reaches well inside A's ring and A is short
-of room by some tens of millimetres. Turn the test round and B needs 70 mm plus
+of room by some tens of millimetres. Turn the test round and B needs 76 mm plus
 half of A's widest width, and A is narrow, so B has room to spare at the very
 same distance. C is clear of both. **So A alone is on the list**, which is the
 asymmetry doing its work: one gap, two different answers, and the glass with
 the problem is the narrow one.
 
 **Can A be pushed.** A stands on a broad foot, so half its foot divided by the
-highest friction in the plausible range is still above the jaw's top edge. A
-slides at every friction worth considering, so no test push is needed and
-nothing is refused.
+*low* end of the friction range is comfortably above the jaw's top edge, and A
+is not refused outright. It does not escape the test push, though, and with a
+real gripper nothing does: being certainly safe would need a foot wider than
+the jaw's top edge is high, which is 107 mm now that the hand has to be turned
+on its side, and the widest foot any of these kinds draws is 95 mm. So A is
+probed first, like every glass this solution pushes.
 
 **The push.** The blocking neighbour is B, so the heading is the direction from
 B's middle through A's middle, continued outwards. The travel is the gain times
@@ -766,7 +786,7 @@ which is precisely what this method gave up in exchange for being one
 multiplication.
 
 **The same table also shows the approach failure.** If B and C stand closer to
-A than the tool is long, then pushing A away from B asks the arm to put 270 mm
+A than the tool is long, then pushing A away from B asks the arm to put 266 mm
 of tool where B is standing, and pushing A away from C asks the same of C's
 place. The method has no third heading to offer, so it refuses A with the
 reason that there is nowhere clear to push it from. The refusal arrives before
@@ -793,11 +813,14 @@ tipping rule and its test push need. It does not use the rendered view from the
 top, it does not use the force report beyond whether the jaw touched anything,
 and it never reads the simulator's record.
 
-**The gripper's own numbers.** The 70 mm of clear room, the 50 mm the jaw's
-middle rides at, the 30 mm height of the jaw that puts its top edge at 65 mm,
-the 270 mm of tool behind the fingertips and the 90 mm width of its body. All of
-these belong to the hardware rather than to any glass, so the project allows
-them to be written down, and none of them is tuned.
+**The gripper's own numbers.** The 76 mm of clear room, the 75 mm the jaw's
+middle rides at, the 63 mm height of its leading stretch that puts the top edge
+at 107 mm, the 266 mm of tool behind the fingertips and the widths of each
+stretch of it. All of these belong to the hardware rather than to any glass, so
+the project allows them to be written down, and none of them is tuned. None of
+them is typed in either: they are worked out in `arm/robotiq_2f85.py` from the
+link offsets and collision meshes Robotiq publish, so a different gripper
+changes them in one place.
 
 **One constant of its own**, the gain, chosen by the convergence argument above
 and then frozen. That is the entire configuration of the method.
@@ -863,7 +886,7 @@ The weaknesses divide into one that makes the others academic and several that
 matter in their own right.
 
 **It has nowhere to stand.** The approach runs along the same line as the push,
-so pushing a glass straight away from its neighbour asks the arm to put 270 mm
+so pushing a glass straight away from its neighbour asks the arm to put 266 mm
 of tool where the neighbour is. In a tight group that is impossible, and the
 method cannot offer a second heading, so it refuses. The honest reading is that
 **the approach is a harder constraint than the departure**, and this solution

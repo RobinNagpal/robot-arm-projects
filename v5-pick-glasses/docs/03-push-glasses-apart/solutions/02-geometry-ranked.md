@@ -80,9 +80,12 @@ predict, the training set and the labelling — are built too, in
 `03-push-glasses-apart/02-geometry-ranked`, fitted, and run over the same fifty
 held-out tables as the rule, with the model deleted, so that both sides see
 exactly the same candidates and the only difference between the two runs is who
-picks. **The ranker loses that comparison.** It racked 185 of the 251 glasses in
-229 pushes where the printed rule racked 195 in 213, finishing two fewer tables
-and toppling nothing either way. The ablation is in the folder: `results.json`
+picks. **The ranker loses that comparison.** It reaches the same end as the
+printed rule — 107 of the 251 glasses, the same fourteen tables, one topple
+either way — but spends 182 pushes and half again as much travel where the
+rule spends 173. It used to lose on the result, racking 185 glasses against the
+rule's 195; now that a real gripper decides most of these tables before the
+choosing begins, it loses on the cost of a result it matches. The ablation is in the folder: `results.json`
 is the ranker's run and `rule.json` is the rule's. Why it loses is explained in
 [where it is strong and where it
 breaks](#where-it-is-strong-and-where-it-breaks), and the short answer is that
@@ -117,19 +120,31 @@ solution happens to do well.
 
 ## A film of one table
 
-Before the explanation, here is this solution clearing one table, recorded from
-the simulator and running at three times real speed.
+Before the explanation, here is this solution working on one table, recorded
+from the simulator and running at three times real speed.
 
-[Watch the film (33 s)](../../../videos/03-push-glasses-apart/02-geometry-ranked.mp4)
+[Watch the film (17 s)](../../../videos/03-push-glasses-apart/02-geometry-ranked.mp4)
 
 The table is number 10003 of the held-out fifty, and it was chosen to be
-**typical rather than flattering**. It holds five glasses, which is the average,
-and on it this solution reaches its commonest outcome with about its usual
-number of pushes. In the film all five are racked in seven pushes with none
-knocked over, which is the same result the printed rule reaches on this table.
+**typical rather than flattering**. It holds five glasses, which is the
+average, and on it this solution reaches its commonest outcome: the table ends
+*incomplete*, which is now what happens on 35 of the fifty.
 
-All six solutions are filmed on this same table, so the six films can be watched
-against each other. How each one does over all fifty tables is in
+In the film three of the five glasses are racked in four pushes, and the other
+two are refused because the test push found they tip rather than slide. Nothing
+is knocked over. That is the shape of nearly every table with this gripper —
+some glasses moved, some turned down, none broken.
+
+The film was recorded again when the examiner was given a real Robotiq 2F-85
+in place of the invented blade, so what the jaw does here is what it does in
+the measurements on this page. **The films for solutions 3 to 6 are still the
+old blade's** and are being redone; until they are, only the first two films
+can be watched against each other.
+
+The printed rule reaches exactly the same result on this table, which is the point
+of the comparison running through this document.
+
+How each solution does over all fifty tables is in
 [the comparison](../../../03-push-glasses-apart/results/README.md).
 
 ## The code at the heart of it
@@ -222,7 +237,7 @@ safe pushes**, which is a different question and a smaller one.
 The complaint it is aimed at is therefore not safety. The geometry already in
 this repository toppled nothing at all over the examiner's fifty held-out tables,
 as its results file records. The complaint is the number of attempts: that run
-spent **213 pushes on 251 glasses, and 90 of those were repeat pushes of a
+spent **173 pushes on 251 glasses, and 63 of those were repeat pushes of a
 glass it had already moved once**. A repeat push is a push that did not achieve
 what it was chosen for, so a method that chose better among the same candidates
 would spend fewer of them. That is the gap a ranker is pointed at.
@@ -370,9 +385,9 @@ foot `2a` across, on a table it rubs against with friction `μ`, slides while
 
 and tips over above that. The height that counts is the **top edge of the
 jaw**, not its middle, because a glass that is wider higher up meets the top
-edge first. The middle of the jaw rides at 50 mm, which is as low as the
+edge first. The middle of the jaw rides at 75 mm, which is as low as the
 gripper reaches without fouling the table, and the fingers are 30 mm tall, so
-the top edge stands at 65 mm. Those are the gripper's own numbers and they do
+the top edge stands at 107 mm. Those are the gripper's own numbers and they do
 not change from one glass to the next. What changes is `a`, because every glass
 has its own foot, so **the limit is computed for each glass from its measured
 foot width** rather than agreed once for the whole kind.
@@ -785,7 +800,7 @@ the model's position after the refusal matters more than the model's accuracy.
 
 A glass slides while the jaw touches it below half its foot width divided by
 the friction, and tips above that. The height that counts is the jaw's **top
-edge** at 65 mm, not the 50 mm its middle rides at, and for a glass whose foot
+edge** at 107 mm, not the 75 mm its middle rides at, and for a glass whose foot
 is narrow enough there is no contact height the arm can offer below the limit.
 The only correct answer for such a glass is to refuse, with the reason
 recorded, which marks the run *correct but incomplete* rather than wrong.
@@ -951,21 +966,34 @@ range 11.9 mm. For one glass the printed rule already matches the best
 candidate in **159 of 206 groups**, and the best possible choice beats it by
 0.0 mm at the median.
 
-**So the ranker was fitted, and it lost to the rule it was meant to improve.**
-Both ran the same loop over the same fifty held-out tables with the same budget
-and the same candidate set, the only difference being who picks: the ranker
-racked **185 of 251 glasses in 229 pushes** and finished 31 tables, where the
-printed rule racked **195 in 213 pushes** and finished 33. Neither toppled
-anything. The gap is not an unlucky fit — three rankers fitted on resamples of
-the same rows racked 180, 181 and 184 — and the reason is the label rather than
-the trees. The model is fitted on **room gained** and the run is marked on
+**So the ranker was fitted, and it did not beat the rule it was meant to
+improve.** Both ran the same loop over the same fifty held-out tables with the
+same budget and the same candidate set, the only difference being who picks,
+and they arrive at the same place: **107 of 251 glasses, fourteen tables
+finished, one glass toppled** either way. What separates them is the cost. The
+ranker takes **182 pushes and 4,325 mm of travel** where the rule takes **173
+pushes and 2,844 mm** — half again as far for the same result.
+
+This is a weaker-looking defeat than the one this document first recorded,
+where the ranker racked 185 glasses against the rule's 195, and the change is
+not about the model. The examiner now pushes with a real Robotiq 2F-85 instead
+of an invented blade, and that hand is 139 mm across its fingers, so it must be
+turned on its side to fit between the glasses and then cannot push lower than
+75 mm. With that hand most tables are settled before the choosing starts: 53 of
+the refusals are the hand being too wide to get behind a glass at all and 87
+are it being too tall to push one without tipping it. Ordering candidates
+cannot move either number, so the two choosers bottom out on the same
+obstacle and only their routes differ.
+
+The reason the ranker takes the longer route is the label rather than the
+trees. The model is fitted on **room gained** and the run is marked on
 **glasses that end up grippable**, and a push that spreads room over three
 glasses scores higher than one that finishes a glass outright. On the
 validation tables in `training.json` the ranker's top pick takes a
 job-finishing push in **47 of the 83 decisions that offer one**, where the rule
 takes it every time; by its own label the ranker is the better chooser, giving
 up 4.4 mm of room against the best candidate where the rule gives up 18.7 mm,
-and it still clears fewer tables. What the fit says mattered points the same
+and it clears no more tables for it. What the fit says mattered points the same
 way: the topple ratio (0.43) and the foot width (0.38) came first and the push
 distance last (0.01), so the model mostly learned which glass is risky to push
 rather than which push is good. **The verdict is to keep the simpler one.**

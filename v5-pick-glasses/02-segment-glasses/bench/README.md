@@ -59,7 +59,7 @@ already committed, and nothing would be comparable with anything.
 
 The second is that **none of it changes the question this problem asks.** The
 question is how well six methods find glasses in a picture, and the
-[comparability contract](../../docs/02-segment-glasses/the-bench.md) gives all
+[comparability contract](../../docs/02-segment-glasses/the-examiner.md) gives all
 six the *same* picture. So the lens cancels out of the comparison: a wider one
 would make every method's job harder in the same way, and the ranking is what
 this problem is for. Problem 2 and the cell therefore do not have to agree

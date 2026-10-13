@@ -451,7 +451,7 @@ def picture_the_friction_ceiling(jobs) -> None:
 
     footer(figure, (
         "A push at height h slides a glass while h is under a / mu, where a is half the foot and mu "
-        f"is the friction with the table.\nEach dot is where a friction's line crosses the jaw's top "
+        "is the friction with the table.\nEach dot is where a friction's line crosses the jaw's top "
         "edge: the narrowest foot that still slides at it."))
     figure.subplots_adjust(bottom=0.24, top=0.90)
     save(figure, "01-the-friction-ceiling.png")
@@ -494,7 +494,7 @@ def picture_the_friction_ceiling(jobs) -> None:
         f"\nAt mu {MU_HIGH} the rule asks for a wider foot than this kind ever draws, so not one of "
         "the 400 may be pushed at all."))
     figure.subplots_adjust(bottom=0.24, top=0.90)
-    save(figure, "01-what-15-mm-of-jaw-costs.png")
+    save(figure, "01-what-the-jaws-height-costs.png")
     for (label, height, mu), share in shares.items():
         print(f"  {label}, mu {mu}, pushed at {height:.0f} mm: {share:.1f}% can be pushed at all")
     print(f"  the foot a glass needs at {JAW_TOP:.0f} mm: "

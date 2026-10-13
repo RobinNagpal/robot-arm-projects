@@ -12,7 +12,7 @@ with two changes explained at the end.
 
 ## Words used below
 
-- **Room.** A glass has room when every other glass's edge is at least 70 mm
+- **Room.** A glass has room when every other glass's edge is at least 76 mm
   from its middle. That is the space the open gripper needs.
 - **Take.** Pick a glass up and put it in the rack. Problem 1 does the real
   pick; here the glass is just lifted off the table.
@@ -88,35 +88,69 @@ make test
 `make film FILM=10` films more. Any run shorter than the 50 test tables writes
 `partial.json`, never `results.json`.
 
-## Results — 50 tables, 251 glasses, 193 without room at the start
+## Results — 50 tables, 251 glasses, 203 without room at the start
 
 | | |
 |---|---|
-| Tables | 33 done, 17 not finished, **0 wrong** |
-| Glasses | 195 taken, 56 refused, **0 knocked over** |
-| Pushes | 213, of which 90 were a second or later push of the same glass |
-| Accuracy | glasses stopped 1.0 mm from where they were aimed (median), 3.9 mm at worst |
+| Tables | 14 done, 35 not finished, **1 wrong** |
+| Glasses | 107 taken, 143 refused, **1 knocked over** |
+| Pushes | 173, of which 63 were a second or later push of the same glass |
+| Accuracy | glasses stopped 1.7 mm from where they were aimed (median), 57.6 mm at worst |
 
-All 56 refused glasses were "nowhere clear to push it to". There was free
-space on the table, but the jaw could not get behind the glass. The body
-behind the fingers is 90 mm wide, and in a tight group it would hit a
-neighbour.
+These are much poorer than the figures this page used to carry — 33 tables done
+and 195 glasses taken — and the whole of the difference is the gripper. The
+examiner used to push with a blade 120 mm long and 28 mm thick, invented for
+the purpose. It now pushes with a real **Robotiq 2F-85**, and that hand is
+139 mm across its fingers, so it has to be turned on its side to fit between
+glasses that stand 150 mm apart. Turned on its side it cannot push lower than
+75 mm, and a push that high up tips glasses that a low one would have slid.
+[The bench](../bench/README.md) explains the hand and why it is held that way.
 
-**On 100 more tables (9500 on) it knocked one glass over.** A tapered glass
-passed its 5 mm test push, then tipped about 40 mm into the real push. The
-test push checks how the glass starts to move, not the whole push. This was
-left as it is and reported, not tuned away.
+The refusals now split three ways, and the split is the most useful thing on
+this page:
+
+| why a glass was left | glasses |
+|---|---|
+| nowhere clear to push it to | 53 |
+| tipped when tried | 49 |
+| tips before it slides | 38 |
+| stopped: a glass fell over | 3 |
+
+The first group is the hand's width: there is free space on the table, but
+nothing the hand can reach into. The next two are its height. Together they
+say that **this gripper is turned down about as often for being too tall as
+for being too wide**, where the old blade was only ever too wide.
+
+**One glass went over, out of 251.** That is worth holding against the 33 per
+cent of glasses that tip when pushed carelessly at this height: almost all of
+the danger is being refused rather than met. The test push is doing less of
+that work than it looks, though — see the note on it below.
 
 ## Two changes from the overview
 
 **A test push instead of a guess.** The overview refuses any glass that would
 tip if the friction were 0.5. That refused 35 of the first 60 glasses, far too
-many. A 5 mm test push shows the answer directly.
+many. A 5 mm test push was meant to show the answer directly.
 
 The first version pushed only 3 mm and wrongly refused 24 glasses. The reason
 is that the first 0.5 to 2.5 mm of any push is lost before the glass starts to
 move (up to 6 mm on a thin stem). Hence 5 mm, and three looks averaged before
 and after.
+
+**That test push no longer tells the two cases apart, and it is left in on
+purpose.** Pushing 75 mm up instead of 50, a glass that is about to tip leans
+first, and the lean takes up the whole 5 mm: measured across the four
+families, a glass the full push slides moves under a millimetre during the
+test, which is inside the error of the looks themselves. No length between 5
+and 20 mm separates them either, so this is not a threshold to retune.
+
+What saves it is that its mistakes all point one way. It now says "it tipped"
+about glasses that would in fact have slid, so the arm refuses glasses it could
+have moved — a refusal, which is a result and can be reported. It never says a
+glass is safe and then topples it, which is the error that costs a glass, and
+`test_programmed.py` asserts that direction and nothing else. The honest
+summary is that most of the 87 glasses turned down for tipping were turned down
+by the arithmetic rather than by the experiment.
 
 **Loosening a tight group.** Pushing only when one push fully frees a glass
 left 107 glasses stuck. Allowing pushes that loosen the group brought that

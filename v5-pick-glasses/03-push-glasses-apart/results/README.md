@@ -1,32 +1,62 @@
 # Problem 3 — the six solutions side by side
 
 Six ways of pushing crowded glasses apart so that each one can then be picked
-up, all tested on the same 50 tables holding 251 glasses, 193 of which have no
+up, all tested on the same 50 tables holding 251 glasses, 203 of which have no
 room at the start. Every solution is given the same tables, spends the same
 push budget, and is judged by the same scorecard, which is described in
 [`docs/03-push-glasses-apart/the-examiner.md`](../../docs/03-push-glasses-apart/the-examiner.md).
 None of them saw these tables while it was being built or fitted. Every number
 on this page is read from a solution's own `results.json`.
 
+## This page is mid-measurement, and says which rows are which
+
+The examiner used to push with a blade 120 mm long and 28 mm thick, invented
+for the purpose. It now pushes with a real **Robotiq 2F-85**, turned on its
+side because that hand is 139 mm across its fingers and otherwise does not fit
+between glasses standing 150 mm apart. That changed the physics of every push,
+so every figure on this page has to be measured again, and the four learned
+solutions have to be trained again first because they learned against the old
+blade.
+
+Two are done. **The other four rows below are still the old blade's numbers
+and are not comparable with the first two.** They are left in place rather than
+blanked so that the page still reads as a whole, but they are marked, and no
+conclusion should be drawn across the line.
+
 ## The results
 
 | | tables done | tables wrong | glasses racked | toppled | pushes | travel | thinking per push |
 |---|---|---|---|---|---|---|---|
-| [1 one fixed nudge](../01-one-fixed-nudge/) | **33** | **0** | 195 | **0** | 213 | 2.0x | 59 ms |
-| [2 geometry ranked](../02-geometry-ranked/) | 31 | **0** | 185 | **0** | 229 | 3.7x | 75 ms |
-| [3 imitation, ACT](../03-imitation-from-demonstrations/) | 3 | 1 | 68 | 1 | 643 | 0.4x | **11 ms** |
-| [4 a world model](../04-a-world-model/) | 31 | 1 | **202** | 1 | **114** | **1.4x** | 401 ms |
+| [1 one fixed nudge](../01-one-fixed-nudge/) | **14** | 1 | **107** | 1 | **173** | 0.87x | **93 ms** |
+| [2 geometry ranked](../02-geometry-ranked/) | **14** | 1 | **107** | 1 | 182 | 1.32x | 102 ms |
+| [3 imitation, ACT](../03-imitation-from-demonstrations/) | 3 | 1 | 68 | 1 | 643 | 0.4x | 11 ms | 
+| [4 a world model](../04-a-world-model/) | 31 | 1 | 202 | 1 | 114 | 1.4x | 401 ms |
 | [5 SmolVLA as it downloads](../05-smolvla-as-it-downloads/) | 0 | 5 | 56 | 6 | 754 | 0.2x | 283 ms |
 | [6 SmolVLA fine-tuned](../06-smolvla-fine-tuned/) | 4 | **38** | 77 | **46** | 400 | 2.2x | 283 ms |
+
+Rows 1 and 2 are the real gripper. **Rows 3 to 6 are the old blade** and will
+change; the bold marks in them are the old comparison's and mean nothing now.
 
 A table is **done** when every glass on it was picked up, and **wrong** when
 the run ended in a state the cell should never reach.
 
+**What the real gripper cost, where it can already be seen.** Solution 1 went
+from 33 tables to 14 and from 195 glasses to 107 on the same fifty tables. The
+refusals say why: 53 glasses because the hand is too wide to get behind them
+and 87 because it is too tall to push them without tipping them. The old blade
+was only ever too wide. Solution 2 is the sharper lesson — its fitted ranker
+now reaches *exactly* the same fourteen tables and 107 glasses as the printed
+rule it was meant to beat, for nine more pushes and half again the travel,
+because when every table bottoms out on the hand's width or height there is
+nothing left for an ordering to win.
+
 **Travel is how far the glasses were really moved, as a multiple of the least
 any legal arrangement needs.** That least is the displacement floor, which
 [the target layout](../../docs/03-push-glasses-apart/the-target-layout.md)
-computes from the geometry of each table: 2,534 mm over these fifty tables
-altogether. The floor belongs to the table rather than to any method, so no
+computes from the geometry of each table: 3,284 mm over these fifty tables
+altogether. That floor moved with the gripper too, up from 2,534 mm, because
+the room each glass needs is how far the *open* hand reaches from its own
+middle and the 2F-85's fingers stand 76 mm out where 70 was assumed. The floor belongs to the table rather than to any method, so no
 solution can go below it while doing the job, and a solution at twice the floor
 moved the glasses twice as far as the task demanded.
 
@@ -37,6 +67,14 @@ numbers: SmolVLA as it downloads travels a fifth of the floor because its jaw
 comes down too high to reach a glass at all, and the imitation policy travels
 less than half the floor because most of its pushes are blocked before they
 start. Neither is economical; both are simply not doing the work.
+
+Solution 1 now sits **below the floor too, at 0.87x**, and it is worth being
+clear that this is the same effect rather than an excellence. The floor is the
+travel needed to give *every* glass its room. A solution that leaves 143 of 251
+glasses crowded was never going to have to spend it. Reading the column at all
+means reading it beside the glasses racked, and at this point in the
+re-measurement the honest statement is that no solution has yet got far enough
+through these tables for its travel to be a measure of economy.
 
 Among the three solutions that do finish most of the tables, the column
 separates them cleanly, and it separates them in the same order as the pushes

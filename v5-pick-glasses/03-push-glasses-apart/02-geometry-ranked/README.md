@@ -50,20 +50,36 @@ enumerates.
 
 | | Ranked (`results.json`) | Printed rule (`rule.json`) |
 |---|---|---|
-| Tables done | 31 | **33** |
-| Tables wrong | **0** | **0** |
-| Glasses racked | 185 of 251 | **195** of 251 |
-| Glasses refused | 66 | **56** |
-| Glasses toppled | **0** | **0** |
-| Pushes | 229 (109 repeats) | **213** (90 repeats) |
-| Landing, median / worst | 1.0 / 3.9 mm | 1.0 / 3.9 mm |
-| Thinking per push | 75 ms | **59 ms** |
+| Tables done | **14** | **14** |
+| Tables wrong | 1 | 1 |
+| Glasses racked | **107** of 251 | **107** of 251 |
+| Glasses refused | 143 | 143 |
+| Glasses toppled | 1 | 1 |
+| Pushes | 182 (71 repeats) | **173** (63 repeats) |
+| Travel against the floor | 1.32x | **0.87x** |
+| Landing, median / worst | **1.6 / 32.8 mm** | 1.7 / 57.6 mm |
+| Thinking per push | 102 ms | **98 ms** |
 
-**The ranker loses.** It racks ten fewer glasses for sixteen more pushes, and
-the document predicted exactly this. It is not a matter of an unlucky fit:
-three rankers fitted on bootstrap resamples of the same rows racked 180, 181
-and 184 glasses on the same tables, so the gap to the rule's 195 is several
-times the spread of the fitting.
+**The ranker still loses, and it now loses in a more awkward way.** It reaches
+exactly the same end as the printed rule — the same fourteen tables, the same
+107 glasses, the same single topple — but spends nine more pushes and **half
+again as much travel** getting there. Where it used to be beaten on the result,
+it is now beaten on the cost of a result it matches.
+
+That is a consequence of fitting a real gripper. These figures were measured
+with a blade 120 mm long and 28 mm thick until the examiner was given a real
+Robotiq 2F-85, which is 139 mm across and has to be turned on its side to fit
+between the glasses, and then cannot push lower than 75 mm. With that hand the
+binding constraint is no longer *which* push to choose but whether any push is
+available at all: 53 of the refusals are the hand being too wide to get behind
+a glass and 87 are it being too tall to push one safely. A ranker that orders
+candidates cannot help with either, and when every table bottoms out on the
+same obstacle, ordering the candidates differently changes only the route.
+
+The refit itself noticed. The single most important feature is now **push
+height over the topple limit**, at 0.43 of the model's importance, where the
+geometry of the destination used to lead. The model learnt the right thing
+about the new hand; there was simply nothing left for it to win with.
 
 The reason is visible in the validation numbers (`training.json`) and it
 is worth stating, because it is a lesson about the label rather than about
@@ -76,8 +92,11 @@ the 83 decisions that offer one**; the printed rule takes it every time.
 
 By its own label the ranker is the better chooser of the two — across a whole
 decision it gives up 4.4 mm of room against the best candidate where the rule
-gives up 18.7 mm — and it still clears fewer tables. That is the measurement
-the document asked for, and it says keep the simpler one.
+gives up 18.7 mm — and it clears no more tables for it. That is the measurement
+the document asked for, and it says keep the simpler one. It said so more
+gently when the two differed by ten glasses; now that they end in the same
+place and the ranker takes half again as much travel to get there, it says so
+plainly.
 
 ## How it works
 
