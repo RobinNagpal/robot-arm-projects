@@ -133,9 +133,44 @@ difference in model.
 
 ## Results
 
-**Being measured.** The three fits and the scoring run are in progress, and
-this section will carry the scorecard beside solutions 5 and 6, with its
-spread, as soon as they finish. Nothing is claimed until then.
+**The fits were made and the scoring run was not.**
+
+Three fits were made, one for each seed, and the distance between this model's
+answers and the teacher's own waypoints, measured on tuning tables nothing was
+fitted on, went from 302 mm to 288 mm over a thousand steps. The spread across
+the three seeds at the end is a single millimetre, so the three agree.
+
+The glass zone is 320 mm across. An answer 288 mm away from the teacher's is
+therefore not a push aimed at the wrong glass; it is a motion somewhere else on
+the table entirely, which is where this model started. **The fitting did not
+teach it the task.** Solution 6, given the same demonstrations and the same
+budget, had reached 85 mm.
+
+The scoring run was stopped rather than finished, and the reason is worth
+stating plainly because this document promised that scorecard. Scoring would
+have measured a policy that aims nowhere near the glasses, at a cost of about
+two hours of this machine's graphics chip, and [solution
+5](05-smolvla-as-it-downloads.md) already measures what an unfitted borrowed
+model does on this bench. The honest finding is in the fitting curve rather
+than in a scorecard, and the curve has three seeds behind it.
+
+**What this is evidence of, and what it is not.** It is not evidence that a
+newer or larger model is worse at this task. The two fits were given the same
+number of steps, and that hid a thirty-fold difference in what each had to
+learn: solution 6 adjusts a few million numbers beside a model that already
+produces robot trajectories, while this solution fits a hundred and twenty-two
+million from random values, because the stage that was used freezes the half of
+the model that can see and leaves the half that moves to be built from nothing.
+A model that has not been given enough training looks exactly like a model that
+cannot do the task, and the only way to tell them apart is to keep training.
+
+That is what the next step is, and it is deliberately the cheap one.
+[Issue #24](https://github.com/RobinNagpal/robot-arm-projects/issues/24) asks
+whether this action head can memorise fifty demonstrations. A network with a
+hundred and twenty-two million free numbers should find that easy, so if it
+cannot, the fault is in how the two halves are joined and no amount of training
+would have helped. If it can, the fault is only scale, and a longer fit on a
+single seed is worth the machine time.
 
 One expectation is worth setting in advance, so that it cannot be adjusted
 afterwards to match whatever arrives. Recency is probably not what limits this

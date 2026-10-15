@@ -95,6 +95,42 @@ and never `results.json`, because one short run is not a result.
 
 ## Results
 
-**Being measured.** The three fits and the scoring run are in progress; this
-section will carry the scorecard beside solutions 5 and 6, with the spread, as
-soon as they finish. Nothing is claimed here until it does.
+**The fits were made and the scoring run was not, and this section says why.**
+
+Three fits, one for each seed, a thousand steps apiece at about a hundred
+minutes each. What they learned, measured against the teacher's own waypoints
+on tuning tables nothing was fitted on:
+
+| | step 0 | step 500 | step 1,000 |
+|---|---|---|---|
+| Distance from the teacher | 302 mm (±6) | 293 mm (±8) | **288 mm (±1)** |
+
+The glass zone is 320 mm across, so every one of those numbers describes a
+motion somewhere else on the table rather than a push aimed at the wrong
+glass. **The fit did not learn the task**, and the three seeds agree closely
+enough that there is nothing left to find out by running it again. Solution 6,
+on the same demonstrations and the same budget, had reached 85 mm by step
+1,000.
+
+The scoring run was stopped rather than finished. It would have cost about two
+hours of this machine's graphics chip to produce a scorecard for a policy that
+aims nowhere near the glasses, and [solution
+5](../05-smolvla-as-it-downloads/README.md) already measures what an unfitted
+borrowed model does on this bench. A row saying "it does nothing" is not worth
+two hours when the row above already says it.
+
+**The reason is not that the model is worse, and it matters.** Solution 6
+adjusts 3.8 million numbers beside a model that already produces robot
+trajectories; this solution fits a **122 million** number action head that
+starts from random values, because Evo-1's first training stage freezes the
+vision-language half and that half has never produced a motion. Four thousand
+examples is plausible for the first job and almost nothing for the second.
+Matching the step count hid a thirty-fold difference in what had to be
+learned, which is a fault in how the comparison was set up rather than a
+verdict on the model.
+
+[Issue #24](https://github.com/RobinNagpal/robot-arm-projects/issues/24) is the
+cheap test that would tell us whether this head can fit anything at all:
+give it fifty demonstrations and see whether it can memorise those fifty. A
+network with 122 million free numbers should manage that easily, and if it
+cannot, more training would never have helped.

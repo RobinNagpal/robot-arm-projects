@@ -1,0 +1,46 @@
+{
+  "backbone": "OpenGVLab/InternVL3-1B-hf",
+  "vlm_layers": 14,
+  "training_stage": "stage1",
+  "denoising_steps": 32,
+  "moving_numbers": 122029360,
+  "total_numbers": 775198640,
+  "steps_wanted": 1000,
+  "batch": 4,
+  "learning_rate": 0.0001,
+  "warmup": 100,
+  "seed": 2,
+  "device": "mps",
+  "demonstrations": 6935,
+  "tables_fitted_on": 2796,
+  "tuning_demonstrations": 403,
+  "chunk": 50,
+  "steps_done": 1000,
+  "minutes": 99.9,
+  "memory_gib": 4.36,
+  "history": [
+    {
+      "step": 0,
+      "tuning_mm": {
+        "median": 308.7,
+        "worst": 622.3
+      }
+    },
+    {
+      "step": 500,
+      "loss": 0.4165,
+      "tuning_mm": {
+        "median": 297.7,
+        "worst": 633.1
+      }
+    },
+    {
+      "step": 1000,
+      "loss": 0.3912,
+      "tuning_mm": {
+        "median": 287.4,
+        "worst": 605.9
+      }
+    }
+  ]
+}
