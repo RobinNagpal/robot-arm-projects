@@ -619,3 +619,33 @@ def test_one_real_table_through_the_real_cell():
     # A look reaches only as far as the camera does. On a table this crowded
     # that is less than the whole table from at least one of the two poses.
     assert min(len(first.seen), len(second.seen)) < result.glasses
+
+
+def test_a_solution_is_told_why_its_path_was_not_carried_out():
+    """Silence after a refusal would be a lie, so the next look carries the reason.
+
+    The arm does not move when a path is refused, so the next look is the same
+    table seen from the same place. Without a reason attached, a solution
+    cannot tell "the cell refused my path" from "my push did nothing", and
+    those two call for opposite responses: try somewhere else, or try harder.
+    """
+    reasons: list[str] = []
+
+    class _Watching:
+        name = "watching"
+
+        def begin(self, seed: int) -> None:
+            self.answers = 0
+
+        def answer(self, look):
+            reasons.append(look.refused)
+            self.answers += 1
+            if self.answers > 3:
+                return Done("seen enough")
+            # Far too long for the bench to accept, so it is refused every time.
+            return Chunk(0, tuple(Waypoint(0.48, -0.26, TRAVEL_HEIGHT, 0.0) for _ in range(900)),
+                         (0.48, -0.26))
+
+    clear_table(_Watching(), 0, 400.0)
+    assert reasons[0] == "", "nothing has been refused before the first answer"
+    assert any(reason for reason in reasons[1:]), "a refusal must reach the solution"

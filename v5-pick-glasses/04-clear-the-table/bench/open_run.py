@@ -366,10 +366,18 @@ def clear_table(
     jaw = HOME
     answers, interlocks = 0, 0
     ended_by = RAN_OUT
+    # Why the last answer was not carried out, which the next look carries.
+    # Without it the solution is shown an unchanged table and cannot tell a
+    # refusal from a push that did nothing, and those call for opposite
+    # responses.
+    refused = ""
     while True:
         picture, seen = cell.view(jaw)
-        answer = solution.answer(Look(picture=picture, seen=seen, jaw=jaw, seconds_left=clock.left))
+        answer = solution.answer(
+            Look(picture=picture, seen=seen, jaw=jaw, seconds_left=clock.left, refused=refused)
+        )
         answers += 1
+        refused = ""
 
         if isinstance(answer, Done):
             ended_by = SAID_DONE
@@ -388,8 +396,9 @@ def clear_table(
         if not clock.enough_for(answer, jaw):
             break
 
-        if interlocked(answer, cell.truth()) is not None:
+        if (stopped := interlocked(answer, cell.truth())) is not None:
             interlocks += 1
+            refused = f"the cell would not drive the jaw into glass {stopped}, which would tip"
         else:
             try:
                 record = cell.follow(answer)
@@ -399,6 +408,7 @@ def clear_table(
                 # decided for the solution: it is shown the same table again.
                 tally.refused_by_bench += 1
                 tally.refused_because[str(refusal)] += 1
+                refused = str(refusal)
             else:
                 # The crossing really happened and no record holds it, so it
                 # is charged beside the record. The record covers the drop, the

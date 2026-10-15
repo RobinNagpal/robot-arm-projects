@@ -25,6 +25,14 @@ the arm there. Both kinds of solution are served by one look: the ones that
 work from numbers read ``seen``, and the ones that work from pictures read
 ``picture``, and neither is given more of the table than the camera caught.
 
+**A refusal is told to the solution, because silence is a lie.** The cell will
+not drive the jaw into a glass the physics says would tip rather than slide,
+and it will not follow a path it cannot follow. When either happens the arm
+does not move, so without ``refused`` the next look would be identical to the
+last one and the solution could not tell "my path was refused" from "my push
+did nothing". Those call for opposite responses — try elsewhere, or try
+harder — and a solution left guessing will waste its budget on one of them.
+
 **Saying "done" is part of the job.** Nothing else decides when a table is
 finished, so a solution that never says it is finished spends its whole budget,
 and a solution that says it too early is marked on a table it left crowded.
@@ -54,7 +62,8 @@ class Look:
     picture: np.ndarray  # what the camera on the arm sees from where the jaw is now
     seen: tuple[Seen, ...]  # the glasses inside that picture, measured as problem 3 measures them
     jaw: Waypoint  # where the jaw is standing, in the same numbers a path is written in
-    seconds_left: float  # arm time left in this table's budget
+    seconds_left: float  # arm time left in the budget
+    refused: str = ""  # why the last path was not carried out, and empty when it was
 
 
 @dataclass(frozen=True)

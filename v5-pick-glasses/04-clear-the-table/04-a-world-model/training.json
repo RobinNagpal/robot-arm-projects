@@ -1,0 +1,50 @@
+{
+  "round_1": {
+    "tables": 1200,
+    "pushes": 5404,
+    "toppled": 603,
+    "arm_seconds": 33876.4,
+    "arm_minutes": 564.6,
+    "laptop_seconds": 302.8,
+    "share_that_toppled": 0.104,
+    "labels_measured": 0.741
+  },
+  "validation": {
+    "tables": 150,
+    "pushes": 658,
+    "toppled": 72,
+    "arm_seconds": 4156.5,
+    "arm_minutes": 69.3,
+    "laptop_seconds": 37.1,
+    "share_that_toppled": 0.106,
+    "labels_measured": 0.747
+  },
+  "model": {
+    "pushes": 658,
+    "landing_mm_median": 5.7,
+    "landing_mm_90th": 38.3,
+    "glass_moved_mm_median": 0.8,
+    "pushes_that_moved_the_glass": 254,
+    "landing_mm_median_when_moved": 14.0,
+    "landing_mm_90th_when_moved": 49.5,
+    "glass_moved_mm_median_when_moved": 34.9,
+    "toppled": 70,
+    "safe": 588,
+    "topples_caught_at_0.01": 57,
+    "safe_pushes_flagged_at_0.01": 116,
+    "topples_caught_at_0.1": 53,
+    "safe_pushes_flagged_at_0.1": 97,
+    "topples_caught_at_0.5": 49,
+    "safe_pushes_flagged_at_0.5": 82
+  },
+  "planned": {
+    "tables": 300,
+    "pushes": 1482,
+    "toppled": 106,
+    "arm_seconds": 8659.2,
+    "arm_minutes": 144.3,
+    "laptop_seconds": 131.4,
+    "share_that_toppled": 0.063,
+    "labels_measured": 0.78
+  }
+}
