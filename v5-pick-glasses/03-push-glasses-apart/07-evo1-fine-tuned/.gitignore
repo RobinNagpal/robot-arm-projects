@@ -1,0 +1,14 @@
+# The fitted action half: 122 million numbers a seed, which is about half a
+# gigabyte each. train.py makes it again from solution 6's demonstrations, so
+# nothing is lost by leaving it out. What the fitting did (training.json) and
+# how its numbers were scaled (stats.json) are small and stay in, because
+# those are what a reader needs.
+fitted*/head.pt
+videos/
+__pycache__/
+
+# A short run writes a scratch scorecard beside the real one, and the
+# scorecard now writes a per-table sibling beside whatever it saves.
+partial.json
+partial-tables.json
+asking-partial.json

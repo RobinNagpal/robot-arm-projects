@@ -46,10 +46,11 @@ slides or tips, the refusal for glasses that cannot be pushed at all, and the
 loop of plan, feel and look again all live in [pushing without
 toppling](../pushing-without-toppling.md).
 
-## The six, in one table
+## The seven, in one table
 
 They are ordered by **how much of the pushing the model is asked to own**,
-which is what decides both the work involved and what can go wrong.
+which is what decides both the work involved and what can go wrong. The first
+six are measured; the seventh was added later and is being measured now.
 
 | # | Solution | What is learned | Model and framework | Licence |
 |---|---|---|---|---|
@@ -59,6 +60,7 @@ which is what decides both the work involved and what can go wrong.
 | 4 | [A world model, then plan with it](04-a-world-model.md) | what a push does | an ensemble in PyTorch, then TD-MPC2 | permissive |
 | 5 | [A foundation model as it downloads](05-smolvla-as-it-downloads.md) | nothing | SmolVLA, LeRobot | check the weights |
 | 6 | [The same model, fine-tuned here](06-smolvla-fine-tuned.md) | all of it, from a borrowed start | SmolVLA with LoRA, LeRobot | check the weights |
+| 7 | [A newer, larger borrowed model](07-evo1-fine-tuned.md) | all of it, from a borrowed start | Evo-1 on InternVL3-1B, LeRobot | check the weights |
 
 Three carry a **second way** rather than a document of their own:
 
@@ -68,6 +70,13 @@ Three carry a **second way** rather than a document of their own:
   shelf.
 - **Solution 6** fine-tunes SmolVLA, or π0.5, to see whether a markedly larger
   foundation model helps.
+
+**Solution 7 is that question asked properly rather than as a second way.** It
+fits Evo-1, which is about seventy per cent larger than SmolVLA and about two
+years newer, on solution 6's own demonstrations through solution 5's own
+reading and loop. So the only thing that differs between solutions 6 and 7 is
+the borrowed model, and the gap between their scores is what a newer and
+larger model is worth here.
 
 ## What each comparison isolates
 

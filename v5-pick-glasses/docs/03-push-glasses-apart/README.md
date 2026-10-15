@@ -29,7 +29,10 @@ share is described once in [the cell](../the-cell.md).
 5. [**The six solutions**](solutions/overview.md) — what they share, what each
    changes, and which pair to compare first.
 
-## The six
+## The seven
+
+The first six are measured. The seventh was added later, to ask whether a
+newer and larger borrowed model helps, and is being measured now.
 
 | # | Solution | Model and framework | What is learned |
 |---|---|---|---|
@@ -39,9 +42,10 @@ share is described once in [the cell](../the-cell.md).
 | 4 | [A world model, then plan with it](solutions/04-a-world-model.md) | an ensemble in PyTorch, then TD-MPC2 | what a push does |
 | 5 | [A foundation model as it downloads](solutions/05-smolvla-as-it-downloads.md) | SmolVLA, LeRobot | nothing |
 | 6 | [The same model, fine-tuned here](solutions/06-smolvla-fine-tuned.md) | SmolVLA with LoRA, LeRobot | all of it |
+| 7 | [A newer, larger borrowed model](solutions/07-evo1-fine-tuned.md) | Evo-1 on InternVL3-1B, LeRobot | all of it |
 
 Each document opens with a block saying what it uses, how the output is
-produced, how it differs from the other five, and what it costs — so the six can
+produced, how it differs from the others, and what it costs — so they can
 be read side by side without reading any of them in full.
 
 **Solutions 5 and 6 are the pair to look at first.** Same library, same model,
