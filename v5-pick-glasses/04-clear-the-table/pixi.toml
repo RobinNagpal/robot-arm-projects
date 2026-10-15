@@ -5,11 +5,12 @@ description = "Problem 4: the arm's own camera, and a table marked when the cloc
 channels = ["conda-forge"]
 platforms = ["osx-arm64", "linux-64"]
 
-# Deliberately lighter than problem 3's environment. Nothing here learns yet,
-# so there is no PyTorch and no LeRobot; the first solutions are geometry, and
-# the physics, the pictures and the drawing are all this needs. A learned
-# solution that arrives later adds what it needs rather than everybody paying
-# for it now.
+# This started lighter than problem 3's environment, because the first two
+# solutions are geometry and nothing in them learns. The learned solutions
+# have now arrived, so the libraries they need are here too, pinned exactly as
+# problem 3 pins them: the two problems are meant to be compared, and a
+# comparison between two versions of the same borrowed model would measure the
+# versions.
 [dependencies]
 python = "3.12.*"
 numpy = ">=2.0,<2.3"
@@ -19,10 +20,24 @@ py-opencv = ">=4.9,<4.14"
 matplotlib = ">=3.8"
 pytest = ">=7"
 ruff = ">=0.4"
+# Solution 2 borrows problem 3's ranker, which is gradient-boosted trees, so
+# the library that defines them has to be here to load the fitted file.
+scikit-learn = ">=1.4"
+# The learned solutions. Every pin below is problem 3's own, for the reason in
+# the comment above the dependency list.
+pytorch = ">=2.7,<2.12"
+setuptools = "<81"
+packaging = "<26"
+fsspec = "<=2026.2.0"
+av = ">=15,<16"
 
 [pypi-dependencies]
 # The physics engine the pushes happen in, the same one problem 3 uses.
 mujoco = ">=3.3"
+# Where the borrowed model and the chunked policy come from, as in problem 3.
+lerobot = { version = ">=0.6,<0.7", extras = ["smolvla", "dataset"] }
+diffusers = ">=0.38,<0.40"
+peft = ">=0.17,<0.22"
 
 [activation.env]
 # Three places, and the third is the point. The project's own modules, this
