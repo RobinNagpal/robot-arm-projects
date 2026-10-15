@@ -75,4 +75,4 @@ built pipelines uses one.
 ← [Problem 3 — glasses standing too close](../03-push-glasses-apart)
 → [Problem 6 — kinds whose proportions are unknown](../problem-6)
 
-[The five problems](../README.md) has the map.
+[The six problems](../README.md) has the map.

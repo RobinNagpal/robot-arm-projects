@@ -20,7 +20,7 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
-from matplotlib.patches import Circle, FancyArrowPatch, Rectangle  # noqa: E402
+from matplotlib.patches import Circle, FancyArrowPatch, Rectangle, Wedge  # noqa: E402
 
 IMAGES = Path(__file__).resolve().parents[2] / "images"
 
@@ -53,39 +53,74 @@ def _bare(axes) -> None:
         side.set_visible(False)
 
 
-# --------------------------------------------------------- the five problems
+# ---------------------------------------------------------- the six problems
+
+# What the camera on the arm's wrist can see in one look, drawn in panel 4 as a
+# wedge from the arm: a direction, an opening angle and a range. The glasses are
+# marked seen or unseen from these same numbers, so the picture cannot disagree
+# with itself.
+WRIST_AT = (0.52, 0.20)
+WRIST_REACH = 0.45
+WRIST_FROM, WRIST_TO = 94.0, 150.0
 
 
-def five_problems() -> None:
+def _wrist_sees(x: float, y: float) -> bool:
+    """Whether a glass at (x, y) falls inside the wedge drawn in panel 4."""
+    import math
+
+    dx, dy = x - WRIST_AT[0], y - WRIST_AT[1]
+    bearing = math.degrees(math.atan2(dy, dx))
+    return math.hypot(dx, dy) <= WRIST_REACH and WRIST_FROM <= bearing <= WRIST_TO
+
+
+def six_problems() -> None:
     """The ladder: one panel per problem, each adding one difficulty.
 
     A table on its own does not show that the problems *contain* each other,
-    and that is the point of the ordering.
+    and that is the point of the ordering. Six panels in two rows rather than
+    one row of six, because one row of six leaves each table too small to read.
     """
-    figure, axes = plt.subplots(1, 5, figsize=(15.5, 3.6))
+    figure, grid = plt.subplots(2, 3, figsize=(11.4, 7.8))
     figure.patch.set_facecolor(PAPER)
+    axes = grid.flatten()
 
     titles = [
         "1. One glass",
         "2. Many, one kind",
         "3. Too close",
-        "4. Several kinds",
-        "5. Unknown\nproportions",
+        "4. Clear the table",
+        "5. Several kinds",
+        "6. Unknown proportions",
     ]
     adds = [
         "the whole pipeline,\nnothing in the way",
         "which pixels are\nwhich glass",
         "move them apart\nwithout lifting",
+        "the camera is on the arm,\nand it says when it is done",
         "a different rule\nper glass",
         "a rule for a glass\nnobody measured",
     ]
-    built = [True, False, False, False, False]
+    states = [
+        ("built", GOOD),
+        ("designed, not built", MUTED),
+        ("solutions built", GOOD),
+        ("being built", INK),
+        ("learned one built", GOOD),
+        ("stated", MUTED),
+    ]
 
     # Where the glasses stand in each panel, and how wide each one is.
     scenes = [
         [(0.50, 0.50, 0.11)],
         [(0.25, 0.62, 0.10), (0.52, 0.30, 0.10), (0.75, 0.66, 0.10), (0.44, 0.78, 0.10)],
         [(0.34, 0.50, 0.11), (0.50, 0.46, 0.11), (0.70, 0.62, 0.11)],
+        # Problem 4's table: a touching pair, a touching group of three, and one
+        # glass that already has room, which is how its draw is specified.
+        [
+            (0.28, 0.45, 0.07), (0.42, 0.45, 0.07),
+            (0.62, 0.66, 0.07), (0.75, 0.71, 0.07), (0.71, 0.56, 0.07),
+            (0.22, 0.73, 0.07),
+        ],
         [(0.26, 0.60, 0.13), (0.50, 0.34, 0.08), (0.74, 0.64, 0.10)],
         [(0.26, 0.60, 0.15), (0.50, 0.34, 0.06), (0.74, 0.64, 0.12)],
     ]
@@ -100,10 +135,30 @@ def five_problems() -> None:
             Rectangle((0.06, 0.16), 0.88, 0.70, fill=False, ec=MUTED, lw=1.0, zorder=1)
         )
 
+        if index == 3:
+            # One look from the camera the arm carries, and the arm it is on.
+            axis.add_patch(
+                Wedge(
+                    WRIST_AT, WRIST_REACH, WRIST_FROM, WRIST_TO,
+                    fc=GOOD, alpha=0.14, ec=GOOD, lw=0.9, zorder=2,
+                )
+            )
+            axis.plot(*WRIST_AT, marker="^", ms=8, color=INK, zorder=4)
+            axis.text(
+                WRIST_AT[0] + 0.05, WRIST_AT[1], "one look",
+                ha="left", va="center", fontsize=8, color=GOOD, zorder=5,
+            )
+
         for x, y, r in scene:
             # Problem 6 is the one where the proportions vary, so its glasses
             # are drawn as outlines rather than as one repeated shape.
-            style = dict(fc="none", ec=GLASS, lw=1.6) if index == 4 else dict(fc=GLASS, alpha=0.55, ec=GLASS)
+            if index == 5:
+                style = dict(fc="none", ec=GLASS, lw=1.6)
+            elif index == 3 and not _wrist_sees(x, y):
+                # Outside the one look, so not seen until the arm moves.
+                style = dict(fc=MUTED, alpha=0.25, ec=MUTED)
+            else:
+                style = dict(fc=GLASS, alpha=0.55, ec=GLASS)
             axis.add_patch(Circle((x, y), r, zorder=3, **style))
 
         if index == 2:
@@ -116,24 +171,29 @@ def five_problems() -> None:
             )
             axis.text(0.55, 0.30, "drag", color=WARN, fontsize=8, va="center", zorder=5)
 
-        if index == 3 or index == 4:
+        if index == 3:
+            axis.text(
+                0.70, 0.44, "not seen yet", ha="center", va="center",
+                fontsize=8, color=MUTED, zorder=5,
+            )
+
+        if index == 4 or index == 5:
             for x, y, _radius in scene:
                 axis.text(x, y, "?", ha="center", va="center", fontsize=11, color=INK, zorder=5)
 
-        axis.set_title(title, fontsize=10.5, color=INK, pad=9)
-        axis.text(0.5, 0.045, add, ha="center", va="center", fontsize=8.2, color=MUTED)
+        axis.set_title(title, fontsize=11, color=INK, pad=9)
+        axis.text(0.5, 0.045, add, ha="center", va="center", fontsize=8.4, color=MUTED)
+        label, colour = states[index]
         axis.text(
-            0.5, 0.925, "built" if built[index] else "not built yet",
-            ha="center", va="center", fontsize=7.6,
-            color=GOOD if built[index] else MUTED,
+            0.5, 0.925, label, ha="center", va="center", fontsize=7.8, color=colour,
         )
 
     figure.suptitle(
         "Each problem takes away something the one before it could assume",
-        fontsize=11.5, color=INK, y=1.03,
+        fontsize=12.5, color=INK, y=0.99,
     )
-    figure.tight_layout()
-    _save(figure, "the-five-problems.png")
+    figure.tight_layout(rect=(0, 0, 1, 0.96), h_pad=3.0)
+    _save(figure, "the-six-problems.png")
 
 
 # ------------------------------------------------------------- problem 1
@@ -437,7 +497,7 @@ def problem_3_push_low_or_it_topples() -> None:
 # ------------------------------------------------------------- problem 5
 
 
-def problem_4_one_wrong_name() -> None:
+def problem_5_one_wrong_name() -> None:
     """What a misnamed kind costs, drawn as the chain it breaks.
 
     In problem 1 a wrong name shows up at once as a refused grip. With several
@@ -649,8 +709,8 @@ def where_the_learned_part_sits() -> None:
 DRAWINGS = {
     "where-the-learned-part-sits": where_the_learned_part_sits,
     "problem-3-an-off-centre-push-spins": problem_3_an_off_centre_push_spins,
-    "problem-5-one-wrong-name": problem_4_one_wrong_name,
-    "the-five-problems": five_problems,
+    "problem-5-one-wrong-name": problem_5_one_wrong_name,
+    "the-six-problems": six_problems,
     "problem-1-what-is-asked": problem_1,
     "problem-2-where-can-the-camera-stand": problem_2_where_can_the_camera_stand,
     "problem-3-the-room-a-gripper-needs": problem_3_the_room_a_gripper_needs,

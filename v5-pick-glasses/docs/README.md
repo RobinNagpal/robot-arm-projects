@@ -1,10 +1,10 @@
-# The five problems
+# The six problems
 
-This project is not one task. It is five, and they get harder in a particular
+This project is not one task. It is six, and they get harder in a particular
 way: **each one takes away something the one before it was allowed to assume.**
 One folder each.
 
-![The five problems, and what each one adds](../images/the-five-problems.png)
+![The six problems, and what each one adds](../images/the-six-problems.png)
 
 Read [`../problem-statement.md`](../problem-statement.md) first if you have
 not. It says what the task is, why glasses were chosen, what the arm is allowed
@@ -14,9 +14,10 @@ to know, and what counts as done. Everything here follows from it.
 | --- | --- | --- | --- |
 | **1** | [One glass, start to finish](problem-1) | the glass is on the rack | **built** |
 | **2** | [Segment the glasses](02-segment-glasses) | a set of pixels per glass | designed, not built |
-| **3** | [Glasses standing too close](03-push-glasses-apart) | the glasses are far enough apart to grip | designed, not built |
-| **4** | [Several kinds at once](problem-5) | the table is clear | learned version built |
-| **5** | [Kinds whose proportions are unknown](problem-6) | the table is clear | stated |
+| **3** | [Glasses standing too close](03-push-glasses-apart) | the glasses are far enough apart to grip | designed, six solutions built |
+| **4** | [Clear the table](04-clear-the-table) | every glass has room, and the arm has said so | **being built** |
+| **5** | [Several kinds at once](problem-5) | the table is clear | learned version built |
+| **6** | [Kinds whose proportions are unknown](problem-6) | the table is clear | stated |
 
 ## Why they are in this order
 
@@ -40,9 +41,20 @@ enough together that the gripper cannot get round one without fouling its
 neighbour. They have to be moved apart by **dragging them across the table**,
 because lifting one is the thing that is not possible yet.
 
-**Problem 5** joins all three up and adds the part none of them has: several
-kinds at once, so the rule changes per glass and naming the kind becomes
-load-bearing.
+**Problem 4** keeps problem 3's task and takes away the help that came from
+outside the arm. In problem 3 a camera fixed above the table sees every glass
+at once, and the arm is handed one push at a time: something outside it decides
+whether that push may be carried out, marks it, and says when the table is
+finished. Neither of those is part of the arm. Here the only camera is the one
+the arm carries, so looking at a corner of the table costs a movement, and
+nothing is handed over push by push. The arm looks, pushes, looks again, and
+says for itself when it has finished. The table is then marked once, on how
+the glasses are arranged when the arm stopped. It ends where problem 3 ends,
+with every glass given room, so problem 5 can stand on either answer.
+
+**Problem 5** joins the first three up and adds the part none of them has:
+several kinds at once, so the rule changes per glass and naming the kind
+becomes load-bearing.
 
 **Problem 6** takes away the proportions. The kinds are still the four shapes,
 but no two glasses of a kind are alike and nothing is written down. This is the
@@ -55,10 +67,10 @@ Each problem folder has a `problem.md` that states the problem in full — what
 is on the table, what the arm is not told, what makes it hard, and what "done"
 means. After that they differ, because the problems do:
 
-- **Problems 1, 4 and 5** are the whole pipeline, so they are written as the
+- **Problems 1, 5 and 6** are the whole pipeline, so they are written as the
   same six *steps*: find it, measure it, name it, choose the grip, squeeze,
   turn it over. Problem 1 gives each step a document of its own, because it is
-  built. Problems 4 and 5 take the six as a section of `problem.md`, saying
+  built. Problems 5 and 6 take the six as a section of `problem.md`, saying
   what changes at each and nothing else.
 - **Problems 2 and 3** are not the whole pipeline and do not have all the
   steps. Problem 2 stops at a set of pixels per glass; problem 3 stops at
@@ -71,6 +83,12 @@ means. After that they differ, because the problems do:
   folder also has a `learned-with-hardware.md` holding the answers that cannot
   — a foundation model, a fine-tune, a reinforcement-learning policy — beside
   the condition each one fails.
+- **Problem 4** does not pick anything up either, so it has no six steps. Its
+  folder is built like problem 3's: `problem.md` for the problem,
+  `the-examiner.md` for how a run is marked, and `solutions/` for the answers.
+  What is marked is different, because the arm declares its own finish — the
+  arrangement of the glasses when it stopped, the arm time it spent getting
+  there, and whether it knew it had finished.
 - **Problem 5** has both: the six steps in `problem.md`, and a `solutions/`
   folder with a `solution-overview.md` and nine solutions, split into
   `programmed/` and `learned/` as problem 2's are. Most of them are

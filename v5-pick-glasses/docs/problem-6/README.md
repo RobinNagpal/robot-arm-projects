@@ -35,4 +35,4 @@ So the work here does not start on the rules. It starts on the cell.
 
 ← [Problem 5 — several kinds at once](../problem-5)
 
-[The five problems](../README.md) has the map.
+[The six problems](../README.md) has the map.

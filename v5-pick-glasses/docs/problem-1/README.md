@@ -5,7 +5,7 @@ Six documents, one per stage of a run, in the order the arm does them. Read
 glass is picked up and racked, and that one explains what is being asked and
 what is deliberately absent from it.
 
-This is the only one of the [five problems](../../problem-statement.md#five-problems-in-order-of-difficulty)
+This is the only one of the [six problems](../../problem-statement.md#six-problems-in-order-of-difficulty)
 that is built. The other four are in the folders beside this one.
 
 ## The arc

@@ -85,7 +85,7 @@ doubt has to end the attempt rather than be pushed through.
   Universal Robots publish ±4.0 N of accuracy for it and a wine glass weighs
   about 2 N, so it cannot weigh one.
 - **The glasses**, standing on the arm's right. How many, of how many kinds,
-  and how close together is what the five problems below vary. They are opaque and each is a different
+  and how close together is what the six problems below vary. They are opaque and each is a different
   solid colour, which is an assumption rather than an accident — see below. Each run draws them fresh from four kinds —
   straight, tapered, stemmed and short-stemmed — with the proportions of each
   one drawn at random inside a plausible range. A seed picks the set, so a run
@@ -141,31 +141,32 @@ is inside another, and none is being held. A tray of glasses jumbled together
 is a different task.
 
 The *apart* half of that is the one the problems below take away by degrees.
-Problem 1 has one glass, so it does not arise. Problems 2 and 4 set them out at
+Problem 1 has one glass, so it does not arise. Problems 2 and 5 set them out at
 least 150 mm from each other, which is far enough for the arm to reach any of
-them. Problem 3 is the one that removes it: the glasses may be standing close
-enough to foul each other, and moving them apart is the whole of that problem.
+them. Problems 3 and 4 are the ones that remove it: the glasses may be standing
+close enough to foul each other, and moving them apart is the whole of both.
 
 Upright, however, is assumed throughout. A fallen glass is out of scope in all
-five.
+six.
 
-## Five problems, in order of difficulty
+## Six problems, in order of difficulty
 
-The task above is not one problem. It is five, and they get harder in a
+The task above is not one problem. It is six, and they get harder in a
 particular way: each one takes away something the one before it was allowed to
 assume. Taking them in order is deliberate, because each answer is a thing the
 next problem can stand on, and because it keeps clear which difficulty is being
 solved at any moment.
 
-![The five problems, and what each one adds](images/the-five-problems.png)
+![The six problems, and what each one adds](images/the-six-problems.png)
 
 | | The problem | What is new in it | Where it is worked out |
 | --- | --- | --- | --- |
 | **1** | One glass on the table | everything, from an empty start | [`docs/problem-1/`](docs/problem-1/) — **built** |
 | **2** | Segment the glasses | telling them apart, from few viewpoints | [`docs/02-segment-glasses/`](docs/02-segment-glasses/) — designed |
-| **3** | Glasses standing too close | moving one without lifting it | [`docs/03-push-glasses-apart/`](docs/03-push-glasses-apart/) — designed |
-| **4** | Several kinds at once | a different rule per glass, in one run | [`docs/problem-5/`](docs/problem-5/) — stated |
-| **5** | Kinds whose proportions are unknown | a rule that has never seen this glass | [`docs/problem-6/`](docs/problem-6/) — stated |
+| **3** | Glasses standing too close | moving one without lifting it | [`docs/03-push-glasses-apart/`](docs/03-push-glasses-apart/) — designed, six solutions built |
+| **4** | Clear the table | seeing with the arm's own camera, and knowing when to stop | [`docs/04-clear-the-table/`](docs/04-clear-the-table/) — **being built** |
+| **5** | Several kinds at once | a different rule per glass, in one run | [`docs/problem-5/`](docs/problem-5/) — learned version built |
+| **6** | Kinds whose proportions are unknown | a rule that has never seen this glass | [`docs/problem-6/`](docs/problem-6/) — stated |
 
 Each has its own folder under [`docs/`](docs/), with the problem written out
 in full and the solution worked through. What follows is the short version of
@@ -218,13 +219,40 @@ This problem is about separation, and only separation. It starts from pixels
 and ends with glasses far enough apart to be picked up. It does not pick
 anything up either.
 
+### Problem 4 — clear the table
+
+The same crowded table as problem 3, with two helpers taken away. Both are the
+same kind of help: something outside the arm doing part of the job for it.
+
+The first is the camera above the table. Problem 3 is watched by a camera fixed
+750 mm above the middle of the glass zone, looking straight down, which sees
+every glass in one picture for nothing. Here that camera is gone and the arm
+has only the one on its own wrist, so each part of the table has to be visited
+to be seen. Looking is now a movement, and a movement costs time.
+
+The second is the hand-over. Problem 3 gives one push at a time to an examiner,
+which decides whether it may be carried out, marks it, and says when the table
+is finished. Here nothing does that. The arm looks, pushes, looks again, and
+**says for itself when it has finished**. Knowing that a job is done is part of
+the job.
+
+What is left is the arrangement on the table when the arm stops. That is what
+the problem is marked on: whether every glass now has the room the gripper
+needs, how much arm time it took, and whether anything was knocked over. The
+cell keeps one rule of its own, the refusal to drive into a glass the physics
+says would tip rather than slide, because a real cell keeps its safety checks
+whatever the arm thinks.
+
+This problem still does not pick anything up. It ends with the glasses on the
+table, far enough apart to be picked up by problem 5.
+
 ### Problem 5 — several kinds at once
 
 A few kinds of glass stand on the table together. The arm has to measure each
 one, decide which kind it is, pick it up, invert it and rack it — one at a
 time, until the table is clear.
 
-This is problems 1, 2 and 3 joined up, plus the part neither of them has:
+This is problems 1, 2 and 3 joined up, plus the part none of them has:
 **the rule changes per glass.** A wine glass is held by the stem and a tumbler
 low on its wall, so naming the kind is now load-bearing, and naming it wrongly
 means holding a glass in a place that was never checked.
@@ -240,12 +268,17 @@ problem refuses to write a measurement down. A rule that says *hold the
 narrowest part below the widest* survives this. A table of grip heights does
 not.
 
-## What "done" means, for all five
+## What "done" means, for all six
 
 A glass is **done** when it is standing mouth-down over a slot peg with the
 fingers open and the arm clear of it. A glass is **left standing** when any
 step cannot be completed safely, and every one of those ends with a sentence
 saying which step and why.
+
+Problems 2, 3 and 4 stop before the rack, so they each end somewhere earlier: a
+set of pixels per glass, glasses far enough apart to be gripped, and a table
+the arm itself says it has finished. The rule below holds in all six anyway,
+because it is about what to do with a doubt rather than about the rack.
 
 **Leaving a glass standing is a success, not a failure.** This is the rule
 that most shapes the code. A run that racks four glasses and refuses one with a

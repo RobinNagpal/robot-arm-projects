@@ -380,6 +380,6 @@ detail, and both halves of that trade show up here.
 
 ## Where to go next
 
-- [The five problems](README.md) — the map.
+- [The six problems](README.md) — the map.
 - [Problem 1](problem-1/) — one glass, start to finish.
 - [Problem 2](02-segment-glasses/) — segment the glasses.

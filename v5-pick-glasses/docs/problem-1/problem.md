@@ -6,7 +6,7 @@ about the glass is known before the run starts.
 
 ![Problem 1: one glass, and nothing known about it in advance](../../images/problem-1-what-is-asked.png)
 
-This is the first of [five problems](../../problem-statement.md#five-problems-in-order-of-difficulty)
+This is the first of [six problems](../../problem-statement.md#six-problems-in-order-of-difficulty)
 and it is the only one that is built. It is worth being exact about what makes it
 hard, because most of that difficulty is still there in the other four. And
 about what makes it easy, because that part is what the next problems take
