@@ -1158,6 +1158,111 @@ situation in which it is most reliable. Combined with it being stochastic and
 with training varying by seed, that is why the examiner insists that one run is not
 a measurement and that a result quoted without a spread is not a result.
 
+## The commonest refusal reason is not the reason it fails
+
+One number on this solution's scorecard invites a wrong conclusion, so it is
+worth settling here. The reason given most often for a glass left on the table
+is **"push budget spent"**, which reads as though the solution was stopped
+early and would do better if it were allowed more tries. That is not what is
+happening, and the difference matters because it points at a different repair.
+
+The budget is the shared one: four pushes for any single glass and sixteen for a
+table, held in the examiner so that the six solutions' push counts mean the same
+thing. Raising it is therefore easy to test, and it has been tested. Each of the
+three fitted seeds was run again over the same fifty held-out tables at four
+budgets, with nothing else changed:
+
+| budget, per glass and per table | seed 0 | seed 1 | seed 2 |
+|---|---|---|---|
+| 4 and 16, the shared budget | 64 | 51 | 63 |
+| 8 and 32 | 65 | 52 | 64 |
+| 16 and 64 | 65 | 52 | 64 |
+| 32 and 128 | 66 | 52 | 64 |
+
+The numbers are glasses racked out of 251. **Eight times the budget buys one or
+two glasses**, while the pushes made rise from about 440 to about 3,000. So the
+budget is where the run stops, which is not the same as the reason it stops.
+
+The reason it stops is the one the blocked descents already show. Three pushes
+in four end before they begin, because the jaw meets a glass while coming down,
+and a push that moves nothing still costs a push. Granting more of them simply
+buys more of the same. A refusal recorded as "budget spent" is therefore the
+last in a line of wasted attempts rather than a solution cut short, and the
+repair is to stop wasting them rather than to allow more.
+
+Two things follow for anyone reading the other solutions beside this one. First,
+the shared budget is not a ceiling the examiner imposes on everybody: solutions
+1 and 2 never spend it once in fifty tables, and [solution
+4](04-a-world-model.md) spends it for ten glasses of 251. It appears here
+because this solution spends pushes on nothing, so the count is a symptom and
+not a cause. Second, the budget was deliberately left at four and sixteen after
+this was measured. These are the held-out tables, and a number chosen because it
+scored better on them would make every later result partly a measurement of that
+choosing.
+
+## Most of what the policy has to learn is the coordinate system
+
+If the budget is not the reason this solution fails, the blocked descents are,
+and those come from the policy putting the jaw down about 50 mm away from where
+the teacher put it. That reads like a limit of the model. Measurement says it is
+mostly a limit of **how the target was written down**, which is a different
+thing and a cheaper one to change.
+
+Here is the idea. A chunk's waypoints are currently written as positions on the
+table, so the number the policy must produce depends on where the table's origin
+happens to be. The same push, written as an offset from the glass it is pushing,
+is a different number for the same motion. And that offset can be turned once
+more, so that one number runs along the push and the other across it. The motion
+is identical in all three; only the description changes.
+
+What matters is that **a description with less spread in it is a smaller thing
+to learn**, in the same way that fitting a line through points scattered in a
+narrow band is easier than fitting one through points scattered widely. So the
+three descriptions were measured on 477 demonstrations from 400 tables, with the
+spread reported as a radius: the typical distance from the middle of the
+distribution.
+
+| how the target is written | where the chunk starts | where the chunk ends |
+|---|---|---|
+| as a position on the table | 135.8 mm | 127.8 mm |
+| as an offset from the target glass | 46.2 mm | 39.2 mm |
+| as that offset in the push's own frame | **7.5 mm** | **25.8 mm** |
+
+The first column is the important one, because where the chunk starts is where
+the jaw comes down and so is what the blocked descents are about. Written on the
+table it varies by 135.8 mm. Written in the push's own frame it varies by
+**7.5 mm**, and the variation *across* the push direction is exactly zero.
+
+That zero is the teacher's own construction showing through. It always brings the
+jaw down on the line through the glass it means to push, a near-constant 46 mm
+behind the glass's measured middle. So in the right frame the descent point is
+almost a single number, and the 135.8 mm the policy currently has to learn is
+very largely the position of the table rather than anything about pushing. A
+model spending its capacity on that is spending it on the one part the examiner
+already measures and hands over for free.
+
+The second column behaves differently and is worth noticing. The aim keeps
+25.8 mm of spread in the push's own frame, and that spread is real: it is how
+far the teacher decided to push, which is a genuine decision that changes from
+table to table. So the measurement separates the two cleanly. Where to come down
+is nearly fixed once the glass and the heading are known, while how far to push
+is a decision that has to be learned.
+
+**One caveat, because this is not a free improvement.** Writing the action in
+the push's own frame means the policy has to produce a glass and a heading, since
+those are what define the frame. That is exactly the parameterisation
+[solution 1](01-one-fixed-nudge.md) and [solution 2](02-geometry-ranked.md)
+choose in, so adopting it moves this solution's vocabulary towards its teacher's
+and away from the plain copying of a trajectory that it currently demonstrates.
+That may well be the right trade, and the measurement above says it is a large
+one, but it is a change in what this solution *is* and not only in how well it
+does. If it is made, it belongs beside the present result as a variant rather
+than replacing it, so that both readings survive.
+
+Nothing has been fitted in the new frame yet, so there is no score for it. The
+numbers above come from `03-imitation-from-demonstrations/measure_frames.py`,
+which trains nothing and reads only the demonstration band.
+
 ## The general ideas behind this
 
 Nothing in this solution was invented for glassware. Every part of it is a

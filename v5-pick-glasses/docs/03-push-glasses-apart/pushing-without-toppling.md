@@ -336,6 +336,47 @@ outcome the system can absorb. This one it cannot, so the arithmetic is used to
 say no, and the two helpers above exist to catch the cases where the arithmetic
 said yes on the strength of a number nobody had.
 
+## Pushing more slowly does not help, and that has been measured
+
+A natural thought, on reading that about a fifth of chosen pushes topple a
+glass, is to push more gently. It is worth settling, because it would be a
+cheap change if it worked and a waste of effort if it did not.
+
+Look first at the limit itself. It compares half the glass's foot width, divided
+by the friction, against the height the jaw meets the glass at, and **no term in
+it mentions speed**. So the arithmetic predicts that slowing down changes
+nothing, because whether a glass slides or tips about its own edge is a balance
+of distances and not of momentum. A slow push and a fast push lean the glass by
+the same amount; they only take different times to do it.
+
+That prediction was then tested. The teacher chose one push on each of 367
+tables, and the same push was carried out five times on fresh copies of the
+table, at speeds from a quarter of the bench's own speed up to four times it:
+
+| push speed | glasses toppled, of 367 | median distance the glass moved |
+|---|---|---|
+| 0.005 m/s | 73, or 19.9% | 34.7 mm |
+| 0.01 m/s | 71, or 19.3% | 41.9 mm |
+| 0.02 m/s, the bench's speed | **66, or 18.0%** | **45.5 mm** |
+| 0.04 m/s | 73, or 19.9% | 41.3 mm |
+| 0.08 m/s | 92, or 25.1% | 32.2 mm |
+
+**Pushing four times more slowly toppled slightly more glasses, not fewer.**
+That difference is 1.9 percentage points against a standard error of 2.9, so the
+honest reading is that nothing happened, exactly as the arithmetic says. Speed
+is not a way out of this limit.
+
+Two smaller things in the table are worth keeping. Pushing four times *faster*
+is genuinely worse, by 7.1 percentage points, which is 2.3 standard errors and
+so is a real effect rather than noise. And the slow pushes moved glasses less
+far, which matters because the point of a push is to make room: the bench's own
+speed moved the median glass 45.5 mm, while a quarter of that speed moved it
+34.7 mm. So slowing down would cost room while buying no safety.
+
+The practical conclusion is that the refusal rule above is the only defence
+against toppling that this problem has, which is why so much of it is spent
+getting that rule right.
+
 ## Where to go next
 
 - [The problem](problem.md) — why dragging rather than lifting, the distances

@@ -69,6 +69,7 @@ are never fitted on. They are what the training diagnostic is measured against.
 | `loop.py` | Look, take what has room, gate, ask for a chunk, follow it |
 | `run.py` | The held-out tables, scored with the bench's `Repeats` |
 | `test_imitation.py` | The arithmetic, the shapes, the refusals and the interface |
+| `measure_frames.py` | How much of the target is the coordinate system. Fits nothing |
 
 The bench, the tables, the physics and the scoring are
 [`../bench/`](../bench), shared with every other solution.

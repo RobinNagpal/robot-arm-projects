@@ -86,6 +86,19 @@ counts mean the same thing across the six. `01-one-fixed-nudge` predates them
 and keeps its own 3 and 15, because its committed scorecard was measured at
 those numbers.
 
+**A glass refused for "push budget spent" has not necessarily been cut short.**
+The reason records where a run stopped, not why it was going badly, and the two
+come apart when a solution spends pushes that move nothing. Solutions 1 and 2
+never spend the budget in fifty tables and `04-a-world-model` spends it for ten
+glasses of 251, so it binds only where pushes are being wasted. It was measured
+on `03-imitation-from-demonstrations`, whose commonest refusal this is: raising
+the budget eightfold moves its score by one or two glasses of 251 while its
+pushes rise from about 440 to about 3,000. The budget was left where it is
+afterwards, because it is these fifty held-out tables that a change would have
+been chosen against.
+[The solution's document](../../docs/03-push-glasses-apart/solutions/03-imitation-from-demonstrations.md)
+holds the table.
+
 ## Repeats and the compute column
 
 `Scorecard` is one evaluation run. A stochastic solution uses `Repeats`, which

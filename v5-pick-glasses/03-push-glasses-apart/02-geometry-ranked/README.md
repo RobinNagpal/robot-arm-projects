@@ -213,6 +213,7 @@ held-out tables writes `partial.json`, never `results.json`.
 | `spread.py` | The measurement above |
 | `run.py` | The loop over the held-out tables, with `--rule` for the ablation |
 | `demos.py` | Demonstrations for solutions 3 and 6 |
+| `measure_push_speed.py` | Whether a slower push topples less. It does not |
 | `../bench/` | The tables, the physics and the scoring, shared by all six |
 
 **The enumerator is imported, not copied.** `candidates.py` loads
