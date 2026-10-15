@@ -70,6 +70,7 @@ are never fitted on. They are what the training diagnostic is measured against.
 | `run.py` | The held-out tables, scored with the bench's `Repeats` |
 | `test_imitation.py` | The arithmetic, the shapes, the refusals and the interface |
 | `measure_frames.py` | How much of the target is the coordinate system. Fits nothing |
+| `readings.py` | One look into a fixed row of 36 numbers, for the readings variant |
 
 The bench, the tables, the physics and the scoring are
 [`../bench/`](../bench), shared with every other solution.
@@ -207,6 +208,51 @@ seed that fitted closest to the teacher per waypoint is not the safest one. A
 closer fit does not make this solution safer, because it makes its pushes real,
 and a real push on a crowded table is the only thing here that can knock a
 glass over.
+
+## The readings variant — the same fits, told where the glasses are
+
+`measure_frames.py` showed that the descent point varies by 135.8 mm written as
+a position on the table and by 7.5 mm written in the push's own frame, so most of
+what the policy must learn is the coordinate system. The variant tests the
+cheapest repair for that: the policy keeps answering with absolute waypoints, and
+the readings the examiner already hands every solution go in beside the picture,
+as six slots of six numbers through `readings.py`. The model grows by 38,400
+numbers, which is less than one part in a thousand.
+
+```
+make collect                                   # the readings are recorded too
+pixi run python train.py --readings --seeds 1 --first-seed 0   # and 1, and 2
+pixi run python run.py --readings              # writes results-act-readings.json
+```
+
+Three seeds, the same 50 held-out tables. Averages across the three seeds:
+
+| | from the picture alone | with the readings |
+|---|---|---|
+| Glasses racked | 59.3 | 61.3 |
+| The three seeds separately | 64, 51, 63 | 61, 65, 58 |
+| Tables done | 2.0 (1 to 3) | **3.0 (3 every run)** |
+| Glasses toppled | 10.7 | 10.3 |
+| Landed from its aim, median | 43.9 mm | 37.7 mm |
+| Travel a run | 2,245 mm | 1,824 mm |
+| Pushes blocked on the way down | 366.3 | 370.3 |
+| Against the teacher, tables it saw | 20.4 to 20.7 mm | 17.2 to 19.3 mm |
+| Against the teacher, tables it did not | 48.1 to 52.4 mm | 48.3 to 52.9 mm |
+
+**The readings bought consistency, not glasses.** Two glasses of 251 is 0.4 of
+the run-to-run variation, so the score did not move. What moved is the spread:
+the bad seed is gone, all three now sit between 58 and 65 racked, and every run
+clears exactly 3 tables where before one seed managed 1. The spread on racked
+glasses halved, from 7.2 to 3.5.
+
+**The aim improved and the score did not, which locates the real limit.** The
+policy lands 6 mm closer to its teacher's target and travels a third less, so it
+used the readings; and the blocked descents did not budge. The binding
+constraint is the straight drop onto the chunk's first waypoint, not the aim,
+because what stops the jaw is usually not at the target but on the way to it.
+
+The picture-only numbers above remain this solution's result. This variant is
+recorded beside it in `results-act-readings.json`, not in place of it.
 
 ## Why it scores that way
 

@@ -20,12 +20,21 @@ import chunks
 import numpy as np
 import pytest
 from correction import CORRECTION, RANK, SCALING, TABLES, Fitted, missing
-from demonstrations import FEATURES, Watched, went_well
+from demonstrations import (
+    FEATURES,
+    FITTING_FIRST,
+    FITTING_TABLES,
+    TUNING_FIRST,
+    TUNING_TABLES,
+    Watched,
+    band,
+    went_well,
+)
 from partners import ACTION_SPAN, CAMERA, INSTRUCTION, SLOTS, to_jaw, to_state
 from work_cell.rack.layout import GLASS_ZONE
 from work_cell.table.layout import TABLE_CENTRE_XY, TABLE_SIZE
 
-from bench import PUSH_HEIGHT, TRAVEL_HEIGHT, Bench, Chunk, Push, Waypoint
+from bench import PUSH_HEIGHT, TEST_SEEDS, TRAVEL_HEIGHT, Bench, Chunk, Push, Waypoint
 
 PATHS = 40
 
@@ -281,3 +290,36 @@ def test_the_correction_settings_are_the_ones_the_document_describes():
     assert SCALING == 2 * RANK
     assert set(TABLES) == {"q_proj", "k_proj", "v_proj", "o_proj"}
     assert CORRECTION.name == "correction"
+
+
+# ------------------------------------------------------ the demonstration band
+
+
+def test_the_bands_are_solution_threes_bands():
+    # Solution 3 fits on 5200 tables from table 1000 and checks on 300 from
+    # table 8000. These two solutions exist to be compared as a small model
+    # against a large one, and that comparison only means something while both
+    # learn from the same material, so these four numbers are not free to drift.
+    assert (FITTING_FIRST, FITTING_TABLES) == (1000, 5200)
+    assert (TUNING_FIRST, TUNING_TABLES) == (8000, 300)
+
+
+def test_the_collection_starts_at_the_band_it_declares():
+    # The fault this guards against really happened: the constants above were
+    # moved to 1000 while the code that chose the band still passed a literal 0,
+    # so a whole collection ran over the wrong tables and looked correct.
+    assert band(check=False) == FITTING_FIRST
+    assert band(check=True) == TUNING_FIRST
+    assert band(check=False, first=42) == 42
+
+
+def test_neither_band_reaches_the_held_out_tables():
+    # Nothing learned from may come from the tables the scorecard is read on.
+    assert FITTING_FIRST + FITTING_TABLES <= TEST_SEEDS
+    assert TUNING_FIRST + TUNING_TABLES <= TEST_SEEDS
+
+
+def test_the_two_bands_do_not_overlap_each_other():
+    # The checking set says when to stop fitting, so it must be tables the
+    # fitting never saw, or it cannot say anything.
+    assert FITTING_FIRST + FITTING_TABLES <= TUNING_FIRST

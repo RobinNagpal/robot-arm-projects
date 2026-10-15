@@ -1263,6 +1263,95 @@ Nothing has been fitted in the new frame yet, so there is no score for it. The
 numbers above come from `03-imitation-from-demonstrations/measure_frames.py`,
 which trains nothing and reads only the demonstration band.
 
+## Telling the policy where the glasses are, and what it changed
+
+The measurement above says the policy spends most of its capacity locating
+things rather than deciding how to push, so the obvious next question is what
+happens if it is simply told where the glasses are. That is a different repair
+from rewriting the target in the push's own frame, and a safer one, because it
+leaves what the policy answers exactly as it was and changes only what it is
+allowed to see. This section says what was given to it, what that cost, and what
+it bought, and the short version is that **it bought consistency rather than
+glasses**.
+
+The difficulty is that a network has a fixed number of inputs while a table holds
+a varying number of glasses, so a list of measurements cannot simply be handed
+over. The way around it is the one [solution 4](04-a-world-model.md) already uses:
+a fixed number of slots, each either describing one glass or standing empty, with
+the glasses placed into slots in a settled order so that the same table always
+produces the same row. Six slots are enough, because the examiner never puts more
+than six glasses on a table, and each slot carries six numbers, which are the
+glass's two position values, its widest width, its height, its foot width, and a
+flag saying whether the slot is used at all. That flag matters, because without
+it an empty slot of zeros is indistinguishable from a glass standing exactly at
+the table's centre.
+
+This is cheap in every sense that matters. The row is 36 numbers, the model grows
+from 51,598,725 numbers to 51,637,125, which is a rise of less than one part in a
+thousand, and the measurements themselves are not privileged information: they
+are the same readings the examiner hands every solution at the start of a push.
+So any change in the score comes from the information and not from a larger model
+or an unfair advantage.
+
+**What it did to how closely the policy copies its teacher** is exactly what the
+earlier measurement predicted:
+
+| | tables it was fitted on | tables it never saw |
+|---|---|---|
+| from the picture alone | 20.4 to 20.7 mm | 48.1 to 52.4 mm |
+| with the readings | **17.2 to 19.3 mm** | 48.3 to 52.9 mm |
+
+On tables it has been shown, every one of the three fits now lands closer to its
+teacher than any of the three picture-only fits did. On tables it has never seen,
+the two groups are indistinguishable. That pattern has a name worth knowing,
+because it appears whenever extra input is added to a model: the model used the
+new information to fit the examples it was given more exactly, without learning
+anything that carries to a table it has not met. In other words it memorised
+better rather than understanding better.
+
+**What it did to the score** follows from that. Each column below is three fits
+scored on the same 50 held-out tables, written as the average across fits.
+
+| | from the picture alone | with the readings |
+|---|---|---|
+| glasses racked | 59.3 | 61.3 |
+| the three fits separately | 64, 51, 63 | 61, 65, 58 |
+| tables cleared completely | 2.0, between 1 and 3 | **3.0, every run** |
+| glasses toppled | 10.7 | 10.3 |
+| aim error, typical | 43.9 mm | 37.7 mm |
+| arm travel a run | 2,245 mm | 1,824 mm |
+| pushes blocked on the way down | 366.3 | 370.3 |
+
+Two more glasses out of 251 is nothing, because the difference is about four
+tenths of the run-to-run variation and this project does not report a number
+without its spread. So **the readings did not raise the score.** What they did
+instead is remove the bad fit. Before, two of the three fits racked 63 or 64
+glasses while the third managed only 51, and that third fit cleared just one
+table; now all three fits sit between 58 and 65 and every single one clears
+exactly three tables. The spread on racked glasses halved, from 7.2 to 3.5.
+
+That is a real gain, but it is important to be clear about which kind. A tighter
+spread around the same average means the method is more **dependable**, so a
+single fit of it is more trustworthy, and that is worth something when each fit
+costs an hour. It does not mean the method is **better**, because the average
+did not move.
+
+The reason the average did not move is in the last row of the table, and it is
+the same reason the earlier sections keep arriving at. Roughly 370 of 444 pushes
+are still thrown away because the jaw touched something while descending, and
+that number did not improve at all. The readings let the policy aim about six
+millimetres more accurately and travel a third less distance, which says it
+really did use them, and the descents still fail just as often. So the aim was
+never the binding constraint. **The binding constraint is the vertical approach
+itself**: the policy names a point, the arm lowers the jaw straight down onto it,
+and anything in the way destroys the push. No amount of better aiming helps while
+the approach is a straight drop, because the obstacle is usually not where the
+jaw is going but where it has to pass through on the way.
+
+This variant is kept beside the original rather than replacing it, exactly as the
+caveat in the previous section asks, so both readings survive. The picture-only
+score remains the solution's result, and this one is recorded next to it.
+
 ## The general ideas behind this
 
 Nothing in this solution was invented for glassware. Every part of it is a

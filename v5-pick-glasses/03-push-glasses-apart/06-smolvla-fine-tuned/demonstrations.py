@@ -198,6 +198,16 @@ def collect(first: int, tables: int, root: Path, show: bool = False) -> dict:
     return summary
 
 
+def band(check: bool, first: int | None = None) -> int:
+    """Which table the teacher starts from. This is a named function rather than
+    a line inside main() because the band is the one thing that has to agree with
+    solution 3, and a band that silently drifts turns the comparison between the
+    two into a comparison of their data instead of their models."""
+    if first is not None:
+        return first
+    return TUNING_FIRST if check else FITTING_FIRST
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--check", action="store_true", help="the tuning tables, not the fitting ones")
@@ -207,7 +217,7 @@ def main() -> None:
     arguments = parser.parse_args()
 
     root = TUNING if arguments.check else FITTING
-    first = arguments.first if arguments.first is not None else (TUNING_FIRST if arguments.check else 0)
+    first = band(arguments.check, arguments.first)
     tables = arguments.tables or (TUNING_TABLES if arguments.check else FITTING_TABLES)
 
     summary = collect(first, tables, root, arguments.show)
