@@ -124,20 +124,21 @@ from partners import (
 from scoring import pickable_on_table
 
 # The arm seconds a solution is given for the whole queue of tables. Ten arm
-# minutes. Measured on this bench, one push-like path costs the arm a median of
-# 3.9 seconds all in -- 1.2 of that the crossing to it -- so ten minutes is
-# about 150 paths, which is roughly ten tables. That is enough for how far a
-# solution got to be a number with some resolution in it, while a run still
-# finishes in seconds of laptop time.
+# minutes, and the figure is now measured rather than guessed: the geometry
+# reference in ../01-one-fixed-nudge spends 31 arm seconds on a table, taken
+# over twenty tables below TEST_SEEDS, so ten minutes carries it through about
+# nineteen of them. That is the number the queue needs, because a solution
+# judged on three tables cannot be judged at all, and because how far down the
+# list a solution got is only a throughput reading while the list is long
+# enough to run out of time rather than out of tables.
 #
 # It lives here, as one constant, rather than as an argument each solution
 # defaults for itself. Problem 3 learned that the hard way: its push budget
 # started life in each runner, the two that existed disagreed, and the push
 # counts were not comparable until it moved into the bench.
 #
-# **This value is not measured yet.** It is a starting figure from the
-# arithmetic above, and it is to be set from what the geometry reference really
-# needs on tables below TEST_SEEDS once that solution exists.
+# Measured on tables below TEST_SEEDS only. A budget set by watching the
+# held-out tables would be a budget chosen to produce a result.
 ARM_BUDGET = 10 * 60.0
 
 # The least arm time any action on a table can cost. The jaw rides at travel
