@@ -11,7 +11,10 @@ Every number drawn here is read out of a committed file rather than typed in:
   the model's numbers move, what the training held, and the held-out error at
   each check;
 - ``06-smolvla-fine-tuned/demonstrations/collected.json`` — what the teacher's
-  own chunks looked like, which is the shape the student was fitted towards;
+  own chunks looked like, which is the shape the student was fitted towards.
+  Only the shape is taken from it, and not the collection's own clock, because
+  this file now describes the larger band while the correction drawn here was
+  fitted on the earlier one;
 - ``06-smolvla-fine-tuned/asking.json`` and ``05-smolvla-as-it-downloads/asking.json``
   — the shape of each half of the pair's answers, measured the same way by the
   same code;
@@ -296,8 +299,12 @@ def picture_what_moved(mine: dict, theirs: dict, teacher: dict) -> None:
         y = y_from - 60 + 130 * index
         far.annotate("", xy=(x_from + across, y), xytext=(x_from, y), zorder=5,
                      arrowprops={"arrowstyle": "-|>", "color": colour, "lw": 1.6})
+        # The arrows start inside the glass zone, so these labels sit on top of its
+        # dashed border. A white patch behind the words keeps the border from
+        # running through them.
         far.text(x_from, y + 34, f"{label}: {across:.0f} mm", fontsize=NOTE_SIZE, color=colour,
-                 ha="left", va="bottom")
+                 ha="left", va="bottom", zorder=6,
+                 bbox={"facecolor": "white", "edgecolor": "none", "pad": 1.5})
     far.set_xlim(x_from - 40, x_from + rows[0][2] + 70)
     far.set_ylim(y_from - 120, y_to + 90)
 
@@ -552,16 +559,17 @@ def picture_the_compute(training: dict, collected: dict) -> None:
           f"{history[1]['step']} and {history[2]['step']} the fitting loss fell from "
           f"{history[1]['loss']:.3f} to {history[2]['loss']:.3f} and the\nheld-out distance fell "
           f"with it, from {history[1]['tuning_mm']['median']:.0f} mm to "
-          f"{history[2]['tuning_mm']['median']:.0f} mm, so the training was still buying something "
-          f"when it stopped.\nIt stopped because the step budget ran out, which is why the square "
-          f"on the left is the caveat on every\nnumber this solution reports: the correction is "
-          f"under-trained rather than over-trained.", y=0.215)
+          f"{history[2]['tuning_mm']['median']:.0f} mm, so this one fit was still buying something "
+          f"when it stopped.\nIt is one fit, though, and the same distance rose between the same "
+          f"two checks in two of the three later fits made on\nsix times the data, so the second "
+          f"half of this curve is flat inside its own noise. The square on the left stays the\n"
+          f"caveat on every number this solution reports.", y=0.215)
 
     footer(figure,
            f"Both halves of this picture have to be read together. The correction was fitted on "
            f"{training['demonstrations']:,} demonstrations from {training['tables_fitted_on']} "
-           f"training tables, recorded in {collected['seconds'] / 60:.0f} minutes of simulator time "
-           f"by a program rather than\na person, which is what makes the data free. What was then "
+           f"training tables, recorded by a program rather than a person,\n"
+           f"which is what makes the data free. What was then "
            f"spent on it is one part in {part:.0f} of the published recipe, and the one thing the "
            f"policy most needed to learn — where to put the jaw down — is the thing it had "
            f"least\nof. So the honest conclusion about the method is still open, and what it is "
