@@ -497,8 +497,25 @@ jaw really followed, which the examiner writes down on every action, so a
 demonstration is a recording of the shared contract being satisfied and nothing
 in it had to be drawn, labelled or judged by a person.
 
-What that came to, measured: **800 training tables, 19 minutes of simulator
-time on this laptop, 1,074 demonstrations from 430 of those tables.** Three
+**Before the counts, one thing about which tables, because it changed after the
+result in this document was measured.** A demonstration band has two jobs: it
+must stay below the held-out tables, so that nothing learned from is ever scored
+on, and it must not include the tables the teacher itself was fitted on, because
+the teacher performs better there than anywhere else and a student learning from
+its teacher's best ground is being flattered. The band used for the result below
+started at table 0, and [solution 2](02-geometry-ranked.md), which is the
+teacher, is fitted on tables 0 to 199, so a quarter of it was that flattered
+ground. The band now starts at table 1,000 and holds 5,200 tables, which are
+exactly the tables [solution 3](03-imitation-from-demonstrations.md) learns
+from. Matching it is deliberate, because these two solutions exist to be
+compared as a small model fitted here against a large one corrected here, and
+that comparison is only about the models while the material is the same. The
+measurement on the new band is being made now, and it will be added here as its
+own column rather than replacing what follows.
+
+What that came to on the original band, measured: **800 training tables, 19
+minutes of simulator time on this laptop, 1,074 demonstrations from 430 of those
+tables.** Three
 things about the count are worth knowing. **Most of the teacher's pushes are not
 demonstrations**: of the 2,766 pushes it made, 1,663 were the 5 mm test pushes
 that settle whether a glass slides, and those belong to the shared tipping check

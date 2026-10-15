@@ -38,8 +38,8 @@ the training needs the model before the correction is attached to it.
 ## Running it
 
 ```
-make demonstrations   # the teacher over 800 training tables (about 19 minutes)
-make tuning           # the same on 50 tuning tables, which say when to stop
+make demonstrations   # the teacher over 5200 training tables (about 70 minutes)
+make tuning           # the same on 300 tuning tables, which say when to stop
 make train            # fits the correction (downloads the weights once)
 make run              # the 50 held-out tables, 3 evaluation runs
 make test
@@ -77,6 +77,18 @@ At run time it is one large forward pass per chunk, on this laptop, which is
 solution 5's cost exactly because the correction is folded into the weights.
 
 ## The demonstrations
+
+**The band these come from changed after the result below was measured, so read
+this section as two things.** The numbers immediately following describe the
+collection the committed `results.json` was fitted on, which was 800 tables
+starting at table 0. The band is now 5,200 tables starting at table 1,000,
+matching [solution 3](../03-imitation-from-demonstrations/README.md), for the
+reason the comment on the band constants gives: these two solutions exist to be
+compared as a small model against a large one, and that comparison is only about
+the models while both learn from the same material. Starting at 1,000 also keeps
+the teacher's own fitting tables, which are 0 to 199, out of the set. The
+re-measurement on the new band is being run now and will be reported here with
+its own column rather than quietly replacing these numbers.
 
 800 training tables, 19 minutes of simulator time, **1,074 demonstrations from
 430 of those tables**; the other 370 gave the teacher nothing it could push
@@ -171,7 +183,8 @@ output and is.)
 
 ## Results — 50 held-out tables, 251 glasses, 203 without room at the start
 
-Three evaluation runs of one training seed. `results.json` holds every run;
+These are the correction fitted on the 800-table band described above. Three
+evaluation runs of one training seed. `results.json` holds every run;
 below is the middle with the spread across the three.
 
 | | |
