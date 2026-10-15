@@ -1,0 +1,16 @@
+{
+  "tables": 5200,
+  "first_table": 1000,
+  "demonstrations": 6935,
+  "dropped": {
+    "a 5 mm test push": 10645,
+    "jammed": 65,
+    "blocked on the way down": 20,
+    "a glass went over": 113,
+    "a glass left the zone": 38
+  },
+  "chunk": 50,
+  "across_mm_median": 78.9,
+  "step_mm_median": 1.6,
+  "seconds": 3829.5
+}

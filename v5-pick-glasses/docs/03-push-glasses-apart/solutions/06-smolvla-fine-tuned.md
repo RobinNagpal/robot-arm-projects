@@ -510,8 +510,8 @@ exactly the tables [solution 3](03-imitation-from-demonstrations.md) learns
 from. Matching it is deliberate, because these two solutions exist to be
 compared as a small model fitted here against a large one corrected here, and
 that comparison is only about the models while the material is the same. The
-measurement on the new band is being made now, and it will be added here as its
-own column rather than replacing what follows.
+measurement on the new band has since been made, and it has a section of its
+own below, called "Was it the data?", rather than replacing what follows.
 
 What that came to on the original band, measured: **800 training tables, 19
 minutes of simulator time on this laptop, 1,074 demonstrations from 430 of those
@@ -911,6 +911,75 @@ and several evaluation runs for exactly this reason, and the scorecard carries
 the spread. **This matters most to this document of any in the folder**, because
 the thing being measured is the gap between two solutions, and a gap smaller
 than either solution's own spread has not been shown to exist.
+
+## Was it the data?
+
+The section above ends on a cheerful point, which is that demonstrations here
+cost only simulator time, so the training set can be made as large as patience
+allows. That turns a complaint into a question with an answer. If this solution
+acts without knowing where to put the jaw down, perhaps it simply has not seen
+enough pushes, and in a cell where pushes are free that is a question nobody
+has to argue about, because it can be measured instead.
+
+So it was measured. The same model, the same low-rank correction, the same
+thousand steps of fitting and the same held-out tables, with **six and a half
+times as many demonstrations** in the middle. Because everything except the
+amount of data is held still, whatever the scorecard does is what data buys.
+
+The measurement came in three columns rather than two, and the extra one is an
+accident that turned out to be useful. The first attempt at the larger
+collection ran over the original tables at the new size, so there is a set that
+is as large as the matched one but drawn from the wrong place. That gives a
+control, in the sense the word carries in an experiment: it separates *how
+much* a student learns from *where* it learns from, which are two different
+questions that a single comparison would have mixed together.
+
+| | the original band | as much data, wrong band | as much data, matched band |
+|---|---|---|---|
+| Demonstrations | 1,074 | 6,907 | **6,935** |
+| The teacher's own tables inside the band | a quarter of it | a tiny part of it | **none of it** |
+| Glasses racked, of 251 | 56 (±7.6) | 52 (±3.8) | 53 (±2.1) |
+| Glasses toppled | 40 (±5.6) | 40 (±3.6) | 42 (±3.6) |
+| Tables marked wrong, of 50 | 36 (±2.9) | 36 (±2.9) | 36 (±1.5) |
+| Pushes that came down onto a glass | 227 (±8.9) | 217 (±32) | 229 (±45) |
+
+**The answer is that the data was not the problem.** Every difference between
+the first column and the last is smaller than two standard errors of the
+difference, which is the threshold this folder uses before a change may be
+called a change, and most of them are smaller than one. The honest way to say
+that is not "the scores are equal" but "no change was detected", because a
+measurement this noisy could hide a small improvement. What it cannot hide is
+the kind of improvement that would matter here, since turning a solution that
+ends thirty-six tables wrong into one that competes with the geometry would be
+an enormous effect and enormous effects do not hide inside these spreads.
+
+Two further points strengthen that reading rather than weakening it. The later
+columns were measured across **three separately trained policies**, where the
+first column is one policy measured three times, so the later numbers include
+the variation between fits that the first one could not see, and they are still
+no worse. And taking the teacher's own tables out of the band changed nothing
+either, which settles the worry raised earlier in this document: learning from
+a teacher's best ground is a real danger in principle, and it was not what held
+this solution back in practice.
+
+One difference in the middle column deserves its own warning, because it is the
+most instructive number in the comparison. On the wrong band the refusals rose
+by ten standard errors, which is as certain as anything in this folder ever
+gets, and on the matched band they returned to where they began. An effect that
+large and that fragile was never about the amount of data at all; it belonged
+to the particular tables and the particular fits it came from. **This is why no
+number in this folder is quoted without its spread**, and it is worth
+remembering the next time a single run shows something striking.
+
+So the explanation given earlier survives intact, and it survives in a stronger
+form, because the obvious alternative has now been ruled out by measurement
+rather than by argument. This solution fails because its jaw descends onto
+glasses, and more demonstrations of correct pushes cannot teach it otherwise,
+for the reason the next-to-last section of this document gives: the teacher
+never descends onto a glass, so no recording of the teacher contains the way
+out of that state. A policy can only be taught to recover from a mistake by
+being shown recoveries, which is precisely what DAgger provides and what plain
+behaviour cloning, however much of it is collected, never will.
 
 ## A second way: the same fine-tune on a larger model
 

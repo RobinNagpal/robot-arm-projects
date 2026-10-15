@@ -87,8 +87,8 @@ reason the comment on the band constants gives: these two solutions exist to be
 compared as a small model against a large one, and that comparison is only about
 the models while both learn from the same material. Starting at 1,000 also keeps
 the teacher's own fitting tables, which are 0 to 199, out of the set. The
-re-measurement on the new band is being run now and will be reported here with
-its own column rather than quietly replacing these numbers.
+re-measurement on the new band has been made, and it is a section of its own
+below rather than a quiet replacement of these numbers.
 
 800 training tables, 19 minutes of simulator time, **1,074 demonstrations from
 430 of those tables**; the other 370 gave the teacher nothing it could push
@@ -98,6 +98,12 @@ and of the 1,103 real pushes **29 were discarded** — 13 toppled a glass, 12
 jammed, 3 pushed one out of the zone and 1 was blocked coming down. So the bias
 from filtering to successes, which the document spends a page on, is 2.6 per
 cent here. `demonstrations/collected.json` records all of it.
+
+**On the new band the same teacher collected six and a half times as much**:
+5,200 tables gave **6,935 demonstrations from 2,796 of them**. The share of
+tables the teacher refused is the same to within a fraction of a per cent, 46
+on either band, so the new band is the old one scaled up rather than easier
+ground.
 
 **The real gripper halved the demonstration set**, and it did so by refusing
 tables rather than by failing on them: the teacher found nothing worth pushing
@@ -153,12 +159,17 @@ on the table entirely. Five hundred steps cut that by two thirds, and the
 second five hundred took another fifth off it.
 
 **Training stopped at 1,000 steps because that was the budget, not because the
-curve had flattened.** The held-out error was still falling when the fitting
-stopped, which is the opposite of the picture an earlier fit showed, and it
-means this correction is **under-trained rather than over-trained**. Read the
-column with the caution it deserves, because each tuning figure is a handful of
-chunks from a policy that draws its answer rather than computing it, so a step
-of twenty millimetres is near the noise. What is clear is the direction: more
+curve had flattened.** This single fit's held-out error was still falling when
+the fitting stopped, which reads as **under-trained rather than
+over-trained**. That reading does not survive more seeds, though: the three
+fits on the new band ended at 101.5, 106.1 and 90.0 mm, against 92.6, 115.3
+and 77.0 mm at the halfway check, so the error rose in two of them and fell in
+one. Between 500 and 1,000 steps the curve is therefore flat inside its own
+noise, and the fair statement is that this correction is not visibly improving
+by the end rather than that it is still improving. Read the column with the
+caution it deserves, because each tuning figure is a handful of chunks from a
+policy that draws its answer rather than computing it, so a step of twenty
+millimetres is near the noise. What is clear is the direction: more
 steps would very likely have helped, and the results below should be read as
 what a thousand steps buys rather than as what this method can do.
 
@@ -227,6 +238,62 @@ glass was ever picked up without really having room, and no glass was ever
 left on the table without a reason. Those are the two mistakes the geometry
 exists to prevent, and it prevented all of them, on every run, under a policy
 that was doing its best to cause them.
+
+### The same fitting on solution 3's tables
+
+The numbers above come from a correction fitted on 1,074 demonstrations from
+800 tables starting at table 0, and the band then changed for the reasons given
+earlier in this file. So the whole thing was done again on the new band, and
+because the first attempt at it ran over the old tables at the new size, there
+are three measurements rather than two. That accident is worth keeping, because
+the wrong band holds as much data as the right one and differs only in which
+tables it came from, which makes it a control: it separates *how much* the
+student learns from *where* it learns from.
+
+| | 800 tables from 0 | 5,200 tables from 0 | 5,200 tables from 1,000 |
+|---|---|---|---|
+| Demonstrations | 1,074 | 6,907 | **6,935** |
+| Teacher's own tables inside the band | 200 of 800 | 200 of 5,200 | **none** |
+| Glasses racked | 56 (±7.6) | 52 (±3.8) | 53 (±2.1) |
+| Glasses refused | 138 (±1.0) | 145 (±0.6) | 137 (±4.5) |
+| Glasses toppled | 40 (±5.6) | 40 (±3.6) | 42 (±3.6) |
+| Tables wrong | 36 (±2.9) | 36 (±2.9) | 36 (±1.5) |
+| Pushes blocked on the way down | 227 (±8.9) | 217 (±32) | 229 (±45) |
+| Chunk error on tuning tables at the end | 85 mm | 98 mm | 99 mm |
+
+**Six and a half times the data changed nothing that can be measured.** Taking
+the difference between the first and last columns in standard errors of the
+difference, which is the only honest way to read a change this small, racked
+glasses move by 0.7, toppled by 1.0, tables wrong by 1.1 and blocked descents
+by 0.1. Nothing reaches the two standard errors below which a difference cannot
+be claimed, so the statement is that no change was detected, not that the
+scores are equal.
+
+Two details make that reading stronger rather than weaker. The spread in the
+last two columns comes from **three training seeds with one evaluation run
+each**, where the first column is one seed run three times, so the later
+columns carry the variation between fits that the first one hides and they are
+still no worse. And taking the teacher's own 200 tables out of the band changed
+nothing either, which means the flattering-ground worry, real as it is in
+principle, was not what held this solution back.
+
+**The one difference that looked certain did not reproduce.** On the wrong band
+refusals rose from 138 to 145, which is ten standard errors and easily the
+largest effect anywhere in this comparison; on the right band they read 137,
+back where they started. An effect that large and that fragile belongs to the
+particular tables and fits it came from rather than to the amount of data, and
+it is a plain reminder of why a number quoted without a spread is not a result.
+That run's `seconds_per_push` of 1.07 s against 0.39 s is the same kind of
+artefact from the other direction, because it shared the one graphics chip with
+a fit and so measured the other work rather than the model.
+
+**So the conclusion of the section above survives the band change completely.**
+What stops this solution is not a shortage of examples and not the choice of
+tables. It is that three fifths of its pushes come down on top of a glass, and
+more pushes of the same kind do not teach it otherwise, because the teacher
+never makes that mistake and so the demonstrations never show the way out of
+it. That is the argument for DAgger at the end of this file, and these three
+columns are the evidence for it.
 
 ### Against the other solutions that have run
 

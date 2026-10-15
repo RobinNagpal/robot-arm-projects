@@ -1,0 +1,18 @@
+{
+  "corrections": [
+    "correction-aligned-0",
+    "correction-aligned-1",
+    "correction-aligned-2"
+  ],
+  "evaluation_runs_each": 1,
+  "asked": 1504,
+  "followed": 1077,
+  "rejected_for_a_refused_glass": 427,
+  "credited_to_a_spent_glass": 257,
+  "rejected_by_the_bench": 0,
+  "tables_that_ran_out_of_asks": 6,
+  "rejected_because": {},
+  "across_mm_median": 327.4,
+  "step_mm_median": 4.7,
+  "lowest_mm_median": 75.0
+}
