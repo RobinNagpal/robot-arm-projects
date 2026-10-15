@@ -36,6 +36,7 @@ from collections import Counter
 from dataclasses import dataclass, field
 
 from chunks import aimed_at, to_waypoints
+from readings import to_state
 from teacher import nudge
 
 from bench import PUSHES_PER_GLASS, PUSHES_PER_TABLE, Bench, Chunk
@@ -101,7 +102,10 @@ def clear(table: Bench, camera, policy, tally: Tally | None = None, show: bool =
             over = pushed.total() >= PUSHES_PER_TABLE or bool(worn)
             return {glass.id: gated.get(glass.id, SPENT if over else STUCK) for glass in seen}
 
-        waypoints, pulled = to_waypoints(policy.chunk(camera.view()))
+        # The readings go over as well. A fit that was given them at training
+        # time needs them now; one that was not simply ignores them, so the
+        # loop does not have to know which kind of fit it is driving.
+        waypoints, pulled = to_waypoints(policy.chunk(camera.view(), to_state(seen)))
         glass, aim = aimed_at(waypoints, left)
         tally.chunks += 1
         tally.waypoints_pulled_in += pulled

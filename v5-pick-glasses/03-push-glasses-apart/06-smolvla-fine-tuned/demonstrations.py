@@ -54,10 +54,22 @@ REPO = "local/push-glasses-apart"
 
 # Tables the teacher is run over to make the fitting set, and the tables it is
 # run over to make the set that says when to stop. Both are below TEST_SEEDS,
-# so neither overlaps the held-out tables the scorecard is read from. The
-# tuning tables are solution 4's, for the same reason it uses them.
-FITTING_FIRST, FITTING_TABLES = 0, 800
-TUNING_FIRST, TUNING_TABLES = 9500, 50
+# so neither overlaps the held-out tables the scorecard is read from.
+#
+# These are solution 3's own bands, and matching them is the point. The two
+# solutions exist to be compared --- a small model fitted here against a large
+# borrowed one corrected here --- and that comparison is only about the model
+# if the material is the same. They used to differ in three ways at once:
+# different tables, different counts, and different tables for checking.
+#
+# Starting at 1000 also fixes something that was wrong rather than merely
+# different. This set began at table 0, and solution 2's ranker --- the teacher
+# --- is itself fitted on tables 0 to 199. So a quarter of the old band asked
+# the teacher to demonstrate on tables it had been fitted on, where it is
+# better than it is anywhere else. Solution 3 starts at 1000 for exactly this
+# reason, and now so does this.
+FITTING_FIRST, FITTING_TABLES = 1000, 5200
+TUNING_FIRST, TUNING_TABLES = 8000, 300
 
 # One frame per decision rather than a rate: the model is asked once per push.
 # LeRobot wants a frame rate, so this says what a frame is.

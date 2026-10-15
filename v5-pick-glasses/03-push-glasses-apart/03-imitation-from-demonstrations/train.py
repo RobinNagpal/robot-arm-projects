@@ -65,8 +65,13 @@ WARMUP = 500
 BATCH = 16
 
 
-def folder(rung: str, seed: int) -> Path:
-    return WEIGHTS / f"{rung}-{seed}"
+def folder(rung: str, seed: int, readings: bool = False) -> Path:
+    """Where one fit lives. A fit given the readings is named apart from one that was not.
+
+    The two are different solutions to the same problem and are reported side
+    by side, so neither may overwrite the other.
+    """
+    return WEIGHTS / (f"{rung}-readings-{seed}" if readings else f"{rung}-{seed}")
 
 
 def learning_rate(step: int, steps: int, peak: float) -> float:
@@ -86,9 +91,17 @@ def fit(
     steps: int,
     batch: int,
     peak: float,
+    states: np.ndarray | None = None,
 ) -> tuple[Imitator, list[float]]:
-    """One fit of one model on all the demonstrations. Returns it and its loss curve."""
-    model = Imitator.new(rung, scale, seed=seed, device=where_to_run())
+    """One fit of one model on all the demonstrations. Returns it and its loss curve.
+
+    ``states`` is the camera's readings of each table, one row per
+    demonstration, from ``readings.to_state``. Pass them and the model is given
+    them beside the picture; leave them out and it sees the picture alone,
+    which is what this solution did first.
+    """
+    width = 0 if states is None else states.shape[1]
+    model = Imitator.new(rung, scale, seed=seed, device=where_to_run(), state_width=width)
     model.net.train()
     optimiser = torch.optim.AdamW(model.net.parameters(), lr=peak, weight_decay=WEIGHT_DECAY)
     rng = np.random.default_rng(seed)
@@ -97,7 +110,7 @@ def fit(
         for group in optimiser.param_groups:
             group["lr"] = learning_rate(step, steps, peak)
         rows = rng.integers(0, len(actions), size=batch)
-        loss = model.loss(pictures[rows], actions[rows])
+        loss = model.loss(pictures[rows], actions[rows], None if states is None else states[rows])
         loss.backward()
         optimiser.step()
         optimiser.zero_grad(set_to_none=True)
@@ -113,7 +126,13 @@ def fit(
     return model, curve
 
 
-def how_far_off(model: Imitator, pictures: np.ndarray, actions: np.ndarray, most: int = 200) -> dict:
+def how_far_off(
+    model: Imitator,
+    pictures: np.ndarray,
+    actions: np.ndarray,
+    most: int = 200,
+    states: np.ndarray | None = None,
+) -> dict:
     """How far the fitted chunk is from the teacher's, on pictures never fitted on.
 
     A diagnostic, not a score. A policy can be close to its teacher on every
@@ -123,7 +142,7 @@ def how_far_off(model: Imitator, pictures: np.ndarray, actions: np.ndarray, most
     count = min(most, len(actions))
     gaps, turns, ends = [], [], []
     for i in range(count):
-        guess = model.chunk(pictures[i])
+        guess = model.chunk(pictures[i], None if states is None else states[i : i + 1])
         want = actions[i]
         gaps.append(1000 * np.hypot(guess[:, 0] - want[:, 0], guess[:, 1] - want[:, 1]))
         turns.append(
@@ -155,40 +174,62 @@ def main() -> None:
     parser.add_argument("--steps", type=int, default=10000)
     parser.add_argument("--batch", type=int, default=BATCH)
     parser.add_argument("--lr", type=float, default=LEARNING_RATE)
+    parser.add_argument(
+        "--readings",
+        action="store_true",
+        help="show the model the camera's readings of the table beside the picture",
+    )
     arguments = parser.parse_args()
 
     held = np.load(DEMOS)
     pictures, actions = held["pictures"], held["actions"]
     checking = np.load(CHECK)
+    states = held["states"] if arguments.readings else None
+    check_states = checking["states"] if arguments.readings else None
     scale = Scale.of(pictures, actions)
     device = where_to_run()
     print(
         f"{len(actions)} demonstrations of {actions.shape[1]} waypoints from "
         f"{len(np.unique(held['tables']))} tables; fitting {arguments.rung} on {device}"
+        + (f", with {states.shape[1]} readings beside each picture" if states is not None else "")
     )
 
     WEIGHTS.mkdir(exist_ok=True)
-    summary = WEIGHTS / f"{arguments.rung}-training.json"
+    name = f"{arguments.rung}-readings" if arguments.readings else arguments.rung
+    summary = WEIGHTS / f"{name}-training.json"
     # A seed takes of order an hour, so seeds are usually fitted in separate
     # runs. Earlier ones are read back rather than written over.
     report = json.loads(summary.read_text()) if summary.exists() else {"seeds": []}
-    report |= {"rung": arguments.rung, "device": device, "demonstrations": int(len(actions))}
+    report |= {
+        "rung": arguments.rung,
+        "readings": bool(arguments.readings),
+        "device": device,
+        "demonstrations": int(len(actions)),
+    }
     for seed in range(arguments.first_seed, arguments.first_seed + arguments.seeds):
         started = time.time()
         model, curve = fit(
-            arguments.rung, pictures, actions, scale, seed, arguments.steps, arguments.batch, arguments.lr
+            arguments.rung,
+            pictures,
+            actions,
+            scale,
+            seed,
+            arguments.steps,
+            arguments.batch,
+            arguments.lr,
+            states=states,
         )
         spent = time.time() - started
-        model.save(folder(arguments.rung, seed))
-        off = how_far_off(model, checking["pictures"], checking["actions"])
-        on = how_far_off(model, pictures, actions)
+        model.save(folder(arguments.rung, seed, arguments.readings))
+        off = how_far_off(model, checking["pictures"], checking["actions"], states=check_states)
+        on = how_far_off(model, pictures, actions, states=states)
         print(
             f"seed {seed}: loss {curve[0]:.3f} -> {curve[-1]:.3f} in {spent / 60:.0f} min\n"
             f"  per waypoint, against the teacher's own chunk: "
             f"{on['waypoint_mm_median']} mm on tables it was fitted on, "
             f"{off['waypoint_mm_median']} mm on tables it never saw\n"
             f"  heading: {on['heading_deg_median']} deg fitted, {off['heading_deg_median']} deg unseen "
-            f"-> {folder(arguments.rung, seed)}"
+            f"-> {folder(arguments.rung, seed, arguments.readings)}"
         )
         report["seeds"] = [row for row in report["seeds"] if row["seed"] != seed]
         report["seeds"].append(

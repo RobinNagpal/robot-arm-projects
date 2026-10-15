@@ -38,11 +38,19 @@ VIDEOS = HERE / "videos"
 HELD_OUT = 50
 
 
-def fitted(rung: str) -> list[int]:
-    """The seeds that have been trained, in order."""
-    return sorted(
-        int(path.name.rsplit("-", 1)[1]) for path in WEIGHTS.glob(f"{rung}-*") if path.is_dir()
-    )
+def fitted(name: str) -> list[int]:
+    """The seeds that have been trained under this name, in order.
+
+    The tail has to be all digits, because ``act-readings-0`` also begins with
+    ``act-`` and counting it as seed 0 of the plain rung would silently run the
+    wrong weights.
+    """
+    seeds = []
+    for path in WEIGHTS.glob(f"{name}-*"):
+        tail = path.name[len(name) + 1 :]
+        if path.is_dir() and tail.isdigit():
+            seeds.append(int(tail))
+    return sorted(seeds)
 
 
 def main() -> None:
@@ -53,24 +61,33 @@ def main() -> None:
     parser.add_argument("--seeds", type=int, nargs="*", help="which fitted seeds to run; all by default")
     parser.add_argument("--show", action="store_true", help="print each table")
     parser.add_argument("--film", type=int, default=0, help="film this many of the tables")
+    parser.add_argument(
+        "--readings",
+        action="store_true",
+        help="run the fits that were given the camera's readings beside the picture",
+    )
     arguments = parser.parse_args()
 
-    seeds = arguments.seeds if arguments.seeds else fitted(arguments.rung)
+    # The name the weights were saved under, which is also what the result is
+    # filed as, so the two variants can never overwrite one another.
+    name = f"{arguments.rung}-readings" if arguments.readings else arguments.rung
+    seeds = arguments.seeds if arguments.seeds else fitted(name)
     if not seeds:
         raise FileNotFoundError(
-            f"nothing fitted for the {arguments.rung} rung. Train it first: "
-            f"`pixi run python 03-imitation-from-demonstrations/train.py --rung {arguments.rung}`."
+            f"nothing fitted under {name}. Train it first: "
+            f"`pixi run python 03-imitation-from-demonstrations/train.py --rung {arguments.rung}"
+            f"{' --readings' if arguments.readings else ''}`."
         )
 
     runs = Repeats()
     tally = loop.Tally()
     started = time.time()
     for seed in seeds:
-        model = Imitator.load(folder(arguments.rung, seed))
+        model = Imitator.load(folder(arguments.rung, seed, arguments.readings))
         card = runs.run()
         for i, number in enumerate(range(arguments.first, arguments.first + arguments.tables)):
             filmed = i < arguments.film
-            table = FilmedBench(number, f"{arguments.rung} seed {seed}") if filmed else Bench(number)
+            table = FilmedBench(number, f"{name} seed {seed}") if filmed else Bench(number)
             camera = TopCamera(table)
             clock = time.perf_counter()
             refused = loop.clear(table, camera, model, tally, arguments.show)
@@ -81,7 +98,7 @@ def main() -> None:
             if filmed:
                 racked = sum(table.taken.values())
                 table.save(
-                    VIDEOS / f"{arguments.rung}-{seed}-table-{number}.mp4",
+                    VIDEOS / f"{name}-{seed}-table-{number}.mp4",
                     f"{outcome}: racked {racked}, refused {len(refused)}",
                 )
             if arguments.show:
@@ -101,7 +118,7 @@ def main() -> None:
     # Tables 9500 on are neither fitted on nor held out; anything run there is
     # a check and goes to its own file, so a result can never be overwritten
     # by one.
-    result = f"results-{arguments.rung}.json" if arguments.rung != "act" else "results.json"
+    result = "results.json" if name == "act" else f"results-{name}.json"
     if arguments.first != TEST_SEEDS:
         name = "tuning.json"
     elif arguments.tables == HELD_OUT and len(seeds) > 1:

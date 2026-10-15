@@ -23,6 +23,8 @@ import numpy as np
 import pictures as pictures_module
 import policy as policy_module
 import pytest
+import readings as readings_module
+import train
 from teacher import nudge
 
 import bench
@@ -287,10 +289,13 @@ class _Policy:
 
     def __init__(self, x=0.46, y=-0.20):
         self.asked = 0
+        self.looks = []
         self.x, self.y = x, y
 
-    def chunk(self, picture):
+    def chunk(self, picture, state=None):
         self.asked += 1
+        # Kept so a test can check the loop really hands the readings over.
+        self.looks.append(state)
         return np.array(
             [[self.x - 0.02, self.y, PUSH_HEIGHT, 1.0, 0.0], [self.x, self.y, PUSH_HEIGHT, 1.0, 0.0]],
             dtype=np.float32,
@@ -345,6 +350,23 @@ def test_the_push_budget_is_the_bench_s_and_the_loop_stops_at_it():
     assert max(sum(c.glass == g for c in table.followed) for g in (0, 1)) <= bench.PUSHES_PER_GLASS
 
 
+def test_the_loop_hands_the_policy_the_readings_of_the_table_it_just_looked_at():
+    """The readings must be the look that decided the push, not a stale one.
+
+    A fit given the readings is useless if they describe a different
+    arrangement from the picture beside them, so the loop is checked rather
+    than trusted.
+    """
+    pair = [_seen(0, 0.46, -0.20), _seen(1, 0.46, -0.14)]
+    brain = _Policy()
+    loop.clear(_Standing(pair), _Camera(), brain, loop.Tally())
+    assert brain.looks, "the policy was asked at least once"
+    for look in brain.looks:
+        assert look is not None, "the loop always passes the readings over"
+        assert look.shape == (readings_module.STATE_WIDTH,)
+    assert np.array_equal(brain.looks[0], readings_module.to_state(pair))
+
+
 def test_a_glass_with_room_is_taken_rather_than_pushed():
     apart = [_seen(0, 0.40, -0.30), _seen(1, 0.55, -0.10)]
     table = _Standing(apart)
@@ -395,6 +417,83 @@ def test_each_rung_is_handed_the_shape_it_expects_and_a_state_of_no_width(rung, 
     assert batch["action"].shape == (2, 8, chunks.ACTION_WIDTH)
     assert not batch["action_is_pad"].any()
     assert net.config.pretrained_backbone_weights is None, "nothing is downloaded"
+
+
+# ------------------------------------------------- the camera's readings
+
+
+def test_a_look_becomes_one_fixed_row_whatever_the_table_holds():
+    """Four glasses and six glasses both come back the same width.
+
+    That is the whole point of the slots: a network's input cannot change
+    width from one table to the next, so the width is fixed and a flag says
+    which slots are used.
+    """
+    four = readings_module.to_state([_seen(i, 0.1 * i, 0.0) for i in range(4)])
+    six = readings_module.to_state([_seen(i, 0.1 * i, 0.0) for i in range(6)])
+    assert four.shape == six.shape == (readings_module.STATE_WIDTH,)
+    used = readings_module.PER_GLASS - 1
+    assert four[used :: readings_module.PER_GLASS].sum() == 4
+    assert six[used :: readings_module.PER_GLASS].sum() == 6
+
+
+def test_an_unused_slot_is_zero_and_says_so():
+    """An empty slot must be distinguishable from a glass standing at the middle.
+
+    Without the flag, a slot of zeros would read as a glass at the table's
+    centre, which is a real place a glass can stand.
+    """
+    row = readings_module.to_state([_seen(0, 0.0, 0.0)])
+    first = row[: readings_module.PER_GLASS]
+    rest = row[readings_module.PER_GLASS :]
+    assert first[-1] == 1.0, "the used slot says it is used"
+    assert not rest.any(), "every other slot is entirely zero, flag included"
+
+
+def test_the_same_table_in_a_different_order_is_the_same_row():
+    """A network is not permutation invariant, so the order has to be settled here."""
+    glasses = [_seen(0, 0.3, 0.1), _seen(1, -0.2, 0.4), _seen(2, 0.05, -0.3)]
+    assert np.array_equal(
+        readings_module.to_state(glasses), readings_module.to_state(list(reversed(glasses)))
+    )
+
+
+def test_a_table_with_more_glasses_than_slots_is_refused_rather_than_cut_short():
+    """Silently dropping a glass would hide a glass the arm has to avoid."""
+    with pytest.raises(ValueError):
+        readings_module.to_state([_seen(i, 0.05 * i, 0.0) for i in range(readings_module.GLASSES + 1)])
+
+
+def test_a_fit_given_the_readings_takes_them_and_one_without_them_does_not():
+    """The pairing comes off the weights, so a caller cannot mismatch them unnoticed."""
+    pictures = np.zeros((2, *bench.TOP_VIEW_SIZE, 3), dtype=np.uint8)
+    _, actions = _demonstrations()
+    scale = policy_module.Scale.of(pictures, actions)
+    width = readings_module.STATE_WIDTH
+
+    with_readings = policy_module.Imitator(
+        policy_module.build("act", seed=0, chunk=8, state_width=width), scale, "act", device="cpu"
+    )
+    assert with_readings.state_width == width
+    looks = np.zeros((2, width), dtype=np.float32)
+    assert with_readings.batch(pictures, states=looks)[policy_module.STATE].shape == (2, width)
+    with pytest.raises(ValueError):
+        with_readings.batch(pictures)
+
+    picture_only = policy_module.Imitator(
+        policy_module.build("act", seed=0, chunk=8), scale, "act", device="cpu"
+    )
+    assert picture_only.state_width == 0
+    # Handed readings it was not fitted with, it ignores them rather than failing.
+    assert picture_only.batch(pictures, states=looks)[policy_module.STATE].shape == (2, 0)
+
+
+def test_the_two_variants_are_fitted_and_read_back_under_different_names():
+    """``act-readings-0`` must never be mistaken for seed 0 of the plain rung."""
+    plain = train.folder("act", 0)
+    given = train.folder("act", 0, readings=True)
+    assert plain != given
+    assert given.name.startswith("act-readings")
 
 
 # ------------------------------------------------- a demonstration replays

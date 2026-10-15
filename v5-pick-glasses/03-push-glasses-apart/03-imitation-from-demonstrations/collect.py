@@ -48,6 +48,7 @@ import numpy as np
 import teacher  # first: it is what puts solution 2's folder on the path for ``rollout``
 from chunks import CHUNK, push_segment, resample, to_action
 from pictures import shrink
+from readings import to_state
 from rollout import truth
 from teacher import nudge
 
@@ -133,12 +134,18 @@ def demonstrate(seed: int) -> dict:
     """One table cleared by the teacher. Returns its demonstrations and what was dropped."""
     table = Watched(seed)
     probes: list[bool] = []
+    looks: list[list] = []
+
+    def noted(seen, push, felt, probe) -> None:
+        probes.append(probe)
+        looks.append(seen)
+
     try:
-        refused = teacher.clear(table, _pick, watch=lambda seen, push, felt, probe: probes.append(probe))
-        pictures, actions, lengths = [], [], []
+        refused = teacher.clear(table, _pick, watch=noted)
+        pictures, actions, states, lengths = [], [], [], []
         drops: Counter = Counter()
-        for record, picture, before, probe in zip(
-            table.records, table.pictures, table.shortfalls, probes, strict=True
+        for record, picture, before, probe, seen in zip(
+            table.records, table.pictures, table.shortfalls, probes, looks, strict=True
         ):
             why = dropped_because(record, probe, table, before)
             if why is not None:
@@ -147,12 +154,16 @@ def demonstrate(seed: int) -> dict:
             segment = push_segment(record.waypoints)
             lengths.append(len(segment))
             pictures.append(picture)
+            # The same look the teacher decided from, which is what a fit that
+            # takes the readings is given at run time as well.
+            states.append(to_state(seen))
             actions.append(resample(to_action(segment), CHUNK))
         return {
             "table": seed,
             "kind": KINDS[seed % len(KINDS)],
             "pictures": pictures,
             "actions": actions,
+            "states": states,
             "lengths": lengths,
             "drops": dict(drops),
             "refused": dict(Counter(refused.values())),
@@ -170,6 +181,7 @@ def gather(seeds: list[int], workers: int) -> tuple[dict[str, np.ndarray], dict]
 
     pictures = [picture for t in tables for picture in t["pictures"]]
     actions = [action for t in tables for action in t["actions"]]
+    states = [state for t in tables for state in t["states"]]
     lengths = np.array([n for t in tables for n in t["lengths"]] or [0])
     drops: Counter = Counter()
     refused: Counter = Counter()
@@ -179,6 +191,7 @@ def gather(seeds: list[int], workers: int) -> tuple[dict[str, np.ndarray], dict]
     data = {
         "pictures": np.asarray(pictures, dtype=np.uint8),
         "actions": np.asarray(actions, dtype=np.float32),
+        "states": np.asarray(states, dtype=np.float32),
         "tables": np.array([t["table"] for t in tables for _ in t["actions"]], dtype=np.int64),
     }
     counts = {

@@ -6,6 +6,10 @@ demonstrations/**
 !demonstrations/collected.json
 demonstrations-check/**
 !demonstrations-check/collected.json
+# A set collected on an earlier band, kept on disk only while the new one is
+# being checked. Regenerable from the band constants in this folder's history.
+demonstrations-old-band/
+demonstrations-check-old-band/
 videos/
 __pycache__/
 

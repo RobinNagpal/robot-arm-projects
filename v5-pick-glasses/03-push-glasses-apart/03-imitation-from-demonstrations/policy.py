@@ -167,21 +167,22 @@ def where_to_run() -> str:
     return "mps" if torch.backends.mps.is_available() else "cpu"
 
 
-def _features(kind: str) -> tuple[dict, dict]:
+def _features(kind: str, state_width: int = 0) -> tuple[dict, dict]:
     rows, columns = SEEN_SIZE
     inputs = {PICTURE: PolicyFeature(FeatureType.VISUAL, (3, rows, columns))}
-    if kind == "diffusion":
-        # Only this rung insists on the feature existing. Width zero, so it
-        # adds nothing to the model.
-        inputs[STATE] = PolicyFeature(FeatureType.STATE, (0,))
+    if state_width or kind == "diffusion":
+        # At width zero the feature exists but adds nothing to the model, which
+        # is what the diffusion rung insists on. Above zero it is the camera's
+        # readings of the table, which ``readings.py`` explains.
+        inputs[STATE] = PolicyFeature(FeatureType.STATE, (state_width,))
     return inputs, {"action": PolicyFeature(FeatureType.ACTION, (ACTION_WIDTH,))}
 
 
-def build(kind: str, seed: int = 0, chunk: int = CHUNK):
+def build(kind: str, seed: int = 0, chunk: int = CHUNK, state_width: int = 0):
     """A fresh, unfitted policy of one of the two rungs."""
     if kind not in KINDS:
         raise ValueError(f"the rungs are {KINDS}, not {kind!r}")
-    inputs, outputs = _features(kind)
+    inputs, outputs = _features(kind, state_width)
     torch.manual_seed(seed)
     if kind == "act":
         from lerobot.policies.act.configuration_act import ACTConfig
@@ -228,22 +229,55 @@ class Imitator:
         self.net = net.to(self.device)
 
     @classmethod
-    def new(cls, kind: str, scale: Scale, seed: int = 0, device: str | None = None) -> Imitator:
-        return cls(build(kind, seed), scale, kind, device)
+    def new(
+        cls,
+        kind: str,
+        scale: Scale,
+        seed: int = 0,
+        device: str | None = None,
+        state_width: int = 0,
+    ) -> Imitator:
+        return cls(build(kind, seed, state_width=state_width), scale, kind, device)
+
+    @property
+    def state_width(self) -> int:
+        """How many readings this model takes beside the picture. Zero for a picture-only fit.
+
+        Read off the model rather than stored, so that a fit loaded from disk
+        cannot disagree with the weights it is loading.
+        """
+        feature = self.net.config.input_features.get(STATE)
+        return int(feature.shape[0]) if feature is not None else 0
 
     @property
     def chunk_length(self) -> int:
         config = self.net.config
         return config.chunk_size if self.kind == "act" else config.horizon
 
-    def batch(self, pictures: np.ndarray, actions: np.ndarray | None = None) -> dict:
+    def batch(
+        self,
+        pictures: np.ndarray,
+        actions: np.ndarray | None = None,
+        states: np.ndarray | None = None,
+    ) -> dict:
         """One training or run-time batch, scaled and on the device."""
         seen = torch.as_tensor(self.scale.picture(pictures), device=self.device)
         if self.kind == "diffusion":
             # One observation step, so the pictures carry a time axis of one.
             seen = seen.unsqueeze(1)
         count = seen.shape[0]
-        state = torch.zeros(count, 0, device=self.device)
+        width = self.state_width
+        if width:
+            if states is None:
+                raise ValueError(f"this fit takes {width} readings beside the picture, and none were given")
+            given = np.asarray(states, dtype=np.float32).reshape(count, -1)
+            if given.shape[1] != width:
+                raise ValueError(f"the readings are {width} wide, not {given.shape[1]}")
+            # Already near one by construction, so the picture's scaling does
+            # not apply and nothing further is done to them.
+            state = torch.as_tensor(given, device=self.device)
+        else:
+            state = torch.zeros(count, 0, device=self.device)
         batch = {PICTURE: seen, STATE: state.unsqueeze(1) if self.kind == "diffusion" else state}
         if actions is not None:
             wanted = torch.as_tensor(self.scale.forward(actions), device=self.device)
@@ -253,16 +287,22 @@ class Imitator:
             )
         return batch
 
-    def loss(self, pictures: np.ndarray, actions: np.ndarray):
+    def loss(self, pictures: np.ndarray, actions: np.ndarray, states: np.ndarray | None = None):
         """How wrong the model is on these demonstrations, as the model's own objective."""
-        loss, _ = self.net.forward(self.batch(pictures, actions))
+        loss, _ = self.net.forward(self.batch(pictures, actions, states))
         return loss
 
-    def chunk(self, picture: np.ndarray) -> np.ndarray:
-        """One action chunk from one picture: (chunk, 5) in the table's own units."""
+    def chunk(self, picture: np.ndarray, state: np.ndarray | None = None) -> np.ndarray:
+        """One action chunk from one picture: (chunk, 5) in the table's own units.
+
+        ``state`` is one look at the table from ``readings.to_state``, and is
+        required by a fit that was given the readings and ignored by one that
+        was not. Which it is comes off the weights, so a caller cannot get the
+        pairing wrong without being told.
+        """
         self.net.eval()
         with torch.no_grad():
-            answer = self.net.predict_action_chunk(self.batch(picture))
+            answer = self.net.predict_action_chunk(self.batch(picture, states=state))
         return self.scale.back(answer[0].float().cpu().numpy())
 
     def save(self, folder: Path) -> None:
