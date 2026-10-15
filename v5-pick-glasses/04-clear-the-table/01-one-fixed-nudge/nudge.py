@@ -263,7 +263,7 @@ class OneFixedNudge:
         # each one as soon as it had room; nothing is racked here, so without
         # this the chooser would answer with a two-millimetre nudge of a glass
         # that needed nothing, over and over, until the clock stopped it.
-        push, chooser_says = plan.choose(glasses, settled | self.leave)
+        push, chooser_says = self._choose(glasses, settled | self.leave)
         if push is None:
             if not self.swept:
                 # Nothing left worth pushing, going by a table last looked at
@@ -290,6 +290,18 @@ class OneFixedNudge:
             # is leaning does not.
             return self._make(look, plan.probe(push), TESTING)
         return self._make(look, push, PUSHING)
+
+    def _choose(self, glasses: list, skip: set[int]) -> tuple:
+        """The push to make next, and why the glasses with none have none.
+
+        Problem 3's printed rule, imported. It is a method and not a call to
+        ``plan.choose`` written into ``_decide`` because the next solution in
+        this problem is this same loop with a different chooser, and this is the
+        one line it has to replace. Everything around it -- the sweep, the
+        belief, the ranging push, the test push, the saying done -- is the same
+        work whoever picks.
+        """
+        return plan.choose(glasses, skip)
 
     def _nothing_more(self, glasses: list, settled: set[int], chooser_says: dict[int, str]) -> str:
         """Why the table is being left as it is. For the record; nothing scores it."""

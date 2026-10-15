@@ -14,14 +14,14 @@ about the cell is drawn again: the hand's reach and ``has_room`` come through
 modules, and the glasses from the one library that draws them. What changes is
 only what the draw promises about the arrangement. Every table holds:
 
-- one touching group of at least three glasses, which no single nudge undoes;
-- at least one touching pair. A group of three already holds three pairs, so
-  the group above meets this; some tables carry a separate group of exactly
-  two as well;
+- one touching group, which is a pair on some tables and three glasses on
+  others, decided by the seed. A pair falls to one well aimed nudge and three
+  do not, so the two together separate a solution that can manage the easy
+  case from one that can manage both;
 - one or two glasses that already have room, so that leaving a glass alone is
   part of the job and not only pushing;
-- three, four or five crowded glasses. The band is narrow on purpose: two
-  tables are only worth comparing if they were about as crowded to begin with;
+- two or three crowded glasses. The band is narrow on purpose: two tables are
+  only worth comparing if they were about as crowded to begin with;
 - every crowded glass one the physics can slide rather than tip, by solution
   1's own tipping rule. The draw redraws the glass until that holds, so a
   table is always solvable in principle and a topple is the solution's doing.
@@ -51,16 +51,24 @@ from work_cell.table.layout import TABLE_TOP_Z
 
 from partners import GRIP_ROOM, Seen, SpawnedGlass, has_room, in_zone
 
-# How many glasses a table holds, fewest and most. Four is the smallest table
-# that can hold a group of three and a glass with room. Past seven the zone
-# cannot take them without every table coming out looking the same.
-FEWEST, MOST = 4, 7
+# How many glasses a table holds, fewest and most.
+#
+# These were four to seven, with a group of three on every table, and that draw
+# turned out to be unsolvable rather than hard. Given true positions, exact
+# pushes, no clock and no limit on how many pushes it could make, the ranked
+# geometry still separated none of twenty tables and ran out of pushes worth
+# suggesting after thirty-one of them across the whole twenty: there was
+# nowhere left to put a glass. The hand is 139 mm across and cannot come lower
+# than 75 mm, so on a zone 320 by 360 mm, seven glasses leave it nowhere to
+# stand. A problem nobody can finish measures nothing, because every solution
+# scores zero for the same reason and the differences between them disappear.
+FEWEST, MOST = 3, 5
 
-# How many of them are crowded, lowest and highest. Three is the floor because
-# a group of three is required, and five the ceiling because this has to stay a
-# narrow band: the scorecard averages arm time over tables, and tables that
-# started two glasses apart in difficulty would not belong in one average.
-CROWDED_BAND = (3, 5)
+# How many of them are crowded, lowest and highest. Two is the floor because
+# two glasses is what crowding means, and three the ceiling because this has to
+# stay a narrow band: the scorecard averages arm time over tables, and tables
+# that started two glasses apart in difficulty would not belong in one average.
+CROWDED_BAND = (2, 3)
 
 # How many already have room. Never none, so that a solution has to decide to
 # leave a glass alone, and never more than two, because a table of mostly free
@@ -109,13 +117,15 @@ def _splits(total: int, least: int) -> list[tuple[int, ...]]:
 
 
 # Every shape of table the draw may produce: the sizes of the touching groups,
-# and how many glasses are left with room. A split with no group of three is
-# dropped, because a table of nothing but pairs is a table of single nudges.
+# and how many glasses are left with room. Some tables hold a touching pair and
+# some a touching group of three, and which one a table gets comes off its
+# seed. Both are needed: a pair falls to a single well aimed nudge, a group of
+# three does not, and a solution that can do the first and not the second
+# should be visible as exactly that rather than scoring zero on everything.
 COMPOSITIONS = tuple(
     (groups, free)
     for crowded in range(CROWDED_BAND[0], CROWDED_BAND[1] + 1)
     for groups in _splits(crowded, LEAST_IN_A_GROUP)
-    if max(groups) >= 3
     for free in range(FREE_BAND[0], FREE_BAND[1] + 1)
     if FEWEST <= crowded + free <= MOST
 )

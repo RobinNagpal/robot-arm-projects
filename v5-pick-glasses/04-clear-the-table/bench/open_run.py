@@ -111,6 +111,7 @@ from clock import Clock
 from contract import GLASS_OVER, RAN_OUT, SAID_DONE, Done, Look, Solution, TableResult
 from partners import (
     DESCEND_SPEED,
+    JAW_HALF_HEIGHT,
     PUSH_HEIGHT,
     STANDING_TILT_DEG,
     TRAVEL_HEIGHT,
@@ -123,11 +124,13 @@ from partners import (
 )
 from scoring import pickable_on_table
 
-# The arm seconds a solution is given for the whole queue of tables. Ten arm
-# minutes, and the figure is now measured rather than guessed: the geometry
-# reference in ../01-one-fixed-nudge spends 31 arm seconds on a table, taken
-# over twenty tables below TEST_SEEDS, so ten minutes carries it through about
-# nineteen of them. That is the number the queue needs, because a solution
+# The arm seconds a solution is given for the whole queue of tables. Fifteen
+# arm minutes, and the figure is measured rather than guessed: the geometry
+# reference in ../01-one-fixed-nudge spends 43 arm seconds on a table, taken
+# over twenty tables below TEST_SEEDS, so fifteen minutes carries it through
+# about twenty-one of them. It was ten minutes while the draw was harder and
+# the reference gave up on most tables in half the time; now that it finds
+# pushes worth making, it spends longer on each. That is the number the queue needs, because a solution
 # judged on three tables cannot be judged at all, and because how far down the
 # list a solution got is only a throughput reading while the list is long
 # enough to run out of time rather than out of tables.
@@ -139,7 +142,7 @@ from scoring import pickable_on_table
 #
 # Measured on tables below TEST_SEEDS only. A budget set by watching the
 # held-out tables would be a budget chosen to produce a result.
-ARM_BUDGET = 10 * 60.0
+ARM_BUDGET = 15 * 60.0
 
 # The least arm time any action on a table can cost. The jaw rides at travel
 # height between actions, so before it can touch anything it has to come down,
@@ -288,8 +291,13 @@ def hand_meets(chunk: Chunk, glass: Seen) -> bool:
     added for luck: the question here is contact, not clearance.
 
     ``follow()`` turns the hand to a leg's own heading as that leg starts, and
-    measures ``z`` to the middle of the jaw, so a leg is only in the way while it
-    is low enough to reach the glass at all.
+    measures ``z`` to the **middle** of the jaw. The fingers hang
+    ``JAW_HALF_HEIGHT`` below that middle, so the lowest part of the hand on a
+    leg is ``z`` minus that, and it is what has to clear the glass. Taking ``z``
+    itself as the hand's underside, which this test did at first, leaves a band
+    seventy millimetres deep in which the hand sweeps through a glass and the
+    interlock says nothing -- and that band is exactly where a policy that
+    hovers spends its time.
     """
     nudge = solution_one()
     centre = np.array([glass.x, glass.y])
@@ -298,7 +306,7 @@ def hand_meets(chunk: Chunk, glass: Seen) -> bool:
     # The first pair is the first waypoint against itself: the jaw comes down
     # onto it, so it stands there before any leg moves it anywhere.
     for start, end in zip((points[0], *points[:-1]), points, strict=True):
-        if min(start.z, end.z) > glass.height:
+        if min(start.z, end.z) - JAW_HALF_HEIGHT > glass.height:
             continue
         u = np.array([math.cos(end.heading), math.sin(end.heading)])
         tip_from, tip_to = np.array([start.x, start.y]), np.array([end.x, end.y])

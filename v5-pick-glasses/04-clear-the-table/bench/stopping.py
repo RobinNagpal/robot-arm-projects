@@ -34,13 +34,26 @@ them apart afterwards.
 
 from __future__ import annotations
 
-from partners import PUSH_HEIGHT, Chunk
+from partners import JAW_HALF_HEIGHT, PUSH_HEIGHT, Chunk
 
-# How close to the pushing height a path has to come before it counts as a
-# push. The jaw pushes at one height in this cell, so an answer that never
-# descends to it cannot move a glass whatever else it does. A millimetre of
-# room is left for the arithmetic that built the path.
-REACHES_DOWN = PUSH_HEIGHT + 0.001
+# A millimetre of room for the arithmetic that built a path, so that a path
+# meant to reach a height is not thrown out for missing it by a rounding.
+A_WHISKER = 0.001
+
+# How far below the number a waypoint carries the hand actually reaches is
+# JAW_HALF_HEIGHT, and that is the correction this module exists to make.
+#
+# An earlier version of this rule asked whether a path came down to the height
+# the jaw pushes at, and it was wrong. A waypoint's number is the **middle** of
+# the jaw, the fingers hang below it, and so a path counted as quiet was
+# sweeping the tops of the glasses: one run broke a glass while every one of
+# its answers was being recorded as quiet. A rule that calls a policy finished
+# while it is knocking glasses over is not a rule about finishing.
+#
+# No glass height is written down here, because no glass measurement is written
+# down anywhere in this project. The caller passes the tallest glass it has
+# **measured**, and a caller that has seen nothing falls back to the gripper's
+# own pushing height, which belongs to the hand rather than to any glass.
 
 # How many such answers in a row are taken as the policy saying it is done.
 # One is too few, because a policy that draws its answer rather than computing
@@ -50,14 +63,22 @@ REACHES_DOWN = PUSH_HEIGHT + 0.001
 QUIET_ANSWERS = 3
 
 
-def is_a_push(answer: Chunk) -> bool:
-    """Whether this path comes down to the height a push happens at.
+def is_a_push(answer: Chunk, tallest: float = 0.0) -> bool:
+    """Whether any part of the hand on this path comes low enough to touch a glass.
 
     The test is the lowest waypoint rather than the first, because a policy is
-    free to come down part way along its path, and a path that touches the
-    pushing height anywhere can move a glass.
+    free to come down part way along its path, and a path that comes low
+    anywhere can move a glass there.
+
+    ``tallest`` is the height of the tallest glass the solution has measured on
+    this table. Passing it is what makes the answer mean "proposing nothing"
+    rather than "proposing nothing that would reach the pushing height": a path
+    may clear the jaw's own working height and still sweep through a glass
+    standing taller than it. A solution that has seen nothing yet passes
+    nothing, and the test falls back to the hand's own pushing height.
     """
-    return min(point.z for point in answer.waypoints) <= REACHES_DOWN
+    lowest = min(point.z for point in answer.waypoints) - JAW_HALF_HEIGHT
+    return lowest <= tallest + A_WHISKER or lowest <= PUSH_HEIGHT + A_WHISKER
 
 
 class Quiet:
@@ -71,9 +92,14 @@ class Quiet:
         self.enough = enough
         self.quiet = 0
 
-    def saw(self, answer: Chunk) -> None:
-        """Take account of what the policy has just answered."""
-        self.quiet = 0 if is_a_push(answer) else self.quiet + 1
+    def saw(self, answer: Chunk, tallest: float = 0.0) -> None:
+        """Take account of what the policy has just answered.
+
+        ``tallest`` is the tallest glass the solution has measured on this
+        table, and passing it is what makes the count mean "proposing nothing"
+        rather than "proposing nothing that would reach the pushing height".
+        """
+        self.quiet = 0 if is_a_push(answer, tallest) else self.quiet + 1
 
     @property
     def finished(self) -> bool:

@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import pytest
-from stopping import QUIET_ANSWERS, Quiet, is_a_push
 
-from partners import PUSH_HEIGHT, TRAVEL_HEIGHT, Chunk, Waypoint
+from partners import JAW_HALF_HEIGHT, PUSH_HEIGHT, TRAVEL_HEIGHT, Chunk, Waypoint
+from stopping import QUIET_ANSWERS, Quiet, is_a_push
 
 
 def _path(*heights: float) -> Chunk:
@@ -72,3 +72,32 @@ def test_each_table_counts_on_its_own():
         quiet.saw(_path(TRAVEL_HEIGHT, 0.25))
     assert quiet.finished
     assert not Quiet().finished
+
+
+def test_a_path_that_would_sweep_a_tall_glass_is_not_quiet():
+    """The fault this rule was rewritten to fix, pinned down.
+
+    A waypoint's number is the middle of the jaw and the fingers hang below it,
+    so a path can clear the height the jaw pushes at and still drag the hand
+    through a glass standing taller than that. A policy doing this is acting,
+    not finishing, and one real run broke a glass while every answer it gave
+    was being counted as quiet.
+    """
+    sweeping = _path(TRAVEL_HEIGHT, 0.146)
+    assert not is_a_push(sweeping), "clears the pushing height, so it is quiet on its own"
+    tall = 0.146 - JAW_HALF_HEIGHT + 0.01
+    assert is_a_push(sweeping, tall), "but the hand goes through a glass this tall"
+
+
+def test_a_glass_too_short_to_be_swept_leaves_the_answer_quiet():
+    sweeping = _path(TRAVEL_HEIGHT, 0.146)
+    short = 0.146 - JAW_HALF_HEIGHT - 0.01
+    assert not is_a_push(sweeping, short)
+
+
+def test_the_count_follows_the_same_rule():
+    quiet = Quiet()
+    tall = 0.146 - JAW_HALF_HEIGHT + 0.01
+    for _ in range(QUIET_ANSWERS):
+        quiet.saw(_path(TRAVEL_HEIGHT, 0.146), tall)
+    assert not quiet.finished, "a policy sweeping the glasses has not finished"

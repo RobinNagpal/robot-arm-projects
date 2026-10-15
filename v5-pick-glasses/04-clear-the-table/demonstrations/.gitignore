@@ -1,0 +1,7 @@
+# The demonstrations are a few hundred megabytes of rendered pictures, and the
+# collector regenerates them from table numbers, so nothing is lost by leaving
+# them out. What was collected is a measurement, so collected.json stays in.
+*
+!.gitignore
+!collected.json
+!README.md

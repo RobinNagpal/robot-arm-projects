@@ -47,18 +47,32 @@ def test_every_table_is_four_to_seven_glasses_of_one_kind(seed):
 
 
 @pytest.mark.parametrize("seed", SEEDS)
-def test_every_table_has_a_touching_group_of_three_and_a_touching_pair(seed):
-    """The group of three is the point of the table: one nudge cannot undo it.
+def test_every_table_has_a_touching_group(seed):
+    """A table always holds glasses that are in each other's way.
 
-    A pair is asked for as well, and a group of three contains three of them,
-    so what this really checks is that a group is a clump of glasses in each
-    other's way and not three glasses that merely ended up near each other.
+    The group is a pair on some tables and three glasses on others, which is
+    what separates a solution that manages the easy case from one that manages
+    both: a pair falls to a single well aimed nudge and three do not. What this
+    checks is that a group really is a clump of glasses in each other's way,
+    rather than glasses that merely ended up near one another.
     """
     spots = _spots(tables.table(seed))
     clumps = tables.groups_of(spots)
-    assert max(len(c) for c in clumps) >= 3
+    assert max(len(c) for c in clumps) >= tables.LEAST_IN_A_GROUP
     pairs = [(i, j) for i in range(len(spots)) for j in range(i + 1, len(spots))]
     assert any(tables.in_the_way(spots[i], spots[j]) for i, j in pairs)
+
+
+def test_both_sizes_of_group_really_occur():
+    """Neither kind of table may quietly disappear from the draw.
+
+    If every table held a pair the problem would be a test of one nudge, and if
+    every table held three the easy case would never be seen. Both have to be
+    drawn often enough that a run of fifty tables holds many of each.
+    """
+    biggest = [tables.facts(seed)["biggest_group"] for seed in range(200)]
+    assert biggest.count(2) > 60, "too few tables whose hardest group is a pair"
+    assert biggest.count(3) > 60, "too few tables with a group of three"
 
 
 @pytest.mark.parametrize("seed", SEEDS)

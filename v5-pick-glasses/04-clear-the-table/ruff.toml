@@ -2,7 +2,8 @@ extend = "../ruff.toml"
 
 [lint.isort]
 # The bench's modules import each other by bare name, and so do the solutions.
-known-first-party = ["clock", "contract", "open_run", "partners", "scoring", "tables", "wrist"]
+known-first-party = ["clock", "contract", "judging", "open_run", "partners", "scoring",
+                     "stopping", "tables", "wrist"]
 # `plan` is problem 3's planner, reached only because partners.py puts its folder
 # on the path. It is named here so that isort keeps it below partners, which is
 # the order it has to be imported in.
