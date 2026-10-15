@@ -21,7 +21,7 @@ and the bench it is scored on is
 - `views.py`, `measure.py` — **not part of this problem.** The bench stops at a
   mask, a place and a width; choosing a viewpoint and measuring the glass from
   the side are the steps after that. They are kept here because
-  [problem 4's documents](../../docs/problem-4/solutions/solution-overview.md)
+  [problem 5's documents](../../docs/problem-5/solutions/solution-overview.md)
   name `views.py` as the view check their pipeline uses. Nothing in `run.py`
   calls them.
 

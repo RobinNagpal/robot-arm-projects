@@ -8,7 +8,7 @@ arithmetic rather than from anything here. Nothing in this half knows how large
 a glass is.
 
 **The viewpoint and the measurement**, which the bench does not score. They are
-kept because problem 4's documents name this folder's `views.py` as the view
+kept because problem 5's documents name this folder's `views.py` as the view
 check their pipeline uses, so the rules are still tested here.
 
 Where a check needs a real glass it uses a family of them rather than one,

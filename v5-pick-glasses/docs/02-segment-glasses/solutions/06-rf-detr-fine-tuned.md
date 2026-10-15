@@ -308,7 +308,7 @@ model with a category list can be read as saying "I am sure this is a glass
 rather than a bowl", while here a high score means only "I am sure something is
 here", so the score cannot be read as agreement about the kind. That is no loss
 in this problem, because the kind on the table is already known, but it becomes
-one in [problem 4](../../problem-4/problem.md), where naming the kind is the
+one in [problem 5](../../problem-5/problem.md), where naming the kind is the
 question.
 
 One thing does not follow. Cutting the class list down does not make the model

@@ -249,7 +249,7 @@ existing check — the 20 N case — is caught before the 20 N is applied.
 - **The capped starting squeeze could be too light for a heavy glass with a
   stem.** 6 N lifts about 370 g. The short-stemmed glasses generated here are
   estimated at 176 to 334 g, so none is short of squeeze today. A heavier one,
-  in problem 5, would slip in the 10 mm lift and be refused.
+  in problem 6, would slip in the 10 mm lift and be refused.
 - **It does not help a glass that is refused.** A glass it catches is left on
   the table with a reason. It is not racked.
 

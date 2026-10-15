@@ -1,125 +1,163 @@
-# Problem 5 — kinds whose proportions are not known
+# Problem 5 — several kinds at once
 
-The same as [problem 4](../problem-4/problem.md), except that the glasses are
-not drawn from proportions anybody wrote down. A wine glass may have a stem that
-is a third of its height or a tenth of it. A tumbler may be 90 mm tall or
-240 mm. The arm still has to measure each one, pick it up, invert it and rack
-it.
+A few glasses of **different kinds** stand on the table together. The arm has
+to measure each one, decide which kind it is, pick it up, turn it over, and
+stand it on the rack. One at a time, until the table is clear.
 
-This is the problem the whole project exists for.
+In one sentence: **this is problems 1, 2 and 3 joined up, plus one thing none
+of them has — the rule changes from one glass to the next.**
+
+## What is already done
+
+Problem 5 starts with most of its pieces in hand. Each earlier problem solved
+one part of it.
+
+| Problem | What it solved | What problem 5 takes from it |
+| --- | --- | --- |
+| [1](../problem-1/README.md) | One glass, start to finish: find it, measure it, name its kind, choose the grip, squeeze, turn it over. Built, and runs in Gazebo. | The six steps, done on each glass in turn. |
+| [2](../02-segment-glasses/problem.md) | Several glasses of **one** kind. Tell them apart and choose where to stand the camera for each. | Finding every glass on the table, and choosing a clear side view of each. |
+| [3](../03-push-glasses-apart/problem.md) | Glasses standing too close to grip. Push them apart along the table. | Moving a crowded glass until the gripper can get round it. |
+
+So most of a problem 5 run is old work done in the right order. The question
+this document answers is: **what breaks when the glasses are not all the same
+kind?**
 
 ## What is on the table
 
-Glasses of the four shapes, at proportions drawn from a range far wider than
-the one problem 4 uses — wide enough that no two glasses of a kind look much
-alike, and wide enough to include sizes nobody anticipated when the rules were
-written.
+- **Four to six glasses**, of more than one of the four kinds: straight,
+  tapered, stemmed, short-stemmed.
+- Each glass's proportions are drawn at random from inside its kind's range.
+- All upright and opaque.
+- Some may stand too close together to be gripped, as in problem 3.
+- **The rack** is where it always is: six slots, found from its marker.
 
-Everything else is problem 4: several kinds at once, at least 150 mm apart to
-begin with, the same rack.
+## What is new: three things
 
-## What is new
+In every earlier problem, one fact held: either there was one glass, or every
+glass was the same kind. Take that away and three things change.
 
-Nothing about the *pipeline*. Everything about what may be written down.
+| | Before | Now |
+| --- | --- | --- |
+| **1. Naming the kind** | A wrong name was cheap. The glass was refused. | A wrong name can look right, and the arm acts on it. |
+| **2. Sharing the rack** | One glass, any free slot. | Several glasses of different widths. Slots can run out. |
+| **3. Telling glasses apart** | Every glass had the same width range. | The range is four kinds wide, so width says much less. |
 
-Problem 4 can, if it has to, get away with a number that is true of the glasses
-in its ranges. Problem 5 cannot get away with any number that is about a glass
-at all. The only things that may be held are sentences about shape and numbers
-about the gripper.
+Each one is explained below.
 
-![Eight wine glasses, and where the rule holds each one](../../images/why-rules-not-sizes.png)
+### 1. Naming the kind becomes load-bearing
 
-That picture is the argument. Eight glasses, all called the same thing, no two
-alike — heights from 131 to 230 mm, stems of different lengths and thicknesses.
-The mark on each is where the rule decided to hold it. One rule covers all of
-them, and a ninth glass needs no change at all.
+![With several kinds, naming becomes load-bearing](../../images/problem-5-one-wrong-name.png)
 
-The right panel is the same information as a table of measurements would have to
-hold it: one dot per glass, and a spread of 25 mm in grip height for a glass
-height that varies by 100 mm. The relationship is loose enough that no single
-number works. **That is what makes a lookup table the wrong shape for this
-problem, and it is the only reason the project is built the way it is.**
+**Why the name matters.** Each kind has its own rule for where to hold the
+glass and how hard to squeeze. The name picks the rule. Nothing after that
+looks at the name again.
 
-## The four things that must not be written down
+**Before, in problem 1.** There is one glass. If the classifier gets the kind
+wrong, the wrong rule almost always fails its own checks: the opening comes
+out impossible, or the band to hold is too short. So the glass is refused, and
+the run says why. A wrong name costs a glass, never a breakage.
 
-1. **A height to grip at.** It comes from the rule applied to the measured
-   profile, every time.
-2. **A finger opening.** It is the width the camera measured at the height the
-   rule chose, a second earlier.
-3. **A weight, or a force.** The force comes from the weight, and the weight is
-   measured by lifting the glass ten millimetres.
-4. **A band to search in, expressed in millimetres.** Search bands are
-   fractions of the glass's own height, which is why they survive a glass twice
-   the size.
+**Now, with several kinds,** two things change:
 
-What *may* be written down is anything about the gripper: how wide it opens,
-how tall its pads are, how low its body may go, how far its wrist turns. Those
-are facts about the cell and they do not change when the glassware does.
+- **Errors show up more.** The classifier runs four to six times per run, not
+  once. An error rate nobody noticed at one glass per run becomes visible.
+- **A wrong name can be wrong *and* plausible.** Some mistakes are harmless.
+  Calling a tapered glass with a very shallow wall "straight" changes little.
+  Others are not. Call a tumbler "stemmed" because a notch in its outline
+  looks like a stem, and the stemmed rule will happily return a grip at a stem
+  that does not exist.
 
-## The six steps, and what changes at each
+**Why this is dangerous.** Nothing downstream re-checks the name, because
+nothing downstream can. The first thing that notices is the width the fingers
+meet in step 5. By then the arm has already travelled to the glass and closed
+on it.
 
-**Step 1 — find the glasses.** Unchanged. Nothing in it was ever about a
-particular glass; a glass is something standing above the table.
+### 2. The rack has to be shared out
 
-**Step 2 — measure one.** Unchanged, and the one number it needs — how far back
-to stand — is already worked out from the lens and the tallest glass the cell
-handles rather than from any glass.
+**Before.** One glass, six slots. Take the next free one.
 
-**Step 3 — name the kind.** This is where the pressure lands. The two thresholds
-that name a kind — a waist below 0.17 of the height, a wall leaning more than
-6 degrees — were set by looking at two populations of generated glasses. Widen
-the populations and the two will overlap, and glasses will land on the line.
-A classifier that reports how close the call was is no longer a nicety here.
+**Now.** Several glasses, and they are different widths. A wide glass needs
+the slots beside it left empty; a narrow one does not. So where a glass goes
+is a real decision:
 
-**Step 4 — choose where to hold it.** The rules already work this way and this
-is what they were built for. The pressure is on the *checks* rather than the
-rules: an unusual glass is much more likely to produce an answer that is
-arithmetically correct and a bad idea, which is what the five rejections exist
-to catch.
+- Put an early glass in the wrong slot, and a later glass can find nowhere to
+  go.
+- The **order** the glasses are handled in decides whether that happens.
 
-**Step 5 — how hard to squeeze.** The mass estimate gets worse, because it
-scales a wall thickness category by a shape that is now much more variable. It
-does not matter much, because the estimate is openly a guess and the lift is
-what settles it. This is the step that degrades most gracefully.
+Problem 1 already has the arithmetic for "does this glass need an empty
+neighbour" — the tilt budget in `rack/layout.py`. What it has never faced is a
+choice made for one glass that leaves no room for the next.
 
-**Step 6 — turn it over and stand it down.** The tilt budget already computes
-per glass from its measured width and height. Unchanged.
+### 3. Telling glasses apart from above gets harder
 
-## What is already known to fail
+**Before.** In problem 2 every glass is one kind, with one known range of
+widths. A footprint far outside that range is a warning sign: maybe two glasses
+merged into one blob.
 
-This problem is not hypothetical, and the project has already measured how badly
-it does at it. [`known-gaps.md`](../known-gaps.md) records the result of giving
-200 random glasses of each kind to the real classifier and grip rules, using
-their exact shapes with no camera error — the best case.
+**Now.** The allowed range is the four kinds' ranges joined together. That is
+wide. A footprint too wide for a tumbler is an ordinary wine glass foot. So
+width is a much weaker check. The separation has to lean on clustering by
+distance, and on the camera's different stations agreeing.
 
-Most sizes cannot be held at all. Straight glasses got a grip in 85 cases out of
-200, and only between 125 and 170 mm tall. Short-stemmed glasses got a grip in
-none.
+This matters less than it sounds. Neither of problem 2's built pipelines uses
+the width check, so neither loses it.
 
-That is the honest state of problem 5 today: **the rules generalise in the way
-they were designed to, and the gripper does not.** The limit is not the rule
-finding the wrong place. It is that a glass under about 120 mm tall has no place
-at all between the lowest the gripper body can go and the highest a grip can be
-and still be invertible.
+## A run, step by step
+
+The pipeline is problem 1's six steps, run once per glass, with problem 2's
+finding before them and problem 3's pushing where a glass is crowded. This
+table shows which steps carry over as they are and which have to change.
+
+| Step | Comes from | In problem 5 |
+| --- | --- | --- |
+| **Find** every glass from above | problem 2 | **Weaker.** Width says less (new thing 3). Output is still a position and a rough width per glass. |
+| **Push** a crowded glass apart | problem 3 | **Harder.** Its kind decides its foot, and its foot decides whether it can be pushed without tipping. The kind may not be known yet. |
+| 1. **Find** this glass | problem 1 | Unchanged. |
+| 2. **Measure** its profile | problems 1, 2 | Unchanged in what it does. Where it can be done from is problem 2's job; problem 3 moves glasses that block the view. |
+| 3. **Name** the kind | problem 1 | **Same method, far more important** (new thing 1). Today the answer is a name or nothing. A glass that only just cleared a line is treated like one far from it. |
+| 4. **Choose** where to hold it | problem 1 | Unchanged. It already switches rule by kind; that is what `spec.py` is for. |
+| 5. **Squeeze** | problem 1 | Unchanged per glass. The force cap now varies within one run, because it belongs to the kind. Racking a thick tumbler at 12 N and then a thin flute at 6 N is correct. |
+| 6. **Turn it over** and stand it down | problem 1 | **The slot choice changes** (new thing 2). It has to keep room for the glasses still on the table. |
+
+Four of the six steps carry over untouched. The work is in **naming**,
+**pushing** and **racking**.
+
+## What is deliberately left out
+
+- **Unknown proportions.** The kinds are the four known ones, and each glass's
+  proportions come from ranges the project holds. Taking those away is
+  [problem 6](../problem-6/problem.md).
+- **New kinds.** A shape that is none of the four is refused, as in problem 1.
 
 ## What "done" means
 
-A run is **done** when every glass is racked or refused with a reason, exactly
-as in problem 4.
+A run is **done** when every glass on the table either:
 
-The number that matters here is different from every other problem's: **what
-fraction of the plausible range of each kind can be handled at all.** A run that
-racks four glasses says nothing if all four were the sizes the cell happens to
-suit. The instrument for this is not a run; it is the property test over a
-generated family, run across the whole range.
+- stands mouth-down over a slot peg, or
+- is left standing, with a sentence saying which step gave up and why.
 
-## Where the work would start
+The numbers to watch are problem 1's, plus three new ones:
 
-Not on the rules. On the cell.
+| Number | What it shows |
+| --- | --- |
+| glasses named correctly, against what was spawned | how good the naming is |
+| glasses named **wrongly but plausibly** | the dangerous case: the error survived until the fingers closed. Should be zero. |
+| glasses refused for want of a **slot**, not a grip | the slot choice is not looking far enough ahead |
 
-The three open questions at the end of the
-[problem statement](../../problem-statement.md#decisions-still-open) are all
-really about this problem: whether a slimmer gripper body would open up the
-short glasses, whether the arm is bolted in the right place, and whether the
-task should be planned as a whole so that a grip is chosen knowing what the turn
-and the placement will need.
+## Where the work starts
+
+No new technique is needed. Problem 5 is problems 1 to 3 joined, with two
+decisions made better:
+
+- a classifier that reports **how close the call was**, not just a name;
+- a slot choice that **plans for the glasses still on the table**.
+
+Both are already noted as open items in
+[problem 1's step 3](../problem-1/step3-what-kind-of-glass.md) and
+[step 6](../problem-1/step6-turning-it-over.md). Writing the solutions found
+two more — measuring a crowded glass before it is pushed, and telling the push
+model each glass's kind.
+
+## How it would be solved
+
+→ [Solution overview](solutions/solution-overview.md)

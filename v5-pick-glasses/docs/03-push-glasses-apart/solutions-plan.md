@@ -73,7 +73,7 @@ beyond being a baseline.
 ## Three shared documents, not cars
 
 - **The examiner** — the crowded tables, `look()`, `push()`, `take()`, the
-  scorecard. It already exists and problem 4 imports it.
+  scorecard. It already exists and problem 5 imports it.
 - **The target layout** — where the glasses should end up, computed rather
   than learned: discs of known foot width placed with the required clearance,
   minimising travel. Also the **displacement floor**, the least movement the
@@ -128,10 +128,10 @@ price of reproducing it.
 
 | Folder | Holds | Decision |
 |---|---|---|
-| `03-push-glasses-apart/bench` | the examiner; problem 4 imports it | keep, rename |
+| `03-push-glasses-apart/bench` | the examiner; problem 5 imports it | keep, rename |
 | `03-push-glasses-apart/01-one-fixed-nudge` | the geometry cars 1 and 2 need | keep |
 | `03-push-glasses-apart/04-a-world-model` | car 4's first way, already written | keep |
-| `03-push-glasses-apart/results` | the two approaches compared; problem 4 cites it | keep |
+| `03-push-glasses-apart/results` | the two approaches compared; problem 5 cites it | keep |
 
 The eleven solution documents become six. Nothing in the code is superseded,
 so the deletions are documents and any diagram left without a home.
@@ -159,7 +159,7 @@ had rated every topple it missed as safe**.
 
 ## Milestones
 
-1. Plan, naming, dependencies. **Check:** problem 4 still imports the examiner.
+1. Plan, naming, dependencies. **Check:** problem 5 still imports the examiner.
 2. Rename documents and images. **Check:** links resolve, tests pass.
 3. `problem.md`, `the-examiner.md`, and the two other shared documents.
 4. The six solution documents, by agents.

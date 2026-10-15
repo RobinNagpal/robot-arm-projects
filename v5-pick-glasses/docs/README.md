@@ -15,8 +15,8 @@ to know, and what counts as done. Everything here follows from it.
 | **1** | [One glass, start to finish](problem-1) | the glass is on the rack | **built** |
 | **2** | [Segment the glasses](02-segment-glasses) | a set of pixels per glass | designed, not built |
 | **3** | [Glasses standing too close](03-push-glasses-apart) | the glasses are far enough apart to grip | designed, not built |
-| **4** | [Several kinds at once](problem-4) | the table is clear | learned version built |
-| **5** | [Kinds whose proportions are unknown](problem-5) | the table is clear | stated |
+| **4** | [Several kinds at once](problem-5) | the table is clear | learned version built |
+| **5** | [Kinds whose proportions are unknown](problem-6) | the table is clear | stated |
 
 ## Why they are in this order
 
@@ -40,11 +40,11 @@ enough together that the gripper cannot get round one without fouling its
 neighbour. They have to be moved apart by **dragging them across the table**,
 because lifting one is the thing that is not possible yet.
 
-**Problem 4** joins all three up and adds the part none of them has: several
+**Problem 5** joins all three up and adds the part none of them has: several
 kinds at once, so the rule changes per glass and naming the kind becomes
 load-bearing.
 
-**Problem 5** takes away the proportions. The kinds are still the four shapes,
+**Problem 6** takes away the proportions. The kinds are still the four shapes,
 but no two glasses of a kind are alike and nothing is written down. This is the
 problem the whole project exists for, and the reason every earlier problem
 refuses to record a measurement.
@@ -71,12 +71,12 @@ means. After that they differ, because the problems do:
   folder also has a `learned-with-hardware.md` holding the answers that cannot
   — a foundation model, a fine-tune, a reinforcement-learning policy — beside
   the condition each one fails.
-- **Problem 4** has both: the six steps in `problem.md`, and a `solutions/`
+- **Problem 5** has both: the six steps in `problem.md`, and a `solutions/`
   folder with a `solution-overview.md` and nine solutions, split into
   `programmed/` and `learned/` as problem 2's are. Most of them are
   combinations of problem 1, 2 and 3 pieces, and the overview says which piece
   sits at which stage of a run. The learned one is built, in
-  [`problem-4-learned`](../problem-4-learned/README.md).
+  [`problem-5-learned`](../problem-5-learned/README.md).
 
 ## What does not work yet
 

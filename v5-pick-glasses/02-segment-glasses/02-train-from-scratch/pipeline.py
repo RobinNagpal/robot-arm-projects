@@ -34,7 +34,7 @@ is, this file makes no use of the kind.
 mask, a place and a width; choosing a viewpoint and reading a glass's profile
 from the side are the steps after that, and nothing in `run.py` calls either.
 They are kept because
-`docs/problem-4/solutions/learned/08-the-learned-pipelines-retrained.md` names
+`docs/problem-5/solutions/learned/08-the-learned-pipelines-retrained.md` names
 this folder's Ranker and SideNet as two of the parts its pipeline reuses.
 """
 

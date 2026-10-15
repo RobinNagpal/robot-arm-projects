@@ -15,7 +15,7 @@ close, run both kinds' rules instead of guessing between them.*
 In problem 1, `classify()` returns a name or nothing. A glass that only just
 cleared a line is treated exactly like one far from it. [Problem 1's step
 3](../../../problem-1/step3-what-kind-of-glass.md#where-this-approach-can-fail)
-lists that as a weakness, and [the problem](../../problem.md) says problem 4 is
+lists that as a weakness, and [the problem](../../problem.md) says problem 5 is
 where it has to be fixed.
 
 This document fixes it, and finds on the way that "add a confidence" is not
@@ -163,7 +163,7 @@ How often the band is entered, on the 800 glasses measured through the camera:
 with the fitted lean, 66 tapered glasses are within 1° of the line, and more
 within 1.7°. No straight glass is. On the waist line, 1 of 400 stemmed and
 short-stemmed glasses is within 0.02, and 121 within 0.04. So the lean line is
-where this does its work in this cell, and the waist line is where problem 5
+where this does its work in this cell, and the waist line is where problem 6
 will need it.
 
 ## The second view, for a stem
@@ -253,7 +253,7 @@ answer and takes the lower squeeze.
   passes. On a 160 mm glass that is 19 mm of reflection, which is a lot, but not
   impossible on real glass under a strip light.
 - **The three numbers were set by looking at generated glasses**, like the two
-  lines they sit beside. Problem 5 widens the ranges, and short stems will
+  lines they sit beside. Problem 6 widens the ranges, and short stems will
   get shorter.
 - **The doubt bands are as wide as the errors this simulator makes.** A real
   camera will make others.

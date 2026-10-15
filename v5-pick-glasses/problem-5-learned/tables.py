@@ -1,4 +1,4 @@
-"""Problem 4's tables: four to six glasses of mixed kinds, some too close to grip.
+"""Problem 5's tables: four to six glasses of mixed kinds, some too close to grip.
 
 Problem 3's crowded layout, with each glass's kind drawn on its own instead of
 one kind per table. Every table has at least two kinds and at least one glass

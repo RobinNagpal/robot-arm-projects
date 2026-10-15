@@ -164,8 +164,8 @@ solved at any moment.
 | **1** | One glass on the table | everything, from an empty start | [`docs/problem-1/`](docs/problem-1/) — **built** |
 | **2** | Segment the glasses | telling them apart, from few viewpoints | [`docs/02-segment-glasses/`](docs/02-segment-glasses/) — designed |
 | **3** | Glasses standing too close | moving one without lifting it | [`docs/03-push-glasses-apart/`](docs/03-push-glasses-apart/) — designed |
-| **4** | Several kinds at once | a different rule per glass, in one run | [`docs/problem-4/`](docs/problem-4/) — stated |
-| **5** | Kinds whose proportions are unknown | a rule that has never seen this glass | [`docs/problem-5/`](docs/problem-5/) — stated |
+| **4** | Several kinds at once | a different rule per glass, in one run | [`docs/problem-5/`](docs/problem-5/) — stated |
+| **5** | Kinds whose proportions are unknown | a rule that has never seen this glass | [`docs/problem-6/`](docs/problem-6/) — stated |
 
 Each has its own folder under [`docs/`](docs/), with the problem written out
 in full and the solution worked through. What follows is the short version of
@@ -218,7 +218,7 @@ This problem is about separation, and only separation. It starts from pixels
 and ends with glasses far enough apart to be picked up. It does not pick
 anything up either.
 
-### Problem 4 — several kinds at once
+### Problem 5 — several kinds at once
 
 A few kinds of glass stand on the table together. The arm has to measure each
 one, decide which kind it is, pick it up, invert it and rack it — one at a
@@ -229,9 +229,9 @@ This is problems 1, 2 and 3 joined up, plus the part neither of them has:
 low on its wall, so naming the kind is now load-bearing, and naming it wrongly
 means holding a glass in a place that was never checked.
 
-### Problem 5 — kinds whose proportions are not known
+### Problem 6 — kinds whose proportions are not known
 
-The same as problem 4, except that the glasses are not drawn from proportions
+The same as problem 5, except that the glasses are not drawn from proportions
 anybody wrote down. A wine glass may have a stem that is a third of its height
 or a tenth of it. The arm still has to pick each one up and invert it.
 

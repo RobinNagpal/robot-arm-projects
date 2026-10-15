@@ -15,7 +15,7 @@ was measured.*
 ## Introduction
 
 This solution changes no code in any step. It changes the order the steps run
-in. That makes it the cheapest thing in problem 4, and one of the most
+in. That makes it the cheapest thing in problem 5, and one of the most
 important, because it is what gives the push its most important input.
 
 ## The problem this solves

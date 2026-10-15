@@ -17,9 +17,9 @@ slots themselves stay with the arithmetic of solution 4.*
 Problem 3 chose [a learned forward model and a search over
 pushes](../../../03-push-glasses-apart/solutions/04-a-world-model.md). On 50
 held-out tables it cleared more glasses than the programmed planner in half the
-pushes, and toppled none. Problem 4 inherits that choice. This document says
-what the model needs to become a problem 4 model, and what the search needs to
-become a problem 4 search.
+pushes, and toppled none. Problem 5 inherits that choice. This document says
+what the model needs to become a problem 5 model, and what the search needs to
+become a problem 5 search.
 
 None of it is built. Nothing here is measured beyond what problem 3 measured.
 It is the plan for the one learned piece in the recommended combination.
@@ -46,7 +46,7 @@ It was trained on 15,379 pushes made in MuJoCo, about half an hour on a laptop.
 
 ### The kind, per glass
 
-The model is told **the table's** kind, the same on every row. In problem 4
+The model is told **the table's** kind, the same on every row. In problem 5
 there is no table kind. Each glass has its own, or has none yet.
 
 So the kind moves from the table to the glass. The pushed glass gets a kind out
@@ -89,7 +89,7 @@ minutes of collecting; several times that is still hours, not days.
 In problem 3, `take()` lifts a glass off the table and it is gone. There is no
 rack, so every glass freed is worth freeing.
 
-In problem 4 the rack can be full. A push that frees a glass the rack has no
+In problem 5 the rack can be full. A push that frees a glass the rack has no
 room for is a push made for nothing — and every push is the one moment a glass
 can be toppled. So the search's score gains a term:
 
@@ -158,7 +158,7 @@ make the best push; look again                                  problem 3, uncha
 ## What it needs
 
 - `03-push-glasses-apart/bench/bench.py` draws each glass's kind separately — the same change
-  every problem 4 solution needs.
+  every problem 5 solution needs.
 - `03-push-glasses-apart/04-a-world-model/features.py` puts the kind on each glass instead of the
   table, with a fifth "not measured" value and the foot zeroed with it.
 - Collection that hides some glasses' kinds at random.

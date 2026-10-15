@@ -13,7 +13,7 @@ already has the number it needs, or cannot afford the guess's mistakes.*
 
 ## Introduction
 
-In problem 4 the kind arrives late. It comes from the side view, and the side
+In problem 5 the kind arrives late. It comes from the side view, and the side
 view comes after the survey, after the racking of the glasses with room, and —
 for a crowded glass — possibly after a push. Several decisions before that
 point would be easier with the kind in hand.

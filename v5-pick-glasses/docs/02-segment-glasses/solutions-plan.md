@@ -136,9 +136,9 @@ groups points where they stand on the table rather than where they fall in the
 picture, which is solution 1's method exactly. It is not superseded by anything.
 
 **`02-segment-glasses/02-train-from-scratch` is solution 2.** Its network is the
-one solution 2 describes as already written, and `problem-4-learned` imports it.
+one solution 2 describes as already written, and `problem-5-learned` imports it.
 
-**`02-segment-glasses/results` is cited from outside.** Problem 4's documents
+**`02-segment-glasses/results` is cited from outside.** Problem 5's documents
 point at its comparison in three places.
 
 **The examiner is used by three problems**, not one: problems 2, 3 and 4 all put
@@ -225,7 +225,7 @@ New pictures are needed only where the material is new:
 6. Diagrams: remap and renumber what exists, then draw only the gaps.
    **Check:** no document points at a picture that contradicts it.
 7. Move the shared pieces into the examiner. **Check:** the floor still runs.
-8. Delete the car code, rename the folders. **Check:** problem 4 still runs.
+8. Delete the car code, rename the folders. **Check:** problem 5 still runs.
 
 ## How the documents get written
 

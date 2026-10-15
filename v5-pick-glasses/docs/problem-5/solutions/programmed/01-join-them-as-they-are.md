@@ -11,7 +11,7 @@ other solution is measured against this one.*
 
 ## Introduction
 
-The problem statement says problem 4 is problems 1, 2 and 3 joined up, plus one
+The problem statement says problem 5 is problems 1, 2 and 3 joined up, plus one
 thing none of them has. So the first thing to try is to join them and see
 where the one thing bites.
 
@@ -131,7 +131,7 @@ Problem 3's [results](../../../../03-push-glasses-apart/results/README.md#what-t
 already say that this is generous: a camera looking down sees the widest part,
 not the foot.
 
-In problem 4 the kind is not known until the glass has been measured from the
+In problem 5 the kind is not known until the glass has been measured from the
 side, and the glass that has to be pushed is the one whose side view the
 crowding may have taken away. The foot, as a share of the widest part, is very
 different from kind to kind:

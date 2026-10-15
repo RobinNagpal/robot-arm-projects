@@ -101,7 +101,7 @@ def five_problems() -> None:
         )
 
         for x, y, r in scene:
-            # Problem 5 is the one where the proportions vary, so its glasses
+            # Problem 6 is the one where the proportions vary, so its glasses
             # are drawn as outlines rather than as one repeated shape.
             style = dict(fc="none", ec=GLASS, lw=1.6) if index == 4 else dict(fc=GLASS, alpha=0.55, ec=GLASS)
             axis.add_patch(Circle((x, y), r, zorder=3, **style))
@@ -434,7 +434,7 @@ def problem_3_push_low_or_it_topples() -> None:
     _save(figure, "problem-3-push-low-or-it-topples.png")
 
 
-# ------------------------------------------------------------- problem 4
+# ------------------------------------------------------------- problem 5
 
 
 def problem_4_one_wrong_name() -> None:
@@ -487,10 +487,10 @@ def problem_4_one_wrong_name() -> None:
         ha="center", va="top", fontsize=8.4, color=MUTED,
     )
     figure.suptitle(
-        "Problem 4: with several kinds, naming becomes load-bearing",
+        "Problem 5: with several kinds, naming becomes load-bearing",
         fontsize=12, color=INK, y=1.02,
     )
-    _save(figure, "problem-4-one-wrong-name.png")
+    _save(figure, "problem-5-one-wrong-name.png")
 
 
 # ----------------------------------------- problem 2, the solution overview
@@ -649,7 +649,7 @@ def where_the_learned_part_sits() -> None:
 DRAWINGS = {
     "where-the-learned-part-sits": where_the_learned_part_sits,
     "problem-3-an-off-centre-push-spins": problem_3_an_off_centre_push_spins,
-    "problem-4-one-wrong-name": problem_4_one_wrong_name,
+    "problem-5-one-wrong-name": problem_4_one_wrong_name,
     "the-five-problems": five_problems,
     "problem-1-what-is-asked": problem_1,
     "problem-2-where-can-the-camera-stand": problem_2_where_can_the_camera_stand,

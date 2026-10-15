@@ -93,7 +93,7 @@ it stands. Problem 3 is what happens when it is not.
 
 **One kind per run is enough to get through.** The classifier has to be right,
 but it only has to be right once per run, and a wrong answer shows up
-immediately as a refused grip rather than as a mess. Problem 4 is what happens
+immediately as a refused grip rather than as a mess. Problem 5 is what happens
 when several kinds have to be handled in one pass.
 
 ## Done, and not done

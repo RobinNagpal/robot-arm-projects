@@ -9,7 +9,7 @@ network itself is needed it is stood in for by a fixed answer, because a test
 that needs trained weights is not a test.
 
 **The viewpoint and the measurement**, which the bench does not score. They are
-kept because problem 4's documents name this folder's Ranker and SideNet as
+kept because problem 5's documents name this folder's Ranker and SideNet as
 parts their pipeline reuses, so the rules around them are still tested here.
 """
 

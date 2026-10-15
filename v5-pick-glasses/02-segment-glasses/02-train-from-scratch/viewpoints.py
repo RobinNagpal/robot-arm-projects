@@ -3,7 +3,7 @@
 **This is not part of problem 2.** Problem 2 asks for masks, and the bench that
 scores the six solutions stops at a mask, a place and a width. Choosing a
 viewpoint is the step after that, and it is kept here because
-`docs/problem-4/solutions/learned/08-the-learned-pipelines-retrained.md` names
+`docs/problem-5/solutions/learned/08-the-learned-pipelines-retrained.md` names
 this folder's Ranker as one of the parts its pipeline reuses. Nothing in
 `run.py` calls it.
 

@@ -32,7 +32,7 @@ and the bench it is scored on is
   a place and a width; choosing a viewpoint and reading a glass's profile from
   the side are the steps after that, and nothing in `run.py` touches them. They
   are kept because
-  [problem 4's documents](../../docs/problem-4/solutions/learned/08-the-learned-pipelines-retrained.md)
+  [problem 5's documents](../../docs/problem-5/solutions/learned/08-the-learned-pipelines-retrained.md)
   name this folder's Ranker and SideNet as parts their pipeline reuses.
 
 ## How the finding works
@@ -225,4 +225,4 @@ print(d['target'][:, 31, 38])     # the 3 true answers for the pixel at row 31, 
 
 `show_ranker.py` and `show_side_net.py` do the same for the two models that are
 not part of this problem; their panels are described in
-[problem 4's document](../../docs/problem-4/solutions/learned/08-the-learned-pipelines-retrained.md).
+[problem 5's document](../../docs/problem-5/solutions/learned/08-the-learned-pipelines-retrained.md).

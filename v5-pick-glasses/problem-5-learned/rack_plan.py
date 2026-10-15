@@ -1,6 +1,6 @@
 """Which slot to put a glass in, chosen for the whole table. Programmed.
 
-Problem 4's solution 4. The rack has six slots, and a wide glass also uses up
+Problem 5's solution 4. The rack has six slots, and a wide glass also uses up
 the slots either side of it. Taking the next free slot can leave a later glass
 with nowhere to go. Here every way of filling the rack with the glasses still
 standing is tried, which is a few hundred cases at most, and the slot that

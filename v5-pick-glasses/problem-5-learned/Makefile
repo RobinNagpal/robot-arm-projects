@@ -1,4 +1,4 @@
-# The learned version of problem 4. Its own environment; no ROS, no Gazebo.
+# The learned version of problem 5. Its own environment; no ROS, no Gazebo.
 
 .DEFAULT_GOAL := help
 TABLES ?= 200

@@ -58,7 +58,7 @@ most needs retraining. It is given the table's one kind as an input, the same
 on every row, and each glass's foot. On a mixed table there is no one kind, and
 for a glass not yet measured there is no foot. [Solution
 9](09-plan-the-whole-table-with-the-push-model.md) is what retraining it for
-problem 4 means.
+problem 5 means.
 
 ## What breaks: naming from SideNet's profile
 
@@ -67,7 +67,7 @@ to within 5.4 mm at the median, widths to within 2.4 mm. [Problem 2's
 results](../../../../02-segment-glasses/results/README.md) found it measures worse than the
 silhouette. The silhouette is out by 0.8 mm in height at the median.
 
-In problem 4 the profile also has to carry the **name**. And the name is asked
+In problem 5 the profile also has to carry the **name**. And the name is asked
 of the profile by a question — is there a narrowest point with wider glass on
 both sides? — that is very sensitive to a single level being a little low.
 
@@ -129,7 +129,7 @@ levels, and one misread level would then decide it.
 the silhouette, as problem 2's programmed twin does, because the name needs a
 profile with enough rows to smooth. [Problem 2's
 results](../../../../02-segment-glasses/results/README.md#what-the-comparison-says) already
-said the silhouette measures better. Problem 4 turns that from "more accurate"
+said the silhouette measures better. Problem 5 turns that from "more accurate"
 into "the only one the naming can use".
 
 That is what the recommended combination does.
@@ -139,7 +139,7 @@ That is what the recommended combination does.
 - `02-segment-glasses/02-train-from-scratch` retrained on mixed scenes: a minute.
 - The forward model retrained on mixed tables: see [solution
   9](09-plan-the-whole-table-with-the-push-model.md).
-- A mixed-kind bench to score it on, the same as every problem 4 solution.
+- A mixed-kind bench to score it on, the same as every problem 5 solution.
 
 ## Where it is strong and where it breaks
 

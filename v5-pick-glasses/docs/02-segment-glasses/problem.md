@@ -151,7 +151,7 @@ hidden](hidden-glasses.md) so that no solution has to restate them.
 ## What is deliberately not in this problem
 
 **Naming the kind.** Every glass in an arrangement is the same kind and that
-kind is known. [Problem 4](../problem-4/problem.md) is where that stops being
+kind is known. [Problem 5](../problem-5/problem.md) is where that stops being
 true.
 
 **Measuring a shape.** A shape needs the view from the side, and whether such a

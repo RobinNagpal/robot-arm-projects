@@ -1,4 +1,4 @@
-# Problem 4 — the learned way
+# Problem 5 — the learned way
 
 Four to six glasses of **mixed kinds** stand on the table, some too close to
 grip. Find each one, photograph it from the side, measure it, name its kind,
@@ -7,8 +7,8 @@ that can be held. Here five small models do the seeing, the naming, the
 gripping and the predicting. Rules are kept only where the answer can be
 worked out exactly, or where a mistake would break a glass.
 
-This is [solution 8](../docs/problem-4/solutions/learned/08-the-learned-pipelines-retrained.md)
-in the problem 4 docs, with two changes. SideNet names the kind itself,
+This is [solution 8](../docs/problem-5/solutions/learned/08-the-learned-pipelines-retrained.md)
+in the problem 5 docs, with two changes. SideNet names the kind itself,
 instead of the rules naming it from SideNet's 16 widths, which solution 8
 measured to fail. And where to grip is learned too, by a new model, GripNet.
 
@@ -88,7 +88,7 @@ The side picture in; the height and the width at 16 heights out, as in
 problem 2. The new part is a second head on the same layers: four scores, one
 per kind, turned into chances that add up to 1.
 
-**Why the kind comes from SideNet and not from the rules.** Problem 4's
+**Why the kind comes from SideNet and not from the rules.** Problem 5's
 solution 8 measured what happens when the rules' waist test is run on
 SideNet's 16 widths: a 1 mm error makes a straight glass grow a waist, and
 turns 83 of 200 stemmed glasses into short-stemmed ones. A head that learns
@@ -120,8 +120,8 @@ entry, not a fault of the model.
 
 ### PushNet — what a push will do
 
-Problem 3's forward model, with the change problem 4's
-[solution 9](../docs/problem-4/solutions/learned/09-plan-the-whole-table-with-the-push-model.md)
+Problem 3's forward model, with the change problem 5's
+[solution 9](../docs/problem-5/solutions/learned/09-plan-the-whole-table-with-the-push-model.md)
 asks for. Problem 3 told it the table's one kind. Here every glass carries its
 own: one of the four, or **not measured** for a glass nobody has photographed
 from the side yet, whose foot then goes in as zero.

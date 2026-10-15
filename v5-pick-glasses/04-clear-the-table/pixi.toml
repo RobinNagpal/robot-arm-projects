@@ -1,0 +1,34 @@
+[workspace]
+name = "clear-the-table"
+version = "0.1.0"
+description = "Problem 4: the arm's own camera, and a table marked when the clock stops"
+channels = ["conda-forge"]
+platforms = ["osx-arm64", "linux-64"]
+
+# Deliberately lighter than problem 3's environment. Nothing here learns yet,
+# so there is no PyTorch and no LeRobot; the first solutions are geometry, and
+# the physics, the pictures and the drawing are all this needs. A learned
+# solution that arrives later adds what it needs rather than everybody paying
+# for it now.
+[dependencies]
+python = "3.12.*"
+numpy = ">=2.0,<2.3"
+# rack/layout.py imports OpenCV, and the glass zone is read from there.
+py-opencv = ">=4.9,<4.14"
+# The diagrams, which run the bench so that a picture is a measurement.
+matplotlib = ">=3.8"
+pytest = ">=7"
+ruff = ">=0.4"
+
+[pypi-dependencies]
+# The physics engine the pushes happen in, the same one problem 3 uses.
+mujoco = ">=3.3"
+
+[activation.env]
+# Three places, and the third is the point. The project's own modules, this
+# problem's own bench, and problem 3's bench, which this problem borrows from
+# rather than copies: the physics, the tables and the pictures are the same
+# cell, and a copy would drift away from it the first time either changed.
+PYTHONPATH = "$PIXI_PROJECT_ROOT/../src/work_cell:$PIXI_PROJECT_ROOT/bench:$PIXI_PROJECT_ROOT/../03-push-glasses-apart/bench"
+
+[tasks]

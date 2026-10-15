@@ -943,7 +943,7 @@ separate things that are not apart in the direction being measured. And allowing
 all four kinds on the table at once widens the acceptable range of widths and
 weakens the width check by exactly as much, since a group that would be
 impossible for the narrowest kind is ordinary for the widest, which is [problem
-4](../../problem-4/problem.md).
+4](../../problem-5/problem.md).
 
 **The limit on the sensor is that the rule needs depth readings, and real
 transparent glass does not give them.** Every dot in this method was born from a depth

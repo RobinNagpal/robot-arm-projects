@@ -3,8 +3,8 @@
 **This is not part of problem 2.** Problem 2 asks for masks, and the bench that
 scores the six solutions stops at a mask, a place and a width. Choosing a
 viewpoint is the step after that, and it is kept here because
-`docs/problem-4/solutions/programmed/05-measure-before-you-push.md` and
-`docs/problem-4/solutions/solution-overview.md` both name this file as the view
+`docs/problem-5/solutions/programmed/05-measure-before-you-push.md` and
+`docs/problem-5/solutions/solution-overview.md` both name this file as the view
 check their pipeline uses. Nothing in `run.py` calls it.
 
 Three stages, all geometry:

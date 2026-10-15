@@ -17,7 +17,7 @@ Read this before any of the solution documents, because every one of them
 assumes it.
 
 The examiner is built. It lives in `03-push-glasses-apart/bench/`, and all six
-solutions run on it, as does problem 4.
+solutions run on it, as does problem 5.
 
 ## Why there is an examiner at all
 

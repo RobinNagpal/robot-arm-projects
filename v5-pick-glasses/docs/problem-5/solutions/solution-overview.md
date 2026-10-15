@@ -1,4 +1,4 @@
-# Problem 4 — how it would be solved
+# Problem 5 — how it would be solved
 
 ## Introduction
 
@@ -8,7 +8,7 @@ into the nine solution documents in the two folders beside it. It says which par
 before any of the nine were written, the words they share, a table of all nine,
 and the combination this project would build.
 
-Nothing in problem 4 is built yet. Every number here comes from the project's
+Nothing in problem 5 is built yet. Every number here comes from the project's
 own code run on generated glasses, not from a run in the simulator. Where the
 numbers come from is said once below and again in each solution document.
 
@@ -35,13 +35,13 @@ Three problems have already been solved in parts:
 - **Problem 3** pushes crowded glasses apart. Both are built and scored; the
   learned forward model is the one chosen.
 
-So problem 4 is mostly a question of **joining**. Most of its solutions are
+So problem 5 is mostly a question of **joining**. Most of its solutions are
 combinations of pieces that already exist. What is new is the handful of places
 where a piece built for one kind stops being right when there are several.
 
 ## A run, stage by stage
 
-A run of problem 4 goes through these stages. The table says which problem each
+A run of problem 5 goes through these stages. The table says which problem each
 stage comes from, what is available for it, and what having several kinds
 changes.
 
@@ -257,17 +257,17 @@ set by looking at generated glasses, the same way the two naming lines were.
 1. **[A learned second opinion](learned/06-a-learned-second-opinion-on-the-name.md)**,
    once there are real pictures to train it on. In the simulator it can only
    learn the artefacts that were drawn for it.
-2. **A slimmer gripper, or grips from an angle.** Not a problem 4 solution.
+2. **A slimmer gripper, or grips from an angle.** Not a problem 5 solution.
    Short-stemmed glasses cannot be held at all today (0 of 200), and only 94 of
-   200 tapered ones. That is [problem 5's](../../problem-5/problem.md) work and
+   200 tapered ones. That is [problem 6's](../../problem-6/problem.md) work and
    [`known-gaps.md`](../../known-gaps.md)'s first entry, and it is the largest
-   loss in any problem 4 run.
+   loss in any problem 5 run.
 
 ### How it would be known to work
 
-It would need a `problem-4-sim`: problem 3's bench with each glass's kind drawn
+It would need a `problem-5-sim`: problem 3's bench with each glass's kind drawn
 separately, and with side masks that can carry a drawn reflection. Scored
-against the simulator's own record, the numbers are problem 4's own:
+against the simulator's own record, the numbers are problem 5's own:
 
 - glasses named as made, against what was spawned;
 - glasses named wrongly but plausibly — this should be zero;
@@ -282,7 +282,7 @@ thing has run end to end.
 ## Where the recommended combination can fail
 
 - **Short-stemmed glasses are never racked.** The grip rules find nowhere to
-  hold one below the cell's lowest grip. Every problem 4 table with one on it
+  hold one below the cell's lowest grip. Every problem 5 table with one on it
   ends with that glass refused. [Known gaps](../../known-gaps.md).
 - **A reflection taller than a short stem is still a stem.** The stem-length
   check separates a 10 mm notch from the shortest stem generated here by a
@@ -304,6 +304,6 @@ thing has run end to end.
 - **Every rule here was checked on glasses from the project's own ranges.** The
   margins that look comfortable — the nearest grippable stemmed glass is 0.045
   of its height from the short-stem line — were measured on those ranges.
-  Problem 5 widens them.
+  Problem 6 widens them.
 
-← [The problem](../problem.md) · [Problem 5 — kinds whose proportions are unknown](../../problem-5) →
+← [The problem](../problem.md) · [Problem 6 — kinds whose proportions are unknown](../../problem-6) →

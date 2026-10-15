@@ -17,7 +17,7 @@ stops being "the next free one" and becomes a decision that can run out of
 room. This document measures how often it does, and replaces the slot choice
 with one that looks at the whole table.
 
-It turns out to be the cheapest fix in problem 4, and the one with the clearest
+It turns out to be the cheapest fix in problem 5, and the one with the clearest
 answer. The rack is small enough that the best possible choice can be computed
 exactly, every time, so there is nothing to tune.
 
