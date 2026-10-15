@@ -1,0 +1,48 @@
+{
+  "room_a_table": 900.0,
+  "pinned_state": true,
+  "runs": [
+    {
+      "run": 0,
+      "arm_seconds_a_table": 12.16,
+      "looking_share": 1.0,
+      "tables_in_the_queue_budget": 20,
+      "shape": {
+        "answers": 58,
+        "lowest_mm_median": 235.5,
+        "lowest_mm_least": 165.4,
+        "lowest_mm_most": 280.9,
+        "across_mm_median": 732.2,
+        "across_mm_least": 240.1,
+        "across_mm_most": 1016.8,
+        "step_mm_median": 11.4,
+        "step_mm_least": 3.4,
+        "step_mm_most": 17.3,
+        "share_reaching_the_table": 0.0
+      }
+    }
+  ],
+  "shape_over_every_run": {
+    "answers": 58,
+    "lowest_mm_median": 235.5,
+    "lowest_mm_least": 165.4,
+    "lowest_mm_most": 280.9,
+    "across_mm_median": 732.2,
+    "across_mm_least": 240.1,
+    "across_mm_most": 1016.8,
+    "step_mm_median": 11.4,
+    "step_mm_least": 3.4,
+    "step_mm_most": 17.3,
+    "share_reaching_the_table": 0.0
+  },
+  "tally": {
+    "tables": 20,
+    "paths_followed": 39,
+    "refused_by_the_bench": 0,
+    "tables_that_ran_out_of_answers": 0,
+    "said_done_because": {
+      "3 answers in a row that would not touch a glass": 19
+    },
+    "refused_because": {}
+  }
+}
