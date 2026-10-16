@@ -42,9 +42,9 @@ however well framed the table under it is. Which glass hides which depends on
 where the glasses are, which no tour worked out from the cell alone can know.
 Looking from every side is the general cure: two glasses in line from one
 bearing are not in line from another. Measured over the same twenty tables as
-below, the eight stands between them catch all 117 glasses on all twenty. The
-best stand on a table catches nine glasses in ten and an average one seven in
-ten, so the sweep is buying the last glass rather than the first — and the last
+below, the eight stands between them catch all 84 glasses on all twenty. The
+best stand on a table catches 97 glasses in 100 and an average one 85 in 100,
+so the sweep is buying the last glass rather than the first — and the last
 glass is the one that would otherwise be declared finished unseen.
 
 **2. Remember.** Each look is folded into one picture of the table. Readings of
@@ -125,59 +125,92 @@ a calibration run.
 
 | | |
 |---|---|
-| Arm time a table | **31.1 s** on average, 28.4 s in the middle, 72.0 s at worst |
-| Of which looking | **56%** |
-| The whole queue of 20 | 621 arm seconds |
-| Answers | 568 over 20 tables, and 13.7 seconds of laptop time thinking in total |
+| Glasses on them | 84, of which 33 already have room |
+| Arm time a table | **42.6 s** on average, 43.0 s in the middle, 74.5 s at worst |
+| Of which looking | **46%** |
+| The whole queue of 20 | 852 arm seconds |
+| Answers | 744 over 20 tables, and 11.9 seconds of laptop time thinking in total |
 
 The looking splits three ways. A sweep of the ring is 8 seconds, and a table has
 one at the start and, if anything was pushed, one before it is declared
 finished. The look after a push is usually free, because the jaw ends up
 standing behind the glass facing it and another frame from a standing arm costs
 nothing; when the glass is not in that picture, the arm drives to a side it
-should not be hidden from, about 1.5 seconds. On the five tables where the
-chooser found nothing safe to do at all, the whole table is one sweep: 8
-seconds, and done.
+should not be hidden from, and those drives are the rest of the 16 seconds a
+table spends looking on average. On the three tables where the chooser found
+nothing safe to do at all, the whole table is one sweep: 8 seconds, nine
+answers, and done.
 
 ## What it achieves — the same twenty tables
 
 | | |
 |---|---|
-| Tables separated with nothing broken | **0** of 20 |
-| Glasses broken | **0** of 117 |
-| Glasses pickable | 30 at the start, **33** at the end |
+| Tables separated with nothing broken | **5** of 20 |
+| Glasses broken | **0** of 84 |
+| Glasses pickable | 33 at the start, **47** at the end |
 | Tables it declared finished | 20 of 20 |
 | Paths the cell's interlock refused | 0 |
 
 | why a glass was left | glasses |
 |---|---|
-| nowhere clear to push it to | 67 |
-| tipped when tried | 16 |
-| tips before it slides | 2 |
-| lost sight of it after pushing | 1 |
+| tipped when tried | 22 |
+| nowhere clear to push it to | 16 |
+| **total left** | **38** |
 
-**Zero tables separated is the draw and not the solution, and that is worth
-being precise about.** Two measurements say so.
+**Those reasons are the solution's own, and they count one glass more than the
+scorer does.** Nothing marks a glass, so the two rows are read back out of the
+sentence the solution gives when it says it is finished, and that sentence is
+written from what the arm believes. The arm believes 46 glasses ended with room
+where the simulator's own geometry finds 47, so one glass is counted as left
+when it was not. That is measurement error, and one glass in eighty-four is the
+right size for it.
 
-Take the physics away and the answer does not change. Give the chooser the true
-positions, let every push land exactly where it aimed, and let it push as often
-as it likes: it separates **0 of these 20 tables**, and 7 of 20 of problem 3's.
-One fixed nudge cannot undo a touching group of three, which every problem 4
-table holds and no problem 3 table has to.
+**Five of twenty is not the ceiling, and about half the fifteen lost tables are
+the arm rather than the arrangement.** Take the physics away — give this same
+chooser the true positions, let every push land exactly where it aimed, drop
+the clock and let it push as often as it likes — and it separates **12 of these
+20 tables** and gives 67 of the 84 glasses room, in 30 pushes.
+[Solution 2](../02-geometry-ranked/) is where that run lives, because it is the
+folder that enumerates the pushes. So these tables come apart when nothing goes
+wrong, and the seven tables between twelve and five are lost to seeing and
+pushing a real glass.
 
-Take the geometry away and the answer still does not change. A glass slides only
-while half its foot over the friction is more than the jaw's top edge, so at the
-cell's own friction of 0.35 it needs a foot wider than **75 mm**. Of the 89
-crowded glasses on these twenty tables, **85 have a narrower foot than that**,
-and **all 20 tables hold at least one**. They do not tip because the push was
-clumsy; they tip because they are too narrow in the foot to be pushed at 107 mm
-up by anything. The one honest way to clear them is to refuse them, which is
-what happens.
+**The foot is where they are lost, and the arithmetic for it still holds.** A
+glass slides rather than tips while half its foot over the friction is more than
+the height the jaw pushes at, which is the jaw's top edge, 107 mm above the
+table. The cell's own table friction is 0.35, so a glass needs a foot wider
+than **75 mm** to slide at that height. Of the 51 crowded glasses on these
+twenty tables, **49 have a narrower foot**, and **all 20 tables hold at least
+one**. That is why the commonest reason a glass is left is that it tipped when
+the test push tried it, and the glasses that tip are not tipping because the
+push was clumsy.
 
-So the first group in the table above is the hand's width — free space on the
-table, but nothing a 139 mm hand can reach into — and the second and third are
-its height. Nothing broke, which is the test push and the lean bound doing their
-job.
+**No solution is allowed to read that 0.35, and the test push is what stands in
+for it.** The tipping rule works from the plausible range of friction instead,
+0.2 to 0.5, which anybody could work out. It can therefore answer "yes" only to
+a foot wider than 107 mm and "no" only to one narrower than 43 mm, and every
+one of the 51 crowded glasses falls between. The rule says "try" to all 51 — it
+says "yes" to no glass at all on these twenty tables — so the 5 mm test push is
+the only thing that can settle them. It settles them one at a time, and it
+settles them without breaking anything: nothing toppled over the whole queue
+and the cell's interlock never once had to refuse a path.
+
+**The perfect-world run has no friction in it at all, which is why its ceiling
+is higher than what the arm reaches.** It asks the same tipping rule, which
+says "try" to every crowded glass and so refuses none of them, and then it
+simply moves the glass. It measures the arrangement rather than the cell, and
+read that way it says the arrangement is winnable.
+
+**An earlier draw gave the opposite answer, and it is worth saying what
+happened to it.** This section used to report none of twenty tables separated,
+and that was true of the draw it was measured on: the first draw asked for four
+to seven glasses with a touching pair **and** a touching group of three on every
+table, and perfect play separated none of twenty such tables either. A draw
+whose ceiling is zero cannot rank anything, because every solution scores zero
+on it for the same reason, so it was replaced by the draw measured here — three
+to five glasses with one touching group, which is a pair on about half the
+tables and three glasses on the rest, plus one or two glasses that already have
+room. The zero went with it.
 
 ## What it achieves — the held-out queue
 
@@ -219,17 +252,16 @@ repeats for a real reason — it draws its action rather than computing it, and
 its training has a random seed of its own — so the examiner asks everybody for
 three walks and this solution simply answers the same thing three times.
 
-**The two bands are not the same tables.** The twenty tuning tables above were
-measured before the draw was simplified: a table then held four to seven
-glasses with a touching group of three on every one of them, and nothing could
-separate such a table at all, which is why that section reports none of twenty
-separated. A table now holds three to five glasses with one touching group,
-which is a pair on about half of them. So the tuning numbers still show what
-the numbers above were chosen on, and the arm times in them are still the right
-order of magnitude, but **the zero in them is not a result about these
-tables**. The held-out queue settles that question directly: ten of twenty-six
-tables are separated, so the tables are separable and the method separates
-them.
+**The two bands are not the same tables, but they are the same draw.** The
+twenty tuning tables are drawn below the held-out line and these fifty from
+table 10,000 up, and both bands are three to five glasses with one touching
+group. Every number in both was measured after the first draw was replaced, and
+the sections above say what that first draw was and why a ceiling of zero made
+it useless for ranking anything. So the two bands tell one story: the tables
+are separable and this method separates some of them, five of twenty on the
+tuning tables and ten of twenty-six here, with nothing broken in either. The
+arm time agrees as well, 42.6 seconds for an average tuning table against 43.6
+for a table separated here.
 
 **Two tables in three are reached, and the twenty-sixth was worth nothing.**
 The queue is fifty tables long on purpose, so a solution runs out of time

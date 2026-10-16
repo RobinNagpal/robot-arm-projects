@@ -13,17 +13,17 @@ What is new is two choosers and a measurement.
 
 ## Why this solution is worth running at all
 
-Solution 1 separates **none** of its twenty tables, and it is not the loop that
-fails. Give its chooser the true positions, let every push land exactly where
-it aimed, and let it push as often as it likes, and it still separates none: one
-fixed nudge cannot undo a touching group of three, and every problem 4 table
-holds one. Sixty-seven of the eighty-six glasses it leaves are left because
-there was nowhere clear to push the glass to.
+Solution 1 separates **5** of its twenty tables and leaves thirty-eight glasses
+across them. Its own account of why is coarse. It cannot say whether a glass
+had no legal push at all or had legal pushes that were every one of them too
+slight to free it, because the printed rule throws its candidates away as it
+goes, so both end up reported as nowhere clear to push the glass to.
 
-A chooser that considers every candidate instead of taking the first is the
-reference most likely to find somewhere. So the question this solution answers
-is not "can a model beat a printed rule" — problem 3 already measured that, and
-the answer was no. It is **whether these tables can be separated at all.**
+A chooser that keeps every candidate can tell the two apart, and it is also the
+reference most likely to find somewhere to push a glass that looks hemmed in.
+So the question this solution answers is not "can a model beat a printed rule"
+— problem 3 already measured that, and the answer was no. It is **how much of
+what is left is the arrangement and how much is the choice.**
 
 ## What is borrowed and what is new
 
@@ -74,7 +74,7 @@ Nothing fails and nothing had to be dropped. Two reasons:
   computed over a subset of the table is still a number.
 - The solution sweeps the whole ring of stands before it decides anything, so
   the belief it hands the ranker is usually the whole table. A sweep is 8 arm
-  seconds and a table that pushes anything pays for two, so most of the 18
+  seconds and a table that pushes anything pays for two, so most of the 15
   seconds a table spends looking is this, and this is one of the things it
   buys.
 
@@ -104,70 +104,90 @@ its own `calibration.json`.
 
 | | Ranked | Solution 1 |
 |---|---|---|
-| Tables separated with nothing broken | **0** of 20 | **0** of 20 |
-| Glasses made pickable | 30 at the start, **33** at the end | 30, **33** |
-| Glasses toppled | **0** of 117 | **0** of 117 |
-| Arm time a table | **32.4 s** (31.1 s middling, 81.6 s worst) | 31.1 s (28.4, 72.0) |
-| Of which looking | **55%** | 56% |
+| Glasses on them | 84, of which 33 already have room | the same tables |
+| Tables separated with nothing broken | **4** of 20 | **5** of 20 |
+| Glasses made pickable | 33 at the start, **43** at the end | 33, **47** |
+| Glasses toppled | **0** of 84 | **0** of 84 |
+| Arm time a table | **41.1 s** (44.9 s middling, 67.7 s worst) | 42.6 s (43.0, 74.5) |
+| Of which looking | **44%** | 46% |
 | Tables it declared finished | 20 of 20 | 20 of 20 |
 | Paths the cell's interlock refused | 0 | 0 |
-| The whole queue of 20 | 649 arm s | 621 arm s |
-| Answers, and laptop time thinking | 582, 15.4 s | 568, 13.7 s |
+| The whole queue of 20 | 822 arm s | 852 arm s |
+| Answers, and laptop time thinking | 706, 13.2 s | 744, 11.9 s |
 
-**The same end, for 4% more arm time.** Same tables, same glasses, same
-breakages, 28 arm seconds more over the queue.
+**One table fewer and four glasses fewer, for 30 arm seconds less over the
+queue.** The ranked chooser is the cheaper of the two here and the worse of the
+two, and nothing was broken either way.
 
-| why a glass was left | ranked | solution 1 |
-|---|---|---|
-| still without room after pushing | 59 | — |
-| nowhere clear to push it to | 8 | 67 |
-| tipped when tried | 16 | 16 |
-| tips before it slides | 2 | 2 |
-| lost sight of it after pushing | 1 | 1 |
-| **total left** | **86** | **86** |
+| why a glass was left | ranked | the same candidates, printed rule | solution 1 |
+|---|---|---|---|
+| tipped when tried | 24 | 22 | 22 |
+| still without room after pushing | 15 | 14 | — |
+| nowhere clear to push it to | 2 | 2 | 16 |
+| tips before it slides | 1 | — | — |
+| **total left** | **42** | **38** | **38** |
 
-The first two rows are the same glasses grouped differently, and the regrouping
-is worth having. Solution 1 reports every glass it could not place as "nowhere
-clear to push it to", because `plan.choose` throws its candidates away as it
-goes. The candidate set keeps them, so this solution can say which glasses had
-**no** legal push at all — 8 of them — and which had legal pushes that were all
-too slight to free the glass or to loosen the table — 59. Only the first group
-is really hemmed in. The other three rows are identical glasses for identical
-reasons.
+The middle column is the regrouping, and it is the reason to keep the
+candidates. It leaves the same thirty-eight glasses solution 1 leaves, for the
+same tables, because it is the same loop making the same pushes; all that
+differs is what it can say about them. Solution 1 reports every glass it could
+not place as "nowhere clear to push it to", because the printed rule throws its
+candidates away as it goes. The candidate set keeps them, so sixteen glasses
+become **2** that had no legal push at all and **14** whose legal pushes were
+every one of them too slight to free the glass or to loosen the table. Only the
+first two are really hemmed in.
 
-## The ordering changes the route and not the destination
+The left-hand column is a different set of glasses, because the ranked chooser
+made different pushes and ended the tables in different arrangements. The row
+that barely moves across all three is the one that matters most: a little over
+twenty glasses tipped when the test push tried them, whoever was choosing.
 
-`measure.py --rule` runs the identical loop over the identical candidate set
-with problem 3's printed rule picking instead of the trees. That isolates the
+All three columns are a solution's own account rather than the scorer's.
+Nothing marks a glass, so the reasons are read back out of the sentence a
+solution gives when it says it is finished, and that sentence is written from
+what the arm believes. Each column therefore counts one glass more than the
+scorer finds without room — 42 against 41 for the ranked chooser, 38 against 37
+for the other two — which is measurement error of about the right size.
+
+## The ordering changes the destination, and for the worse
+
+The ablation run takes the identical loop over the identical candidate set and
+lets problem 3's printed rule pick instead of the trees. That isolates the
 sort: nothing else differs.
 
 | | Ranked | Printed rule, same candidates |
 |---|---|---|
-| Tables separated | 0 | 0 |
-| Glasses pickable at the end | 33 | 33 |
-| Arm time a table | 32.4 s | **31.1 s** |
-| Answers | 582 | **568** |
-| Thinking | 15.4 s | **13.7 s** |
+| Tables separated | 4 | **5** |
+| Glasses pickable at the end | 43 | **47** |
+| Arm time a table | **41.1 s** | 42.6 s |
+| Answers | **706** | 744 |
+| Thinking | 13.2 s | **12.6 s** |
 
-The right-hand column reproduces solution 1's `calibration.json` number for
-number — 31.07 arm seconds a table, 28.35 middling, 71.96 worst, 568 answers,
-548 paths followed — which is the check that this folder enumerates exactly
-what solution 1 chooses from. A test asserts the two pick the same push.
+The right-hand column reproduces solution 1's own calibration run number for
+number — 42.58 arm seconds a table, 43.03 middling, 74.48 worst, 744 answers,
+724 paths followed, the same five tables separated — which is the check that
+this folder enumerates exactly what solution 1 chooses from. A test asserts the
+two pick the same push. The only figure that differs is the laptop thinking
+time, 12.6 seconds against solution 1's 11.9, because this folder enumerates
+the whole candidate set before picking the push solution 1 picks first.
 
-**The model disagrees constantly and it changes nothing.** Over the 85
-decisions where any candidate existed, the ranker's pick was one the printed
-rule would have been equally happy with **15 times**, and a push the rule ranks
-below it **70 times**. The twenty tables still end in the same arrangement.
+**The model disagrees constantly, and on this draw the disagreement costs
+something.** Over the 128 decisions where any candidate existed, the ranker's
+pick was one the printed rule would have been equally happy with **13 times**,
+and a push the rule ranks below it **115 times**. The twenty tables end one
+separated table and four freed glasses worse than the printed rule left them.
 
 (The comparison is made on the rule's own measure and not by comparing the two
 pushes, because the rule takes the *first* shortest freeing push and so can name
 a different push of exactly the same length when the set is handed to it in a
 different order. Counting that as a disagreement would make the number depend on
-the sort it is there to measure. It happens on about one decision in thirty.) This is the same finding problem 3 reported — "where it
-used to be beaten on the result, it is now beaten on the cost of a result it
-matches" — reproduced on a harder problem, and it is slightly sharper here,
-because problem 3's ranker at least reached the same fourteen tables by a
-different route while here there is no route to anywhere.
+the sort it is there to measure.)
+This is worse than the finding problem 3 reported. There the ranker reached the
+same result as the printed rule and paid more arm time for it — "beaten on the
+cost of a result it matches" — so the sort was a waste and not a loss. Here it
+does not match the result: it separates one table fewer and frees four glasses
+fewer, and it does so for slightly *less* arm time. The sort has stopped being
+free.
 
 The reason is in the fit, and problem 3 already named it. The two inputs that
 carry four fifths of the importance are **push height over the topple limit**
@@ -184,32 +204,55 @@ before it slides is still refused, because that refusal belongs to the chooser.
 
 | twenty perfect tables | Ranked | Printed rule |
 |---|---|---|
-| Tables separated | **0** of 20 | **0** of 20 |
-| Glasses with room at the end | 42 of 117 | 45 of 117 |
-| Pushes it found to make | 31 | 26 |
-| Left with no legal push at all | 10 | 10 |
-| Left with only pushes too slight to help | 65 | 62 |
+| Tables separated | **11** of 20 | **12** of 20 |
+| Glasses with room at the end | 66 of 84 | 67 of 84 |
+| Pushes it found to make | 40 | 30 |
+| Left with only pushes too slight to help | 16 | 15 |
+| Left with no legal push at all | 1 | 2 |
+| Left as tippy before it would slide | 1 | — |
 
-**The answer is no, and the chooser is not what is in the way.** Twenty tables,
-a chooser looking at every candidate, nothing going wrong, and it runs out of
-pushes to suggest after **31 pushes across all twenty tables** — one or two a
-table. It is not choosing badly; there is nothing left to choose.
+**The answer is yes, and most of what a real run loses is the arm.** Eleven or
+twelve of the twenty tables come apart when nothing goes wrong, and the
+choosers run out of pushes worth suggesting after thirty or forty of them
+across the whole twenty. The real runs reach four and five. So of the fifteen
+or sixteen tables that end crowded with a real arm, seven or eight were
+winnable and were not won, and the explanation is not the arrangement.
 
-That matters because it closes off a whole family of explanations for solution
-1's zero. The zero is not the loop, not the camera on the arm, not the ranging
-push, not the measurement error and not the ordering. It is the draw against
-this hand: a Robotiq 2F-85 is 139 mm across and cannot push below 75 mm, so on
-these tables most crowded glasses are too narrow in the foot to be pushed at
-all, and the ones that can be pushed have nowhere to go that is 139 mm clear of
-everything else. Solution 1's README measures that directly — 85 of 89 crowded
-glasses have a foot narrower than the 75 mm the cell's friction demands, and all
-twenty tables hold at least one.
+It is not the chooser either, because the two columns above are within one
+table of each other and the real runs are within one table of each other. What
+is left is seeing and pushing a real glass, and the foot is where that goes
+wrong. Solution 1's README measures it directly: a glass slides rather than
+tips only while half its foot over the friction is more than the 107 mm the
+jaw's top edge stands at, the cell's own table friction is 0.35, and 49 of the
+51 crowded glasses on these twenty tables have a foot narrower than the 75 mm
+that demands. Every one of the twenty tables holds at least one such glass.
 
-**So the geometry reference is the ceiling here, and this solution is the proof
-rather than an improvement on it.** Any later solution that separates a problem
-4 table will have to do something neither of these does: pick a glass up, or
-push two at once, or move a glass through a gap neither chooser will aim at
-because the hand does not fit.
+**The perfect world has no friction in it, and that is exactly why its ceiling
+is higher.** It asks the same tipping rule the solutions ask, and that rule
+works from the plausible range of friction, 0.2 to 0.5, rather than from the
+cell's real value. The range lets it say "no" only to a foot narrower than
+43 mm, so it refuses almost nothing and the perfect run then moves the glass.
+One glass in the ranked column was refused that way, and it is a glass that
+started its table with room, which is the one case the draw does not check: the
+draw redraws a *crowded* glass until the rule stops saying "no" to it, and a
+glass that only became crowded after a push was never held to that.
+
+**So the geometry reference is the better of the two here, and neither of them
+is the ceiling.** Twelve of twenty is what a later solution has to aim at, and
+the room between twelve and five is in the physics of a push rather than in the
+arrangement. Getting at it means doing something neither of these does: pick a
+glass up, push it lower down than the jaw's top edge, push two at once, or
+settle the tipping question some way other than shoving the glass and watching.
+
+**An earlier draw answered no, and that is why it is gone.** This section used
+to report none of twenty tables separated in the perfect world, after
+thirty-one pushes across the whole twenty, and it concluded from that the
+geometry reference was the ceiling and this solution was the proof of it. That
+was true of the draw it was measured on, which asked for four to seven glasses
+with a touching pair **and** a touching group of three on every table. A draw
+whose ceiling is zero ranks nothing, since every solution scores zero on it for
+the same reason, so it was replaced by the draw measured here — three to five
+glasses with one touching group — and the conclusion went with it.
 
 ## How wide the choice really is
 
@@ -218,14 +261,15 @@ wearing a hat.
 
 | | |
 |---|---|
-| Decisions over the twenty tables | 122 |
-| Candidates offered | 9,611, **79 a decision** |
-| The widest single group | 398 |
+| Decisions over the twenty tables | 165 |
+| Candidates offered | 20,706, **126 a decision** |
+| The widest single group | 792 |
 
-So the ranker was given real choices and used them (70 disagreements), and the
-tables came out the same. The size of the groups is why the thinking time is
-higher: the enumeration is nearly all of it, and this solution enumerates the
-same pushes solution 1 enumerates and then scores them as well.
+So the ranker was given real choices and used them, on 115 of the 128
+decisions where any candidate existed, and the tables came out a table worse.
+The size of the groups is why the thinking time is higher: the enumeration is
+nearly all of it, and this solution enumerates the same pushes solution 1
+enumerates and then scores them as well.
 
 ## What it achieves — the held-out queue
 
@@ -270,16 +314,15 @@ times. The only figure that moves at all is the laptop thinking time, about
 0.2 s of spread over 12 s a walk, which measures the machine and not the
 method.
 
-**The band above and this one are not the same tables.** Every measured number
-earlier on this page, including the perfect-world run, was taken before the
-draw was simplified. A table then held four to seven glasses with a touching
-group of three on every one, and the conclusion drawn from it — that none of
-these tables can be separated at all, and that the geometry reference is
-therefore the ceiling — was true of that draw and is not true of this one. A
-table now holds three to five glasses with one touching group, which is a pair
-on about half of them. The held-out queue settles the question those sections
-asked: the tables are separable, solution 1 separates ten of twenty-six, and
-this solution separates seven.
+**The band above and this one are not the same tables, but they are the same
+draw.** The twenty tables earlier on this page are drawn below the held-out
+line and these fifty from table 10,000 up, and both bands are three to five
+glasses with one touching group. Every measured number on this page, the
+perfect-world run included, was taken after the first draw was replaced, and
+the sections above say what that first draw was and why a ceiling of zero made
+it useless for ranking anything. So the two bands tell one story: the tables
+are separable, and this solution finishes behind solution 1 in both of them —
+four tables against five above, seven against ten here.
 
 ### The ranked chooser loses, and the rows say where
 
@@ -341,12 +384,12 @@ result.
 
 **The extra arm time is real but it is not where the tables went.** On the
 twenty-four tables both solutions walked to their own finish, this one spends
-895.4 arm seconds against solution 1's 861.5 — 33.9 s more, the same four per
-cent the tuning band found. Most of it is on tables it does separate: over the
-six tables both of them separate it spends 246.1 s against 190.8 s, twenty-nine
-per cent more, with 209 answers against 177. That extra third of a minute is
-exactly what costs it the twenty-sixth table and the one glass on table 10,024.
-It is not what costs it three separated tables.
+895.4 arm seconds against solution 1's 861.5 — 33.9 s more, four per
+cent. Most of it is on tables it does separate: over the six tables both of
+them separate it spends 246.1 s against 190.8 s, twenty-nine per cent more,
+with 209 answers against 177. That extra third of a minute is exactly what
+costs it the twenty-sixth table and the one glass on table 10,024. It is not
+what costs it three separated tables.
 
 **Its lower arm time for a separated table is an artefact of which tables it
 won, not evidence that it is quicker.** The average is taken over successful
@@ -356,17 +399,18 @@ one's not at all, although this solution spent the same 94 s there. On the
 tables both of them separate, this solution is the slower of the two by
 twenty-nine per cent.
 
-### Why ordering by the model costs tables here when it cost nothing before
+### Why ordering by the model costs tables
 
-The tuning band on the old draw measured the ordering directly: over the
-eighty-five decisions where any candidate existed, the model picked a push the
-printed rule ranks below its own on **seventy** of them, and all twenty tables
-still ended in the same arrangement. The conclusion recorded there was that the
-model disagrees constantly and changes nothing. The held-out queue shows the
-second half of that sentence was a property of the draw. On a set of tables
-where no ordering can win, any ordering is as good as any other; on a set where
-ten of twenty-six are winnable, a worse order has something to spoil, and the
-same disagreement that was free before now costs three tables.
+The tuning band measures the ordering directly, because the ablation there runs
+the same loop over the same candidates with the printed rule picking. Over the
+128 decisions where any candidate existed, the model picked a push the printed
+rule ranks below its own on **115** of them, and the twenty tables ended one
+separated table and four freed glasses worse than the printed rule left them.
+The held-out queue is the same result over a longer queue, three tables rather
+than one. The first draw of problem 4 hid this: the model
+disagreed just as constantly there and cost nothing at all, because on a set of
+tables where no ordering can win any ordering is as good as any other. This
+draw has something to spoil, and a worse order spoils it.
 
 **What the model learned is which glass is risky, not which push helps.** The
 two inputs carrying four fifths of the fitted importance are the push height
@@ -436,10 +480,10 @@ fitted under problem 3's version and load under problem 4's without complaint.
 ## Three things this port found
 
 **The candidate set reproduces the printed rule exactly, and that is the test
-worth having.** `--rule` matches solution 1's `calibration.json` on every
-number, including the 548 paths the bench followed. Two enumerators that agree
-on a push are easy to write and hard to be sure of; two runs that agree on 548
-paths are the same enumerator.
+worth having.** The ablation matches solution 1's own calibration run on every
+arm second, every answer and all 724 paths the bench followed. Two enumerators
+that agree on a push are easy to write and hard to be sure of; two runs that
+agree on 724 paths are the same enumerator.
 
 **No feature needed dropping, because problem 3 chose relations over
 addresses.** The inputs were designed so that moving the arrangement would not
@@ -450,7 +494,8 @@ been fine in problem 3 and useless here.
 **"Still without room after pushing" is a better refusal than "nowhere clear to
 push it to", and it costs nothing to say.** Solution 1 cannot tell the two
 apart because its chooser discards the candidates it rejected. This one keeps
-them, and the breakdown turns out to be 8 against 59 — so the commonest reason
-a glass is left is not that the table is full, but that every push the geometry
-will allow is too small to matter. That is a different problem, and it points
-at a different fix.
+them, and over the same twenty tables solution 1's sixteen glasses with
+"nowhere clear to push it to" turn out to be 2 with no legal push at all and 14
+whose every legal push was too small to matter. So the commonest of those two
+reasons is not that the table is full. That is a different problem from a full
+table, and it points at a different fix.

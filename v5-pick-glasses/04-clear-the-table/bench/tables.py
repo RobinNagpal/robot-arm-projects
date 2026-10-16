@@ -1,4 +1,4 @@
-"""Problem 4's tables: four to seven glasses, and every crowded one movable.
+"""Problem 4's tables: three to five glasses, and every crowded one movable.
 
 Problem 3's ``scene()`` draws four to six glasses of one kind and asks only
 that one of them is short of room. That is enough when the bench hands a

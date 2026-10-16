@@ -6,15 +6,20 @@ safe push on the table instead, scores each one with problem 3's fitted trees,
 and makes the first on the sorted list. Everything else about the two is the
 same code.
 
-**Why this solution is worth running here.** Solution 1 separates none of its
-twenty tables, and it is not the loop that fails. Give its chooser the true
-positions, perfect pushes and as many of them as it likes and it still
-separates none, because one fixed nudge cannot undo a touching group of three
-and every problem 4 table holds one. Sixty-seven of the eighty-six glasses it
-leaves behind are left because there was nowhere clear to push them to. A
-chooser that looks at every candidate is the reference most likely to find
-somewhere, so what this solution really measures is whether these tables can be
-separated at all.
+**Why this solution is worth running here.** Solution 1 separates five of its
+twenty tuning tables where perfect play separates eleven or twelve, so most of
+what it misses is the choosing rather than the arrangement. Of the glasses it
+leaves behind, more are left because a glass tipped when it was tried than for
+any other reason, and the rest because there was nowhere clear to push them to.
+A chooser that looks at every candidate instead of taking the first safe push
+is the reference most likely to find somewhere, so what this solution measures
+is how much of that gap better choosing can close.
+
+An earlier draw gave a different answer to the same question. Under it solution
+1 separated none of twenty tables and so did perfect play, because every table
+held a touching group of three. That draw was replaced precisely because a
+ceiling of zero ranks nothing, and the sentence above is the measurement on the
+draw that replaced it.
 
 **One line is different, and it is the chooser.** ``nudge.OneFixedNudge``
 already does the hard part of problem 4: walk a ring of stands to see a table

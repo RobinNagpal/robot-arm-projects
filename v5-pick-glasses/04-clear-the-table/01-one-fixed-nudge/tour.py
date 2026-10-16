@@ -38,9 +38,9 @@ which are exactly the ones worth seeing, so the arm has to go round the group
 and pay for the trip.
 
 Measured on the twenty tables below ``TEST_SEEDS`` that the calibration run
-uses: the eight stands between them catch all 117 glasses on all twenty tables.
-The best stand on a table catches nine in ten, and an average one seven in ten,
-so the sweep is buying the last glass rather than the first. Walking all eight
+uses: the eight stands between them catch all 84 glasses on all twenty tables.
+The best stand on a table catches 97 glasses in a hundred, and an average one
+85 in a hundred, so the sweep is buying the last glass rather than the first. Walking all eight
 is about six seconds of arm time, and about eight from where a table starts.
 
 **The reach band is asked of the jaw and not of the flange.** A push has to put
