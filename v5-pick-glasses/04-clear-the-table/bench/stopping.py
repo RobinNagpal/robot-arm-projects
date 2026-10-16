@@ -63,13 +63,14 @@ A_WHISKER = 0.001
 # reference gives without touching a glass, a learned policy must be allowed at
 # least as many before anyone calls it finished.
 #
-# Measured on the demonstration band, the teacher's longest quiet spell that
-# then ends in a push is eleven answers, and the spell it finishes a table with
-# is ten or eleven. Looking is most of what it does: four answers in five move
-# the arm only to see. So three is far too few -- a policy would be declared
-# done partway through its first look round the table, on every table -- and
-# sixteen sits comfortably above the longest spell the teacher takes while still
-# working.
+# Measured on forty tables of the demonstration band, with every answer
+# classified by ``is_a_push`` below so that the two cannot disagree: the
+# teacher's longest quiet spell that then ends in a push is eight answers, with
+# two in the middle, and the spell it finishes a table with is eleven at its
+# longest and ten in the middle. So three is far too few -- a policy would be
+# declared done partway through its first look round the table, on every table
+# -- and sixteen sits comfortably above both. Solution 3's ``teacher.py`` is
+# the measurement and its ``teacher-quiet-spells.json`` holds the numbers.
 #
 # Being wrong in this direction is cheap and being wrong in the other is not. A
 # threshold set too high costs a few arm seconds of waving at a table that was

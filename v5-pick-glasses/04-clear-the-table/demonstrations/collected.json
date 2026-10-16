@@ -1,0 +1,79 @@
+{
+  "fitted-on": {
+    "teacher": "02-geometry-ranked, with problem 3's ranker, which was fitted on problem 3's tables",
+    "band": {
+      "first_table": 1000,
+      "tables": 300,
+      "held_out_from": 10000
+    },
+    "demonstrations": 11016,
+    "answers": 11027,
+    "answers_a_table": 36.8,
+    "kinds": {
+      "drive": 4822,
+      "stay": 4143,
+      "ranging": 1416,
+      "testing": 331,
+      "pushing": 315
+    },
+    "looking_share": 0.813,
+    "dropped": {
+      "a glass left the glass zone": 8,
+      "a glass went over": 3
+    },
+    "chunk": 200,
+    "action_width": 6,
+    "state_width": 35,
+    "picture": [
+      384,
+      384
+    ],
+    "waypoints_a_path": {
+      "least": 1,
+      "median": 1,
+      "90th": 44,
+      "most": 190
+    },
+    "seconds": 516.6,
+    "seconds_a_table": 1.72,
+    "seconds_a_demonstration": 0.047
+  },
+  "held-back": {
+    "teacher": "02-geometry-ranked, with problem 3's ranker, which was fitted on problem 3's tables",
+    "band": {
+      "first_table": 8000,
+      "tables": 50,
+      "held_out_from": 10000
+    },
+    "demonstrations": 1850,
+    "answers": 1851,
+    "answers_a_table": 37.0,
+    "kinds": {
+      "drive": 802,
+      "stay": 701,
+      "ranging": 233,
+      "pushing": 58,
+      "testing": 57
+    },
+    "looking_share": 0.812,
+    "dropped": {
+      "a glass left the glass zone": 1
+    },
+    "chunk": 200,
+    "action_width": 6,
+    "state_width": 35,
+    "picture": [
+      384,
+      384
+    ],
+    "waypoints_a_path": {
+      "least": 1,
+      "median": 1,
+      "90th": 44,
+      "most": 184
+    },
+    "seconds": 86.8,
+    "seconds_a_table": 1.74,
+    "seconds_a_demonstration": 0.047
+  }
+}
