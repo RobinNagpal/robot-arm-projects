@@ -43,6 +43,16 @@ been measured so far, and which document to read next.
    arm's own seconds, and what is counted when it stops.
 2. [**The examiner**](the-examiner.md) — the tables, the arm's clock, the
    camera on the wrist, the open run, and how a set of tables is marked.
+3. [**The six solutions side by side**](../../04-clear-the-table/results/README.md)
+   — every column of the result, the ceiling on the same tables, and which
+   columns mislead when read on their own.
+4. **One page for each solution**, which gives its spread and what it found out
+   while being built: [one fixed nudge](solutions/01-one-fixed-nudge.md),
+   [geometry ranked](solutions/02-geometry-ranked.md),
+   [imitation from demonstrations](solutions/03-imitation-from-demonstrations.md),
+   [a world model](solutions/04-a-world-model.md),
+   [SmolVLA as it downloads](solutions/05-smolvla-as-it-downloads.md) and
+   [SmolVLA fine-tuned](solutions/06-smolvla-fine-tuned.md).
 
 The cell underneath is the same cell, described once in
 [the cell](../the-cell.md). Two documents of problem 3's are still worth
@@ -54,45 +64,47 @@ arrangement that this problem takes two things away from.
 
 ## What has been measured
 
-**Four of the six solutions, on the held-out queue.** That queue is fifty
-tables offered in order from table ten thousand, with fifteen minutes of arm
-time for the whole queue, walked three times. None of the four saw those
-tables while it was being built or fitted, and the budget belongs to the queue
-rather than to a table, so how quickly a solution works decides how far down
-the list it gets.
+**All six solutions, on the held-out queue.** That queue is fifty tables
+offered in order from table ten thousand, with fifteen minutes of arm time for
+the whole queue, walked three times. No solution saw those tables while it was
+being built or fitted, and the budget belongs to the queue rather than to a
+table, so how quickly a solution works decides how far down the list it gets.
 
-| | attempted | separated | failed by a topple | pickable share | broken |
+| | attempted | separated | glasses freed | pickable share | broken |
 |---|---|---|---|---|---|
-| [1 one fixed nudge](../../04-clear-the-table/01-one-fixed-nudge/) | 26 | **10** | **0** | **0.627** | **0** |
-| [2 geometry ranked](../../04-clear-the-table/02-geometry-ranked/) | 25 | 7 | **0** | 0.582 | **0** |
-| [4 a world model](../../04-clear-the-table/04-a-world-model/) | 32 | **11** | 7 | 0.560 | 8 |
-| [5 SmolVLA as it downloads](../../04-clear-the-table/05-smolvla-as-it-downloads/) | 15 | **0** | **14** | **0.018** | **20** |
+| [1 one fixed nudge](../../04-clear-the-table/01-one-fixed-nudge/) | 26 | 10 | 25 | **0.627** | **0** |
+| [2 geometry ranked](../../04-clear-the-table/02-geometry-ranked/) | 25 | 7 | 19 | 0.582 | **0** |
+| [3 imitation, ACT](../../04-clear-the-table/03-imitation-from-demonstrations/) | 10 | **0** | **0** | 0.400 | **0** |
+| [4 a world model](../../04-clear-the-table/04-a-world-model/) | **32** | **11** | **29** | 0.560 | 8 |
+| [5 SmolVLA as it downloads](../../04-clear-the-table/05-smolvla-as-it-downloads/) | 15 | **0** | **-1** | **0.018** | **20** |
+| [6 SmolVLA fine-tuned](../../04-clear-the-table/06-smolvla-fine-tuned/) | **8** | **0** | **0** | 0.103 | 8 |
 
-A table is **separated** when every glass on it has room for the hand and
-nothing fell. It **failed** when a glass went over, and a failed table counts
-for nothing at either end, so breaking a glass is never cheaper than leaving
-the table alone. The **pickable share** is the glasses that ended with room,
-out of every glass on every table attempted, which is the partial credit that
-lets two solutions be told apart even when neither finishes many tables. The
-first two solutions choose nothing at random, so each of their three walks is
-identical and their numbers carry no spread; the other two draw from noise,
-and the spread of every number is in each folder's own page.
+**[The comparison page](../../04-clear-the-table/results/README.md) is where to
+read this properly.** It gives every column, says what perfect play achieves on
+exactly the tables each solution reached, and explains the three columns that
+mislead when read on their own — above all "tables attempted", which a solution
+that gives up instantly would win.
 
-**Two solutions are still being measured**, and both learn from
-demonstrations: the imitation policy and the fine-tuned borrowed model. Their
-rows are not here because their fits were still running when this was written,
-and a row written before its measurement is not a result.
+The short version is that the plainest solution leads. One fixed nudge, chosen
+by arithmetic with nothing learned anywhere, separates ten of the twenty-six
+tables it reaches and breaks no glass. The world model separates one more table
+and frees the most glasses, but breaks eight, and a table that lost a glass
+pays nothing at either end, so the two are level. **The three solutions that
+answer from pictures separate no table and free no glass between them**, and
+the reason is the same in each case: with the camera on the arm, four of the
+teacher's five answers only move it to see, so fitting on those answers teaches
+the looking rather than the pushing.
 
-The seven solutions that will be asked this question are problem 3's own, so
-they are already written up and already have a standing under the per-push
-scorecard: the [fixed nudge](../03-push-glasses-apart/solutions/01-one-fixed-nudge.md),
+The six solutions asked this question are problem 3's own, so each of them also
+has a standing under problem 3's per-push scorecard, and the two can be set
+side by side: the [fixed nudge](../03-push-glasses-apart/solutions/01-one-fixed-nudge.md),
 the [ranked geometry](../03-push-glasses-apart/solutions/02-geometry-ranked.md),
 the [imitation policy](../03-push-glasses-apart/solutions/03-imitation-from-demonstrations.md),
 the [world model](../03-push-glasses-apart/solutions/04-a-world-model.md), a
 [borrowed foundation model as it downloads](../03-push-glasses-apart/solutions/05-smolvla-as-it-downloads.md),
 [the same model fine-tuned here](../03-push-glasses-apart/solutions/06-smolvla-fine-tuned.md),
 and a [newer and larger borrowed model](../03-push-glasses-apart/solutions/07-evo1-fine-tuned.md).
-Each is run again under this scorecard, and each result carries a spread
+Each was run again under this scorecard, and each result carries a spread
 wherever anything about it was uncertain, because a result quoted without one
 is not a result. Solution 7, the newer and larger borrowed model, is not part
 of problem 4: problem 3 fitted it three times and it did not learn the task

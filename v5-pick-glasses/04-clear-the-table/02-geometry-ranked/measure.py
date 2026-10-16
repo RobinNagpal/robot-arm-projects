@@ -152,7 +152,12 @@ def perfect(seed: int, choose: Chooser) -> Perfect:
 
 
 def measure_perfect(seeds: range, choose: Chooser, name: str) -> dict:
-    """``--perfect`` over a queue of tables, printed and summarised."""
+    """``--perfect`` over a queue of tables, printed and summarised.
+
+    The summary also carries the running totals table by table, because a
+    solution that reached twenty-six of the fifty tables has to be read against
+    the ceiling on those twenty-six and not against the ceiling on all fifty.
+    """
     rows = []
     left: Counter = Counter()
     for seed in seeds:
@@ -181,6 +186,18 @@ def measure_perfect(seeds: range, choose: Chooser, name: str) -> dict:
         "with_room": sum(row["with_room"] for row in rows),
         "pushes": sum(row["pushes"] for row in rows),
         "left_because": dict(left),
+        # The ceiling after each table in turn. A solution is read against the
+        # prefix it reached: twenty-six tables of the queue hold a fixed set of
+        # glasses whoever is walking it, so this makes every row comparable.
+        "prefixes": [
+            {
+                "tables": upto,
+                "glasses": sum(row["glasses"] for row in rows[:upto]),
+                "separated": sum(row["separated"] for row in rows[:upto]),
+                "with_room": sum(row["with_room"] for row in rows[:upto]),
+            }
+            for upto in range(1, len(rows) + 1)
+        ],
     }
     print()
     print(
@@ -199,16 +216,33 @@ def main() -> None:
     parser.add_argument("--first", type=int, default=0, help="first table's seed")
     parser.add_argument("--rule", action="store_true", help="the printed rule, over the same candidates")
     parser.add_argument("--perfect", action="store_true", help="the chooser alone, with the arm taken away")
+    parser.add_argument(
+        "--ceiling",
+        action="store_true",
+        help="perfect play on the scored queue: how separable those arrangements are",
+    )
     parser.add_argument("--show", action="store_true", help="print why each table ended")
     parser.add_argument("--save", type=str, default="", help="write the numbers to this file")
     arguments = parser.parse_args()
 
-    last = arguments.first + arguments.tables - 1
-    if last >= TEST_SEEDS:
-        raise SystemExit(
-            f"seeds {arguments.first}..{last} reach the held-out tables, which start at {TEST_SEEDS}. "
-            "They are scored once, and not by a measurement run."
-        )
+    if arguments.ceiling:
+        # The one measurement allowed to touch the held-out tables, because it
+        # measures the **draw** and not a solution. Perfect play takes the arm
+        # away entirely, so nothing here is a solution's score, nothing is
+        # chosen from it, and no solution is changed by it. What it answers is
+        # how separable those fifty arrangements are at all, which is the scale
+        # every solution's result on them has to be read against. It is a
+        # ceiling on the arrangements and not on the queue, because the queue's
+        # arm minutes are exactly what perfect play removes.
+        arguments.perfect = True
+        arguments.first, arguments.tables = TEST_SEEDS, 50
+    else:
+        last = arguments.first + arguments.tables - 1
+        if last >= TEST_SEEDS:
+            raise SystemExit(
+                f"seeds {arguments.first}..{last} reach the held-out tables, which start at "
+                f"{TEST_SEEDS}. They are scored once, and not by a measurement run."
+            )
 
     seeds = range(arguments.first, arguments.first + arguments.tables)
     name = "the printed rule" if arguments.rule else "the fitted ranker"

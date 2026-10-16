@@ -15,7 +15,7 @@ to know, and what counts as done. Everything here follows from it.
 | **1** | [One glass, start to finish](problem-1) | the glass is on the rack | **built** |
 | **2** | [Segment the glasses](02-segment-glasses) | a set of pixels per glass | designed, not built |
 | **3** | [Glasses standing too close](03-push-glasses-apart) | the glasses are far enough apart to grip | designed, six solutions built |
-| **4** | [Clear the table](04-clear-the-table) | every glass has room, and the arm has said so | **being built** |
+| **4** | [Clear the table](04-clear-the-table) | every glass has room, and the arm has said so | designed, six solutions built |
 | **5** | [Several kinds at once](problem-5) | the table is clear | learned version built |
 | **6** | [Kinds whose proportions are unknown](problem-6) | the table is clear | stated |
 

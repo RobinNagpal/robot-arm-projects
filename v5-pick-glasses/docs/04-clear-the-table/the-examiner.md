@@ -23,11 +23,13 @@ scorecard is for.
 
 Read this before any solution document, because each of them assumes it.
 
-Nothing has been measured yet. The shared contract and the one module that
-borrows from problem 3 are written; the draw, the clock, the arm's camera,
-the loop and the scorecard are being built as this is written. So there is
-not a single measured number in this document. Where a result would go, it
-says so instead.
+Every number in this document is now measured, and it says where each one
+comes from. The results themselves are not here: this document is the rules of
+the examination, and
+[the comparison page](../../04-clear-the-table/results/README.md) is the
+marks. Where a rule exists because a measurement showed the previous rule was
+wrong, this document says so, because a reader who cannot see why a rule is
+shaped the way it is cannot tell whether it is fair.
 
 ## Why there is an examiner at all
 

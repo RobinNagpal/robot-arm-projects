@@ -19,9 +19,10 @@ By the end of this document you will understand which two assumptions problem 3
 was allowed and this one is not, what is on the table, what the arm is given
 and what it must hand back, why the budget is measured in the arm's own seconds
 rather than in the computer's, what happens when a glass goes over, and what is
-counted when the arm stops. **Nothing here has been measured yet.** The
-measurement is being built, and this document describes the question rather
-than any answer to it.
+counted when the arm stops. This document describes the question rather than
+the answers to it, and the answers are on
+[the comparison page](../../04-clear-the-table/results/README.md), which is
+worth reading only after this one.
 
 ## Why there is a problem 4 at all
 
@@ -375,19 +376,20 @@ scorecard, on these tables.
 
 ## What has been measured
 
-Four of the six solutions have walked the held-out queue, which is fifty
-tables offered in order from table ten thousand with fifteen minutes of arm
-time for the whole queue. The plain geometry solution leads it: one fixed
-nudge, chosen by arithmetic with nothing learned anywhere, separates ten of
-the twenty-six tables it reaches and breaks no glass at all. The world model
-separates one more table but puts eight glasses on the floor, and a failed
-table counts for nothing, so it ends behind. The borrowed foundation model,
-with nothing fitted, separates none and breaks twenty.
+All six solutions have walked the held-out queue, which is fifty tables
+offered in order from table ten thousand with fifteen minutes of arm time for
+the whole queue. The plain geometry solution leads it: one fixed nudge, chosen
+by arithmetic with nothing learned anywhere, separates ten of the twenty-six
+tables it reaches and breaks no glass at all. The world model separates one
+more table and frees more glasses, but it puts eight on the floor, and a failed
+table counts for nothing, so the two end level. The three solutions that answer
+from pictures separate no table and free no glass between them.
 
-The [folder's own page](README.md#what-has-been-measured) carries the table,
-and each solution's page carries its spread. The two solutions that learn from
-demonstrations were still being fitted when this was written, so they have no
-row yet, and a row written before its measurement is not a result.
+The [comparison page](../../04-clear-the-table/results/README.md) carries every
+column, and each solution's page carries its spread. It also carries the scale
+the whole table should be read against: with the arm taken away and no clock,
+perfect play separates thirty-four of the fifty tables, so the best row reaches
+about two thirds of what the arrangements allow.
 
 These results sit beside problem 3's rather than replacing them, because the
 two scorecards answer different questions and both are worth keeping: problem
