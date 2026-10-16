@@ -40,6 +40,7 @@ from bench import (  # noqa: E402
     FEEL_SPEED,
     GRIP_ROOM,
     JAW_HALF_HEIGHT,
+    MAX_WAYPOINTS,
     PUSH_HEIGHT,
     PUSH_SPEED,
     STANDING_TILT_DEG,
@@ -88,6 +89,10 @@ __all__ = [
     "PUSH_HEIGHT",
     "PUSH_SPEED",
     "JAW_HALF_HEIGHT",
+    # How many waypoints one path may hold. Any solution that writes its own
+    # paths rather than borrowing them has to check against it, because the
+    # bench rejects a longer path and the arm never moves.
+    "MAX_WAYPOINTS",
     "STANDING_TILT_DEG",
     "TEST_SEEDS",
     "TOOL_LENGTH",

@@ -205,6 +205,16 @@ for the **whole queue**, walked three times through the bench's own judging.
 Medians of the three walks, with the three values in brackets, and the geometry
 reference's walk of the same queue as a scale.
 
+**One note before the numbers, so that they stay readable later.** This walk
+ran while the stopping rule asked for three quiet answers in a row, and the
+rule now asks for sixteen, because the teacher itself takes up to eleven quiet
+answers before pushing again. That change cannot move anything in this walk.
+This solution never gave even three quiet answers in a row, which is why it
+declared itself finished on no table at all, so asking for more of them leaves
+every table ending exactly where it ended. Raising the threshold can only
+reduce how often a solution is called finished, and this one was never called
+finished.
+
 | | geometry reference | **this, as it downloads** |
 |---|---|---|
 | Tables attempted | 26 | 15 (15, 13, 15) |

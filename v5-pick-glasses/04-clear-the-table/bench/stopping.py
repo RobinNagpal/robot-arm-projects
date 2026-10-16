@@ -56,11 +56,25 @@ A_WHISKER = 0.001
 # own pushing height, which belongs to the hand rather than to any glass.
 
 # How many such answers in a row are taken as the policy saying it is done.
+#
 # One is too few, because a policy that draws its answer rather than computing
-# it will draw a stray one. Three in a row from a policy that acts at all is
-# not a coincidence, and three is also cheap: at about two arm seconds an
-# answer, being wrong about this costs a few seconds rather than a table.
-QUIET_ANSWERS = 3
+# it will draw a stray one. The number has to come from somewhere, though, and
+# the right place is the teacher: however many answers in a row the geometry
+# reference gives without touching a glass, a learned policy must be allowed at
+# least as many before anyone calls it finished.
+#
+# Measured on the demonstration band, the teacher's longest quiet spell that
+# then ends in a push is eleven answers, and the spell it finishes a table with
+# is ten or eleven. Looking is most of what it does: four answers in five move
+# the arm only to see. So three is far too few -- a policy would be declared
+# done partway through its first look round the table, on every table -- and
+# sixteen sits comfortably above the longest spell the teacher takes while still
+# working.
+#
+# Being wrong in this direction is cheap and being wrong in the other is not. A
+# threshold set too high costs a few arm seconds of waving at a table that was
+# already finished; a threshold set too low ends the table.
+QUIET_ANSWERS = 16
 
 
 def is_a_push(answer: Chunk, tallest: float = 0.0) -> bool:
