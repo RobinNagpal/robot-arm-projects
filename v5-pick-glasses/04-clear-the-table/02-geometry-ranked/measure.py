@@ -227,7 +227,7 @@ def main() -> None:
         # A queue of one, so that the solution's own running totals can be read
         # between tables. The real runner still runs each of them, and the
         # budget is wide enough that no table is cut short.
-        result = clear_queue(solution, [seed], ROOM_TO_WORK, tally=tally).results[0]
+        result = clear_queue(solution, [seed], ROOM_TO_WORK, tally=tally, drop_unreached=False).results[0]
         split.append((result, solution.look_seconds - looked, solution.push_seconds - pushed))
         print(
             f"seed {seed}: {result.glasses} glasses, pickable {result.pickable_at_start}"

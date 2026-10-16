@@ -489,12 +489,21 @@ def clear_queue(
     *,
     tally: Tally | None = None,
     cell_for: Callable[[int], Cell] | None = None,
+    drop_unreached: bool = True,
 ) -> Run:
     """Walk the queue of tables until the arm time runs out, and report how far it got.
 
     Every solution is given the same ordered list and the same budget, so this is
     the only place a run's arm time is divided up, and it is not divided up: each
     table is told what is left and may spend as much of it as it needs.
+
+    ``drop_unreached`` is what the score uses, and it leaves out a table the
+    clock ended before the arm had moved on it even once. A script that asks
+    "what does this solution do on *this* table" rather than "how far down a
+    queue does it get" should pass ``False``, because then there is no tail for
+    the rule to protect against and the empty answer is itself the reading: a
+    solution whose every answer was refused spent nothing, and a caller that
+    expected one table back would otherwise be handed none.
     """
     build = open_cell if cell_for is None else cell_for
     run = Run(budget=budget, seeds=tuple(seeds))
@@ -502,7 +511,7 @@ def clear_queue(
         if run.left < LEAST_ACTION:
             break
         result = clear_table(solution, seed, run.left, cell=build(seed), tally=tally)
-        if result.never_reached:
+        if drop_unreached and result.never_reached:
             # This table was handed over and handed straight back, because what
             # was left of the clock could not pay for the first path asked for.
             # Keeping it would count a table the solution never had a chance at,

@@ -1,0 +1,82 @@
+{
+  "weights": [
+    "smolvla as it downloads"
+  ],
+  "walks": 3,
+  "first_table": 0,
+  "tables": 20,
+  "arm_budget": 900.0,
+  "quiet_answers_taken_as_done": 16,
+  "tables_the_arm_never_moved_on": 0,
+  "each_walk": [
+    {
+      "correction": "smolvla as it downloads",
+      "quiet_answers_taken_as_done": 16,
+      "looking_seconds": 0.0,
+      "pushing_seconds": 8506.9,
+      "looking_share": 0.0,
+      "refused_because": {
+        "the tipping interlock": 1432
+      },
+      "shape": {
+        "answers": 2195,
+        "lowest_mm_median": 123.5,
+        "lowest_mm_least": 75.0,
+        "lowest_mm_most": 266.8,
+        "across_mm_median": 423.9,
+        "across_mm_least": 185.7,
+        "across_mm_most": 1106.3,
+        "step_mm_median": 7.4,
+        "step_mm_least": 3.2,
+        "step_mm_most": 22.1,
+        "share_reaching_the_table": 0.006
+      }
+    },
+    {
+      "correction": "smolvla as it downloads",
+      "quiet_answers_taken_as_done": 16,
+      "looking_seconds": 14.5,
+      "pushing_seconds": 14941.3,
+      "looking_share": 0.001,
+      "refused_because": {
+        "the tipping interlock": 3324
+      },
+      "shape": {
+        "answers": 3782,
+        "lowest_mm_median": 142.6,
+        "lowest_mm_least": 75.0,
+        "lowest_mm_most": 253.0,
+        "across_mm_median": 490.3,
+        "across_mm_least": 193.4,
+        "across_mm_most": 1043.1,
+        "step_mm_median": 8.6,
+        "step_mm_least": 3.4,
+        "step_mm_most": 18.5,
+        "share_reaching_the_table": 0.008
+      }
+    },
+    {
+      "correction": "smolvla as it downloads",
+      "quiet_answers_taken_as_done": 16,
+      "looking_seconds": 6.6,
+      "pushing_seconds": 8877.1,
+      "looking_share": 0.001,
+      "refused_because": {
+        "the tipping interlock": 1688
+      },
+      "shape": {
+        "answers": 2308,
+        "lowest_mm_median": 127.9,
+        "lowest_mm_least": 75.0,
+        "lowest_mm_most": 265.2,
+        "across_mm_median": 441.8,
+        "across_mm_least": 192.4,
+        "across_mm_most": 1007.2,
+        "step_mm_median": 7.8,
+        "step_mm_least": 3.5,
+        "step_mm_most": 18.6,
+        "share_reaching_the_table": 0.005
+      }
+    }
+  ]
+}

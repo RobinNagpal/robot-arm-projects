@@ -170,17 +170,14 @@ def one_fit(folder: Path, seeds: range, show: bool) -> tuple[Scorecard, dict]:
         # between tables. The real runner still runs each of them, every table
         # gets the same allowance, and ``ended_by`` says when the allowance was
         # what stopped a table.
-        walk = clear_queue(counted, [seed], ROOM_TO_WORK, tally=tally)
-        if not walk.results:
-            # ``clear_queue`` drops a table the clock ended before the arm moved
-            # on it at all. That is for a queue sharing one budget; here every
-            # table is handed the same whole allowance, which is twenty times
-            # the most expensive path a chunk can be, so this cannot happen and
-            # says something is wrong rather than that a table was skipped.
-            raise RuntimeError(
-                f"table {seed} was handed {ROOM_TO_WORK:g} arm seconds and the first path "
-                f"{counted.name} asked for did not fit in them"
-            )
+        # ``drop_unreached`` is off because this is a queue of one. The rule it
+        # turns off protects the tail of a real queue, where the clock can hand
+        # a table over with too little left to act on; here the question is what
+        # this solution does on this table, and a table it spent nothing on is
+        # part of the answer rather than something to leave out. A policy whose
+        # every answer the cell refuses spends no arm time and is stopped by the
+        # answer guard, and that table has to come back.
+        walk = clear_queue(counted, [seed], ROOM_TO_WORK, tally=tally, drop_unreached=False)
         result = walk.results[0]
         looking, pushing = (now - was for now, was in zip(counted.split(), before, strict=True))
         card.table(result)

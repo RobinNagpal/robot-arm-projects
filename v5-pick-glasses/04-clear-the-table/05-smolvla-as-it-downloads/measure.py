@@ -94,7 +94,10 @@ def main() -> None:
         # what keeps one run's totals out of the next one's.
         solution = AsItDownloads(model, pinned=arguments.pinned)
         for seed in range(arguments.first, arguments.first + arguments.tables):
-            result = clear_queue(solution, [seed], arguments.room, tally=tally).results[0]
+            walk = clear_queue(
+                solution, [seed], arguments.room, tally=tally, drop_unreached=False
+            )
+            result = walk.results[0]
             card.table(result)
             if arguments.show:
                 print(

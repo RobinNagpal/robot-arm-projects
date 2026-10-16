@@ -1,0 +1,36 @@
+{
+  "weights": [
+    "correction-0"
+  ],
+  "walks": 1,
+  "first_table": 0,
+  "tables": 8,
+  "arm_budget": 900.0,
+  "quiet_answers_taken_as_done": 12,
+  "tables_the_arm_never_moved_on": 0,
+  "each_walk": [
+    {
+      "correction": "correction-0",
+      "quiet_answers_taken_as_done": 12,
+      "looking_seconds": 167.3,
+      "pushing_seconds": 909.7,
+      "looking_share": 0.155,
+      "refused_because": {
+        "the tipping interlock": 41
+      },
+      "shape": {
+        "answers": 297,
+        "lowest_mm_median": 225.8,
+        "lowest_mm_least": 75.0,
+        "lowest_mm_most": 300.0,
+        "across_mm_median": 320.7,
+        "across_mm_least": 180.7,
+        "across_mm_most": 707.0,
+        "step_mm_median": 4.6,
+        "step_mm_least": 2.5,
+        "step_mm_most": 10.0,
+        "share_reaching_the_table": 0.027
+      }
+    }
+  ]
+}

@@ -1,0 +1,78 @@
+{
+  "weights": [
+    "correction-0",
+    "correction-1",
+    "correction-2"
+  ],
+  "walks": 3,
+  "first_table": 10000,
+  "tables": 50,
+  "arm_budget": 900.0,
+  "quiet_answers_taken_as_done": 16,
+  "tables_the_arm_never_moved_on": 0,
+  "each_walk": [
+    {
+      "correction": "correction-0",
+      "quiet_answers_taken_as_done": 16,
+      "looking_seconds": 357.4,
+      "pushing_seconds": 932.4,
+      "looking_share": 0.277,
+      "refused_because": {},
+      "shape": {
+        "answers": 360,
+        "lowest_mm_median": 233.0,
+        "lowest_mm_least": 75.0,
+        "lowest_mm_most": 297.1,
+        "across_mm_median": 301.7,
+        "across_mm_least": 161.0,
+        "across_mm_most": 773.5,
+        "step_mm_median": 4.2,
+        "step_mm_least": 2.2,
+        "step_mm_most": 12.5,
+        "share_reaching_the_table": 0.022
+      }
+    },
+    {
+      "correction": "correction-1",
+      "quiet_answers_taken_as_done": 16,
+      "looking_seconds": 212.7,
+      "pushing_seconds": 881.2,
+      "looking_share": 0.194,
+      "refused_because": {},
+      "shape": {
+        "answers": 302,
+        "lowest_mm_median": 250.6,
+        "lowest_mm_least": 75.0,
+        "lowest_mm_most": 300.0,
+        "across_mm_median": 297.0,
+        "across_mm_least": 144.9,
+        "across_mm_most": 755.9,
+        "step_mm_median": 3.8,
+        "step_mm_least": 2.1,
+        "step_mm_most": 12.9,
+        "share_reaching_the_table": 0.017
+      }
+    },
+    {
+      "correction": "correction-2",
+      "quiet_answers_taken_as_done": 16,
+      "looking_seconds": 391.8,
+      "pushing_seconds": 917.4,
+      "looking_share": 0.299,
+      "refused_because": {},
+      "shape": {
+        "answers": 358,
+        "lowest_mm_median": 240.2,
+        "lowest_mm_least": 75.0,
+        "lowest_mm_most": 300.0,
+        "across_mm_median": 310.2,
+        "across_mm_least": 145.9,
+        "across_mm_most": 678.0,
+        "step_mm_median": 4.2,
+        "step_mm_least": 2.2,
+        "step_mm_most": 10.7,
+        "share_reaching_the_table": 0.039
+      }
+    }
+  ]
+}

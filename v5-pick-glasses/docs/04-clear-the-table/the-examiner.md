@@ -315,6 +315,18 @@ queue than it did, and that it left every glass on that table crowded, which
 would drag down the share of glasses made pickable for a reason that has
 nothing to do with the method.
 
+**So "tables attempted" counts the tables the arm worked on, and it is not the
+same as how far down the list a solution got.** The two usually agree, because
+a solution spends its budget steadily and stops near where it ran out. They
+come apart at the end of a queue: one walk acted on the first seven tables,
+then passed through thirty-nine it could not afford, and finally found one
+cheap enough to answer once, so it reports eight tables attempted while having
+reached the forty-seventh table in the list. Reading that eight as "it only got
+eight tables into the queue" would be wrong. Which of the two numbers matters
+depends on the question, and the one reported is the number of tables the
+solution really did something on, because that is the number the glasses are
+counted out of.
+
 The walk then carries on to the next table rather than stopping, because what
 did not fit was one path and not every path. The clock still holds time, and
 the next table may be asked for something cheaper that fits inside it, which

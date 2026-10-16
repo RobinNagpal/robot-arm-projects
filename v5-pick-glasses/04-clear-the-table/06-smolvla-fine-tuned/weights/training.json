@@ -1,0 +1,257 @@
+{
+  "seeds": [
+    {
+      "seed": 0,
+      "steps_wanted": 1000,
+      "steps_done": 1000,
+      "batch": 4,
+      "learning_rate": 0.0001,
+      "warmup": 100,
+      "minutes": 26.4,
+      "memory_gib": 1.02,
+      "moving_numbers": 3813376,
+      "total_numbers": 453859552,
+      "tuning_chunks_a_check": 16,
+      "reading_the_demonstrations": {
+        "demonstrations_read": 4000,
+        "kinds": {
+          "looking": 3254,
+          "pushing": 672,
+          "squeezed": 74
+        },
+        "squeezed_share": 0.0185,
+        "waypoints_pulled_inside_the_limits": 0
+      },
+      "history": [
+        {
+          "step": 0,
+          "tuning_mm": {
+            "all": {
+              "median": 163.2,
+              "worst": 387.4
+            },
+            "looking": {
+              "median": 203.8,
+              "worst": 528.3
+            },
+            "pushing": {
+              "median": 82.4,
+              "worst": 530.8
+            }
+          }
+        },
+        {
+          "step": 500,
+          "loss": 0.3413,
+          "tuning_mm": {
+            "all": {
+              "median": 128.7,
+              "worst": 432.7
+            },
+            "looking": {
+              "median": 166.1,
+              "worst": 447.7
+            },
+            "pushing": {
+              "median": 96.8,
+              "worst": 439.4
+            }
+          }
+        },
+        {
+          "step": 1000,
+          "loss": 0.2285,
+          "tuning_mm": {
+            "all": {
+              "median": 110.1,
+              "worst": 308.8
+            },
+            "looking": {
+              "median": 181.1,
+              "worst": 406.3
+            },
+            "pushing": {
+              "median": 103.0,
+              "worst": 454.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "seed": 1,
+      "steps_wanted": 1000,
+      "steps_done": 1000,
+      "batch": 4,
+      "learning_rate": 0.0001,
+      "warmup": 100,
+      "minutes": 26.4,
+      "memory_gib": 1.05,
+      "moving_numbers": 3813376,
+      "total_numbers": 453859552,
+      "tuning_chunks_a_check": 16,
+      "reading_the_demonstrations": {
+        "demonstrations_read": 4000,
+        "kinds": {
+          "looking": 3254,
+          "pushing": 663,
+          "squeezed": 83
+        },
+        "squeezed_share": 0.0208,
+        "waypoints_pulled_inside_the_limits": 0
+      },
+      "history": [
+        {
+          "step": 0,
+          "tuning_mm": {
+            "all": {
+              "median": 152.3,
+              "worst": 522.8
+            },
+            "looking": {
+              "median": 184.6,
+              "worst": 401.7
+            },
+            "pushing": {
+              "median": 88.0,
+              "worst": 506.1
+            }
+          }
+        },
+        {
+          "step": 500,
+          "loss": 0.3468,
+          "tuning_mm": {
+            "all": {
+              "median": 150.9,
+              "worst": 484.1
+            },
+            "looking": {
+              "median": 176.4,
+              "worst": 550.5
+            },
+            "pushing": {
+              "median": 101.4,
+              "worst": 365.2
+            }
+          }
+        },
+        {
+          "step": 1000,
+          "loss": 0.2217,
+          "tuning_mm": {
+            "all": {
+              "median": 122.2,
+              "worst": 491.3
+            },
+            "looking": {
+              "median": 187.5,
+              "worst": 450.5
+            },
+            "pushing": {
+              "median": 115.9,
+              "worst": 474.9
+            }
+          }
+        }
+      ]
+    },
+    {
+      "seed": 2,
+      "steps_wanted": 1000,
+      "steps_done": 1000,
+      "batch": 4,
+      "learning_rate": 0.0001,
+      "warmup": 100,
+      "minutes": 27.1,
+      "memory_gib": 1.04,
+      "moving_numbers": 3813376,
+      "total_numbers": 453859552,
+      "tuning_chunks_a_check": 16,
+      "reading_the_demonstrations": {
+        "demonstrations_read": 4000,
+        "kinds": {
+          "looking": 3268,
+          "squeezed": 80,
+          "pushing": 652
+        },
+        "squeezed_share": 0.02,
+        "waypoints_pulled_inside_the_limits": 0
+      },
+      "history": [
+        {
+          "step": 0,
+          "tuning_mm": {
+            "all": {
+              "median": 151.6,
+              "worst": 379.2
+            },
+            "looking": {
+              "median": 201.1,
+              "worst": 471.4
+            },
+            "pushing": {
+              "median": 97.3,
+              "worst": 508.5
+            }
+          }
+        },
+        {
+          "step": 500,
+          "loss": 0.3386,
+          "tuning_mm": {
+            "all": {
+              "median": 150.0,
+              "worst": 320.7
+            },
+            "looking": {
+              "median": 231.4,
+              "worst": 489.4
+            },
+            "pushing": {
+              "median": 121.0,
+              "worst": 523.7
+            }
+          }
+        },
+        {
+          "step": 1000,
+          "loss": 0.2143,
+          "tuning_mm": {
+            "all": {
+              "median": 148.4,
+              "worst": 367.4
+            },
+            "looking": {
+              "median": 222.1,
+              "worst": 390.5
+            },
+            "pushing": {
+              "median": 83.9,
+              "worst": 489.3
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "weights": "lerobot/smolvla_base",
+  "rank": 16,
+  "scaling": 32,
+  "tables": [
+    "q_proj",
+    "k_proj",
+    "v_proj",
+    "o_proj"
+  ],
+  "chunk": 50,
+  "device": "mps",
+  "band": {
+    "first_table": 1000,
+    "tables": 300,
+    "held_out_from": 10000
+  },
+  "demonstrations": 11016,
+  "tables_fitted_on": 300,
+  "tuning_demonstrations": 1850
+}

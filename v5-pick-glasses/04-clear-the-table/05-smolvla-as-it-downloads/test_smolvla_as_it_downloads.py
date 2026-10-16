@@ -205,14 +205,27 @@ def test_a_table_ends_only_after_enough_answers_that_could_not_touch_a_glass(hei
 
 
 def test_one_push_among_the_quiet_answers_starts_the_count_again() -> None:
-    """The rule is a run of quiet answers, not a total of them."""
+    """The rule is a run of quiet answers, not a total of them.
+
+    So the count is taken all the way to the threshold, broken by one push one
+    answer short of it, and then taken to the threshold again. The lengths come
+    from the bench's own threshold rather than from written-down numbers,
+    because that threshold is set from a measurement of the teacher and moves
+    when the measurement is redone.
+    """
     high, low = flat_path(0.25), flat_path(PUSH_HEIGHT)
-    solution = AsItDownloads(Stub([high, high, low, high, high, high]))
+    nearly = QUIET_ANSWERS - 1
+    answers_to_give = [high] * nearly + [low] + [high] * QUIET_ANSWERS
+    solution = AsItDownloads(Stub(answers_to_give))
     solution.begin(0)
     look = Look(picture=PICTURE, seen=(glass(),), jaw=HOME, seconds_left=600.0)
-    answers = [solution.answer(look) for _ in range(5)]
-    assert not any(isinstance(a, Done) for a in answers)
-    assert isinstance(solution.answer(look), Done)
+
+    quiet_then_a_push = [solution.answer(look) for _ in range(nearly + 1)]
+    assert not any(isinstance(a, Done) for a in quiet_then_a_push), "the push restarted the count"
+
+    after = [solution.answer(look) for _ in range(QUIET_ANSWERS)]
+    assert not any(isinstance(a, Done) for a in after[:-1])
+    assert isinstance(after[-1], Done)
 
 
 def test_a_new_table_starts_with_a_clean_count() -> None:

@@ -1,0 +1,84 @@
+{
+  "weights": [
+    "correction-0",
+    "correction-1",
+    "correction-2"
+  ],
+  "walks": 3,
+  "first_table": 0,
+  "tables": 20,
+  "arm_budget": 900.0,
+  "quiet_answers_taken_as_done": 16,
+  "tables_the_arm_never_moved_on": 0,
+  "each_walk": [
+    {
+      "correction": "correction-0",
+      "quiet_answers_taken_as_done": 16,
+      "looking_seconds": 604.1,
+      "pushing_seconds": 2077.2,
+      "looking_share": 0.225,
+      "refused_because": {
+        "the tipping interlock": 65
+      },
+      "shape": {
+        "answers": 745,
+        "lowest_mm_median": 230.6,
+        "lowest_mm_least": 75.0,
+        "lowest_mm_most": 300.0,
+        "across_mm_median": 316.4,
+        "across_mm_least": 136.1,
+        "across_mm_most": 749.7,
+        "step_mm_median": 4.6,
+        "step_mm_least": 2.1,
+        "step_mm_most": 12.1,
+        "share_reaching_the_table": 0.02
+      }
+    },
+    {
+      "correction": "correction-1",
+      "quiet_answers_taken_as_done": 16,
+      "looking_seconds": 767.3,
+      "pushing_seconds": 1993.1,
+      "looking_share": 0.278,
+      "refused_because": {
+        "the tipping interlock": 68
+      },
+      "shape": {
+        "answers": 765,
+        "lowest_mm_median": 249.9,
+        "lowest_mm_least": 75.0,
+        "lowest_mm_most": 300.0,
+        "across_mm_median": 301.1,
+        "across_mm_least": 142.2,
+        "across_mm_most": 762.6,
+        "step_mm_median": 3.9,
+        "step_mm_least": 2.2,
+        "step_mm_most": 12.3,
+        "share_reaching_the_table": 0.014
+      }
+    },
+    {
+      "correction": "correction-2",
+      "quiet_answers_taken_as_done": 16,
+      "looking_seconds": 677.7,
+      "pushing_seconds": 2027.3,
+      "looking_share": 0.251,
+      "refused_because": {
+        "the tipping interlock": 52
+      },
+      "shape": {
+        "answers": 749,
+        "lowest_mm_median": 232.7,
+        "lowest_mm_least": 75.0,
+        "lowest_mm_most": 300.0,
+        "across_mm_median": 295.0,
+        "across_mm_least": 126.8,
+        "across_mm_most": 867.2,
+        "step_mm_median": 4.1,
+        "step_mm_least": 2.1,
+        "step_mm_most": 11.6,
+        "share_reaching_the_table": 0.028
+      }
+    }
+  ]
+}
