@@ -125,6 +125,19 @@ class TableResult:
         """Nothing was broken and the table is still crowded. Not the same as failing."""
         return not self.failed and not self.separated
 
+    @property
+    def never_reached(self) -> bool:
+        """The clock ended this table before the arm moved on it even once.
+
+        A queue's budget belongs to the whole queue, so the last table in a
+        walk is handed whatever is left, and what is left can be too little to
+        pay for any path at all. Such a table is not a table the solution
+        failed. It is a table the solution never got, and counting it would
+        both overstate how far down the queue the solution reached and add
+        every glass standing on it to the glasses it left crowded.
+        """
+        return self.ended_by == RAN_OUT and self.arm_seconds == 0.0
+
 
 class Solution(Protocol):
     """What problem 4 asks of an approach. Four lines, and no more.

@@ -283,6 +283,34 @@ all, and a scorecard that hid that would be misleading — but it must not be
 subtracted from the arm's clock, because the arm is not the thing that was
 slow.
 
+### One budget for the whole queue, and the tables it does not reach
+
+That budget belongs to a **queue** of tables and not to a table on its own.
+Every solution is handed the same ordered list of tables and the same number
+of arm seconds for all of them together, and each table may spend as much of
+what is left as it needs. This is deliberate, because it makes speed part of
+the score instead of a separate column: a solution that clears a table
+beautifully in four minutes reaches fewer tables than one that clears it
+roughly in one, and the card shows both halves of that trade.
+
+Working that way creates one case that has to be handled carefully. Near the
+end of a queue the clock holds only a few seconds, so a table can be handed
+over, be asked for a path, and have that path turned down for not fitting in
+the time left. The arm never moves, and the table comes straight back
+untouched. Such a table is **not counted at all**, because counting it would
+say two untrue things at once: that the solution reached further down the
+queue than it did, and that it left every glass on that table crowded, which
+would drag down the share of glasses made pickable for a reason that has
+nothing to do with the method.
+
+The walk then carries on to the next table rather than stopping, because what
+did not fit was one path and not every path. The clock still holds time, and
+the next table may be asked for something cheaper that fits inside it, which
+is also how a queue in a real cell behaves: an operator who cannot finish one
+table moves to the next rather than ending the shift. A table where the arm
+did move and then ran out of time is a different thing and is counted, because
+that is a real attempt the solution did not finish.
+
 ## What the cell still refuses to do
 
 Problem 4 takes work away from the examiner and gives it to the solution.

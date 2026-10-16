@@ -501,7 +501,24 @@ def clear_queue(
     for seed in run.seeds:
         if run.left < LEAST_ACTION:
             break
-        run.results.append(clear_table(solution, seed, run.left, cell=build(seed), tally=tally))
+        result = clear_table(solution, seed, run.left, cell=build(seed), tally=tally)
+        if result.never_reached:
+            # This table was handed over and handed straight back, because what
+            # was left of the clock could not pay for the first path asked for.
+            # Keeping it would count a table the solution never had a chance at,
+            # and every glass on it would go into the denominator of the
+            # pickable share as a glass left crowded. LEAST_ACTION is a true
+            # floor under one descent, but a whole path costs more than a
+            # descent, so the guard above lets such a table through and this is
+            # what catches it.
+            #
+            # The walk carries on rather than stopping, because what did not fit
+            # was one path and not every path: the clock still holds time, and
+            # the next table may be asked for something cheaper that fits. A
+            # queue in a real cell behaves the same way, moving on to the next
+            # table rather than ending the shift.
+            continue
+        run.results.append(result)
     return run
 
 

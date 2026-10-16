@@ -115,9 +115,9 @@ def traced(chunk: Chunk, legs: int | None = None, lift: int = 0) -> Record:
     return Record(push=chunk.as_push(), felt=felt, landed=chunk.aim, waypoints=points)
 
 
-def nudge_away() -> Chunk:
+def nudge_away(across: float = 0.04) -> Chunk:
     """A short push across the middle of the glass zone, starting where the jaw starts."""
-    return straight(START, (START[0] + 0.04, START[1]))
+    return straight(START, (START[0] + across, START[1]))
 
 
 @dataclass
@@ -489,6 +489,94 @@ def test_the_queue_walks_until_the_arm_time_runs_out():
     assert run.arm_seconds == pytest.approx(3 * per_table)
     assert run.left < LEAST_ACTION
     assert not run.finished_the_queue
+
+
+def test_a_table_the_arm_never_moved_on_is_not_counted():
+    """The queue's own guard is a floor under one descent, and a path costs more.
+
+    So the last table of a walk can be handed a few seconds, answer with a path
+    that does not fit, and come back with the arm never having moved. Such a
+    table is not a table the solution failed, and counting it would both
+    overstate how far down the queue the solution reached and add every glass
+    standing on it to the glasses it left crowded.
+    """
+    push = nudge_away()
+    per_table = followed_seconds(traced(push, lift=LIFT))
+    # Two tables' worth, and then exactly one descent left, which is enough to
+    # pass the guard above and nowhere near enough to pay for a whole path.
+    # That is the gap the guard cannot see.
+    budget = 2 * per_table + LEAST_ACTION
+    run = clear_queue(
+        Scripted([push, Done()]),
+        [100, 101, 102, 103],
+        budget,
+        cell_for=lambda seed: FakeCell(pickable_now=1, lift=LIFT),
+    )
+
+    assert [r.seed for r in run.results] == [100, 101]
+    assert not run.finished_the_queue
+
+
+def test_the_walk_carries_on_past_a_table_it_could_not_reach():
+    """What did not fit was one path and not every path.
+
+    The clock still holds time when a table is handed back untouched, so the
+    next table is offered, and a solution asked for something cheaper there can
+    still be given it. A queue in a real cell behaves the same way: it moves on
+    to the next table rather than ending the shift.
+    """
+    long_push, short_push = nudge_away(across=0.2), nudge_away(across=0.01)
+    long_cost = followed_seconds(traced(long_push, lift=LIFT))
+    short_cost = followed_seconds(traced(short_push, lift=LIFT))
+    assert short_cost < long_cost, "the second table has to be the cheaper one"
+
+    class LongThenShort:
+        """Asks for the long path on the first table and the short one after."""
+
+        name = "long then short"
+
+        def __init__(self) -> None:
+            self.tables = 0
+
+        def begin(self, seed: int) -> None:
+            self.tables += 1
+            self.answered = False
+
+        def answer(self, look: Look):
+            if self.answered:
+                return Done("nothing more")
+            self.answered = True
+            return long_push if self.tables == 1 else short_push
+
+    run = clear_queue(
+        LongThenShort(),
+        [100, 101],
+        long_cost - 0.5,
+        cell_for=lambda seed: FakeCell(pickable_now=1, lift=LIFT),
+    )
+
+    assert [r.seed for r in run.results] == [101], "the first was unreachable, the second was not"
+
+
+def test_a_table_the_clock_stopped_partway_is_still_counted():
+    """The other side of the same rule, so that it cannot be read too widely.
+
+    A table where the arm did move and then ran out of time is a real attempt
+    that the solution did not finish, and it is counted as one.
+    """
+    push = nudge_away()
+    per_table = followed_seconds(traced(push, lift=LIFT))
+    run = clear_queue(
+        Scripted([push, push, Done()]),
+        [100],
+        per_table + LEAST_ACTION + 0.5,
+        cell_for=lambda seed: FakeCell(pickable_now=1, lift=LIFT),
+    )
+
+    assert run.attempted == 1
+    assert run.results[0].ended_by == RAN_OUT
+    assert run.results[0].arm_seconds > 0.0
+    assert not run.results[0].never_reached
 
 
 def test_the_queue_reports_finishing_the_list_before_the_budget():

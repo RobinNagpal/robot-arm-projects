@@ -143,6 +143,11 @@ class Scorecard:
                 "ended_by": r.ended_by,
                 "interlocks": r.interlocks,
                 "arm_seconds": round(r.arm_seconds, 2),
+                # Kept per table, and not only as a run total, because a walk
+                # can be truncated afterwards -- a table the clock ended before
+                # the arm moved is dropped from the queue -- and a total cannot
+                # be truncated with it.
+                "thinking_seconds": round(r.thinking_seconds, 3),
                 "answers": r.answers,
             }
             for r in self.results
