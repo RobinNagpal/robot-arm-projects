@@ -197,6 +197,95 @@ score.
 Both are in `bench/`, which is not this folder's to change. They are reported
 here and in the hand-back.
 
+## What it scores — the held-out queue, fifty tables offered from 10,000
+
+Everything above was measured on tables below `TEST_SEEDS`. **This is the
+score**: fifty tables offered in order from table 10,000, fifteen arm minutes
+for the **whole queue**, walked three times through the bench's own judging.
+Medians of the three walks, with the three values in brackets, and the geometry
+reference's walk of the same queue as a scale.
+
+| | geometry reference | **this, as it downloads** |
+|---|---|---|
+| Tables attempted | 26 | 15 (15, 13, 15) |
+| Glasses on those tables | 102 | 57 (57, 49, 57) |
+| Tables separated, nothing broken | **10** | **0** |
+| Tables failed by a topple | **0** | 14 (14, 12, 14) |
+| Tables left unfinished | 16 | 1 |
+| Glasses pickable at the end | 64 | 1 (2, 0, 1) |
+| Of those, had room already | 39 | 2 (2, 1, 2) |
+| Glasses it gave room to | +25 | **−1** (0, −1, −1) |
+| Pickable share | **0.627** | **0.018** (0.035, 0, 0.018) |
+| Glasses broken | **0** | 20 (22, 19, 20) |
+| It said a table was finished | 24 of 26 | **0 of 15** |
+| Arm seconds for a table it separated | 43.6 | nothing separated |
+| Answers a table | 31 | 22 (19, 22, 41) |
+| Thinking an answer | 15 ms | 776 ms |
+| Paths the cell's interlock refused | 0 | 10 (10, 1, 251) |
+
+**What makes the two cards unrecognisable is the rule, not the tables.** Both
+bands are the same draw and the same policy, but both faults this folder
+reported were fixed in the bench between the two measurements, and the
+committed twenty-table numbers are from before the fix. So its "said done",
+"arm seconds a table", "answers a table" and "interlock refused" lines describe
+a stopping rule and an interlock that no longer exist. The shape-of-answers table is still good, with one
+caveat: under the old rule the policy was asked about three times a table, so
+those medians describe a table's opening answers.
+
+**It never once says a table is finished, and that is the stopping rule being
+right.** The median answer bottoms out at 145 mm, the hand hangs
+`JAW_HALF_HEIGHT` below that, so the hand's lower edge is at about 76 mm —
+within a millimetre or two of the pushing height and below the top of every
+glass on the table. The corrected rule counts almost every answer as a push, so
+the quiet counter resets and never reaches three. The proof that this is the
+mechanism and not just tables ending early is the one table in walk 3 that the
+clock stopped: **369 answers, and never three quiet ones in a row.** Under the
+old rule the same answers at the same height were all quiet and it declared
+nearly every table finished after three.
+
+**A table now costs it about 60 arm seconds where it cost 6.8, and nothing about
+the policy changed.** That is why it reaches 15 tables rather than all 50. The
+policy was always sweeping the glasses; the old rule let it leave before the
+damage was done.
+
+**Forty of the 43 tables it was given ended with a glass on the floor.** The
+other three are the table each walk was in the middle of when the clock ran out,
+and those three tables are the *whole* of the pickable column: a table that
+loses a glass pays nothing for any glass on it, including the ones that already
+had room. In walk 2 that surviving table started with one glass that had room
+and ended with none, which is where the negative gain comes from.
+
+**The prediction this solution was ported to test is answered, and the answer is
+no**, now with the queue behind it as well as the sensitivity check. The wrist
+view moved the answers not at all: with the picture changed and the pose pinned
+the chunks come back at 236 mm, no lower than problem 3's 217. The 90 mm drop to
+145 mm is the **state**, because this model emits absolute targets near the pose
+it is told about, and problem 4's `Look.jaw` is a real pose inside the join's box
+where problem 3's parked pose clipped to the ceiling. Closer to the model's home
+ground made it worse, because a path that reaches the glasses without aiming at
+them is more destructive than one that never arrives: in the twenty-table band
+the same policy broke 2 glasses of 84 because it left after three answers, and
+given the whole clock it breaks 20 of 57.
+
+**A third thing about the bench, smaller than the two above and in the same
+place.** The interlock's height test was corrected, but the physics test behind
+it was not: `plan.slides` answers whether a push **at the jaw's own working
+height** slides a glass, and the draw guarantees every crowded glass slides at
+that height, so there is almost never a glass for the interlock to refuse. A
+path that meets a glass 70 mm higher up tips the same glass and the interlock
+has no question of that shape to ask. That is why it refused almost nothing
+while 20 glasses went over on paths it passed. The examiner already says the
+interlock is one test at one moment and not a promise, so this is a note for
+whoever revisits it rather than a fault report.
+
+**What is not settled.** The held-out walk saved no shape tally, so whether the
+median answer stays at 145 mm over twenty-odd answers a table rather than three is
+unmeasured; saving those three numbers from a queue walk costs no arm time. The
+pinned check is one walk of twenty tables, not three. And nothing here measures
+whether the model uses the picture at all — the direct test is to ask it the
+same table from the same pose with the picture replaced by an empty table or by
+noise, and see whether the answers move.
+
 ## Running it
 
 ```

@@ -311,6 +311,133 @@ thing the model is worst at is measured rather than predicted, and let the
 model choose everything else. That is a different solution from this one, and
 it should be built as one.
 
+## What it scores — the held-out queue, fifty tables offered from 10,000
+
+Everything above was measured on tables below `TEST_SEEDS`, which is where the
+two settings were chosen and where nothing is a score. **This is the score.**
+Fifty tables are offered in order from table 10,000, with fifteen arm minutes
+for the **whole queue**, walked three times through the bench's own judging. The
+geometry reference walked the same queue and is beside it. Medians of the three
+walks, with the three values in brackets.
+
+| | geometry reference | **this, the model** |
+|---|---|---|
+| Tables attempted | 26 | **32** (32, 33, 32) |
+| Glasses on those tables | 102 | 125 (125, 130, 125) |
+| Tables separated, nothing broken | 10 | **11** (12, 8, 11) |
+| Tables failed by a topple | **0** | 7 (5, 8, 7) |
+| Tables left unfinished | 16 | 15 (15, 17, 14) |
+| Glasses pickable at the end | 64 | 70 (70, 64, 71) |
+| Of those, had room already | 39 | 39 (41, 39, 38) |
+| Glasses it gave room to | +25 | **+29** (+29, +25, +33) |
+| Pickable share | **0.627** | 0.560 (0.560, 0.492, 0.568) |
+| Glasses broken | **0** | 8 (6, 8, 8) |
+| It said a table was finished | 24 of 26 | 24 of 32 (25, 24, 24) |
+| …while the table was still crowded | 14 | 13 (13, 16, 13) |
+| Tables the clock stopped | 2 | 1 (2, 1, 1) |
+| Arm seconds for a table it separated | 43.6 | **26.7** (26.9, 24.1, 26.7) |
+| Thinking an answer | 15 ms | **6 ms** |
+| Pushes the cell's interlock refused | 0 | 0 |
+
+Both spend essentially the whole 900 seconds, so how far each got down the list
+is set by what a table costs it. The rest of the fifty were offered and handed
+straight back because what was left of the clock could not pay for the first
+path; the bench does not count those, and the rule is in
+[the examiner](../../docs/04-clear-the-table/the-examiner.md).
+
+**The saving this port was made for is real, and the twenty tables could not
+show it.** A table it separates costs 26.7 arm seconds against the reference's
+43.6. That average is over tables that were actually finished, so a table cut
+short by a falling glass cannot flatter it — which is exactly the objection that
+made prediction 1 read "no, not really" above. On the eighteen tables where it
+breaks nothing at all it spends 498 to 557 seconds against the reference's 698.
+The reach down the queue is where that saving went: 32 tables against 26.
+
+**And it is level with the geometry on separations rather than ahead of it.**
+Eleven against ten, but the three walks gave 12, 8 and 11 while the reference is
+deterministic and gives 10 every time. A method that wins by less than its own
+spread has not been shown to win. What it is ahead on is glasses given room:
++29 against +25, over six more tables.
+
+**The pickable share is below both geometry solutions', and the whole of the
+difference is the breakages.** Of the 125 glasses it met, 19, 30 and 27 stood on
+tables it broke a glass on, and such a table pays nothing for any glass on it.
+
+| | walk 1 | walk 2 | walk 3 |
+|---|---|---|---|
+| Pickable share, as scored | 0.560 | 0.492 | 0.568 |
+| …had those tables merely been left crowded | 0.616 | 0.577 | 0.648 |
+| …had those tables been separated instead | 0.664 | 0.662 | 0.720 |
+
+The middle row is what doing *nothing at all* on those seven tables would have
+scored, and it is the whole of the gap to the reference's 0.627.
+
+### Where the breakages are, which is one place
+
+| tables | walks | separated | failed | glasses given room | glasses broken |
+|---|---|---|---|---|---|
+| 10,000–10,017 | 54 | 9, 6, 7 of 18 | **0** | +22, +19, +22 | **0 of 68** |
+| 10,018–10,025 | 24 | 2, 2, 2 of 8 | 3, 3, 4 | +8, +6, +8 | 4, 3, 4 of 34 |
+| 10,026 on | 19 | 1, 0, 2 | 2, 5, 3 | +2, +1, +5 | 2, 5, 4 |
+
+**All twenty breakages across all three walks are on table 10,018 or later, and
+the first eighteen tables were attempted fifty-four times without one.** That is
+not the clock running low: nothing here reads `Look.seconds_left`, and the
+budget still held over five minutes at the first breakage. It is those tables,
+and the reference proves it independently — deterministic, same list, and on
+10,018 to 10,025 it separates **none** and gives room to **one** glass, saying
+the table was finished on six of the eight. On two of them it sweeps, finds no
+push it is willing to make, and says so in 8 seconds.
+
+Lined up table by table over the 26 tables both reached:
+
+- it breaks a glass on five of them, and the reference separates **none** of
+  those five;
+- it separates five the reference never separates, all of them tables the
+  reference leaves crowded;
+- it never separates three that the reference does;
+- there is **no table where the reference succeeds and this breaks a glass.**
+
+So the wins and the breakages come out of the same decision — being willing to
+push where the geometry finds no clear corridor. Two of those eight hard tables
+it wins in every walk; three or four end on the floor. Table 10,023 is the
+clearest: the reference sweeps it and declines in 8 seconds, and this loses a
+glass on it in two walks of three.
+
+### What the rows settle about why, and what they do not
+
+**The cell never refused a push**, in any walk. The interlock is pre-checked
+here, so every broken glass came from a push both the model and the public
+tipping rule called acceptable; nothing in the cell was placed to save it.
+
+**It is not a stale belief.** Nine of the twenty breakages are the ninth answer
+of the table — the eight stands of the opening sweep, then one push. That is the
+freshest and most complete belief this solution ever holds. Seventeen of twenty
+are inside the first twenty answers.
+
+**The rows point at the search rather than at the model, without settling it.**
+On validation the filter at 0.01 passes 472 of the 588 safe pushes and 13 of the
+70 that toppled, so about three in a hundred passed pushes put a glass over.
+A table takes a handful of pushes, so that rate predicts a breakage on well
+under a tenth of tables; the hard stretch breaks about half of them. Pushes the
+search *chose* are therefore several times more dangerous than pushes the same
+filter passed when they were drawn at random, which is what maximising over a
+model's own estimates does. The competing reading — that the hard tables simply
+have no safe push, so any filter leaks on them — fits the rows equally well.
+
+**What would settle it** is a per-push record: for every push answered, the
+predicted topple chance, the predicted movements, and what really happened,
+grouped by whether the reference would have pushed on that table. It costs no
+arm time. Nothing saves it today, and `results-tables.json` has only the
+outcome of a table, not the push that ended it.
+
+**The price of a millimetre was chosen honestly and still cost it.** On the forty
+tuning tables the inherited 0.1 was better by both readings — more tables
+separated *and* a higher pickable share, 0.61 to 0.66 against 0.53 to 0.56 at
+0.5. The queue returned 0.560 for the same setting, because the queue reaches
+past where the tuning band went, into tables where the same willingness buys
+fewer separations and more floor.
+
 ## Running it
 
 ```

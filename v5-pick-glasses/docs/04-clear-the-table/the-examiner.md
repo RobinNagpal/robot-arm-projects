@@ -359,6 +359,31 @@ nothing can fall over. A glass driven into its neighbour can still go over,
 and so can one that was nudged while already leaning. That is why toppling
 is still counted.
 
+**The measurements show how narrow that one test really is, and it is worth
+being blunt about it.** The physics question the interlock asks is whether a
+push *at the height the jaw works at* would tip a glass rather than slide it.
+That height is low, near the bottom of a glass, and the draw deliberately
+only ever puts out crowded glasses that slide when pushed there, so that no
+table is impossible. Taken together, those two facts mean the interlock has
+almost nothing to refuse: three of the four solutions measured so far were
+refused nothing at all over a whole walk.
+
+Yet glasses still went over, twenty of them in one walk of the borrowed
+model. They went over because the hand met them **higher up**. A waypoint's
+height is the middle of the jaw and the fingers hang below it, so a path that
+clears the working height can still drag the hand through the upper body of a
+tall glass, and a glass pushed high enough tips whatever the arithmetic at its
+foot says. The interlock has no shape for that question, because it was
+written for the push a solution means to make and not for the sweep a solution
+did not realise it was making.
+
+So the cell protects a solution from one specific mistake and leaves it
+responsible for the rest, which is the honest arrangement: a real cell's
+interlocks are partial too. It also means the rule that a toppled glass
+forfeits its table is doing the real work of discouraging breakage. If the
+interlock caught every sweep, it would be taking the decision back out of the
+solution's hands, and problem 4 exists to find out what each solution decides.
+
 The cell also **never racks a glass**. Problem 3 had a call that lifted a
 glass off the table, and clearing was demonstrated by racking every glass.
 Here the table ends with the glasses still standing on it, and the question
