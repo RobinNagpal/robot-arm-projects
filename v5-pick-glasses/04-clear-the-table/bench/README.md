@@ -77,10 +77,13 @@ missing from it is discussed before it is added.
 reaches into problem 3.
 
 `tables.py` is the draw. `table(seed)` returns the glasses to stand on one
-table and `facts(seed)` says what was drawn. Every table holds four to seven
-glasses, with at least one touching pair, at least one touching group of three,
-and one or two glasses that already have room, and the number of crowded
-glasses stays inside a narrow band so that tables differ less from one another.
+table and `facts(seed)` says what was drawn. Every table holds three to five
+glasses: one touching group, which is a pair on about half the tables and three
+glasses on the rest, and one or two glasses that already have room. The number
+of crowded glasses stays inside a narrow band so that tables differ less from
+one another. An earlier draw asked for four to seven glasses with a touching
+pair and a group of three on every table, and it was replaced because perfect
+play separated none of twenty such tables, so nothing could be ranked on it.
 The arrangement still varies with the seed, because a constant arrangement is
 something a trained solution can memorise instead of learning the task. Every
 crowded glass is one the physics can slide rather than tip, checked with

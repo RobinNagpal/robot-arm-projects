@@ -179,6 +179,82 @@ table, but nothing a 139 mm hand can reach into — and the second and third are
 its height. Nothing broke, which is the test push and the lean bound doing their
 job.
 
+## What it achieves — the held-out queue
+
+The two sections above chose this solution's own numbers, and this one is its
+score. The examiner offers fifty tables in order from table 10,000, gives
+**fifteen arm minutes for the whole queue**, and lets each table spend as much
+of what is left as it needs. The queue is walked three times.
+
+| | |
+|---|---|
+| Tables attempted | **26** of the fifty offered |
+| Glasses on them | 102 |
+| Tables separated with nothing broken | **10** |
+| Tables failed by a topple | **0** |
+| Tables left unfinished | 16 |
+| Glasses broken | **0** |
+| Glasses pickable | 39 at the start, **64** at the end, a gain of 25 |
+| Pickable share at the end | **0.627** |
+| It said it was finished | on 24 tables; the clock stopped the other 2 |
+| Said it was finished while the table was still crowded | 14 |
+| Paths the cell's interlock refused | 0 |
+| Arm time spent | 899.98 s of the 900 given |
+| Arm time for a table it separated | **43.6 s** |
+| Answers | 813, at 15 ms of laptop thinking each |
+
+**Nothing varies between the three walks.** Not one count above differs, and
+the per-table rows are identical table for table: the same outcome, the same
+arm seconds to the hundredth, the same number of answers. So there is no spread
+to quote, and quoting one as "± 0" would suggest a measured zero where the
+right statement is that this solution has nothing to vary. Given a table it
+always answers the same way, because every step of it is arithmetic: the push
+is computed from the measurements, the ranging and test pushes are fixed
+lengths, the ring of stands is walked in a fixed order, and no number anywhere
+is drawn. The only figure with any movement in it is the laptop thinking time,
+0.2 s of spread over about 12 s a walk, and that measures the machine rather
+than the method. The three walks are therefore a check that the measurement
+reproduces, not a sample of a distribution. A trained solution needs the
+repeats for a real reason — it draws its action rather than computing it, and
+its training has a random seed of its own — so the examiner asks everybody for
+three walks and this solution simply answers the same thing three times.
+
+**The two bands are not the same tables.** The twenty tuning tables above were
+measured before the draw was simplified: a table then held four to seven
+glasses with a touching group of three on every one of them, and nothing could
+separate such a table at all, which is why that section reports none of twenty
+separated. A table now holds three to five glasses with one touching group,
+which is a pair on about half of them. So the tuning numbers still show what
+the numbers above were chosen on, and the arm times in them are still the right
+order of magnitude, but **the zero in them is not a result about these
+tables**. The held-out queue settles that question directly: ten of twenty-six
+tables are separated, so the tables are separable and the method separates
+them.
+
+**Two tables in three are reached, and the twenty-sixth was worth nothing.**
+The queue is fifty tables long on purpose, so a solution runs out of time
+rather than out of tables, and this one stops at the twenty-sixth. It arrived
+there with 38.5 s of the budget left, spent 36.2 s on table 10,024 and 2.3 s on
+table 10,025 before the clock caught it, and freed one glass between the two.
+Five of the twenty-six tables cost only one sweep of the ring each — about 8 s
+and nine answers — because the chooser found nothing safe to push and the
+solution said so after a second sweep.
+
+**Fourteen tables were declared finished while still crowded, and that is the
+honest shape of the method.** It is not a claim that the table was clear: the
+loop says it is finished when the chooser has no push left that it is willing
+to make, and it sweeps the whole ring once more before saying it, so what the
+fourteen record is glasses the geometry would not touch rather than glasses it
+failed to notice. The other side of the same caution is the zero in the broken
+column and the zero interlock refusals: over 813 answers the cell never once
+had to refuse a path for driving into a glass that would tip.
+
+**Against the ranked chooser.** [Solution 2](../02-geometry-ranked/) walks the
+same queue with every legal push enumerated and a fitted model sorting them,
+and it separates seven tables where this one separates ten. The two agree on
+twenty of the twenty-five tables they both reached, and its own README works
+through the five they disagree on.
+
 ## Running it
 
 Problem 4's own environment may not be installed yet. Either way:

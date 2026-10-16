@@ -1,6 +1,6 @@
 # Problem 4 — clear the table
 
-A table holds four to seven drinking glasses, and some of them stand too close
+A table holds three to five drinking glasses, and some of them stand too close
 together for the gripper to get round one without fouling its neighbour. The arm
 has to drag them apart across the table until every glass has room, and then
 say that it has finished. Nothing is lifted and nothing is racked: **what is
@@ -54,15 +54,34 @@ arrangement that this problem takes two things away from.
 
 ## What has been measured
 
-**Nothing.** This folder currently holds a question and no answers.
+**Four of the six solutions, on the held-out queue.** That queue is fifty
+tables offered in order from table ten thousand, with fifteen minutes of arm
+time for the whole queue, walked three times. None of the four saw those
+tables while it was being built or fitted, and the budget belongs to the queue
+rather than to a table, so how quickly a solution works decides how far down
+the list it gets.
 
-The measuring machinery is being built in
-[`04-clear-the-table/bench/`](../../04-clear-the-table/bench/) — the draw, the
-arm's clock, the camera carried by the arm, the open loop and the end-state
-scorecard — together with a plain geometry solution, ported to this problem's
-contract, that exists so the bench has something honest to check itself
-against. Anywhere a result would go, there is no result yet, and no number in
-this folder should be read as one.
+| | attempted | separated | failed by a topple | pickable share | broken |
+|---|---|---|---|---|---|
+| [1 one fixed nudge](../../04-clear-the-table/01-one-fixed-nudge/) | 26 | **10** | **0** | **0.627** | **0** |
+| [2 geometry ranked](../../04-clear-the-table/02-geometry-ranked/) | 25 | 7 | **0** | 0.582 | **0** |
+| [4 a world model](../../04-clear-the-table/04-a-world-model/) | 32 | **11** | 7 | 0.560 | 8 |
+| [5 SmolVLA as it downloads](../../04-clear-the-table/05-smolvla-as-it-downloads/) | 15 | **0** | **14** | **0.018** | **20** |
+
+A table is **separated** when every glass on it has room for the hand and
+nothing fell. It **failed** when a glass went over, and a failed table counts
+for nothing at either end, so breaking a glass is never cheaper than leaving
+the table alone. The **pickable share** is the glasses that ended with room,
+out of every glass on every table attempted, which is the partial credit that
+lets two solutions be told apart even when neither finishes many tables. The
+first two solutions choose nothing at random, so each of their three walks is
+identical and their numbers carry no spread; the other two draw from noise,
+and the spread of every number is in each folder's own page.
+
+**Two solutions are still being measured**, and both learn from
+demonstrations: the imitation policy and the fine-tuned borrowed model. Their
+rows are not here because their fits were still running when this was written,
+and a row written before its measurement is not a result.
 
 The seven solutions that will be asked this question are problem 3's own, so
 they are already written up and already have a standing under the per-push
@@ -73,8 +92,11 @@ the [world model](../03-push-glasses-apart/solutions/04-a-world-model.md), a
 [borrowed foundation model as it downloads](../03-push-glasses-apart/solutions/05-smolvla-as-it-downloads.md),
 [the same model fine-tuned here](../03-push-glasses-apart/solutions/06-smolvla-fine-tuned.md),
 and a [newer and larger borrowed model](../03-push-glasses-apart/solutions/07-evo1-fine-tuned.md).
-Each will be run again under this scorecard, and each result will carry a
-spread, because a result quoted without one is not a result.
+Each is run again under this scorecard, and each result carries a spread
+wherever anything about it was uncertain, because a result quoted without one
+is not a result. Solution 7, the newer and larger borrowed model, is not part
+of problem 4: problem 3 fitted it three times and it did not learn the task
+there, so there is nothing to port.
 
 ## Why the cell is borrowed rather than copied
 

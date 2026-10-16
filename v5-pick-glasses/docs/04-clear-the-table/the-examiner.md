@@ -80,20 +80,32 @@ each other apart in the first instant of simulation, so an overlapping table
 would begin by moving on its own, before any solution had answered
 anything.
 
-With that said, every table holds four to seven glasses, and holds them in
+With that said, every table holds three to five glasses, and holds them in
 a particular mixture.
 
-**At least one touching pair.** This is the smallest unit of crowding, and
-the one a single push can answer. A solution that cannot handle a pair
-cannot do the task at all.
+**One touching group, of either two glasses or three.** A touching group is
+a set of glasses standing so close that the hand cannot get between them, and
+it is the unit of crowding the whole task is about. A group of two is the
+smallest such unit and the one a single push can answer, so a solution that
+cannot handle a pair cannot do the task at all. A group of three is a real
+step up, because it is not two pairs: moving the middle glass of three can
+leave the outer two touching each other, and moving an outer one can push it
+into something else, so the three cannot be dealt with one pair at a time and
+the order of the pushes matters. It is the same step up as going from two
+equations in one variable each to two equations that share a variable, because
+each part can no longer be solved on its own. Both sizes appear about equally
+often over a long queue, so a solution meets both.
 
-**At least one touching group of three.** A group of three is not two pairs,
-and this is the reason it is drawn on purpose. Moving the middle glass of
-three can leave the outer two still touching each other. Moving an outer
-one can push it into something else. So the three cannot be solved one pair
-at a time, and the order of the pushes matters. It is the same step up as
-going from two equations in one variable each to two equations that share a
-variable: each part can no longer be solved on its own.
+**This draw is the second one, and it is deliberately easier than the first.**
+The first draw asked for four to seven glasses with a touching pair *and* a
+touching group of three on every table. That turned out to be not merely hard
+but unsolvable: with perfect play, choosing the best push available at every
+step from exact knowledge of the table, the geometry reference separated none
+of twenty tables and ran out of candidate pushes after thirty-one pushes. A
+draw on which the ceiling is zero cannot rank anything, because every method
+scores zero and the differences between them vanish. So the draw was reduced
+until the ceiling was clearly above zero while the task stayed hard, which is
+why the tables are smaller now and hold one touching group rather than two.
 
 **One or two glasses that already have room.** These are the glasses whose
 correct treatment is to be left alone. Without them, "push everything you

@@ -227,6 +227,180 @@ tables came out the same. The size of the groups is why the thinking time is
 higher: the enumeration is nearly all of it, and this solution enumerates the
 same pushes solution 1 enumerates and then scores them as well.
 
+## What it achieves — the held-out queue
+
+Everything above chose numbers; this is the score. The examiner offers fifty
+tables in order from table 10,000, gives **fifteen arm minutes for the whole
+queue**, and lets each table spend as much of what is left as it needs. The
+queue is walked three times. Solution 1's column is its own held-out run on the
+same queue with the same budget.
+
+| | Ranked | Solution 1 |
+|---|---|---|
+| Tables attempted | **25** of fifty | 26 of fifty |
+| Glasses on them | 98 | 102 |
+| Tables separated with nothing broken | **7** | **10** |
+| Tables failed by a topple | 0 | 0 |
+| Tables left unfinished | 18 | 16 |
+| Glasses broken | 0 | 0 |
+| Glasses pickable | 38 at the start, **57** at the end | 39, **64** |
+| Glasses freed | **19** | **25** |
+| Pickable share at the end | 0.582 | 0.627 |
+| It said it was finished | on 24 tables; the clock stopped 1 | on 24; the clock stopped 2 |
+| Said finished while still crowded | 17 | 14 |
+| Paths the interlock refused | 0 | 0 |
+| Arm time spent | 899.23 s of 900 | 899.98 s of 900 |
+| Arm time for a table it separated | 41.7 s | 43.6 s |
+| Answers, and thinking an answer | 796, 15 ms | 813, 15 ms |
+
+**Nothing varies between the three walks, for either solution.** Every count is
+identical, and so is every per-table row: the same outcome, the same arm
+seconds to the hundredth, the same number of answers. There is no spread to
+quote, and writing one as "± 0" would offer a measured zero where the true
+statement is that neither solution has anything to vary. Given a table, each
+always answers the same way. This one enumerates the candidate pushes in a
+fixed order, scores each with trees that are loaded from a file and never
+refitted, and takes the first on the sorted list; nothing is sampled anywhere.
+A fitted model is not the same thing as a random one. The repeats exist for the
+solutions that come later, which draw their action from a distribution rather
+than computing it and whose training carries a random seed of its own, so the
+same method trained twice is two policies of different quality. The examiner
+asks everybody for three walks, and these two answer the same thing three
+times. The only figure that moves at all is the laptop thinking time, about
+0.2 s of spread over 12 s a walk, which measures the machine and not the
+method.
+
+**The band above and this one are not the same tables.** Every measured number
+earlier on this page, including the perfect-world run, was taken before the
+draw was simplified. A table then held four to seven glasses with a touching
+group of three on every one, and the conclusion drawn from it — that none of
+these tables can be separated at all, and that the geometry reference is
+therefore the ceiling — was true of that draw and is not true of this one. A
+table now holds three to five glasses with one touching group, which is a pair
+on about half of them. The held-out queue settles the question those sections
+asked: the tables are separable, solution 1 separates ten of twenty-six, and
+this solution separates seven.
+
+### The ranked chooser loses, and the rows say where
+
+It has strictly more machinery than solution 1 for the same task — every legal
+push instead of the first one the printed rule names — and it finishes behind
+on both counts that matter: seven tables separated against ten, and nineteen
+glasses freed against twenty-five. That is the result. The per-table rows say
+where the six glasses went.
+
+**It is not the shorter queue.** Both solutions spend essentially the whole
+budget, so the length of the queue is set by what a table costs them, and this
+one reaches twenty-five tables where solution 1 reaches twenty-six. But the
+twenty-sixth table bought solution 1 almost nothing: it was stopped by the
+clock after 2.3 s and three answers, and freed no glass on it. Of the six
+glasses between the two solutions, exactly **one** is owed to the shorter
+queue, and it is on the table before that one — solution 1 reached table 10,024
+with 38.5 s of budget left and freed a glass there, while this solution reached
+it with 4.6 s left, spent 3.8 of them, and freed none. **No separated table
+is owed to the queue at all.**
+
+**It is not the clock, the interlock, or a topple.** Both numbers are zero
+everywhere, and all five of the tables the two solutions disagree about ended
+with the solution saying it was finished, not with the clock stopping it.
+
+**It is five tables out of twenty-five.** Both solutions reached tables 10,000
+to 10,024, and both declared themselves finished on exactly the same
+twenty-four of them. On twenty of the twenty-five the outcome is the same, and
+five of those twenty cost each solution a single sweep and nothing else,
+because neither chooser found anything it would push. The whole difference sits
+in five tables, and this solution wins one of them.
+
+| table | solution 1 | ranked | |
+|---|---|---|---|
+| 10,006 | crowded, 1 glass freed, 63.3 s, 56 answers | **separated**, 2 freed, 45.5 s, 41 answers | ranked wins |
+| 10,008 | **separated**, 2 freed, 43.5 s, 41 answers | crowded, 0 freed, 38.0 s, 35 answers | |
+| 10,014 | **separated**, 3 freed, 94.3 s, 71 answers | crowded, 1 freed, 94.1 s, 74 answers | |
+| 10,015 | **separated**, 3 freed, 60.8 s, 53 answers | crowded, 2 freed, 54.1 s, 47 answers | |
+| 10,017 | **separated**, 2 freed, 46.3 s, 41 answers | crowded, 1 freed, 51.4 s, 44 answers | |
+
+Eleven glasses against six on those five tables, plus the one glass on table
+10,024, is the six. On the twenty-five tables both reached, the pickable share
+is 0.643 for solution 1 against 0.582 for this one.
+
+**"Said done while crowded" is the same fact counted again, not a second
+symptom.** Both solutions declared themselves finished on twenty-four tables,
+and a declared table is either separated or crowded, so twenty-four is ten and
+fourteen for solution 1 and seven and seventeen for this one. The three extra
+crowded finishes **are** the three lost tables. Both solutions use the same
+stopping rule — it is solution 1's code, borrowed whole — so nothing about
+saying "done" differs between them. What differs is the arrangement the rule is
+asked about.
+
+**It does not simply give up earlier, either.** On two of the four tables it
+loses it stops sooner than solution 1 does, and on the other two it works
+longer and achieves less: on table 10,014 it makes three more answers for the
+same arm time and frees two fewer glasses, and on table 10,017 it spends five
+seconds more and frees one fewer. So "it quits early" does not cover the
+result.
+
+**The extra arm time is real but it is not where the tables went.** On the
+twenty-four tables both solutions walked to their own finish, this one spends
+895.4 arm seconds against solution 1's 861.5 — 33.9 s more, the same four per
+cent the tuning band found. Most of it is on tables it does separate: over the
+six tables both of them separate it spends 246.1 s against 190.8 s, twenty-nine
+per cent more, with 209 answers against 177. That extra third of a minute is
+exactly what costs it the twenty-sixth table and the one glass on table 10,024.
+It is not what costs it three separated tables.
+
+**Its lower arm time for a separated table is an artefact of which tables it
+won, not evidence that it is quicker.** The average is taken over successful
+tables only, so the expensive tables this solution lost drop out of it: table
+10,014 cost 94 s and counts in solution 1's average as a success and in this
+one's not at all, although this solution spent the same 94 s there. On the
+tables both of them separate, this solution is the slower of the two by
+twenty-nine per cent.
+
+### Why ordering by the model costs tables here when it cost nothing before
+
+The tuning band on the old draw measured the ordering directly: over the
+eighty-five decisions where any candidate existed, the model picked a push the
+printed rule ranks below its own on **seventy** of them, and all twenty tables
+still ended in the same arrangement. The conclusion recorded there was that the
+model disagrees constantly and changes nothing. The held-out queue shows the
+second half of that sentence was a property of the draw. On a set of tables
+where no ordering can win, any ordering is as good as any other; on a set where
+ten of twenty-six are winnable, a worse order has something to spoil, and the
+same disagreement that was free before now costs three tables.
+
+**What the model learned is which glass is risky, not which push helps.** The
+two inputs carrying four fifths of the fitted importance are the push height
+over the topple limit, at 0.43, and the width of the glass's foot, at 0.38.
+Both are about whether the glass would go over, and neither is about whether
+the push leaves the glass with room. Sorting by that is harmless when nothing
+can be won and harmful when something can, and it fits the shape of the losses:
+nothing was toppled, nothing was refused by the interlock, and the glasses were
+simply left where the pushes put them.
+
+**Where the rows run out, and the one measurement that would settle it.** The
+held-out rows hold a table's outcome, its arm seconds, its answers and how many
+glasses had room before and after. They do not hold which push was chosen, for
+which glass, whether the glass gained room by it, how many of its four allowed
+tries it had spent, or the reason each glass was finally left alone. Three
+readings fit what is recorded, and they are not exclusive:
+
+- the ranked pick is legal but too small to free its glass, so a glass spends
+  its four tries and the loop leaves it alone — table 10,014, where more
+  answers in the same time freed fewer glasses, has that shape;
+- the ranked pick sends a glass somewhere clear on the believed table but into
+  a third glass's room, so the table never settles — the extra time on the
+  tables both solutions separate has that shape;
+- the ranked order frees the easy glasses first and leaves the hard one
+  surrounded, with nowhere for the hand to come in.
+
+**None of them can be told apart from these rows, so none is asserted here.**
+What would settle it is a per-decision log of the five tables above: for every
+answer, the glass, the push, whether that glass gained room, and the reason
+each glass was finally left, set beside solution 1's log of the same table.
+That is five tables of the held-out queue and no new machinery — the
+tuning-band run already records the reasons a glass was left, and the held-out
+rows merely do not keep them.
+
 ## Running it
 
 ```

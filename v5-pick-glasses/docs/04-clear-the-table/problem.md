@@ -88,15 +88,21 @@ wrong in the direction that calls a pair fine when the hand does not fit.
 
 ## What is on the table
 
-Each table holds **four to seven glasses**, and the arrangement is built to
-contain three different situations at once:
+Each table holds **three to five glasses**, and the arrangement is built to
+contain two different situations at once:
 
-- at least one **touching pair**, so there is crowding that plainly has to be
-  dealt with;
-- at least one **touching group of three**, because a crowd of three cannot be
-  fixed by one push and forces a solution to think about order;
+- **one touching group**, which is two glasses on about half the tables and
+  three on the rest. Two is the smallest piece of crowding and one push can
+  answer it. Three cannot be fixed by one push and forces a solution to think
+  about the order of its pushes, because moving the middle glass of three can
+  leave the outer two touching.
 - **one or two glasses that already have room**, so that "this one needs
   nothing from me" stays a decision the scorecard can see.
+
+An earlier draw asked for more: four to seven glasses, with a touching pair
+and a touching group of three on every table. It was abandoned because it was
+unsolvable rather than hard, and the section on what has been measured says
+how that was established.
 
 The number of crowded glasses is kept inside a narrow band. This is a
 statistical convenience rather than a rule about glasses: when tables resemble
@@ -327,7 +333,7 @@ rather than only on the ones that were nearly finished.
 
 This is the same reason a test suite reports how many assertions passed rather
 than only whether the suite passed. A single pass-or-fail bit per table throws
-away almost everything the run found out, and with four to seven glasses a
+away almost everything the run found out, and with three to five glasses a
 table there is a lot to throw away. The table count is still the headline,
 because a table with one crowded glass left is a table the next stage cannot
 use; the glass count is what gives the comparison its resolution.
@@ -369,17 +375,24 @@ scorecard, on these tables.
 
 ## What has been measured
 
-Nothing yet. The draw, the arm's clock, the camera on the wrist, the open run
-and the scorecard are being built in
-[`04-clear-the-table/bench/`](../../04-clear-the-table/bench/), and the
-geometry reference is being ported to this problem's contract so that there is
-a solution to check the bench against. Until those exist and have been run,
-this folder holds no result at all, and no number in it should be read as one.
+Four of the six solutions have walked the held-out queue, which is fifty
+tables offered in order from table ten thousand with fifteen minutes of arm
+time for the whole queue. The plain geometry solution leads it: one fixed
+nudge, chosen by arithmetic with nothing learned anywhere, separates ten of
+the twenty-six tables it reaches and breaks no glass at all. The world model
+separates one more table but puts eight glasses on the floor, and a failed
+table counts for nothing, so it ends behind. The borrowed foundation model,
+with nothing fitted, separates none and breaks twenty.
 
-When results do arrive they will sit beside problem 3's, because the two
-scorecards answer different questions and both are worth keeping: problem 3's
-says what one change did, and problem 4's says what the arm would do on its
-own.
+The [folder's own page](README.md#what-has-been-measured) carries the table,
+and each solution's page carries its spread. The two solutions that learn from
+demonstrations were still being fitted when this was written, so they have no
+row yet, and a row written before its measurement is not a result.
+
+These results sit beside problem 3's rather than replacing them, because the
+two scorecards answer different questions and both are worth keeping: problem
+3's says what one change did, and problem 4's says what the arm would do on
+its own.
 
 ## Where to go next
 
