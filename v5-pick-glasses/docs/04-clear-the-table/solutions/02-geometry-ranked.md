@@ -45,6 +45,35 @@ once it is explained.
 **No glass's size appears below**, as everywhere in this project. The numbers
 quoted belong to the hand, to the cell, or to a results file.
 
+## A film of one table
+
+Here is this solution clearing one table, recorded in the simulator and playing
+at one and a half times real speed.
+
+[Watch the film (23 s)](../../../videos/04-clear-the-table/02-geometry-ranked.mp4)
+
+It is table 10001, the one table every solution in problem 4 is filmed on.
+[The comparison page](../../../04-clear-the-table/results/README.md#a-film-of-each-solution)
+says how it was chosen, and [the reference's film](01-one-fixed-nudge.md#a-film-of-one-table)
+is the one to watch beside it.
+
+The pair makes this page's measurement something to look at rather than only
+read. Both solutions separate this table and neither breaks anything, so by the
+scorecard they drew. But this one spends **five pushes and thirty-five arm
+seconds** where the reference spends three and twenty-eight. That is the same
+difference perfect play reports over all fifty held-out tables, where the
+printed rule separates thirty-four of them with eighty-six pushes and this
+chooser separates twenty-nine with a hundred and ten. The trees pick a
+different push, and the different push is not a better one.
+[The comparison page](../../../04-clear-the-table/results/README.md#what-was-possible-and-how-far-short-each-row-fell)
+sets those two measurements side by side.
+
+One thing the corner picture shows better than any paragraph is what a look
+costs here. Several times the jaw ends up close to a glass, and the corner
+fills with that one glass while the rest of the table falls outside the frame.
+The solution is not being careless when it then drives somewhere else to look
+again; it has no other way to see what it is standing next to.
+
 ## What it is made of
 
 Almost nothing here is new, and that is the point of it.

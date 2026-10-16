@@ -72,6 +72,35 @@ towards, what the fit cost, what it changed, and why the camera on the wrist —
 which was supposed to suit a model trained on real robots — is not what helped or
 hurt it, while taking the overhead camera away is.
 
+## A film of one table
+
+Here is one of the three fits on one table, recorded in the simulator and
+playing at one and a half times real speed.
+
+[Watch the film (1 min 14 s)](../../../videos/04-clear-the-table/06-smolvla-fine-tuned.mp4)
+
+It is table 10001 of the held-out fifty, the one table every solution in
+problem 4 is filmed on, and the film to set beside it is
+[its untrained partner's on the same glasses](05-smolvla-as-it-downloads.md#a-film-of-one-table).
+[The comparison page](../../../04-clear-the-table/results/README.md#a-film-of-each-solution)
+says how the table was chosen.
+
+**The pair is what makes this film worth watching, and it shows what the fit
+bought.** The untrained model gives seventy answers over two hundred and
+seventy-two arm seconds and every one of them brings the hand down among the
+glasses. This fit gives thirty-two answers over a hundred and three seconds,
+and eleven of them hold the hand clear. So the fitting did move the model
+towards the teacher's commonest answer, which is a move made only to see, and
+that is the whole of what it moved.
+
+**Two thirds of its answers still come low enough to touch a glass**, which is
+what the writing across the top means by a push, and two glasses are over by
+the end. It is not aiming at them: it sweeps, and a glass standing taller than
+the hand is riding catches the fingers. That is the same thing
+[what the fit changed, and what it did not](#what-the-fit-changed-and-what-it-did-not)
+reports over the whole queue, where this fit breaks eight glasses against its
+untrained partner's twenty. Safer, and no better at the task.
+
 ## The pair, and what is held still
 
 A matched pair is two runs that differ in one thing. Here that one thing is

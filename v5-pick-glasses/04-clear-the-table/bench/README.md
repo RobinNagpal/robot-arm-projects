@@ -118,6 +118,15 @@ broken, tables failed by a topple, tables left unfinished, glasses made
 pickable out of all glasses, the average arm time for a table that succeeded,
 and how often the solution declared itself done.
 
+`film.py` records a table being cleared, for looking at by eye. It changes
+nothing: the table is scored in the world the bench builds and everything the
+film draws is drawn in a second world of its own, which `test_film.py` checks
+by running one table both ways and comparing the results. A frame shows the
+table from the arm's side and, in the corner, the last picture the arm's own
+camera gave the solution, which is everything the solution knew when it chose.
+The recording itself is borrowed from problem 3's `film.py` rather than written
+again. `../results/films.py` is what drives it, one solution at a time.
+
 Each module has one test file beside it, `test_<module>.py`. Tests here run
 against families of glasses rather than single examples, because a rule that
 works on one wine glass and fails on a differently proportioned one is the

@@ -39,6 +39,42 @@ did not start with. The reason turns out to be a property of **problem 4's
 task** rather than a fault in the fitting, and it is the most useful thing this
 solution found.
 
+## A film of one table
+
+Here is one of the three fits clearing one table, or rather not clearing it.
+The film was recorded in the simulator and plays at one and a half times real
+speed.
+
+[Watch the film (12 s)](../../../videos/04-clear-the-table/03-imitation-from-demonstrations.mp4)
+
+It is table 10001 of the held-out fifty, the one table every solution in
+problem 4 is filmed on, and this is the first of the three fits.
+[The comparison page](../../../04-clear-the-table/results/README.md#a-film-of-each-solution)
+says how the table was chosen and how to read a film. The film is worth
+watching beside [the teacher's own film](02-geometry-ranked.md#a-film-of-one-table),
+because the teacher separates this table and the student does not.
+
+Three things in it are worth watching for, and together they are this page's
+result.
+
+**No glass gains room.** The student gives twenty-five answers over fourteen
+arm seconds, and the table it hands back is the table it was given: two of the
+four glasses had room at the start and two have room at the end. That is what
+"freed no glasses" means on one table.
+
+**Almost every answer is a single waypoint.** Twenty-three of its twenty-four
+paths hold one point each, which is
+[the habit described below](#the-fit-that-put-its-hand-down-and-called-it-an-answer).
+On this table those twenty-three all stay above the glasses, so the arm hovers
+and the picture in the corner is the only thing that changes.
+
+**The one real answer comes down in the right place and still moves nothing.**
+Answer nine is a path of thirty-nine waypoints that descends to exactly the
+height the jaw pushes at, and the writing across the top marks it as a push. So
+the failure a viewer sees here is not the student holding its hand too high. It
+is a properly shaped push aimed where no glass needs moving, and after it the
+student goes back to hovering and then says it is finished.
+
 ## What a demonstration is here
 
 A demonstration is one pair: what the solution was shown, and what the teacher

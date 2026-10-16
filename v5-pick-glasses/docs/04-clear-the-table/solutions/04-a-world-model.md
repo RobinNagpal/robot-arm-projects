@@ -62,6 +62,35 @@ Read [the examiner](../the-examiner.md) first. It defines what a solution is
 shown, what it may answer, why saying "done" is part of the job, and how a walk
 of the queue is marked.
 
+## A film of one table
+
+Here is this solution clearing one table, recorded in the simulator and playing
+at one and a half times real speed.
+
+[Watch the film (11 s)](../../../videos/04-clear-the-table/04-a-world-model.mp4)
+
+It is table 10001 of the held-out fifty, the one table every solution in
+problem 4 is filmed on, so this film and
+[the reference's](01-one-fixed-nudge.md#a-film-of-one-table) are of the same
+glasses in the same places.
+[The comparison page](../../../04-clear-the-table/results/README.md#a-film-of-each-solution)
+says how the table was chosen.
+
+**The film shows this solution's one real advantage.** It separates the table
+with a **single push**, in twenty answers and twenty-two arm seconds, where the
+reference needs three pushes and twenty-eight seconds and the ranked chooser
+five and thirty-five. The search is choosing where to put the hand by asking a
+fitted model what each candidate push would do, and on this table it finds in
+one go a push that the geometry takes three attempts to arrive at. That is the
+same thing the row "arm seconds for a table it separated" reports over the
+whole queue, where this solution needs 26.7 seconds to the reference's 43.6.
+
+**It is one run and not the middle of three.** Across the three walks of the
+queue this solution separated table 10001 once and left it crowded twice, so a
+viewer should read the film as what this solution can do here rather than as
+what it reliably does. Nothing else about the film is lucky: the search is
+seeded, so it runs this way every time it is filmed.
+
 ## What the port had to add
 
 The method is problem 3's and is unchanged in its middle. What changed is

@@ -4,7 +4,7 @@ Nearly everything here is arithmetic over drawn tables, so it runs in
 milliseconds and needs no graphics context. The one test that builds the real
 cell says so in its name, and it runs a single table.
 
-The tables come from ``tables.table``, which draws four to seven glasses across
+The tables come from ``tables.table``, which draws three to five glasses across
 the four families, and the glasses are read off the draw rather than out of the
 simulator. None of the questions below is a question about physics: they are
 about what a chooser does with a table, and a table is four numbers a glass.
@@ -28,7 +28,7 @@ from partners import PUSHING, Felt, Record, Seen
 import plan
 
 # Every table measured on is below TEST_SEEDS. These are the first few of them,
-# which between them hold four to seven glasses of several families.
+# which between them hold three to five glasses of several families.
 DRAWN = range(6)
 
 # The reasons a chooser in this folder can give for leaving a glass. A new one

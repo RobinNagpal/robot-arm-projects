@@ -79,6 +79,12 @@ table, so how quickly a solution works decides how far down the list it gets.
 | [5 SmolVLA as it downloads](../../04-clear-the-table/05-smolvla-as-it-downloads/) | 15 | **0** | **-1** | **0.018** | **20** |
 | [6 SmolVLA fine-tuned](../../04-clear-the-table/06-smolvla-fine-tuned/) | **8** | **0** | **0** | 0.103 | 8 |
 
+**Each of the six was also filmed clearing the same table**, so that what a row
+of the table above means can be watched rather than inferred. The six films are
+linked from
+[the comparison page](../../04-clear-the-table/results/README.md#a-film-of-each-solution),
+and each solution's own page below links its own.
+
 **[The comparison page](../../04-clear-the-table/results/README.md) is where to
 read this properly.** It gives every column, says what perfect play achieves on
 exactly the tables each solution reached, and explains the three columns that

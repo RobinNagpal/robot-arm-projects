@@ -51,6 +51,32 @@ dimensions down, because the arm is supposed to measure every glass during the
 run. The numbers quoted here belong to the hand, to the cell, or to a results
 file.
 
+## A film of one table
+
+Here is this solution clearing one table. It was recorded in the simulator and
+plays at one and a half times real speed.
+
+[Watch the film (17 s)](../../../videos/04-clear-the-table/01-one-fixed-nudge.mp4)
+
+The table is number 10001 of the held-out fifty, and every solution in problem
+4 is filmed on that same table so that the six films can be set beside each
+other. [The comparison page](../../../04-clear-the-table/results/README.md#a-film-of-each-solution)
+says how it was chosen and how to read a film.
+
+Each frame shows the table from the arm's side of it, and the corner holds the
+last picture the arm's own camera gave the solution. The corner is the half
+worth watching, because it is everything the solution knew when it chose what
+to do next.
+
+**Three of the twenty-six answers in this film are pushes**, and the writing
+across the top says which an answer is as it is carried out. The other
+twenty-three only move the camera. That proportion is the shape of problem 4
+rather than a habit of this solution, because the arm has to drive in order to
+see. When a push does come, the hand comes down behind one glass of the
+touching pair, drives it clear of its neighbour and lifts away. Twenty-eight
+arm seconds after it began, every glass has room and the solution says it is
+finished.
+
 ## What question it answers
 
 The question is **how much of problem 4 is answered by careful geometry

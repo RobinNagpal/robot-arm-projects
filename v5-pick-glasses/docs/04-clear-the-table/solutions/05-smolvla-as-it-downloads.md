@@ -64,6 +64,38 @@ Read [the examiner](../the-examiner.md) first. It defines what a solution is
 shown, what it may answer, why saying "done" is part of the job, and what each
 line of the card means.
 
+## A film of one table
+
+Here is the borrowed model on one table, recorded in the simulator and playing
+at one and a half times real speed.
+
+[Watch the film (3 min 23 s)](../../../videos/04-clear-the-table/05-smolvla-as-it-downloads.mp4)
+
+It is table 10001 of the held-out fifty, the one table every solution in
+problem 4 is filmed on, so it can be watched beside
+[the geometry reference on the same glasses](01-one-fixed-nudge.md#a-film-of-one-table).
+[The comparison page](../../../04-clear-the-table/results/README.md#a-film-of-each-solution)
+says how the table was chosen. This is much the longest and emptiest of the six
+films, and that is the result rather than a fault in the recording.
+
+**Every one of its seventy answers is marked a push.** The writing across the
+top says of each answer whether the hand comes low enough to touch a glass,
+and here it always does, which is
+[the measurement below](#why-the-answers-came-down-which-is-not-the-camera)
+seen from the side: the model's paths sit within a millimetre of the height
+the jaw pushes at. So the hand is never out of reach of the glasses, and it is
+never aimed at one either. It drives across the table at glass height, again
+and again, for two hundred and seventy-two arm seconds.
+
+**The corner is often empty table.** Several of its answers leave the jaw
+pointing at a patch with no glass in it at all, so the picture the model is
+given for its next answer holds nothing to act on. A viewer can watch the
+model asking for its next push from a view of bare table.
+
+**It ends with a glass on its side**, which forfeits the table whatever else
+happened on it, and by then the remaining glasses have been shoved to opposite
+corners. Counting pushes is not what this solution needed; aiming them was.
+
 ## How a policy with no words for it says it is finished
 
 Problem 4 asks every solution to declare a table finished. This policy cannot

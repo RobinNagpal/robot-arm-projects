@@ -12,7 +12,10 @@ SOLUTIONS := 01-one-fixed-nudge
 # needs, which is what `test-in-problem-3` below is for.
 PUSHING := ../03-push-glasses-apart
 
-.PHONY: help install test lint test-in-problem-3 $(SOLUTIONS)
+# Where the films go, beside problem 3's films of the same six methods.
+FILMS := ../videos/04-clear-the-table
+
+.PHONY: help install test lint films test-in-problem-3 $(SOLUTIONS)
 
 help: ## This list
 	@grep -hE '^[a-z0-9-]+:.*##' $(MAKEFILE_LIST) | sed 's/:.*##/\t/' | sort
@@ -28,6 +31,15 @@ test: install ## Every folder's tests, one folder at a time
 
 lint: install ## Ruff over everything
 	pixi run ruff check .
+
+# One table, all six solutions, and the files the pages link to. The table and
+# the reason it was chosen are in results/films.py, because that script is the
+# one place all six solutions meet. Each one is filmed in a process of its own:
+# several of them load their borrowed files under the same plain names, so two
+# in one process would fight over them.
+films: install ## Film all six solutions on the one comparison table
+	pixi run python results/films.py --all
+	@echo "six films in $(FILMS)"
 
 # The same test files, run in problem 3's environment, for a machine where this
 # folder's own environment is not resolved yet. The three paths are the ones

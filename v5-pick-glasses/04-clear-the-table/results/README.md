@@ -192,6 +192,62 @@ times more, for results that are worse on every column. That gap is not part of
 the score, because the budget is the arm's time, but it is what decides whether
 a method could run on a real arm at all.
 
+## A film of each solution
+
+A table of totals says what happened and never why, and on this page the gap
+between the two is wide. Three solutions freed no glass at all, and that one
+result covers a policy that holds its hand above every glass, a policy that
+comes down in the right place and pushes where nothing needs moving, and a
+policy that ploughs across the table at glass height until something falls
+over. So each solution was also filmed clearing one table.
+
+**Every film is of the same table, and it was chosen by a rule.** The table has
+to be one that all six solutions reached, which puts it inside the first eight
+of the queue, because the shortest of the six walks got through eight tables.
+It also has to be a table where something happens: on most of those eight the
+geometry reference looks round the table, finds no push it believes in and says
+it is finished. Table 10001 is the first that passes both. It holds four
+straight glasses, two of which have room at the start.
+
+**What a frame shows.** The large picture is the table from the arm's side of
+it. The corner holds the last picture the arm's own camera gave the solution,
+and the corner is the half worth watching, because it is everything the
+solution knew when it chose what to do next. A line across the top names the
+answer being carried out and says whether the hand comes down low enough to
+touch a glass -- a push -- or stays above the glasses -- a look. That is the
+same test [`bench/stopping.py`](../bench/stopping.py) uses to decide when a
+policy with no word for "finished" has stopped proposing pushes.
+
+| | the film | answers | of them pushes | arm seconds | how it ends |
+|---|---|---|---|---|---|
+| 1 one fixed nudge | [17 s](../../videos/04-clear-the-table/01-one-fixed-nudge.mp4) | 26 | 3 | 28 | separated |
+| 2 geometry ranked | [23 s](../../videos/04-clear-the-table/02-geometry-ranked.mp4) | 32 | 5 | 35 | separated |
+| 3 imitation, ACT | [12 s](../../videos/04-clear-the-table/03-imitation-from-demonstrations.mp4) | 25 | 1 | 14 | said done, nothing freed |
+| 4 a world model | [11 s](../../videos/04-clear-the-table/04-a-world-model.mp4) | 20 | 1 | 22 | separated |
+| 5 SmolVLA as it downloads | [3 min 23 s](../../videos/04-clear-the-table/05-smolvla-as-it-downloads.mp4) | 70 | 70 | 272 | a glass over |
+| 6 SmolVLA fine-tuned | [1 min 14 s](../../videos/04-clear-the-table/06-smolvla-fine-tuned.mp4) | 32 | 21 | 103 | two glasses over |
+
+Read down the "of them pushes" column and the problem is in front of you.
+**The three solutions that do best on this table push least.** The world model
+separates it with one push in twenty-two arm seconds, the reference with three
+in twenty-eight, the ranked chooser with five in thirty-five. Everything else
+in those films is the arm driving somewhere to see, which is what problem 4
+charges for and problem 3 gave away. The two borrowed models push on nearly
+every answer, take four to ten times as long, and finish with glasses on the
+floor.
+
+**The films are fresh runs and not recordings of the scored walks.** Nothing of
+a walk is kept but its numbers, so a film has to be made by running the table
+again. The two geometry solutions answer the same way every time and so film
+exactly what they were scored doing. The other four draw from noise or are one
+of three fits, so each of those films is one run: it shows what the solution
+does, and the numbers written on its own last picture are its own rather than
+the middle of three walks. The world model, for instance, separates this table
+on one walk of three, and the film is of a run where it does.
+
+Each film is made by [`results/films.py`](films.py), one solution to a process,
+and `make films` makes all six.
+
 ## Where to read more
 
 Each solution has a page of its own, which gives its spread, its own selection
@@ -206,7 +262,10 @@ problem 4 while being built.
 6. [SmolVLA fine-tuned](../../docs/04-clear-the-table/solutions/06-smolvla-fine-tuned.md)
 
 `ceiling.json` beside this page holds the perfect-play measurement, table by
-table and as a running total, which is where the ceiling columns come from.
+table and as a running total, which is where the ceiling columns come from. It
+is perfect play with the printed rule choosing. `ceiling-ranked.json` is the
+same fifty tables with the fitted trees choosing instead, and the pair is what
+the paragraph above about the ordering is read from.
 
 Problem 3's own comparison is at
 [`03-push-glasses-apart/results/`](../../03-push-glasses-apart/results/README.md).

@@ -27,11 +27,15 @@ for how a run is marked. Read those two before any solution document.
 
 ## How a run is marked
 
-The tables are drawn, not chosen. Every table holds four to seven glasses, with
-at least one touching pair, at least one touching group of three, and one or
-two glasses that already have room. The composition changes with the table
-number on purpose: a table that always holds the same arrangement is a constant
-that a trained solution can memorise instead of learning to separate glasses.
+The tables are drawn, not chosen. Every table holds three to five glasses, with
+one touching group -- a pair on some tables and three glasses on others -- and
+one or two glasses that already have room. The composition changes with the
+table number on purpose: a table that always holds the same arrangement is a
+constant that a trained solution can memorise instead of learning to separate
+glasses. An earlier draw asked for four to seven glasses with a touching pair
+*and* a touching group of three, and it turned out to be unsolvable rather than
+hard; [`bench/tables.py`](bench/tables.py) says what was measured and why it
+was changed.
 
 **The budget is arm time, not laptop time.** It is counted in simulated seconds
 of arm motion, summed from the waypoints the arm carried out and the speeds it

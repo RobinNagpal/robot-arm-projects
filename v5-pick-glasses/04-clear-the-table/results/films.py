@@ -1,0 +1,211 @@
+"""Film each solution clearing the same table, for the comparison page.
+
+The six solutions are compared by numbers on the page beside this file, and
+numbers cannot say why a solution did what it did. A table of totals records
+that three of the six freed no glass at all; it cannot show that one of them
+never comes low enough to touch one while another comes down in the wrong
+place. So each solution is also filmed, on one table, and the films are what
+the pages link to.
+
+    pixi run python results/films.py 01-one-fixed-nudge
+    pixi run python results/films.py --all
+
+**One solution to a run, and that is not a convenience.** Each solution folder
+loads its own borrowed files under plain names -- several of them have a module
+called ``borrowed`` -- so two solutions in one process would fight over those
+names and whichever lost would be running somebody else's wiring. Running them
+one at a time removes the question.
+
+**The film is one fresh run and not a replay of a scored walk.** Nothing of a
+walk is kept but its numbers, so a film has to be made by running the table
+again. The two geometry solutions answer the same way every time and so film
+exactly what they were scored doing. The other four draw from noise or come
+from one of three fits, so a film of one of them is one run of that table: it
+shows what the solution does, and its numbers are its own rather than the
+middle of the three walks in the results file. Each film writes what it cost
+on its own last picture, so no film can be read as a number it did not produce.
+
+**Every film is given the whole queue's budget for its one table.** In a walk
+the table would be handed whatever the earlier tables had left, which differs
+for every solution and would make the six films six different arrangements.
+Giving each the full budget asks one question of all of them: what does this
+solution do with a table when nothing but its own judgement stops it.
+"""
+
+from __future__ import annotations
+
+import argparse
+import sys
+from collections.abc import Callable
+from pathlib import Path
+
+from contract import Solution
+from film import filmed_cell, save
+from open_run import ARM_BUDGET, clear_table
+from partners import TEST_SEEDS
+
+HERE = Path(__file__).resolve().parent
+PROBLEM = HERE.parent
+# Beside problem 3's films, which the same pages link to for the same six
+# methods on the problem before this one.
+FILMS = PROBLEM.parent / "videos" / "04-clear-the-table"
+
+# The one held-out table every solution is filmed on. It is chosen by a rule
+# rather than by eye, and the rule has to answer two things.
+#
+# The table has to be one every solution reached. A solution is handed the
+# tables of the queue in order until its arm time runs out, and the shortest
+# walk of the six got through eight of them, so the film table is among the
+# first eight or some of the films would be of a table that solution was never
+# given.
+#
+# And the table has to be worth watching. On most of those eight the geometry
+# reference looks round the table, finds no push it believes in, and says it is
+# finished, which is honest and shows nothing. So the film table is the first
+# of them on which the reference frees a glass. That is table 10001: the
+# reference and the ranked chooser both separate it, the world model separates
+# it on one walk of three, the imitation policy leaves it as it found it, and
+# both borrowed models break a glass on it. Those are the six findings of the
+# problem, on one table.
+FILM_TABLE = 10_001
+
+# What each film says about itself beyond the solution's own name. Two of the
+# solutions are fitted three times over and walk the queue once with each fit,
+# so a viewer holding one of their films against the spread in the results file
+# needs to know which fit it is of.
+NOTES = {
+    "03-imitation-from-demonstrations": "fit 1 of 3",
+    "06-smolvla-fine-tuned": "fit 1 of 3",
+}
+
+
+def _on_path(folder: str) -> Path:
+    """Put one solution's folder on the import path and hand back where it is.
+
+    The folder cannot be imported by name, because its name starts with a digit
+    and so it is not a package. Appending rather than inserting keeps this
+    problem's own bench ahead of it, so a solution can never shadow the
+    contract it is being run against.
+    """
+    where = PROBLEM / folder
+    if str(where) not in sys.path:
+        sys.path.append(str(where))
+    return where
+
+
+def one_fixed_nudge() -> Solution:
+    """The geometry reference: one push a table, chosen by arithmetic."""
+    _on_path("01-one-fixed-nudge")
+    import nudge
+
+    return nudge.OneFixedNudge()
+
+
+def geometry_ranked() -> Solution:
+    """The same loop with the fitted trees ordering the candidate pushes."""
+    _on_path("02-geometry-ranked")
+    from ranked import GeometryRanked
+
+    return GeometryRanked()
+
+
+def imitation() -> Solution:
+    """The chunked policy fitted on the ranked chooser's own answers."""
+    folder = _on_path("03-imitation-from-demonstrations")
+    from clear import Imitation
+    from wiring import policy
+
+    return Imitation(policy.Imitator.load(folder / "weights" / "act-0"))
+
+
+def a_world_model() -> Solution:
+    """The reference's loop with a fitted model of what a push does, and a search."""
+    _on_path("04-a-world-model")
+    import learned
+
+    # The search draws its candidate pushes, so the seed is what makes a film
+    # of it repeatable.
+    return learned.WorldModel(seed=0)
+
+
+def as_it_downloads() -> Solution:
+    """The borrowed foundation model, asked with nothing fitted."""
+    _on_path("05-smolvla-as-it-downloads")
+    import torch
+    from as_downloaded import AsItDownloads
+    from borrowed import policy
+
+    # The noise the model denoises from is the only thing that varies between
+    # runs of it, so seeding it is what makes a film repeatable. The
+    # measurement runs seed it the same way.
+    torch.manual_seed(0)
+    return AsItDownloads(policy.Downloaded.load(policy.device_for()))
+
+
+def fine_tuned() -> Solution:
+    """The same borrowed model with one correction fitted on this problem's demonstrations."""
+    _on_path("06-smolvla-fine-tuned")
+    import torch
+    import weights
+    from fine_tuned import FineTuned, load
+
+    torch.manual_seed(0)
+    return FineTuned(load(weights.correction(0)))
+
+
+BUILD: dict[str, Callable[[], Solution]] = {
+    "01-one-fixed-nudge": one_fixed_nudge,
+    "02-geometry-ranked": geometry_ranked,
+    "03-imitation-from-demonstrations": imitation,
+    "04-a-world-model": a_world_model,
+    "05-smolvla-as-it-downloads": as_it_downloads,
+    "06-smolvla-fine-tuned": fine_tuned,
+}
+
+
+def film(folder: str, seed: int, room: float) -> None:
+    """Film one solution clearing one table, and write the video beside the others."""
+    solution = BUILD[folder]()
+    note = NOTES.get(folder, "")
+    cell = filmed_cell(seed, f"{solution.name}{',  ' + note if note else ''}")
+    result = clear_table(solution, seed, room, cell=cell)
+    save(cell, FILMS / f"{folder}.mp4", result)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("solution", nargs="?", choices=sorted(BUILD), help="which one to film")
+    parser.add_argument("--all", action="store_true", help="every solution, one after another")
+    parser.add_argument("--table", type=int, default=FILM_TABLE, help="which table to film")
+    parser.add_argument(
+        "--room", type=float, default=ARM_BUDGET, help="arm seconds the one table may spend"
+    )
+    arguments = parser.parse_args()
+
+    if arguments.all:
+        # One process a solution, for the reason at the top of this file. The
+        # work is done by this same script, called again.
+        import subprocess
+
+        for folder in sorted(BUILD):
+            print(f"\n--- {folder}", flush=True)
+            subprocess.run(
+                [sys.executable, __file__, folder, "--table", str(arguments.table),
+                 "--room", str(arguments.room)],
+                check=True,
+            )
+        print(f"\nsix films in {FILMS}")
+        return
+
+    if not arguments.solution:
+        raise SystemExit("name a solution to film, or pass --all")
+    if arguments.table < TEST_SEEDS:
+        print(
+            f"table {arguments.table} is below the held-out band, so this film is of a "
+            "table the solutions were built on"
+        )
+    film(arguments.solution, arguments.table, arguments.room)
+
+
+if __name__ == "__main__":
+    main()
