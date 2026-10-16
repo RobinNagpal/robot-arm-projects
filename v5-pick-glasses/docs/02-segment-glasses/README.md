@@ -1,32 +1,28 @@
 # Problem 2 — segment the glasses
 
-Several glasses stand on the table. The arm photographs them from the top and
-has to work out **which pixels belong to which glass**, and where each glass
-stands.
+Several glasses stand on the table. The arm photographs them from above. It must
+say which pixels belong to which glass, and where each glass stands.
+[The problem](problem.md) states this in full.
 
-It stops there. It does not measure a shape, and it does not pick anything up.
-
-This problem is answered **six different ways**, and that is the point of the
-folder. Six methods, from a written rule to a fine-tuned transformer, are given
-the same pictures and marked by the same examiner, so that they can be compared
-and one of them chosen knowing what the choice costs. The cell they all share —
-the layout, the two places the camera works from, the sensors and the vocabulary
-— is described once in [the cell](../the-cell.md).
+Six methods answer the same question. One examiner marks them all the same way,
+so they can be compared. The arm, camera and glasses they share are described in
+[the cell](../the-cell.md).
 
 ## Read in this order
 
-1. [**The problem**](problem.md) — what is on the table, exactly what goes in
-   and what must come out, the three difficulties, and what "done" means.
-2. [**The examiner**](the-examiner.md) — the arrangements, the pictures handed to
-   every solution, the shared step that turns a mask into a place, and how a run
-   is marked. **Every solution document assumes this one.**
-3. [**Looking again at what was hidden**](hidden-glasses.md) — the part all six
-   share, because a glass that appeared in no picture needs geometry rather than
-   pixels.
-4. [**The six solutions**](solutions/overview.md) — what they have in common,
-   what each one changes, and which pair to compare first.
+1. [**The problem**](problem.md): what goes in, what must come out, and why it
+   is hard.
+2. [**The examiner**](the-examiner.md): the test arrangements, the pictures, the
+   shared last step and the marking. Every solution document assumes it.
+3. [**Looking again at what was hidden**](hidden-glasses.md): the step all six
+   share for a glass that no picture showed.
+4. [**The six solutions**](solutions/overview.md): a map of the six and their
+   scores.
 
 ## The six
+
+Each row names one solution, the libraries it uses, and how much of it is
+fitted on this cell's pictures.
 
 | # | Solution | Libraries and models | What is fitted |
 |---|---|---|---|
@@ -37,31 +33,24 @@ the layout, the two places the camera works from, the sensors and the vocabulary
 | 5 | [A foundation model with a keeper](solutions/05-sam2-with-a-keeper.md) | SAM 2, scikit-learn | the keeper |
 | 6 | [A transformer segmenter, fine-tuned](solutions/06-rf-detr-fine-tuned.md) | RF-DETR-Seg | all of it, here |
 
-Each document opens with a block saying what it uses, how it produces the
-output, how it differs from the other five, and what it costs — so the six can
-be read side by side without reading any of them in full.
+Each document opens with a short block. It says what the solution uses, how it
+works, how it differs from the other five, and what it costs.
 
-**Solutions 3 and 4 are the pair to look at first.** They are the same library,
-the same model and the same downloaded weights, and one of them has had its
-training continued on this cell's pictures. That training brings one other
-change with it, which is that the borrowed list of everyday categories becomes a
-single class — so nothing varies between the two that the training did not
-bring, and the gap between them measures what training bought.
+**Compare solutions 3 and 4 first.** They are the same model with the same
+starting weights. Only solution 4 was trained on this cell's pictures. The
+[results page](../../02-segment-glasses/results/README.md) explains what that gap
+measures.
 
 ## The plan behind the six
 
-[The plan](solutions-plan.md) records the decisions in short form: the contract
-all six share, why these six and not others, what the scorecard still needs,
-and what is deliberately left for later.
+[The plan](solutions-plan.md) lists the decisions in short form: what all six
+share, why these six, and what was left for later.
 
 ## What is built
 
-The examiner is built, including the shared arithmetic and the measurement of the
-best answer any method could possibly give. **None of the six is built as a
-solution on the examiner**, and each document says so rather than describing code
-that does not exist. One of them starts from something that exists: the network
-solution 2 describes is already written in this project's code, and that
-document separates what exists from what the design adds around it.
+The examiner is built. All six solutions are built and have been run by it. The
+scores of all six are on the [results
+page](../../02-segment-glasses/results/README.md).
 
-Building the yardstick before the cars is deliberate: a comparison whose
-yardstick arrives after the results is one nobody can trust.
+The examiner was built before the solutions on purpose. A test written after the
+results are known is hard to trust.

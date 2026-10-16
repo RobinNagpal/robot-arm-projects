@@ -1,91 +1,61 @@
 # Solution 5 — SAM 2 with a keeper
 
-> **What it uses** — SAM 2, the second generation of the Segment Anything model,
-> loaded through Hugging Face `transformers` and never trained here;
-> scikit-learn for the one small model that is fitted here; PyTorch underneath,
-> which reaches this machine's integrated graphics through its MPS backend.
-> **What it does** — SAM 2 outlines whatever is at a place it is pointed at, and
-> it names none of what it outlines. Pointed at a plain grid of places spread
-> over the whole picture, it therefore outlines everything the picture contains:
-> the glasses, the table, the rim of a glass, two glasses that ran together into
-> one shape. A small model fitted in this cell, called the **keeper**, is then
-> handed each of those outlines on its own and decides whether it is one glass.
-> So the half of the job that finds shapes is borrowed whole, and the half that
-> decides what a shape is gets replaced.
-> **How the output is produced** — the depth readings are shaded into a grey
-> picture; SAM 2 reads that picture once; a grid of point prompts turns into a
-> heap of outlines; scoring, stability and duplicate removal cut the heap down
-> to a shortlist of **proposals**; each proposal's pixels and their depth
-> readings become a handful of measurements on the table; the keeper reads those
-> measurements and answers keep, drop, or more than one glass; what it keeps
-> still has to pass a width check against the kind, which is known; and the
-> proposals that survive all of that are the masks this solution reports.
+> **What it uses** — SAM 2, the second generation of the Segment Anything
+> model. It is loaded through Hugging Face `transformers` and never trained
+> here. scikit-learn fits the one small model this solution trains. PyTorch runs
+> underneath and reaches this machine's integrated graphics through its MPS
+> backend.
+> **What it does** — SAM 2 outlines whatever is at a point you give it. It does
+> not name what it outlines. Given a grid of points over the whole picture, it
+> outlines everything: the glasses, the table, a rim, two glasses run together.
+> A small model fitted here, the **keeper**, looks at each outline and decides
+> whether it is one glass. So the finding is borrowed, and the deciding is
+> replaced.
+> **How the output is produced** — the depth is shaded into a grey picture.
+> SAM 2 reads it once. A grid of point prompts gives a heap of outlines. Score,
+> stability and duplicate checks cut the heap to a shortlist of **proposals**.
+> Each proposal becomes a few measurements on the table. The keeper answers
+> keep, drop, or more than one glass. A kept proposal must still pass a width
+> check against the kind. The survivors are the masks this solution reports.
 
-> **What it costs** — no hand labelling, because the examiner's own answer key
-> turns a proposal into a training label by arithmetic. Fitting the keeper is
-> seconds of processor time with no graphics card; what takes real time is
-> running SAM 2 over the arrangements to collect the proposals to fit it on. At
-> run time it costs one pass of the picture encoder per picture and very little
-> after that. The weights are large and are not owned by this project, so they
-> have to be fetched and pinned to a version. The licence is permissive, which
-> is something solutions 3 and 4 cannot say.
+> **What it costs** — no hand labelling, because the examiner's answer key
+> labels each proposal by arithmetic. Fitting the keeper takes seconds on the
+> processor. Running SAM 2 over the arrangements is what takes time. At run time
+> it costs one pass of the picture encoder per picture. The weights are large
+> and not ours, so they must be fetched and pinned to a version. The licence is
+> permissive, unlike the weights of solutions 3 and 4.
 
 > **The cell is described once, in [the cell](../../the-cell.md)** — the layout,
-> the two places the camera works from, from the top and from the side, all four
-> sensors, and the words this project uses them with. What follows is only what
-> is specific to this solution.
+> the two camera places (top and side), the four sensors, and the words this
+> project uses. This page covers only what is special to this solution.
 
 ## Introduction
 
-This document describes a way to answer [problem 2](../problem.md) in which
-almost nothing is fitted in this cell. The other five solutions either write
-every rule down by hand or fit a model to this cell's own pictures. This one
-does neither for the part that finds objects: the finding is done by a very
-large model that somebody else fitted, somewhere else, on photographs of the
-real world, and it is used exactly as it downloads. The only numbers fitted here
-belong to a small model that looks at what the large one produced and decides
-which parts of it are glasses.
+This page answers [problem 2](../problem.md) with almost nothing fitted in this
+cell. A large borrowed model does the finding, exactly as it downloads. A small
+model fitted here, the keeper, decides which of its outlines are glasses.
 
-The solution therefore has two halves, and they are very unequal in size. The
-first half is a **borrowed model** that can be asked *what is at this point?*
-and answers with an outline of the thing at that point. Asked at many points at
-once, it outlines everything the picture holds, while naming none of it, because
-it produces regions and not labels. The second half is the **keeper**, a small
-model fitted in this cell, which is handed each of those outlines in turn and
-says whether it is one glass.
+You will learn what a promptable foundation model is. You will see how a grid of
+points makes it propose everything in a scene, and why it is never trained here.
+You will learn what the keeper reads, why it is fitted, why it gives three
+answers, and why its probability must be calibrated.
 
-By the end you will understand what a foundation model is and what it means for
-one to be promptable, how a plain grid of points turns such a model into a
-proposer of everything in a scene, why the large model is never trained here and
-what that buys, what the keeper is shown and why it is fitted rather than
-written as a page of thresholds, why it must give three answers rather than two,
-and what its probability has to have done to it before a threshold can be put on
-it.
-
-You will also understand the one design question this solution carries inside
-itself, which is the most interesting part of the document. A newer generation
-of the same borrowed model takes a **word** instead of a point: ask it for
-"drinking glass" and it returns every instance of that concept. That would
-delete the keeper completely. So this solution has two **ways**, meaning two
-versions of one approach, one of them a generation newer than the other. The
-last concept section weighs the two against each other, and the honest answer is
-not simply that the newer one is better, because the keeper is the one place in
-this whole set of six solutions where the deciding can be explained by printing
-its inputs beside its answer.
+The solution has two **ways**, meaning two versions of one approach. The second
+uses SAM 3, a newer model that takes a word instead of a point. Asked for
+"drinking glass", it would remove the keeper. [The second
+way](#the-second-way--a-word-instead-of-a-grid) weighs the two. The newer one is
+not simply better. The keeper is the only place in the six solutions where the
+decision can be explained by printing its inputs beside its answer.
 
 ## The code at the heart of it
 
-This solution is two models meeting at one place, so that place is worth seeing
-before the rest of the document explains it. On one side a grid of point
-prompts goes into the borrowed model. On the other a short row of measurements
-comes back out of what the borrowed model returned, and that row is the only
-thing the fitted model ever reads. Everything after this section is an account
-of those two sides.
+Two models meet at one place, so this section shows that place first. Going in,
+a grid of point prompts enters the borrowed model. Coming out, a short row of
+measurements is made from each region. That row is all the keeper ever reads.
 
-Going in, in `05-sam2-with-a-keeper/sam_keeper.py`: how far apart the grid's
-points stand is taken from the narrowest glass the kind allows rather than
-chosen, the grid is then laid over the whole picture, and the borrowed model is
-called on batches of its points with the picture already encoded.
+Going in, in `05-sam2-with-a-keeper/sam_keeper.py`: the grid spacing comes from
+the narrowest glass the kind allows. The grid covers the whole picture. The
+model runs on batches of points, with the picture already encoded.
 
 ```python
 def prompt_spacing(kind: str) -> int:
@@ -111,11 +81,11 @@ def _grid(spacing: int, inside: np.ndarray | None = None) -> list[list[float]]:
                 out = self.model(image_embeddings=self.embeddings, input_points=chunk, multimask_output=True)
 ```
 
-Coming out, in the same file: every region that survived the cleanup becomes
-numbers measured on the table rather than in the picture. Six of the keeper's
-eight come from here. The other two — how many prompt points returned this same
-region, and how it nests among the regions beside it — are added by the function
-that calls this one, because neither can be known from one region on its own.
+Coming out, in the same file: each region that survived the cleanup becomes
+numbers measured on the table, not in the picture. Six of the keeper's eight
+numbers come from here. The calling function adds the other two: how many prompt
+points returned this region, and how it nests among nearby regions. Neither can
+be known from one region alone.
 
 ```python
 def _measure(picture, mask, found, jumps, step, camera, widths) -> list[float]:
@@ -135,381 +105,274 @@ def _measure(picture, mask, found, jumps, step, camera, widths) -> list[float]:
     ]
 ```
 
-Two things show in those two blocks. The borrowed half is one call,
-`self.model(...)` on a `Sam2Model` loaded through Hugging Face `transformers`,
-and every line written around it belongs to this project. And the fitted half
-never sees a pixel: what reaches scikit-learn — a
-`HistGradientBoostingClassifier` wrapped in a `CalibratedClassifierCV` — is the
-list the second block returns. That is what borrowing the seeing and fitting the
-deciding looks like in code.
+The borrowed half is one call: `self.model(...)` on a `Sam2Model` loaded
+through Hugging Face `transformers`. Every line around it belongs to this
+project. The fitted half never sees a pixel. scikit-learn gets only the list the
+second block returns. The model there is a `HistGradientBoostingClassifier`
+wrapped in a `CalibratedClassifierCV`.
 
 ## The problem this solves
 
-Problem 2 puts four to six glasses on the table. They are all of one kind, the
-kind is known, and they are opaque, so the depth camera sees them. The job is to
-say which pixels belong to which glass, and to give each glass a place on the
-table and a rough footprint width. Nothing is picked up and no shape is
-measured.
+[The problem](../problem.md) asks for one mask per glass, for four to six
+glasses of one known kind. The hard part is counting. [Two glasses that stand
+apart can still join into one shape seen from the
+top](../problem.md#glasses-merge-in-the-picture-even-when-they-stand-apart-on-the-table).
 
-What is asked for is therefore **instance segmentation**, meaning one outline
-per object rather than one label per pixel, because how many glasses there are
-is part of the answer. The difficulty is not noticing that something is on the
-table but deciding **how many things are there**, since two glasses standing
-clearly apart can still leave one connected shape in a picture taken from the
-top.
+Solution 1 answers with rules a person writes. Solutions 2, 4 and 6 fit weights
+to this cell. Those weights are a second copy of the cell, and they go out of
+date when the cell changes. This solution borrows weights that never saw this
+cell, so nothing in them can go stale. It fits only the last small decision.
 
-Four of the other five solutions reach that answer at one of two prices, and
-this one is an attempt to pay neither in full.
-
-Solution 1 pays in **rules somebody has to write**. Every limit inside which it
-is safe has to be worked out by a person and stated in code, so its cost is that
-somebody must be able to state the rule at all.
-
-Solutions 2, 4 and 6 pay in **fitting**. Each of them ends up with a file of
-weights that is a second copy of this cell, produced by hours of rendering and
-hours of training. That copy has a quiet failure mode: change the lighting,
-change the table's surface, widen the range of sizes a kind is drawn from, and
-the file is out of date in a way that no test of the code can notice.
-
-This solution avoids the second price by borrowing weights that were never
-fitted to this cell, so there is nothing in them that can fall out of step with
-it, and it avoids most of the first price by fitting the one decision that is
-left over.
-
-The catch arrives with the first sentence of the design, and much of the rest of
-this document is about it. **A model that was never fitted to this cell also
-never saw this cell.** It does not know about splay, it does not know that
-everything on the table is one kind of object, it does not know the gap the cell
-guarantees between two glasses, and there is no way to tell it any of those
-things.
+The catch is simple. A model never fitted to this cell also never saw it. It
+does not know about splay, that all glasses are one kind, or the gap the cell
+keeps between glasses. There is no way to tell it.
 
 ## The main idea
 
-The main idea is to stop asking for glasses and start asking for everything,
-then to throw away what is not a glass.
+Ask for everything, then throw away what is not a glass.
 
-**The first half is to ask for everything.** Rather than fit something that
-finds glasses, take a model that can be asked what is at a point and get back an
-outline of the thing at that point, and then ask it at points spread evenly over
-the whole picture. Every point lands on something, so what comes back is an
-outline of the table, an outline of each glass that is distinguishable at all,
-outlines of parts of glasses such as a rim, and outlines of groups of glasses.
-None of them carries a name. The model is SAM 2, and no gradient is ever
-computed through it in this project.
+**First, ask for everything.** SAM 2 returns an outline of whatever is at a
+point. Ask it at points spread evenly over the picture. Every point lands on
+something. So you get the table, each glass, parts of glasses such as a rim, and
+groups of glasses. None of them has a name. No gradient ever passes through
+SAM 2 in this project.
 
-**The second half is to decide what to keep.** Each outline that survives a
-first cleanup is called a **proposal** from here on. The **keeper** is a small
-model which is shown a handful of measurements about one proposal and answers
-whether that proposal is one glass. The keeper is the only thing fitted in this
-solution, it would fit in seconds, and the examples it would learn from cost
-nothing, because the examiner already knows which pixels belong to which glass in
-the arrangements it draws.
+**Second, decide what to keep.** Each outline that survives a first cleanup is a
+**proposal**. The keeper reads a few measurements of one proposal and says
+whether it is one glass. It is the only thing fitted here, and it fits in
+seconds. Its labels are free, because the examiner knows which pixels belong to
+which glass.
 
-So, in the plainest terms: **everything that finds objects is borrowed whole,
-and everything fitted here is one small decision at the end.** Beside the
-borrowed model's weights, the keeper's numbers are a rounding error.
-
-That split is not an accident of convenience, and it is the sentence worth
-carrying through the rest of the document. **The job is divided along the line
-that transfers best.** A shape is a shape everywhere: a step in distance between
-one surface and the surface behind it is the same kind of evidence in a
-photograph of a kitchen and in a grey picture shaded from depth, which is why
-the proposing half can be borrowed from a model that never saw this cell. What
-counts as a cup, on the other hand, is a judgement that somebody fitted to
-somebody else's collection of pictures, and it has no reason to agree with what
-counts as a glass here. So the proposing half is borrowed and the naming half is
-replaced. **That is the opposite trade from solution 3**, which borrows both
-halves and takes the borrowed model's names as the answer.
+**The job is split along the line that transfers best.** A shape is a shape
+everywhere. A step in distance between one surface and the one behind it is the
+same evidence in a kitchen photo and in a shaded depth picture. So the proposing
+half can be borrowed. What counts as a cup is a judgement fitted to somebody
+else's pictures. It need not match what counts as a glass here. So the naming
+half is replaced. Solution 3 makes [the opposite
+trade](03-yolo-zero-shot.md#one-stage-detect-and-segment-against-propose-then-classify)
+and borrows both halves.
 
 ## What a foundation model is
 
-Before the main idea can be made precise, the word for the borrowed half has to
-be defined, because everything this solution buys and everything it risks
-follows from the definition.
+This section defines the borrowed half, because what this solution gains and
+risks follows from it.
 
-A **foundation model** is a model fitted once, on a very large and very general
-collection of data, at a cost nobody expects to repeat, and then used for many
-tasks it was not fitted for in particular. The fitting is done by somebody with
-a warehouse of machines, and the using is done by everybody else with a
-download. A lens is the closest physical comparison: it was ground for no
-particular photograph, it suits an enormous range of them, and it knows nothing
-about the scene in front of it.
+A **foundation model** is fitted once, on a very large and general set of data,
+at a cost nobody wants to repeat. Then many people use it for tasks it was not
+fitted for. One group with many machines does the fitting. Everyone else
+downloads it.
 
-One property of SAM 2 is what makes it usable in this project at all. **It is
-class-agnostic**, which means it returns regions with no labels attached to
-them. It holds no list of object types and is never asked to recognise anything,
-so it never needs the word glass, and the fact that it was fitted on pictures of
-everyday things rather than on glasses in a simulated cell does not by itself
-disqualify it.
+SAM 2 is **class-agnostic**: it returns regions with no labels. It has no list
+of object types and never needs the word "glass". So it learned on everyday
+photos and not on this cell, but that alone does not rule it out.
 
-SAM 2 has three parts, and the split between them matters twice later on. A
-**picture encoder** turns the whole picture into a block of numbers, and this is
-the expensive part, which runs once per picture. A **prompt encoder** turns one
-prompt into a small block of numbers. A **mask decoder** combines the two and
-produces a mask, and this part is cheap, running once per prompt.
+SAM 2 has three parts. The **picture encoder** turns the whole picture into a
+block of numbers. It is the expensive part, and it runs once per picture. The
+**prompt encoder** turns one prompt into a small block of numbers. The **mask
+decoder** combines the two into a mask. It is cheap, and it runs once per
+prompt.
 
 ### What promptable means
 
-The word doing the work above is *promptable*, and it does not mean the same
-thing as a network that takes a picture and returns an answer.
+A promptable model is not the same as a network that takes a picture and
+returns an answer.
 
-The ordinary kind of network has a **fixed list of classes**, which is a list of
-names chosen before the weights were fitted. Such a model answers one question
-and only that one: for each name on the list, how strongly does this picture
-show it. Asking about anything the list does not hold means fitting the weights
-again.
+An ordinary network has a **fixed list of classes**, chosen before it was
+fitted. It answers one question: how strongly does the picture show each name on
+the list? To ask about anything else, you must fit it again.
 
 ![A picture goes into fitted weights and one score comes out for each name on a list decided in advance: person, chair, dining table, cup, bowl, bottle, wine glass.](../../../images/02-segment-glasses/05-a-fixed-list-of-classes.png)
 
-A **prompt** is a small extra input saying *which* thing in the picture you
-mean. For SAM 2 it is a point, meaning "the thing here", or a box, meaning "the
-thing inside this rectangle", or a rough mask. The picture and the prompt go in
-together and one mask comes out, so changing the prompt while leaving the
-picture alone gives a different mask from exactly the same weights. In
-programming terms the model is a function of two arguments rather than one,
-which is why one picture has as many answers as you care to ask for.
+A **prompt** is a second input that says *which* thing you mean. For SAM 2 it is
+a point ("the thing here"), a box ("the thing in this rectangle"), or a rough
+mask. Picture and prompt go in together, and one mask comes out. Change the
+prompt and you get a different mask from the same weights. In code terms, the
+model is a function of two arguments, not one.
 
 ![The same picture and the same unchanged weights return a different mask for each point prompt, because the prompt is a second argument and nothing else about the model changed.](../../../images/02-segment-glasses/05-what-promptable-means.png)
 
-There is a second part of promptability, and it is the more useful part here.
-**Ambiguity is returned rather than resolved.** A point on the wall of a glass
-genuinely could mean three different things: that patch of wall, the whole
-glass, or the glass together with whatever stands behind it. The model does not
-guess between them. For one point it returns several masks at different extents
-— roughly a part, a whole, and something larger — each with its own estimate of
-how good that mask is, and the choice is handed back to whoever asked. That
-behaviour is why the heap of proposals further down this document contains a rim
-without its glass, and it is what gives the keeper something to choose between
-rather than one answer to accept.
+**Ambiguity is returned, not resolved.** A point on a glass wall could mean that
+patch of wall, the whole glass, or the glass with what stands behind it. The
+model does not guess. For one point it returns several masks: roughly a part, a
+whole, and something larger. Each has its own quality estimate, and the caller
+chooses. This is why the proposals include a rim without its glass. It is also
+what gives the keeper choices to make.
 
-One more property has to be stated here, because a later section rests entirely
-on it. **A prompt selects; it does not add information.** Pointing at a picture
-says which part of that picture interests you. It cannot tell the model about
-anything the picture holds no evidence of.
+**A prompt selects; it does not add information.** It says which part of the
+picture you care about. It cannot tell the model about anything the picture
+holds no evidence of. [The hidden glasses](#when-the-glasses-are-completely-hidden)
+section rests on this.
 
 ## Turning a promptable model into a proposer of everything
 
-If one prompt gives one thing, then many prompts give many things, and that is
-the whole of the step which turns SAM 2 from a tool somebody points at objects
-into something that finds the objects by itself.
+One prompt gives one thing, so many prompts give many things. That turns SAM 2
+into something that finds objects on its own.
 
-The design is to lay a regular grid of points over the picture taken from the
-top and to prompt once at every point of it. The grid aims at nothing, which is
-the point of it: nothing has to know where the glasses are before they have been
-found. Each point lands on whatever is under it — bare table returns the table,
-a glass wall returns that wall and that glass and something larger, a mouth
-returns the mouth — and a grid fine enough to put several points on the
-narrowest glass the kind allows touches everything in the scene at least once.
+Lay a regular grid of points over the picture from the top, and prompt at every
+point. The grid aims at nothing, so nothing needs to know where the glasses are
+first. Each point returns whatever is under it. Bare table returns the table. A
+glass wall returns the wall, the glass, and something larger. The grid puts
+several points on the narrowest glass the kind allows, so it touches everything
+in the scene at least once.
 
 ![A regular grid of prompt points laid over the picture from the top, with the points landing on a glass marked apart from the points landing on bare table, and the many points that returned the same mask counted up beside it.](../../../images/02-segment-glasses/05-the-prompt-grid.png)
 
-What makes this affordable is the three-part split named above. The expensive
-picture encoder runs **once**, and every prompt after it is one pass through the
-small mask decoder, so prompting at every point of a grid costs very little more
-than prompting at one.
+This is cheap because of the three parts named above. The picture encoder runs
+**once**. Each prompt is one pass through the small mask decoder. So a whole
+grid costs little more than one prompt.
 
 ### What comes back, and the cleanup that is not fitted
 
-What comes back is not a list of objects but a heap, and there are three
-problems in it. Many grid points land on the same glass, so the same region
-arrives many times over with slightly different edges. For a single point the
-model returns a part, a whole and something larger, so the heap holds a rim, the
-glass that rim belongs to, and that glass together with its neighbour, all of
-them defensible answers to the same prompt. And some masks are simply unstable,
-which is the signature of a boundary the model is not really sure about.
+What comes back is a heap with three problems. Many points land on one glass, so
+the same region arrives many times with slightly different edges. One point
+returns a part, a whole and something larger, so the heap holds a rim, its
+glass, and the glass with its neighbour. And some masks are unstable, which
+shows the model is unsure of a boundary.
 
-The repairs are standard, and not one of them involves fitting anything. **Drop
-the low-scoring masks**, using the quality estimate the model already returns
-beside each one. **Drop the unstable ones**, by nudging the cut-off that turns
-the model's output into a yes-or-no mask and keeping only those masks that
-barely change when it moves. Then **remove the duplicates** with a step called
-**non-maximum suppression**: sort the masks by score, walk down the list keeping
-each one, and throw away any later mask that overlaps a mask already kept by
-more than a chosen amount. The **overlap** of two masks means the area both of
-them claim divided by the area either of them claims, which is one for identical
-masks and zero when they share nothing.
+The fixes are standard, and none of them is fitted. **Drop the low-scoring
+masks**, using the quality estimate the model returns. **Drop the unstable
+masks**: move the cut-off that turns the model's output into a yes-or-no mask,
+and keep only masks that barely change. Then **remove the duplicates** with
+[non-maximum suppression](04-yolo-fine-tuned.md#non-maximum-suppression). The
+**overlap** of two masks is the area both claim divided by the area either
+claims. It is one for identical masks and zero when they share nothing.
 
-The quality estimate and the stability earn their place here and nowhere else.
-They are a **gate** rather than evidence: their job is to cut the heap down to a
-shortlist before anything else looks at it, and the keeper is deliberately never
-shown either of them, because what the keeper has to decide is what a region
-*is*, not how sure the borrowed model was while drawing it.
+The score and the stability are a **gate**, not evidence. They cut the heap to a
+shortlist. The keeper never sees them, because it must decide what a region
+*is*, not how sure SAM 2 was.
 
-After that cleanup there is a shortlist of regions, each with an outline and a
-score, and **not one of them has a name**. The regions are there and they are
-good regions, but nothing says which of them are glasses, nothing says the
-largest one is the table, and nothing says that the pair which ran together into
-one shape is two glasses rather than one very wide one.
+After the cleanup there is a shortlist of good regions, and **none of them has a
+name**. Nothing says which are glasses, or that the largest is the table. Nothing
+says that a joined shape is two glasses and not one wide one.
 
 ![The shortlist that comes back over one scene holds the table, each glass on its own, a rim without the glass it belongs to and a pair of glasses taken as one shape, all of them on the same footing and not one of them carrying a name.](../../../images/02-segment-glasses/05-everything-is-proposed.png)
 
-So the borrowed model has answered a different question from the one the problem
-asks. It says *where the regions are*, and the problem asks *which regions are
-glasses, and how many*. The rest of this solution is about closing that gap
-without ever training the borrowed model.
+So SAM 2 answers *where are the regions*. The problem asks *which regions are
+glasses, and how many*. The rest of this page closes that gap without training
+SAM 2.
 
 ## Why the borrowed model is never trained here
 
-The obvious way to close that gap is to train the model, and this solution does
-not. **Never trained** means the weights file is used exactly as it downloads:
-no gradient is computed through it, no layer of it is replaced, and nothing
-about this cell reaches its numbers. Running it is a forward pass and nothing
-else.
+The obvious way to close the gap is to train the model. This solution does not.
+**Never trained** means the weights are used exactly as downloaded. No gradient
+passes through them, no layer is replaced, and nothing about this cell reaches
+them.
 
-Four things follow, and together they are the case for this solution. **There is
-no training set for the part that finds objects**, because arrangements are
-still rendered for the keeper's sake, but the keeper learns from a short table
-of measurements per proposal rather than from pictures. **There is nothing that
-can go out of date**, because the borrowed model never saw this cell, which is
-the exact opposite of solutions 2, 4 and 6, whose weights record what this cell
-looked like on the day they were fitted. **It cannot have fitted itself to the
-renderer**, so it needs none of the randomisation that a model fitted here
-needs. And **setting it up is a download rather than a training run**.
+Four things follow. **There is no training set of pictures for the finding.**
+Arrangements are still rendered, but the keeper learns from a short table of
+measurements. **Nothing can go out of date**, because the model never saw this
+cell. **It cannot overfit to the renderer**, so it needs no randomisation.
+**Setup is a download**, not a training run.
 
-Against those, one cost lands immediately, and it shapes every section after
-this one. **There is no way to teach it anything.** Every difficulty that is
-specific to this cell has to be handled either **before** the model, by choosing
-what picture to hand it, or **after** the model, by the keeper. Splay, the
-single known kind, the guaranteed gap between two glasses, the wide range of
-sizes inside one kind: the borrowed model knows none of it and cannot be told.
-That is why the sections which follow are about the input and the output, and
-why none of this document is about the model's insides.
+One cost follows at once: **you cannot teach it anything.** Every difficulty
+special to this cell is handled **before** the model or **after** it. Before
+means choosing its picture. After means the keeper. Splay, the single known kind, the gap between
+glasses, the range of sizes: the model knows none of these. So the next sections
+are about the input and the output, not the model's insides.
 
-Freezing a large borrowed model and fitting something small behind it is
-ordinary practice, named with its citations in [the general ideas behind
-this](#the-general-ideas-behind-this).
+Freezing a large model and fitting something small behind it is ordinary
+practice. [A small head on frozen features](#a-small-head-on-frozen-features)
+gives the sources.
 
 ## The picture the borrowed model is handed
 
-One thing stands between the input this problem defines and the input the
-borrowed model expects, and it is the riskiest choice in the whole design, so it
-belongs before the keeper rather than after it.
+The input is the riskiest choice in the design, so it comes before the keeper.
 
-The examiner hands over a grey picture shaded from how far away each surface is,
-the depth reading at every pixel, and the camera's own pose. SAM 2, like every
-model of its kind, was fitted on ordinary colour photographs. So what it is
-shown here is a picture of distances dressed up as a photograph, and the single
-grey channel has to be repeated across all three colour channels to be a legal
-input at all.
+The examiner gives a grey picture shaded from depth, the depth at every pixel,
+and the camera's pose. SAM 2 was fitted on colour photographs. So it sees a
+picture of distances made to look like a photograph. The one grey channel is
+copied into all three colour channels, so the model accepts it.
 
 ![An ordinary colour photograph of the kind the borrowed weights were fitted on beside the grey picture shaded from depth that this cell renders, with the colour, texture, highlight and shadow boundaries the first carries and the second does not, and the single grey channel repeated across all three colour channels.](../../../images/02-segment-glasses/05-the-domain-gap.png)
 
-A **domain gap** is the difference between the examples a model was fitted on
-and the examples it is used on. The physics comparison is exact and worth
-holding on to: a formula fitted over one range of temperatures and then used
-outside that range does not announce that it has left the range. It returns
-numbers, confidently, and they are wrong. A model with a domain gap behaves the
-same way, which is why a gap has to be looked for on purpose rather than waited
-for.
+This is a **domain gap**: the data a model is used on differs from the data it
+was fitted on. [Solution 3 explains the
+risk](03-yolo-zero-shot.md#the-domain-gap-which-is-the-main-risk). A model
+across a gap gives confident, wrong answers, so you must look for the gap on
+purpose. Here it shows in four ways, and they do not all point the same way.
 
-Four things differ between the two kinds of picture, and they do not all point
-the same way.
+**Brightness means distance, not surface.** In a photo, a step in brightness is
+often a change of material, a shadow or a highlight. Here it is only a step in
+distance. The two agree at a glass's outline, where the wall and the table
+really are at different distances. They disagree almost everywhere else.
 
-**Brightness means distance rather than surface.** In a photograph a step in
-brightness is usually a step between materials, or a shadow edge, or a
-highlight. Here it is a step in distance and nothing else. The two agree at a
-glass's silhouette, where the wall and the table behind it really are at
-different distances, and they disagree nearly everywhere else.
+**There is no texture.** Photos have grain, wood, print and dirt. A shaded depth
+picture is smooth. A model that uses texture edges finds none.
 
-**There is no texture anywhere.** Photographs carry grain, wood, print and dirt,
-while a picture shaded from depth is smooth by construction, so a model leaning
-on texture boundaries finds none to lean on.
+**Glass does not look like glass.** In a photo, glass is clear, has highlights,
+and bends what is behind it. Shaded depth draws it as a solid with a clean
+outline. That helps here, because these glasses are opaque anyway. It helps by
+accident, not by design.
 
-**Glass does not look like glass.** In a photograph it is transparent, carries
-highlights and bends what is behind it, while shaded depth draws it as an opaque
-solid with a clean outline. That happens to be in this solution's favour,
-because the glasses in this problem are opaque anyway, and it is favour by
-accident rather than by design.
+**Missing readings leave holes.** Where the depth camera returns nothing, the
+shading must invent a brightness. A hole filled with one constant value has a
+sharp edge, and SAM 2 will propose it as an object.
 
-**Missing readings leave holes.** Wherever the depth camera returns nothing, the
-shading has to invent a brightness, and a hole filled with a constant is a
-region with a crisp edge which the borrowed model will happily propose as an
-object.
+Three fixes follow. They are advice, not something built. Scale each picture's
+shading to the depth range it holds, so outlines are the strongest edges. Add
+shading from the surface slope, which the depth readings give, so a curved wall
+looks curved. Fill holes from their neighbours, not with a constant, so a hole
+does not become an object.
 
-Three prescriptions follow, and they are prescriptions rather than descriptions
-of anything built. Shade so that silhouettes are the strongest boundaries in the
-picture, by normalising each picture's shading to the range of depth that
-picture actually contains. Add some shape shading, since the slope of a surface
-relative to the camera can be computed from the depth readings themselves, so
-that a curved wall reads as curved rather than as a flat ramp. And fill the
-holes from their neighbours rather than with a constant, so that a missing
-reading does not become an object with an outline.
-
-None of that closes the gap, and the honest claim is smaller: it makes the
-picture more like the pictures the weights were fitted on. The problem itself
-says that the two kinds of glass with a stem are harder than the two without,
-and that the stemmed glass is the hardest of the four, and that ordering is
-exactly what a shaded depth picture makes worse, because a stem is thin and the
-silhouette it offers is nearly nothing. Where the shading cannot be made good
-enough, the remedy is not available inside this solution at all: it is solution
-4 or solution 6, where the weights are allowed to move towards the pictures this
-cell really produces.
+None of this closes the gap. It only makes the picture more like a photograph.
+The two stemmed kinds suffer most, because a thin stem gives almost no outline
+in shaded depth. Where shading is not enough, the fix is outside this solution.
+It is solution 4 or solution 6, whose weights can move towards this cell's
+pictures.
 
 ## The keeper
 
-The keeper is where this solution stops being borrowed. It is to run once per
-surviving proposal, read a short table of numbers about that proposal, and
-return how likely it is that the proposal is exactly one glass.
+Here the solution stops being borrowed. The keeper runs once per proposal. It
+reads a short table of numbers about that proposal. It returns how likely the
+proposal is to be exactly one glass.
 
 ### What the keeper is shown
 
-The keeper is not shown pixels, and the reason is not cost. It is that the
-useful facts about a proposal are not in its pixels but in what its pixels mean
-on the table, and this project already has the arithmetic that works that out.
+The keeper is not shown pixels. The useful facts are not in the pixels but in
+what they mean on the table, and this project already has the arithmetic for
+that.
 
-Every proposal's pixels carry depth readings, because the glasses here are
-opaque, so each proposal becomes a set of points in the room. The points at the
-top of the proposal give its middle, because seen from the top a rim leans
-outwards while its own middle stays over the glass, and how far the cloud of
-points reaches from that middle gives a width. The heights of those same points
-say how far the proposal's surface stands above the table. The rest of the
-measurements come from the shape of the outline, from the depth readings along
-that outline, and from the other proposals lying beside it. The keeper would be
-shown a handful of them, and they are worth walking through in order.
+The glasses are opaque, so each proposal's pixels carry depth readings. They
+become points in the room, the same way [the examiner measures a
+mask](../the-examiner.md#what-must-come-back). That gives a width and a height
+above the table. The other measurements come from the outline's shape, the
+depth along the outline, and the nearby proposals. There are eight in all.
 
-**Where the measured width falls inside the range this kind of glass allows** is
-the strongest single input, because the kind is known and the range of widths
-that kind is drawn from is known with it. A footprint narrower than the
-narrowest glass of this kind can be is a part of something rather than a glass,
-and one wider than the widest is more than one thing.
+**Where the width falls in the kind's range** is the strongest input. The kind
+is known, so its range of widths is known. Narrower than the narrowest glass of
+the kind is a part of something. Wider than the widest is more than one thing.
 
-**How round the proposal is**, meaning its own area against the area its outline
-could enclose, comes next. A filled disc is as round as a region can be, while a
-ring, a crescent, and two footprints joined by a strip of table all fall well
-short of that.
+**How round it is** compares its own area with the area its outline could
+enclose. A filled disc is as round as a region can be. A ring, a crescent, and
+two footprints joined by a strip of table all fall well short.
 
-**How far its surface stands above the table** follows from the same points, and
-it is what tells the table apart from everything standing on it, because bare
-table lies at the table's own height and a glass stands clear of it.
+**How far its surface stands above the table** separates the table from what
+stands on it.
 
-**How far it sits from the point directly below the camera** is about the
-viewpoint rather than about the glass. A glass directly below the camera is seen
-straight down and shows almost none of its wall, while one far out from that
-point leans away and shows a great deal of it, so the same glass gives a
-differently shaped proposal in the two places, and the keeper is told which of
-the two it is looking at.
+**How far it sits from the point below the camera** is about the view, not the
+glass. A glass right below the camera shows almost none of its wall. A glass far
+out shows a lot of it. So the same glass gives a different proposal in the two
+places, and the keeper is told which it is.
 
-**How many prompt points returned this same mask** is counted by the duplicate
-removal already and costs nothing to keep, and a region that many points of the
-grid agreed on is a firmer thing than one a single prompt found.
+**How many prompt points returned this mask** is counted by the duplicate
+removal anyway. A region many points agreed on is firmer than one a single
+prompt found.
 
-**Whether another proposal contains it, or it contains one**, which is called
-the **containment** measurement from here on, is the input a hand-written rule
-always forgets, and it is how a part declares itself. A rim is a proposal
-sitting entirely inside a larger proposal whose own width is perfectly legal,
-and that larger proposal is one holding a smaller one, so a single count read
-both ways separates a part from the whole it belongs to.
+**Whether another proposal contains it, or it contains one** is the
+**containment** measurement. A hand-written rule usually forgets it. A rim sits
+inside a larger proposal with a legal width, and that larger proposal holds a
+smaller one. So one count, read both ways, separates a part from its whole.
 
-**How much of its outline is a step in depth rather than a smooth run** is the
-last thing the picture itself can offer. Where a glass ends, the depth reading
-jumps from its wall to the table behind it, so an outline made of such jumps is
-the outline of a thing standing on the table, while an outline running smoothly
-across one surface is a boundary the cut-off drew rather than one the room
-holds.
+**How much of its outline is a step in depth** is the last thing the picture
+gives. Where a glass ends, the depth jumps from its wall to the table behind. An
+outline made of such jumps belongs to a thing on the table. An outline that
+runs smoothly across one surface was drawn by the cut-off, not by the room.
 
-**How much table the proposal stands over** closes the list, and it is an area
-on the table rather than a count of pixels, which is what separates the table
-itself from anything that could be a glass of this kind.
+**How much table it stands over** is an area on the table, not a pixel count. It
+separates the table from anything that could be a glass of this kind.
+
+The table below lists the eight. The left column is the measurement, and the
+right column is why it helps answer "is this one glass?".
 
 | What the measurement says | Why it bears on the question |
 | --- | --- |
@@ -522,709 +385,553 @@ itself from anything that could be a glass of this kind.
 | how much of its outline is a step in depth rather than a smooth run | a thing standing on the table ends where the depth jumps to the table behind it |
 | how much table it stands over | the table stands over far more of itself than any glass of this kind can cover |
 
-Every one of those is a **length, a count or a ratio, and not one of them is an
-address in the picture**, which is a requirement rather than a preference. The
-reason is plain: a pixel address means something different from every place the
-camera can stand. The camera here is on the wrist, so it visits several stations
-over the glass zone and the same glass appears at a different address in each
-picture, while its footprint width, its roundness and its height above the table
-are the same numbers from all of them. An input measured in pixels would
-therefore teach the keeper about where the camera was parked when the
-arrangements for fitting it were rendered, which is exactly the lesson it must
-not learn. The one input that does speak about the camera speaks about it on
-purpose, because how far a proposal sits from the point below the camera is how
-much splay to expect in it.
+Every one is a **length, a count or a ratio, and none is a place in the
+picture**. This is a requirement. The camera is on the wrist and visits several
+stations. The same glass sits at a different pixel in each picture. But its
+width, roundness and height are the same from all of them. An input in pixels
+would teach the keeper where the camera stood during training. It must not learn
+that. The distance from the point below the camera is the one input about the
+camera. It is there on purpose, because it says how much splay to expect.
 
-One worry about that list is worth settling before the list is used, because the
-list invites it. Seen from the top, the **mouth** of a glass is a filled disc
-whose footprint is the footprint of the glass it belongs to: a width the kind
-allows, as round as a footprint gets, and standing well clear of the table. On
-every measurement taken from the footprint a mouth therefore looks exactly like
-one glass, so the worry is that the keeper holds a mouth as a glass of its own
-beside its own glass, and the report then names more glasses than the table
-holds.
-
-It does not, and the reason is where a mouth lands rather than what it measures.
-A mouth's footprint is its own glass's footprint, so a mouth kept as a glass
-would be reported at the place that glass already stands, and a rule of **one
-report per place on the table** collapses the two into one. Two glasses of one
-kind standing side by side are at least the narrowest width that kind allows
-apart, so a second report nearer than that is the same glass arriving twice
-rather than another glass. The keeper has its own way of noticing a part inside
-a whole, which is the containment measurement, and where that is not enough the
-geometry still holds the count.
+One worry is worth settling now. Seen from the top, the **mouth** of a glass is
+a filled disc with that glass's footprint. It has a legal width, it is round,
+and it stands clear of the table. So the keeper may keep a mouth as a glass.
+That does no harm, because the mouth lands at the place its own glass already
+stands. [One report per place](#the-arithmetic-still-decides) then merges the
+two.
 
 ### Why the keeper is fitted rather than written
 
-Every one of those inputs could be a written threshold instead, so the case for
-fitting them has to be made rather than assumed, and there are three parts to
-it.
+Every input could be a written threshold instead. There are three reasons to fit
+them.
 
-**The first is the nature of the evidence, and it is the real argument.** It is
-several weak pieces at once, and not one of them is decisive on its own.
-Consider a proposal roughly one glass wide, roughly round, and standing clear of
-the table: that is one glass, or the near part of two, or a mouth, and no single
-measurement separates the three. Consider a proposal slightly wider than the
-kind allows: that is two glasses, or one glass whose mask leaked a little onto
-the table. In both cases every measurement leans one way or the other and none
-of them settles it. Combining several weak pieces of evidence is precisely what
-a written threshold does worst and a small fitted model does best, because a
-threshold has to commit to a cut on one measurement at a time while a fitted
-model can learn that a width near the top of the range matters only when the
-roundness is also low. Writing that down by hand means writing a cut for every
-combination, and the number of combinations grows faster than anybody will
-maintain.
+**First, the evidence is many weak pieces, and none is decisive.** A proposal
+about one glass wide, round, and clear of the table could be one glass, the near
+part of two, or a mouth. No single measurement tells them apart. A proposal a
+little too wide could be two glasses, or one glass whose mask leaked onto the
+table. A threshold cuts on one measurement at a time. A fitted model can learn
+that a width near the top of the range matters only when roundness is also low.
+Writing that by hand needs a cut for every combination, and there are too many.
 
-The second part is this solution's own purpose. A page of thresholds over
-regions is a programmed solution, and problem 2 already has one of those in
-solution 1. The question this solution exists to answer is how little has to be
-written down, so the last decision is fitted rather than written.
+**Second, this solution's purpose.** A page of thresholds is a programmed
+solution, and problem 2 already has one in solution 1. This solution asks how
+little has to be written down.
 
-The third part is that **the labels are free**, which is what makes the second
-part affordable. The examiner's answer key says which glass owns each pixel, so the
-overlap between a proposal and each real glass's pixels is a subtraction and a
-division: overlapping one glass well and no other is one glass, overlapping none
-is not a glass, and overlapping two of them well is more than one glass. That is
-arithmetic rather than judgement, with no annotator and no annotator's mistakes.
-Those labels come only from the training half of the arrangements, and the
-keeper is never run on the answer key.
+**Third, the labels are free.** The examiner's answer key says which glass owns
+each pixel. So a proposal's overlap with each real glass is simple arithmetic.
+Good overlap with one glass means one glass. Overlap with none means not a
+glass. Good overlap with two means more than one glass. No person labels
+anything. The labels come only from the training half of the arrangements, and
+the keeper is never run on the answer key.
 
 ### Three answers, not two
 
-That third label is a real answer rather than a spare category, because in this
-cell it is the ordinary way for a proposal to be wrong. So the keeper gives
-three answers.
+In this cell, "more than one glass" is the usual way for a proposal to be wrong.
+So the keeper gives three answers.
 
-**Keep** means the proposal is one glass, so its pixels are that glass's mask
-and go into the report.
+**Keep** means the proposal is one glass. Its pixels are that glass's mask.
 
-**Drop** means the proposal is not a glass, which is what the table, a rim and
-an unstable region all are.
+**Drop** means the proposal is not a glass. The table, a rim and an unstable
+region are all dropped.
 
-**More than one glass** is the third, and it is to be handled rather than
-discarded. The design is to prompt the borrowed model again with a fresh grid of
-points placed only inside that one proposal. That can work where the whole
-picture could not, because when one glass stands in front of another the near
-glass's rim is much closer to the camera than the far glass's wall, and that
-step in depth is the kind of boundary the borrowed model can find. If at least
-two of the regions which come back stand at different places on the table with
-widths inside the kind's range, the pair is reported as those two glasses.
+**More than one glass** is handled, not thrown away. SAM 2 is prompted again
+with a fresh grid only inside that proposal. This can work where the whole
+picture failed. When one glass stands in front of another, the near rim is much
+closer to the camera than the far wall. SAM 2 can find that step in depth. If at
+least two returned regions stand at different places, with widths in the kind's
+range, they are reported as two glasses.
 
-If they do not, the pair is **reported as an unseparated pair**, carrying its
-reason, and handed to [problem 3](../../03-push-glasses-apart/problem.md).
-That is not a failure. This project's rule is that anything doubtful is reported
-and never guessed, and a pair the arm cannot tell apart is stated as the input
-to the next problem rather than turned into one wide glass that everything
-downstream would believe.
+If not, the pair is **reported as an unseparated pair** with its reason. It is
+handed to [problem 3](../../03-push-glasses-apart/problem.md). That is not a
+failure. This project reports anything doubtful and never guesses.
 
 ![Eight proposals from one picture going into the keeper, and each coming out as one of three answers: four kept, one that is more than one glass, and three dropped.](../../../images/02-segment-glasses/05-the-keeper.png)
 
 ### What kind of model the keeper is
 
-The keeper's input is a short table of numbers of different kinds — widths,
-heights, distances, ratios and counts — and its answer is one of three
-categories. That is the case **gradient-boosted decision trees** were made for
-(Friedman, *Greedy Function Approximation: A Gradient Boosting Machine*, Annals
-of Statistics, 2001), and scikit-learn provides them.
+The keeper's input is a short table of mixed numbers: widths, heights,
+distances, ratios and counts. Its output is one of three answers.
+**Gradient-boosted decision trees** were made for this (Friedman, *Greedy
+Function Approximation: A Gradient Boosting Machine*, Annals of Statistics,
+2001). scikit-learn provides them.
 
-A tree asks threshold questions and lands in a leaf holding a prediction.
-Boosting fits one weak tree, then fits the next tree to whatever the first one
-got wrong, and adds them up.
+A tree asks threshold questions and ends in a leaf that holds a prediction.
+Boosting fits one weak tree, then fits the next tree to the first one's errors,
+and adds them up.
 
 ![One shallow tree asking two threshold questions and landing in one of four leaves, and under it the set of trees being added together into one score for each of the three answers.](../../../images/02-segment-glasses/05-the-keeper-trees.png)
 
-Every question in that tree is a threshold on one of the measurements tabled
-above, and every leaf holds a small push towards one of the three answers. A
-tree three questions deep is weak on its own and is meant to be: 60 rounds, one
-set of trees per answer, make 180 shallow trees in all, and added up they are
-the keeper. Trees suit this table for three reasons. They do
-not care that a width measured as a length and a ratio between zero and one are
-on different scales, so nothing has to be rescaled. They find combinations of
-conditions by themselves, which is the whole argument of the section above. And
-on a table of this size they would fit in well under a second on an ordinary
-processor with no graphics card involved, which is a pleasant contrast with the
-model in front of them.
+Each question is a threshold on one measurement from the table above. Each leaf
+gives a small push towards one answer. A tree three questions deep is weak on
+its own, on purpose. 60 rounds, one set of trees per answer, make 180 shallow
+trees. Added up, they are the keeper.
 
-**This is the only one of the six solutions where a classical model does the
-deciding.** Solutions 2, 4 and 6 decide with a neural network fitted here,
-solution 3 decides with a borrowed network's own list of names, and solution 1
-decides with arithmetic a person wrote. Here a borrowed network proposes and a
-small classical model disposes, which is also why the deciding can be explained:
-the keeper's inputs are a short list of named measurements, so printing them
-beside its answer is an explanation a person can read and argue with.
+Trees suit this table for three reasons. They ignore scale, so a length and a
+ratio need no rescaling. They find combinations of conditions by themselves,
+which is the argument above. And they fit in well under a second on an ordinary
+processor.
+
+**This is the only solution of the six where a classical model decides.**
+Solutions 2, 4 and 6 decide with a network fitted here. Solution 3 uses a
+borrowed network's names. Solution 1 uses arithmetic a person wrote. Here, the
+keeper's inputs are named measurements. Printed beside its answer, they are an
+explanation a person can read and argue with.
 
 ### Calibration, and why the probability needs it
 
-The keeper returns a probability, and before any threshold is put on that
-probability it has to be made to mean something.
+The keeper returns a probability. Before a threshold is put on it, it must be
+**calibrated**: its claims must come true about as often as it says. [Solution 3
+defines
+this](03-yolo-zero-shot.md#the-number-beside-each-outline-and-why-it-is-not-a-probability).
+Boosted trees tend to push scores towards 0 and 1. So a raw score of 0.9 does not
+mean nine in ten such proposals are glasses.
 
-A probability is **calibrated** when its claims come true about as often as it
-says they will: among the proposals it scores very highly, nearly all should
-really be one glass, and among those it scores middling, a middling share should
-be. A model fitted to be right as often as possible is not fitted to be honest
-about how sure it is, and boosted trees in particular tend to push their scores
-towards the ends of the range, so a raw score of nine tenths is not a promise
-that nine proposals in ten like it are glasses.
+This matters because the score is compared with a threshold. A threshold on a
+meaningless number is just a knob turned until the results look good. So a small
+correction from raw score to honest probability is fitted with the keeper, in
+**folds**. The table of proposals is cut into parts. Each part in turn is held
+back. The trees are fitted on the other parts, and the correction on the part
+held back. So the correction never sees rows the trees were fitted on. If it
+did, it would learn the keeper's overconfidence instead of correcting it. The
+correction is only a few numbers.
 
-That matters here because the score is not used only to sort. It is compared
-against a threshold, and a threshold on a number whose size means nothing is a
-knob somebody turned until the result looked good. So a small correction from
-the raw score to an honest probability is fitted as part of the keeper's own
-fit, in **folds**: the table of proposals is cut into parts, and each part takes
-its turn at being held back while the trees are fitted on the others and the
-correction on it. No correction is therefore fitted on rows the trees behind it
-were shown, because a correction fitted on the keeper's own training rows would
-learn the keeper's optimism rather than correct it. The correction is
-a handful of numbers more, and it is the cheapest honest thing in this
-solution.
+**One weakness will not show in any run.** The folds cut the table row by row.
+One arrangement gives many rows. So proposals from the same table can land on
+both sides of a fold. The correction then sees an easier test than a fresh
+arrangement, and its probabilities are a little too kind. The fix is to cut the
+folds by arrangement, not by row. It is cheap, but the code does not do it
+today.
 
-**One weakness in that is worth naming, because nothing in the run will show
-it.** The folds cut the table of proposals row by row, and one arrangement
-contributes many rows, so proposals of the same glasses on the same table can
-land on both sides of a fold. Those rows are not independent of each other, so
-the correction sees something a little easier than a fresh arrangement would be,
-and the probability it produces is therefore a little kinder than the truth. The
-cure is to cut the folds by arrangement rather than by row, so that every
-proposal from one table stays together, and it is not expensive. It is simply
-not what this code does today.
-
-With a calibrated probability, the keeper can have **two thresholds rather than
-one**, and the band between them means "I cannot tell". A proposal landing in
-that band is neither quietly kept nor quietly dropped: it is a reason to take
-another picture from another place, which costs arm time and is cheap compared
-with being wrong. That band is also where a glass half hidden behind another one
-should land, because a footprint fitted to a sliver of a glass is either
-narrower than the kind allows or less round than a whole one, or both.
+With a calibrated probability, the keeper can use **two thresholds**. The band
+between them means "I cannot tell". A proposal in that band is neither kept nor
+dropped. It is a reason to take another picture from another place. That costs
+arm time, but it is cheaper than being wrong. A glass half hidden behind another
+should land there, because its footprint is too narrow, less round, or both.
 
 ![The keeper's calibrated probability as a line from certainly not one glass to certainly one glass, cut by two thresholds into drop, I cannot tell, and keep.](../../../images/02-segment-glasses/05-the-keeper-thresholds.png)
 
-The third answer is not a point on that line. More than one glass is not a
-doubtful glass, it is a different thing to do next, so it is a category of its
-own rather than a band of the probability.
+"More than one glass" is not a point on that line. It is not a doubtful glass
+but a different next step, so it is a category of its own.
 
 ### The arithmetic still decides
 
-One thing does not change from solution 1, and it is what keeps this solution
-inside the same safety argument as the rest of the project.
+One thing is the same as in solution 1, and it keeps this solution inside the
+project's safety argument.
 
-A proposal the keeper wants to keep still has its width measured against the
-kind, and if that width falls outside the range this kind of glass can be, the
-proposal is **not reported as a glass**, whatever the keeper said. It becomes a
-doubtful report carrying its reason instead.
+A proposal the keeper keeps still has its width checked against the kind. If the
+width is outside the kind's range, it is **not reported as a glass**, whatever
+the keeper said. It becomes a doubtful report with its reason. [Solution 1
+explains this
+check](01-rules-on-the-table.md#checking-a-group-against-the-widths-the-kind-allows).
 
-**With one exception, and the exception is about the view rather than the
-proposal.** At the cell's own survey height one picture does not hold the glass
-zone, so a glass at the edge of a station's frame shows part of its footprint
-and the width measured off that part is part of a width. Refusing on it refuses
-the view, and that was measured on masks nothing can improve on: handed the
-examiner's own exact masks, one station at a time over 20 held-out spawned
-arrangements, the kind's range of footprints refuses 66 of 297 glass sightings,
-and **every one of those 66 reaches the frame edge**. So the check is not put to
-a proposal whose mask reaches that edge. What answers such a proposal instead is
-the survey rather than a refusal inside one picture: the cell stands at three
-overlapping stations, and the report kept is the one from the station the glass
-stood nearest the middle of.
+**There is one exception: a glass the frame cut short.** At survey height one
+picture does not hold the whole glass zone. A glass at the edge of a frame shows
+only part of its footprint, so its width is only part of a width. Handed the
+examiner's exact masks, one station at a time over 20 held-out spawned
+arrangements, the kind's range refuses 66 of 297 glass sightings. **Every one of
+those 66 reaches the frame edge.** So a proposal whose mask reaches that edge is
+not checked. The survey answers it instead. The cell looks from three
+overlapping stations, and the report kept is from the station where the glass
+stood nearest the middle. [Solution 4 gives the full
+argument](04-yolo-fine-tuned.md#the-masks-are-what-this-contributes).
 
-A second piece of arithmetic settles what the width check cannot. **Two reports
-at one place on the table are one glass reported twice**, because two glasses of
-one kind standing side by side have their centres at least the narrowest width
-that kind allows apart, so a report landing nearer than that to one already kept
-is the same glass arriving a second time, and only the surer of the two keeps
-the place. That is geometry the cell guarantees rather than a number somebody
-tuned, and it is what holds the count honest when a mouth and the glass below it
-are both kept.
+**Two reports at one place are one glass reported twice.** Two glasses of one
+kind stand with their centres at least the kind's narrowest width apart. So a
+report nearer than that to one already kept is the same glass again. Only the
+surer of the two keeps the place. The cell guarantees this geometry, and nobody
+tuned it. It keeps the count honest when a mouth and its glass are both kept.
 
-So the borrowed model proposes, the keeper sorts, and the geometry disposes. A
-fitted component chooses among regions and a rule nobody trained decides whether
-the choice is believable, which is what makes a model this foreign safe to use
-here at all.
+So SAM 2 proposes, the keeper sorts, and the geometry decides. A rule nobody
+trained checks every fitted choice. That makes a model this foreign safe to use
+here.
 
 ## The second way — a word instead of a grid
 
-Everything above is one generation of this solution. There is a second, and it
-is the most interesting question this document carries, because it would delete
-the keeper entirely.
+Everything above is the first way. The second way would remove the keeper.
 
-SAM 3 is available through the same library, and it takes **open-vocabulary text
-prompts**. Open-vocabulary means the model is not limited to a fixed list of
-categories: the prompt is a phrase rather than a point, and the model returns
-every instance of the concept that phrase names. So instead of a grid of points
-and a keeper, the whole of this solution's finding and deciding would be a
-single request for "drinking glass", answered with one outline per glass. There
-is no heap to clean up, because nothing proposes the table or a rim in the first
-place, and there is nothing to fit, because the naming is done inside the
-borrowed model.
+SAM 3 is in the same library. It takes **open-vocabulary text prompts**. The
+prompt is a phrase, not a point, and it is not limited to a fixed list. The
+model returns every instance of what the phrase names. So one request for
+"drinking glass" would replace the grid and the keeper, with one outline per
+glass. There is no heap to clean, because nothing proposes the table or a rim.
+There is nothing to fit, because the naming happens inside the borrowed model.
 
-**Both of them are the same solution.** Both borrow a promptable foundation model
-and train nothing in this cell. They differ only in where the judgement "this is
-a glass" lives: on the first way it lives in a small fitted model in this
-folder, and on the second way it lives inside borrowed weights, reached through
-a word.
+**Both ways are the same solution.** Both borrow a promptable foundation model
+and train nothing here. They differ only in where "this is a glass" is decided.
+In the first way it is a small fitted model in this folder. In the second it is
+inside borrowed weights, reached through a word.
 
-What is gained is real and worth stating plainly. There is **less code**: no
-grid, no scoring and stability gate, no duplicate removal, no table of
-measurements, no classifier, no calibration, and no training step of any kind.
-There is **nothing fitted at all**, so the solution has no training half of the
-arrangements, nothing to keep in step with the cell, and nothing that can be
-fitted to the renderer by mistake. And the proposals that do come back are
-already about glasses, so the whole class of mistakes the keeper exists to catch
-— the table proposed as an object, a rim proposed without its glass — does not
-arise.
+The gain is real. There is **less code**: no grid, no gate, no duplicate
+removal, no measurements, no classifier, no calibration and no training. There
+is **nothing fitted**, so there is nothing to keep in step with the cell. And
+the outlines are already about glasses, so the mistakes the keeper catches, such
+as the table or a rim, do not arise.
 
-What is lost is one thing, and it is the thing this document values most. **The
-keeper is the one place in the set of six where the deciding is explainable by
-printing its inputs beside its answer.** When the keeper drops a region, the
-reason is a short list of named measurements and the answer that followed from
-them, and a person can read that list, disagree with it, and point at the
-measurement that was wrong. A text prompt moves that judgement inside a model
-nobody here can inspect, so when it misses a glass there is nothing to print:
-the only available response is to try a different phrase and see what happens.
-The difference is between a decision with a readable argument behind it and a
-decision that can only be measured from the outside.
+The loss is the thing this page values most. **The keeper is the one place in
+the six solutions where the decision can be explained by printing its inputs
+beside its answer.** When it drops a region, the reason is a short list of named
+measurements. A person can read it, disagree, and point at the wrong
+measurement. A text prompt moves the decision inside a model nobody here can
+inspect. When it misses a glass, there is nothing to print. You can only try
+another phrase.
 
-There is a second loss, and it is about where this solution then sits. **With a
-text prompt this solution begins to resemble solution 3**, because both of them
-then rely on a borrowed model's own idea of what a glass is. The resemblance is
-only partial, because the two reach that idea differently — solution 3 can only
-return a name from a list fixed before it was downloaded, while an open
-vocabulary is not limited to any list — and the open vocabulary is a genuine
-improvement on a fixed list, since the fixed list has to contain something close
-enough to a drinking glass while the phrase can simply say so. But the
-structural trade is the same one, and it is the trade this solution was built to
-avoid: borrowing both halves rather than borrowing the half that transfers and
-replacing the half that does not.
+There is a second loss. **With a text prompt, this solution starts to look like
+solution 3**, because both rely on a borrowed model's idea of a glass. An open
+vocabulary is better than solution 3's fixed list, because the phrase can say
+"drinking glass" directly. But it is the trade this solution was built to avoid:
+borrowing both halves instead of only the half that transfers.
 
-One practical note belongs here, because the licence is one of this solution's
-advantages and that advantage is not automatically inherited. The terms a newer
-generation of weights is released under have to be read for themselves rather
-than assumed to match the generation before it, and here that matters more than
-as a caution. **The second way has not been run on this machine.** The library
-holds the model and the code for this way is written against it, but the newer
-weights are gated: the upload will not hand them over without an account that
-has been granted access. So this way has no scorecard, and none has been
-invented for it: only the first way has been measured.
+**The second way has not been run on this machine.** A newer generation's
+licence must be read on its own; it is not inherited from SAM 2. And SAM 3's
+weights are gated: they download only to an account that has been granted
+access. The code for this way is written, but it has no scorecard, and none has
+been invented. Only the first way has been measured.
 
-So the recommendation is still not to choose once. Fit the keeper, because it is
-small and it fits in seconds, and run both of them on the same held-out
-arrangements on a machine whose account has been granted the newer weights. The
-examiner makes that comparison honest, and if the text prompt wins, the keeper is
-still the thing that explains why a region was refused.
+So do not choose once. Fit the keeper, because it is small and fast. Run both
+ways on the same held-out arrangements, on a machine with access to the newer
+weights. The examiner makes that comparison fair. If the text prompt wins, the
+keeper still explains why a region was refused.
 
 ## The masks are what this contributes
 
-Everything above produces masks, and nothing above produces a place or a width.
-
-Turning a mask into a place on the table and a rough width is the examiner's job,
-described once in [the examiner](../the-examiner.md) and shared by all six
-solutions: every mask pixel carries a depth reading, so it becomes a point in
-the room, the axis comes from the points at the top of the glass, and the width
-is how far the cloud reaches from that axis. **So this solution contributes only
-the masks, and any difference in its score belongs to the mask.** It cannot win
-by measuring more cleverly and it cannot lose by measuring worse.
-
-One consequence is worth stating because it removes a question this solution
-invites. **No model here produces a pose.** The borrowed model produces regions,
-the keeper produces a decision about a region, and the pose comes from depth and
-the camera's own pose by arithmetic. A glass standing upright on a flat table
-has no orientation left to find.
+Like every solution here, this one contributes only masks. [The
+examiner](../the-examiner.md#what-must-come-back) turns each mask into a place
+and a width, the same way for all six. So any difference in score belongs to the
+mask. **No model here produces a pose.** The place comes from depth and the
+camera's pose, by arithmetic.
 
 ## How the concepts fit together
 
-Everything above is one pipeline, worth seeing in order before the failure
-cases, because each stage works only on what the stage before it passed along.
+Here is the whole pipeline in order. Each stage works only on what the stage
+before it passed on.
 
 The depth readings are **shaded** into a grey picture. The **picture encoder**
-runs once over it. A **grid of point prompts** then goes through the mask
-decoder, one cheap pass each, and scoring, stability and duplicate removal
-reduce what comes back to a shortlist of **proposals**. Each proposal's pixels
-become **points in the room**, and a place, a width, a height above the table
-and the rest of the **measurements** come out of those points and of the
-proposals beside it. The **keeper** reads the measurements and answers one of
-three things, with its probability **calibrated** so that the two thresholds
-mean what they say. A proposal it keeps must still pass the **width check**
-against the kind before it is reported, and where two reports land at **one
-place on the table** only the surer of them survives. A proposal it calls more
-than one glass goes back for a **second round of prompts inside itself**.
-Anything left over is **reported doubtful**, which for a pair means handing it
-to problem 3.
+runs once over it. A **grid of point prompts** goes through the mask decoder,
+one cheap pass each. Score, stability and duplicate removal cut the results to a
+shortlist of **proposals**. Each proposal's pixels become **points in the
+room**. A width, a height above the table and the other **measurements** come
+from those points and from nearby proposals. The **keeper** reads them and gives
+one of three answers. Its probability is **calibrated**, so its two thresholds
+mean what they say. A kept proposal must still pass the **width check** against
+the kind. Where two reports land at **one place on the table**, only the surer
+one survives. A proposal called more than one glass gets a **second round of
+prompts inside itself**. Anything left over is **reported doubtful**, and a pair
+goes to problem 3.
 
-Three things about that chain are worth holding on to.
-
-**The only fitted stage is the keeper**, which reads a table of numbers rather
-than pictures, so everything that finds objects is borrowed and none of it knows
-anything about this cell.
-
-**The riskiest stage is the shading**, because it is the only place where a
-choice that no arithmetic can check changes what every later stage sees.
-
-**The width check sits after the keeper rather than before it**, so a wrong
-answer from the keeper still has to get past a rule nobody fitted, and a wrong
-keep therefore becomes a doubtful report rather than a wrong glass.
+Three points matter most. **The keeper is the only fitted stage**, and it reads
+numbers, not pictures. **The shading is the riskiest stage**, because no
+arithmetic can check it and it changes what every later stage sees. **The width
+check comes after the keeper**, so a wrong keep becomes a doubtful report, not a
+wrong glass.
 
 ## When the glasses are completely hidden
 
-A glass can be covered completely, and then it contributes no pixel to any
-picture. [What is asked for](../problem.md) gives
-the geometry and says how close two glasses have to stand for it, and [looking
-again at what was
-hidden](../hidden-glasses.md) is the shared
-answer: work out from arithmetic where a glass could have been standing unseen,
-and go and look there. **No method that reads pictures can do better**, because
-the arrangement with the hidden glass and the same arrangement with it removed
-produce the same picture, pixel for pixel. What follows is only what is this
-solution's own.
+A glass can be fully covered and leave no pixel in any picture. [What is asked
+for](../problem.md) gives the geometry. [Looking again at what was
+hidden](../hidden-glasses.md) is the shared answer: work out where a glass could
+stand unseen, and go and look there. No method that reads pictures can do
+better, because the picture is the same with or without the hidden glass. Below
+is only what is special to this solution.
 
-**The keeper is never consulted**, which is worth following because it closes
-the escape route this solution seems to offer. The borrowed model grows a mask
-from the picture's own content at the place the prompt points at, so a prompt
-anywhere over the hidden glass lands on the covering glass and returns the
-covering glass — and that answer is correct. Prompting harder does not help,
-because **a prompt selects and does not add information**: there is no point,
-no box and no rough mask that makes a model return a glass which cast no
-pixels. With no proposal for the hidden glass, the keeper's three answers are
-never asked for, and every check here is a check on a proposal.
+**The keeper is never asked.** SAM 2 grows a mask from what the picture shows at
+the prompt. A prompt over the hidden glass lands on the covering glass and
+returns it, and that answer is correct. More prompts do not help, because **a
+prompt selects and does not add information**. With no proposal for the hidden
+glass, the keeper has nothing to judge.
 
-The first picture is the arrangement itself, seen from above. The short glass
-stands entirely inside the tall one's outline, so not one of the 464 prompt
-points can land on it.
+The first picture shows the arrangement from above. The short glass is entirely
+inside the tall one's outline, so none of the 464 prompt points can land on it.
 
 ![A top view of two glasses, where the tall one's splayed outline covers the short one completely and every prompt point that falls on the pair lands on the tall glass.](../../../images/02-segment-glasses/05-where-it-stops.png)
 
-The second picture follows that geometry through the solution, one step at a
-time, to show that there is no stage at which anything could have noticed.
+The second picture follows that through the solution, step by step. No stage
+could have noticed.
 
 ![Five steps from the geometry to the keeper: no pixel, so no prompt, so no proposal, so the keeper is never shown the glass at all.](../../../images/02-segment-glasses/05-why-nothing-catches-it.png)
 
-One temptation is worth naming, because this solution invites it. A foundation
-model's strength is that it generalises to objects it never saw, and it is easy
-to hope that covers this. It does not. The difficulty is not an unfamiliar
-object but **an absent one**, and generalisation handles evidence of a new
-kind, while here there is no evidence of any kind.
+A foundation model can handle objects it never saw. That does not help here. The
+problem is not an unfamiliar object but **an absent one**, and there is no
+evidence of any kind.
 
 ## A worked example
 
-One picture from the top shows the whole chain working, and failing once. It is
-a walk through the design rather than a record of a run.
+One picture from the top shows the chain working, and failing once. It walks
+through the design. It is not a record of a run.
 
-**The picture.** Five glasses stand in the glass zone, drawn across the kind's
-range of sizes, two of them along a line running out from the point below the
-camera. The depth is shaded into grey, normalised so that the tallest rim and
-the table sit at opposite ends of the range of grey.
+**The picture.** Five glasses stand in the glass zone, across the kind's range
+of sizes. Two of them stand on a line running out from the point below the
+camera. The depth is shaded grey. It is scaled so the tallest rim and the table
+sit at the two ends of the grey range.
 
-**The proposals.** The grid of prompts returns a heap, and after scoring,
-stability and duplicate removal a shortlist is left: the table, four regions
-each about one glass wide, one region far wider than the kind allows, three rims
-and two mouths.
+**The proposals.** After the cleanup the shortlist holds the table, four regions
+about one glass wide, one region far wider than the kind allows, three rims and
+two mouths.
 
-**The keeper.** The table is dropped, on its width and on lying at the table's
-own height. The rims are dropped, on being rings rather than filled discs and on
-sitting inside proposals whose widths are legal. The mouths are the interesting
-case, because their footprints are perfectly legal, so the keeper may well hold
-one of them as a glass and nothing it is shown says otherwise. Four proposals
-are kept as one glass each, and the wide one is answered "more than one glass".
+**The keeper.** The table is dropped: it is too wide and lies at table height.
+The rims are dropped: they are rings, and they sit inside proposals with legal
+widths. The mouths are harder, because their footprints are legal, so the keeper
+may keep one. Four proposals are kept as one glass each. The wide one is
+answered "more than one glass".
 
-**The width check and the second round.** All four kept proposals have a width
-inside the kind's range, so all four are reported with a mask, and the wide one
-fails the check as it should. A fresh grid of points inside that wide region
-returns two masks, split along the step between the near glass's rim and the far
-glass's wall, and both of their widths land inside the kind's range, so the pair
-is reported as two glasses rather than as an unseparated pair.
+**The width check and the second round.** All four kept proposals pass the width
+check. The wide one fails it, as it should. A fresh grid inside it returns two
+masks, split at the step between the near rim and the far wall. Both widths are
+legal, so they are reported as two glasses.
 
 **One report per place.** The near glass of that pair was also proposed on its
-own, so it now arrives twice, and the mouth the keeper held stands at the place
-its own glass already occupies. Both are second reports at a place already
-taken, so both are dropped, and five glasses are reported where five stand.
+own, so it arrives twice. The kept mouth stands where its own glass already is.
+Both are second reports at a place already taken, so both are dropped. Five
+glasses are reported where five stand.
 
-**Where it fails.** Behind the tallest glass in the arrangement a sixth glass is
-standing that nothing in this run has any opinion about. It cast no pixels, so
-no prompt point could reach it, so no proposal exists for it, so the keeper was
-never asked. The report says five glasses and one region of table that could not
-have been seen, and the second of those two statements is this solution's entire
-contribution to finding the sixth.
+**Where it fails.** A sixth glass stands behind the tallest one. It cast no
+pixels, so no prompt reached it, no proposal exists, and the keeper was never
+asked. The report gives five glasses and one region of table that could not have
+been seen. That second statement is all this solution can do to find the sixth.
 
-**What it costs.** Running the borrowed model is the whole of the cost to within
-a rounding error: the picture encoder runs once per picture, every prompt after
-it is cheap, and what the keeper adds is too small to see beside them. The whole
-chain still costs far less than one movement of the arm.
+**What it costs.** Running SAM 2 is nearly the whole cost. The picture encoder
+runs once per picture, each prompt is cheap, and the keeper is too small to
+notice. The whole chain costs far less than one movement of the arm.
 
 ## What it needs
 
-It needs a **deep learning framework** and the environment to run it, which is a
-large dependency for a cell whose simplest answer is a page of arithmetic.
+It needs a **deep learning framework** and its environment. That is a large
+dependency for a cell whose simplest answer is a page of arithmetic.
 
-It needs a **weights file this project does not own**, which is a real
-difference from solutions 2, 4 and 6, whose weights are produced here and can be
-produced again at any time. These cannot be produced here at all, so they have
-to be fetched, pinned to a version, and stored where a run can find them.
+It needs a **weights file this project does not own**. Solutions 2, 4 and 6
+make their weights here and can make them again. These cannot be made here, so
+they must be fetched, pinned to a version, and stored where a run can find them.
 
-It needs **arrangements for the keeper**, which the examiner renders and labels for
-nothing, and far fewer of them than a network fitted from scratch needs, because
-the keeper learns from a short table of numbers rather than from pictures. The
-calibration needs no arrangements beyond those, because it is fitted in folds of
-the keeper's own table rather than on a second set of its own.
+It needs **arrangements for the keeper**, which the examiner renders and labels
+for free. It needs far fewer than a network fitted from scratch, because it
+learns from numbers, not pictures. Calibration needs no extra arrangements,
+because it uses folds of the same table.
 
-Fitting the keeper takes **seconds** once the proposals are in hand, with no
-graphics card. What takes the time is running the borrowed model over those
-arrangements to get the proposals, which is where nearly all of this solution's
-cost sits, at fitting time and at run time both. At run time it needs one pass
-of the picture encoder per picture, which is the largest single cost here and
-still small beside one movement of the arm. The machine is an Apple processor
-with integrated graphics and memory shared with the processor, which PyTorch
-reaches through its MPS backend, falling back to the processor where that is
-absent; no separate graphics card and no CUDA are involved, and the shared
-memory is why a model this size fits at all.
+Fitting the keeper takes **seconds** on the processor, once the proposals exist.
+Running SAM 2 to get them is where nearly all the cost sits, at fitting time and
+at run time. The machine is an Apple processor with integrated graphics and
+memory shared with the processor. PyTorch reaches the graphics through its MPS
+backend, and falls back to the processor without it. There is no separate
+graphics card and no CUDA. The shared memory is why a model this size fits.
 
-And it needs **the shading got right**, which is the only part where a careless
-choice makes everything after it worse without anything complaining.
+It needs **the shading got right**. That is the one place where a careless
+choice harms everything after it, and nothing complains.
 
-Finally, the **licence is permissive**, which is a real advantage rather than a
-footnote. Solutions 3 and 4 use weights under the AGPL, which places conditions
-on anything built around them, so on the day this cell becomes a product rather
-than an experiment those two have a question to answer and this one does not.
+The **licence is permissive**. Solutions 3 and 4 use weights under the AGPL,
+which [solution 3 explains](03-yolo-zero-shot.md#the-licence-which-is-the-real-cost-here).
+If this cell becomes a product, those two have a question to answer and this one
+does not.
 
 ## Where it is strong and where it breaks
 
-**Almost nothing is fitted here, and what is fitted is small, fast and
-inspectable.** Everything that finds objects is borrowed whole, and the borrowed
-part cannot fall out of step with this cell because it never knew anything about
-it. The keeper fits in seconds on a processor, its inputs are a short list of
-named measurements, and printing those beside its answer is an explanation a
-person can read. No other solution in this set has that property.
+Most of these points are argued above, so this list only names them. The
+measured scores are in [the code's README](../../../02-segment-glasses/05-sam2-with-a-keeper/README.md#results).
 
-**It needs the least data of the four that fit anything**, because a model
-learning from a short table of measurements needs a small fraction of the
-arrangements a model learning from pictures does.
+**Almost nothing is fitted, and what is fitted is small, fast and readable.**
+The borrowed part cannot fall out of step with the cell. The keeper fits in
+seconds, and its inputs can be printed beside its answers. No other solution
+here has that.
 
-**It splits the job along the line that transfers.** Shapes are shapes
-everywhere, so the proposing half is borrowed with confidence; what counts as a
-cup is somebody else's judgement fitted to somebody else's pictures, so the
-naming half is replaced. That is the opposite trade from solution 3, and it is
-the clearest reason to prefer this solution to that one.
+**It needs the least data of the four that fit anything**, because it learns
+from a table of numbers, not from pictures.
 
-**It notices things nobody described**, because the grid of prompts proposes
-every region in the scene, so a spoon left on the table arrives as a proposal
-and is answered "not a glass" rather than passed over in silence. Every other
-solution in this set is blind to whatever falls outside the one class it knows.
+**It splits the job along the line that transfers**, as [the main
+idea](#the-main-idea) explains. That is the clearest reason to prefer it to
+solution 3.
 
-**Its doubt is cheap and explicit.** Three answers rather than two, two
-thresholds rather than one, a width check after the keeper and one report per
-place on the table: each of those turns a wrong answer into a doubtful report
-rather than into a wrong glass, which is what this project asks for.
+**It notices things nobody described.** The grid proposes every region. So a
+spoon left on the table arrives as a proposal and is answered "not a glass". The
+other solutions are blind to anything outside the one class they know.
 
-Against those, the weaknesses are not small.
+**Its doubt is cheap and explicit.** Three answers, two thresholds, a width check
+after the keeper, and one report per place each turn a wrong answer into a
+doubtful report.
 
-**The domain gap is the largest risk and it cannot be closed from inside.** The
-weights were fitted on photographs and they are being shown depth dressed up as
-a grey picture, the two stemmed kinds are where a shaded silhouette offers
-least, and the only levers available are the shading and the grid, because
-nothing here is trained. Where those levers are not enough, the answer is
-solution 4 or solution 6.
+The weaknesses are not small.
 
-**It cannot be taught this cell's hard cases.** Pairs standing closer than the
-cell's rule allows, pairs actually touching, a glass half hidden behind another:
-all of those can go into a training set for solutions 2, 4 and 6, and none of
-them can be communicated to the borrowed model at all.
+**The domain gap is the largest risk, and it cannot be closed from inside.** The
+only levers are the shading and the grid, because nothing is trained. The two
+stemmed kinds suffer most. Where the levers fail, the answer is solution 4 or
+solution 6.
 
-**Every part of it works by finding regions and the boundaries between them**,
-so it inherits what every boundary method inherits: where the evidence holds no
-boundary, nothing finds one. Two glasses that run together with no seam anywhere
-along the join are proposed as one region, for the same reason that a rule
-following connected pixels would join them.
+**It cannot be taught this cell's hard cases.** Pairs closer than the cell's
+rule, touching pairs, a half-hidden glass: solutions 2, 4 and 6 can train on
+these. SAM 2 cannot be told about them.
 
-**It depends on depth twice over.** The keeper's best inputs — the footprint
-width and the height above the table — come from depth readings, and so does the
-picture itself, because the picture *is* shaded depth. So on the day the glasses
-become real transparent glass and the depth camera stops returning anything
-through them, this solution has no input at all, not even a picture.
+**It finds regions by their boundaries.** Where there is no boundary, nothing
+finds one. Two glasses joined with no seam become one region. A rule that
+follows connected pixels would join them for the same reason.
 
-**It is blind to a glass hidden completely**, for the reasons worked out above,
-and that is a fact about the input rather than about the model.
+**It depends on depth twice.** The keeper's best inputs, the footprint width and
+the height above the table, come from depth. So does the picture itself. If the
+glasses become real clear glass and the depth camera sees through them, this
+solution has no input at all.
+
+**It is blind to a fully hidden glass**, as [shown
+above](#when-the-glasses-are-completely-hidden). That is a fact about the input,
+not the model.
 
 ## The general ideas behind this
 
-Nothing here is new. It is a foundation model used zero-shot, a grid of prompts,
-a standard cleanup, a small classifier on top and a calibration step, and each
-one has a literature and a set of cases where it is the right answer.
+Nothing here is new. Each piece has its own sources and its own cases where it
+is the right tool.
 
 ### Foundation models — one very expensive fit, reused many times
 
-A very large model is fitted once on a very broad collection of data and then
-used, unchanged or lightly adapted, for many tasks it was not fitted for. The
-term and the argument are set out by Bommasani and colleagues, 2021
-([arXiv:2108.07258](https://arxiv.org/abs/2108.07258)); the general mechanism is
-[transfer learning](https://en.wikipedia.org/wiki/Transfer_learning).
+[What a foundation model is](#what-a-foundation-model-is) defines the idea. The
+term and the argument come from Bommasani and colleagues, 2021
+([arXiv:2108.07258](https://arxiv.org/abs/2108.07258)). The general mechanism is
+[transfer learning](https://en.wikipedia.org/wiki/Transfer_learning), which
+[solution 4 covers](04-yolo-fine-tuned.md#transfer-learning-and-fine-tuning).
 
-It is normally the right tool when the fit is far too expensive to repeat, when
-your own labels are scarce, and when your task is one of many similar ones. It
-is normally the wrong tool when the task is narrow, the labels are free, and the
-borrowed model's world differs from yours — which is exactly the argument
-solution 2 makes for fitting a small network here from nothing.
+It is the right tool when the fit is too expensive to repeat and your labels
+are scarce. It helps most when your task is one of many similar ones. It is the wrong tool when the
+task is narrow, the labels are free, and the borrowed model's world differs from
+yours. That is solution 2's argument for fitting a small network here.
 
 ### Promptable segmentation — Segment Anything
 
-The model takes a picture and a prompt — a point, a box or a rough mask — and
-returns a mask, with several masks and a quality estimate for each when the
-prompt is ambiguous. It is class-agnostic, so it outlines without naming.
-Kirillov and colleagues, 2023
-([arXiv:2304.02643](https://arxiv.org/abs/2304.02643)) introduced it, and the
-second generation extends the same idea to video by carrying a memory between
+[What promptable means](#what-promptable-means) explains the idea. Kirillov and
+colleagues, 2023 ([arXiv:2304.02643](https://arxiv.org/abs/2304.02643))
+introduced it. The second generation adds video by carrying a memory between
 frames (Ravi and colleagues, 2024,
-[arXiv:2408.00714](https://arxiv.org/abs/2408.00714)). The video memory is not
-used here, because this problem is answered one picture at a time, but the
-second generation's stronger picture encoder is the reason to prefer it.
+[arXiv:2408.00714](https://arxiv.org/abs/2408.00714)). This problem works one
+picture at a time, so the video memory is not used. The reason to prefer SAM 2
+is its stronger picture encoder.
 
-It is normally the right tool when you need the outline of something you cannot
-name in advance, when a person is choosing among the proposals, or as the first
-stage of something that classifies. It is normally the wrong tool when you need
-a decision rather than an outline, because it names nothing; when objects are
-defined by something other than their appearance boundaries; and when the input
-is not a photograph, which is the risk this document gives a whole section to.
+It is the right tool when you need outlines of things you cannot name in
+advance. It also suits a person picking among proposals, or a first stage
+before a classifier. It is the wrong tool when you need a decision, because it names
+nothing. It is also wrong when objects are not defined by their visible
+boundaries, and when the input is not a photograph.
 
 ### Open-vocabulary segmentation — a phrase instead of a point
 
-A model takes a phrase in ordinary language and returns every instance of the
-concept that phrase names, rather than choosing from a fixed list of categories.
-The idea that a phrase and a picture can be matched in one space became
-mainstream with CLIP (Radford and colleagues, 2021,
-[arXiv:2103.00020](https://arxiv.org/abs/2103.00020)), and the segmentation
-models built on it are the second way of this solution.
+A model takes a phrase and returns every instance of what it names, with no
+fixed list. Matching phrases and pictures in one space became common with CLIP
+(Radford and colleagues, 2021,
+[arXiv:2103.00020](https://arxiv.org/abs/2103.00020)). Models built on that idea
+give this solution its second way.
 
-It is normally the right tool when the thing you want is easy to say and hard to
-write a rule for, and when nobody needs to audit the decision. It is normally
-the wrong tool when the decision has to be explainable, because the judgement
-lives inside weights nobody can inspect, and when the concept you mean is
-narrower than the phrase you have, since you cannot tell the model which of
-several readings you meant.
+It is the right tool when the thing is easy to say but hard to write a rule
+for. Nobody must need to check the decision. It is the wrong tool when the decision
+must be explained. It is also wrong when what you mean is narrower than the
+phrase, because you cannot say which reading you meant.
 
 ### Propose, then classify
 
-Producing many candidate regions with a cheap general method and then deciding
-about each one separately is an old structure. It is how R-CNN worked (Girshick
-and colleagues, 2013, [arXiv:1311.2524](https://arxiv.org/abs/1311.2524)), with
-selective search (Uijlings and colleagues, *International Journal of Computer
-Vision*, 2013) as the proposer. This solution is that structure with a far
-better proposer and a far smaller decider.
+Make many candidate regions with a cheap general method, then decide about each
+one. R-CNN worked this way (Girshick and colleagues, 2013,
+[arXiv:1311.2524](https://arxiv.org/abs/1311.2524)), with selective search
+(Uijlings and colleagues, *International Journal of Computer Vision*, 2013) as
+the proposer. This solution has a far better proposer and a far smaller decider.
+[Solution 3 compares it with doing both in one
+pass](03-yolo-zero-shot.md#one-stage-detect-and-segment-against-propose-then-classify).
 
-It is normally the right tool when missing an object at the first stage is much
-worse than proposing too many, because a later stage can always reject. It is
-normally the wrong tool when the proposer and the decider disagree about what
-counts as one object, which is this document's "more than one glass".
+It is the right tool when missing an object early is worse than proposing too
+many, because a later stage can always reject. It is the wrong tool when the
+proposer and the decider disagree about what one object is. That is this page's
+"more than one glass".
 
 ### Zero-shot transfer — using a model on a task it was never fitted for
 
-A model is applied to a task, or to data, it was not fitted on, with no further
-fitting. The general notion is [zero-shot
-learning](https://en.wikipedia.org/wiki/Zero-shot_learning).
-
-It is normally the right tool when you have no labels at all, and as the first
-thing to try before anything is fitted, because it costs a download. It is
-normally the wrong tool when you do have labels and the task is narrow, because
-fine-tuning then wins nearly always, which is the argument solutions 4 and 6
+[Solution 3 covers this
+idea](03-yolo-zero-shot.md#zero-shot-transfer--using-a-model-on-a-task-it-was-never-fitted-for);
+the general notion is [zero-shot
+learning](https://en.wikipedia.org/wiki/Zero-shot_learning). It costs only a
+download, so it is the first thing to try. But once you have labels and a narrow
+task, fine-tuning nearly always wins. That is the argument solutions 4 and 6
 make against this one.
 
 ### A small head on frozen features
 
-Freeze a large borrowed model, take what it produces, and fit something small on
-top of it. This was shown to work early and well (Donahue and colleagues, 2013,
+Freeze a large borrowed model, and fit something small on what it produces. This
+worked early and well (Donahue and colleagues, 2013,
 [arXiv:1310.1531](https://arxiv.org/abs/1310.1531); Razavian and colleagues,
-2014, [arXiv:1403.6382](https://arxiv.org/abs/1403.6382)), and it is the
-standard first thing to try with any borrowed model. The keeper is this pattern
-with one difference: it is shown measurements computed from each proposal rather
-than the model's own internal numbers, because measurements on the table mean
-the same thing from every viewpoint and can be read by a person.
+2014, [arXiv:1403.6382](https://arxiv.org/abs/1403.6382)). It is the standard
+first thing to try with a borrowed model. The keeper differs in one way. It
+reads measurements of each proposal, not the model's own internal numbers.
+Measurements on the table mean the same from every view, and a person can read
+them.
 
-It is normally the right tool when data is small and the borrowed features
-already contain what the task needs. It is normally the wrong tool when they do
-not, because no small head recovers a distinction the frozen part threw away,
-and at that point the weights themselves have to move.
+It is the right tool when data is small and the borrowed features already hold
+what the task needs. It is the wrong tool when they do not. No small head can
+recover what the frozen part threw away, and then the weights must move.
 
 ### Gradient-boosted decision trees
 
-Many weak trees are fitted one after another, each to the errors of the ones
-before it, and added up (Friedman, *Greedy Function Approximation: A Gradient
-Boosting Machine*, Annals of Statistics, 2001).
-
-It is normally the right tool for a short table of numbers of mixed kinds with a
-category to predict, which is exactly the keeper's job, and it needs no
-rescaling of the inputs. It is normally the wrong tool for raw pixels, sound or
-text, where a network that can learn its own features wins easily.
+[What kind of model the keeper is](#what-kind-of-model-the-keeper-is) explains
+the idea (Friedman, 2001). It is the right tool for a short table of mixed
+numbers with a category to predict, and it needs no rescaling. It is the wrong
+tool for raw pixels, sound or text. There, a network that learns its own
+features wins easily.
 
 ### Calibration — making a score mean what it says
 
-A model's output is turned into an honest probability by fitting a small
-correction on data the model was not fitted on, either a shape with two
-parameters (Platt, 1999) or a monotone staircase ([isotonic
+A small correction turns a model's output into an honest probability. It is
+fitted on data the model was not fitted on. It is either a curve with two
+parameters (Platt, 1999) or a staircase that never goes down ([isotonic
 regression](https://en.wikipedia.org/wiki/Isotonic_regression), Zadrozny and
-Elkan, 2002). Boosted trees are a standard example of a model that needs it,
-because boosting pushes scores towards the ends of the range.
+Elkan, 2002). Boosted trees often need it, because boosting pushes scores
+towards the ends. [Solution 3 explains why calibration breaks when the input
+changes](03-yolo-zero-shot.md#calibration-under-changed-input).
 
-It is normally the right tool whenever a threshold or a cost is going to be
-applied to a score, which is the keeper's case exactly. It is normally
-unnecessary when only the ordering is used, because a correction that never
-decreases cannot change an ordering, and it is not a repair for a model that is
-simply wrong: a calibrated bad model is honestly unsure rather than secretly
-unsure.
+It is the right tool whenever a threshold or a cost is applied to a score, as
+with the keeper. It is not needed when only the order is used, because such a
+correction cannot change an order. It does not fix a wrong model. A calibrated
+bad model is honestly unsure instead of secretly unsure.
 
 ### The domain gap, and sim-to-real
 
-A model carries the habits of the collection it was fitted on, argued memorably
-by Torralba and Efros, *Unbiased Look at Dataset Bias*, CVPR 2011; the general
-problem is [domain adaptation](https://en.wikipedia.org/wiki/Domain_adaptation).
-There are three usual repairs: make the synthetic pictures look more like real
-ones, make the model insensitive to the difference by varying everything that is
-not the task (domain randomisation, Tobin and colleagues, 2017,
-[arXiv:1703.06907](https://arxiv.org/abs/1703.06907)), or translate one
-appearance into the other with a fitted model (Zhu and colleagues, 2017,
+A model carries the habits of the data it was fitted on (Torralba and Efros,
+*Unbiased Look at Dataset Bias*, CVPR 2011). The general problem is [domain
+adaptation](https://en.wikipedia.org/wiki/Domain_adaptation), which [solution 4
+covers](04-yolo-fine-tuned.md#domain-adaptation). There are three usual repairs.
+Make the synthetic pictures look more real. Vary everything that is not the
+task, which is domain randomisation (Tobin and colleagues, 2017,
+[arXiv:1703.06907](https://arxiv.org/abs/1703.06907)). Or translate one look
+into the other with a fitted model (Zhu and colleagues, 2017,
 [arXiv:1703.10593](https://arxiv.org/abs/1703.10593)).
 
-Two things are unusual about the gap in this solution. It runs **the opposite
-way** from the usual sim-to-real direction, because the weights come from
-photographs while the pictures come from a renderer. And the standard repair is
-**not available**, because randomisation happens while training and nothing here
-is trained, so the only lever is the input.
-
-Randomisation is normally the right tool when you control the training and want
-robustness against an appearance you cannot predict, and appearance translation
-when you have examples of both appearances and nothing simpler works. Neither is
-right when the model cannot be trained at all, and then the honest options are
-to change the input or to stop borrowing.
+Two things are unusual here. The gap runs **the opposite way** from the usual
+sim-to-real case: the weights come from photos, and the pictures come from a
+renderer. And randomisation is **not available**, because it happens during
+training and nothing here is trained. The only lever is the input. When a model
+cannot be trained, the honest options are to change the input or to stop
+borrowing.
 
 ## Where it sits among the other five
 
-The comparison worth making first is against **solution 3**, because the two are
-the only solutions here that fit nothing that finds objects, and they make
-opposite choices about what to borrow. Solution 3 borrows a model's shapes and
-its names together, so the whole answer is the borrowed model's own idea of what
-a glass is. This solution borrows the shapes and replaces the names with
-something fitted here and readable. That is the better half to replace, because
-a boundary between one surface and the surface behind it transfers from
-photographs to this cell far better than a category boundary does. The second
-way of this solution gives that advantage back, which is why the section about
-it is careful rather than enthusiastic.
+The scores side by side are in [the results
+table](../../../02-segment-glasses/results/README.md). This section compares the
+designs.
 
-Against **solution 4** the comparison is about where the adaptation happens.
-Solution 4 moves the borrowed weights towards this cell's pictures, which is the
-honest remedy for the domain gap and the only remedy this solution does not
-have. What it costs is a training run that has to be repeated whenever the cell
-changes, and a weights file that is a second copy of the cell. This solution has
-no such file and therefore nothing that can go stale, and it pays for that with
-a worse outline wherever the shading serves the kind badly.
+**Against solution 3**, the question is what to borrow. Both fit nothing that
+finds objects. Solution 3 borrows shapes and names together. This solution
+borrows the shapes and replaces the names with a fitted, readable keeper. That
+is the better half to replace, because surface boundaries transfer from photos
+far better than categories do. The second way gives that advantage back.
 
-Against **solutions 2 and 6** the two sit at opposite ends of one axis. Those
-borrow nothing and fit everything; this borrows everything and fits almost
-nothing. Their weights are produced here and are a second copy of this cell,
-which has to be kept in step with it; this solution's weights are large, owned
-by somebody else, and know nothing about this cell to be out of step with. They
-cost hours of rendering and fitting; this costs a download and minutes. And the
-honest half of that comparison is that they can be taught this cell's hard cases
-and this one cannot.
+**Against solution 4**, the question is where the adaptation happens. Solution 4
+moves the borrowed weights towards this cell's pictures. That is the real fix
+for the domain gap, and it is the one fix this solution lacks. Solution 4 pays
+with a training run that must be repeated when the cell changes. This solution
+has nothing to go stale. It pays with worse outlines where the shading serves
+the kind badly. Solution 6 makes the same trade as solution 4, with a different
+model.
+
+**Against solution 2**, the two sit at opposite ends of one line. Solution 2
+borrows nothing and fits everything here. This solution borrows almost
+everything and fits almost nothing. Solution 2's weights are a copy of this cell
+and must be kept in step with it. These weights are owned by somebody else and
+know nothing of this cell. Solution 2 costs hours of rendering and fitting. This
+costs a download and minutes. But solution 2 can be taught this cell's hard
+cases, and this one cannot.
 
 ![Three bars on a scale where each step is ten times the last: SAM 2's 93,314,184 borrowed weights, the keeper's 2,700 fitted thresholds and leaf values, and solution 2's 482,211 weights fitted here from scratch.](../../../images/02-segment-glasses/05-borrowed-against-trained.png)
 
-The bars say how much is fitted, and the table below says what that difference
-buys and what it costs. Read it one row at a time: the left column is the
-question, and the two columns after it are how each solution answers that same
-question.
+The bars say how much is fitted. The table says what that difference buys and
+costs. Read one row at a time: the left column is the question, and the other
+two columns are how each solution answers it.
 
 | the question | solution 5: borrow almost everything | solution 2: fit everything from scratch |
 | --- | --- | --- |
@@ -1236,26 +943,22 @@ question.
 | what it was fitted on | everyday photographs, for the part that finds objects | this cell's own pictures, and nothing else |
 | where the risk sits | the borrowed part has never seen a picture like this one | the fitted part has seen nothing but pictures like it |
 
-The last row is the trade in one line. Borrowing buys the small training set,
-and it buys the risk with it, because a borrowed weight cannot be corrected
-here.
+The last row is the trade in one line. Borrowing buys a small training set. It
+also brings a risk, because a borrowed weight cannot be corrected here.
 
-Against **solution 1** the comparison is the least flattering, and it should be
-stated plainly. Solution 1 is a page of arithmetic: no training set, no weights,
-a cost in run time too small to be worth naming beside a pass of a picture
-encoder, and its failures explained by printing one number of its own. On any
-day the depth readings work it is the simpler tool, and this solution does not
-survive the loss of depth either, since it needs depth for the keeper's inputs
-*and* to make the picture at all. So this is not the solution that survives real
-glassware. It is the solution that survives having almost no training data,
-which is a different and narrower virtue.
+**Against solution 1**, the comparison is the least flattering. Solution 1 is a
+page of arithmetic. It has no training set and no weights. Its run time is tiny
+beside one pass of a picture encoder. Its failures are explained by one printed
+number. When the depth readings work, it is the simpler tool. This solution
+needs depth too, for the keeper and for the picture. So it does not survive real
+glassware either. It survives having almost no training data, which is a
+narrower virtue.
 
-What this solution is genuinely for is to find out how far borrowed weights get
-in this cell with almost nothing fitted behind them, and to find out at what
-point an explainable decision is worth more than a shorter program. The examiner
-answers the first question by running it beside the other five on the same
-arrangements. The second question is the one the two ways of this solution ask
-of each other, and it is a judgement rather than a measurement.
+This solution asks two questions. How far do borrowed weights get in this cell
+with almost nothing fitted behind them? The examiner answers that by running it
+beside the other five. When is an explainable decision worth more than a shorter
+program? The two ways of this solution ask that of each other, and it is a
+judgement, not a measurement.
 
 ← [The same model, fine-tuned here](04-yolo-fine-tuned.md) · [RF-DETR-Seg,
 fine-tuned here](06-rf-detr-fine-tuned.md) →

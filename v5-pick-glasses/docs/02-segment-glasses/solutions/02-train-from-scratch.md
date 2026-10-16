@@ -1,91 +1,54 @@
 # Solution 2 — a network trained here from scratch
 
-> **What it uses** — PyTorch, running on this machine's integrated graphics
-> through the MPS backend. One small convolutional network, written for this
-> cell and fitted entirely inside it. No downloaded weights and no model from
-> anybody else, so there is no licence condition to meet.
-> **What it does** — one network looks at a survey picture and answers two
-> questions at every pixel. The first question is whether the pixel is glass.
-> The second question, asked only of the glass pixels, is which way the middle
-> of that pixel's own glass lies. Each glass pixel then votes for the place its
-> arrow points at, so one glass makes one pile of votes and two glasses make
-> two piles, and a connected blob of glass pixels comes apart into separate
-> glasses without any rule for cutting it having been written down.
-> **How the output is produced** — a survey picture and its depth reading go
-> into the network; the first head gives a glass-or-not score at every pixel
-> and the second head gives an arrow at every glass pixel; each glass pixel
-> casts one vote; the votes are piled up and the peaks are counted; the pixels
-> that voted into one peak are one glass's mask; the examiner's shared arithmetic
-> turns each mask into a place and a width.
+> **What it uses** — PyTorch, on this machine's integrated graphics. One small
+> convolutional network, written for this cell and trained only on its
+> pictures. No downloaded weights, so there is no licence condition.
+> **What it does** — at every pixel, the network says whether the pixel is
+> glass. At each glass pixel, it also gives an arrow to the middle of that
+> pixel's own glass. Each arrow is a vote. One glass makes one pile of votes, so
+> two glasses that touch in the picture still make two piles.
 > **How it differs from the other five** — [rules on the
-> table](01-rules-on-the-table.md) writes the grouping rule by hand, where this
-> one fits it from examples. [YOLO as it downloads](03-yolo-zero-shot.md)
-> borrows a whole model and changes nothing, where this one borrows nothing.
-> [YOLO fine-tuned](04-yolo-fine-tuned.md) and [RF-DETR
-> fine-tuned](06-rf-detr-fine-tuned.md) are both trained on this cell's
-> pictures as this one is, but they start from somebody else's weights rather
-> than from random numbers. [SAM 2 with a keeper](05-sam2-with-a-keeper.md)
-> fits only a small decider on top of a borrowed model, where here every weight
-> in the network is fitted here.
-> **What it costs** — a training set of this cell's own pictures with labels,
-> a training run before the solution can answer anything, and a file of weights
-> that has to be kept in step with the cell. The training run is short enough
-> on this machine's integrated graphics that it can be repeated whenever the
-> cell changes, and no dedicated graphics card is needed. At run time one pass
-> of a small network over a small picture is cheap beside one movement of the
-> arm.
+> table](01-rules-on-the-table.md) writes its grouping rule by hand; this one
+> learns it. The other four learned solutions start from somebody else's
+> weights; this one starts from random numbers.
+> **What it costs** — labelled pictures, a training run, and a file of weights
+> that must match the cell.
 
 > **The cell is described once, in [the cell](../../the-cell.md)** — the
-> layout, the two places the camera works from, from the top and from the side,
-> all four sensors, and the words this project uses them with. What follows is
-> only what is specific to this solution.
+> layout, the two camera places, the sensors and the words. This page covers
+> only what is special to this solution.
 
 ## Introduction
 
-This document explains how to answer [problem 2](../problem.md) with a network
-that is built and fitted entirely inside this cell, borrowing nothing from
-anywhere else. That is the one property worth holding on to while reading,
-because it is what makes this solution different from the four learned ones
-beside it. Each of those starts from weights somebody else fitted to
-photographs of the real world. This one starts from random numbers and learns
-only from pictures this project rendered itself.
+This page answers [problem 2](../problem.md) with a network that is built and
+trained inside this cell. It borrows nothing. That is what sets it apart from
+the four other learned solutions, which all start from weights fitted to real
+photographs.
 
-By the end you will understand four things. You will understand why a network
-is wanted here at all, which is that the hard part of this problem is a
-grouping rule nobody can write down neatly. You will understand how one small
-network answers both the question *is this pixel glass* and the question *which
-glass is it*, and why asking the second question as an arrow rather than as a
-label is what makes the merge answerable. You will understand where the
-training labels come from, and this is the part the document is really for,
-because there are two quite different answers to it and the second one is the
-interesting one. And you will understand why this solution is the control for
-the one question the other five cannot answer between themselves, which is what
-borrowing somebody else's weights is worth.
+You will learn four things here:
 
-That last point is worth stating now, because it explains why this document
-exists even though a borrowed model is easier to set up. Every other learned
-solution here carries a **domain gap**, which is the gap between the pictures a
-model learned from and the pictures it is asked about. A model fitted to
-photographs of kitchens and streets has never seen this simulator's table, this
-lens or these four kinds of glass, and nobody can say in advance how much of
-what it learned still applies. This solution has no domain gap of any size,
-because everything it knows came from this cell's own pictures. So when the
-six are scored side by side, this one is the line that says whether borrowing
-weights was worth anything at all. Without it, a good score from a borrowed
-model proves only that the model is good, and not that borrowing helped.
+- why a network helps at all;
+- how one small network says both *is this pixel glass* and *which glass is it*;
+- where the training labels come from (there are two answers, and the second is
+  the interesting one);
+- why this solution is the fair test of what borrowed weights are worth.
+
+The last point is why this page exists. A borrowed model has a **domain gap**:
+its training pictures differ from this cell's pictures.
+[Why nothing is borrowed](#why-nothing-is-borrowed-and-what-that-buys) explains
+the gap. This solution has no gap, so it is the baseline the borrowed models
+are compared against.
 
 ## The network, in the code
 
-The network is written in `02-segment-glasses/02-train-from-scratch/`, and the
-piece worth seeing is not its shape but what it is asked for. It answers three
-numbers at every pixel of a shrunk picture: one saying whether the pixel is
-glass, and two holding the arrow to the middle of that pixel's own glass.
+The code is in `02-segment-glasses/02-train-from-scratch/`. The network gives
+three numbers at every pixel of a shrunk picture. One says whether the pixel is
+glass. Two hold the arrow to the middle of that pixel's own glass.
 
-This is the answer it is trained towards, and the network that produces it,
-from ``02-train-from-scratch/models.py``. The first function builds the target
-out of the simulator's record of which glass each pixel shows. The second is
-where PyTorch does the work, and the two `torch.cat` lines are the copies
-carried from the way down across to the way up.
+Below is the target it is trained towards, and the network itself, from
+`02-train-from-scratch/models.py`. `top_target` builds the target from the
+simulator's record of which glass each pixel shows. In `TopNet.forward`, the
+two `torch.cat` lines carry copies from the way down across to the way up.
 
 ```python
 def top_target(picture: Picture, glasses) -> np.ndarray:
@@ -113,10 +76,10 @@ class TopNet(nn.Module):
         return self.head(self.up_full(torch.cat([up, full], 1)))
 ```
 
-And this is where the votes become one glass's mask, from
-``02-train-from-scratch/pipeline.py``. `SHRINK` is how much the picture was
-shrunk by, and `_BLOCK` is the offsets of one shrunk pixel's own block, so the
-mask claims the whole block each voting pixel stands for.
+Next is where the votes become one glass's mask, from
+`02-train-from-scratch/pipeline.py`. `SHRINK` is how much the picture was
+shrunk. `_BLOCK` holds the offsets of one shrunk pixel's block, so the mask
+claims the whole block behind each voting pixel.
 
 ```python
 def pile_mask(picture: Picture, votes: Votes, middle) -> np.ndarray | None:
@@ -134,1098 +97,785 @@ def pile_mask(picture: Picture, votes: Votes, middle) -> np.ndarray | None:
     return mask
 ```
 
-Two things are worth reading off those. The borrowed library supplies the
-layers and the training loop, while the idea — an arrow at every glass pixel
-instead of a label — lives in the twelve lines that build the target, which is
-this project's own arithmetic. And a mask here is a set of votes rather than a
-drawn outline: nothing in either piece asks where a glass ends, and the only
-line that mentions a boundary is the one that keeps a block inside the picture.
+Two points stand out. PyTorch gives the layers and the training loop. The idea
+itself, an arrow instead of a label, lives in the twelve lines of
+`top_target`. And a mask here is a set of votes, not a drawn outline. No line
+asks where a glass ends. The only boundary in the code keeps a block inside the
+picture.
 
 ## The problem this solves
 
-The problem is the one [problem 2](../problem.md) states, and this section
-narrows it down to the single difficulty this solution is aimed at.
+The hard part of [problem 2](../problem.md) is telling one glass from another.
+Two glasses with table between them can still join into one shape in a picture
+from the top. [Glasses merge in the
+picture](../problem.md#glasses-merge-in-the-picture-even-when-they-stand-apart-on-the-table)
+states this, and [solution 1 shows
+why](01-rules-on-the-table.md#why-a-picture-from-the-top-joins-two-glasses-that-stand-apart).
 
-Four to six glasses stand on the table. They are all the same kind, the kind is
-known, and they are opaque, so the depth camera gets a reading on them. They
-stand far enough apart never to touch. The arm photographs them from the top
-and has to say which pixels belong to which glass.
+A better-trained network does not fix this on its own. The limit is in the
+shape of the answer. Two terms explain why:
 
-The difficulty is not finding the glass. **It is telling one glass from
-another.** Two words are needed to say why. A **mask** is a picture the same
-size as the photograph in which every pixel is marked glass or not glass. The
-usual step that turns a mask into separate objects is **connected
-components**, also called a flood fill: take a marked pixel nobody has visited,
-spread out to every marked pixel touching it, call everything you reached one
-object, and repeat.
+- **Semantic segmentation** gives each pixel a class, such as "glass".
+- **Instance segmentation** gives each pixel a class *and* the object it
+  belongs to.
 
-A flood fill answers exactly one question, which is *are these pixels joined?*
-And joined is what two glasses in a survey picture often are, because a camera
-looking straight down throws each glass's outline outwards from the point below
-the lens, so each glass covers more of the picture than its footprint on the
-table deserves. Two glasses with clear table between them can therefore leave
-one connected shape, and a method that treats one connected shape as one object
-reports one glass where two are standing.
+This problem needs the second. A perfect class map still merges two joined
+glasses. It holds only one value, "glass", and one value cannot mark a
+boundary. So the fix is a **different output**. That is the network's second
+head.
 
-**Training harder does not remove that difficulty, because it is a limit on the
-shape of the answer rather than on the quality of the fit.** A picture that
-labels every pixel with a class is called **semantic** segmentation. A picture
-that labels every pixel with a class *and* with which object it belongs to is
-called **instance** segmentation. This problem asks for the second. A perfectly
-fitted class map still merges two joined glasses, because "glass" is the only
-value it has room to hold, and a value that is the same everywhere cannot mark
-a boundary. So the fix is not a better network. **It is a different output**,
-and that is what the second half of this solution's network is.
-
-![Two glasses in line with the camera overlap in the picture, and a class map has only one value to put on both of them, so the separating has to come from a different output — which here is the arrow at each glass pixel towards the middle of its own glass.](../../../images/02-segment-glasses/02-semantic-against-instance.png)
+![Two glasses overlap in the picture. A class map puts one value on both, so the split must come from another output: an arrow at each glass pixel.](../../../images/02-segment-glasses/02-semantic-against-instance.png)
 
 ## The main idea
 
-The main idea has two halves. The first half is a claim about this cell rather
-than about networks, and the second half is the different output just promised.
+The idea has two halves.
 
-**This cell is narrow, so the network can be small.** Consider how little
-varies here. There is one class to predict, glass or not glass. There is one
-kind of glass at a time, drawn from inside that kind's range of proportions.
-There is one camera with one lens. There is one simulator with one lighting
-setup. The glasses are always upright and always opaque. Almost all the variety
-a general-purpose model is built to absorb simply does not occur here, so a
-small network has enough capacity for the job — and a small network with an
-endless supply of labelled pictures is something that can be fitted from
-nothing on an ordinary machine.
+**This cell is narrow, so the network can be small.** Little changes here.
+There is one class, glass. There is one kind of glass at a time, one camera and
+one lighting setup. The glasses are always upright and opaque. A general model
+is built to handle far more. So a small network is enough, and a small network
+can be trained from nothing on an ordinary machine.
 
-**The second half is that each glass pixel is asked for an arrow instead of a
-label.** At every pixel it calls glass, the network predicts a short arrow
-pointing towards the middle of that pixel's own glass. Add the arrow to the
-pixel's own position and the result is a **vote** for where that glass's middle
-is. One glass makes one pile of votes, because all of its pixels point at the
-same middle. Two glasses make two piles, because each glass's pixels point at
-their own middle. So counting glasses becomes counting piles, and splitting a
-blob becomes asking which pile each of its pixels voted into.
+**Each glass pixel gives an arrow, not a label.** The arrow points to the
+middle of that pixel's own glass. The pixel's position plus its arrow is a
+**vote** for where that middle is. All pixels of one glass point at one middle,
+so one glass makes one pile. Two glasses make two piles. Counting glasses
+becomes counting piles.
 
-![Every glass pixel's arrow ends on the middle of its own glass, so one glass makes one pile of votes and two glasses joined in the picture make two piles, and the seam between them is a change of direction rather than a gap.](../../../images/02-segment-glasses/02-the-voting-idea.png)
+![Each glass pixel's arrow ends on the middle of its own glass. One glass makes one pile of votes. Two joined glasses make two piles.](../../../images/02-segment-glasses/02-the-voting-idea.png)
 
-Two things about that are worth noticing immediately, because they are why this
-design is chosen over the obvious alternatives.
+This design has two strong points.
 
-**Nothing has to find a boundary, so nothing can get a boundary wrong.** Where
-two glasses meet in the picture, the pixels do not change at all. What changes
-is the direction the arrows point: the pixels on one side point one way and the
-pixels on the other side point the other way. The seam between them is a
-consequence rather than something anything has to locate.
+**Nothing has to find a boundary.** Where two glasses meet in the picture, the
+pixels look the same. Only the arrows change direction. The seam follows from
+that; nothing has to locate it.
 
-**A wrong vote is outvoted rather than fatal.** A glass seen from the top
-covers many pixels, so it casts many votes, and a handful of them pointing the
-wrong way are a handful of strays in a pile of many. Compare that with
-predicting the seam directly, where one missing pixel along the seam rejoins
-two objects completely.
+**A wrong vote is outvoted.** A glass covers many pixels, so it casts many
+votes. A few stray votes do not move the pile. Compare a method that draws the
+seam directly: one missing seam pixel joins the two objects again.
 
-The rest of this document builds that up. First comes what exists in code and
-what is a design, so that nothing later has to be read twice. Then what a
-network is and what training from scratch means. Then the shape of the network
-and the two heads in turn. Then the two ways of this solution, which are the
-two places the training labels can come from. Then what the solution hands to
-the examiner, the failure that no amount of training can fix, and where this sits
-among the other five.
+The rest of this page builds this up in order: what is built, what a network
+is, its shape and two heads, where the labels come from, and where it fails.
 
 ## What exists in code, and what is a design
 
-All six solutions are built, and this one is built in two layers, so it is
-worth separating them plainly before going further.
+**What is built.** The network described below exists in PyTorch, with both
+heads: one channel for glass or not, and two for the arrow. It runs on this
+machine's integrated graphics through the **MPS backend**, which is how
+PyTorch reaches the graphics chip on this kind of Mac. No graphics card is
+needed. Its labels come from the simulator's record of which glass each pixel
+shows. The votes go into a tally, and the tally's peaks are taken one at a
+time, largest first. The pixels that voted near a peak are that peak's glass.
 
-**What exists.** A network of exactly the shape described below is already
-written in this project's code. It has the two heads this document describes:
-one channel saying whether a pixel is glass, and two channels holding the two
-parts of the arrow. It is written in PyTorch and it runs on
-this machine's integrated graphics through the MPS backend, which is the
-interface PyTorch uses to reach graphics hardware on this kind of machine
-rather than a dedicated graphics card. Its training labels are read from the
-simulator's own record of which glass each pixel shows. Its votes are piled up
-into a tally and the peaks of that tally are picked off one at a time, largest
-first, and the pixels that voted near a peak are that peak's glass.
+It runs as one of the six solutions on the shared
+[examiner](../the-examiner.md). It trains on the examiner's training
+arrangements, half of them crowded. It is scored on held-out arrangements and
+writes its own `results.json`. The scores are in the [code
+README](../../../02-segment-glasses/02-train-from-scratch/README.md#results--20-held-out-scenes-from-each-family-three-stations-each).
 
-Running it as one of the six solutions on the shared
-[examiner](../the-examiner.md) is built too. The training set is drawn from the examiner's own arrangements, half
-of them crowded and all of them below the examiner's dividing line, and the
-solution is scored on held-out arrangements above that line and writes its own
-`results.json` beside itself.
+**What is only a design.** Five things on this page are not built:
 
-**What is a design.** Four things this document describes are written here and
-not built: the two fixes for the rare class in the loss, the check on a pile's
-fitted width, the second alarm on how far a pile's votes sit from their own
-peak, and the whole of the second way described below, which changes where the
-labels come from. Where this document prescribes a check or a threshold, it
-says so, and it quotes no measurement from anywhere.
+- the two fixes for the rare class in the loss;
+- the check on a pile's fitted width;
+- the second alarm, on how far a pile's votes sit from their peak;
+- domain randomisation of the training pictures;
+- the whole of the second way, which takes labels from the arm's movement.
+
+Where the page prescribes a check or a threshold, it says so. It quotes no
+measurement for them.
 
 ## What a network is, and what training from scratch means
 
-Before the two heads can be described, three words need defining, because
-everything after this uses them.
+Three terms are used from here on.
 
 A **neural network** is a program whose behaviour comes from numbers fitted to
-examples rather than from rules anybody wrote. Those numbers are called
-**weights**. They start as random noise, and **training** shows the network an
-example, compares what it produced against the answer wanted, and nudges every
-weight in the direction that would have helped. Nobody writes the rule the
-network ends up applying, and nobody can read that rule back out afterwards.
+examples, not from written rules. Those numbers are **weights**. They start as
+random noise. **Training** shows the network an example and compares its answer
+with the right one. Then it nudges every weight in the direction that would
+have helped. Nobody writes the rule the network ends up with, and nobody can
+read it back out.
 
-**Fine-tuning** means not starting from random numbers. You take a network
-somebody else fitted to a large collection of labelled photographs, replace its
-last layer with your own, and carry on training from there. This is the
-standard advice almost everywhere, and the reason is that labelled real
-pictures are scarce: somebody has to draw round every object in every picture,
-so a borrowed network cuts the number of labels you need by a large factor.
+**Fine-tuning** does not start from random numbers. You take a network somebody
+else trained on many labelled photographs. You replace its last layer and keep
+training on your own pictures. This is the usual advice, because labelled
+pictures are scarce. Someone must draw round every object by hand. A borrowed
+network needs far fewer labels.
 
-**Training from scratch** is the other option: start from random numbers and
-learn everything from your own examples. It is normally the worse choice, for
-exactly the reason fine-tuning is the standard advice. It is the right choice
-here, and the next section is why.
+**Training from scratch** starts from random numbers and learns everything from
+your own examples. It is usually the worse choice. Here it is the right one,
+for the reasons below.
 
 ## Why nothing is borrowed, and what that buys
 
-The usual argument for fine-tuning rests on labels being scarce, so the first
-thing to check is whether they are scarce here. They are not.
+Fine-tuning helps when labels are scarce. Here they are not.
 
-**Labels in this cell are free and exact.** The examiner renders every picture
-itself, so it also knows, for every pixel, which glass that pixel shows. Asking
-for that record costs no more than asking for the picture. There is no
-annotator, so there is no annotator's budget, no annotator's fatigue and no
-annotator's mistakes. The scarcity that fine-tuning exists to solve is simply
-not present, and training from scratch on an endless supply of exact labels is
-a quite different proposition from training from scratch on a few hundred
-hand-drawn ones.
+**Labels in this cell are free and exact.** The examiner renders every picture.
+So it also knows which glass each pixel shows. That record costs no more than
+the picture. There is no person drawing outlines, so there are no drawing
+mistakes and no limit on the count. Training from scratch on endless exact
+labels is very different from training on a few hundred hand-drawn ones.
 
-**And borrowing brings a domain gap, which this solution is the only learned one
-without.** A borrowed model's weights say what the world looked like in the
-pictures it was fitted to, and those were photographs of real rooms with real
-objects. This cell is a simulator with one table, one lens and four kinds of
-glass that no photograph collection contains. Nobody can say in advance how
-much of what such a model learned still applies here, and the honest way to
-find out is to measure it. That is this solution's job in the comparison: it is
-the line with no borrowed knowledge in it at all, so the distance between it
-and the four borrowed ones is a measurement of what borrowing was worth.
+**Borrowing brings a domain gap.** The **domain gap** is the difference between
+the pictures a model learned from and the pictures it is given. A borrowed
+model learned from photographs of real rooms. This cell is a simulator with
+one table, one lens and four kinds of glass. No one can say in advance how
+much of the borrowed knowledge still applies. The only way to know is to
+measure it. This solution has no gap at all, because it learned only from this
+cell. So the score difference between it and the four borrowed models measures
+what borrowing was worth.
 
-There is a third, smaller reason, which decides nothing by itself but removes
-the last practical argument for borrowing. Many ready-made models expect a
-dedicated graphics card and this machine has none. A network small enough to
-be written for this cell does not.
+**A third, smaller reason.** Many ready-made models expect a graphics card.
+This machine has none. A small network written for this cell does not need
+one.
 
-What all of that costs is set out in [what it needs](#what-it-needs), and the
-short version is a training set, a training run and a file of weights to keep
-in step with the cell. Those are real costs and rules on the table does
-not pay any of them.
+The costs are listed in [what it needs](#what-it-needs). Rules on the table
+pays none of them.
 
 ## The shape of the network
 
-With the choice of a random start settled, the shape of the network can be
-described, and it is the standard shape for labelling every pixel of a picture.
+The network uses the standard shape for labelling every pixel of a picture. It
+has a **down path** and an **up path**, joined across the middle.
 
-The network has a **down path** and an **up path**, and the two are joined
-across the middle.
+The down path applies **convolutions**. A convolution slides a small square
+window over the picture. At each place it multiplies the values in the window
+by a set of weights and adds them up. One set of weights gives one output
+channel; many sets give many channels. Between groups of convolutions, the
+block is **halved**: half as wide and half as tall, with twice the channels.
 
-The down path starts with the picture and applies **convolutions**. A
-convolution takes a small square window, slides it over the picture, and at
-each position multiplies the values inside the window by a fixed set of weights
-and adds them up. One set of weights produces one output channel, and many
-sets produce many channels, so a convolution turns a picture of a few channels
-into a block of numbers of many channels. Between groups of convolutions the
-block is **halved**, meaning it comes out half as wide and half as tall, while
-the number of channels is doubled.
+Each halving has a cost and a gain. The cost: one unit now stands for a patch
+of the picture, so exact position is lost. The gain: the next window covers
+four times as much of the picture. So deep units know less about *where* and
+more about *what is around*. **That is why the network goes down.** A pixel
+must see enough of its glass to know which way the middle lies.
 
-Two things happen on the way down and they pull against each other. Each
-halving throws away exactly *where* something is, because one unit now stands
-for a whole patch of the original picture. But each halving also means the next
-window covers four times as much of the original picture as it did before. So
-deeper units know less and less precisely where they are looking, and more and
-more about what is around them. **That trade is the entire reason for going
-down**, because an arrow towards the middle of a glass cannot be predicted by a
-pixel that can only see itself. The pixel has to see enough of the glass around
-it to tell which way the middle lies.
+The up path undoes the halving step by step, back to the input size, with
+fewer channels at each step. A last convolution, one pixel wide, turns the
+channels into the few output values wanted at each pixel.
 
-The up path reverses the halving, enlarging the block step by step until it is
-back to the size of the picture it started from, and narrowing the channels as
-it goes. A final convolution with a window of exactly one pixel, so no mixing
-across space at all, collapses the channels to the handful of output values
-this solution wants at each pixel.
-
-The up path alone cannot work, and the reason is the first of the two things
-that happened on the way down. The deepest layer knows there is a glass roughly
-over *there*, but the halvings destroyed which exact pixel its rim sits on, and
-enlarging the block again cannot invent a detail that was thrown away. So the
-detail is not thrown away: before each halving a copy of the block is kept, and
-on the way back up the copy is attached on as extra channels. The fine detail
-comes across on the copy, the sense of context comes up from below, and the
-convolution after the join mixes the two. Those copies are called **skip
-connections**, and a network built this way is a **U-Net**, from Ronneberger,
-Fischer and Brox, 2015 ([arXiv:1505.04597](https://arxiv.org/abs/1505.04597)).
+The up path alone cannot restore exact position. Enlarging cannot invent
+detail that was thrown away. So before each halving, a copy of the block is
+kept. On the way up, the copy is attached as extra channels. The copy brings
+the fine detail; the path from below brings the context. These copies are
+**skip connections**. A network built this way is a **U-Net** (Ronneberger,
+Fischer and Brox, 2015, [arXiv:1505.04597](https://arxiv.org/abs/1505.04597)).
 
 ### What goes in
 
-The network is given the depth reading turned into something like a height
-above the table, and two further channels that say where in the frame each
-pixel sits. All three go in at half size, which is four times quicker to train
-on and still leaves a glass many pixels across.
+The network gets three channels:
 
-The last of those needs explaining, because it looks like a strange thing to
-tell a network. A camera looking straight down throws a glass's outline
-outwards from the point directly below the lens, and it throws it further the
-taller the glass is. So the direction from a pixel to the middle of its own
-glass depends on where in the frame that pixel is seen, which means a pixel
-cannot answer the question from appearance alone. Telling the network where
-each pixel sits hands it the one fact it cannot see.
+- the depth reading, turned into height above the table;
+- two channels that say where in the frame each pixel sits.
+
+All three are at half size. That trains four times faster, and a glass is
+still many pixels across.
+
+The position channels need a reason. A camera looking down throws a glass's
+outline outwards from the point below the lens. Taller glasses are thrown
+further. [The cell](../../the-cell.md#the-words) calls this **splay**. So the
+direction from a pixel to its glass's middle depends on where the pixel is in
+the frame. A pixel cannot see that from its own looks. The position channels
+give the network that one fact.
 
 ### The warning worth checking before training
 
-There is one piece of arithmetic worth doing **before** trusting this shape,
-and it follows directly from the trade on the down path. How much of the
-original picture one deep unit depends on is called its **receptive field**,
-and it is easy to work out: each convolution extends the field a little at
-whatever scale it is working at, and each halving doubles that scale, so the
-field grows slowly at first and then in larger and larger jumps.
+Do one sum **before** trusting this shape. The **receptive field** of a deep
+unit is how much of the picture it depends on. Each convolution grows the field
+a little. Each halving doubles the scale of that growth. So the field grows
+slowly at first and then fast.
 
-Turn the deepest layer's field into a distance on the table, using how much
-table one pixel covers from the height the camera flies at, and compare it with
-the smallest gap the cell guarantees between two glasses. **If that patch of
-table is smaller than the gap, then the one layer with enough context to reason
-about a neighbour cannot see two glasses at once**, and it is structurally
-incapable of the comparison you might have hoped it was making. Adding one more
-halving fixes it, at the price of several times as many weights in the deepest
-block, because a convolution's weight count grows with the product of its two
-channel counts.
+Turn the deepest layer's field into a distance on the table. Use how much table
+one pixel covers at the camera's height. Compare it with the smallest gap the
+cell allows between two glasses. **If the field is smaller than the gap, the
+deepest layer can never see two glasses at once.** It cannot make the
+comparison you hoped for. One more halving fixes this. The cost is several
+times more weights in the deepest block, because a convolution's weight count
+grows with the product of its two channel counts.
 
-Whether the extra depth is actually needed here is not known, and this document
-is not going to pretend otherwise. Two things could rescue the shallower shape:
-the up path's own convolutions widen the field further, and the evidence that
-separates two joined outlines may be entirely local to the seam, in which case
-no unit ever needs to see both glasses at once. It is flagged here because it
-is far cheaper to check with arithmetic beforehand than to diagnose afterwards,
-when all you have is a network that quietly never separates anything.
+It is not known whether the extra depth is needed here. Two things may save
+the shallower shape. The up path's convolutions widen the field further. And
+the evidence for a split may sit right at the seam, so no unit needs to see
+both glasses. The warning is here because the sum is cheap. Finding the
+problem after training is hard: the network just never separates anything.
 
 ## The first head: which pixels are glass
 
-The shape is settled, so the two heads can be taken in turn, and the first is
-the simpler. It has one output channel, it gives one number per pixel, and that
-number is how sure the network is that the pixel is glass. A function that
-squashes any number into the range zero to one turns it into a probability, and
-a threshold on that probability is the mask.
+The first head is the simpler one. It gives one number per pixel: how sure the
+network is that the pixel is glass. A squashing function turns that number into
+a probability between zero and one. A threshold on the probability gives the
+**mask**, the set of pixels called glass.
 
-Training needs a **loss**, which is one number saying how wrong an answer was
-and which the nudging then tries to reduce. The ordinary loss for a yes-or-no
-answer per pixel is **binary cross entropy**: for a pixel that really is glass
-the penalty is smaller the higher the probability the network gave it, so being
-sure and right costs almost nothing while being sure and wrong costs a great
-deal, and for a table pixel it is the same with the probability flipped. Then
-the penalty is averaged over every pixel in the picture.
+Training needs a **loss**: one number that says how wrong an answer was.
+Training tries to make it smaller. The usual loss for a yes-or-no answer per
+pixel is **binary cross entropy**. Sure and right costs almost nothing. Sure
+and wrong costs a lot. The cost is then averaged over all pixels.
 
-**That average is where the trouble is**, and the trouble comes straight out of
-this cell's geometry. Seen from the top, a glass covers a small patch of a large
-picture, and there are only a handful of glasses, so the great majority of every
-picture is bare table. Glass is the rare class by a wide margin. A network can
-therefore lower the average a long way by learning exactly one thing, which is
-to say "not glass" everywhere: the many table pixels then cost almost nothing
-each, and the few glass pixels cost a great deal each but there are few of
-them. The network has been rewarded for producing an empty picture, and this is
-worst early in training, when saying nothing is the easiest improvement
-available.
+**The average is the trouble.** From the top, glasses cover a small part of the
+picture. Most pixels are bare table. So a network can lower the average a lot
+by saying "not glass" everywhere. The many table pixels then cost almost
+nothing, and the few glass pixels are few. The network is rewarded for an
+empty answer. This is worst early in training.
 
-Two standard fixes exist, and **both are prescriptions here rather than
-descriptions of what is built**.
+There are two standard fixes. **Both are designs here, not built.**
 
-The first is to **weight the rare class up**, multiplying every glass pixel's
-contribution by the ratio of the two class sizes, so that the glass pixels and
-the table pixels contribute equally to the total. Saying nothing is then no
-longer an improvement at all.
+The first fix **weights the rare class up**. Each glass pixel's cost is
+multiplied by the ratio of table pixels to glass pixels. Then glass and table
+count equally, and an empty answer no longer helps.
 
-The second is to **add a loss that measures overlap rather than counting
-pixels**. The **Dice coefficient** is twice the number of pixels that both the
-answer and the truth call glass, divided by the total number either of them
-calls glass. It is one for a perfect match and zero when they share nothing,
-and it has no term for the table at all. Using one minus Dice alongside the
-weighted cross entropy is the usual recipe, from Milletari and colleagues, 2016
-([arXiv:1606.04797](https://arxiv.org/abs/1606.04797)).
+The second fix **adds an overlap loss**. The **Dice coefficient** is twice the
+pixels both the answer and the truth call glass, divided by all pixels either
+calls glass. It is one for a perfect match and zero for no overlap. It ignores
+the table. The usual recipe adds one minus Dice to the weighted cross entropy
+(Milletari and others, 2016,
+[arXiv:1606.04797](https://arxiv.org/abs/1606.04797)).
 
-![Bare table outnumbers glass by a wide margin in every picture from the top, so a score that counts pixels is already high for a network that answers table everywhere, while a score that measures overlap gives that same network nothing.](../../../images/02-segment-glasses/02-most-pixels-are-table.png)
+![Table pixels far outnumber glass pixels. A pixel-count score is high for a network that says "table" everywhere. An overlap score gives it nothing.](../../../images/02-segment-glasses/02-most-pixels-are-table.png)
 
-The general lesson is worth more than the detail: **a score that rewards saying
-nothing will be optimised by a network that says nothing.**
+The general lesson: **a score that rewards saying nothing will be won by a
+network that says nothing.**
 
 ## The second head: which way is the middle of my own glass
 
-The first head stops exactly where the problem starts asking which glass is
-which, so this is where the second head comes in. It keeps the network's shape
-and its training recipe unchanged and adds two more output channels, holding
-the two parts of an arrow. Nothing else about the network changes, which is why
-the two heads are one network and not two.
+The first head cannot say which glass is which. The second head adds that. It
+adds two output channels, the two parts of an arrow. The shape and the training
+recipe stay the same. That is why the two heads are one network.
 
 ### Why the arrow is an easier question than it looks
 
-The arrow runs from a pixel to the middle of that pixel's own glass, so the
-longest arrow that can ever occur is half the widest footprint the cell
-handles. Every training target is therefore a pair of numbers inside a small
-and known box, and **a target that is bounded is far easier to fit than an
-unbounded one**. The network is never asked for a large number, so it never has
-to learn how large numbers scale.
+The arrow goes from a pixel to its glass's middle. So the longest possible
+arrow is half the widest glass footprint. Every target is a pair of numbers in
+a small, known range. **A bounded target is much easier to fit.** The network
+never has to produce a large number.
 
-The second head also spends none of its capacity on the easy question, because
-the loss is applied **over glass pixels only**. Most pixels in a picture from
-the top are table, and a table pixel has no correct arrow at all, since there
-is no glass for it to point at. So the arrow loss is multiplied by the mask
-before it is added up, and the network is scored on the arrow only where the
-question has an answer.
+The arrow loss counts **only glass pixels**. A table pixel has no glass to
+point at, so it has no correct arrow. The arrow loss is multiplied by the mask
+before it is summed.
 
-One more choice inside the loss matters. The arrow is scored by how far it is
-from the true arrow, measured in a way that does not let a handful of wild
-pixels dominate every update. Pixels right at the edge of a glass, where a
-pixel may genuinely belong to either of two glasses, are exactly the wild ones,
-and a loss that squares every error would let them drown out the many pixels
-that are nearly right.
+The loss also limits the pull of a few wild pixels. Pixels at a glass's edge
+may belong to either of two glasses, so their arrows can be far off. A loss
+that squares every error would let them drown out the many good pixels.
 
 ### Which frame the arrow is measured in
 
-This is the one decision inside the second head that is worth going through
-slowly, because the two reasonable answers give the network two different jobs.
+There are two sensible choices, and they give the network two different jobs.
 
-**The arrow can be measured in the picture.** Then the target is a shift of so
-many pixels across and so many down, and the network is predicting something
-about the photograph. This is what the built network does, and it is why the
-network is also told where in the frame each pixel sits: the same glass seen
-near the middle of the frame and seen out at the edge needs a different arrow,
-and the position channels are what let the network tell those two cases apart.
+**The arrow can be measured in the picture**, as so many pixels across and
+down. The built network does this. That is why it gets the position channels:
+the same glass needs a different arrow near the middle of the frame and near
+the edge.
 
-**Or the arrow can be measured on the table.** Every glass pixel has a depth
-reading, and depth with the camera's own pose turns a pixel into a point in the
-room, which drops onto a place on the table. So the arrow could be a distance
-on the table instead, and then it would not depend on the camera at all: the
-same glass would demand the same answer wherever the camera stood and wherever
-in the frame it appeared. The price is that the arrow then needs the depth
-reading at run time, so the solution would lose the one thing it gets for free
-by working on the picture, which is an answer that does not depend on depth
-coming back. That matters because real glassware returns almost no depth, and
-it is the reason this choice is worth stating rather than assuming.
+**Or the arrow can be measured on the table.** Depth plus the camera's pose
+turns a pixel into a point on the table. An arrow measured there does not
+depend on the camera. The same glass gets the same arrow wherever it appears.
+The cost is that the arrow then needs depth at run time. The picture-frame
+arrow does not. That matters because real glass returns almost no depth.
 
-![An arrow measured in the picture is a different number for the same glass at every range, while an arrow measured on the table is the same number wherever the camera stood, which is the whole of the choice between the two frames.](../../../images/02-segment-glasses/02-image-space-against-table-space.png)
+![A picture-frame arrow differs for the same glass at every range. A table-frame arrow is the same wherever the camera stands.](../../../images/02-segment-glasses/02-image-space-against-table-space.png)
 
 ## From votes to glasses
 
-Each glass pixel now has a vote, so the remaining question is how a cloud of
-votes becomes a count of glasses. One glass's votes should land in one tight
-pile, so the question is where the votes pile up.
+Each glass pixel now has a vote. The next step turns the cloud of votes into a
+count of glasses.
 
-**What is built counts them.** Every vote is added into a tally the size of the
-picture, the tally is smoothed a little so that votes landing on neighbouring
-places reinforce each other, and then the largest place in the tally is taken
-as a middle, the votes around it are set aside, and the next largest place is
-taken, until no place has enough votes left to be a glass. The pixels whose
-votes landed near one middle are that middle's glass.
+**What is built.** Every vote is added to a tally the size of the picture. The
+tally is smoothed a little, so nearby votes add up. The highest point is taken
+as a middle, and its votes are set aside. Then the next highest is taken. This
+stops when no point has enough votes for a glass. The pixels whose votes landed
+near a middle form that glass.
 
-**The published method for the same job is mean shift**, and it is worth
-knowing because it is what the general idea is called. Put a circular window
-down on one vote, move the window to the average position of the votes inside
-it, and repeat until it stops moving; each move is a step uphill towards
-thicker votes, and the votes whose windows stop in the same place are one pile
-(Comaniciu and Meer, 2002). Its important property is what it does **not** need
-to be told: unlike methods that divide data into a fixed number of groups,
-nothing has to say how many piles to expect. That matters here more than
-usually, because in this problem the count *is* the answer.
+**The published method is mean shift** (Comaniciu and Meer, 2002). Put a round
+window on one vote. Move it to the average of the votes inside. Repeat until
+it stops. Votes whose windows stop at the same place are one pile. Mean shift
+does **not** need to know how many piles to expect. That matters here, because
+the count is the answer.
 
-![One glass's votes land in one thick patch and two glasses' votes in two, and the published method for finding those patches slides a window uphill to the average of the votes inside it until it stops, so the starts that stop together are one glass.](../../../images/02-segment-glasses/02-vote-cloud-and-mean-shift.png)
+![One glass's votes land in one patch and two glasses' votes in two. Mean shift slides a window uphill until it stops.](../../../images/02-segment-glasses/02-vote-cloud-and-mean-shift.png)
 
-Both forms have exactly one number to choose, which is how close two votes have
-to be to count as the same pile, and it is pinned at both ends before anything
-is run. The **floor** is the spread of one glass's own votes, because a window
-much smaller than that scatter fits inside one pile and climbs some lump within
-it, so one glass comes back as several peaks. The **ceiling** is the closest
-two middles can ever be, which is two of the narrowest glasses of the kind
-standing as close as the cell allows, because a window reaching much more than
-half of that covers both middles at once and the two piles merge into one.
-There is comfortable room between those two limits. It is worth seeing what a
-careless choice costs, because the failure is quiet: a window large enough to
-span the narrowest possible gap between middles swallows two middles whole, so
-it merges exactly the pairs this solution exists to separate, and it does so
-without complaining, because a merged pile looks perfectly tight.
+Both methods have one setting: how close two votes must be to count as one
+pile. It has a floor and a ceiling, fixed before any run.
 
-Two checks go with the counting. The first is in the built code; the second is
-a prescription.
+- **Floor**: the spread of one glass's votes. A smaller window finds lumps
+  inside one pile, so one glass becomes several.
+- **Ceiling**: half the closest distance two middles can have. That is two of
+  the narrowest glasses standing as close as the cell allows. A larger window
+  covers both middles, so two piles merge.
 
-**A pile needs enough votes.** A glass seen from the top covers many pixels, so
-a pile built from a small fraction of the votes a whole glass should cast is
-doubtful however tight it looks. This is the check that catches confident
-agreement between witnesses who all stood in the same wrong place: a glass
-reduced to a crescent down one edge votes only from that crescent, and those
-votes agree closely with each other while being wrong together.
+There is plenty of room between the two. A careless choice fails quietly. A
+window too large merges exactly the pairs this solution exists to split. The
+merged pile still looks tight, so nothing complains.
 
-**A pile needs a believable width.** The pixels that voted into one pile are
-fitted with a circle on the table, and a pile whose fitted width falls outside
-the range this kind of glass can be is not reported as a glass, whatever the
-votes say. So the network proposes and the arithmetic disposes, which is what
-keeps this solution inside the same safety argument as rules on the table: a
-learned part decides which pixels group together, and a rule nobody trained
-decides whether the result is believable.
+Two checks go with the counting. The first is built; the second is a design.
+
+**A pile needs enough votes.** A whole glass casts many votes. A pile with only
+a small part of that is doubtful, even if it is tight. This catches a glass
+seen only as a crescent down one edge. Its votes agree with each other but are
+wrong together.
+
+**A pile needs a believable width.** Fit a circle on the table to the pile's
+pixels. If the width is outside the kind's range, do not report a glass. The
+network proposes; a written rule decides. This keeps the solution inside the
+same safety argument as rules on the table. The [code
+README](../../../02-segment-glasses/02-train-from-scratch/README.md#what-this-does-not-do)
+says why this check, tried inside one picture, did worse than nothing.
 
 ## The two ways: where the labels come from
 
-Everything up to here is one method, and nothing in it says where the training
-labels come from. That question has two answers, and the rest of the method
-does not change between them. The network is the same network, the two heads
-are the same two heads, the votes are the same votes and the checks are the
-same checks. **Only the source of the labels changes**, which is why the two
-are two ways of one solution rather than two solutions.
+Nothing so far says where the training labels come from. There are two answers.
+The network, the heads, the votes and the checks stay the same in both. **Only
+the source of labels changes.** So they are two ways of one solution, not two
+solutions.
 
-The first way takes its labels from the examiner's answer key, which makes them
-free and exact. The second way takes its labels from the arm's own movement,
-which makes them neither free nor exact, and buys something else instead. The
-second way is the point of this document, and the first is best read as the
-thing it is a step up from.
+The first way takes labels from the examiner's answer key. They are free and
+exact. The second way takes labels from the arm's own movement. They are
+neither free nor exact, but they buy something else. The second way is the
+main point of this page.
 
 ## The first way — labels from the answer key
 
-The examiner renders every picture itself, so alongside the grey picture and the
-depth reading it has an **id image**: at every pixel, which glass that pixel
-shows, or nothing. The [examiner](../the-examiner.md) describes it in full,
-including the rule that a method may be trained on id images from the training
-half of the arrangements and is never given one while answering. This way is
-built on that permission.
+The examiner renders every picture, so it also has an **id image**. At each
+pixel it says which glass that pixel shows, or none. [What the examiner keeps
+to itself](../the-examiner.md#what-the-examiner-keeps-to-itself) gives the
+rule: a method may train on id images from the training arrangements, and
+never sees one while answering.
 
-From an id image both heads' labels fall out by arithmetic.
+Both heads' labels come from the id image by arithmetic:
 
-**The first head's label is the id image with the identities forgotten.** A
-pixel is glass if the id image names any glass there, and table otherwise.
-There is nothing to judge and nothing to draw.
+- **First head**: the id image with the identities dropped. A pixel is glass if
+  the id image names any glass there.
+- **Second head**: a subtraction. The target arrow is the glass's middle minus
+  the pixel's position. The examiner placed each glass, so both are known
+  exactly.
 
-**The second head's label is a subtraction.** For a pixel the id image assigns
-to one particular glass, the target arrow is that glass's middle minus the
-pixel's own position. The examiner knows where each glass stands because it put it
-there, so both ends of the subtraction are known exactly, and the arrow is a
-calculation rather than an opinion.
+So the labels are free and contain no judgement. That is why training from
+scratch makes sense here.
 
-So the labels are free, in the sense that asking for them costs no more than
-asking for the picture, and exact, in the sense that there is no judgement in
-them anywhere to be wrong. That is a better position than almost any real
-vision project is in, and it is the whole reason training from scratch is
-sensible here. No annotator also means no limit on how many arrangements can be
-labelled beyond the time it takes to render them.
-
-The honest weakness of this way is not in the labels. It is in what they
-depend on. The id image comes from the simulator's own record of what it
-rendered, and a real camera on a real table has no such record. So everything
-this way learns is learned from a source that exists only while the glasses
-are simulated, and the day the cell meets real glasses, this way has to be
-labelled again by somebody drawing round things. The second way is what
-removes that dependency.
+The weakness is what the labels depend on. The id image is the simulator's
+record of what it drew. A real camera has no such record. So on the day the
+cell meets real glasses, someone must draw labels by hand. The second way
+removes that need.
 
 ## The second way — labels from the arm's own movement
 
-The second way asks the same network the same two questions and fits it with
-no answer key at all. Nothing in the simulator's record is read, not even
-during training.
+The second way trains the same network with no answer key. It reads nothing
+from the simulator's record, not even in training.
 
-What replaces the answer key is a fact about this cell that is easy to pass
-over. **The camera is on the wrist, so the arm knows exactly how it moved the
-camera between two pictures.** That movement is not estimated from the
-pictures. It is commanded, and then read back from the joint encoders. So for
-two pictures of a scene that stood still while the camera moved, geometry says
-where each surface point must have landed in the second picture, given how far
-away it is. Points on one glass therefore move together, and points on a
-different glass at a different distance move by a different amount. **That
+It uses one fact about this cell. **The camera is on the wrist, so the arm
+knows exactly how it moved the camera between two pictures.** The movement is
+commanded and read back from the joint encoders, not estimated from pictures.
+Take two pictures of a still scene. Geometry then says where each surface point
+must land in the second picture, given its distance. Points on one glass move
+together. Points on a glass at another distance move by another amount. **That
 agreement is the label.**
 
-![The arm's own encoders say exactly how far it slid the camera between two pictures of a still scene, and every pixel of the near glass then shifts by one amount while every pixel of the far glass shifts by another, which is the agreement this way uses in place of an answer key.](../../../images/02-segment-glasses/02-two-views-parallax.png)
+![The encoders give the exact camera slide. All pixels of the near glass shift by one amount, and all pixels of the far glass by another.](../../../images/02-segment-glasses/02-two-views-parallax.png)
 
 ### Parallax: the shift goes as one divided by the depth
 
-The effect the way lives on is called **parallax**, and you have seen it from
-a moving train, where the near fence races past the window while the far hills
-barely move. When the camera slides sideways, a surface moves across the
-picture by an amount equal to the slide divided by how far away the surface is.
-Near things move a lot, far things move a little, and things infinitely far
-away do not move at all.
+This effect is **parallax**. When the camera slides sideways, a surface moves
+across the picture by the slide divided by its distance. Near things move a
+lot. Far things move a little.
 
-Two consequences matter. The first is that the relationship is one divided by
-the depth, so it is steep close up and nearly flat far away: the same
-difference in depth is worth a great deal of separation near the camera and
-almost nothing far from it. The second is that the separation between two
-surfaces' shifts grows in step with the slide, so **a longer slide buys more
-separation, in proportion**. That turns the arm into a dial it can set
-deliberately, and it is the reason this way can say in advance how far it must
-move to settle a particular doubt.
+Two facts follow. First, the shift goes as one over depth. So a depth
+difference matters a lot close up and very little far away. Second, the gap
+between two surfaces' shifts grows in step with the slide. **A longer slide
+gives proportionally more separation.** So the arm can choose in advance how
+far to move to settle a doubt.
 
-![How far a surface moves between the two pictures goes as one divided by its depth, so the effect is steep close up and nearly flat far away, and the separation between two glasses' shifts grows in step with the slide, which is what turns the arm into a dial.](../../../images/02-segment-glasses/02-depth-against-shift.png)
+![Shift goes as one over depth: steep close up, flat far away. The gap between two glasses' shifts grows with the slide.](../../../images/02-segment-glasses/02-depth-against-shift.png)
 
 ### Why the slide has to be sideways, and why the top view is the weak case
 
-Parallax separates two surfaces by how far apart **in depth** they are, so it
-separates two glasses only when the gap between them is much larger than the
-range of depths each glass covers by itself. That condition is worth checking
-against the two places this cell puts the camera, because it comes out
-differently in each.
+Parallax separates two glasses only if the depth gap *between* them is much
+larger than the range of depths *within* each one.
 
-**From the top it is a weak signal, for two reasons.** Two glasses of one kind
-have their rims at nearly the same height, so from a camera looking straight
-down they are at nearly the same distance from the lens, and there is almost no
-depth gap between the two objects to work with. Worse, each glass on its own
-runs from its rim, well up towards the camera, down to the table far below it,
-so each glass by itself covers a wide range of depths and both cover the same
-wide range. Two ranges of shifts lying on top of each other cannot be told
-apart however far the camera slides.
+**From the top, this fails twice.** Two glasses of one kind have rims at about
+the same height, so there is almost no depth gap between them. And each glass
+runs from its rim down to the table, so each covers a wide range of depths, the
+same range for both. Two overlapping ranges of shifts cannot be told apart,
+however far the camera slides.
 
-**From the side the geometry turns over.** A glass standing in line behind
-another is much further back than either glass is wide, so the gap between the
-two objects is now large while the range of depths each covers by itself is
-only its own width, which is small. The two sets of shifts end up far apart,
-which is exactly what parallax needs. And the arm already slides the camera
-sideways at every survey station, because a station takes two pictures a short
-distance apart; a slide taken deliberately for this purpose is the same kind of
-movement, just longer and from the side.
+**From the side, it works.** A glass behind another is much further back than
+either is wide. The gap between them is large, and each covers only its own
+width in depth. The two sets of shifts land far apart. The arm already slides
+the camera sideways at each survey station, because a station takes two
+pictures a short distance apart. A slide for labels is the same movement, just
+longer and from the side.
 
-![The loop this way prescribes would not take another picture and hope: it would name the doubt in pixels, divide by how much separation one millimetre of slide is worth, move the arm exactly that far, and check each region that came back against the range this kind of glass can be.](../../../images/02-segment-glasses/02-deliberate-motion-loop.png)
+![The loop names the doubt in pixels, works out the slide needed, moves the arm that far, and checks each region against the kind's width range.](../../../images/02-segment-glasses/02-deliberate-motion-loop.png)
 
-So this way's labels come mostly from pictures taken from the side, which has
-a plain consequence worth stating rather than hiding. **The labels for the
-hardest case, which is the merge in a picture from the top, are the ones this
-way is worst at producing**, because that is exactly where parallax is weak.
-The way still trains the network that runs on pictures from the top, because
-training and running are separate, and only the trained network is used at run
-time, on exactly the input the examiner hands every solution. But the supervision
-it gets for the merge is weaker than the answer key's, and that is the price of
+So this way's labels come mostly from side pictures. **That means its labels
+are weakest for the hardest case: the merge in a picture from the top.** It
+still trains the top-view network, because training and running are separate.
+At run time it gets the same input as every other solution. But its
+supervision for the merge is weaker than the answer key's. That is the price of
 not reading the answer key.
 
 ### What an embedding is
 
-The first way could turn its labels into targets directly, because the answer
-key says which glass a pixel belongs to and therefore where its arrow should
-point. Movement gives something weaker: it says whether two pixels belong
-together, and nothing about which glass they are or how many glasses there are.
-So the network's output has to change shape to carry that weaker information,
-and the shape it changes to is called an embedding.
+The first way could build the arrow targets directly, because the answer key
+names each pixel's glass. Movement gives less. It says only whether two pixels
+belong together. It does not say which glass, or how many glasses. So the
+network's output changes shape to an embedding.
 
-An **embedding** is a short list of numbers the network produces at every
-pixel, arranged so that **two lists being close together means the two pixels
-belong together**. The numbers themselves mean nothing on their own. There is
-no channel that says "glass number two" and no number that counts anything.
-Only the distances between lists carry information.
+An **embedding** is a short list of numbers the network gives at every pixel.
+**Two lists close together mean the two pixels belong together.** The numbers
+mean nothing on their own. Only the distances between lists carry information.
 
-A comparison helps here. Think of giving every pixel a position on a map, where
-the map has no place names and no scale, and the only thing you may ask is how
-far apart two pixels are. Pixels on one surface are put in one neighbourhood,
-pixels on a different surface are put in a different neighbourhood, and
-grouping the pixels afterwards is reading the neighbourhoods off the map. The
-map is the embedding, and the network's job is to draw it.
+Think of a map with no names and no scale. Each pixel gets a spot on the map.
+Pixels of one surface share a neighbourhood. Pixels of another surface sit in
+another one. Grouping pixels means reading the neighbourhoods off the map.
 
 ### What contrastive training does
 
-With that output shape in place, the labels from movement are exactly the right
-kind of label for it.
+Movement gives labels of exactly the right kind for an embedding.
 
-Two pixels whose shifts between the two pictures agree to within the
-measurement noise are a **positive pair**, meaning they are on the same
-surface. Two pixels whose shifts differ by clearly more than the noise are a
-**negative pair**, meaning they are not. Those two verdicts are all movement
-gives, and they are all this training needs.
+Two pixels whose shifts agree within the noise form a **positive pair**: same
+surface. Two pixels whose shifts differ by clearly more than the noise form a
+**negative pair**: different surfaces.
 
-**Contrastive training** turns them into a loss. Pick a pixel, take its
-positive partner and a handful of negative ones, and make the loss low only
-when the partner's list is closer to the pixel's list than every one of the
-negatives' lists is. Training therefore **pulls** a pixel and its positive
-partner together on the map and **pushes** a pixel and its negatives apart. Do
-that over many pixels and many pairs, and the map arranges itself so that the
-pixels of one surface sit together and the pixels of different surfaces sit
-apart, without anybody ever having said what a glass is.
+**Contrastive training** turns those pairs into a loss. Pick a pixel, its
+positive partner and a few negatives. The loss is low only when the partner is
+closer on the map than every negative. So training **pulls** positive pairs
+together and **pushes** negative pairs apart. Over many pairs, each surface's
+pixels gather in one place. Nobody ever says what a glass is.
 
-![Every pixel becomes a short list of numbers, and training pulls a pixel and its positive partner together while pushing it away from its negatives, so the pixels of one surface end up in one neighbourhood without anything ever naming a glass.](../../../images/02-segment-glasses/02-embedding-space.png)
+![Training pulls a pixel towards its positive partner and away from its negatives, so one surface's pixels end up together.](../../../images/02-segment-glasses/02-embedding-space.png)
 
-What that gets right is worth naming, because no appearance-based rule can do
-it. The line the embedding draws runs where the **depth jumps**, and not where
-the brightness changes. So two glasses of the same kind, the same colour and
-the same shape are no harder for this way than two different ones, which is
-the exact case that defeats a method relying on how things look.
+What it gets right: the embedding splits where the **depth jumps**, not where
+brightness changes. So two identical glasses are no harder than two different
+ones. A method based on looks fails on exactly that case.
 
-What it does not get is equally worth naming. **Nothing in an embedding names a
-glass and nothing counts them.** The map says which pixels belong together, and
-something else has to decide how many neighbourhoods there are. So the lists
-are grouped, each group becomes a candidate region, and every candidate region
-goes through the same checks the first way's piles go through: enough pixels, a
-circle fitted on the table, and a width inside the range this kind of glass
-can be. The grouping step here is doing the job mean shift does for the votes,
-and it has the same one number to choose and the same two limits pinning it.
+What it misses: **an embedding does not name or count glasses.** Something else
+must decide how many neighbourhoods there are. So the lists are grouped, and
+each group goes through the same checks as the first way's piles: enough
+pixels, a circle fitted on the table, and a believable width. The grouping
+step plays the part of mean shift, with the same one setting and the same two
+limits.
 
-That makes the check after the network less optional here than anywhere else in
-this document, because a merged pair comes back from an embedding as one tidy
-region with no complaint attached to it at all.
+So the check after the network matters most here. A merged pair comes back
+from an embedding as one tidy region, with no warning at all.
 
-![Two glasses of one kind standing the same distance from the lens shift by the same amount however far the camera slides, so there is nothing for parallax to separate them by; and where there is, an embedding still says only which pixels are alike and never how many glasses there are.](../../../images/02-segment-glasses/02-the-limit.png)
+![Two identical glasses at the same distance shift by the same amount, so parallax cannot split them. Even when it can, an embedding never says how many glasses there are.](../../../images/02-segment-glasses/02-the-limit.png)
 
 ### What this way buys and what it costs
 
-It buys one thing, and the thing is about the future rather than about this
-problem. **This is the only way whose supervision a real arm also has.** A
-real arm has joint encoders and a wrist camera, which is everything this way
-needs. Every other solution here that is fitted in this cell, including way
-one, is fitted to labels that exist only because the pictures were rendered, so
-every one of them would have to be labelled again from nothing on the day the
-code met real hardware. This one would not.
+It buys one thing, for the future. **This is the only way whose labels a real
+arm also has.** A real arm has joint encoders and a wrist camera. That is all
+this way needs. Every other solution trained in this cell, including the first
+way, uses labels that exist only because the pictures were rendered. All of
+them would need new hand-drawn labels on real hardware. This one would not.
 
-![A person drawing round every glass, the simulator's record of which glass each pixel shows, and the arm's own encoders are three ways to get the answer written beside a picture, and only the last of them is one a real arm would still have.](../../../images/02-segment-glasses/02-where-the-labels-come-from.png)
+![Three sources of labels: a person drawing, the simulator's record, and the arm's encoders. Only the last exists on a real arm.](../../../images/02-segment-glasses/02-where-the-labels-come-from.png)
 
-It costs three things. The labels are **weaker**, as the section above says,
-and weakest exactly where the problem is hardest. The labels are **not free**,
-because collecting them means moving the arm, and an arm movement costs seconds
-while a picture costs milliseconds and a pass of the network costs less than
-that; so a training set gathered this way is paid for in arm time rather than
-in render time. And the whole way depends on there being something to match
-between two pictures, so it is weakest where the pictures are plainest, which
-is a surface of one even shade.
+It costs three things:
 
-The honest conclusion is that the first way is the way to build for this problem
-and the second way is the way to reach for when the cell leaves the simulator. This
-cell has a working depth camera, which measures directly what parallax is being
-trained to infer, so inside this problem the second way is doing hard work for
-information the cell already has. It earns its place the day that stops being
-true.
+- The labels are **weaker**, and weakest where the problem is hardest.
+- The labels are **not free**. Each needs an arm movement, which takes seconds,
+  where a render takes milliseconds.
+- It needs texture to match between two pictures. A plain surface of one shade
+  gives it nothing.
+
+The conclusion: build the first way for this problem. Use the second way when
+the cell leaves the simulator. This cell has a working depth camera, which
+already measures what parallax would infer. The second way earns its place
+only when that stops being true.
 
 ## The training set
 
-Both of them need a set of arrangements to learn from, and two decisions about
-that set decide whether the network works at all. They apply to each way
-equally.
+Both ways need a set of arrangements to learn from. Two choices about that set
+decide whether the network works.
 
-**Spawn the hard case.** The cell's own rule keeps glasses a comfortable
-distance apart, and a training set drawn only from that rule never once shows
-the network a pair that a page of arithmetic could not already separate. So the
-teaching has to happen on pairs standing far closer than the rule allows, which
-is what the examiner's crowded family of arrangements is for. But keep the easy
-case too, in proportion, or the network quietly learns that there is always a
-pair to find. As a general rule, **the edge of the specification should sit
-somewhere in the middle of the training set**, so that the network has met
-worse than it ever will in use.
+**Include the hard case.** The cell's own rule keeps glasses well apart. A
+training set drawn only from that rule never shows a pair that simple
+arithmetic could not split. So the network must see pairs much closer than the
+rule allows. That is what the examiner's crowded arrangements are for. Keep
+easy cases too, or the network learns that there is always a pair to find. **The
+edge of the specification should sit in the middle of the training set**, so
+the network has seen worse than it will meet in use.
 
-**Randomise everything that is not shape.** A simulator will render the same
-table under the same light for ever, and a network given a constant will use it
-as a clue: if every training picture has the table at the same shade, the
-network is free to learn that glass means the pixels that are not that shade.
-That rule scores perfectly on the training pictures and on the held-out ones
-too, because both came out of the same renderer, and then somebody changes a
-light and the network fails for a reason that appears in no number.
-**Domain randomisation** is the fix, and it is blunt: vary the lighting, the
-table's colour and texture, the glass tint, the exposure, the picture noise,
-the camera pose and the number and placement of the glasses, over a range wider
-than anything expected, so that none of them is a reliable shortcut and shape
-is the only thing left that predicts the answer (Tobin and colleagues, 2017,
-[arXiv:1703.06907](https://arxiv.org/abs/1703.06907)).
+**Vary everything that is not shape.** A simulator renders the same table under
+the same light every time. A network will use any constant as a clue. If the
+table is always one shade, the network can learn "glass is whatever is not that
+shade". That scores perfectly on held-out pictures from the same renderer. Then
+someone changes a light, and it fails, and no number showed the risk. **Domain
+randomisation** is the fix. Vary the lighting, the table's colour and texture,
+the glass tint, the exposure, the noise, the camera pose and the number and
+placement of glasses. Vary them more widely than expected. Then shape is the
+only reliable clue (Tobin and others, 2017,
+[arXiv:1703.06907](https://arxiv.org/abs/1703.06907)). This is a design; the
+built training set uses one fixed setting.
 
-![The same kind of arrangement rendered under different lighting, table colour and texture, glass tint, exposure, picture noise and camera pose, with the lens and the picture size held fixed on purpose, so that shape is the only thing left that predicts the answer.](../../../images/02-segment-glasses/02-domain-randomisation.png)
+![One kind of arrangement under different lighting, table colour, glass tint, exposure, noise and camera pose. The lens and picture size stay fixed.](../../../images/02-segment-glasses/02-domain-randomisation.png)
 
-One thing would **not** be varied, which is the camera's lens. The focal length
-and the picture size are facts about the camera this cell has rather than
-nuisances to be made robust against, and teaching the network to cope with
-lenses it will never meet would spend its limited capacity on nothing.
+One thing is **not** varied: the lens. The focal length and picture size are
+facts of this camera. Teaching the network other lenses would waste its small
+capacity.
 
-And the split between learning and marking is the examiner's, not this solution's.
-The examiner divides its arrangements into a training half and a test half, so a
-network fitted on the first is marked on the second and is never tested on an
-arrangement it learned from.
+The split between training and test is the examiner's. A network is never
+tested on an arrangement it learned from.
 
 ## The masks are what this contributes
 
-Everything above produces one thing, and it is worth being plain about what
-happens to it.
-
-This solution contributes **only the masks**: which pixels in which picture are
-which glass. Turning a mask into a place on the table and a rough width is the
-examiner's job, done by one shared piece of arithmetic that every one of the six
-solutions goes through, and it is described in the [test
-examiner](../the-examiner.md). So a difference in the score belongs to the mask. This
-solution cannot win by measuring more cleverly and it cannot lose by measuring
-worse.
-
-One consequence follows, and it is the same for all six. **No model here
-produces a pose.** Models produce masks. The place comes from the depth
-readings under the mask together with the camera's own pose, by arithmetic, and
-a glass standing upright on a flat table has no orientation left to find.
+This solution hands over only the masks. The examiner turns each mask into a
+place and a width, the same way for all six. [What must come
+back](../the-examiner.md#what-must-come-back) explains this, and why no model
+here produces a pose.
 
 ## How the concepts fit together
 
-Everything above is one chain, and it is worth seeing the whole of it in order
-before the failure cases, because each stage inherits what the last one got
-wrong.
+Here is the whole chain in order:
 
-A **survey picture** goes in, with its depth reading and two channels saying
-where in the frame each pixel sits. The **network**, whose down path and up
-path are shaped so that a unit near the output can see a large part of the
-scene, produces two things at every pixel: a **probability** that the pixel is
-glass, and an **arrow** towards the middle of that pixel's own glass. The
-probability is thresholded into a **mask**. Every mask pixel adds its arrow to
-its own position and casts a **vote**. The votes pile up, one pile per glass,
-and the piles are counted without anything having been told how many to expect.
-A pile with too few votes is doubted; a pile whose fitted width is not one this
-kind of glass could have would be turned down by the check prescribed above.
-What survives is one mask per glass, handed to the examiner's shared arithmetic.
+1. A survey picture goes in, with height and two position channels.
+2. The network gives a glass **probability** and an **arrow** at every pixel.
+3. The probability, thresholded, is the **mask**.
+4. Each mask pixel adds its arrow to its position and casts a **vote**.
+5. The votes form one pile per glass. Nothing says how many to expect.
+6. A pile with too few votes is doubted. A pile with an impossible width would
+   be refused, once that check is built.
+7. Each surviving pile is one mask, handed to the examiner.
 
-Three things in that chain are worth holding on to.
+Three ideas carry the chain:
 
-**The output shape is what makes the merge answerable.** A class map has
-nowhere to record which glass a pixel belongs to, so no amount of training
-could make one separate two joined glasses. An arrow has somewhere to record
-it, and the separation falls out of counting rather than out of cutting.
-
-**The loss is what most often goes wrong.** Most pixels in these pictures are
-table, so a measure of success that counts pixels rewards a network for saying
-nothing, and the fix is to score the overlap of the shape rather than the count
-of the pixels.
-
-**The arithmetic after the network is what keeps the whole thing honest.** The
-network proposes; the vote count and the kind's own range of widths dispose. A
-pile of votes implying a footprint no glass of this kind could have is turned
-down by a rule nobody trained.
+- **The output shape makes the merge answerable.** A class map has no room to
+  say which glass. An arrow does.
+- **The loss is what most often goes wrong.** A pixel-count loss rewards an
+  empty answer; an overlap loss fixes it.
+- **The written checks after the network keep it honest.** The network
+  proposes; the vote count and the width range decide.
 
 ## When the glasses are completely hidden
 
-A glass can be covered completely, and then it contributes no pixel to any
-picture. [What is asked for](../problem.md) gives
-the geometry and says how close two glasses have to stand for it, and [looking
-again at what was
-hidden](../hidden-glasses.md) is the shared
-answer: work out from arithmetic where a glass could have been standing unseen,
-and go and look there. **No method that reads pictures can do better**, because
-the arrangement with the hidden glass and the same arrangement with it removed
-produce the same picture, pixel for pixel. What follows is only what is this
-solution's own.
+A glass can be fully covered in every picture. [Looking again at what was
+hidden](../hidden-glasses.md) is the shared answer for all six solutions. This
+section covers only what is special to this one.
 
-**This solution is unusually good at a glass that is only partly covered**, and
-the reason is that it finds nothing between two glasses. Every other method
-here separates them by finding something — a gap, a strip of bare table, a
-seam. Here each glass pixel votes for its own glass's middle whether or not
-anything can be told apart anywhere, so a glass left with only a crescent of
-itself still speaks, and its votes do not have to be joined to each other or to
-make a recognisable shape.
+**This solution is good at a partly covered glass.** Other methods split two
+glasses by finding something between them: a gap, a strip of table, a seam.
+Here each glass pixel votes for its own middle. A glass left with only a
+crescent still votes. Its votes need not touch each other or form a shape.
 
-![When a tall glass's outline is thrown far enough outwards to swallow a shorter neighbour standing at the closest separation the cell allows, not one vote mentions the covered glass; swing the same pair off the line out from the camera and the crescent that survives casts few votes, but they pile up almost exactly where that glass really stands.](../../../images/02-segment-glasses/02-votes-when-hidden-from-above.png)
+![A tall glass's outline swallows a short neighbour, and no vote names the short glass. Turn the pair off the line from the camera, and the visible crescent casts few votes, but they land close to the true middle.](../../../images/02-segment-glasses/02-votes-when-hidden-from-above.png)
 
-**Covered completely, it has no alarm to raise.** Both of this solution's own
-warnings are measurements of votes — how many a pile holds, and how far they
-sit from their own peak — and there are no votes to measure. The vote map
-simply has one peak where two glasses are standing, and nothing in it is wrong.
+**Fully covered, it has no alarm.** Both of its warnings measure votes: how
+many a pile holds, and how far they spread. A hidden glass casts no votes. The
+tally just has one peak where two glasses stand.
 
-![Looking level the near glass's outline covers the far one whole with no outward throw needed, and the single pile of votes left behind is tight, well filled and a believable width, so nothing about it looks wrong; step the far glass off the line of sight and the strip that appears votes for its own middle.](../../../images/02-segment-glasses/02-votes-when-hidden-from-the-side.png)
+![From the side, the near glass hides the far one whole. The one pile left is tight, full and a believable width. Step the far glass aside and its visible strip votes for its own middle.](../../../images/02-segment-glasses/02-votes-when-hidden-from-the-side.png)
 
-![Four pictures from the top as the camera slides outwards show the covered glass sitting outside the frame in every one of them, so from the top this solution loses a glass only where its picture never reached, and a short sideways move of the camera ends even that.](../../../images/02-segment-glasses/02-camera-slides-from-above.png)
+![Four top pictures as the camera slides outwards. The covered glass is outside the frame in each. A short sideways move ends this.](../../../images/02-segment-glasses/02-camera-slides-from-above.png)
 
-![Looking from the side, the far glass contributes not one pixel while it stands on the line of sight, however much further back it is put, and only sideways movement brings it back — in less of a slide than a survey station already makes between its two pictures.](../../../images/02-segment-glasses/02-camera-slides-from-the-side.png)
+![From the side, the far glass gives no pixel while it is on the line of sight. A sideways slide shorter than one survey station's own brings it back.](../../../images/02-segment-glasses/02-camera-slides-from-the-side.png)
 
 ## A worked example
 
-This example follows one crowded arrangement through the method, and it is the
-case the whole solution exists for.
+This follows one crowded arrangement, the case this solution exists for.
 
-**What is on the table.** Two glasses of one kind stand much closer together
-than the cell's own rule allows, which is the crowded family of arrangements
-the examiner draws deliberately. There is still bare table between their rims, but
-only a little.
+**On the table.** Two glasses of one kind stand much closer than the cell's
+rule allows. This is the examiner's crowded family. A little bare table is left
+between their rims.
 
-**What the picture does to them.** From the top, each glass's outline is thrown
-outwards from the point below the lens, so each covers more of the picture than
-its footprint deserves. The two outlines join. A flood fill over the mask comes
-back with **one** shape, spanning both glasses and the gap between them, and
-that shape is far wider than any glass of this kind can be. A rule that checks
-widths therefore notices that something is wrong — and that is all it can do,
-because nothing in a class map says where to cut.
+**In the picture.** Splay throws both outlines outwards, and they join. A flood
+fill on the mask gives **one** shape. It is wider than any glass of this kind.
+A width rule notices something is wrong, but a class map cannot say where to
+cut.
 
-**What the votes do.** The pixels of the two glasses are exactly as joined as
-before, because nothing has changed about the pixels. Their votes are not. Each
-glass's pixels point inwards at their own glass's middle, so the votes land in
-two piles whose separation is the full distance between the two middles, which
-is comfortably more than the counting step can span. Both piles are tight, both
-have plenty of votes, and a circle fitted to each pile's voters comes back
-inside the range this kind of glass can be. **Two glasses, two masks, out of a
-picture in which the pixels themselves never came apart.**
+**In the votes.** The pixels are still joined. The votes are not. Each glass's
+pixels point at their own middle. So the votes form two piles, a full
+middle-to-middle distance apart. That is well beyond the counting window. Both
+piles are tight and full, and both fitted widths are believable. **Two
+glasses, two masks, from pixels that never came apart.**
 
-**The case that defeats the votes.** Now stand one glass mostly behind another,
-so that only a crescent down one side of it is ever visible. It contributes a
-small fraction of the votes it should, and worse, every one of them comes from
-that same crescent, so the votes agree with each other and are wrong in the
-same direction. The pile lands off the true middle and its spread comes out
-much wider than a tight pile's. The short count is the alarm the code measures
-and it fires on its own; the wide spread is the second warning this document
-prescribes. Neither of them is the network's own opinion of itself: both are
-measurements of the votes. The pair is reported as one the arm could not
-separate, with its reason, which is a result this problem asks for and not a
-failure.
+**The case that beats the votes.** Now stand one glass mostly behind the other.
+Only a crescent of it shows. It casts few votes, and they all come from that
+crescent, so they are wrong in the same direction. The pile lands off the true
+middle and spreads wide. The short count is the built alarm. The wide spread is
+the second, designed alarm. Both measure the votes, not the network's own
+opinion. The pair is reported as one the arm could not separate, with the
+reason. The problem counts that as a result, not a failure.
 
-![The less of a glass reaches the picture the fewer votes it casts and the further its votes sit from their own peak, so a short count and a wide spread are two separate warnings, both of them measurements of the votes rather than the network's opinion of itself.](../../../images/02-segment-glasses/02-too-few-votes.png)
+![Less of a glass in the picture means fewer votes and a wider spread. These are two separate warnings, both measured from the votes.](../../../images/02-segment-glasses/02-too-few-votes.png)
 
-**What it costs in time.** Running the network on a picture costs milliseconds.
-Moving the arm to a new place and letting it settle costs seconds. So the
-balance of this solution is to compute freely and move rarely, and the whole of
-its cost sits in building it rather than in running it.
+**Time.** One network pass takes milliseconds. One arm move takes seconds. So
+this solution computes freely and moves rarely. Its cost is in building it, not
+running it.
 
 ## What it needs
 
-This is the most demanding of the six to set up, and it is worth being plain
-about that before anyone starts.
+This is the hardest of the six to set up.
 
-**A deep learning framework and the environment to run it in.** PyTorch, on
-this machine's integrated graphics through the MPS backend. No dedicated
-graphics card is needed, and nothing is downloaded, so there is no licence
-condition on anything this solution uses.
+- **PyTorch**, on the integrated graphics. Nothing is downloaded, so there is
+  no licence condition.
+- **A training set.** The first way needs examiner renders with id images,
+  which cost only render time. The second way needs picture pairs with the
+  camera's movement logged, which cost arm time.
+- **A training run** before it can answer anything. The network and pictures
+  are small, so the run is short and can be repeated whenever the cell changes.
+  The [code README](../../../02-segment-glasses/02-train-from-scratch/README.md#what-it-costs)
+  gives the time.
+- **A file of weights that matches the cell.** This cost is easy to forget. The
+  code says what the cell is. The weights say what the cell looked like when
+  they were trained. Change the lighting, the camera or a kind's range, and the
+  weights are out of date. No code test will notice.
 
-**A training set.** For the first way, arrangements rendered by the examiner with their
-id images, which costs render time and nothing else. For the second way, pairs of
-pictures with the camera's movement logged beside each one, which costs arm
-time.
-
-**A training run**, before the solution can answer anything at all. The network
-is small and the pictures are small, so the run is short enough on this machine
-to be repeated whenever the cell changes, which is the property that makes the
-next line bearable.
-
-**A file of weights kept in step with the cell.** This is the cost that is easy
-to forget. The code says what the cell is; the weights say what the cell looked
-like when they were fitted. Change the lighting, the camera or the range of
-proportions a kind is drawn from, and the file is quietly out of date in a way
-that no test of the code will notice.
-
-At run time what it needs is small: one pass of a small network over a small
-picture, which is nothing beside the seconds an arm movement costs.
+At run time it needs one pass of a small network, which is tiny beside an arm
+move.
 
 ## Where it is strong and where it breaks
 
-**It has no domain gap.** Everything it knows came from this cell's own
-pictures, so nothing it learned has to be transferred from a world it will
-never see. This is the reason it is the control for the comparison, and it is
-the one strength no borrowed model can claim.
+Strong:
 
-**It separates glasses that are joined in the picture.** Nothing has to find a
-boundary, so nothing can get a boundary wrong, and the separation survives
-cases where there is no gap anywhere to find.
+- **No domain gap.** It learned only from this cell, so it is the fair
+  baseline for the borrowed models.
+- **It splits glasses that touch in the picture**, because [nothing has to find
+  a boundary](#the-main-idea).
+- **It handles a partly hidden glass**, because a crescent still votes.
+- **Its doubt is measured from the votes**, not taken from the network's own
+  opinion. The built code measures the count.
 
-**It is unusually good at a partly hidden glass.** A crescent of surviving
-pixels still votes towards the right middle, and the votes do not have to be
-joined to each other or to make a recognisable shape.
+Weak:
 
-**Its doubt costs nothing.** How many votes a pile holds is a confidence per
-glass, and how far its votes sit from its own peak would be a second one. Both
-are measurements of the votes rather than the network's opinion of itself,
-which is a better kind of warning than most learned methods give; the count is
-the one the code measures.
-
-**It is blind to a glass hidden completely.** No pixels means no votes, which
-means no pile, no spread and no short count. This is a fact about the input
-rather than about the model.
-
-**It needs a training set and a training run before it answers anything.** The
-borrowed model that changes nothing can be pointed at a picture on the day it
-is downloaded. This one cannot, and that gap in setup cost is real.
-
-**Its answer cannot explain itself.** When a fitted circle is wrong you can
-print one number and see why. When a network is wrong you can look at the
-picture and guess. The arithmetic wrapped around it is what makes that
-tolerable.
-
-**Its weights are a second copy of the cell**, and keeping them in step with
-the first copy is a maintenance job rules on the table simply does not
-have.
+- **It cannot see a fully hidden glass.** No pixels means no votes. That is a
+  limit of the input, not the model.
+- **It needs a training set and a training run** before it answers anything.
+  [YOLO as it downloads](03-yolo-zero-shot.md) works on day one.
+- **It cannot explain itself.** A wrong circle fit can be traced to one number.
+  A wrong network can only be guessed at. The written checks around it make
+  this bearable.
+- **Its weights are a second copy of the cell** that must be kept in step.
+  Rules on the table has no such job.
 
 ## The general ideas behind this
 
-Every part of this is standard, and most of the parts are not new. Two things
-here are unusual: fitting from a random start on rendered pictures rather than
-fine-tuning something large, and asking one network a question about classes
-and a question about instances from the same shared body.
+Each idea below is standard. Two things here are unusual: training from random
+weights on rendered pictures, and asking one network both a class question and
+an instance question.
 
 ### Semantic segmentation — a class label at every pixel
 
-Rather than a box round an object, produce a label for every pixel. The idea
-became practical with **fully convolutional networks** (Long, Shelhamer and
-Darrell, [arXiv:1411.4038](https://arxiv.org/abs/1411.4038)), which replaced a
-classifier's final layers with convolutions so that a picture of any size maps
-to a label map of the same size.
-
-It is used wherever the extent of a thing matters more than a box round it,
-such as medical imaging, aerial pictures and industrial inspection. It is
-rarely right for counting or separating individuals, because a class label has
-nowhere to record which object a pixel belongs to, and that is the limitation
-the second head here exists to remove. For more, see [image
+Label every pixel instead of drawing a box. **Fully convolutional networks**
+made this practical (Long, Shelhamer and Darrell,
+[arXiv:1411.4038](https://arxiv.org/abs/1411.4038)). They map a picture of any
+size to a label map of the same size. It is used in medical, aerial and
+inspection images. It cannot separate objects of one class, which is what the
+second head adds. See [image
 segmentation](https://en.wikipedia.org/wiki/Image_segmentation).
 
 ### The encoder–decoder with skip connections
 
-Halve the resolution repeatedly while widening the channels, then enlarge it
-back, copying each level on the way down across to the matching level on the
-way up so that detail lost going down is available coming back. That is the
-**U-Net** (Ronneberger, Fischer and Brox,
-[arXiv:1505.04597](https://arxiv.org/abs/1505.04597)), designed for biomedical
-images with very few training examples, which is exactly why it suits a small
-rendered training set.
-
-It remains the default for a small segmentation problem. It is rarely right for
-problems needing broad understanding of a scene or many classes, where a large
-pre-trained network earns its size, because a small network knows only what its
-receptive field and its training set contained.
+This is the U-Net from [the shape of the network](#the-shape-of-the-network).
+It was designed for medical images with very few training examples, which is
+why it suits a small rendered training set. It is still the default for small
+segmentation problems. A large pre-trained network does better when a problem
+needs a broad view of many classes.
 
 ### Overlap losses — scoring the shape rather than the pixel count
 
-Cross entropy averages over pixels, so on a picture that is mostly background a
-model can score well by predicting background everywhere. **Dice** and
-**intersection over union** losses score the overlap between the predicted and
-the true regions instead, and they are usually added to cross entropy rather
-than used in place of it (Milletari and colleagues,
-[arXiv:1606.04797](https://arxiv.org/abs/1606.04797)).
-
-They are used wherever one class is far rarer than the other, which covers most
-medical and industrial segmentation. They are rarely enough on their own,
-because an overlap score says nothing about how confident the individual pixels
-were, which is information a feedback loop can use.
+The Dice loss is explained in [the first
+head](#the-first-head-which-pixels-are-glass). **Intersection over union** is a
+close cousin. Both are used where one class is rare, as in most medical and
+industrial work. They are usually added to cross entropy, not used alone,
+because an overlap score says nothing about how sure each pixel was.
 
 ### The Hough transform — local evidence for a global claim
 
-A single edge pixel cannot say where a shape is, but it can vote for every
-shape that would explain it; add up the votes and the peaks are the shapes
-really present. Hough's 1962 patent did this for straight lines, and the
-**generalised Hough transform** (Ballard, 1981) extended it to any shape by
-replacing the equation with a table of offsets.
-
-It is used for finding shapes in noisy, cluttered pictures where much of the
-outline is missing. Voting is naturally robust to things being hidden, because
-the visible part still votes correctly. It is rarely right for shapes with many
-parameters, because the table of votes grows explosively with them. For more,
-see the [Hough transform](https://en.wikipedia.org/wiki/Hough_transform).
+One edge pixel cannot say where a shape is. But it can vote for every shape
+that would explain it. Sum the votes, and the peaks are the real shapes.
+Hough's 1962 patent did this for straight lines. The **generalised Hough
+transform** (Ballard, 1981) extended it to any shape with a table of offsets.
+Voting copes well with hidden parts, because the visible part still votes
+right. It does badly for shapes with many parameters, because the vote table
+grows too fast. See the [Hough
+transform](https://en.wikipedia.org/wiki/Hough_transform).
 
 ### Learned voting — replacing the table of offsets with a model
 
-**Hough forests** (Gall and Lempitsky, 2009) first replaced the hand-built
-table of offsets with a learned one. The neural descendants apply the same
-structure to pixels and points: **VoteNet**
-([arXiv:1904.09664](https://arxiv.org/abs/1904.09664)) has points from a depth
-sensor vote for object middles, and **PVNet**
-([arXiv:1812.11788](https://arxiv.org/abs/1812.11788)) has pixels vote for
-landmark points, specifically because voting survives things being hidden.
-
-These are used for finding objects in cluttered scenes and bin picking, where a
-method needing the whole object visible fails and a method needing only a
-fraction does not. They are rarely right for objects with no well-defined
-middle, or where the offsets are large compared with the picture, because then
-the number the network has to predict grows and the votes scatter.
+**Hough forests** (Gall and Lempitsky, 2009) first learned the table of
+offsets. Neural versions followed. In **VoteNet**
+([arXiv:1904.09664](https://arxiv.org/abs/1904.09664)), depth points vote for
+object middles. In **PVNet** ([arXiv:1812.11788](https://arxiv.org/abs/1812.11788)),
+pixels vote for landmark points, because voting survives hidden parts. These
+suit cluttered scenes and bin picking. They suit objects with no clear middle
+badly, and also large offsets, because the votes then scatter.
 
 ### Mean shift — finding peaks without being told how many
 
-Slide a window to the average of the points inside it and repeat until it stops
-moving; every starting point that ends in the same place belongs to one peak
-(Comaniciu and Meer, 2002). Unlike methods that divide data into a fixed number
-of groups, it does not need the count in advance, which is the whole point
-here, because the number of groups is the answer.
-
-It is used for finding peaks when the count is unknown, such as tracking and
-colour segmentation. It is rarely right for data with many dimensions, where it
-is slow and the window size becomes impossible to choose, and it is poor for
-groups of very different densities, where one window size cannot serve both.
-For more, see [mean shift](https://en.wikipedia.org/wiki/Mean_shift).
+Explained in [from votes to glasses](#from-votes-to-glasses). It is used in
+tracking and colour segmentation. It is slow with many dimensions, and one
+window size cannot suit groups of very different density. See [mean
+shift](https://en.wikipedia.org/wiki/Mean_shift).
 
 ### Self-supervised learning — labels from the structure of the data
 
-Rather than annotate anything, construct a task whose answer is already implied
-by the data, so that the supervision is free and unlimited. The second way is this
-idea with the arm's own encoders as the generator of labels.
-
-It is used where unlabelled data is abundant and labels are expensive, and in
-robotics, where a robot's sense of its own position is a label generator that
-never tires. It is rarely right where the invented task can be solved by a
-shortcut that does not need the understanding you wanted, and designing a task
-with no shortcut is the hard part of the field. For more, see [self-supervised
+Instead of labelling by hand, build a task whose answer is already in the data.
+The labels are then free and unlimited. The second way does this, with the
+arm's encoders as the source of labels. It suits robotics well, because a robot
+always knows its own position. The hard part is a task with no shortcut, one
+the network cannot solve without the understanding you wanted. See
+[self-supervised
 learning](https://en.wikipedia.org/wiki/Self-supervised_learning).
 
 ### Geometry as supervision, and depth without depth labels
 
-If a camera's movement between two pictures is known, then a point's position
-in the first picture determines where it must appear in the second, given its
-depth. That is the **epipolar constraint**, and it turns a depth guess into a
-checkable prediction. **SfMLearner** (Zhou and colleagues,
-[arXiv:1704.07813](https://arxiv.org/abs/1704.07813)) built a training recipe
-on it with no depth labels at all, and **Monodepth2** (Godard and colleagues,
+If the camera's movement between two pictures is known, a point's place in the
+first picture and its depth fix its place in the second. This is the
+**epipolar constraint**. It turns a depth guess into a prediction that can be
+checked. **SfMLearner** (Zhou and others,
+[arXiv:1704.07813](https://arxiv.org/abs/1704.07813)) trained depth this way
+with no depth labels. **Monodepth2** (Godard and others,
 [arXiv:1806.01260](https://arxiv.org/abs/1806.01260)) fixed most of its
-practical failures.
-
-Those methods have to **estimate** the camera's movement, and that estimate is
-where a large part of their error lives. In this cell the movement is not
-estimated but commanded, so the hardest half of that literature's problem does
-not exist here. The approach is rarely right for surfaces without texture or
-for scenes where the objects move between the two pictures, which breaks the
-still-scene assumption entirely. For more, see [structure from
+practical faults. Those methods must *estimate* the camera's movement, and
+much of their error comes from that. Here the movement is commanded, so that
+error is gone. The approach fails on plain surfaces and on scenes that move
+between pictures. See [structure from
 motion](https://en.wikipedia.org/wiki/Structure_from_motion).
 
 ### Grouping by shared motion — common fate
 
-Points on one rigid surface move together in the picture and points on a
-different surface at a different distance do not. The Gestalt psychologists
-called that **common fate**: a flock of birds is one flock because the birds
-turn together. It is one of the very few grouping cues that needs no model of
-appearance at all, which is why it works on two identical glasses.
-
-It is used for video segmentation and tracking, and anywhere objects are hard
-to tell apart by how they look. It is rarely right where nothing moves relative
-to anything else, which is exactly why the second way is weak from the top: two rims
-at nearly the same distance have almost no relative movement to group by.
+Points on one rigid surface move together; points at another distance do not.
+Gestalt psychology calls this **common fate**: birds that turn together are one
+flock. It needs no model of looks, so it works on two identical glasses. It
+fails where nothing moves relative to anything else. That is why the second
+way is weak from the top.
 
 ### Contrastive training — turning "these belong together" into a loss
 
-Pull together the outputs for things that belong together and push apart the
-outputs for things that do not. **SimCLR** (Chen and colleagues,
+Explained in [what contrastive training does](#what-contrastive-training-does).
+The standard references are **SimCLR** (Chen and others,
 [arXiv:2002.05709](https://arxiv.org/abs/2002.05709)) and **MoCo** (He and
-colleagues, [arXiv:1911.05722](https://arxiv.org/abs/1911.05722)) are the
-standard references, and the related idea of giving each pixel an identity code
-and grouping the codes is **associative embedding** (Newell and colleagues,
-[arXiv:1611.05424](https://arxiv.org/abs/1611.05424)).
-
-It is used wherever pairs that belong together are easy to construct but
-categories are not, which is most of self-supervised vision. It is rarely
-enough on its own when the count of groups matters, because an embedding says
-which things belong together and never how many groups there are, and that is
-exactly the gap the checks after the network fill here.
+others, [arXiv:1911.05722](https://arxiv.org/abs/1911.05722)). Giving each
+pixel an identity code and grouping the codes is **associative embedding**
+(Newell and others, [arXiv:1611.05424](https://arxiv.org/abs/1611.05424)). On
+its own it cannot count groups. The checks after the network fill that gap.
 
 ### Training from scratch against fine-tuning a large model
 
-The last idea is the choice this whole document turns on. Fine-tuning wins
-whenever labels are scarce, which is almost always. Training from scratch wins
-in the narrow case where labels are free, the problem is small, and the borrowed
-weights would bring knowledge of a world you do not have. This cell is that
-narrow case, and it is worth noticing how rare that is rather than generalising
-from it.
+Fine-tuning wins when labels are scarce, which is almost always. Training from
+scratch wins only when labels are free, the problem is small, and borrowed
+weights would bring knowledge of a different world. This cell is that rare
+case. Do not generalise from it.
 
 ## Where it sits among the other five
 
-This solution is the one with nothing borrowed in it, so its place in the
-comparison is fixed by that and not by its score.
+This solution's place in the comparison comes from borrowing nothing, not from
+its score.
 
-Against [rules on the table](01-rules-on-the-table.md), the comparison is
-whether a fitted grouping rule beats a written one. The written rule is a page
-of arithmetic that explains its own failures and needs no training set, and on
-any day the depth readings work it is the easier tool. This solution earns its
-place where no single written rule can be made to work, which is where two
-glasses leave no gap anywhere to find.
+Against [rules on the table](01-rules-on-the-table.md), the question is whether
+a learned grouping rule beats a written one. The written rule explains its own
+failures and needs no training. When depth readings work, it is the easier
+tool. This solution earns its place where two glasses leave no gap to find.
 
-Against the four that borrow weights, the comparison is the one this solution
-exists for. [YOLO as it downloads](03-yolo-zero-shot.md) borrows everything and
-fits nothing. [YOLO fine-tuned](04-yolo-fine-tuned.md) and [RF-DETR
-fine-tuned](06-rf-detr-fine-tuned.md) borrow a starting point and then fit on
-this cell's pictures as this solution does. [SAM 2 with a
-keeper](05-sam2-with-a-keeper.md) borrows a large model and fits only a small
-decider on top of it. Every one of those four carries a domain gap of unknown
-size, and this solution carries none, so **the distance between this line and
-those four is the measurement of what borrowing was worth**. If the borrowed
-models do no better than a network fitted here from random numbers, then their
-size and their licences bought nothing in this cell.
+Against the four borrowed models, this solution is the baseline. [YOLO as it
+downloads](03-yolo-zero-shot.md) borrows everything and trains nothing. [YOLO
+fine-tuned](04-yolo-fine-tuned.md) and [RF-DETR
+fine-tuned](06-rf-detr-fine-tuned.md) borrow a start and then train on this
+cell. [SAM 2 with a keeper](05-sam2-with-a-keeper.md) borrows a large model and
+trains only a small decider. **If they do no better than this network, their
+size and licences bought nothing here.**
 
-One pairing is sharper than the rest and is worth knowing while reading this
-one. [YOLO as it downloads](03-yolo-zero-shot.md) and [YOLO
-fine-tuned](04-yolo-fine-tuned.md) are the same model from the same library
-with the same starting weights, and the only difference between them is whether
-it was trained on this cell's pictures. The gap between those two measures what
-training bought. The gap between this solution and the pair of them measures
-what the starting weights bought.
-
-And what this solution cannot do, on any day, is notice a glass that is absent
-from the picture. That failure is answered by geometry rather than by
-appearance, in [looking again at what was hidden](../hidden-glasses.md), which
-all six share. This solution contributes the masks that argument starts from,
-and none of the argument.
+One pair is especially clear. The two YOLO solutions share the same model and
+starting weights. The only difference is training on this cell's pictures. So
+the gap between those two measures what training bought. The gap between this
+solution and the pair measures what the starting weights bought. The full
+table is in [the results](../../../02-segment-glasses/results/README.md#the-results).
 
 ← [Rules on the table](01-rules-on-the-table.md) · [YOLO as it
 downloads](03-yolo-zero-shot.md) →

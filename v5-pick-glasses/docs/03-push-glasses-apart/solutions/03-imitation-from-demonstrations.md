@@ -1,192 +1,103 @@
 # Solution 3 — imitation from demonstrations
 
-> **What it uses** — [LeRobot](https://github.com/huggingface/lerobot), which
-> holds reference implementations of this whole family of policies, with
-> PyTorch underneath. No rented accelerator: this one fitted on the machine
-> the project is written on, an Apple M4 with no NVIDIA card. The model
-> is **ACT**, an action chunking transformer: it predicts a short run of future
-> actions in one go rather than one action at a time. A second way uses
-> **Diffusion Policy**, also in LeRobot, which reaches the same kind of answer
-> by starting from noise and denoising towards an action chunk. Nothing is
-> downloaded except the library: both models are fitted here, from random
-> numbers, on demonstrations produced inside this project.
-> **What it does** — the arm is shown what a good push looks like, many times
-> over, and a network is trained to copy it. The demonstrations come from
-> [solution 2](02-geometry-ranked.md), which generates legal candidate pushes
-> and ranks them, so they cost nothing but arm time on the examiner's tables. The trained
-> policy then maps what the camera sees straight to a short run of jaw
-> waypoints, with no geometry, no friction model and no candidate list
-> anywhere inside it. Nobody writes down how to push a glass; the examples
-> carry that, and the fitting extracts it.
-> **How the output is produced** — a view of the table from the top goes in.
-> The policy returns an **action chunk**: a short run of consecutive jaw
-> waypoints, predicted together in one pass. The examiner carries those waypoints
-> out directly, because there is nothing to expand — a chunk is already a jaw
-> trajectory. The arm then looks again, and the fresh picture is the next
-> input. One push is one chunk, and the loop runs until every glass has room,
-> or the glasses that are left have been refused, or the push budget is spent.
-> **How it differs from the other five** — [solution
-> 1](01-one-fixed-nudge.md) fits nothing and pushes a fixed fraction of the
-> room a glass is short of, which is the floor this has to clear. [Solution
-> 2](02-geometry-ranked.md) writes the geometry by hand and fits only a ranker
-> over the candidates that geometry produces, and it is this solution's
-> teacher, which makes the pair a reading of how close a student gets to the
-> program it copied. [Solution 4](04-a-world-model.md) learns how the world
-> changes and searches over actions at run time, so it can find a push nobody
-> ever demonstrated, and pays for the search on every push. [Solution
-> 5](05-smolvla-as-it-downloads.md) runs a large borrowed policy exactly as it
-> downloads, with no fitting here at all. [Solution
-> 6](06-smolvla-fine-tuned.md) continues that borrowed policy's training on
-> this cell's own data, which is this solution's method applied to somebody
-> else's weights instead of to random ones.
-> **What it costs** — the demonstrations are free in money and cheap in time,
-> because the teacher is a program and the tables are simulated, so the whole
-> dataset is arm time on the examiner's tables rather than human hours at a teleoperation
-> rig. Training runs in hours — on this machine's own graphics processor, as
-> it turned out, so the rental this document first budgeted for was not
-> needed. The licence position is as simple as it gets here:
-> LeRobot is Apache-2.0, which is the permissive kind of licence [the
-> implementation notes](../../../implementation-notes.md) record for
-> everything else this project depends on, and because no borrowed weights
-> are used, the weights file this solution produces inherits no terms from
-> anybody. The real price is paid elsewhere, in two parts named plainly below:
-> the policy cannot be much better than its teacher, and it asks two things of
-> the examiner that a push-parameter solution never needs: the table seen from
-> straight above, and a path given as waypoints rather than as a push.
+> **What it uses** — [LeRobot](https://github.com/huggingface/lerobot), with
+> PyTorch underneath. The model is **ACT**, an action chunking transformer. It
+> predicts a short run of future actions in one go. A second way uses
+> **Diffusion Policy**, also from LeRobot. Both models are fitted here from
+> random numbers. Nothing is downloaded except the library. Everything ran on
+> an Apple M4 with no NVIDIA card.
+> **What it does** — the arm is shown many good pushes, and a network learns to
+> copy them. The good pushes come from [solution 2](02-geometry-ranked.md), so
+> they cost only arm time on the examiner's tables. The policy has no geometry,
+> no friction model and no candidate list inside it.
+> **How the output is produced** — a view of the table from straight above goes
+> in. An **action chunk** comes out: a short run of jaw waypoints, predicted
+> together in one pass. The examiner carries the waypoints out as given. Then
+> the arm looks again. One push is one chunk. The loop runs until every glass
+> has room, the rest are refused, or the push budget is spent.
+> **How it differs from the other five** — it copies solution 2, so the pair
+> shows how close a student gets to its teacher. [Where it sits among the
+> other five](#where-it-sits-among-the-other-five) compares it with each one.
+> **What it costs** — the demonstrations are free, training takes hours on a
+> laptop, and no borrowed weights are used. The real price has three parts. The
+> policy is capped by its teacher. Filtering the demonstrations biases them.
+> And the examiner had to gain a top view and a waypoint path. [What it
+> needs](#what-it-needs) has the details.
 
-> **The cell is described once, in [the cell](../../the-cell.md)** — the
-> layout, the two places the camera works from, from the top and from the
-> side, all four sensors, and the words this project uses them with. What
-> follows is only what is specific to this solution.
+> **The cell is described once, in [the cell](../../the-cell.md)**: the layout,
+> the two camera places, the four sensors, and the words this project uses.
+> What follows is only what belongs to this solution.
 
 ## Introduction
 
-This document explains how to answer problem 3 by showing the arm examples of
-good pushes and training a model to copy them. The method has a name,
-**behaviour cloning**, and it is the plainest kind of learning there is: no
-reward, no exploration, no physics, only a large table of situations and the
-action somebody took in each one. The model that does the copying is ACT, an
-action chunking transformer, taken from LeRobot, and a second way replaces it
-with Diffusion Policy, which arrives at the same kind of answer by a different
-route.
+This document answers problem 3 by showing the arm good pushes and training a
+model to copy them. The method is called **behaviour cloning**. It uses no
+reward, no exploration and no physics. It uses only a table of situations and
+the action taken in each one.
 
-**This is built, and it is worth being exact about which parts.** [The test
-examiner](../the-examiner.md) is built, the programmed geometry that picks a landing
-spot for one glass at a time is built, and so is the ranker that turns that
-geometry into [solution 2](02-geometry-ranked.md), which is this solution's
-teacher. The two things the examiner was missing are built as well: the
-straight-down rendered view this policy reads, as `bench/top_view.py`, and the
-path that carries out a chunk of waypoints, as `Bench.follow`. ACT has been
-fitted here, from random numbers, on demonstrations recorded off solution 2's
-own pushes, and run over the held-out tables. The code is in
-`03-push-glasses-apart/03-imitation-from-demonstrations/` and the numbers it
-scored are in that folder's `README.md`, not here: this document is the
-design, and a measurement quoted in two places drifts.
+**This is built.** [The examiner](../the-examiner.md) is built, and so is
+[solution 2](02-geometry-ranked.md), which is the teacher. The examiner's
+straight-down view is built as `bench/top_view.py`. The path that carries out a
+chunk of waypoints is built as `Bench.follow`. ACT has been fitted here from
+random numbers, on demonstrations recorded from solution 2's pushes. It has
+been run over the held-out tables. The code is in
+`03-push-glasses-apart/03-imitation-from-demonstrations/`. Its full scores are
+in that folder's `README.md`.
 
-Three things below are still prescriptions rather than code, and each says so
-where it appears: the DAgger round, the force monitor that would watch a chunk
-while it runs, and deliberately over-representing the crowded corner cases in
-the demonstration set.
+Three things are still designs, not code. They are the DAgger round, a force
+monitor that watches a chunk while it runs, and extra weight for crowded corner
+cases in the demonstrations. Each says so where it appears.
 
-The reason this solution is worth writing out in full is that it is the
-cheapest way of asking a question the other five cannot ask. Solution 2 is a
-program that chooses pushes well. If a network trained only to copy that
-program comes close to it, then the mapping from a picture of a crowded table
-to a good push is learnable, and the remaining error belongs to the teacher
-rather than to the idea. If the student falls a long way short, that is
-evidence about the policy class itself, and it is evidence gathered before any
-of the expensive solutions is attempted.
+This solution matters because it asks a question the others cannot. Solution 2
+is a program that chooses pushes well. If a network that copies it comes close,
+then a good push can be learned from a picture. Any remaining error then
+belongs to the teacher. If the network falls far short, that is evidence about
+this kind of policy. We learn it before trying the expensive solutions.
 
-By the end of this document you will understand what behaviour cloning is, why
-it is unusually attractive in this cell and where it is fragile; where the
-demonstrations come from and why they cost almost nothing; what an action chunk
-is and why committing to a short run of actions beats re-deciding at every
-instant; what a denoising policy adds when more than one push would have been
-good; what compounding error is, why it is the characteristic failure of
-copying, and what in this problem's own loop blunts it; and the three honest
-costs this solution carries, none of which can be engineered away.
+This document covers behaviour cloning, where the demonstrations come from,
+action chunks, what a denoising policy adds, compounding error, and the costs
+this solution carries.
 
 ## A film of one table
 
-Before the explanation, here is this solution working on one table,
-recorded from the simulator and running at one and a half times real speed.
+Here is this solution on one table, filmed in the simulator at one and a half
+times real speed.
 
 [Watch the film (23 s)](../../../videos/03-push-glasses-apart/03-imitation-from-demonstrations.mp4)
 
-The table is number 10025 of the held-out fifty, and it was chosen to be
-**typical rather than flattering**. The rule for choosing it was written down
-before it was applied: the table had to be one where every one of the six
-solutions reaches its own commonest outcome and racks at least one glass.
-Exactly one table of the fifty satisfies both, which is this one. It holds six
-glasses where the average is five, so it is one glass above average, and that
-is the one way in which it is not typical.
+It is table 10025 of the held-out fifty. Every solution is filmed on this
+table. [Solution 1's film section](01-one-fixed-nudge.md#a-film-of-one-table)
+explains how the table was chosen, and what the drawn hand and drawn pick show.
+Five of its six glasses start with no room. Over all fifty tables, 203 of the
+251 glasses start that way.
 
-Five of its six glasses have no room at the start, which is the usual state of
-these tables: over the fifty, 203 of the 251 glasses begin without room.
+In the film the policy makes fourteen pushes and racks one glass. That glass
+already had room. Most pushes end while the jaw is still coming down. The chunk
+puts the jaw over a neighbour instead of behind the target. So the arm touches
+something, lifts, and asks for another chunk from the same picture.
 
-In the film the policy spends fourteen pushes and racks one glass, and the
-glass it racks is the one that already had room. Most of those pushes end while
-the jaw is still coming down, because the chunk puts the jaw over a neighbour
-rather than behind the target, so the arm touches something, goes back up and
-asks for another chunk from the same unchanged picture.
-
-This solution draws its answer rather than computing it, and three seeds of it
-were fitted, so the film is one draw from one seed rather than an average. It is
-seed 0. On this table the three seeds racked 1, 1 and 3 glasses in 14, 14 and 11
-pushes, so the film shows the commoner of the two behaviours;
-`results-tables.json` holds all three rows.
-
-Two things in the film are not what a first viewing suggests. The first is
-that **the hand never opens while it is pushing**. This problem holds the
-gripper shut and uses the whole hand as a pusher, which is what the parallel
-locking kit on a Robotiq 2F-85 is for, so nothing is gripped and nothing is
-lifted during a push. The second is that **the pick at the end of a take is
-drawn rather than simulated**. The bench racks a glass by moving it off the
-table in one instant, so instead of showing a glass vanish the film draws a
-stand-in for a pick: the wrist rolls back level, the fingers open to the width
-the glass was measured to be, the hand reaches in so that the pads pass either
-side of it, the fingers close and the glass is carried off. The label on screen
-says so while it happens, and says that problem 1 does the real pick.
-
-A drawn hand cannot collide with anything, so which side it comes in from is
-checked before it is drawn. The hand is 266 mm long from its fingertips to the
-back of its force sensor, so having room around a glass is not the same as
-having a way in to it: every side is tried, and if none is clear the hand is
-drawn stopping where it would have touched, with a line saying so. Across the
-six films that happens once, in the world model's, because it is the only
-solution that racks enough glasses for the question to come up twice. It is
-rare here for a reason worth noticing: these glasses have just been pushed
-apart, which is what makes a way in exist.
-
-The hand itself is drawn twice, and both drawings are worth looking at. Its
-real pieces are solid, and around them, as a faint shell, is the larger shape
-the bench collides with. That shell fills in the gap between the two fingers,
-because a glass standing in the gap would be swept along just the same, so it
-is the shape every solution has to plan around even though no metal is there.
-
-All six solutions are filmed on this same table, so the six films can be
-watched against each other. How each one does over all fifty tables is in
-[the comparison](../../../03-push-glasses-apart/results/README.md).
+Three seeds of the policy were fitted, and the film shows seed 0. On this
+table the three seeds racked 1, 1 and 3 glasses in 14, 14 and 11 pushes.
+`results-tables.json` holds all three rows. How each solution does over all
+fifty tables is in [the comparison](../../../03-push-glasses-apart/results/README.md).
 
 ## The code at the heart of it
 
-This solution lives or dies on one join. A demonstration is the path the jaw
-really followed, written down waypoint by waypoint by the examiner; a policy's
-answer is an **action chunk**, a block of numbers of fixed shape. The code that
-turns the first into something the model can be fitted on, and turns the model's
-answer back into waypoints the examiner will carry out, is this solution's own
-contribution, and beside it sits the single call that reaches into the borrowed
-library.
+This solution depends on one join. A demonstration is the path the jaw really
+followed, recorded waypoint by waypoint by the examiner. The policy's answer is
+an **action chunk**, a block of numbers of fixed shape. This solution's own code
+turns the first into the second for fitting. It also turns the answer back into
+waypoints for the examiner.
 
 The conversion is in
-[`03-push-glasses-apart/03-imitation-from-demonstrations/chunks.py`](../../../03-push-glasses-apart/03-imitation-from-demonstrations/chunks.py),
-which holds no model and no geometry of pushing. `push_segment` keeps the part
-of a recorded path at push height, from where the jaw started travelling across
-the table to the furthest point it reached, and drops the descent, the back-off
-and the lift, because the examiner does all three itself. `to_action` then writes
-what is left as the five columns the policy is fitted on. The way back is the
-same file's `to_waypoints`, which turns the cosine-and-sine pair into an angle
-again and pulls every waypoint inside what the jaw can reach:
+[`03-push-glasses-apart/03-imitation-from-demonstrations/chunks.py`](../../../03-push-glasses-apart/03-imitation-from-demonstrations/chunks.py).
+It holds no model and no geometry of pushing. `push_segment` keeps the part of a
+recorded path at push height. That part starts where the jaw began to travel
+across the table, and ends at the furthest point it reached. The descent, the
+back-off and the lift are dropped, because the examiner does those itself.
+`to_action` writes what is left as the five columns the policy is fitted on.
+The way back is `to_waypoints` in the same file. It turns the cosine and sine
+pair back into an angle, and pulls every waypoint inside the jaw's reach.
 
 ```python
 def push_segment(waypoints: tuple[Waypoint, ...]) -> tuple[Waypoint, ...]:
@@ -210,8 +121,8 @@ def to_action(waypoints: tuple[Waypoint, ...]) -> np.ndarray:
 ```
 
 The borrowed model is reached in one place, in
-[`03-push-glasses-apart/03-imitation-from-demonstrations/policy.py`](../../../03-push-glasses-apart/03-imitation-from-demonstrations/policy.py):
-one call that builds LeRobot's ACT, and one that asks it for a chunk.
+[`03-push-glasses-apart/03-imitation-from-demonstrations/policy.py`](../../../03-push-glasses-apart/03-imitation-from-demonstrations/policy.py).
+One call builds LeRobot's ACT, and one asks it for a chunk.
 
 ```python
     if kind == "act":
@@ -238,939 +149,696 @@ one call that builds LeRobot's ACT, and one that asks it for a chunk.
         return self.scale.back(answer[0].float().cpu().numpy())
 ```
 
-Three of those settings are the whole of what this folder insists on against
-LeRobot's own defaults: `pretrained_backbone_weights=None`, which switches off
-the ImageNet weights ACT would otherwise download for its vision backbone and
-is what makes "fitted from random numbers" true; `normalization_mapping`, which
-hands the scaling back to this folder's own code so that the numbers reaching
-the model are only ones written here; and `n_action_steps` set to the chunk's
-full length, because one push is one chunk and nothing re-plans part way
-through. The rest of the model is LeRobot's, untouched.
+Three settings differ from LeRobot's defaults. The rest of the model is
+LeRobot's, untouched.
 
-Reading the two blocks together says where the measured shortfall has to sit,
-and it does sit there. The first two columns of the chunk come out roughly
-right — the policy puts the fingertips down in about the neighbourhood the
-teacher used — while the heading carried in the last two comes out about thirty
-degrees away from the teacher's, which is enough that on a crowded table the
-jaw meets a neighbour while it is still coming down, and the push ends before
-any glass is touched.
+- `pretrained_backbone_weights=None` switches off the ImageNet weights ACT
+  would download for its vision backbone. This makes "fitted from random
+  numbers" true.
+- `normalization_mapping` hands the scaling to this folder's own code. So every
+  number the model sees is written here.
+- `n_action_steps` is the chunk's full length. One push is one chunk, and
+  nothing re-plans halfway.
+
+The two blocks also show where the measured shortfall sits. The first two
+columns come out roughly right. The fingertips go down near where the teacher
+put them. The heading, in the last two columns, is 22 to 27 degrees away from
+the teacher's. On a crowded table, that is enough for the jaw to meet a
+neighbour on the way down. The push then ends before any glass is touched.
 
 ## The problem this solves
 
-[The problem](../problem.md) asks for a jaw trajectory, and then another, until
-every glass has about 76 mm of clear room in every direction or the glasses
-that are left have been refused with a reason. So the thing to be produced is a
-function: from the arrangement of a crowded table, to a motion of the jaw.
+[The problem](../problem.md) asks for jaw motions until every glass has about
+76 mm of clear room, or the rest are refused with a reason. So the answer is a
+function from a crowded table to a jaw motion. That function is hard to write.
+The main reason is that nothing in this cell measures friction, as [pushing
+without toppling](../pushing-without-toppling.md#the-number-nobody-has)
+explains.
 
-That function is hard to write down, and [pushing without
-toppling](../pushing-without-toppling.md) says exactly why. The relation
-between a push and the slide it produces runs through the friction coefficient
-between the glass and the table, **nothing in this cell measures friction**,
-and the examiner never tells any solution what it is. On top of that, the contact
-between a flat jaw and a curved glass is a small patch rather than a point, and
-a pushed glass turns as well as travels. Planar pushing is a well studied
-problem and the honest summary is that predicting an outcome precisely needs
-numbers nobody here has.
+Solution 2 copes by listing legal pushes and ranking them. But a person had to
+write that list and choose the ranker's inputs. Each choice brings in a
+person's model of pushing, and that model is incomplete.
 
-Solution 2 answers that difficulty by not predicting much. It enumerates pushes
-that are legal by construction, scores each one, and takes the best. That works,
-and it has a price that is easy to overlook: somebody has to write the
-enumeration, choose which features the ranker sees, and keep both in step with
-the cell. Every one of those choices is a place where a person's model of
-pushing enters the method, and a person's model of pushing is the thing that is
-known to be incomplete.
+**This solution comes at the same difficulty from the other end.** Nobody can
+write the function down. But [the
+examiner](../the-examiner.md#the-score-is-the-outcome-not-the-action) can tell
+afterwards whether a push was good. So good pushes can be collected, and a
+network can be fitted to them.
 
-**This solution attacks the same difficulty from the other end.** Nobody can
-write the function from a crowded table to a good push. But an examiner can tell
-afterwards whether a push was good, because [the examiner](../the-examiner.md)
-marks the outcome and not the action. So good pushes can be collected even
-though they cannot be derived, and a network can be fitted to the collection.
-The function is not written; it is measured into existence.
-
-Two further things follow from doing it this way, and they are what make this
-solution different in kind from its teacher rather than merely cheaper.
+Two more things make it different in kind from its teacher.
 
 **The policy learns the motion, not only the choice.** Solution 2 emits a
-parameterised push — which glass, where to put the jaw down, which way to
-point, how far to feel, how far to push — and [the test
-examiner](../the-examiner.md) owns the macro that expands those numbers into a
-descent, a feel, a slide, a back-off and a lift. Every parameterised push is
-expanded the same way. A policy that emits waypoints is not limited to motions
-that macro can express. It can slow where a neighbour is close, lean the slide
-away from a glass it is passing, or stop short of the distance it set out to
-cover. Whether any of that helps is exactly the sort of thing this folder
-exists to measure, but the freedom is real and only the trajectory solutions
-have it.
+parameterised push, and the examiner's macro expands every one the same way. A
+policy that emits waypoints is not limited to that macro. It can slow near a
+neighbour, lean the slide away from a glass, or stop short. Whether that helps
+is for measurement to decide.
 
-**The policy reads the picture.** Solution 2 works from the numeric readings
-`look()` returns. A policy of this family takes an image, and the examiner hands
-one over for that reason. An image holds things the readings do not: the shape
-of the gap between two glasses, how a third glass sits behind them, where the
-edge of the glass zone is relative to all of it. None of that is in a list of
-positions and widths, and none of it has to be named in advance for a network
-to use it.
+**The policy reads the picture.** Solution 2 works from the numbers `look()`
+returns. This policy takes an image. An image shows the shape of the gap
+between two glasses, what stands behind them, and where the zone edge is. None
+of that has to be named in advance for a network to use it.
 
 ## The main idea
 
-The idea is one sentence long: **run solution 2 over the training tables, keep
-the pushes that worked, and fit a network that maps the picture of the table to
-the next short run of jaw waypoints.**
+The idea fits in three steps. **Run solution 2 over the training tables. Keep
+the pushes that worked. Fit a network that maps a picture of the table to the
+next short run of jaw waypoints.**
 
-Three things follow from that sentence, and the rest of this document is those
-three things.
+Three points follow, and the rest of this document covers them.
 
-**The teacher is a program.** The demonstrations are not recorded from a person
-driving the arm. They are produced by another one of the six, which generates
-candidate pushes and ranks them, running on the same examiner, on tables drawn
-from numbers below the dividing line that separates training from testing. That
-single fact changes almost everything about the economics of this method, and
-the next section is about it.
-
-**The answer is a chunk, not an action.** The policy does not return one target
-and wait to be asked again. It returns a short run of consecutive waypoints,
-predicted together. This is not a convenience. It is the mechanism that keeps
-the motion committed, and the section on action chunking explains why a push in
-particular needs that.
-
-**The loop is unchanged.** [Pushing without
-toppling](../pushing-without-toppling.md) describes the loop every solution
-here runs: plan, feel, look again. This solution replaces the planning step and
-nothing else. The arm still feels its way to contact rather than driving to a
-computed point, still looks again afterwards, and still refuses a glass it
-cannot push safely. That the loop stays is what makes copying survivable at
-all, for a reason the section on compounding error gives.
+- **The teacher is a program**, not a person. [Where the demonstrations come
+  from](#where-the-demonstrations-come-from) explains why that matters.
+- **The answer is a chunk, not one action.** [Action chunking, and why it
+  matters](#action-chunking-and-why-it-matters) explains why a push needs that.
+- **The loop does not change.** Every solution here plans, feels, and looks
+  again, as [the loop](../pushing-without-toppling.md#the-loop-plan-feel-look-again)
+  describes. This solution replaces only the planning step. [Compounding
+  error](#compounding-error) explains why the loop keeps copying safe.
 
 ## Behaviour cloning — learning a policy by copying
 
-Because behaviour cloning is the whole of this solution, it is worth setting
-out carefully and in plain words before anything is built on it.
+Behaviour cloning is the whole of this solution, so it is set out here in plain
+words.
 
-A **policy** is a function from what the arm can see to what the arm should do.
-**Behaviour cloning** is fitting that function from examples of somebody else
-doing the job. Each example is a pair: what was seen at some moment, and what
-the demonstrator did at that moment. The first half of the pair is the input,
-the second half is the label, and fitting proceeds exactly as it would for any
-other supervised problem — show an example, compare what the network produced
-against what the demonstrator did, and nudge every weight a little in the
-direction that would have closed the gap.
+A **policy** is a function from what the arm sees to what the arm should do.
+**Behaviour cloning** fits that function from examples of someone else doing
+the job. Each example is a pair: what was seen, and what the demonstrator did.
+The first is the input, and the second is the label. Fitting works like any
+supervised learning. The network makes a guess, and the guess is compared with
+the label. Then every weight moves a little to close the gap.
 
-The programming comparison is a close one. Behaviour cloning is fitting a
-lookup table that was given to you, and then being asked to answer queries that
-are not in it. The table holds situations and the right answer for each. The
-network is a compressed, smooth stand-in for the table, and the whole hope of
-the method is that smoothness between the entries is a good guess at what
-belongs there.
+In programming terms, it is like being given a lookup table, then being asked
+about entries that are not in it. The network is a smooth stand-in for the
+table. The hope is that a smooth guess between entries is a good guess.
 
-Three things make this attractive here, and all three are things the method does
-not have to do.
+Three things make the method attractive here. Each is something it does not
+need.
 
-**There is no reward to design.** Reinforcement learning needs a number that
-says how good an outcome was, and writing such a number is its own difficulty,
-because a learner optimises what the number says rather than what the number was
-meant to say. A number that rewards moving glasses apart quickly rewards
-shoving. A number that punishes toppling heavily teaches the arm to stop
-touching anything. Behaviour cloning never needs one. The label is the action,
-and the only thing being measured during training is how far the network's
-action was from the demonstrator's.
+**No reward to design.** Reinforcement learning needs a number that scores each
+outcome. A learner chases what the number says, not what it was meant to say.
+A reward for moving glasses apart fast rewards shoving. A big penalty for
+toppling teaches the arm to touch nothing. Behaviour cloning needs no such
+number. Training only measures how far the network's action was from the
+demonstrator's.
 
-**There is no exploration.** A learner that discovers by trying has to try bad
-things, and in this problem one class of bad thing cannot be undone: **nothing
-in this project stands a toppled glass back up.** A method that learns by
-knocking glasses over until it stops is learning at a cost the arrangement
-cannot absorb. Behaviour cloning never tries anything during training. It only
+**No exploration.** A learner that learns by trying must try bad things. Here
+one bad thing cannot be undone: **nothing in this project stands a toppled
+glass back up.** Behaviour cloning tries nothing during training. It only
 reads.
 
-**There is no physics to model.** Friction does not appear anywhere in this
-method. Not as a constant, not as a guess, not as a quantity to be estimated.
-The demonstrations were produced in a world with friction in it, so the
-consequences of friction are in the data, and the network learns whatever of
-them it can use without ever representing the number. Compare that with
-[solution 4](04-a-world-model.md), whose whole business is learning how the
-world changes and planning through it. This solution does not predict what a
-push will do. It only predicts what the teacher would have done.
+**No physics to model.** Friction appears nowhere in this method. The
+demonstrations happened in a world with friction, so its effects are in the
+data. The network learns what it can use from them. [Solution
+4](04-a-world-model.md), by contrast, learns how the world changes and plans
+through it. This solution predicts only what the teacher would have done.
 
-Against those three, one fragility, and it is the only one that matters because
-everything else about this method follows from it.
+Against these three there is one weakness, and everything else follows from it.
 
-**A cloned policy only knows situations the demonstrator visited.** The fitted
-function was determined by the examples, and the examples cover a region of its
-input. Inside that region, smoothness between examples is a reasonable guess.
-Outside it, the network still returns an answer — a network always returns an
-answer — and that answer is an extrapolation with nothing behind it. Worse,
-**nothing in the output says which case you are in.** The policy emits a chunk
-of waypoints either way, with the same confidence, because it has no way of
-expressing doubt. A method whose mistakes announce themselves can be guarded;
-this one's do not.
+**A cloned policy only knows situations the demonstrator visited.** Inside the
+region its examples cover, a smooth guess is fair. Outside it, the network still
+returns an answer, but nothing backs that answer. Worse, **nothing in the
+output says which case you are in.** The policy returns a chunk either way, with
+the same confidence. A method whose mistakes show can be guarded. This one's
+mistakes do not show.
 
 ## Where the demonstrations come from
 
-Behaviour cloning needs examples, and in most of robotics that is the sentence
-that kills it. Here it is almost free, and it is worth being clear about why,
-because the judgement of whether this method is worth its price depends on it.
+In most of robotics, collecting demonstrations is what makes behaviour cloning
+too costly. Here they are almost free.
 
-**The teacher is [solution 2](02-geometry-ranked.md).** That solution generates
-candidate pushes from geometry — pushes that are legal by construction, aimed
-at destinations [the target layout](../the-target-layout.md) computed — and
-ranks them with a fitted model, taking the best. Run it on a table and it
-produces a push. Run it on many tables and it produces many pushes. Each one is
-carried out by the examiner, which expands the parameterised push into the
-waypoints the jaw actually followed, and marks what happened to the table
-afterwards. So **every push solution 2 makes is a finished demonstration
-already**: a picture of the table before it, the waypoints that were followed,
-and the examiner's own verdict on whether it worked.
+**The teacher is [solution 2](02-geometry-ranked.md).** It generates legal
+pushes aimed at the destinations [the target layout](../the-target-layout.md)
+computes. It ranks them and takes the best. The examiner expands each push into
+the waypoints the jaw really followed, and marks what happened to the table. So
+**every push solution 2 makes is already a finished demonstration**: a picture
+before it, the waypoints followed, and the examiner's verdict.
 
 ![One real training table seen from the top with the push the teacher chose on it, the path the jaw really followed written down waypoint by waypoint at half a millimetre apart while feeling and a millimetre apart while pushing, and the counts for the whole set: 17,816 pushes on 5,200 tables of which 6,659 were kept, where almost everything dropped is the teacher's own 5 mm test push rather than a failure.](../../../images/03-push-glasses-apart/03-where-the-demonstrations-come-from.png)
 
-Five consequences follow, and they are the reason [the
-plan](../solutions-plan.md) says that supplying demonstrations is what earns
-solution 2 its place beyond being a baseline.
+Five things follow. They are why [the plan](../solutions-plan.md) values
+solution 2 for more than being a baseline.
 
-**The cost is arm time on a simulated examiner, and nothing else.** There is no
-teleoperation rig, no operator, no scheduling of a person's hours, and no
-agreement to be reached about what a good push looks like. The examiner is
-MuJoCo, which is fast for exactly this reason, and [the test
-examiner](../the-examiner.md) records that a learned approach needs thousands of
-pushes while Gazebo would run each one at the speed of real time.
+**The only cost is arm time on a simulated examiner.** There is no
+teleoperation rig and no operator. The examiner runs on MuJoCo, which is fast.
+[The examiner](../the-examiner.md) notes that a learned approach needs
+thousands of pushes. Gazebo would run each one at real-time speed.
 
-**The demonstrations are reproducible.** Every table comes from a single
-number, so the same number always gives the same table, and the dataset can be
-regenerated rather than archived. This is not a small thing. A demonstration
-set recorded from a person is a one-off artefact that can never be made again;
-this one is a function of a list of numbers.
+**The demonstrations can be made again.** Each table comes from a single
+number, and the same number always gives the same table. So the dataset can be
+regenerated instead of archived.
 
-**Training and testing cannot be confused.** The examiner's table numbers are
-split, with numbers above a fixed dividing line reserved for testing.
-Demonstrations are drawn only from below it, so no policy here is ever marked
-on a table it learned from.
+**Training and testing cannot mix.** [Table
+numbers](../the-examiner.md#what-the-examiner-draws) above a fixed dividing line
+are for testing only. Demonstrations come only from below it. This document
+calls that range of training tables the **demonstration band**. So no policy is
+marked on a table it learned from.
 
-**The teacher can be asked again, at any state.** A person who demonstrated a
-hundred pushes last week cannot be asked what they would have done on a table
-that came up today. A program can, every time, for nothing. This is the single
-most useful property of a programmed teacher, and the section on compounding
-error is where it is spent.
+**The teacher can be asked again, about any table.** A person who demonstrated
+last week cannot say what they would do on today's table. A program can, every
+time, for free. [Compounding error](#compounding-error) is where this pays off.
 
-**And the teacher is itself one of the six.** So the comparison between
-solution 2 and this solution is not two methods against each other but a
-student against the program it copied, measured on the same tables with the
-same scorecard. That is a rare and clean reading, and [the
-plan](../solutions-plan.md) builds it in deliberately.
+**The teacher is itself one of the solutions.** So the comparison is a student
+against the program it copied, on the same tables with the same scorecard.
+[The plan](../solutions-plan.md) builds this in on purpose.
 
-One honest qualification belongs with all of that. **This is a privilege of
-working in a simulator with a programmed teacher.** On a real arm with a human
-demonstrator, collecting demonstrations is the dominant cost of the whole
-method, and usually the thing that decides whether it is affordable. Any
-judgement made here about whether imitation is worth its price should carry
-that qualification with it.
+One caveat goes with all of this. **This is a privilege of a simulator with a
+programmed teacher.** On a real arm with a human demonstrator, collecting
+demonstrations is usually the biggest cost of the method. Any judgement here
+about the price of imitation should carry that caveat.
 
 ## Choosing which demonstrations to keep, and the bias it buys
 
-Free demonstrations are not the same as a good demonstration set, and the
-choice of which pushes to keep is the place where this solution's second honest
-cost enters.
+Free demonstrations do not make a good demonstration set. Choosing which pushes
+to keep brings in this solution's second cost.
 
-Start with why any filtering happens at all. **A cloned policy copies
-everything in its data.** It has no notion of a good action and a bad one; it
-has only a label to reproduce. If the set holds a push that toppled a glass,
-that push is a label like any other, and the fitting moves the weights towards
-producing it. Solution 2 is not perfect — no solution here is — so some of its
-pushes topple a glass, push one out of the glass zone, or jam. Keeping those
-teaches the student to make them. So the set is filtered by the examiner's own
-verdict, and only the pushes that worked are kept.
+**A cloned policy copies everything in its data.** It has no idea of a good or
+bad action, only labels. Some of solution 2's pushes topple a glass, push one
+out of the zone, or jam. Keeping them would teach the student to do the same.
+So only the pushes the examiner marked as working are kept.
 
-That is clearly right, and it has a consequence that is clearly uncomfortable.
+That is right, but it has an uncomfortable side. **Filtering by outcome also
+changes which situations are covered.** Say solution 2 handles one kind of
+table badly, such as glasses crowded in a corner. Most of its pushes there fail
+and are dropped. So the student sees few tables of that kind. It is fitted most
+densely where the teacher was already strong. **The filter removes examples
+exactly where they would help most.** [Solution 2's own
+section](02-geometry-ranked.md#it-is-the-teacher) makes the same point from the
+teacher's side.
 
-**Filtering by outcome does not only change which actions are recommended. It
-changes which situations are covered.** Suppose there is a kind of table
-solution 2 handles badly — glasses crowded in a corner of the glass zone, say,
-where the legal destinations are few and the teacher's candidates are poor.
-Most of the teacher's pushes on such tables fail, so most of them are dropped,
-so the training set holds few examples of that kind of table. The student is
-therefore fitted most densely on the situations where the teacher was already
-strong, and thinly or not at all on the situations where help was most needed.
-**The filtering removes the examples exactly where the examples would have been
-most valuable.**
+There are three defences. Two are now code, and one is still a design.
 
-Said in the language of the previous section: conditioning the dataset on
-success biases the input distribution as well as the labels, and it biases it
-towards the teacher's own competence. So this solution's picture of problem 3
-is solution 2's picture of problem 3, with solution 2's blind spots deepened
-rather than merely copied.
+**Keep the teacher's refusals as refusals.** A glass solution 2 declined to
+push is a result, not a failure, as [pushing without
+toppling](../pushing-without-toppling.md) says. A dataset that silently drops
+those tables teaches nothing about them. **Done**: the refusals and their
+reasons are counted beside the demonstrations.
 
-Three things can be done about it. Two are now code and the third is still a
-prescription.
+**Count what the filter removed.** The thinning is invisible unless it is
+counted. **Done**: the collection writes a table of kept and dropped pushes, by
+reason and by kind of glass. In total the thinning is small. By kind of glass
+it is very uneven, as [the folder's
+README](../../../03-push-glasses-apart/03-imitation-from-demonstrations/README.md#where-the-demonstrations-come-from)
+shows.
 
-**Keep the teacher's refusals, as refusals.** A glass solution 2 declined to
-push is not a failure and should not be dropped as one; [pushing without
-toppling](../pushing-without-toppling.md) is explicit that a refusal is a
-result. A dataset that silently omits those tables teaches the student nothing
-about them, and silence in a dataset is not a label. **Done**: the refusals
-and their reasons are counted beside the demonstrations.
+**Weight the hard tables up, and draw more of them.** Tables cost only time, so
+a thin region can be filled by drawing more tables of that kind. **Not done**:
+the demonstrations come from consecutive table numbers. So they hold whatever
+mix the examiner produces.
 
-**Record what the filtering removed, broken down by table.** The thinning is
-invisible unless it is counted. A table of kept and dropped pushes, grouped by
-the kind of table and by the way the dropped ones failed, says where the
-student's coverage is thin before the student is ever run. **Done**: the
-collection writes exactly that table, and the first thing it says is that on
-these tables the teacher is clean enough that the thinning is small — far
-smaller than this section assumed when it was written.
-
-**Weight the hard tables up, and gather more of them.** Because tables are
-drawn from numbers and cost only time, a thin region can be filled by drawing
-more tables of that kind rather than by accepting the thinness. That is the
-cheapest defence available here and it is unavailable on real hardware.
-**Not done**: the demonstration set is drawn from consecutive table numbers,
-so it holds whatever mixture the examiner produces.
-
-None of the three removes the problem. The ceiling stays where the next
-sections put it.
+None of the three removes the problem. The teacher still sets the ceiling, as
+[where it is strong and where it breaks](#where-it-is-strong-and-where-it-breaks)
+says.
 
 ## Action chunking, and why it matters
 
-The policy's output is the second thing that defines this solution, and the
-word for it is the one in ACT's own name.
+The policy's output is the second thing that defines this solution. Its name is
+in ACT's own name.
 
 **Action chunking** means predicting a short run of future actions in one go,
-rather than one action at a time. Ask the network once and it returns a
-sequence: this waypoint, then this one, then this one, several of them,
-produced together in a single pass. The arm then carries out that whole
-sequence before anything is asked again.
+not one action at a time. The network is asked once and returns several
+waypoints together. The arm carries out the whole run before it asks again.
 
 ![A parameterised push drawn from the side as the examiner's macro expands it — down at 10 mm a waypoint, feeling at 0.5 mm, pushing at 1 mm, backing off and lifting — against the chunk the policy emits, a fixed block of 120 waypoints by five columns predicted in one pass, with the teacher's own pushes running from 25 to 246 waypoints and every one of them resampled to that fixed 120.](../../../images/03-push-glasses-apart/03-a-chunk-is-not-a-push.png)
 
-The programming comparison is exact and it is worth stating plainly, because
-the difference sounds smaller than it is. One way to write a controller is a
-function called on every tick that returns the single next thing to do; the
-plan exists only as whatever that function happens to decide each time. The
-other way is a function called once that returns a few steps of a plan, which
-are then carried out. The second **commits**. It cannot change its mind partway
-through, and that is both what it costs and what it buys.
+In programming terms, there are two ways to write a controller. One function is
+called every tick and returns the next single step. The other is called once
+and returns several steps, which are then carried out. The second one
+**commits**. It cannot change its mind partway. That is both its cost and its
+value.
 
-Here is the reason committing helps, and it is specific to pushing rather than
-general.
+Committing helps for a reason specific to pushing. **A push works only if the
+motion is sustained.** A glass moves because the jaw keeps travelling one way,
+in contact, for some distance. A policy that decides afresh each instant
+forgets why it was going that way. Two failures follow.
 
-**A push is one continuous motion, and it only works if it is sustained.** A
-glass does not move because the jaw touched it; it moves because the jaw kept
-travelling in one direction, in contact, for some distance. A policy that
-re-decides at every instant has no record of why it was going that way, so each
-decision is made afresh from a picture that has barely changed. Two failures
-follow, and both are commonly seen in policies that predict one action at a
-time. The first is **dithering**: tiny disagreements between consecutive
-decisions turn into a motion that wanders instead of travelling, and a wandering
-jaw in contact with a glass is doing something nobody designed. The second is
-worse and quieter. At the moment of choosing, the arm has usually seen a
-demonstration that pushed left and a demonstration that pushed right from a
-situation that looked much the same, and a network asked for the single best
-next step minimises its error by producing something between the two. **The
-average of two commitments is not a commitment.** Chunking does not remove that
-difficulty but it moves it to where it does least damage: the averaging now
-happens once per push, over whole pushes, rather than at every instant over
+The first is **dithering**. Small differences between steps make the jaw
+wander instead of travel. The second is quieter. The data often holds a push to
+the left and a push to the right from tables that look alike. A network asked
+for one best next step lowers its error by answering between the two. **The
+average of two commitments is not a commitment.** Chunking does not remove
+this. It moves the averaging to once per push, over whole pushes, instead of at
 every step.
 
-Two more things follow from chunking, one good and one a genuine cost.
+Two more things follow from chunking. One is good and one is a cost.
 
-**Errors do not compound inside a chunk.** The waypoints of a chunk were
-produced together, so they are consistent with each other by construction.
-Nothing inside the chunk is a decision made on top of an earlier mistake. A
-step-by-step policy has one decision per tick, and every one of them is made
-from a state its own previous decisions produced, which is the mechanism the
-section after next is about.
+**Errors do not compound inside a chunk.** The waypoints of a chunk are made
+together, so they agree with each other. No waypoint is a decision built on an
+earlier mistake. A step-by-step policy makes every decision from a state its own
+past decisions produced. [Compounding error](#compounding-error) is about that.
 
-Consistent is not the same as direct, and the measurement makes the difference
-plain. The fitted policy's chunks wander two to four times as far as the glass
-they move ends up travelling, where the teacher's path and its displacement are
-the same length. So chunking stops one mistake from feeding the next, and it
-does not stop the policy from being unsure: a chunk can be internally
-consistent and still take a long, wavering route to a short move. What
-chunking removes is compounding, not indecision.
+Consistent does not mean direct, and the measurement shows it. The fitted
+policy's chunks wander two to four times as far as the glass they move travels.
+The teacher's path is the same length as its displacement. So chunking stops
+compounding, but it does not stop indecision.
 
-**A chunk is open-loop while it runs.** Nothing is being read during it. The
-arm is carrying out a motion it decided on from a picture that is now out of
-date, and if something unexpected happens three waypoints in, the remaining
-waypoints do not know. So the chunk's length is a real trade and not a
-formality: a long chunk is committed and blind, a short chunk is responsive and
-prone to dither. And it is a trade in speed as well as in length, because
-waypoints are consumed at a fixed rate: how far apart they are is how fast the
-jaw goes. The examiner caps that at the fastest the cell ever moves the jaw, so a
-chunk whose waypoints are further apart than the arm can cover in one control
-period is taken slower rather than at a speed the arm does not have. A policy
-copying this teacher never meets the cap — the teacher's own waypoints are
-about a millimetre apart, and the cap is at ten — but a policy that learned to
-emit coarser chunks would be slowed by it.
+**A chunk is blind while it runs.** Nothing is read during it. If something
+unexpected happens three waypoints in, the rest of the chunk does not know. So
+chunk length is a real trade. A long chunk is committed but blind. A short chunk
+responds, but tends to dither.
 
-What makes the trade bearable is set by `Bench.follow`, and it is worth being
-exact, because it is less than the loop gives a parameterised push. Coming
-down to the chunk's first waypoint is the examiner's
-own move and it stops if the jaw touches anything on the way, so a chunk that
-starts over an obstacle comes back as blocked rather than being driven
-through. But **once the jaw is travelling across the table the examiner does not
-feel for the glass.** A chunk is carried out as it was given, which is the
-whole point of accepting one, and the only thing that stops it is the jam
-threshold. So the slow approach to contact is not the cell's behaviour here;
-it is part of the chunk, copied from the teacher's own feel. That is the one
-place where this solution leans on the demonstrations for safety rather than
-on the examiner.
+It is a trade in speed too. Waypoints are used at a fixed rate, so their spacing
+sets the jaw's speed. The examiner caps that at the fastest the cell ever moves
+the jaw. A chunk spaced wider than one control period allows is run slower.
+This policy never meets the cap. The teacher's waypoints are about a millimetre
+apart, and the cap is at ten. A policy that emitted coarser chunks would be
+slowed.
 
-Finally, chunking is the reason [the examiner](../the-examiner.md) accepts
-waypoints at all, and that argument is worth repeating here because it is about
-this solution specifically. The examiner could have required every solution to
-emit the same three or four push parameters, which sounds like the fairest
-possible rule. It would be the unfair one, because squeezing a chunking policy
-down to a handful of parameters removes the mechanism that makes it work, and
-what you would then measure is a damaged version of the method rather than the
-method that exists.
+`Bench.follow` makes the trade bearable, but it protects less than a
+parameterised push gets. The descent to the first waypoint is the examiner's
+own move. It stops if the jaw touches anything, so a chunk that starts over an
+obstacle is reported blocked. But **once the jaw travels across the table, the
+examiner does not feel for the glass.** The chunk runs as given, and only the
+jam threshold stops it. So the slow approach to contact is part of the chunk,
+copied from the teacher. This is the one place where this solution relies on its
+demonstrations for safety, not on the examiner.
+
+Chunking is also why the examiner accepts waypoints at all. Squeezing a chunking
+policy into a few push parameters would remove what makes it work. [The
+examiner](../the-examiner.md#the-shared-output-and-why-it-is-a-jaw-trajectory)
+explains this once for every solution.
 
 ## The second way — Diffusion Policy
 
-The plan carries a second way for this solution, and it is not a spare in case
-the first one fails. It is there to test one specific weakness of the first,
-which the previous section has just named.
+The second way is not a spare. It tests one weakness of the first: the
+averaging that the previous section named.
 
-**Diffusion Policy reaches the same kind of answer by starting from noise and
-denoising towards an action chunk.** In plain words: instead of computing the
-chunk, the model begins with a chunk of pure random numbers — a run of
-waypoints that is nothing but static — and then removes a little of what it
-judges to be noise, and does that again, and again, until what is left is a
-plausible run of waypoints. The model was trained to answer one question: given
-a noisy chunk, which part of it is noise? Asking that question repeatedly
-carves an answer out of the static.
+**Diffusion Policy starts from noise and removes it, step by step, until an
+action chunk is left.** The model begins with a chunk of pure random numbers.
+It removes a little of what it judges to be noise, and repeats. What remains is
+a plausible run of waypoints. The model was trained on one question: given a
+noisy chunk, which part of it is noise?
 
-A comparison from mathematics helps with why that is even possible. Think of
-every possible chunk of waypoints as a point in a space, and of the good chunks
-— the ones a demonstration might contain — as lying on a thin region inside it.
-Pure noise is a point far off that region. The denoising step is a nudge
-towards it. Repeated, the nudges arrive at the region, and where exactly they
-arrive depends on where the noise started, which is why asking twice can give
-two different good answers.
+A picture from mathematics helps. Think of every possible chunk as a point in a
+space. The good chunks lie in a thin region of that space. Pure noise is a
+point far from that region. Each denoising step moves the point a little
+towards the region. Where it arrives depends on where the noise started. So
+asking twice can give two different good answers.
 
-That last property is the whole argument, and it is worth stating carefully
-because it is the clearest reason to carry both of them.
+That last property is the whole argument.
 
-**When several different pushes would all be good, a model trained to predict
-one answer tends to average them.** This is not a flaw in any particular
-network; it is what fitting towards a single answer does. If the training data
-holds, for situations that look alike, one demonstration that pushed the left
-glass left and one that pushed the right glass right, then the single prediction
-that is least wrong on average is somewhere between the two — and between
-"push left" and "push right" is "barely move". The average of several good
-pushes is commonly not a push at all. A denoising model does not have this
-problem, because it is not trying to name one answer. It represents a
-distribution over chunks and draws from it, so it can keep both options and
-pick one.
+**When several pushes would all be good, a model that predicts one answer tends
+to average them.** Any network fitted to a single answer does this. Suppose the
+data holds, for similar tables, one push of the left glass left and one push of
+the right glass right. The least wrong single answer lies between them. Between
+"push left" and "push right" is "barely move". A denoising model does not name
+one answer. It holds a distribution over chunks and draws from it. So it can
+keep both options and pick one.
 
-**And this problem has several good answers nearly everywhere.** That is not a
-hypothetical. [The target layout](../the-target-layout.md) says it twice over:
-minimising travel subject to clearance has more than one local optimum, because
-moving the left glass left and moving the right glass right are both perfectly
-good answers to the same crowded pair; and success is defined on the clearance
-rather than on the layout, so **there is more than one way to uncrowd a table
-and the alternatives are not wrong.** A method that must name a single answer
-is therefore being asked, at almost every step, to choose between options it has
-no reason to choose between — and its way of coping is to produce their
-average.
+**This problem has several good answers almost everywhere.** [The target
+layout](../the-target-layout.md#two-cautions) says so. Moving the left glass
+left and the right glass right are both good answers for one crowded pair.
+Success depends on clearance, not on one fixed layout. So a single-answer model
+must often choose between options it has no reason to prefer. It copes by
+averaging them.
 
-So the two ways together measure something real rather than merely trying two
-models. ACT predicts a chunk directly, and if the averaging problem bites, it
-will show up as pushes that move glasses too little or in the wrong direction
-on exactly the symmetric arrangements where two answers were available.
-Diffusion Policy can represent the choice. The gap between the two is a
-measurement of how much the averaging cost, on this table, with this data.
+So the two ways together measure something real. If averaging hurts ACT, it
+shows as pushes that move glasses too little, or the wrong way, on symmetric
+tables. Diffusion Policy can represent the choice. The gap between the two
+measures what averaging cost.
 
-**The way is written and it runs; it has not been fitted here.** It is in
-`policy.py` beside ACT, taking the same demonstrations, the same scaling and
-the same picture, so that only the model differs. What stopped it was the
-compute bill rather than the code: Diffusion Policy is about 75 million
-parameters against ACT's 52 million, a training step costs it roughly twice as
-much, and one chunk at run time is sixteen denoising passes rather than one
-forward pass. Fitting it with several seeds on this machine is a night's work
-on top of ACT's, and a way reported from one seed is not a result. So there
-is no `results-diffusion.json`, and the gap this section argues for has not
-been measured.
+**This way is written and runs, but it has not been fitted here.** It is in
+`policy.py` beside ACT. It uses the same demonstrations, the same scaling and
+the same picture, so only the model differs. The compute bill stopped it, not
+the code. Diffusion Policy has about 75 million parameters against ACT's 52
+million. A training step costs it roughly twice as much. One chunk at run time
+takes sixteen denoising passes instead of one forward pass. Several seeds of it
+would be a night's work on top of ACT's, and one seed is not a result. So there
+is no `results-diffusion.json`. The gap this section argues for has not been
+measured.
 
-It is worth saying plainly that **ACT's measured behaviour makes this the most
-valuable thing left undone in this solution.** What ACT produces on a table it
-has not seen is a chunk about 55 mm away from the teacher's and about 30
-degrees off in heading — close to what averaging over the teacher's
-alternatives would give, and far enough off that the jaw meets a neighbour on
-the way down. Whether a model that draws its chunk instead of naming one
-escapes that is now a question with a measurement behind it rather than an
-argument.
+**ACT's measured behaviour makes this the most valuable thing left undone.** On
+tables it has not seen, ACT's chunk is 48 to 52 mm from the teacher's. Its
+heading is 22 to 27 degrees off. That is close to what averaging the teacher's
+choices would give. Whether a model that draws its chunk avoids this is now a
+question with a measurement behind it.
 
 ![The teacher's chunk drawn beside the policy's on the same scale: the teacher's is a straight 79 mm of path for 79 mm of displacement, every single one of them, while the policy's wanders 97 mm of path to get 67 mm away, and across the held-back demonstrations the policy's chunks walk one and a half to twice as far as they get; beside it, the waypoints that had to be pulled inside the jaw's limits, which were every one of them the height column and at most 2.3 mm below push height.](../../../images/03-push-glasses-apart/03-inside-one-chunk.png)
 
-Two costs come with the second way and both belong on the scorecard.
+Two costs come with this way, and both belong on the scorecard.
 
-**It costs more per push.** One chunk needs several denoising passes rather
-than one forward pass, so the run-time cost is some multiple of ACT's. [The
-examiner](../the-examiner.md) carries a compute column for precisely this kind
-of difference, because a solution that wins while taking much longer has not
-obviously won.
+**It costs more per push.** Each chunk needs several denoising passes, not one.
+[The examiner](../the-examiner.md) has a compute column for this kind of
+difference. A solution that wins while taking much longer has not clearly won.
 
-**It is one more thing that varies by seed.** A policy that draws its answer is
-stochastic by construction, so asked the same question twice it may act
-differently. The examiner's requirement applies with full force: several training
-seeds, several evaluation runs, and the spread reported, because a method that
-wins by less than its own spread has not been shown to win.
+**Its answers vary more.** A model that draws its answer may act differently
+when asked the same thing twice. So it needs several training seeds, several
+runs, and the spread reported, as [the
+examiner](../the-examiner.md#two-things-this-scorecard-needs-that-problem-2s-did-not)
+requires.
 
 ## Compounding error
 
-Behaviour cloning has one characteristic failure, and it follows directly from
-the fragility named earlier: a cloned policy only knows situations the
-demonstrator visited.
+Behaviour cloning has one typical failure. It follows from the weakness named
+earlier: a cloned policy only knows situations the demonstrator visited.
 
-Here is the mechanism, in order. The policy acts slightly differently from the
-teacher — a little short, a little off the demonstrated heading, because no
-fitted function reproduces its labels exactly. That small difference puts the
-arm in a state the teacher would not have reached. In that state the policy is
-a little further outside the region its examples covered, so its next action is
-a little worse, which puts the arm in a state further out still. **The error is
-not added once; it is fed back into its own input.** This is **compounding
-error**, and it is why a policy that looks excellent on held-out single
-decisions can still fail over a whole run.
+The mechanism goes in four steps.
 
-The comparison from programming is the difference between a rounding error in a
-calculation and a rounding error inside a loop that reads its own last result.
-The first stays the size it was. The second grows with the number of
-iterations.
+1. The policy acts a little differently from the teacher, a little short or a
+   little off the heading. No fitted function matches its labels exactly.
+2. That puts the arm in a state the teacher would not have reached.
+3. In that state the policy is a little outside its examples, so its next
+   action is a little worse.
+4. That puts the arm further out still.
 
-**What mitigates it here is the loop, and the mitigation is substantial.**
-[Pushing without toppling](../pushing-without-toppling.md) describes every
-solution in this problem as acting, measuring what really happened, and then
-deciding again from what it measured. The arm is not following a script of
-pushes; it repeats one step — look at the table, choose one push, make it, look
-again — until the work is done. For a cloned policy that arrangement is worth
-more than it is for anybody else, because **the state the policy is asked about
-is always a measured table and never a predicted one.** Drift inside a chunk is
-cut off at the end of the chunk. The policy is re-anchored on a fresh reading
-before it is asked anything again, so the feedback path that makes error
-compound is broken once per push.
+**The error is fed back into its own input.** This is **compounding error**. It
+is why a policy that does well on single held-out decisions can still fail over
+a whole run. In programming terms, compare a rounding error in one calculation
+with one inside a loop that reads its own last result. The first stays the same
+size. The second grows with each pass.
 
-It is blunted, not removed, and two ways it still bites are worth naming.
+**The loop blunts it a great deal.** Every solution here looks at the table,
+chooses one push, makes it, and looks again, as [the
+loop](../pushing-without-toppling.md#the-loop-plan-feel-look-again) describes.
+So **the policy is always asked about a measured table, never a predicted
+one.** Drift inside a chunk is cut off at the end of the chunk. The feedback
+path is broken once per push.
 
-**Inside a chunk, nothing is read.** The chunk is carried out as decided, so
-whatever drift accumulates over its waypoints accumulates unobserved. This is
-the cost of chunking from the previous section, seen from the other side, and it
-is bounded by the chunk being short.
+It still bites in two ways.
 
-**Across pushes, the arrangement itself drifts.** This is the real one. Looking
-again tells the policy where the glasses are; it does not make those positions
-ones the teacher ever produced. A policy whose first push went further than the
-teacher's would have leaves a table the teacher never generated, and the second
-push is then chosen on a table outside the demonstration set. Repeated over a
-run, the policy walks its own table into territory its data does not cover.
-Measuring positions accurately does not help with that at all, because the
-problem is not that the state is unknown but that the state is unfamiliar.
+**Inside a chunk, nothing is read.** Drift over its waypoints goes unseen. The
+chunk being short limits the damage.
 
-**The standard repair for this is called DAgger, and it is unusually cheap
-here.** The idea is to collect demonstrations where the policy actually goes
-rather than only where the teacher went: run the policy, and at every state it
-visits, ask the teacher what it would have done there, and add that answer to
-the training set as a label. Retrain, and repeat. The set then covers the
-policy's own drift, which is exactly the region plain cloning leaves empty.
+**Across pushes, the table itself drifts.** This is the real one. Looking again
+tells the policy where the glasses are. It does not make that layout one the
+teacher ever produced. Say the first push went further than the teacher's
+would. The second push is then chosen on a table outside the demonstrations.
+Over a run, the policy walks its own table into places its data does not cover.
+Measuring positions well does not help. The state is not unknown; it is
+unfamiliar.
 
-The reason this is affordable here is the property named two sections ago.
-**The teacher is a program, so it can be asked about any state, at any time,
-for nothing.** A human demonstrator cannot answer "what would you have done on
-this table that my policy produced last Tuesday"; solution 2 can answer it
-every time it is asked. So the one serious weakness of behaviour cloning has, in
-this particular arrangement, a cheap and well understood repair available — and
-it is worth recording that this is a consequence of the teacher being code,
-not a property of imitation learning in general.
+**The standard repair is called DAgger, and it is cheap here.** DAgger collects
+demonstrations where the policy goes, not only where the teacher went. Run the
+policy. At each state it visits, ask the teacher what it would do, and add that
+answer as a label. Then retrain and repeat. The set then covers the policy's own
+drift, which plain cloning leaves empty.
+
+It is cheap because **the teacher is a program, so it can be asked about any
+table, at any time, for free.** A person cannot say what they would have done on
+a table the policy made last Tuesday. Solution 2 can. This comes from the
+teacher being code, not from imitation learning in general. DAgger is not built
+yet.
 
 ## The pushes are what this contributes
 
-One point about the output has to be clear, because it decides what a
-comparison with this solution is a comparison of.
+This section says what a comparison with this solution is a comparison of.
 
-**This solution emits waypoints directly, and nothing expands them.** [The test
-examiner](../the-examiner.md) owns a macro that turns a parameterised push into a
-descent, a feel, a slide, a back-off and a lift, and the solutions that think
-in parameterised pushes go through it. A chunk is already a jaw trajectory, so
-there is nothing for the macro to do. The examiner carries the waypoints out as
-given, through `Bench.follow`, which is built.
+**This solution emits waypoints, and nothing expands them.** Solutions that
+think in parameterised pushes go through the examiner's macro, as [solution
+2](02-geometry-ranked.md#the-pushes-are-what-this-contributes) describes. A
+chunk is already a jaw path. So the examiner runs it as given, through
+`Bench.follow`.
 
-**Two small things travel beside the waypoints, and they are not the
-policy's.** The examiner's chunk carries the glass it is meant to move and the
-place the solution expects that glass to arrive, because the scorecard counts
-pushes per glass and measures how far each glass ended from its aim. A policy
-whose output is a run of waypoints produces neither. Both are therefore read
-back off the chunk after the fact: the glass is the one the jaw ends up
-against, and the aim is that last fingertip moved forward by half the glass's
-measured width, which is solution 1's own convention. Nothing about that
-reaches the policy or changes the motion. It is bookkeeping for the
-scorecard, and it is named here because it is the one place where this
-solution's output is not literally the whole answer.
+**Two small things travel with the waypoints, and they are not the policy's.**
+The examiner's chunk carries the glass it means to move and where that glass
+should arrive. The scorecard needs both. It counts pushes per glass and
+measures how far each glass ended from its aim. The policy produces neither, so
+both are read off the chunk afterwards. The glass is the one the jaw ends up
+against. The aim is the last fingertip point, moved forward by half the glass's
+measured width. That is solution 1's convention. None of this reaches the
+policy or changes the motion. It is bookkeeping, and it is the one place where
+the policy's output is not the whole answer.
 
-**The score is the outcome, not the action.** The examiner does not ask whether the
-chunk was the chunk it would have chosen, or whether the waypoints were smooth.
-It looks only at the table afterwards: which glasses have room, which are
-standing, where each one ended up, and how many pushes it took. That is what
-makes a three-number push and a chunk of a hundred-odd waypoints comparable at
-all, and it is the only reason this solution and its teacher can be set side by
-side.
+**The score is the outcome, not the action.** The examiner looks only at the
+table afterwards. That is what lets a three-number push and a chunk of a
+hundred-odd waypoints be compared, as [the
+examiner](../the-examiner.md#the-score-is-the-outcome-not-the-action) explains.
 
 ![Two fits compared: an early one drove the training loss to 0.04, more than twice as low as the fit this solution shipped, and was memorising — 11 mm from the teacher on tables it had seen against 62 mm on tables it had not — while four times the tables removed the memorising and took only about a fifth off the unseen error; and of the three shipped seeds the one that fitted closest to the teacher racked the fewest glasses of the three.](../../../images/03-push-glasses-apart/03-the-loss-was-not-the-score.png)
 
-**Everything else in the pipeline is shared, so a difference in the score
-belongs to the policy.** The tables are the examiner's. The measurements are the
-examiner's, carrying problem 2's measured error. The destinations come from [the
-target layout](../the-target-layout.md), computed once per arrangement and so
-every solution that aims at a destination aims at the same places, rather than
-at an easier arrangement than another. The topple limit and the refusal rule
-come from [pushing without toppling](../pushing-without-toppling.md). What this
-solution contributes is one mapping — from a picture of the table to a short
-run of waypoints — and nothing else.
+**Everything else is shared, so a difference in score belongs to the policy.**
+The tables are the examiner's. So are the measurements, which carry problem 2's
+measured error. The destinations come from [the target
+layout](../the-target-layout.md), the same for every solution. The topple limit
+and the refusal rule come from [pushing without
+toppling](../pushing-without-toppling.md). This solution adds one mapping: from
+a picture of the table to a short run of waypoints.
 
-There is a pleasing detail in how the shared parts reach this solution, and it
-is worth noticing because it explains what the policy is really learning. The
-target layout never appears inside the network. It reached the demonstrations,
-because the teacher aimed at it, and the demonstrations are all the policy ever
-saw. In the same way, the examiner's macro never appears inside the network, but
-the waypoints it produced are the labels the network was fitted to, so **the
-student's action space is the teacher's macro, written down as motion.** The
-policy begins by being able to express only what the macro expressed, and
-whatever it learns beyond that comes from generalising between those examples
-rather than from being given a wider vocabulary.
+The shared parts reach the policy only through the demonstrations. The target
+layout is not inside the network. But the teacher aimed at it, so it is in the
+labels. The examiner's macro is not inside the network either. But the macro's
+waypoints are the labels. So **the student's action space is the teacher's
+macro, written down as motion.** The policy starts able to express only what the
+macro expressed. Anything beyond that comes from generalising between examples.
 
 ## How the concepts fit together
 
-The pieces now join into one pipeline. It has an offline half that happens once
-and an online half that happens on every push, and the halves are worth keeping
-apart because almost all the cost is in the first and almost all the risk is in
-the second.
+The pipeline has two halves. The offline half happens once, and the online
+half runs on every push. Almost all the cost is offline, and almost all the risk
+is online.
 
-**Offline, and once.** Tables are drawn from numbers below the dividing line.
-Solution 2 is run over them. For every push it chooses, three things are
-recorded: the view of the table from the top at that moment, the waypoints the
-examiner's macro produced, and the examiner's verdict on what happened to the table
-afterwards. Pushes that failed are dropped and the dropping is counted, so the
-thinning is visible. Refusals are kept as refusals. What remains is a dataset of
-pairs — a picture, and a chunk of waypoints — which is exactly the shape
-behaviour cloning needs. One detail of the shape is worth naming, because the
-document above does not settle it: a recorded path is a few hundred waypoints
-long and a chunk is a fixed, shorter run, so every demonstration is trimmed to
-the part at push height and resampled to the chunk's length. The trimming is
-free, because the examiner does the descent and the lift itself. The resampling
-is not free: waypoints are consumed at a fixed rate, so squeezing a long push
-into a fixed chunk runs it faster than it was demonstrated. The chunk's length
-is therefore set near the median length of the teacher's own pushes, and a
-push longer than that is replayed quicker than it was made.
+**Offline, once.** Tables are drawn from the demonstration band, and solution 2
+runs on them. Each push records three things: the top view at that moment, the
+waypoints the macro produced, and the examiner's verdict. Failed pushes are
+dropped and counted. Refusals are kept as refusals. What remains is pairs of a
+picture and a chunk.
 
-ACT is then fitted on the dataset from random numbers, for hours. The second
-way fits Diffusion Policy on the same dataset, changing the model and nothing
-else. Both are fitted several times with different seeds, because one training
-run is not a measurement.
+One detail of shape matters. A recorded path is a few hundred waypoints long,
+and a chunk is a fixed, shorter run. So each demonstration is trimmed to the
+part at push height, then resampled to the chunk's length. The trimming is
+free, because the examiner does the descent and the lift. The resampling is
+not. Waypoints run at a fixed rate, so a long push squeezed into a short chunk
+runs faster than it was shown. So the chunk length is set near the median
+length of the teacher's pushes. A longer push is replayed faster than it was
+made.
 
-**Online, on every push.** The arm looks at the table and racks every glass
-that already has room. The shared topple limit is then evaluated on every
-glass still standing there, before the policy is asked anything, and a glass
-that fails it is refused with its reason and taken out of play. Only then does
-the straight-down view go into the policy, which returns one action chunk; the
-chunk is charged to one of the glasses the limit left in play, so a refused
-glass can never be pushed. The examiner carries the chunk out: the closed jaw is
-placed clear above the first waypoint, comes down to it, follows the waypoints
-one control period apart, and lifts clear, reporting what it felt in the same
-words a parameterised push reports. The arm looks again. The loop repeats
-until every glass has room, or the glasses that are left have all been
-refused, or the push budget is spent.
+ACT is then fitted on the dataset from random numbers, for hours. It is fitted
+several times with different seeds, because one training run is not a
+measurement. The second way would fit Diffusion Policy on the same data,
+changing only the model.
 
-Three things are worth holding on to from all of that.
+**Online, on every push.**
 
-**Nothing in the method represents pushing.** There is no friction coefficient,
-no slide prediction, no candidate list and no geometry inside the policy. The
-consequences of friction are in the data, and what the network holds is a
-mapping, not an understanding. This is the most economical of the six in terms
-of what somebody had to know in order to build it.
+1. The arm looks at the table and racks every glass that already has room.
+2. The shared topple limit is checked on every glass left. A glass that fails
+   is refused with its reason and taken out of play.
+3. The straight-down view goes into the policy, which returns one chunk.
+4. The chunk is charged to a glass still in play, so a refused glass is never
+   pushed.
+5. The examiner places the closed jaw above the first waypoint and lowers it.
+   It follows the waypoints one control period apart, then lifts clear. It
+   reports what it felt in the same words as for a parameterised push.
+6. The arm looks again.
 
-**The loop is what makes copying survivable.** A cloned policy run open-loop
-over a whole run would compound its own error. Run one chunk at a time against
-a freshly measured table, it is re-anchored on every push. The method and the
-loop are a pair; neither would be sensible here without the other.
+The loop repeats until every glass has room, the rest are refused, or the push
+budget is spent.
 
-**The ceiling is the teacher.** Every label this policy ever saw came from
-solution 2, and nothing in behaviour cloning evaluates an outcome. So the
-student has no mechanism by which to discover a better choice of glass, or a
-better destination, than the one it was shown. The next sections are about what
-that does and does not rule out.
+**Nothing in the method represents pushing.** The policy holds no friction
+value, no slide prediction, no candidate list and no geometry. Of the six
+solutions, this one needed the least knowledge of pushing to build. Its ceiling
+is its teacher, as [where it is strong and where it
+breaks](#where-it-is-strong-and-where-it-breaks) explains.
 
 ## When a glass cannot be pushed safely
 
-A glass slides while the jaw touches it below half its foot width divided by
-the friction, and tips above that. The height that counts is the jaw's **top
-edge** at 107 mm, not the 75 mm its middle rides at, and for a glass whose foot
-is narrow enough there is no contact height the arm can offer below the limit.
-The only correct answer for such a glass is to refuse, with the reason
-recorded, which marks the run *correct but incomplete* rather than wrong.
-[Pushing without toppling](../pushing-without-toppling.md)
-sets all of that out once, including what is done when the unknown friction
-leaves the limit undecided, and it is **arithmetic applied before any model is
-consulted** in five of the six solutions. What follows is only what is this
-solution's own.
+Some glasses tip before they slide at every height the jaw can offer. The
+height that counts is the jaw's top edge at 107 mm, not the 75 mm its middle
+rides at. The only correct answer is to refuse such a glass with a reason. The
+run is then *correct but incomplete*, not wrong. [Pushing without
+toppling](../pushing-without-toppling.md#some-glasses-cannot-be-pushed-at-all)
+sets this out once. In five of the six solutions it is arithmetic, run before
+any model is asked. What follows is only what belongs to this solution.
 
-**A policy of this kind has no way to refuse**, and the reason is a good
-illustration of what a cloned policy cannot express. Its output is a chunk of
-waypoints, and there is no channel in it for "I cannot move this glass, and the
-reason is that it tips before it slides". The examiner requires a refusal to
-carry a reason, so the thing it wants is a kind of answer this policy cannot
-produce.
+**A policy of this kind has no way to refuse.** Its output is a chunk of
+waypoints. It has no channel for "I cannot move this glass, because it tips
+before it slides". The examiner wants a refusal with a reason, and this policy
+cannot produce one.
 
-It is tempting to hope the policy learns to refuse by itself. It does not, and
-it is worth being exact about why. The teacher refuses those glasses, so the
-dataset contains no push on them — but **the absence of an example is not a
-label.** The network was never shown such a situation paired with an
-instruction to do nothing; it was shown nothing at all. Asked about one, it
-returns a chunk, because returning a chunk is the only thing it does. The one
-case where the arm must not act is the case where the policy is least anchored
-and least able to warn.
+It does not learn to refuse by itself either. The teacher refuses those
+glasses, so the data holds no push on them. But **the absence of an example is
+not a label.** The network was never shown such a table paired with "do
+nothing". It was shown nothing. Asked about one, it returns a chunk, because
+that is all it can do. So the case where the arm must not act is where the
+policy is least anchored.
 
-**The early abort matters more here than anywhere else.** A chunking policy is
-open-loop while its chunk runs, so a monitor reading the jaw's force during a
-push would be the only thing observing at all during that window. It is a
-prescription rather than built code, and this is the solution with the
-strongest reason to want it.
+**An early abort matters more here than anywhere else.** A chunk runs blind. A
+monitor reading the jaw's force during a push would be the only thing watching.
+[Pushing without
+toppling](../pushing-without-toppling.md#an-early-abort-acting-during-the-push)
+describes it. It is a design, not built code. This solution has the strongest
+reason to want it.
 
 ## A worked example
 
-Follow one table through, because the places where this solution differs from
-its teacher are easier to recognise on a concrete arrangement than in the
-abstract.
+This follows one table as the design said it would go. A correction at the end
+says what the fitted policy really did.
 
-**The table.** Five straight glasses stand in the glass zone, drawn at
-proportions from across that kind's range, so they are not all the same size.
-Two of them stand deliberately close — closer than the gripper can work with,
-with a little daylight still between them — and one of that pair is also fairly
-near the edge of the glass zone. The other three have room. The examiner accepted
-the table because at least one glass on it has no room, so there is work to do.
+**The table.** Five straight glasses of different sizes stand in the zone. Two
+of them stand closer than the gripper can work with, with a little gap still
+between them. One of that pair is near the zone edge. The other three have
+room.
 
-**What happened offline.** Long before this table was drawn, solution 2 was run
-over many tables below the dividing line. On each, it generated legal candidate
-pushes, ranked them, pushed, and the examiner recorded the picture, the waypoints
-and the verdict. The failures were dropped and counted. What was left was fitted
-into ACT, several times with different seeds. None of that involves this table,
-which comes from above the dividing line.
+**Offline.** Long before, solution 2 ran on many tables in the demonstration
+band. ACT was fitted on the kept pushes, with several seeds. This table comes
+from above the dividing line, so none of that involved it.
 
-**The first push.** The arm takes the view from the top and the policy returns
-one chunk: a descent behind the outer glass of the crowded pair, a slow feel
-forward, a committed slide outward along a heading away from its neighbour, a
-back-off, and a lift to travel height. Notice what the chunk is free to do that
-a parameterised push is not. It can lean the slide as it travels, so the glass
-leaves its neighbour at a slightly different angle from the one it started on,
-and it can slow as it approaches the end rather than stopping at speed. Whether
-either of those is worth anything is a thing to measure rather than to assert.
-The freedom is real, it belongs to the trajectory solutions only, and this is
-the kind of place it would show up.
+**The first push, as designed.** The policy returns one chunk. The jaw comes
+down behind the outer glass of the pair and feels forward slowly. It slides the
+glass outward, away from its neighbour, then backs off and lifts. The chunk could lean the slide or slow near
+the end. A parameterised push cannot do either. Whether that is worth anything
+is for measurement to decide.
 
-**What the push actually does.** The glass goes further than the teacher's aim
-would have put it, because the friction under this glass's foot is not what any
-of the demonstrations happened to sit at, and no part of this method models
-friction. Nothing is lost by that: the arm looks again, and the fresh reading
-says where the glass really is.
+**What the push does.** The glass goes further than the teacher would have
+aimed. Its friction differs from the demonstrations, and nothing here models
+friction. Nothing is lost by that. The arm looks again and sees where the glass
+really is.
 
-**And here is compounding error, in one concrete form.** The table the policy
-now faces has a glass closer to the edge of the glass zone than the teacher
-would ever have left one, because the teacher aimed at a destination the layout
-computed and this push overshot it. If the demonstration set happened to hold
-tables with a glass in roughly that position, the policy is on familiar ground
-and the second push is as good as the first. If it did not — and the filtering
-makes that more likely, because overshoots near the zone edge are exactly the
-pushes that failed and were dropped — then the policy is being asked about a
-table outside its data. It will answer. The answer will arrive as a chunk of
-waypoints like any other, with nothing to distinguish it from a confident one.
-This is the failure to watch for in this solution, and the DAgger repair is
-aimed precisely at it: ask solution 2 what it would have done on this table,
-and the gap closes.
+**Compounding error, in one concrete form.** The policy now faces a glass
+closer to the zone edge than the teacher would have left it. If the data held
+tables like that, the second push is fine. If not, the policy is outside its
+data. The filter makes that more likely, because overshoots near the edge are
+pushes that failed and were dropped. The policy will still answer, with nothing
+to mark the answer as unsure. DAgger aims at exactly this case. Ask solution 2
+about this table, and the gap closes.
 
-**Where the averaging problem would show.** Change the table slightly so that
-the crowded pair sits symmetrically, with as much free table to the left of the
-left glass as to the right of the right glass. Pushing the left glass left and
-pushing the right glass right are equally good, and [the target
-layout](../the-target-layout.md) says plainly that both are legal answers. The
-demonstration set will hold both kinds of example, taken from arrangements that
-look much alike. ACT must name one chunk, and the chunk that is least wrong on
-average over those examples is something between them: a short, hesitant motion
-that separates nothing. The examiner would score that as a push spent with the
-table unchanged, and a solution that repeats it would burn its push budget
-without failing in any way the counts call wrong. **This is the case the
-Diffusion Policy way exists to test**, because a model that draws its chunk
-can commit to one side.
+**Where averaging would show.** Now make the crowded pair symmetric, with equal
+free space on both sides. Pushing the left glass left and the right glass right
+are equally good. The data will hold both, from tables that look alike. ACT
+must name one chunk, and the least wrong one is between them. That is a short,
+hesitant motion that separates nothing. The examiner scores it as a wasted
+push. Repeated, it uses up the budget without anything the counts call wrong.
+**This is the case the Diffusion Policy way exists to test**, because a model
+that draws its chunk can commit to one side.
 
-**And the refusal.** Take a different table, of stemmed glasses this time, one
-of them drawn with a foot narrow enough that half its width divided by any
-plausible friction falls below the jaw's top edge. The shared arithmetic
-evaluates that from the measured foot width before the policy is consulted, and
-refuses the glass with its reason. The policy never sees it. The other glasses
-on the table are pushed as usual, and the run ends *correct but incomplete*,
-which is the right result. The important part of this example is the negative
-one: nothing the policy could have learned would have improved it, and nothing
-the policy might have produced was allowed to make it worse.
+**And the refusal.** On a different table, one stemmed glass has a foot so
+narrow that it tips before it slides. The shared arithmetic refuses it from the
+measured foot width, before the policy is asked. The policy never sees it. The
+other glasses are pushed as usual, and the run ends *correct but incomplete*.
+That is the right result. Nothing the policy learned could improve it, and
+nothing it produced could make it worse.
 
-**One correction to all of the above, now that it has been run.** Everything in
-this example is what the design says the method would do, and it was written
-before any of it existed. The refusal behaves exactly as described. The first
-push does not. What the fitted policy actually returns on a table it has not
-seen is a chunk that starts in roughly the right neighbourhood but points about
-thirty degrees away from where the teacher pointed, and the jaw is a quarter of
-a metre long behind its fingertips, so on a crowded table it meets a neighbour
-while it is still coming down. Almost every push ends there, before any glass
-is touched. Nothing in the example about leaning the slide or slowing near the
-end was reached, because the motion never got that far. The folder's
-`README.md` has the counts.
+**The correction, now that it has run.** The refusal works as described. The
+first push does not. On unseen tables, the policy's chunk starts in roughly the
+right place but points 22 to 27 degrees away from the teacher's heading. The
+hand reaches a quarter of a metre behind its fingertips. So on a crowded table
+it meets a neighbour on the way down, and the push ends before any glass is
+touched. The leaning and slowing were never reached. The folder's `README.md`
+has the counts.
 
 ![The same held-out table with the teacher's push and the policy's chunk side by side: the teacher brings the fingertips down 10 mm clear of the glass's rim and the 266 mm body of the hand clears every other glass, while the policy brings them down 3 mm inside the rim of the glass it means to push, so the examiner stops the descent and reports the chunk blocked with nothing moved; over the whole run 331 of 438 pushes end that way and 308 of them go to a glass that has already been pushed.](../../../images/03-push-glasses-apart/03-blocked-on-the-way-down.png)
 
 ## What it needs
 
 It needs **[LeRobot](https://github.com/huggingface/lerobot)**, which holds ACT
-and Diffusion Policy as reference implementations, with **PyTorch** underneath.
-LeRobot is Apache-2.0, and because this solution downloads no weights, the
-weights file it produces is fitted entirely on data generated inside this
-project and inherits no terms from anybody. That is as simple as a licence
-position gets in this folder: [solution 5](05-smolvla-as-it-downloads.md) and
-[solution 6](06-smolvla-fine-tuned.md) both carry borrowed weights, and this
-one carries none.
+and Diffusion Policy, with **PyTorch** underneath. LeRobot is Apache-2.0. That
+is the permissive kind of licence [the implementation
+notes](../../../implementation-notes.md) record for the rest of the project. No
+weights are downloaded. So the weights this solution produces carry no one
+else's terms. [Solution 5](05-smolvla-as-it-downloads.md) and [solution
+6](06-smolvla-fine-tuned.md) both carry borrowed weights.
 
-It needs **[solution 2](02-geometry-ranked.md) working**, because that solution
-is the teacher. This is a real dependency and not a preference: without a
-program that chooses pushes well, there are no demonstrations, and with a
-teacher that chooses badly the student has nothing worth copying. [The
-plan](../solutions-plan.md) builds the two in that order for this reason.
+It needs **[solution 2](02-geometry-ranked.md) working**, because it is the
+teacher. Without it there are no demonstrations. With a poor teacher, the
+student has nothing worth copying. [The plan](../solutions-plan.md) builds the
+two in that order.
 
-It needed **two things the examiner did not have**, and that was the third of the
-honest costs. [The plan](../solutions-plan.md) recorded both in its audit of
-`bench.py`. The first was a **rendered view of the table from the top**: the
-examiner returned numeric readings, and it did render the world, but from the
-arm's side rather than straight down, and only for the films used to check a
-run by eye. The second was a **path that accepts a chunk of waypoints**:
-`push()` takes a parameterised push and *is* the macro that expands it, so
-there was no way in for a trajectory. Both are now built — `bench/top_view.py`
-and `Bench.follow` — and both were the real price of going off the shelf,
-because every LeRobot policy expects pictures and a control-rate action space.
-Solutions 1 and 2 need neither, which is one more reason to build them first.
+It needed **two things the examiner did not have**. [The
+plan](../solutions-plan.md#the-examiner-had-to-grow-before-cars-3-to-6-could-run)
+recorded both when it audited `bench.py`. The first was a **rendered view from
+straight above**. The examiner rendered only from the arm's side, for films.
+The second was a **path that accepts a chunk of waypoints**. `push()` takes a
+parameterised push and *is* the macro that expands it. Both are now built, as
+`bench/top_view.py` and `Bench.follow`. Every LeRobot policy expects pictures
+and a control-rate action space. So these were the real price of using one off
+the shelf. Solutions 1 and 2 need neither.
 
-It needs **demonstrations**, which cost arm time on the examiner's tables's tables and nothing else,
-drawn only from table numbers below the dividing line. The prescription here
-is to over-represent the crowded corner cases deliberately, so that the edge
-of what the policy will face sits somewhere in the middle of what it was
-trained on. **That part is not done**: the demonstration set is drawn from
-consecutive table numbers, which is whatever mixture the examiner's own table
-generator produces, and the crowded corners are therefore as rare in the
-training set as they are on the examiner's tables.
+It needs **demonstrations**, which cost only arm time on the examiner's tables.
+They are drawn from the demonstration band. The design says to over-represent
+crowded corner cases, so the hardest tables sit inside the training data.
+**That part is not done.** The demonstrations come from consecutive table
+numbers. So crowded corners are as rare in training as on the examiner's
+tables.
 
-It needs **compute**, and this is the cheapest entry in the folder. **Training
-runs in hours.** The reason it is so modest is worth stating, because it is
-easy to assume that anything with a transformer in it is expensive. The dataset
-is small — thousands of pushes, each a picture and a short chunk — the network
-is small by the standards of the foundation models in [solution
-5](05-smolvla-as-it-downloads.md) and [solution
-6](06-smolvla-fine-tuned.md), and nothing has to be learned about vision in
-general, only about this one cell's pictures of this one task.
+It needs **compute, and less than any other solution here.** Training takes
+hours. The dataset is small: thousands of pushes, each a picture and a short
+chunk. The network is small next to the foundation models in solutions 5 and 6.
+It only has to learn this one cell's pictures of this one task.
 
-**In the end nothing was rented.** This document first budgeted tens of
-dollars for a small accelerator, and that is still the right figure for
-anybody who wants one. But a network of a few tens of millions of parameters
-on a few thousand small pictures fits on the graphics processor an Apple M4
-already has, in about an hour per training seed, so the whole of this solution —
-demonstrations, several training seeds and the held-out run — was made on the
-machine the project is written on. For comparison, renting an accelerator for
-a weekend is of order a hundred dollars, and a small one for a month of order
-five hundred, so even a generous schedule of retraining stays well inside a
-weekend's rental if a laptop is not available.
+**In the end nothing was rented.** This document first budgeted tens of dollars
+for a small accelerator. That is still the right figure for anyone who wants
+one. But a few tens of millions of parameters, on a few thousand small
+pictures, fit on an Apple M4's own graphics processor. Each training seed took
+about an hour. So the demonstrations, the seeds and the held-out run were all
+made on the project's own machine. For comparison, renting an accelerator costs
+about a hundred dollars a weekend. A small one costs about five hundred a
+month.
 
-At run time it needs very little: **one forward pass per chunk** for ACT, and
-several passes per chunk for the denoising way, against a push that takes the
-arm seconds to carry out. The compute column on the scorecard is where that
-difference between the two ways becomes visible.
+At run time it needs **very little**: one forward pass per chunk for ACT, and
+several for the denoising way. A push takes the arm seconds, so this barely
+matters. The compute column on the scorecard shows the difference.
 
-And once fitted, it needs **a weights file kept in step with the examiner**.
-Change how the view from the top is rendered, or the macro whose waypoints
-became the labels, or the error the readings carry, and the file is quietly out
-of date in a way no test of the code would notice.
+Once fitted, it needs **a weights file kept in step with the examiner**. Change
+how the top view is rendered, the macro whose waypoints became the labels, or
+the error in the readings. The file is then out of date, and no test of the
+code would notice.
 
 ## Where it is strong and where it breaks
 
-**Nothing has to be written about pushing.** No friction model, no candidate
-generator, no features chosen by hand, no geometry. The method's entire content
-is a dataset and a fitting procedure, and the dataset was produced by a program
-that already exists. Of the six, this is the one that demands the least prior
-understanding of the task from whoever builds it.
+It has five strengths.
 
-**The output is native.** This solution emits a chunk because a chunk is what
-it is built to emit, so nothing is squeezed or expanded on the way out, and the
-examiner's decision to accept waypoints costs it nothing.
+**Nothing about pushing has to be written.** It needs no friction model, no
+candidate generator, no hand-chosen features and no geometry. The method is a
+dataset and a fitting procedure, and a program made the dataset.
 
-**Labels are free and plentiful.** The usual reason not to attempt imitation
-learning — that somebody has to demonstrate the task by hand, many times — does
-not apply, because the teacher is code and the tables are simulated.
+**The output is native.** It emits a chunk because it is built to. So the
+examiner's choice to accept waypoints costs it nothing.
 
-**It is cheap to train and cheap to run.** Hours on a laptop's own graphics
-processor, and one forward pass per push.
+**Labels are free and plentiful**, because the teacher is code and the tables
+are simulated.
 
-**It is a measurement.** Student against teacher, on the same tables with the
-same scorecard, with every shared part held still. Even if this solution were
-not the one carried forward, that reading would have earned its place.
+**It is cheap to train and to run**: hours on a laptop, and one forward pass
+per push.
 
-Against that, five weaknesses, and the first three cannot be engineered away.
+**It is a measurement**: student against teacher, on the same tables and the
+same scorecard, with everything else held still.
 
-**The ceiling is the teacher's quality.** Every label came from solution 2, and
-nothing in behaviour cloning ever evaluates an outcome, so **this solution
-cannot beat solution 2 by much on the pushes it imitates.** It is worth being
-precise about the two narrow ways it might exceed its teacher, because they are
-real but small: it can smooth away some of the teacher's inconsistency, since a
-fitted function averages over many examples and so is steadier than any one of
-them; and it can express motions the examiner's macro cannot, since its output is
-waypoints rather than push parameters. What it cannot do is discover that a
-different glass should have been moved, or a different destination chosen,
-because no mechanism in it compares one outcome against another. [Solution
-4](04-a-world-model.md) has such a mechanism, which is the sharpest difference
-between the two.
+It has five weaknesses, and the first three cannot be engineered away.
 
-**Filtering the demonstrations biases it towards what the teacher does well.**
-Keeping only the pushes that succeeded is necessary, because a cloned policy
-copies failures as readily as successes, and it thins the dataset exactly in
-the situations where the teacher struggled. So the student is fitted most
-densely where help was least needed.
+**The ceiling is the teacher.** Every label came from solution 2, and nothing
+in behaviour cloning judges an outcome. So **this solution cannot beat solution
+2 by much on the pushes it copies.** It might beat it in two small ways. A
+fitted function averages many examples, so it can be steadier than its teacher.
+And it can express motions the macro cannot. But it cannot discover that a
+different glass or destination was better. [Solution 4](04-a-world-model.md)
+can, and that is the sharpest difference between the two.
 
-**It needed examiner work the first two solutions did not.** A straight-down
-rendered view and a waypoint path, both recorded in the plan as missing and
-both now built. That cost is paid, but two smaller ones are paid on every
-push rather than once. The examiner's chunk wants a glass and an aim that the
-policy does not produce, so both are read back off the waypoints outside it.
-And nothing stops a network emitting a coordinate the jaw cannot reach, so
-every chunk is pulled inside the jaw's limits before it is followed, and how
-often that happens has to be counted and reported rather than hidden. When it
-was counted, the character of it was milder than this warning suggests: every
-waypoint that had to be pulled in was pulled in **height** alone, by at most
-2.3 millimetres, and not one of the six hundred chunks measured ever asked for
-a place off the table. So the limit that bites is the one the jaw has below the
-table top, not the reach across it.
+**Filtering biases it towards what the teacher does well**, as [choosing which
+demonstrations to
+keep](#choosing-which-demonstrations-to-keep-and-the-bias-it-buys) explains.
 
-**It is open-loop inside a chunk, and it cannot refuse.** During a chunk
-nothing is read, and the monitor that would watch the force is not built, so
-the only thing stopping a chunk is the jam threshold. And the policy's only
-output is waypoints, so a refusal has to come from the shared gate in front of
-it rather than from the policy itself.
+**It needed examiner work the first two solutions did not.** The top view and
+the waypoint path are built. Two smaller costs are paid on every push. The
+glass and the aim are read back off the waypoints, outside the policy. And a
+network can emit a coordinate the jaw cannot reach. So every chunk is pulled
+inside the jaw's limits, and the count is reported. In practice, every pulled
+waypoint was pulled in **height** only, by at most 2.3 millimetres. None of the
+six hundred chunks measured asked for a place off the table. So the limit that
+bites is how low the jaw can go, not how far it can reach.
 
-**And it cannot explain itself, or say when it is lost.** When solution 2 is
-wrong you can print the candidates and the scores and see which step went
-astray. When this policy is wrong you can look at the picture and guess. It has
-no confidence output, and the situation in which it is least reliable — a table
-unlike anything in its data — is indistinguishable in its output from the
-situation in which it is most reliable. Combined with it being stochastic and
-with training varying by seed, that is why the examiner insists that one run is not
-a measurement and that a result quoted without a spread is not a result.
+**It is blind inside a chunk, and it cannot refuse.** The force monitor is not
+built, so only the jam threshold stops a chunk. Refusals come from the shared
+gate in front of the policy, not from the policy.
+
+**It cannot explain itself, or say when it is lost.** When solution 2 is wrong,
+you can print its candidates and scores. When this policy is wrong, you can only
+look at the picture and guess. It has no confidence output. A table unlike its
+data looks the same in its output as a familiar one. With training that varies
+by seed, this is why [the
+examiner](../the-examiner.md#two-things-this-scorecard-needs-that-problem-2s-did-not)
+insists that one run is not a measurement.
 
 ## The commonest refusal reason is not the reason it fails
 
-One number on this solution's scorecard invites a wrong conclusion, so it is
-worth settling here. The reason given most often for a glass left on the table
-is **"push budget spent"**, which reads as though the solution was stopped
-early and would do better if it were allowed more tries. That is not what is
-happening, and the difference matters because it points at a different repair.
+The reason given most often for a glass left on the table is **"push budget
+spent"**. That reads as if the solution was stopped early and would do better
+with more tries. It would not, and the real reason points at a different
+repair.
 
-The budget is the shared one: four pushes for any single glass and sixteen for a
-table, held in the examiner so that the six solutions' push counts mean the same
-thing. Raising it is therefore easy to test, and it has been tested. Each of the
-three fitted seeds was run again over the same fifty held-out tables at four
-budgets, with nothing else changed:
+The budget is shared: four pushes per glass and sixteen per table. [The
+examiner](../the-examiner.md#what-the-examiner-measures) holds it, so that push
+counts mean the same thing for every solution. Raising it is easy to test. Each
+of the three seeds was run again over the same fifty held-out tables at four
+budgets, with nothing else changed. The table gives glasses racked, out of 251,
+for each seed at each budget.
 
 | budget, per glass and per table | seed 0 | seed 1 | seed 2 |
 |---|---|---|---|
@@ -1179,48 +847,41 @@ budgets, with nothing else changed:
 | 16 and 64 | 65 | 52 | 64 |
 | 32 and 128 | 66 | 52 | 64 |
 
-The numbers are glasses racked out of 251. **Eight times the budget buys one or
-two glasses**, while the pushes made rise from about 440 to about 3,000. So the
-budget is where the run stops, which is not the same as the reason it stops.
+**Eight times the budget buys one or two glasses.** Meanwhile the pushes made
+rise from about 440 to about 3,000. So the budget is where the run stops, not
+why it stops.
 
-The reason it stops is the one the blocked descents already show. Three pushes
-in four end before they begin, because the jaw meets a glass while coming down,
-and a push that moves nothing still costs a push. Granting more of them simply
-buys more of the same. A refusal recorded as "budget spent" is therefore the
-last in a line of wasted attempts rather than a solution cut short, and the
-repair is to stop wasting them rather than to allow more.
+It stops because of the blocked descents. Three pushes in four end before they
+begin, because the jaw meets a glass on the way down. A push that moves nothing
+still costs a push. More budget only buys more of the same. So "budget spent"
+is the last of a line of wasted attempts. The repair is to stop wasting pushes,
+not to allow more of them.
 
-Two things follow for anyone reading the other solutions beside this one. First,
-the shared budget is not a ceiling the examiner imposes on everybody: solutions
-1 and 2 never spend it once in fifty tables, and [solution
-4](04-a-world-model.md) spends it for ten glasses of 251. It appears here
-because this solution spends pushes on nothing, so the count is a symptom and
-not a cause. Second, the budget was deliberately left at four and sixteen after
-this was measured. These are the held-out tables, and a number chosen because it
-scored better on them would make every later result partly a measurement of that
-choosing.
+Two notes help when reading the other solutions beside this one. First, the
+budget is not a limit that binds everyone. Solutions 1 and 2 never spend it in
+fifty tables. [Solution 4](04-a-world-model.md) spends it for ten glasses of
+251. It shows up here because this solution wastes pushes. Second, the budget
+stayed at four and sixteen after this test. These are the held-out tables. A
+budget chosen because it scored better on them would taint every later result.
 
 ## Most of what the policy has to learn is the coordinate system
 
-If the budget is not the reason this solution fails, the blocked descents are,
-and those come from the policy putting the jaw down about 50 mm away from where
-the teacher put it. That reads like a limit of the model. Measurement says it is
-mostly a limit of **how the target was written down**, which is a different
-thing and a cheaper one to change.
+The blocked descents come from the policy putting the jaw down about 50 mm from
+where the teacher did. That looks like a limit of the model. Measurement says
+it is mostly a limit of **how the target is written down**. That is cheaper to
+change.
 
-Here is the idea. A chunk's waypoints are currently written as positions on the
-table, so the number the policy must produce depends on where the table's origin
-happens to be. The same push, written as an offset from the glass it is pushing,
-is a different number for the same motion. And that offset can be turned once
-more, so that one number runs along the push and the other across it. The motion
-is identical in all three; only the description changes.
+A chunk's waypoints are now written as positions on the table. So the numbers
+depend on where the table's origin is. The same push can be written as an
+offset from the glass it pushes. That offset can be turned once more, so one
+number runs along the push and the other across it. The motion is the same in
+all three. Only the description changes.
 
-What matters is that **a description with less spread in it is a smaller thing
-to learn**, in the same way that fitting a line through points scattered in a
-narrow band is easier than fitting one through points scattered widely. So the
-three descriptions were measured on 477 demonstrations from 400 tables, with the
-spread reported as a radius: the typical distance from the middle of the
-distribution.
+**A description with less spread is easier to learn.** Fitting a line through
+points in a narrow band is easier than through widely scattered points. So the
+three descriptions were measured on 477 demonstrations from 400 tables. The
+table gives the spread as a radius, which is the typical distance from the
+middle. Its two columns are where the chunk starts and where it ends.
 
 | how the target is written | where the chunk starts | where the chunk ends |
 |---|---|---|
@@ -1228,89 +889,77 @@ distribution.
 | as an offset from the target glass | 46.2 mm | 39.2 mm |
 | as that offset in the push's own frame | **7.5 mm** | **25.8 mm** |
 
-The first column is the important one, because where the chunk starts is where
-the jaw comes down and so is what the blocked descents are about. Written on the
-table it varies by 135.8 mm. Written in the push's own frame it varies by
-**7.5 mm**, and the variation *across* the push direction is exactly zero.
+The first column matters most. Where the chunk starts is where the jaw comes
+down, and that is what the blocked descents are about. Written on the table, it
+varies by 135.8 mm. Written in the push's own frame, it varies by **7.5 mm**.
+The spread *across* the push direction is exactly zero.
 
-That zero is the teacher's own construction showing through. It always brings the
-jaw down on the line through the glass it means to push, a near-constant 46 mm
-behind the glass's measured middle. So in the right frame the descent point is
-almost a single number, and the 135.8 mm the policy currently has to learn is
-very largely the position of the table rather than anything about pushing. A
-model spending its capacity on that is spending it on the one part the examiner
-already measures and hands over for free.
+That zero comes from how the teacher works. It always brings the jaw down on
+the line through the target glass. It lands a near-constant 46 mm behind the
+glass's measured middle. So in the right frame, the descent point is almost one
+number. Most of the 135.8 mm the policy must learn is just where things are on
+the table. The examiner already measures that and hands it over for free.
 
-The second column behaves differently and is worth noticing. The aim keeps
-25.8 mm of spread in the push's own frame, and that spread is real: it is how
-far the teacher decided to push, which is a genuine decision that changes from
-table to table. So the measurement separates the two cleanly. Where to come down
-is nearly fixed once the glass and the heading are known, while how far to push
-is a decision that has to be learned.
+The second column is different. The end point keeps 25.8 mm of spread in the
+push's frame. That spread is real. It is how far the teacher chose to push,
+which changes from table to table. So the measurement splits the two cleanly.
+Where to come down is nearly fixed, once the glass and heading are known. How
+far to push is a real decision that must be learned.
 
-**One caveat, because this is not a free improvement.** Writing the action in
-the push's own frame means the policy has to produce a glass and a heading, since
-those are what define the frame. That is exactly the parameterisation
-[solution 1](01-one-fixed-nudge.md) and [solution 2](02-geometry-ranked.md)
-choose in, so adopting it moves this solution's vocabulary towards its teacher's
-and away from the plain copying of a trajectory that it currently demonstrates.
-That may well be the right trade, and the measurement above says it is a large
-one, but it is a change in what this solution *is* and not only in how well it
-does. If it is made, it belongs beside the present result as a variant rather
-than replacing it, so that both readings survive.
+**One caveat: this is not a free improvement.** To use the push's own frame,
+the policy must output a glass and a heading, because those define the frame.
+That is how [solution 1](01-one-fixed-nudge.md) and [solution
+2](02-geometry-ranked.md) describe a push. So the change moves this solution
+towards its teacher's vocabulary, and away from plainly copying a path. It may
+be the right trade, and a large one. But it changes what this solution *is*. If
+it is made, it should sit beside the present result as a variant, so both
+readings survive.
 
-Nothing has been fitted in the new frame yet, so there is no score for it. The
-numbers above come from `03-imitation-from-demonstrations/measure_frames.py`,
-which trains nothing and reads only the demonstration band.
+Nothing has been fitted in the new frame yet, so it has no score. The numbers
+come from `03-imitation-from-demonstrations/measure_frames.py`. That script
+trains nothing and reads only the demonstration band.
 
 ## Telling the policy where the glasses are, and what it changed
 
-The measurement above says the policy spends most of its capacity locating
-things rather than deciding how to push, so the obvious next question is what
-happens if it is simply told where the glasses are. That is a different repair
-from rewriting the target in the push's own frame, and a safer one, because it
-leaves what the policy answers exactly as it was and changes only what it is
-allowed to see. This section says what was given to it, what that cost, and what
-it bought, and the short version is that **it bought consistency rather than
-glasses**.
+The last section found that the policy spends most of its effort locating
+things. So the next question is: what if it is simply told where the glasses
+are? This is a safer repair than changing the frame. The policy's answer stays
+the same, and only its input grows. The short version is that **it bought
+consistency, not glasses**.
 
-The difficulty is that a network has a fixed number of inputs while a table holds
-a varying number of glasses, so a list of measurements cannot simply be handed
-over. The way around it is the one [solution 4](04-a-world-model.md) already uses:
-a fixed number of slots, each either describing one glass or standing empty, with
-the glasses placed into slots in a settled order so that the same table always
-produces the same row. Six slots are enough, because the examiner never puts more
-than six glasses on a table, and each slot carries six numbers, which are the
-glass's two position values, its widest width, its height, its foot width, and a
-flag saying whether the slot is used at all. That flag matters, because without
-it an empty slot of zeros is indistinguishable from a glass standing exactly at
-the table's centre.
+A network has a fixed number of inputs, but a table holds a varying number of
+glasses. The way round this is the one [solution 4](04-a-world-model.md) uses.
+There are six fixed slots, and each one describes one glass or stands empty.
+Glasses fill the slots in a set order, so the same table always gives the same
+row. Six is enough, because the examiner never puts more than six glasses on a
+table. Each slot holds six numbers: two for position, the widest width, the
+height, the foot width, and a flag for whether the slot is used. Without the
+flag, an empty slot of zeros would look like a glass at the table's centre.
 
-This is cheap in every sense that matters. The row is 36 numbers, the model grows
-from 51,598,725 numbers to 51,637,125, which is a rise of less than one part in a
-thousand, and the measurements themselves are not privileged information: they
-are the same readings the examiner hands every solution at the start of a push.
-So any change in the score comes from the information and not from a larger model
-or an unfair advantage.
+This is cheap. The row is 36 numbers. The model grows from 51,598,725 numbers
+to 51,637,125, which is less than one part in a thousand. The readings are not
+privileged. The examiner hands them to every solution at the start of a push.
+So any change in score comes from the information, not from a bigger model or
+an unfair advantage.
 
-**What it did to how closely the policy copies its teacher** is exactly what the
-earlier measurement predicted:
+**How closely it copies the teacher** changed as the last section predicted.
+The table gives the distance from the teacher's chunk for the three fits of
+each kind. One column is tables the fits were trained on, and the other is
+tables they never saw.
 
 | | tables it was fitted on | tables it never saw |
 |---|---|---|
 | from the picture alone | 20.4 to 20.7 mm | 48.1 to 52.4 mm |
 | with the readings | **17.2 to 19.3 mm** | 48.3 to 52.9 mm |
 
-On tables it has been shown, every one of the three fits now lands closer to its
-teacher than any of the three picture-only fits did. On tables it has never seen,
-the two groups are indistinguishable. That pattern has a name worth knowing,
-because it appears whenever extra input is added to a model: the model used the
-new information to fit the examples it was given more exactly, without learning
-anything that carries to a table it has not met. In other words it memorised
-better rather than understanding better.
+On seen tables, every fit with the readings is closer to the teacher than any
+picture-only fit. On unseen tables, the two groups are the same. So the model
+used the new information to fit its examples more exactly. It learned nothing
+that carries over to a new table. It memorised better; it did not understand
+better.
 
 **What it did to the score** follows from that. Each column below is three fits
-scored on the same 50 held-out tables, written as the average across fits.
+scored on the same 50 held-out tables, given as the average across fits.
 
 | | from the picture alone | with the readings |
 |---|---|---|
@@ -1322,210 +971,164 @@ scored on the same 50 held-out tables, written as the average across fits.
 | arm travel a run | 2,245 mm | 1,824 mm |
 | pushes blocked on the way down | 366.3 | 370.3 |
 
-Two more glasses out of 251 is nothing, because the difference is about four
-tenths of the run-to-run variation and this project does not report a number
-without its spread. So **the readings did not raise the score.** What they did
-instead is remove the bad fit. Before, two of the three fits racked 63 or 64
-glasses while the third managed only 51, and that third fit cleared just one
-table; now all three fits sit between 58 and 65 and every single one clears
-exactly three tables. The spread on racked glasses halved, from 7.2 to 3.5.
+Two more glasses out of 251 is nothing. It is about four tenths of the
+run-to-run variation, and this project does not report a number without its
+spread. So **the readings did not raise the score.** They removed the bad fit
+instead. Before, two fits racked 63 or 64 glasses and the third only 51. That
+third fit cleared just one table. Now all three sit between 58 and 65, and each
+clears exactly three tables. The spread on racked glasses halved, from 7.2 to
+3.5.
 
-That is a real gain, but it is important to be clear about which kind. A tighter
-spread around the same average means the method is more **dependable**, so a
-single fit of it is more trustworthy, and that is worth something when each fit
-costs an hour. It does not mean the method is **better**, because the average
-did not move.
+That is a gain in how **dependable** the method is. One fit is now more
+trustworthy, which matters when each fit costs an hour. It is not a gain in how
+**good** the method is, because the average did not move.
 
-The reason the average did not move is in the last row of the table, and it is
-the same reason the earlier sections keep arriving at. Roughly 370 of 444 pushes
-are still thrown away because the jaw touched something while descending, and
-that number did not improve at all. The readings let the policy aim about six
-millimetres more accurately and travel a third less distance, which says it
-really did use them, and the descents still fail just as often. So the aim was
-never the binding constraint. **The binding constraint is the vertical approach
-itself**: the policy names a point, the arm lowers the jaw straight down onto it,
-and anything in the way destroys the push. No amount of better aiming helps while
-the approach is a straight drop, because the obstacle is usually not where the
-jaw is going but where it has to pass through on the way.
+The last row of the table says why. About 370 of 444 pushes are still lost to
+a touch on the way down, and that number did not improve. The readings let the
+policy aim about six millimetres better and travel a third less. So it did use
+them, yet descents fail just as often. Aim was never the limit. **The limit is
+the vertical approach itself.** The policy names a point, and the arm lowers
+the jaw straight down onto it. Anything in the way ends the push. Better aim
+cannot help while the approach is a straight drop. The obstacle is usually on
+the way down, not at the target.
 
-This variant is kept beside the original rather than replacing it, exactly as the
-caveat in the previous section asks, so both readings survive. The picture-only
-score remains the solution's result, and this one is recorded next to it.
+This variant sits beside the original, as the last section's caveat asks. The
+picture-only score stays this solution's result, and this one is recorded next
+to it.
 
 ## The general ideas behind this
 
-Nothing in this solution was invented for glassware. Every part of it is a
-standard piece of modern practice, and each is worth knowing on its own,
-including where it is normally the wrong tool.
+Every part of this solution is a standard piece of modern practice. This
+section gives each one in short, with a reference and with when it is the wrong
+tool. The sections above hold the full explanations.
 
 ### Behaviour cloning
 
 Fit a policy by supervised learning on pairs of what the demonstrator saw and
-what the demonstrator did. It is the oldest and simplest form of imitation
-learning, going back to driving a vehicle from camera images with a small
-network trained on a person's steering, and it remains the first thing to try
-whenever demonstrations exist.
+what it did. It is the oldest form of imitation learning. An early example
+drove a vehicle from camera images, with a small network trained on a person's
+steering. It is still the first thing to try when demonstrations exist.
 
-It is normally the right choice when demonstrations are plentiful and the task
-is reactive — when what to do next really is a function of what is in front of
-you. It is normally the wrong choice when demonstrations are scarce, when the
-task needs a long-horizon plan that no single observation implies, or when the
-demonstrator cannot be consulted again, because then the compounding error
-below has no cheap repair. For more, see [imitation
+It suits plentiful demonstrations and reactive tasks, where the next action
+follows from what is in front of you. It is a poor choice when demonstrations
+are scarce, when the task needs a long plan, or when the demonstrator cannot be
+asked again. For more, see [imitation
 learning](https://en.wikipedia.org/wiki/Imitation_learning).
 
 ### Compounding error, and dataset aggregation
 
-A cloned policy's own small mistakes move it to states its demonstrations never
-covered, where it acts worse, which moves it further out. The standard analysis
-of this and the standard repair are both in **DAgger** — dataset aggregation —
-by Ross and colleagues ([arXiv:1011.0686](https://arxiv.org/abs/1011.0686)):
-run the policy, label the states it actually visits with what the expert would
-have done there, add them to the training set, and retrain.
+[Compounding error](#compounding-error) explains the failure. The standard
+analysis and the standard repair are both in **DAgger**, short for dataset
+aggregation, by Ross and colleagues
+([arXiv:1011.0686](https://arxiv.org/abs/1011.0686)).
 
-It is the right method whenever the expert can be queried at a state of your
-choosing, which is the case here because the expert is a program. It is wrong,
-or rather unavailable, when the expert is a person, because asking a person to
-label thousands of states the policy wandered into is slower and more
-unpleasant than asking them to demonstrate the task properly in the first
-place. That asymmetry is the main reason a programmed teacher is worth so much
-more than a human one for this particular method.
+DAgger works when the expert can be asked about any state you choose. That is
+true here, because the expert is a program. It does not really work when the
+expert is a person. Labelling thousands of states the policy wandered into is
+slower and less pleasant than demonstrating the task well. That is the main
+reason a programmed teacher is worth more than a human one for this method.
 
 ### Action chunking
 
-Predict a short sequence of future actions in one pass and execute it, rather
-than predicting one action per control step. ACT introduced this for fine
-manipulation learned from inexpensive hardware (Zhao and colleagues,
-[arXiv:2304.13705](https://arxiv.org/abs/2304.13705)) and it has become a
-standard component of imitation policies, including the vision-language-action
-models [solution 5](05-smolvla-as-it-downloads.md) and [solution
-6](06-smolvla-fine-tuned.md) use.
+Predict a short run of future actions in one pass and carry it out, instead of
+one action per control step. ACT introduced this for fine manipulation on
+low-cost hardware (Zhao and colleagues,
+[arXiv:2304.13705](https://arxiv.org/abs/2304.13705)). It is now standard in
+imitation policies. That includes the vision-language-action models [solution
+5](05-smolvla-as-it-downloads.md) and [solution 6](06-smolvla-fine-tuned.md)
+use.
 
-It is right for continuous, committed motions — a push, a wipe, a pour — where
-re-deciding every instant produces dithering and averages away the commitment
-the motion needs. It is wrong when the environment can change faster than a
-chunk takes to run, because a chunk is blind while it executes: a policy
-chunking through a moving obstacle is a policy driving with its eyes closed.
-This cell is quasi-static and nothing moves except what the arm moves, which is
-why chunking is safe here and would not be in a scene with people in it.
+It suits continuous, committed motions, such as a push, a wipe or a pour. It is
+wrong when the scene can change faster than a chunk runs, because a chunk is
+blind while it runs. In this cell nothing moves except what the arm moves. So
+chunking is safe here. It would not be safe in a scene with people in it.
 
 ### Denoising diffusion, and Diffusion Policy
 
-Learn to remove noise from a corrupted sample, then generate by starting from
-pure noise and removing a little at a time. The modern form of this is the
-denoising diffusion probabilistic model (Ho and colleagues,
-[arXiv:2006.11239](https://arxiv.org/abs/2006.11239)), and **[Diffusion
+Learn to remove noise from a corrupted sample. Then generate by starting from
+pure noise and removing a little at a time. The modern form is the denoising
+diffusion probabilistic model (Ho and colleagues,
+[arXiv:2006.11239](https://arxiv.org/abs/2006.11239)). **[Diffusion
 Policy](https://diffusion-policy.cs.columbia.edu/)** applies it to action
 chunks for robot control (Chi and colleagues,
 [arXiv:2303.04137](https://arxiv.org/abs/2303.04137)).
 
-It is right when the right answer is not unique — when several actions would
-all be good and a model forced to name one would return their average, which is
-often no answer at all. It is wrong when the answer genuinely is unique and
-speed matters, because the several denoising passes buy nothing and cost real
-time per decision. The honest reading in this problem is that uncrowding a
-table has many good answers, which argues for it, and that a push happens at
-the speed of an arm rather than of a processor, which means the extra passes are
-affordable.
+It suits problems where several actions would all be good. It is wrong when the
+answer is unique and speed matters, because the extra passes buy nothing. Here,
+uncrowding a table has many good answers, which argues for it. And a push runs
+at the speed of an arm, not of a processor, so the extra passes are affordable.
 
 ### Mode averaging under a single-answer loss
 
-The failure the previous idea repairs deserves its own name, because it is
-general and it catches people out. Fitting a model to produce one output while
-minimising its average error over examples that disagree makes the model produce
-something between those examples. Where the examples are two sensible choices,
-the something between them is frequently a third thing that is not sensible at
-all.
+Fit a model to give one output while lowering its average error over examples
+that disagree. It will give something between those examples. When the
+examples are two sensible choices, the answer between them is often not
+sensible at all. [The second way](#the-second-way--diffusion-policy) shows this
+on a crowded pair.
 
-It is worth knowing because the symptom is misleading. The model's training
-error looks reasonable and its behaviour looks timid, and the natural diagnosis
-— that it needs more data or more training — is the wrong one, since more
-examples of both choices make the averaging worse rather than better. The
-repairs are to represent a distribution rather than a point, as the denoising
-model does, or to remove the ambiguity from the data by making the choice part
-of the input.
+The symptom misleads. Training error looks fine and the behaviour looks timid.
+The natural guess is that it needs more data or more training, and that guess is
+wrong. More examples of both choices make the averaging worse, not better.
+There are two fixes. One is to represent a distribution instead of one point,
+as the denoising model does. The other is to make the choice part of the input,
+so the examples no longer disagree.
 
 ### Distilling a planner or a program into a policy
 
-Use a slow but good procedure as the teacher for a fast network, so that the
-network ends up doing at run time what the procedure did offline. This is a
-common and unglamorous pattern, and it is exactly what the relationship between
-solution 2 and this solution is.
+Use a slow but good procedure as the teacher for a fast network. The network
+then does at run time what the procedure did offline. That is exactly how
+solution 2 and this solution relate.
 
-It is right when the teacher is correct but too slow to run where it is needed,
-or when the teacher needs information at training time that is unavailable at
-run time. It is wrong when the student is expected to be better than the
-teacher, because distillation has no mechanism for improvement — it is copying,
-and copying has a ceiling. In this folder the honest statement is that
-distillation is being used for its measurement value rather than for speed,
-since solution 2 is not slow; what the pair establishes is whether the mapping
-is learnable at all.
+It suits a teacher that is correct but too slow where it is needed. It also
+suits a teacher that needs information only available in training. It is wrong
+when the student is meant to beat the teacher, because copying has a ceiling.
+Here, solution 2 is not slow. Distillation is used to measure whether the
+mapping can be learned at all.
 
 ## Where it sits among the other five
 
 [The six solutions](overview.md) form a ladder, ordered by how much of each one
-was fitted in this cell, and this solution is the first way on which
-everything was.
+was fitted in this cell. This is the first one where everything was fitted
+here. The scores of all solutions side by side are in [the
+comparison](../../../03-push-glasses-apart/results/README.md).
 
-Against [solution 1](01-one-fixed-nudge.md), the comparison is the basic one
-the whole folder is built around: does any learning beat a fixed nudge? Solution
-1 fits nothing, pushes the same distance in the same way every time, and looks
-again. It is arithmetic and it costs essentially nothing to run. If this
-solution cannot clear more tables than that, no part of the machinery above has
+**Against [solution 1](01-one-fixed-nudge.md)**, the question is whether any
+learning beats a fixed nudge. Solution 1 fits nothing and costs almost nothing
+to run. If this solution cannot clear more tables, none of its machinery has
 earned its place.
 
-Against [solution 2](02-geometry-ranked.md), the comparison is student against
-teacher, and it is the most informative pairing this solution has. Every label
-this policy saw came from that solution, so it cannot discover a better choice
-of glass or destination than the one it was shown, and it should not be expected
-to beat its teacher by much on the pushes it imitates. What the gap measures is
-therefore not which method is better but whether the mapping from a picture to
-a good push is learnable: a student that nearly matches its teacher says the
-policy class is adequate and the remaining error belongs to the teacher's
-geometry, and a student that falls well short says the opposite. The two places
-this solution can legitimately exceed its teacher are narrow and worth watching
-for in the numbers — a steadier push, from averaging over many examples, and a
-motion the examiner's macro could not have expressed.
+**Against [solution 2](02-geometry-ranked.md)**, it is student against teacher,
+and this is its most useful pairing. The gap shows whether a good push can be
+learned from a picture. A student close to its teacher says this kind of policy
+is good enough. A student far short says it is not. The two narrow ways it could
+beat its teacher are a steadier push and a motion the macro cannot express.
 
-Against [solution 4](04-a-world-model.md), the comparison is the sharpest
-question in the folder after the foundation-model pair: plan with a model, or
-learn the push directly? That solution learns how the world changes and
-searches over candidate actions at run time, simulating each one forward before
-committing, so **it can find a push nobody ever demonstrated** — which is
-exactly the thing this solution cannot do. It pays for that on every push, in
-run-time cost that [the examiner](../the-examiner.md) puts at hundreds or
-thousands of times the arithmetic a fixed nudge costs, and it pays again in
-needing a model of the world accurate enough to plan against,
-which is a harder thing to learn than a mapping. So the pair trades a ceiling
-against a cost: this solution is cheap and capped by its teacher, that one is
-expensive and capped by what its own encoding can express rather than by
-anybody else's work.
+**Against [solution 4](04-a-world-model.md)**, the question is whether to plan
+with a model or learn the push directly. Solution 4 learns how the world
+changes, and tries candidate pushes forward before it chooses. So **it can
+find a push nobody demonstrated**, which this solution cannot. It pays on every
+push. [The examiner](../the-examiner.md) puts its run-time cost at hundreds or
+thousands of times a fixed nudge's. It also needs a world model good enough to
+plan with. So this solution is cheap and capped by its teacher. Solution 4 is
+costly and capped by what its own encoding can express.
 
-Against [solution 5](05-smolvla-as-it-downloads.md), the comparison is fitting
-here against borrowing wholesale. That solution runs SmolVLA exactly as it
-downloads, with about 450 million parameters and a pretraining set of 487
-community datasets of real teleoperation behind it, and fits nothing in this
-cell. So it brings a vast amount of experience of robot manipulation in general
-and none of this cell in particular, while this solution brings the opposite: a
-small network that has seen nothing but this examiner, this jaw and these four
-kinds of glass. Which of those two is the better trade is precisely what the
-folder is for.
+**Against [solution 5](05-smolvla-as-it-downloads.md)**, it is fitting here
+against borrowing whole. Solution 5 runs SmolVLA as it downloads: about 450
+million parameters, pretrained on 487 community datasets of real
+teleoperation, with nothing fitted here. It brings broad experience of
+manipulation and none of this cell. This solution brings the opposite: a small
+network that has seen only this cell.
 
-Against [solution 6](06-smolvla-fine-tuned.md), the comparison is where the
-fitting happens. That solution takes SmolVLA's borrowed weights and continues
-their training on this cell's own data with low-rank adaptation, which is this
-solution's method — imitation from demonstrations collected here — applied to
-somebody else's starting point instead of to random numbers. Reading the two
-together separates what the demonstrations are worth from what the pretraining
-is worth. And solutions 5 and 6 are the sharpest pair in the folder in their own
-right: same model, same weights, and the only difference between them is that
-one has had its training continued here.
+**Against [solution 6](06-smolvla-fine-tuned.md)**, the question is where the
+fitting starts. Solution 6 continues SmolVLA's training on this cell's data,
+with low-rank adaptation. That is this solution's method, applied to borrowed
+weights instead of random ones. Read together, the two separate what the
+demonstrations are worth from what the pretraining is worth.
 
-Read as a ladder, the six measure what each increment of fitting buys. This one
-is the way where all the fitting is done here, from nothing, on examples a
-program produced for free — the cheapest honest attempt at learning this task
-that the folder contains, and the one whose limits are easiest to state in
-advance.
+Read as a ladder, the six show what each step of fitting buys. This one does
+all its fitting here, from nothing, on examples a program made for free. It is
+the cheapest honest attempt at learning this task. Its limits are also the
+easiest to state in advance.
 
 ← [Geometry generates, a model ranks](02-geometry-ranked.md) · [A world model,
 then plan with it](04-a-world-model.md) →

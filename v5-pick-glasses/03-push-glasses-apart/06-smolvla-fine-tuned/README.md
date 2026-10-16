@@ -1,21 +1,20 @@
 # Solution 6 — the same foundation model, fine-tuned here
 
-SmolVLA, the 450-million-parameter robot foundation model that [solution
-5](../05-smolvla-as-it-downloads) uses exactly as it downloads, with its
-training continued on pushes made on this bench. The training is a **low-rank
-correction**: every borrowed number stays where it is and a small correction is
-learned beside it, then folded in, so what runs afterwards is a model of the
-original size and speed.
+SmolVLA, the 450-million-parameter robot model that [solution
+5](../05-smolvla-as-it-downloads) uses as it downloads, with its training
+continued on pushes made on this bench. The training is a **low-rank
+correction**. Every borrowed number stays where it is. A small correction is
+learned beside them and then folded in. So the model keeps its size and speed.
 
-The two solutions are a matched pair. Same library, same weights, same picture,
-same sentence, same reading of an action into jaw waypoints, same loop, same
-checks, same marking. One thing differs, which is the training, and the gap
-between the two scores is what that training bought.
+The two solutions are a matched pair. Only the training differs, so the gap
+between their scores is what the training bought.
 
 Full explanation: [the
 document](../../docs/03-push-glasses-apart/solutions/06-smolvla-fine-tuned.md).
 
 ## What is here
+
+The table lists each file and its job.
 
 | File | What it does |
 |---|---|
@@ -28,12 +27,11 @@ document](../../docs/03-push-glasses-apart/solutions/06-smolvla-fine-tuned.md).
 | `test_fine_tuned.py` | The checks that need no correction and no download |
 
 The convention that reads an action as jaw waypoints, and the loop of plan,
-feel and look again, are solution 5's and are imported rather than copied,
-because a second copy of either would be a second thing that could vary
-between the pair. `Fitted` is solution 5's `Downloaded` with the correction
-loaded on top, so the asking is inherited too. What is written out again here
-is the twelve lines that fetch the weights and build the processors, because
-the training needs the model before the correction is attached to it.
+feel and look again, are imported from solution 5. A second copy would be a
+second thing that could differ between the pair. `Fitted` is solution 5's
+`Downloaded` with the correction loaded on top. Only the twelve lines that
+fetch the weights and build the processors are written again here. The
+training needs the model before the correction is attached.
 
 ## Running it
 
@@ -47,104 +45,76 @@ make test
 
 Any run shorter than the full held-out set writes `partial.json`, never
 `results.json`. `make train SEED=1 INTO=correction-1` fits a second training
-seed, and `run.py --correction correction --correction correction-1` scores
-both, which is what [the examiner](../../docs/03-push-glasses-apart/the-examiner.md)
+seed. `run.py --correction correction --correction correction-1` scores both,
+which is what [the examiner](../../docs/03-push-glasses-apart/the-examiner.md)
 asks for.
 
 ## What it costs
 
-**It trains on this machine.** The document said it needed a rented
-accelerator; that turned out to be wrong, and the reason is the one the
-document gives for why low-rank adaptation is used at all. Only the
-correction's four million numbers carry gradients and optimiser state, so what
-has to be held is the model plus a little: **1.02 GiB of the Mac's unified
-memory**, measured while it ran, against the 22 GB the document quotes for a
-low-rank fine-tune of π0. Memory was never the obstacle at this size. Time is:
-the 1,000 steps took 47 minutes on Metal, which is about 3 seconds a step — and
-that was on a laptop shared with other training runs — where an NVIDIA card
-would take a fraction of a second.
-So the committed correction is 1,000 steps at a batch of 4, which is a small
-fraction of the compute LeRobot's own SmolVLA recipe spends (twenty thousand
-steps at a batch of sixty-four), and that is the honest caveat on every number
+**It trains on this machine.** It held **1.02 GiB of the Mac's unified
+memory**, measured while it ran. A low-rank fine-tune of π0 needs 22 GB. [The
+document](../../docs/03-push-glasses-apart/solutions/06-smolvla-fine-tuned.md#low-rank-adaptation--a-small-correction-instead-of-a-large-change)
+says why. Time is the limit, not memory. The 1,000 steps took 47 minutes on
+Metal, about 3 seconds a step, on a laptop shared with other training runs.
+An NVIDIA card would take a fraction of a second. So the committed correction
+is 1,000 steps at a batch of 4. LeRobot's own SmolVLA recipe is twenty
+thousand steps at a batch of sixty-four. That caveat applies to every number
 here.
 
-Renting would still be the way to spend real compute on it, and the figures
-are the ones the rest of this problem uses: hours of a small accelerator is of
-order tens of dollars, a weekend of order a hundred, a month of order five
-hundred. Nothing here was rented.
+Renting would cost of order tens of dollars for hours of a small accelerator,
+a hundred for a weekend, and five hundred for a month. Nothing here was
+rented.
 
-At run time it is one large forward pass per chunk, on this laptop, which is
-solution 5's cost exactly because the correction is folded into the weights.
+At run time it is one large forward pass per chunk on this laptop. That is
+solution 5's cost, because the correction is folded into the weights.
 
 ## The demonstrations
 
-**The band these come from changed after the result below was measured, so read
-this section as two things.** The numbers immediately following describe the
-collection the committed `results.json` was fitted on, which was 800 tables
-starting at table 0. The band is now 5,200 tables starting at table 1,000,
-matching [solution 3](../03-imitation-from-demonstrations/README.md), for the
-reason the comment on the band constants gives: these two solutions exist to be
-compared as a small model against a large one, and that comparison is only about
-the models while both learn from the same material. Starting at 1,000 also keeps
-the teacher's own fitting tables, which are 0 to 199, out of the set. The
-re-measurement on the new band has been made, and it is a section of its own
-below rather than a quiet replacement of these numbers.
+**The band changed after the main result was measured.** The committed
+`results.json` was fitted on 800 tables starting at table 0. The band is now
+5,200 tables starting at table 1,000, matching [solution
+3](../03-imitation-from-demonstrations/README.md). That also keeps out the
+teacher's own fitting tables, 0 to 199. [The
+document](../../docs/03-push-glasses-apart/solutions/06-smolvla-fine-tuned.md#where-the-demonstrations-come-from-and-what-they-cost)
+gives the reasons. The new band's result is
+[its own section below](#the-same-fitting-on-solution-3s-tables).
 
-800 training tables, 19 minutes of simulator time, **1,074 demonstrations from
-430 of those tables**; the other 370 gave the teacher nothing it could push
-with the real hand. Of the 2,766 pushes the teacher made, 1,663 were the 5 mm
-test pushes that belong to the shared tipping check rather than to the chooser,
-and of the 1,103 real pushes **29 were discarded** — 13 toppled a glass, 12
-jammed, 3 pushed one out of the zone and 1 was blocked coming down. So the bias
-from filtering to successes, which the document spends a page on, is 2.6 per
-cent here. `demonstrations/collected.json` records all of it.
+The old band: 800 training tables, 19 minutes of simulator time, **1,074
+demonstrations from 430 of those tables**. On the other 370 the teacher found
+nothing it could push with the real hand. With the invented blade it found
+something on all but 60. The teacher made 2,766 pushes. 1,663 were 5 mm test
+pushes for the shared tipping check. Of the 1,103 real pushes, **29 were
+discarded**: 13 toppled a glass, 12 jammed, 3 pushed one out of the zone and 1
+was blocked coming down. That is 2.6 per cent. `demonstrations/collected.json`
+records it all.
 
-**On the new band the same teacher collected six and a half times as much**:
-5,200 tables gave **6,935 demonstrations from 2,796 of them**. The share of
-tables the teacher refused is the same to within a fraction of a per cent, 46
-on either band, so the new band is the old one scaled up rather than easier
-ground.
-
-**The real gripper halved the demonstration set**, and it did so by refusing
-tables rather than by failing on them: the teacher found nothing worth pushing
-on 370 of the 800 tables, where with the invented blade it found something on
-all but 60. That matters more than the discard rate, because a table the
-teacher never pushes on is a table the student never sees.
+**The new band gave six and a half times as much**: **6,935 demonstrations
+from 2,796 of 5,200 tables**. The teacher refused 46 per cent of tables on
+either band. So the new band is the old one scaled up, not easier ground.
 
 A chunk covers 78 mm of table in 49 waypoint periods, 1.6 mm a waypoint.
 
 ## Three things to know before reading the numbers
 
-**The student pushes faster than its teacher.** A chunk holds the number of
-waypoints SmolVLA emits in one pass, which is 50, and the teacher's push is
-two or three times that many once the bench has sampled it. So the recorded
-push is resampled to a chunk's length, and since the bench consumes waypoints
-a fixed period apart, that makes the student's jaw travel about 36 mm/s where
-the teacher felt forward at 10 and pushed at 20. It is the one place the
-borrowed model's shape shows through into the physics.
+**The student pushes faster than its teacher.** A chunk holds 50 waypoints.
+The teacher's push is two or three times that many. Resampling it makes the
+student's jaw travel about 32 mm/s, where the teacher felt forward at 10 and
+pushed at 20.
 
-**One training seed, not several.** The document and the bench both ask for
-several, because training varies with its seed. Only one was fitted here, so
-the spread in `results.json` is over evaluation runs alone and is a narrower
-claim than the spread the bench wants.
+**One training seed, not several.** The examiner asks for several. Only one was
+fitted here, so the spread in `results.json` covers evaluation runs only.
 
-**The compute column was re-measured, and it says what the method predicts.**
-`seconds_per_push` is wall time with the bench's own share taken off, so a
-reading taken while the machine is busy measures the other work too. Timed
-while several training runs shared the laptop it read 0.82 s; timed again on
-an idle machine it reads 283 ms. That second figure is the one to use, and it
-confirms what the method guarantees rather than merely agreeing with it: a
-low-rank correction folds into the weights without adding any, so this
-solution's forward pass is the same arithmetic as solution 5's, and solution 5
-measured on the same idle machine costs 283 ms too, agreeing to the
-millisecond. The two are the same price per
-push, and fine-tuning changes what the model answers rather than what it costs
-to ask.
+**The compute column was re-measured.** `seconds_per_push` is wall time
+without the bench's own share. So a busy machine inflates it. Timed while
+training runs shared the laptop, it read 0.82 s. Timed on an idle machine, it
+read 283 ms, and solution 5 read 283 ms too. That matches the method: the
+folded correction adds no arithmetic. The committed `results.json` reads
+404 ms.
 
 ## What the training moved
 
-`correction/training.json` holds the whole curve. Distances below are between
-the model's own waypoints and the teacher's, on tuning tables nothing was
+`correction/training.json` holds the whole curve. The table gives the distance
+between the model's waypoints and the teacher's, on tuning tables nothing was
 fitted on.
 
 | Step | Fitting loss | Tuning error, median | Worst |
@@ -153,50 +123,36 @@ fitted on.
 | 500 | 0.291 | 107 mm | 283 mm |
 | 1000 | 0.150 | **85 mm** | 255 mm |
 
-The glass zone is 320 mm by 360 mm, so the borrowed model's untrained answer
-is not a push aimed at the wrong glass — it is a smooth motion somewhere else
-on the table entirely. Five hundred steps cut that by two thirds, and the
-second five hundred took another fifth off it.
+The glass zone is 320 mm by 360 mm. So the untrained answer is a motion
+somewhere else on the table. Five hundred steps cut the error by two thirds.
+The next five hundred took another fifth off.
 
-**Training stopped at 1,000 steps because that was the budget, not because the
-curve had flattened.** This single fit's held-out error was still falling when
-the fitting stopped, which reads as **under-trained rather than
-over-trained**. That reading does not survive more seeds, though: the three
-fits on the new band ended at 101.5, 106.1 and 90.0 mm, against 92.6, 115.3
-and 77.0 mm at the halfway check, so the error rose in two of them and fell in
-one. Between 500 and 1,000 steps the curve is therefore flat inside its own
-noise, and the fair statement is that this correction is not visibly improving
-by the end rather than that it is still improving. Read the column with the
-caution it deserves, because each tuning figure is a handful of chunks from a
-policy that draws its answer rather than computing it, so a step of twenty
-millimetres is near the noise. What is clear is the direction: more
-steps would very likely have helped, and the results below should be read as
-what a thousand steps buys rather than as what this method can do.
+**Training stopped at 1,000 steps because that was the budget.** This fit's
+error was still falling. But the three fits on the new band ended at 101.5,
+106.1 and 90.0 mm, against 92.6, 115.3 and 77.0 mm at step 500. The error rose
+in two and fell in one. So between 500 and 1,000 steps the curve is flat
+within its noise. Each tuning figure comes from a handful of drawn chunks, so
+twenty millimetres is near the noise. More steps would still very likely
+help. Read the results below as what a thousand steps buys.
 
-**And the chunks changed shape in a way that is easier to see than the loss.**
-Each solution's `asking.json` records what its answers looked like:
+**The chunks changed shape.** Each solution's `asking.json` records what its
+answers looked like. The table compares the medians.
 
 | | Solution 5, untrained | This solution | The teacher |
 |---|---|---|---|
-| Lowest the chunk reaches above the table | 247 mm | **50 mm** | 50 mm |
-| Distance across the table in one chunk | 964 mm | 315 mm | 89 mm |
-| Per waypoint, which is the speed | 16.3 mm | 4.5 mm | 1.8 mm |
+| Lowest the chunk reaches above the table | 217 mm | **75 mm** | 75 mm |
+| Distance across the table in one chunk | 868 mm | 320 mm | 78 mm |
+| Per waypoint, which is the speed | 14.6 mm | 4.6 mm | 1.6 mm |
 
-The first row is the whole of what the training bought that can be seen
-without the scorecard: the borrowed model never brings the jaw down to the
-glasses, and the fine-tuned one brings it to exactly the height the gripper
-pushes at. The second and third rows are what it did not buy. Its pushes are
-still three times too long and four times too fast, and the price of that is
-in the toppled column below. (Solution 5's figures are from a run taken before
-the bench capped a commanded path to the jaw's top speed, so its *outcome*
-counts are not comparable with these; the shape of a chunk is the model's own
-output and is.)
+The first row is what the training bought: the jaw now comes down to the push
+height. The other rows are what it did not buy. Its pushes are still about four
+times too long and three times too fast. The toppled count below is the price.
 
 ## Results — 50 held-out tables, 251 glasses, 203 without room at the start
 
-These are the correction fitted on the 800-table band described above. Three
-evaluation runs of one training seed. `results.json` holds every run;
-below is the middle with the spread across the three.
+These come from the correction fitted on the 800-table band. Three evaluation
+runs of one training seed. `results.json` holds every run. The table gives the
+middle value with the spread across the three.
 
 | | |
 |---|---|
@@ -209,46 +165,29 @@ below is the middle with the spread across the three.
 | Where the glass stopped, from where the chunk ended | 57.3 mm median, 784 mm worst |
 | Thinking per push | 404 ms (±16) on an idle machine |
 
-**This is a bad score, and it is a bad score for one reason.** Three fifths of
-its pushes — 223 of the 369 in the middle run — were **blocked on the way
-down**: the chunk's first waypoint is over a glass, so the jaw comes down onto
-one instead of behind it. The share is taken from one run rather than from the
-spread above, because the spread reports a median for each field on its own,
-and those medians come from different runs: 369 pushes from one and 227 blocked
-from another, which together describe no run that happened.
-The model learned the height a push happens at and the kind of motion a push
-is, and did not learn where to put the jaw down. From there everything else
-follows: 40 glasses over, 36 tables wrong, and 66 of the refusals reading
-"stopped: a glass fell over" rather than anything about the glass.
+**This is a bad score, for one reason.** 223 of the 369 pushes in the middle
+run were **blocked on the way down**: the jaw came down onto a glass. That
+share is from one run. The spread gives a median per field, and those come
+from different runs, such as 227 blocked from another run. The model learned
+the push height and did not learn where to put the jaw down. That causes 40
+glasses over, 36 tables wrong, and 66 refusals that read "stopped: a glass
+fell over".
 
-**Of the four learned solutions, this is the one the real gripper changed
-least, and the reason is instructive.** With the invented blade it toppled
-about 46 glasses a run and ended 38 tables wrong, against 40 and 36 now, so the
-score barely moved. The other three were each hurt badly by the new hand, and
-this one was not, because its failure never depended on the hand's size: a jaw
-that comes down on top of a glass breaks it whether the jaw is a thin blade or
-a 2F-85. The correction was refitted on the new hand's demonstrations and it
-did learn the new height — its chunks now reach exactly 75 mm, where the
-earlier fit reached exactly 50 — so what the fitting can learn, it learned
-again, and what it cannot learn stayed exactly where it was.
+**The real gripper changed this solution least of the four learned ones.**
+With the invented blade it toppled about 46 glasses a run and ended 38 tables
+wrong. Now it is 40 and 36. Its failure never depended on the hand: a jaw that
+comes down on a glass hits it either way. The refit did learn the new height,
+75 mm where the earlier fit reached 50.
 
-**What it did get right is not nothing**, and it is worth separating out,
-because the shared machinery and the model are doing different jobs here. No
-glass was ever picked up without really having room, and no glass was ever
-left on the table without a reason. Those are the two mistakes the geometry
-exists to prevent, and it prevented all of them, on every run, under a policy
-that was doing its best to cause them.
+**The geometry did its job.** No glass was picked without room, and none was
+left without a reason, on every run.
 
 ### The same fitting on solution 3's tables
 
-The numbers above come from a correction fitted on 1,074 demonstrations from
-800 tables starting at table 0, and the band then changed for the reasons given
-earlier in this file. So the whole thing was done again on the new band, and
-because the first attempt at it ran over the old tables at the new size, there
-are three measurements rather than two. That accident is worth keeping, because
-the wrong band holds as much data as the right one and differs only in which
-tables it came from, which makes it a control: it separates *how much* the
-student learns from *where* it learns from.
+The whole fitting was done again on the new band. The first try ran over the
+old tables at the new size, so there are three measurements. That accidental
+column is a control: it separates *how much* the student learns from *where*.
+The table reads left to right from the old band to the matched one.
 
 | | 800 tables from 0 | 5,200 tables from 0 | 5,200 tables from 1,000 |
 |---|---|---|---|
@@ -261,69 +200,42 @@ student learns from *where* it learns from.
 | Pushes blocked on the way down | 227 (±8.9) | 217 (±32) | 229 (±45) |
 | Chunk error on tuning tables at the end | 85 mm | 98 mm | 99 mm |
 
-**Six and a half times the data changed nothing that can be measured.** Taking
-the difference between the first and last columns in standard errors of the
-difference, which is the only honest way to read a change this small, racked
-glasses move by 0.7, toppled by 1.0, tables wrong by 1.1 and blocked descents
-by 0.1. Nothing reaches the two standard errors below which a difference cannot
-be claimed, so the statement is that no change was detected, not that the
-scores are equal.
+**Six and a half times the data changed nothing measurable.** Between the
+first and last columns, in standard errors of the difference: racked glasses
+move by 0.7, toppled by 1.0, tables wrong by 1.1 and blocked descents by 0.1.
+None reaches two. The last two columns come from three training seeds with one
+evaluation run each. [The
+document's "Was it the data?"](../../docs/03-push-glasses-apart/solutions/06-smolvla-fine-tuned.md#was-it-the-data)
+reads these columns in full.
 
-Two details make that reading stronger rather than weaker. The spread in the
-last two columns comes from **three training seeds with one evaluation run
-each**, where the first column is one seed run three times, so the later
-columns carry the variation between fits that the first one hides and they are
-still no worse. And taking the teacher's own 200 tables out of the band changed
-nothing either, which means the flattering-ground worry, real as it is in
-principle, was not what held this solution back.
-
-**The one difference that looked certain did not reproduce.** On the wrong band
-refusals rose from 138 to 145, which is ten standard errors and easily the
-largest effect anywhere in this comparison; on the right band they read 137,
-back where they started. An effect that large and that fragile belongs to the
-particular tables and fits it came from rather than to the amount of data, and
-it is a plain reminder of why a number quoted without a spread is not a result.
-That run's `seconds_per_push` of 1.07 s against 0.39 s is the same kind of
-artefact from the other direction, because it shared the one graphics chip with
-a fit and so measured the other work rather than the model.
-
-**So the conclusion of the section above survives the band change completely.**
-What stops this solution is not a shortage of examples and not the choice of
-tables. It is that three fifths of its pushes come down on top of a glass, and
-more pushes of the same kind do not teach it otherwise, because the teacher
-never makes that mistake and so the demonstrations never show the way out of
-it. That is the argument for DAgger at the end of this file, and these three
-columns are the evidence for it.
+On the wrong band, refusals rose from 138 to 145, ten standard errors. On the
+matched band they read 137. So that effect came from particular tables and
+fits. That run's `seconds_per_push` of 1.07 s against 0.39 s is also an
+artefact: it shared the graphics chip with a fit.
 
 ### Against the other solutions that have run
 
+The table puts this solution beside three others. The full comparison is in
+[the results](../results/README.md).
+
 | | 1 — fixed nudge | 4 — world model | 5 — untrained | 6 — this |
 |---|---|---|---|---|
-| Tables done | **33** | 31 | 0 | 4 |
-| Tables wrong | **0** | 1 | 5 | 38 |
-| Glasses racked | 195 | **202** | 56 | 77 |
-| Glasses toppled | **0** | 1 | 6 | 46 |
-| Pushes | 213 | **114** | 754 | 400 |
+| Tables done | 14 | **20** | 1 | 1 |
+| Tables wrong | **1** | 19 | 9 | 36 |
+| Glasses racked | 107 | **146** | 48 | 56 |
+| Glasses toppled | **1** | 20 | 12 | 40 |
+| Pushes | **173** | 221 | 620 | 369 |
 
-Every column is from that solution's own committed `results.json`, and the two
-that are run several times, 5 and 6, show the middle run.
+Every column is from that solution's own committed `results.json`. For 5 and
+6, which run several times, each figure is the median over runs.
 
-**The pair's answer is the uncomfortable one.** Fine-tuning plainly worked as
-training: the chunk error against the teacher fell by three quarters, and the
-model stopped waving the jaw in the air and started putting it on the table.
-It also plainly made the score worse. Solution 5 keeps its tables out of the
-*wrong* column by never touching a glass — it hovers, refuses almost
-everything and is marked *correct but incomplete* — while this solution
-touches glasses and knocks them over. So the honest reading of the gap between
-the two is **not** "training bought nothing". It is that a thousand steps of
-training bought enough competence to act and not enough to act safely, and on
-a scorecard where a toppled glass is unrecoverable, that is worse than
-inaction. Both halves of the pair are far below the geometry.
+**Training worked, and the score got worse.** The chunk error against the
+teacher fell by three quarters. The jaw now reaches the table. But solution 5
+stays out of the *wrong* column by never touching a glass, while this solution
+knocks glasses over. So a thousand steps bought enough skill to act, but not
+enough to act safely. Both are far below the geometry.
 
-Two things would be worth trying before concluding anything about the method,
-and both are named in the document. The first is simply more training: the
-compute here was about one part in three hundred of what LeRobot's own SmolVLA
-recipe spends, and the one thing the policy most needs to learn — where to put
-the jaw down — is the thing it had least of. The second is **DAgger**, because
-"the jaw comes down on a glass" is exactly a state the teacher never visits
-and therefore exactly what the demonstrations cannot teach.
+Two things are worth trying next. One is more training: the compute here was
+about one part in three hundred of LeRobot's own recipe. The other is
+**DAgger**, because "the jaw comes down on a glass" is a state the teacher
+never visits, so the demonstrations cannot teach it.

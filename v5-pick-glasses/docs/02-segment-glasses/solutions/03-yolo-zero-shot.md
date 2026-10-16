@@ -1,91 +1,57 @@
 # Solution 3 — a borrowed model, as it downloads
 
-> **What it uses** — the Ultralytics package, PyTorch running on this machine's
+> **What it uses** — the Ultralytics package, PyTorch on this machine's
 > integrated graphics through Apple's MPS backend, and the Ultralytics
 > YOLO26-seg instance segmentation model exactly as it downloads. The weights
 > fetch themselves the first time the model is used.
-> **What it does** — it shows the borrowed model a survey picture from the top,
-> takes the list of objects the model reports, and keeps the outlines whose
-> name is a drinking vessel while dropping everything else the model named. A
-> survey is three pictures from three overlapping stations, and the model is
-> asked about each one on its own, which is the examiner's arrangement rather than
-> this solution's.
-> Nothing whatsoever is fitted in this cell, so there is not a single number in
-> this solution that came from this project's own data.
-> **How the output is produced** — the grey picture shaded from depth goes into
-> the model; the model returns, for each object it believes it found, a box, a
-> name from a fixed list of categories, a confidence number and an outline; the
-> design keeps the outlines named as drinking vessels and discards the names
-> afterwards; the kept outlines are the masks, and the shared arithmetic in [the
-> examiner](../the-examiner.md) turns each mask into a place on the table and a
-> rough width.
-> **How it differs from the other five** — [solution
-> 1](01-rules-on-the-table.md) uses no model at all and reasons about depth with
-> arithmetic a person can read. [Solution 2](02-train-from-scratch.md) fits
-> every number it holds on this cell's own pictures, where this one fits none.
-> [Solution 4](04-yolo-fine-tuned.md) is this same library, this same model and
-> these same starting weights with training on this cell's pictures added, and
-> with the borrowed list of category names cut to the single class "glass",
-> which is part of that training rather than a separate choice. Nothing else
-> varies between the two, and that is the point of running both. [Solution
-> 5](05-sam2-with-a-keeper.md) borrows a model that outlines without naming, so
-> it has to fit a small keeper here to decide which outlines are glasses, which
-> is the one thing this solution never needs. [Solution
-> 6](06-rf-detr-fine-tuned.md) trains a different architecture here and carries
-> a permissive licence instead of this one's.
-> **What it costs** — no labels, no training run, no weights file to keep in
-> step with the cell, and no graphics card of its own. The whole cost is the
-> licence, which is why it has a section to itself below.
+> **What it does** — It shows the borrowed model each survey picture from the
+> top. It keeps the outlines the model names as drinking vessels and drops the
+> rest. The kept outlines are the masks. **Nothing is fitted in this cell.**
+> **How it differs from the other five** — [Solution
+> 4](04-yolo-fine-tuned.md) is this same model with training on this cell's
+> pictures added. Nothing else differs between the two, which is why both are
+> run. [Where it sits among the other five](#where-it-sits-among-the-other-five)
+> places it beside the rest.
+> **What it costs** — no labels, no training and no graphics card of its own.
+> The real cost is [the licence](#the-licence-which-is-the-real-cost-here).
 
-> **The cell is described once, in [the cell](../../the-cell.md)** — the layout,
-> the two places the camera works from, from the top and from the side, all four
-> sensors, and the words this project uses them with. What follows is only what
-> is specific to this solution.
+> **The cell is described once, in [the cell](../../the-cell.md).** That page
+> covers the layout, the camera's two working places, the four sensors and the
+> words this project uses. This page covers only what is special to this
+> solution.
 
 ## Introduction
 
-This document describes how [problem 2](../problem.md) could be answered by
-downloading a model and running it, without collecting a single label and
-without training anything at all. The solution is built, and what it scored is
-recorded beside the code, in
+This page asks whether [problem 2](../problem.md) can be answered by
+downloading a model and running it. No labels are collected and nothing is
+trained. The solution is built. Its scores are in
 [`03-yolo-zero-shot/README.md`](../../../02-segment-glasses/03-yolo-zero-shot/README.md)
-and in that folder's `results.json`. The reasoning below was written before the
-run and is kept in the voice it was written in, so where it says what the method
-would do, read that as what the design expected rather than as a measurement.
+and in that folder's `results.json`. The reasoning below was written before
+the run. Where it says what the method "would" do, read that as what the design
+expected, not as a measurement.
 
-The design is worth writing down because of what it does not contain. Every
-other solution that uses a model pays something before it can answer: a set of
-labelled pictures, a training run, and a weights file that has to be refitted
-whenever the cell changes. This one would pay none of that, because the model it
-borrows was already fitted on photographs of everyday scenes, and the list of
-things that model can name already contains drinking vessels. So the model would
-be asked for glasses and would answer on the first picture, having never seen
-this cell.
+Every other model-based solution pays before it can answer: labelled pictures,
+a training run, and a weights file to refit when the cell changes. This one
+pays none of that. Its model was fitted on everyday photographs, and its list
+of names already includes drinking vessels. So it can be asked for glasses on
+the first picture.
 
-That makes it the cheapest of the six to try, and it also makes it the baseline
-for the sharpest comparison in the set. By the end you will understand what an
-instance segmentation model returns and how that differs from the two
-neighbouring kinds of segmentation model, why the borrowed category names can
-only ever be a filter, how the outline is built and why it is approximate in a
-way the arithmetic downstream feels, why the confidence number beside each
-outline is not a probability on these pictures even though it looks like one,
-what the domain gap is and why it runs in both directions here, and what the
-licence costs, because on this solution the licence is a real cost rather than a
-footnote.
+That makes it the cheapest of the six to try. This page explains what an
+instance segmentation model returns, why the borrowed names can only be a
+filter, why the outline is approximate, why the confidence number is not a
+probability here, why the domain gap is the main risk, and what the licence
+costs.
 
 ## The code that does the work
 
-This solution is almost entirely somebody else's code, so the part worth reading
-is small: one call into the borrowed library, and the handful of lines that
-decide what to keep out of the answer. Those lines are the whole of what this
-project wrote, and seeing them is the quickest way to understand both what the
-solution is and how little of it is this project's.
+This solution is almost all somebody else's code. The part this project wrote
+is one call into the library and a few lines that choose what to keep.
 
-The call and the handling of its answer are in
+The call is in
 [`03-yolo-zero-shot/yolo_zero_shot.py`](../../../02-segment-glasses/03-yolo-zero-shot/yolo_zero_shot.py).
-The library is Ultralytics: `YOLO` is the model, `attempt_download_asset` is
-what fetches the weights, and `model.predict` is the one line where the borrowed
-model does its work. Everything around it is this project's, and it is short.
+The library is Ultralytics. `YOLO` is the model, `attempt_download_asset`
+fetches the weights, and `model.predict` is the one line where the borrowed
+model works.
 
 ```python
 @lru_cache(maxsize=1)
@@ -118,13 +84,10 @@ def look(picture) -> object:
     return answers[0].cpu()
 ```
 
-The filter those lines call is in
-[`03-yolo-zero-shot/drinking_vessels.py`](../../../02-segment-glasses/03-yolo-zero-shot/drinking_vessels.py),
-and it is worth showing rather than describing, because the solution's one
-promise is that nothing in it was tuned to this cell and that promise covers
-this list. Every name in it is one of the borrowed model's own categories, read
-off its fixed list, and not one was added after anybody saw what the model
-called a glass here.
+The filter is in
+[`03-yolo-zero-shot/drinking_vessels.py`](../../../02-segment-glasses/03-yolo-zero-shot/drinking_vessels.py).
+Every name in it comes from the borrowed model's own fixed list. None was added
+after anybody saw what the model called a glass here.
 
 ```python
 VESSELS = ("wine glass", "cup")
@@ -140,584 +103,389 @@ def is_drinking_vessel(name: str) -> bool:
     return name in ACCEPTED
 ```
 
-Two things show from that. The borrowed library is reached in exactly one place,
-and what this project contributes is a bar on the confidence number, a filter on
-names, and the collapsing of a glass that arrived twice — after which the name
-is gone and what leaves is a list of masks carrying no claim about what was
-outlined. And nothing above reads a fitted file, because there is none: the
-folder has no training command at all, and its `fit` function exists only to
-refuse. The bar on the confidence number, the share of pixels that makes two
-outlines one, and those five names are everything this solution chose, and none
-of it came from this cell's data.
+The library is reached in one place. This project adds three things: a bar on
+the confidence number, a filter on names, and merging a glass that arrived
+twice. After that the name is gone, and only masks leave. Nothing reads a
+fitted file, because there is none. The folder has no training command, and
+its `fit` function exists only to refuse. None of the three choices came from
+this cell's data.
 
 ## The problem this solves
 
-Problem 2 asks for one record per glass on the table, each with a mask, a place
-and a rough width. The difficulty is not seeing that something is there but
-deciding **how many things are there**. Two glasses standing well apart on the
-table can still leave one connected shape in a picture taken from the top,
-because the rim of each glass is nearer the lens than the table is, so each
-glass covers more of the picture than its footprint deserves. A method that
-treats each connected shape as one object then reports one glass where two are
-standing. That is the merge, and it is what most of the six solutions attack.
+[Problem 2](../problem.md#glasses-merge-in-the-picture-even-when-they-stand-apart-on-the-table)
+explains the merge: two glasses that stand apart can leave one connected shape
+in the picture. Most of the six solutions attack that.
 
-A model built to find objects attacks the merge directly, because such a model
-returns **one outline per object** rather than one outline per connected shape.
-Two glasses whose outlines join in the picture are still two objects, and a
-model fitted on crowded photographs has met that situation many thousands of
-times, in scenes where cups and glasses stand side by side on tables. So the
-hope is a reasonable one: the separation this cell finds hard is the separation
-the borrowed model was fitted to perform.
+A model built to find objects attacks it directly. It returns **one outline
+per object**, not one per connected shape. The borrowed model was fitted on
+many photographs of cups and glasses side by side. So the hope is fair: the
+separation this cell finds hard is the one the model was fitted to do.
 
-What makes this version of the hope worth testing first is its price. The other
-model-based solutions need pictures of this cell with every glass outlined, and
-then a training run that has to be repeated whenever the cell changes. Here
-there would be nothing to collect and nothing to repeat. If the borrowed model
-worked even moderately well, it would be the fastest route from no perception at
-all to a working report, and that is worth knowing in an afternoon rather than
-after a week spent building a training set.
+The price is what makes it worth testing first. There is nothing to collect
+and nothing to retrain. If it worked even moderately well, it would be the
+fastest route to a working report. That is worth knowing in an afternoon, not
+after a week of building a training set.
 
 ## The main idea
 
-The idea has three steps, and only the first two belong to this solution at all.
+There are three steps, and only the first two belong to this solution.
 
 **First, run the borrowed model on the survey picture from the top.** The model
-is Ultralytics YOLO26-seg, taken exactly as it downloads. It is an **instance
-segmentation model**, which means that for every object it believes it has found
-it returns four things together: a box around the object, a name taken from a
-fixed list of categories, a number saying how sure it is, and an outline marking
-which pixels inside the box belong to that object rather than to the background
-or to a neighbouring object.
+is Ultralytics YOLO26-seg, used as it downloads. It is an **instance
+segmentation model**. For each object it finds, it returns four things: a box,
+a name from a fixed list, a confidence number, and an outline of the object's
+pixels.
 
-**Second, keep the outlines whose name is a drinking vessel.** The fixed list of
-categories the model was fitted on is a general one, covering the ordinary
-contents of ordinary photographs, and several of its entries are things a person
-drinks from. Those are the ones this design would keep, and everything else the
-model named would be dropped.
+**Second, keep the outlines whose name is a drinking vessel.** The model's list
+is a general one for everyday photographs. Several entries are things people
+drink from. Those are kept, and everything else is dropped.
 
-**Third, hand the kept outlines to the shared arithmetic.** An outline is a set
-of pixels, and turning a set of pixels into a place on the table and a width is
-a job the examiner does, the same way, for every solution that produces masks.
-Nothing about that step changes here.
+**Third, hand the kept outlines to the examiner.** The examiner turns each mask
+into a place and a width, the same way for every solution.
 
-So the whole of this solution is the first two steps, and the second step is a
-filter on a list of names rather than anything fitted. That is the point to
-remember: **this solution would contain no numbers fitted in this cell at all**,
-not one.
+The second step is a filter on names, not anything fitted. **This solution
+contains no numbers fitted in this cell.**
 
 ![The whole chain, with the one step this project wrote marked out: a grey picture from the top goes into the borrowed model exactly as it downloads, the model returns a box, a name, a score and an outline for every object it believes it found, a gate keeps an outline only when its name is one of five, the name is then thrown away and the examiner's shared arithmetic turns what is left into a place and a width; the funnel underneath is the measured one, in which 180 glasses standing across 36 pictures produced 87 named outlines and five names on the list of five, every one of them the same name.](../../../images/02-segment-glasses/03-the-name-is-the-only-gate.png)
 
 ## What instance segmentation is, and the two kinds beside it
 
-Three kinds of model all produce outlines, and they are not interchangeable, so
-they are worth separating before going further.
+Three kinds of model produce outlines. They are not interchangeable.
 
-**Semantic segmentation** labels every pixel with a category and stops there. It
-would mark all the glass pixels in the picture as glass, which sounds like what
-this problem wants until you notice that two glasses whose outlines join produce
-one connected region of glass pixels, with nothing in the output saying where
-one ends and the next begins. A semantic model therefore hands the merge
-straight back, unsolved.
+**Semantic segmentation** labels every pixel with a class, as [solution 2's
+first head](02-train-from-scratch.md#semantic-segmentation--a-class-label-at-every-pixel)
+does. Two joined glasses come back as one region of glass pixels. So it hands
+the merge straight back.
 
 **Instance segmentation** labels every pixel *and* says which object it belongs
-to. Two glasses whose outlines join come back as two outlines that happen to be
-adjacent, so the merge is answered inside the model. This is why problem 2
-reaches for this kind of model and not for the simpler one.
+to. Two joined glasses come back as two outlines side by side. The model
+answers the merge itself. That is why this solution uses this kind.
 
-**Promptable segmentation** outlines whatever is at a place you point to, and
-names nothing at all. It separates objects very well and has no opinion about
-what they are. That is the kind of model [solution 5](05-sam2-with-a-keeper.md)
-borrows.
-
-That last difference is the whole reason this document is shorter than solution
-5's. A model that outlines without naming has to be followed by something that
-decides which of its outlines are glasses, and in solution 5 that something is a
-small keeper fitted on this cell's pictures. A model that outlines **and** names
-needs no such thing, because the naming is already done. The borrowed model's
-list of categories does the job that solution 5 has to fit a keeper to do, and
-that is exactly why this solution can claim that nothing in it is fitted here.
+**Promptable segmentation** outlines whatever is at a point you give it, and
+names nothing. [Solution 5](05-sam2-with-a-keeper.md) borrows that kind. So it
+must fit a small keeper here to decide which outlines are glasses. This model
+names its outlines, so it needs no keeper. That is why this solution can fit
+nothing.
 
 ## Why the borrowed names are a filter and never the kind of glass
 
-The naming is also where the weakness of borrowing first becomes visible, so
-this is the section to read most carefully.
+The names are where borrowing first shows its weakness.
 
-The list of categories the model knows was drawn up to describe photographs of
-the everyday world, and it contains several entries a drinking glass could
-plausibly belong to: a stemmed drinking vessel, a plain cup, and a few shapes
-that are near neighbours of both. The cell's four kinds do not correspond to
-those entries. The two kinds with a stem, the stemmed glass and the short
-stemmed glass, resemble the stemmed vessel in the list. The two without a stem,
-the straight glass and the tapered glass, resemble the plain cup. But the
-resemblance is loose, the model has never seen these particular shapes, and the
-boundary it draws between its own categories was never meant to tell this cell's
-two stemmed kinds apart.
+The model's list was made for everyday photographs. It has a few entries a
+glass could fall under: a stemmed drinking vessel, a plain cup, and some near
+neighbours. The cell's four kinds do not match them. The two stemmed kinds look
+like the stemmed vessel. The straight and tapered glasses look like the cup.
+But the match is loose, and the model never saw these shapes.
 
-Two consequences follow from that mismatch.
+Two things follow.
 
-The first is that **the filter on names has to be generous**. If only one
-category were accepted, every glass the model named with a neighbouring category
-would be thrown away, and the solution would lose a whole kind for no reason. So
-the filter should accept the whole group of drinking-vessel categories, and
-accept in exchange that it will sometimes also admit something that is not a
-glass.
+**The filter has to be generous.** If only one name were accepted, every glass
+named with a neighbouring name would be lost. So the filter accepts the whole
+group, and may sometimes let through something that is not a glass.
 
-The second is that **the name must never be carried into the record as the kind
-of glass**. The temptation is real, because a free guess at the kind looks like
-a gift. It is not a gift: it is a category from somebody else's list, assigned
-by a model that was never shown this cell's kinds, and it would be wrong often
-enough to be dangerous. Problem 2 does not ask for the kind in any case, since
-every glass in one arrangement is the same kind and that kind is known, and
-naming a kind from a glass's own profile is [what problem 1 does after the arm
-has looked at the glass from the
-side](../../problem-1/step3-what-kind-of-glass.md). So the name here serves as a
-filter and is then thrown away.
+**The name must never go into the record as the kind of glass.** It is a name
+from somebody else's list, given by a model that never saw this cell's kinds.
+It would often be wrong. Problem 2 does not ask for the kind anyway, because
+the kind is known. Naming a kind from a glass's profile is [what problem 1 does
+from the side](../../problem-1/step3-what-kind-of-glass.md).
 
-Throwing it away is also what keeps this solution inside the rule that governs
-the whole project, which is that **no glass's size is written down anywhere**. A
-borrowed category carries an implied size with it, because the model's idea of a
-stemmed drinking vessel was formed from photographs of real ones, at the sizes
-real ones come in. If the name travelled any further than the filter, that
-implied size would travel with it, and a belief about how big a glass is would
-have entered the cell without anything having measured it. Dropping the name
-immediately after filtering is what prevents that, and it is a deliberate choice
-rather than tidiness.
+Dropping the name also keeps the project's main rule: **no glass's size is
+written down anywhere.** A borrowed name carries an implied size, learned from
+real glasses at real sizes. If the name went further than the filter, that size
+would go with it. So the name is dropped right after filtering, on purpose.
 
 ## How the outline is produced, and why it is approximate
 
-The outline needs some explanation too, because its shape is not free to be
-anything, and the restriction has a consequence the arithmetic downstream feels.
+The outline's shape is restricted, and the examiner's arithmetic feels the
+result.
 
-A model of this kind does not draw an outline pixel by pixel. Instead it
-computes, once for the whole picture, a short list of coarse pattern images, and
-then for each object it returns a short list of weights. The object's outline is
-the weighted sum of those patterns, cut at a threshold, and then enlarged to the
-size of the picture. The useful comparison is a familiar one from maths: this is
-the same move as approximating a curve by a short weighted sum of fixed basis
-functions. A handful of terms captures the broad shape of almost anything, and
-no handful of them will ever capture a fine detail that none of the basis shapes
-contains.
+The model does not draw an outline pixel by pixel. It computes a few coarse
+pattern images once for the whole picture. For each object it returns a few
+weights. The outline is the weighted sum of the patterns, cut at a threshold,
+then enlarged to picture size. This is like approximating a curve with a few
+fixed basis functions. A few terms catch the broad shape. They never catch a
+fine detail that no basis shape holds.
 
 Two things follow for this cell.
 
-**A thin part of a glass is the first thing lost.** A stem is narrow compared
-with the bowl above it, so it is exactly the sort of detail a coarse pattern
-cannot hold, and the outline would tend either to thicken it into a stub or to
-drop it. The examiner measures how much of each real glass a mask covered and
-breaks that number down by kind for precisely this reason, and the expectation
-here is the one the problem statement already sets out from the shapes alone:
-the two kinds without a stem should be outlined almost exactly, and the two with
-a stem should be where the method does worst, and the stemmed glass worst of
-all. That is an expectation drawn from the shape of the glasses and the
-coarseness of the outline, not a measurement of this model.
+**A thin part is lost first.** A stem is narrow next to the bowl, so a coarse
+pattern cannot hold it. The outline tends to thicken it into a stub or drop
+it. The design expected the stemmed kinds to do worst, as [the
+problem](../problem.md#what-is-on-the-table) predicts from the shapes alone.
 
 ![The two mask numbers broken down by kind, measured on the handful of glasses whose names got past the filter: the two kinds without a stem are covered almost exactly and the stemmed kinds worst, which is the order this section predicts from the shapes alone, while the outline leaks only a few percent onto the table in every kind; each bar carries the number of glasses its median is taken over, and that number is between one and five, so the order is a hint rather than a result.](../../../images/02-segment-glasses/03-the-outlines-were-not-the-problem.png)
 
-**The edge of the outline is approximate, and the arithmetic reads the width
-from the edge.** The shared step takes a glass's width from how far its mask's
-points reach away from the axis, so an outline that is a little too generous
-reports a glass a little too wide, and one that is a little too tight reports it
-a little too narrow. The error would not cancel out over many glasses, because
-the enlargement step tends to err the same way every time. This is the main
-reason to expect this solution to sit further from the best achievable answer
-than a model fitted on this cell's own pictures, and it is a limit of the
-outline rather than of the finding.
+**The edge is approximate, and the examiner reads the width from the edge.** A
+generous outline gives a glass that is too wide. A tight one gives a glass that
+is too narrow. The error does not cancel, because the enlarging step tends to
+err the same way each time. So this solution should sit further from the best
+possible answer than a model fitted here. That is a limit of the outline, not
+of the finding.
 
 ## The number beside each outline, and why it is not a probability
 
-Each outline arrives with a number the model offers as its confidence, and it is
-worth being precise about what that number would be worth here, because the
-obvious reading of it is wrong.
+Each outline comes with a confidence number. The obvious reading of it is
+wrong here.
 
 A number is a **calibrated** probability when its claims come true about as
-often as it says they will: among the outlines it scores very highly, nearly all
-should really be glasses, and among those it scores middling, a middling share
-should be. Whatever calibration this model has was obtained on photographs. This
-cell's pictures are not photographs, and a model's confidence under changed
-input is the first thing to drift, usually becoming too sure rather than too
-cautious.
+often as it says. Of the outlines it scores very high, nearly all should be
+glasses. This model was calibrated on photographs. This cell's pictures are not
+photographs. Under changed input, confidence is the first thing to drift. It
+usually becomes too sure.
 
-What survives the change better than the numbers is their **order**. A model
-whose scores are badly calibrated may still rank a clear glass above a doubtful
-one, because ranking only needs the scores to move in the right direction, not
-to be honest about their size. So this design may use the number to sort the
-outlines and to set a bar below which an outline is ignored, but it must treat
-that bar as a **knob, not as a probability threshold with a meaning**. Calling
-it a probability would be claiming a property nobody has measured.
+The **order** of the numbers survives better. A badly calibrated model may
+still rank a clear glass above a doubtful one. So the design may use the number
+to sort outlines and to set a bar. But that bar is **a knob, not a probability
+threshold**.
 
-What the code does with that knob is the strictest thing it could do: it leaves
-it at the value the library itself uses when nobody chooses one. Nothing here
-looked at this cell's pictures and moved it, because the moment a bar is tuned
-on arrangements from the examiner, this solution stops being a borrowed model used
-as it downloads and becomes a very small fitted one. The bar is therefore a
-borrowed number like the weights are borrowed, and the scorecard records that
-nothing at all was fitted here.
+The code leaves the knob at the library's own default. Nobody moved it after
+looking at this cell's pictures. Tuning it on the examiner's arrangements would
+make this a small fitted model. So the bar is borrowed, like the weights.
 
-This is also the one place where the solution could be improved without
-abandoning its central promise. Fitting a small correction from the model's
-scores to honest probabilities needs no change to the model and no outlines
-drawn by hand, only a set of arrangements where the answer is known. That would
-be a few fitted numbers rather than none, and it would buy a bar that means
-something. It is worth noting as an option and worth keeping out of the
-baseline, because the baseline's whole value is that it fits nothing.
+This is the one place the solution could improve without breaking its promise.
+A small correction from scores to honest probabilities needs no model change
+and no hand-drawn outlines. It needs only arrangements with known answers. That
+would be a few fitted numbers instead of none. It is kept out of the baseline,
+because the baseline's value is that it fits nothing.
 
 ## The domain gap, which is the main risk
 
-Everything above assumes the borrowed model works at all on this cell's
-pictures, and that assumption deserves its own section, because the difference
-between what the model was fitted on and what it would be shown here is large
-and runs in both directions.
+[Solution 2](02-train-from-scratch.md#why-nothing-is-borrowed-and-what-that-buys)
+defines the **domain gap**: the difference between the pictures a model
+learned from and the pictures it is asked about. Models fail across it by
+giving confident, plausible, wrong answers. Here the gap is large and runs in
+two directions.
 
-A **domain gap** is the difference between the data a model was fitted on and
-the data it is used on. Models fail across such a gap in a characteristic way:
-not by producing nonsense, but by producing confident, plausible, wrong answers,
-which is worse, because nothing downstream looks suspicious.
+**The picture is not a photograph.** The cell gives a grey picture shaded by
+depth. A photograph model leans on real light: shading on curves, table
+texture, shadows where an object meets the table, and colour. Little of that is
+here.
 
-**The picture is not a photograph.** The cell gives a solution a grey picture
-shaded from how far away each surface is. A borrowed model's strength on real
-photographs comes largely from real light: the way a surface changes shade as it
-curves, the texture of a table, a shadow that says where an object meets the
-surface it stands on, and the colour differences that separate one object from
-the one behind it. Very little of that is present here. The model would be asked
-to work with a fraction of the evidence it learned to use.
-
-**The glasses are not photographed glasses either, and this is the direction
-that is easy to forget.** A real drinking glass is transparent, so a photograph
-of one shows the background through it, a bright highlight along one side, and a
-bright line where the rim catches the light. Those are precisely the features
-that tell a model, in a photograph, that it is looking at a glass. The cell's
-glasses are rendered as solid shaded shapes, so the strongest evidence the model
-has for its own category is absent, while the broad silhouette, which is weaker
-evidence, is all that remains. So the gap is not only that the picture is poorer
-than a photograph; it is also that the thing in the picture no longer looks like
-the thing the model was taught to name.
+**The glass is not a photographed glass.** This direction is easy to forget. A
+real glass is transparent. A photograph shows the background through it, a
+highlight down one side, and a bright line at the rim. Those features tell a
+model it is looking at a glass. The cell renders glasses as solid shaded shapes.
+So the strongest evidence for the model's own category is gone. Only the round
+silhouette is left.
 
 ![A drinking glass as a photograph shows it from the side, with a bright line where the rim catches the light, a highlight running down one side, the wall behind showing through it and a shadow where it meets the table, set beside the same kind of glass as this cell renders it from the top: a plain disc shaded by how far away the nearest surface is, with not one of those four features present, so that all the model is left with is a round silhouette and its width.](../../../images/02-segment-glasses/03-a-glass-from-the-top.png)
 
-Put together, this is the clearest reason the solution might fail outright
-rather than merely do poorly, and it is also what makes the comparison with
-[solution 4](04-yolo-fine-tuned.md) the interesting one. Solution 4 takes this
-same model and continues its training on this cell's pictures, which is the
-standard repair for exactly this gap. The difference between the two would
-therefore be a clean measurement of what the gap costs, and that is the most
-useful thing this solution could contribute to the folder even if it performed
-badly.
+This is the clearest reason the solution might fail outright. It is also what
+makes [solution 4](04-yolo-fine-tuned.md) the interesting comparison. Solution
+4 continues this model's training on this cell's pictures, which is the
+standard repair for this gap. The difference between the two measures what the
+gap costs.
 
 ![Every name the borrowed model offered over thirty-six pictures, kind by kind and with no filter in front of it, set against the five names the filter accepts: four of those five were never offered once, the only accepted name that ever arrived was vase, five times out of eighty-seven, and seventy-six of the eighty-seven were a sports ball or a frisbee, which are the two roundest things on the model's list. The model finds the objects and names them; it simply does not call them drinking vessels.](../../../images/02-segment-glasses/03-what-it-named.png)
 
 ## The masks are what this contributes
 
-It is worth stating plainly where this solution stops, because the boundary is
-the same for all six and is what makes them comparable.
+[The examiner](../the-examiner.md#what-must-come-back) fixes the input and the
+output for all six, and turns masks into places itself. So this solution
+contributes only masks. Two points are its own.
 
-The input is fixed by the examiner: for each survey picture, the grey picture
-shaded from depth, the depth reading at every pixel, and the camera's own pose,
-and nothing else. In particular no solution may read the simulator's record of
-what it spawned. The output is fixed too: one record per glass, holding its mask
-pixels, its place on the table and a rough width.
+First, one glass can be named twice, under two neighbouring names, as two
+outlines over nearly the same pixels. The examiner would count that as a split.
+So the code merges outlines that share most of their pixels before handing
+anything over.
 
-The step between the mask and the place belongs to [the test
-examiner](../the-examiner.md) rather than to the solution. So **this solution
-contributes only the masks**, and any difference in its score belongs to the
-mask. It cannot win by measuring more cleverly and it cannot lose by measuring
-worse. One consequence is worth repeating because it removes a question that
-would otherwise be asked here: **no model in this problem produces a pose.**
-Models produce masks, the place comes from depth and the camera's own pose by
-arithmetic, and a glass standing upright on a flat table has no orientation left
-to find.
-
-Two further points follow from that boundary. A single glass can be named twice,
-under two neighbouring drinking-vessel categories, and arrive as two outlines
-covering nearly the same pixels; the examiner counts a real glass that collected
-two reports as a split, so the design should merge outlines that cover
-substantially the same pixels before it hands anything over, rather than leaving
-the examiner to count one glass twice. And a mask that asserts pixels the camera
-never saw the glass at must say which ones, because the depth reading at such a
-pixel belongs to whatever stood in front; that case does not arise here, since
-the outlines this model returns mark only pixels where the object was actually
+Second, a mask that claims pixels the camera never saw must say which ones.
+That does not arise here. This model outlines only pixels where the object was
 visible.
 
 ## How the concepts fit together
 
-The pieces now connect into one picture, and it is a short picture because the
-solution is short.
-
-A model fitted elsewhere would be shown this cell's grey picture from the top
-and would return, for each thing it found, an outline and a name. The names come
-from a general list, so they would be used only to decide which outlines are
-worth keeping and then thrown away, because a borrowed category carries an
-implied size that must not enter this project. The outlines are built from a
-short weighted sum of coarse patterns and then enlarged, so they are good about
-where a glass is and only approximate about where its edge lies, and the shared
-arithmetic reads the width from that edge. The number beside each outline would
-order them usefully but would mean nothing as a probability, because the
-pictures are not what it was calibrated on. And the same change of pictures is
-the main risk to the whole arrangement, since the light and the transparency
-that tell a model it is looking at a glass are mostly absent from a grey picture
-shaded from depth.
-
-Every one of those is a consequence of one decision: **fit nothing here**. That
-decision is what would make the solution free to try, and it is also what
-removes every lever that would normally be pulled to fix the problems above.
+Every point above follows from one decision: **fit nothing here**. That
+decision makes the solution free to try. It also removes every lever that would
+normally fix its problems: the names, the coarse outline, the uncalibrated
+score and the domain gap.
 
 ## When the glasses are completely hidden
 
-A glass can be covered completely, and then it contributes no pixel to any
-picture. [What is asked for](../problem.md) gives
-the geometry and says how close two glasses have to stand for it, and [looking
-again at what was
-hidden](../hidden-glasses.md) is the shared
-answer: work out from arithmetic where a glass could have been standing unseen,
-and go and look there. **No method that reads pictures can do better**, because
-the arrangement with the hidden glass and the same arrangement with it removed
-produce the same picture, pixel for pixel. What follows is only what is this
-solution's own.
+A fully covered glass leaves no pixel, and no method that reads pictures can
+find it. [Looking again at what was hidden](../hidden-glasses.md) is the shared
+answer, and [solution 1](01-rules-on-the-table.md#when-the-glasses-are-completely-hidden)
+shows the arithmetic from found glasses.
 
-**This solution has the least to add**, because it fits nothing and has no
-check of its own to fire. The borrowed model returns one outline per object it
-believes it found, the hidden glass is not an object in the picture, and so no
-candidate is produced and no entry appears. The confidence number is about the
-objects that were found, and they really are glasses.
+**This solution has the least to add.** It has no check of its own to fire.
+The model returns one outline per object it sees, and a hidden glass is not in
+the picture. So no entry appears.
 
 ## A worked example
 
-Following one crowded arrangement through makes the failures above easier to
-recognise, because they appear together rather than one at a time.
+One crowded arrangement shows the expected failures together.
 
-Four glasses of the stemmed kind stand in the glass zone, which is the fewest an
-arrangement holds. Three of them are where the interest is: one near the middle,
-standing at the tall end of the range its kind allows, one a little way out from
-it at the short end of that range, and one off near the edge of the frame. The
-fourth stands clear of the other three and is outlined without any trouble. The
-camera takes the survey picture from the top.
+Four stemmed glasses stand in the glass zone. One is near the middle, at the
+tall end of its kind's range. One is a little way out from it, at the short
+end. One is near the edge of the frame. The fourth stands clear. The camera
+takes the survey picture from the top.
 
-Suppose the borrowed model returns six outlines. The tall glass comes back
-twice, once under each of two neighbouring drinking-vessel categories, with
-nearly the same pixels both times, its bowl outlined well and its stem thickened
-into a stub. The glass near the edge comes back once and is outlined reasonably,
-because the bowl is the easy part and the stem is the hard part wherever the
-glass stands. The glass standing clear comes back once as well, outlined
-cleanly. The short glass comes back once too, but the tall glass's outline leans
-outwards from the point directly below the camera and overlaps it, so the short
-glass's outline holds only the part of it the tall one did not cover. The table
-itself is named and dropped by the filter, which accounts for the sixth outline.
+Suppose the model returns six outlines:
 
-What the arithmetic would make of that is the instructive part. The two outlines
-of the tall glass cover substantially the same pixels, so merging them before
-handing anything over turns them into one record and the double naming costs
-nothing. The glass standing clear is reported accurately, and the glass near the
-edge is reported with a place that is good and a width pulled in a little by the
-lost stem. The short glass is reported at a place pulled towards the part of it
-that stayed visible, and with a width read from a slice of its silhouette rather
-than from the whole of it, so it is reported narrower than it is.
+- The tall glass comes back twice, under two neighbouring names, with nearly
+  the same pixels. Its bowl is outlined well. Its stem is thickened into a
+  stub.
+- The glass near the edge comes back once, outlined reasonably. The bowl is
+  the easy part wherever the glass stands.
+- The glass standing clear comes back once, outlined cleanly.
+- The short glass comes back once. But the tall glass's outline leans out and
+  overlaps it. So its outline holds only the part not covered.
+- The table is named too, and the filter drops it. That is the sixth outline.
 
-That last report is the hazard this solution carries. Four glasses were put out
-and four reports came back, so the counts look right. One of the four is
-quietly wrong, and nothing in the run marks it as doubtful, which is why the
-comparison against the same model fitted here matters: a wrong report that
-looks right is worse than no report.
+What the arithmetic makes of that is the useful part. The tall glass's two
+outlines are merged into one record, so the double naming costs nothing. The
+clear glass is reported accurately. The edge glass gets a good place and a
+width pulled in a little by the lost stem. The short glass's place is pulled
+towards its visible part, and its width is read from a slice. So it is reported
+too narrow.
 
-**The run, when it was made, failed in a different way from this, and the
-difference is worth more than the example.** This walk-through assumes the
-model names the glasses and then draws them imperfectly. It does not name them.
-Over the held-out scenes nothing at all was merged, split or falsely found,
-while nine glasses in ten were never reported, so the quietly wrong report
-above is a hazard the method has rather than the failure it actually produced.
-The measured failure is silence, and the section on what was measured gives
-it.
+That last report is the hazard. Four glasses went out and four reports came
+back, so the counts look right. One report is quietly wrong, and nothing marks
+it as doubtful. A wrong report that looks right is worse than no report.
+
+**The real run failed in a different way.** This example assumes the model
+names the glasses and draws them imperfectly. In fact it does not name them.
+Over the held-out scenes nothing was merged, split or falsely found. But nine
+glasses in ten were never reported. The measured failure is silence. The [code
+README](../../../02-segment-glasses/03-yolo-zero-shot/README.md) gives the
+numbers.
 
 ## What it needs
 
-Very little, which is the whole point.
+Very little, which is the point.
 
-It needs the Ultralytics package and the model's weights, which the package
-downloads by itself the first time the model is used, so there is no data
-preparation step of any kind. It would run on this machine's integrated graphics
-through PyTorch's MPS backend, the same backend the rest of this project's
-learned work uses, and the weights are small enough that memory is not a
-concern. The model family comes in several sizes, and the smaller end is the
-sensible place to start, because the glasses fill a reasonable part of the frame
-and a larger model costs time without obviously buying accuracy on silhouettes
-this plain. Whichever size is chosen, solution 4 continues the training of that
-same one, because the pair is only clean while both start from the same file.
+It needs the Ultralytics package and the model's weights. The package
+downloads the weights the first time, so there is no data preparation. It runs
+on this machine's integrated graphics through PyTorch's MPS backend, like the
+rest of this project's learned work. The weights are small.
 
-What it does not need is the expensive part of every other learned solution
-here: no labelled pictures, no training run, no weights file to keep in step
-with the cell, and no held-out set at all, because there is no number in it
-that this cell chose.
+The model comes in several sizes. The small end is the sensible start: the
+glasses fill a fair part of the frame, and a larger model costs time without
+clear gain on such plain silhouettes. Whichever size is chosen, solution 4
+trains that same one, because the pair is only clean when both start from the
+same file.
+
+It needs no labelled pictures, no training run, no weights file to keep in step
+with the cell, and no held-out set, because no number in it was chosen here.
 
 ## The licence, which is the real cost here
 
-This section exists because the choice of model carries a condition the rest of
-the project does not, and a reader who takes this solution forward should meet
-that condition here rather than discover it later.
+The model carries a condition the rest of the project does not. Read it here,
+not later.
 
-Ultralytics YOLO26-seg is licensed under the AGPL-3.0. The AGPL requires that
-anybody who distributes the software, **or offers its functionality over a
-network**, makes the complete corresponding source available under the same
-terms. That network clause is the demanding part, because it reaches a product
-that never ships a copy of the model to anybody and only ever serves answers
-from it. Everything else this project depends on is permissively licensed and
-can be used commercially without that obligation, as [the implementation
-notes](../../../implementation-notes.md) record, so this one component would
-change the terms of the whole perception step if it were carried into a product.
+Ultralytics YOLO26-seg is licensed under the AGPL-3.0. Anybody who distributes
+the software, **or offers its functionality over a network**, must publish the
+full source under the same terms. The network clause is the hard part. It
+reaches a product that never ships the model and only serves answers from it.
+Everything else this project uses is permissively licensed, as [the
+implementation notes](../../../implementation-notes.md) record. So this one
+part would change the terms of the whole perception step in a product.
 
-The choice is made here with that understood. This folder exists to compare
-methods and to learn what each kind of model buys, and for that purpose the
-licence costs nothing, because nothing is shipped and nothing is served. Nothing
-in this solution's design depends on the borrowed model being this particular
-one, which is worth saying plainly: what is being tested is whether an
-off-the-shelf instance segmenter works here at all, and the answer to that
-question transfers to whichever one is licensed conveniently. [Solution
-6](06-rf-detr-fine-tuned.md) already uses a permissively licensed segmenter, and
-the implementation notes name others, so the replacement is straightforward if
-the method proved to be the right one and the work were headed somewhere
-commercial.
+For this folder the licence costs nothing. The folder compares methods, and
+nothing is shipped or served. Nothing in the design depends on this particular
+model. The question is whether any off-the-shelf instance segmenter works here,
+and the answer carries over to one with a friendlier licence. [Solution
+6](06-rf-detr-fine-tuned.md) already uses a permissively licensed segmenter,
+and the implementation notes name others.
 
 ## Where it is strong and where it breaks
 
-The strengths all come from the same source, which is that nothing is fitted.
+Its strengths all come from fitting nothing. It can be tried in an afternoon,
+before anybody pays for labels. It answers the merge inside the model. No other
+solution can be cheaper, so if this one were good enough, several others would
+not need to exist.
 
-There would be nothing to collect, nothing to train and nothing to keep in step
-with the cell, so this solution could be tried in an afternoon and would give
-the folder a reading on what a borrowed model is worth before anybody invests in
-labels. It attacks the merge directly, because a model that finds objects
-returns one outline per object rather than one per connected shape. It needs no
-graphics card of its own. And it is a genuine upper bound on convenience: no
-other solution here can be cheaper, so if this one were good enough, several of
-the others would not need to exist.
+Its weaknesses are listed in the sections above: an approximate edge that is
+worst at the stem, an uncalibrated confidence, borrowed names that only filter,
+and a domain gap large enough that it may not work at all.
 
-The weaknesses divide into what the borrowing costs and what it cannot be asked
-to do.
+It also cannot do anything that needs fitting. Its outlines mark only visible
+pixels. So a glass partly behind another reads as a smaller glass in the wrong
+place. The fix is to train a model to return the whole silhouette, and this
+solution trains nothing. A fully hidden glass is invisible to it. For both, the
+project's usual answer applies: report the doubt, not a guess, and send the arm
+to look again.
 
-What the borrowing costs is accuracy at the edge and honesty in its numbers. The
-outline is built coarsely and then enlarged, so a width carries an error that
-does not average away, and a thin stem is where it is worst. The confidence
-number is uncalibrated on these pictures, so any bar on it is a hand-set knob.
-The names are somebody else's categories, so they filter usefully and mean
-nothing beyond that. And the domain gap is large enough that the whole thing may
-simply not work, since the light and the transparency that identify a glass in a
-photograph are mostly missing here.
+**One check the others make is left out on purpose.** Every other solution
+refuses a report whose width no glass of the kind could have. This solution is
+also handed the kind, and ignores it. The quietly wrong report in the worked
+example is exactly what that check would catch. Catching it here would hide the
+behaviour that the comparison with solution 4 exists to measure. A reader who
+builds on this solution, rather than comparing it, should add the check. The
+code says so where the kind is received.
 
-What it cannot be asked to do is anything that needs fitting. The outlines mark
-only pixels where the camera actually saw the object, so a glass standing partly
-behind another is read as a smaller glass in the wrong place, and the repair for
-that is to train a model to return the whole silhouette, which this solution
-cannot do because it trains nothing. A completely hidden glass is invisible to
-it, and no model can find what left no pixels. Neither limit has a fix inside
-this solution, and the project's usual answer applies to both: report the doubt
-rather than the guess, and send the arm to look again.
-
-**One check the other solutions make is deliberately left out here, and the
-reason is the comparison.** Every sibling refuses a report whose width no glass
-of the kind on the table could have, which turns a bad outline into a stated
-doubt instead of a wrong answer. This solution is handed the kind as well, and
-ignores it. That is not an oversight: the quietly wrong report in the worked
-example above is exactly what such a check would catch, and catching it here
-would hide the behaviour that the comparison with solution 4 exists to measure.
-A reader building on this solution rather than comparing it should add the
-check, and the code says so where the kind is received and unused.
-
-The honest position is therefore that this is the first thing to run and
-unlikely to be the one carried into a finished product. Its value is the
-comparison it makes possible rather than the accuracy it would deliver.
+So this is the first thing to run, and unlikely to be the one carried into a
+product. Its value is the comparison it makes possible.
 
 ## The general ideas behind this
 
-Four named ideas sit under this solution, and each is worth knowing in its own
-right, including where it is normally the wrong tool.
+Four named ideas sit under this solution. Each has places where it is the wrong
+tool.
 
 ### Zero-shot transfer — using a model on a task it was never fitted for
 
-A model is used **zero-shot** when it is applied to a task with no examples of
-that task at all, relying entirely on what it learned elsewhere. It works when
-the new task is genuinely a special case of the old one, which is close to true
-here, because finding drinking vessels standing on a table is something the
-borrowed model's training set contained.
+A model is used **zero-shot** when it gets no examples of the new task and
+relies only on what it learned elsewhere. It works when the new task is a
+special case of the old one. That is close to true here, because the model's
+training set had drinking vessels on tables.
 
-It is normally the right first move whenever a general model exists and labels
-are expensive, because it costs an afternoon and tells you how hard your problem
-really is. It is normally wrong as a final answer when the input differs visibly
-from what the model was fitted on, which is the case here, and wrong whenever
-the categories you need are finer than the categories the model knows, which is
-also the case here.
+It is usually the right first move when a general model exists and labels are
+expensive. It costs an afternoon and shows how hard the problem is. It is
+usually wrong as a final answer when the input looks different from the
+training data, as here. It is also wrong when you need finer categories than
+the model knows, as here too.
 
 ### Closed-vocabulary detection — a fixed list of things that can be named
 
-A model of this kind can only ever return names from a list fixed when it was
-fitted. That is called a **closed vocabulary**, and it is the structural reason
-the names here can be a filter and nothing more: the list cannot contain this
-cell's four kinds, because it was written without this cell in view.
+This kind of model can only return names from a list fixed at training time.
+That is a **closed vocabulary**. It is why the names here can only filter: the
+list was written without this cell in view, so it cannot hold the four kinds.
 
-A closed vocabulary is right when your categories really are on the list, and
-then it is efficient, predictable and easy to reason about. It is wrong when
-they are not, and the two usual repairs are to continue the model's training on
-your own categories, which is [solution 4](04-yolo-fine-tuned.md), or to use a
-model that accepts a description in words instead of a fixed list, which removes
-the restriction at the cost of being markedly less reliable about outlines.
+It is right when your categories are on the list. Then it is efficient and
+predictable. When they are not, there are two usual repairs. One is to train
+further on your own categories, which is [solution 4](04-yolo-fine-tuned.md).
+The other is a model that takes a description in words, which is less reliable
+about outlines.
 
 ### One-stage detect-and-segment, against propose-then-classify
 
-This solution's model does the finding and the naming together in a single pass.
-The alternative arrangement, used by [solution 5](05-sam2-with-a-keeper.md),
-proposes regions first with one model and decides afterwards with a second which
-of them to keep.
+This model finds and names in one pass. [Solution
+5](05-sam2-with-a-keeper.md) does it in two: one model proposes regions, and a
+second decides which to keep.
 
-Doing both at once is faster and simpler, and it is the right choice when the
-categories you want are the ones the model names. Separating the two is the
-right choice when they are not, because the proposing half survives a domain gap
-much better than the naming half does: a shape is a shape everywhere, while what
-counts as a cup is a judgement that was fitted to somebody else's data. That is
-the trade this solution and solution 5 sit on either side of, and it is the
-cleanest reason to run both.
+One pass is faster and simpler, and right when the model's names are the ones
+you want. Two steps are right when they are not. The proposing half survives a
+domain gap much better than the naming half. A shape is a shape everywhere, but
+what counts as a cup was fitted to somebody else's data. This solution and
+solution 5 sit on either side of that trade.
 
 ### Calibration under changed input
 
-A model's confidence is fitted, without anybody intending it, on the data the
-model was trained and checked on, so moving the model to different data breaks
-the calibration while often leaving the ranking usable. Knowing which of those
-two properties you depend on is the practical point.
-
-Trusting the ranking is usually safe, and it is what this solution would do.
-Trusting the numbers requires a repair, which is a small correction fitted on
-data where the answer is known, and that repair is cheap and almost always worth
-doing before a bar on a confidence number is allowed to decide anything that
-matters.
+This is the idea in [the number beside each
+outline](#the-number-beside-each-outline-and-why-it-is-not-a-probability).
+Moving a model to new data breaks its calibration but often leaves its ranking
+usable. Trusting the ranking is usually safe. Trusting the numbers needs a
+small correction fitted on data with known answers. That repair is cheap and
+almost always worth doing before a confidence bar decides anything important.
 
 ## Where it sits among the other five
 
-This solution is one end of a line that runs through three of the others, and
-the line is the useful way to see it.
+This solution is one end of a line through the others. Here nothing is fitted
+and the model's own names pick the glasses. [Solution
+5](05-sam2-with-a-keeper.md) borrows a model that does not name, and fits a
+small keeper here. [Solution 4](04-yolo-fine-tuned.md) continues this model's
+training here, and [solution 6](06-rf-detr-fine-tuned.md) does the same for a
+different model. [Solution 2](02-train-from-scratch.md) fits everything here
+and borrows nothing. [Solution 1](01-rules-on-the-table.md) sits outside the
+line, with no model at all. Read in that order, [the six
+solutions](overview.md) measure what each step of fitting buys.
 
-At this end, nothing is fitted in the cell and the borrowed model's own
-vocabulary picks the glasses out. One step along, [solution
-5](05-sam2-with-a-keeper.md) borrows a model that outlines without naming and
-fits a small keeper here to pick the glasses, so a little is fitted and the part
-that transfers worst is the part replaced. Another step along, [solution
-4](04-yolo-fine-tuned.md) continues this very model's training on this cell's
-own pictures, so the finding is borrowed and then adjusted, and [solution
-6](06-rf-detr-fine-tuned.md) does the same for a different architecture. At the
-far end, [solution 2](02-train-from-scratch.md) fits everything here and borrows
-nothing, and [solution 1](01-rules-on-the-table.md) sits outside the line
-altogether, with no model and no fitting of any kind.
-
-Read in that order, [the six solutions](overview.md) measure what each increment
-of fitting buys, and this one is the baseline the others are read against.
-
-One of those comparisons is sharper than the rest, and it is the reason this
-document and the next one should be read together. **Solution 4 is this same
-model, from this same library, starting from these same downloaded weights, with
-its training continued on this cell's own pictures.** The examiner holds the input,
-the output and the marking still for both. One further thing changes with the
-training, and it is honest to name it: solution 4 replaces the borrowed list of
-category names with the single class "glass", because a model cannot be trained
-towards this cell's own labels while still being asked which everyday object it
-is looking at. That change comes with the training rather than beside it, so
-nothing varies between the pair that the training did not bring, and the gap
-between their scores would be a measurement of what the training bought and of
-nothing else. No other pair in the folder is that clean, and that is the main
-reason this solution is worth building even though it is unlikely to be the one
-carried forward.
+**The pair with solution 4 is the cleanest comparison in the folder.** It is
+the same model and the same starting weights, plus training here. That training
+also cuts the names to one class, "glass". [The
+examiner](../the-examiner.md#why-there-is-an-examiner-at-all) explains why the
+two changes come together, and why the gap between the pair measures what
+training bought. That pair is the main reason to build this solution.
 
 ![What that pair measured: ten glasses of a hundred found on the spawned layouts and four of a hundred and one on the crowded ones, against the examiner's floor at 100 and 83 and against solution 4, which is this same model with its training continued here, at 99 and 73; and the scorecard's five columns for this solution, in which merged, split and false are all zero, so every glass it reported was a real glass and the whole of the failure is the ninety glasses that got no report at all.](../../../images/02-segment-glasses/03-silence-against-the-floor.png)
 

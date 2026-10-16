@@ -2,205 +2,164 @@
 
 ## Introduction
 
-This problem is answered six different ways, and six answers are only
-comparable if they were asked the same question and marked the same way. The
-examiner is the program that does both. It draws the arrangements of glasses,
-renders the pictures, hands exactly those pictures to whichever solution is
-being tried, and then marks what comes back against what it knows it put out.
+The examiner is the program that tests every solution to [the
+problem](problem.md). It draws the arrangements of glasses and renders the
+pictures. It hands those pictures to a solution. Then it marks what comes back
+against what it knows it put out.
 
-It does that twice for every solution: once with the glasses spaced as the cell
-normally spaces them, and once with them crowded closer than the cell allows. So
-each of the six comes back with two scorecards rather than one.
+It tests each solution twice. One run has the glasses spaced as the cell spaces
+them. The other has them crowded closer than the cell allows. So each solution
+gets two scorecards.
 
-By the end of this document you will understand what the examiner gives a
-solution, what it keeps to itself, how a report is matched to a real glass,
-which numbers decide whether one method beat another, and why one of those
-numbers matters far more than it first appears.
-
-Read this before any of the solution documents, because every one of them
-assumes it.
+This page explains what a solution is given and what the examiner hides. It
+also shows how a report is matched to a glass, and which numbers count most.
+Every solution document assumes it.
 
 ## Why there is an examiner at all
 
-Without one, each method would arrive with its own arrangements and its own
-idea of a good answer, and nothing could be concluded by putting their results
-side by side. The examiner exists to remove every difference between the six
-except the one being studied.
+Without one, each method would bring its own arrangements and its own idea of a
+good answer. Their results could not be compared. The examiner removes every
+difference except the method.
 
-It does that by holding three things fixed. The **input** is the same pictures
-from the same arrangements, in the same order. The **output** is the same record
-per glass, produced by the same final step. The **marking** is the same set of
-measurements, computed the same way. Everything a solution is free to change
-sits between the input and the output, and that is exactly the part we want to
-compare.
+It holds three things fixed:
 
-The comparison that follows from this is sharper than it sounds. Two of the six
-solutions use the same model from the same library, starting from the same
-downloaded weights, and one of them has had its training continued on this
-cell's pictures. That training also cuts the borrowed list of everyday
-categories down to a single class, because a model cannot be trained towards
-this cell's labels while still being asked which household object it is looking
-at — so the two changes cannot be had separately. Because the examiner holds
-everything else still, nothing varies between those two that the training did
-not bring, which makes the gap between them a measurement of what training
-bought.
+- the **input**: the same pictures of the same arrangements, in the same order;
+- the **output**: the same record per glass, made by the same last step;
+- the **marking**: the same measurements, computed the same way.
+
+A solution may change only what sits between the input and the output.
+
+This makes sharp comparisons possible. The best one is solutions 3 and 4: the
+same model, with and without training on this cell. The [results
+page](../../02-segment-glasses/results/README.md#what-the-comparison-says)
+reads that gap.
 
 ## What the examiner draws
 
-**It draws the arrangements, not Gazebo.** The real simulator would produce a
-slower picture of the same thing, and a few hundred arrangements are needed, so
-the examiner renders them directly from the cell's own glass shapes, the cell's own
-table layout and the wrist camera's real lens. Nothing about the geometry is
-invented for convenience.
+**It draws the arrangements itself, not with Gazebo.** A few hundred
+arrangements are needed, and Gazebo would be slow. The examiner renders them
+from the cell's own glass shapes, table layout and wrist camera lens. No
+geometry is made up for convenience.
 
-**Each arrangement holds four to six glasses of one kind**, and the kind changes
-from one arrangement to the next so that all four kinds are met in turn. The
-glasses stand far enough apart never to touch.
+**Each arrangement holds four to six glasses of one kind.** The kind changes
+from one arrangement to the next, so all four kinds come up in turn. The glasses
+never touch.
 
-That rotation is why **a score is an average over all four kinds** rather than a
-result for one. An ordinary run of 20 arrangements comes out at roughly a
-quarter of each kind, and the four are not equally hard to outline, so the
-examiner reports every measurement broken down by kind as well as over all of
-them. [The problem](problem.md) explains its difficulties with the tapered kind
-alone, to keep the explaining simple, but nothing is ever scored on that kind by
-itself.
+So **a score is an average over all four kinds**. A run of 20 arrangements holds
+roughly a quarter of each kind. The kinds are not equally hard to outline, so
+the examiner also reports every measurement by kind.
 
-**There are two families of arrangement**, and the difference between them is
-only how far apart the glasses stand.
+**There are two families of arrangement.** They differ only in how far apart
+the glasses stand.
 
-The **ordinary family** is what the cell's own spawner produces. It keeps 150 mm
-between any two centres, and that guarantee is what leaves a strip of bare table
-between every pair of glasses. In an ordinary arrangement each glass makes its
-own separate patch of pixels and nothing is hidden behind anything.
+The **ordinary family** is what the cell's own spawner makes. It keeps 150 mm
+between any two centres. That leaves bare table between every pair of glasses.
+Each glass makes its own patch of pixels, and nothing is hidden.
 
-The **crowded family** pushes the glasses as close as the cell allows, which is a
-third to two thirds of that ordinary spacing. This is where the methods separate
-most, because crowding is what creates the two failures worth studying. Two
-glasses close enough together run into a single patch of pixels, so one report
-covers both of them; and a short glass standing behind a tall one can lose its
-whole outline and appear in the picture not at all.
+The **crowded family** pushes the glasses closer: a third to two thirds of the
+ordinary spacing. This is where the methods differ most. Two close glasses run
+into one patch of pixels, so one report covers both. A short glass behind a tall
+one can vanish from the picture.
 
-**Arrangements are split into a training half and a test half**, by the number
-used to draw them. Anything a method is fitted on comes from below the dividing
-line, and everything it is marked on comes from above it, so no method is ever
-tested on an arrangement it learned from.
+**Arrangements are split into a training half and a test half** by the number
+used to draw them. A method is fitted only on arrangements below the dividing
+line. It is marked only on arrangements above it. So no method is tested on an
+arrangement it learned from.
 
 ### Every solution is tested twice, once on each family
 
-This is the shape of the whole test, so it is worth stating on its own. **A
-solution is not run once and scored once. It is run twice, once on each family,
-and it comes back with two scorecards.** Both runs use the same 20 held-out
-arrangements of their family, and both are marked exactly the same way, so the
-only thing that changes between a solution's two scorecards is how close the
-glasses were standing.
+**A solution is run twice, once on each family, and gets two scorecards.** Each
+run uses the same 20 held-out arrangements of its family. Both are marked the
+same way. So the only change between the two scorecards is how close the
+glasses stood.
+
+The table gives the size of each run and the question it asks.
 
 | run | arrangements | glasses | what it asks |
 |---|---|---|---|
 | the ordinary run | 20 | 100 | can the method do the job the cell actually sets it? |
 | the crowded run | 20 | 101 | where does the method begin to break? |
 
-Every solution gets the same two runs, so reading a solution means reading its
-pair: a method that does well on the ordinary run has met the cell's own
-spacing, and the distance between its two rows is how much of that depended on
-the glasses standing apart.
+The gap between a solution's two rows shows how much it relied on the glasses
+standing apart.
 
-A fitted solution is still trained only once. Its training set is drawn from
-below the dividing line and holds both kinds of arrangement mixed together, so
-no method meets crowding for the first time in the run that scores it.
+A fitted solution is trained only once. Its training set mixes both families,
+all from below the dividing line. So no method meets crowding for the first time
+in the run that scores it.
 
 ## What a solution is given
 
-For each arrangement, the camera is parked at several overlapping stations above
-the glass zone, looking straight down. The overlap matters: a glass cut off at
-the edge of one station's picture sits well inside another's.
+The examiner hands over the input that [the problem](problem.md#what-goes-in)
+defines: for each survey picture, the grey picture, the depth at every pixel,
+and the camera's pose. The stations overlap, so a glass cut off at the edge of
+one picture sits inside another.
 
-From each picture a solution may read three things:
-
-- the **grey picture**, shaded from how far away each surface is;
-- the **depth reading** at every pixel;
-- the **camera's pose**, which the arm knows from its own joint encoders.
-
-That is the whole input. It is the same for all six, and it is handed over by
-the examiner rather than fetched by the solution, so no solution can quietly read
-anything else.
+The examiner hands this over. The solution does not fetch it. So no solution can
+quietly read anything else.
 
 ## What the examiner keeps to itself
 
-Every picture also carries an **id image**: at each pixel, which glass that
-pixel shows, or nothing. The examiner renders it alongside the depth and never
-gives it to a solution at run time.
+Every picture also has an **id image**. At each pixel it says which glass that
+pixel shows, or none. The examiner renders it with the depth and never gives it
+to a solution at run time.
 
-That image is the examiner's whole power, and it is used for two different jobs
-which are worth keeping apart.
+The id image has two jobs.
 
-**As the answer key**, it is how marking works. Because the examiner knows which
-glass owns each pixel, it can decide what a returned mask is really a picture
-of.
+**As the answer key**, it makes marking possible. The examiner knows which glass
+owns each pixel. So it can tell what a returned mask really shows.
 
-**As a training label**, it is what a fitted method learns from — but only from
-the training half of the arrangements. A method may be *trained* on id images
-and is never *run* on them. Any method that read one while answering would not
-be answering this problem.
+**As a training label**, a fitted method learns from it, but only on the
+training half. A method may be *trained* on id images. It is never *run* on
+them.
 
 ## What must come back
 
-One record per glass, holding its mask pixels, its place on the table, a rough
-width of its footprint, and **whether the picture held the whole glass** — that
-last one because a glass at the edge of a station's frame shows only part of its
-footprint, so a width read off it is part of a width, and a solution refusing a
-report on its width has to be able to tell which it has. The examiner observes it;
-what to do about it is the solution's own. Beside those records come the two
-honest statements [the problem](problem.md) asks for: which glasses could not be
-separated and why, and which parts of the table could not have been seen at
-all. Neither is a list of glasses, and the examiner counts both rather than
-treating a reported doubt as a missing answer.
+One record per glass, as [the problem](problem.md#what-must-come-out) asks:
+mask, place and rough width. The examiner adds one more field: **whether the
+picture held the whole glass**. A glass at the edge of a frame shows only part
+of its footprint, so its width is only part of a width. A solution that refuses
+a report on its width needs to know this. The examiner reports the fact. What to
+do with it is up to the solution.
 
-**The solution picks the pixels, and the examiner does the measuring.** A mask
-is a set of pixels, and three things are enough to turn it into a place on the
-table and a width: the grey picture says which pixels there are, the depth
-reading beside each pixel says how far away that bit of glass was, and the
-camera's pose says where the camera was standing while it looked. Those are the
-same three things the examiner handed over above, and the examiner runs that
-step itself, the same way for every solution.
+The two honest statements come back too: glasses that could not be separated,
+and table that could not be seen. The examiner counts both. It does not treat a
+stated doubt as a missing answer.
 
-The arithmetic of that step is short. The pixels become points standing in the
-room, and the glass's upright axis is taken from the points at the top of it
-rather than from all of them, because a rim leans outwards in the picture while
-the middle of the rim still sits over where the glass really stands. The width
-is then how far the cloud of points reaches out from that axis, taken as a high
-percentile so that one stray point cannot widen it.
+**The solution picks the pixels, and the examiner does the measuring.** Three
+things turn a mask into a place and a width: the mask's pixels, the depth at
+each pixel, and the camera's pose. The examiner runs this step itself, the same
+way for every solution.
 
-So the final answer — which glass is where, and how wide — depends on nothing
-but which pixels the solution chose. No solution can win by measuring more
-cleverly, and none can lose by measuring worse. **The method that scores best is
-simply the one whose masks pin down the exact position and size of the
-glasses**, because choosing the pixels is the only thing any of the six
-contributes.
+The step is short. The pixels become points in the room. The glass's upright
+axis comes from the points at its top, not from all of them. The rim leans
+outwards in the picture, but its middle still sits over where the glass stands.
+The width is how far the points reach from that axis. It uses a high
+percentile, so one stray point cannot widen it.
 
-One thing follows from this and is worth saying plainly here, because it would
-otherwise come up in all six documents. **No model in this problem produces a
-pose.** Models produce masks. The place comes afterwards, from the depth
-readings and the camera's pose, by arithmetic — and a glass standing upright on
-a flat table has no orientation left for anybody to find.
+So the final answer depends only on which pixels the solution chose. No solution
+can win by measuring more cleverly. **The method that scores best is simply the
+one whose masks pin down the exact position and size of the glasses.**
+
+**No model in this problem produces a pose.** Models produce masks. The place
+comes afterwards, from depth and the camera's pose. An upright glass on a flat
+table has no turn left to find.
 
 ## How a report is matched to a real glass
 
-Before anything can be counted, the examiner has to decide which real glass a
-report is talking about. It does this by pixels rather than by position: it
-looks at the pixels the report is made of, asks the id image which real glass
-owns most of them, and that majority owner is the glass the report refers to.
+Before counting, the examiner decides which real glass each report is about. It
+looks at the report's pixels. It asks the id image which glass owns most of
+them. That glass is the match.
 
-Matching by pixels rather than by position is deliberate, because it still works
-when a method is badly wrong about where the glass stands. A report whose mask
-is plainly a picture of glass number three is credited to glass number three,
-even if the place it computed is well off.
+Matching by pixels, not by position, is deliberate. It still works when a method
+is badly wrong about the place. A mask that clearly shows glass three is
+credited to glass three, even if its place is far off.
 
 ## What the examiner measures
 
 ### Did it separate the glasses?
 
-Five counts come straight out of the matching, and between them they describe
-every way the finding step can go right or wrong.
+The matching gives these counts. Together they cover every way the finding step
+can go right or wrong.
 
 | Count | What it means |
 |---|---|
@@ -211,91 +170,64 @@ every way the finding step can go right or wrong.
 | **split** | one real glass that collected two reports |
 | **false** | a report whose pixels belong to no glass at all |
 
-**Missed is the count to watch hardest.** A split glass announces itself,
-because both halves are too small to be a glass. A merged pair looks like one
-large glass, which is worse, because everything downstream believes it. A
-missed glass leaves no trace at all — no bad number, no failed check, nothing
-in the run to read. The only defence is to have worked out in advance where a
-glass could have been hiding, which is what [looking again at what was
-hidden](hidden-glasses.md) is for.
+**Missed is the count to watch hardest.** A split glass shows itself, because
+both halves are too small to be a glass. A merged pair looks like one large
+glass, and everything later believes it. A missed glass leaves no trace at all.
+The only defence is to work out where a glass could hide. [Looking again at what
+was hidden](hidden-glasses.md) does that.
 
 ### How far out was the place?
 
-For each glass that was found, the examiner records how far the reported place is
-from the true one, and reports the middle value and the worst.
+For each found glass, the examiner records how far the reported place is from
+the true one. It reports the middle value and the worst.
 
-**This number saturates, and knowing that saves a lot of confusion.** The step
-that turns a mask into a place is deliberately forgiving, because it takes the
-axis from the rim and the width from a percentile precisely so that a ragged
-mask edge cannot move the answer. The consequence is that two quite different
-masks can produce almost the same place — close enough to the floor of error
-described below that the difference between the two masks disappears into it.
-When two answers both sit that near the best the shared step can give, this
-number can no longer tell them apart, which is why the mask itself has to be
-measured as well.
+**This number saturates.** The step that turns a mask into a place is forgiving
+on purpose. It takes the axis from the rim and the width from a percentile, so a
+ragged mask edge cannot move the answer. So two quite different masks can give
+almost the same place. Near the floor of error below, this number can no longer
+tell two methods apart. That is why the mask itself is measured too.
 
 ### How good was the mask?
 
-This is the measurement that separates methods when the place cannot, and it is
-the reason the examiner looks at the mask itself rather than only at what the
-arithmetic made of it.
+This measurement separates methods when the place cannot.
 
-Two numbers per glass: **how much of the real glass the mask covered**, and
-**how much of the mask was not that glass**. The first catches an outline that
-lost the thin stem of a glass or stopped at the edge of an occluder. The second
-catches an outline that leaked onto the table or swallowed a neighbour.
+It gives two numbers per glass: **how much of the real glass the mask covered**,
+and **how much of the mask was not that glass**. The first falls when an outline
+loses a thin stem or stops at a glass in front. The second rises when an outline
+leaks onto the table or swallows a neighbour.
 
-Both are then **broken down by kind of glass**, because the four kinds are not
-equally hard to outline and an average over all four would hide that.
+Both are **broken down by kind of glass**. An average over all four kinds would
+hide which kinds are hard. The [results
+page](../../02-segment-glasses/results/README.md#what-the-numbers-mean) shows
+what the breakdown found: a written rule loses the stem, and a fitted model does
+not.
 
-What the breakdown shows is worth saying plainly, because it is not what the
-shapes alone suggest. A solution that works from rules written by hand does
-lose the thin stem: it covers the two kinds without a stem almost completely,
-and the two kinds with a stem noticeably less, so for that kind of solution the
-stem really is the hard part. A solution fitted on this cell's own pictures does
-not lose it: it covers all four kinds almost equally well, the stemmed glass
-included. So the stem is where a written rule runs out, and not where every
-method runs out.
-
-Those two solutions differ in the other number instead, and in opposite
-directions. The written rule almost never includes a pixel that is not the
-glass, because it only accepts a pixel it is sure about, so it is exact about
-what it claims and simply claims too little. The fitted model always includes a
-few, because a learned outline follows the shape coarsely and its edge sits a
-little outside the glass, so it claims the whole glass and a thin margin around
-it. Neither of those two habits can be seen in the places the solutions report,
-which is the reason this measurement exists at all.
-
-The measurement is checked against the floor below, where the masks are the ones
-the renderer itself drew. There both numbers come out perfect for all four
-kinds, which is what a correct yardstick has to say about a perfect mask.
+The measurement is checked on the floor below, where the masks are the
+renderer's own. There both numbers are perfect for all four kinds. A correct
+yardstick must say that about a perfect mask.
 
 ### The ceiling: what the best possible answer would be
 
-One more measurement is not about any method. The examiner can run its own id
-images through the shared arithmetic, as though a method had returned perfect
-masks. What comes out is the **floor of error**, or equivalently the ceiling of
-achievable accuracy: the best place and width the shared step can produce even
-when the mask is exactly right.
+One more measurement is not about any method. The examiner runs its own id
+images through the shared step, as if a method had returned perfect masks. The
+result is the **floor of error**. It is the best place and width the shared step
+can give when the mask is exactly right.
 
-That number is what makes the others readable. A method within a hair of the
-floor is not a good method so much as a method whose remaining error is not its
-fault, and knowing that stops effort being spent on the wrong half of the
-pipeline.
+This floor makes the other numbers readable. A method very close to the floor
+has little error of its own left. Its remaining error comes from the shared
+step.
 
-It also exposes one trap that is easy to fall into. A mask may claim pixels the
-camera never saw the glass at, which happens on purpose when a method predicts
-the hidden part of a glass. The depth reading at such a pixel belongs to
-whatever stood in front, so feeding it in drags the computed place onto the
-object in front. Measured with exact masks, naming those pixels and leaving them
-out gives a place several times closer than feeding them in. So a mask that
-asserts pixels must say which ones, and the examiner excludes their depth readings
-rather than guessing a value for them.
+The floor also exposes one trap. Some methods predict the hidden part of a
+glass. Their masks then claim pixels where the camera never saw that glass. The
+depth at such a pixel belongs to whatever stood in front. Using it drags the
+computed place onto that object. With exact masks, leaving those pixels out
+gives a place several times closer than using them. So a mask that claims hidden
+pixels must say which ones. The examiner then ignores their depth readings.
 
 ## Where to go next
 
-- [The problem](problem.md) — what is asked for, and the three difficulties.
-- [Looking again at what was hidden](hidden-glasses.md) — the shared part that
-  recovers a glass no picture held.
-- [The six solutions](solutions/overview.md) — what each method puts between the
+- [The problem](problem.md): what is asked for, and the three difficulties.
+- [Looking again at what was hidden](hidden-glasses.md): the shared part that
+  finds a glass no picture held.
+- [The six solutions](solutions/overview.md): what each method puts between the
   input and the output.

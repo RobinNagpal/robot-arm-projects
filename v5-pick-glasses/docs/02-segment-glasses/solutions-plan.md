@@ -1,37 +1,36 @@
 # Plan — the six solutions for problem 2
 
-Short notes only. Each line is a decision, not an explanation. The documents
-themselves carry the reasoning.
+Short notes only. Each line is a decision, not an explanation. The reasoning is
+in the documents themselves. This is the plan as written before the six were
+built. All six are now built and scored; see the [results
+page](../../02-segment-glasses/results/README.md).
 
 ## The destination, the same for all six
 
-For each glass: **the pixels that are it, and its pose on the table.**
+For each glass: **the pixels that are it, and its place on the table.** [The
+problem](problem.md#what-must-come-out) defines this output.
 
-Already returned by the shared arithmetic, which gives a place, a width and the
-pixels whose depth readings were used. No code change needed for the output.
+The shared step already returns a place, a width and the pixels it used. No code
+change is needed for the output.
 
-**The models give no pose.** They give masks. Depth plus the camera's own pose
-turn a mask into a place, by arithmetic shared by all six. A glass stands
-upright, so its pose is a position.
+**The models give no pose, only masks.** The shared step turns a mask into a
+place. See [the examiner](the-examiner.md#what-must-come-back).
 
 ## The comparability contract
 
-Three things are shared, and nothing else is. This is what makes the six
-comparable.
+The six share the same input, the same output and the same yardstick, and
+nothing else. [The examiner](the-examiner.md#why-there-is-an-examiner-at-all)
+holds all three fixed. Two rules from it matter most here:
 
-**Same input.** One fixed set of held-out scenes from the shared examiner, same
-seeds for every car. Per scene, the survey pictures from the overlapping
-stations: the grey picture shaded from depth, the depth reading per pixel, and
-the camera pose. Nothing else. **No car may read the spawn record at run time.**
+- **No car may read the spawn record at run time.**
+- One shared function turns a mask into a place and a width, so a difference in
+  the result belongs to the mask.
 
-**Same output.** One record per glass: its mask pixels, its place on the table,
-its width. One shared function turns a mask into a place and a width, so a
-difference in the result belongs to the mask.
-
-**Same yardstick.** One scorecard for all six, plus the exact-mask floor as the
-ceiling any car could reach.
+The exact-mask floor is the best any car could reach.
 
 ## Naming
+
+The table maps the old names to the new ones.
 
 | Old | New |
 |---|---|
@@ -39,6 +38,8 @@ ceiling any car could reach.
 | `images/02-segment-glasses/` | `images/02-segment-glasses/` |
 | `images/generators/02-segment-glasses/` | `images/generators/02-segment-glasses/` |
 | `02-segment-glasses/bench/` | `02-segment-glasses-sim/` |
+
+The last rename was not done. The bench is still in `02-segment-glasses/bench/`.
 
 Documents:
 
@@ -53,9 +54,13 @@ Documents:
 - `solutions/05-sam2-with-a-keeper.md`
 - `solutions/06-rf-detr-fine-tuned.md`
 
-Numbered by the ladder, least fitted first, so the table reads downwards.
+They are numbered from least fitted to most fitted, so the table reads
+downwards.
 
 ## The six
+
+Each row is one solution ("car"), how much of it is fitted, what it is built
+from, and its licence.
 
 | # | Car | Fitted | Libraries and models | Licence |
 |---|---|---|---|---|
@@ -66,7 +71,7 @@ Numbered by the ladder, least fitted first, so the table reads downwards.
 | 5 | Promptable foundation model, small fitted head | head only | SAM 2 via `transformers`, scikit-learn | permissive |
 | 6 | Transformer segmenter, fine-tuned | all, here | RF-DETR-Seg | Apache 2.0 |
 
-Three carry a second way inside them:
+Three have a second way inside them:
 
 - **2** — labels from the answer key, or from the arm's own movement.
 - **5** — SAM 2 with a grid of points and a keeper, or SAM 3 with a word
@@ -75,8 +80,8 @@ Three carry a second way inside them:
 
 ## One shared document, not a car
 
-Hidden glasses and where to look next: blind regions, pose vetoes, learned
-ranker. Unchanged in approach. All six point at it.
+[Looking again at what was hidden](hidden-glasses.md): blind regions, pose
+vetoes, learned ranker. The approach is unchanged. All six point at it.
 
 ## Block at the top of every document
 
@@ -87,6 +92,9 @@ ranker. Unchanged in approach. All six point at it.
 - **What it costs** — labels, training, hardware, licence
 
 ## What the six let us compare
+
+Each row is one question. The right column says which solutions to compare to
+answer it.
 
 | Question | Hold still, change one thing |
 |---|---|
@@ -99,15 +107,16 @@ ranker. Unchanged in approach. All six point at it.
 
 ## Scorecard: what to add
 
-Place error saturates. Two fine-tuned segmenters already sit within half a
-millimetre of the exact-mask floor, and share its worst case. So add:
+Place error saturates (see [the
+examiner](the-examiner.md#how-far-out-was-the-place)). Two fine-tuned segmenters
+already sat within half a millimetre of the exact-mask floor. So add:
 
 - **mask overlap per glass** — share of the true silhouette captured
 - **mask leak per glass** — share of the mask that is not that glass
 - **both broken down by kind** — the stemmed kind is the hard one
 
-The matcher already computes the overlap share to assign a report to a glass.
-It is discarded. Recording it is small work.
+The matcher already computes the overlap share, then throws it away. Recording
+it is small work.
 
 ## Harder scenes, in order of cost
 
@@ -121,6 +130,8 @@ It is discarded. Recording it is small work.
 
 ## Code: what goes, what stays
 
+The table lists each code folder and the decision about it.
+
 | Folder | Holds | Decision |
 |---|---|---|
 | `02-segment-glasses/bench` | the renderer, the scenes, the scorecard | keep, rename |
@@ -129,26 +140,25 @@ It is discarded. Recording it is small work.
 | `02-segment-glasses/results` | the two pipelines compared | keep |
 | `02-segment-glasses/05-sam2-with-a-keeper` | shared pieces **and** two superseded models | split |
 
-An audit cut this list down. Only one folder holds anything dead.
+An audit cut this list down. Only one folder held anything dead.
 
-**`02-segment-glasses/01-rules-on-the-table` is solution 1.** Its finding step
-groups points where they stand on the table rather than where they fall in the
-picture, which is solution 1's method exactly. It is not superseded by anything.
+**`02-segment-glasses/01-rules-on-the-table` is solution 1.** It groups points
+where they stand on the table, not where they fall in the picture. That is
+solution 1's method exactly.
 
 **`02-segment-glasses/02-train-from-scratch` is solution 2.** Its network is the
-one solution 2 describes as already written, and `problem-5-learned` imports it.
+one solution 2 describes, and `problem-5-learned` imports it.
 
 **`02-segment-glasses/results` is cited from outside.** Problem 5's documents
 point at its comparison in three places.
 
-**The examiner is used by three problems**, not one: problems 2, 3 and 4 all put
-it on their path. Deleting it would change the input the six are compared on,
-which is the one thing this plan holds fixed.
+**Three problems use the examiner**: problems 2, 3 and 4. Deleting it would
+change the input the six are compared on.
 
 ### Splitting `02-segment-glasses/05-sam2-with-a-keeper`
 
-It holds the shared pieces as well as two superseded models. The shared ones
-belong in the examiner; only the models go.
+It held the shared pieces and two superseded models. The shared pieces belong in
+the examiner. Only the models go.
 
 | Move to the examiner | Why |
 |---|---|
@@ -165,16 +175,20 @@ belong in the examiner; only the models go.
 
 ## Not in this pass
 
-- Four of the six cars are not built. Documents say so, and quote no
-  measurement produced by a different model.
-- Old measurements belong to SAM 1 and Mask R-CNN. Not reusable for the new
-  cars. The exact-mask floor survives: it measures the arithmetic, not a model.
+- When this plan was written, four of the six cars were not built. Documents
+  were to say so and quote no number from a different model. All six are built
+  now.
+- Old measurements belong to SAM 1 and Mask R-CNN. They cannot be reused for the
+  new cars. The exact-mask floor survives, because it measures the arithmetic,
+  not a model.
 
 ## Diagrams: reuse, do not rewrite
 
-The six writers asked for 79 pictures between them. 95 already exist, drawn for
-the old solutions, and most depict ideas that survive. Each generator runs to
-well over a thousand lines, so writing 79 fresh ones is the wrong move.
+The six writers asked for 79 pictures. 95 already existed, drawn for the old
+solutions, and most showed ideas that survive. Each generator is over a thousand
+lines long. So reuse beats writing 79 new ones.
+
+The table says where each old generator's pictures go now.
 
 | Existing generator | Where its pictures go now |
 |---|---|
@@ -189,24 +203,19 @@ well over a thousand lines, so writing 79 fresh ones is the wrong move.
 
 ### Two kinds of rejection, and only one is a deletion
 
-A picture put back into a document is judged against what that document now
-says, so many were rejected. The reasons divide, and the division decides what
-happens to the file.
+Many reused pictures were rejected. There are two reasons, and they lead to
+different actions.
 
-**Rejected on substance — delete.** The picture draws a camera looking from the
-side where the survey looks from the top, or a method none of the six
-describes, or it argues the opposite of what the problem statement says. No
-amount of relabelling saves these.
+**Rejected on substance — delete.** The picture shows a side camera where the
+survey looks from the top. Or it shows a method none of the six uses. Or it
+argues against the problem statement. New labels cannot save these.
 
-**Rejected on labels only — relabel and redraw.** The picture is exactly right
-and says "SAM" where the document says SAM 2, or labels itself "solution 8"
-where it is now solution 5, or carries a caption about an earlier version of a
-page. The generator that drew it still exists, so the label is a line of code
-to change and the picture can be redrawn and placed. These are the valuable
-ones: several were rejected only because a word in the image names the wrong
-generation.
+**Rejected on labels only — relabel and redraw.** The picture is right, but a
+label is old. It says "SAM" where the document says SAM 2, or "solution 8" where
+it is now solution 5. The generator still exists, so the fix is one line of
+code. These are the valuable ones.
 
-New pictures are needed only where the material is new:
+New pictures are needed only for new material:
 
 - how a borrowed model builds a coarse outline, and its fixed category list;
 - a transformer segmenter's queries, and set prediction against pruning;
@@ -229,9 +238,10 @@ New pictures are needed only where the material is new:
 
 ## How the documents get written
 
-Six writer agents, one per solution document. Then four reviewer agents, each
-reading documents it did not write, checking against the code and against each
-other.
+Six writer agents write one solution document each. Then four reviewer agents
+each read documents they did not write. They check them against the code and
+against each other.
 
-Written by hand, because they must agree with all six: `problem.md`,
-`the-examiner.md`, `hidden-glasses.md`, `overview.md`, `README.md`.
+Five documents are written by hand, because they must agree with all six:
+`problem.md`, `the-examiner.md`, `hidden-glasses.md`, `overview.md`,
+`README.md`.

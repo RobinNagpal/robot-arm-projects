@@ -1,23 +1,22 @@
 # Problem 3 — geometry generates, a model ranks
 
-Plain geometry writes down every push that is legal. A fitted model puts the
-survivors in order, and the arm makes the first push on the list. The model
-can never add a push and never bring back one the geometry refused, so a wrong
-answer costs one wasted push and nothing worse.
+Plain geometry lists every legal push. A fitted model puts them in order, and
+the arm makes the first push. The model can never add a push or bring back a
+refused one. So a wrong answer costs one wasted push and nothing worse.
 
-This is solution 2 of [the six](../../docs/03-push-glasses-apart/solutions/overview.md),
-specified by [geometry generates, a model
-ranks](../../docs/03-push-glasses-apart/solutions/02-geometry-ranked.md). Read that
-for the reasoning; this file is what was built, how to run it, and what it
+This is solution 2 of [the six](../../docs/03-push-glasses-apart/solutions/overview.md).
+[Geometry generates, a model
+ranks](../../docs/03-push-glasses-apart/solutions/02-geometry-ranked.md) gives
+the reasoning. This file says what was built, how to run it, and what it
 measured.
 
 ## The measurement comes first, and it decides the rest
 
-The document says to measure the spread of the label inside a candidate group
-before fitting anything, because a ranking over a group whose members are tied
-has nothing to learn. Nobody had measured it. `spread.py` does, and the answer
-is in `spread.json`: **60 training tables, 4,511 candidate pushes really made,
-106 seconds.**
+A ranker has nothing to learn from a group of tied candidates. So the spread
+of the label inside each group is measured before fitting. `spread.py` does
+this and writes `spread.json`: **60 training tables, 4,511 candidate pushes
+really made, 106 seconds.** The table gives how much the room gained varies
+from best to worst inside one glass's candidates.
 
 | Within one glass's candidates | Room gained, best to worst |
 |---|---|
@@ -25,28 +24,26 @@ is in `spread.json`: **60 training tables, 4,511 candidate pushes really made,
 | the pushes that only ease the crowding | 11.9 mm median, 14.5 mm mean, over 212 groups |
 | the same push made four times | 0.000 mm by the simulator's record, 4.9 mm as the camera measures it |
 
-The job-finishing pushes are an exact tie, and the reason is structural rather
-than accidental: `nudge.along` stops each heading at the first travel that
-gives the glass room, so every one of them lands on the same contour — within
-**0.96 mm** of the same room margin, measured — and a table where every glass
-has room has a shortfall of zero whichever push got it there. A test
-(`test_each_heading_stops_at_the_first_travel_that_works`) proves the two
-halves of that in code.
+The job-finishing pushes tie exactly. `nudge.along` stops each heading at the
+first travel that gives the glass room. So they all land within **0.96 mm** of
+the same room margin. The
+[document](../../docs/03-push-glasses-apart/solutions/02-geometry-ranked.md#what-the-geometry-proposes)
+explains why. The test
+`test_each_heading_stops_at_the_first_travel_that_works` checks it in code.
 
-So the ordering can carry information in only two places: among the pushes
-that merely ease the crowding, and across glasses, in which glass to push
-next. For one glass, the printed rule is already as good as the best candidate
-in **159 of 206** groups, and the best possible choice beats it by 0.0 mm at
-the median. Across the whole table the gap is real but small: 2.56 mm of room
-at the median, and the rule's own choice toppled a glass in 1 of 82 decisions.
+So the order can matter in only two places: among pushes that only ease the
+crowding, and in which glass to push next. For one glass, the printed rule
+already matches the best candidate in **159 of 206** groups. The best choice
+beats it by 0.0 mm at the median. Across a whole table the gap is small:
+2.56 mm of room at the median. The rule's own choice toppled a glass in 1 of
+82 decisions.
 
 ## What it scores, against the same geometry without the model
 
-Both columns are the same loop over the same 50 held-out tables with the same
-budget and the same candidate set. The only difference is who picks. The
-right-hand column is also, number for number, solution 1's own re-run
-`results.json`, which is the check that this folder enumerates what that one
-enumerates.
+Both columns are the same loop over the same 50 held-out tables, with the
+same budget and the same candidates. Only the chooser differs. The right-hand
+column matches solution 1's own `results.json` number for number. That checks
+that this folder lists the same candidates as that one.
 
 | | Ranked (`results.json`) | Printed rule (`rule.json`) |
 |---|---|---|
@@ -60,43 +57,24 @@ enumerates.
 | Landing, median / worst | **1.6 / 32.8 mm** | 1.7 / 57.6 mm |
 | Thinking per push | 102 ms | **98 ms** |
 
-**The ranker still loses, and it now loses in a more awkward way.** It reaches
-exactly the same end as the printed rule — the same fourteen tables, the same
-107 glasses, the same single topple — but spends nine more pushes and **half
-again as much travel** getting there. Where it used to be beaten on the result,
-it is now beaten on the cost of a result it matches.
+**The ranker loses.** It ends exactly where the printed rule ends: the same
+fourteen tables, the same 107 glasses, the same single topple. But it spends
+nine more pushes and **half again as much travel**.
 
-That is a consequence of fitting a real gripper. These figures were measured
-with a blade 120 mm long and 28 mm thick until the examiner was given a real
-Robotiq 2F-85, which is 139 mm across and has to be turned on its side to fit
-between the glasses, and then cannot push lower than 75 mm. With that hand the
-binding constraint is no longer *which* push to choose but whether any push is
-available at all: 53 of the refusals are the hand being too wide to get behind
-a glass and 87 are it being too tall to push one safely. A ranker that orders
-candidates cannot help with either, and when every table bottoms out on the
-same obstacle, ordering the candidates differently changes only the route.
+With the real Robotiq 2F-85, most refusals happen before any choosing. 53 are
+the hand too wide to get behind a glass. 87 are it too tall to push one safely.
+Ordering cannot change either. The model's top input is now **push height over
+the topple limit**, at 0.43 of its importance.
 
-The refit itself noticed. The single most important feature is now **push
-height over the topple limit**, at 0.43 of the model's importance, where the
-geometry of the destination used to lead. The model learnt the right thing
-about the new hand; there was simply nothing left for it to win with.
-
-The reason is visible in the validation numbers (`training.json`) and it
-is worth stating, because it is a lesson about the label rather than about
-boosted trees. The model is fitted on **room gained**, and the run is scored on
-**glasses that end up grippable**. Those are not the same quantity. A push that
-spreads 20 mm of room over three glasses scores higher than one that finishes
-a glass outright, and only the second gets a glass off the table. On the
-validation tables the ranker's top pick takes a job-finishing push in **47 of
-the 83 decisions that offer one**; the printed rule takes it every time.
-
-By its own label the ranker is the better chooser of the two — across a whole
-decision it gives up 4.4 mm of room against the best candidate where the rule
-gives up 18.7 mm — and it clears no more tables for it. That is the measurement
-the document asked for, and it says keep the simpler one. It said so more
-gently when the two differed by ten glasses; now that they end in the same
-place and the ranker takes half again as much travel to get there, it says so
-plainly.
+The ranker takes the longer route because of its label. It learns **room
+gained**, but the run is scored on **glasses that end up grippable**. In
+`training.json`, its top pick finishes the job in **47 of the 83 decisions that
+offer one**. The rule does every time. By its own label the ranker is better:
+it gives up 4.4 mm of room against the best candidate, where the rule gives up
+18.7 mm. It still clears no more tables. So keep the simpler one. [Where it is
+strong and where it
+breaks](../../docs/03-push-glasses-apart/solutions/02-geometry-ranked.md#where-it-is-strong-and-where-it-breaks)
+has the full argument.
 
 ## How it works
 
@@ -109,35 +87,27 @@ plainly.
 ```
 
 Everything before the sort is arithmetic, and so is every refusal. The model
-enters at the sort and nowhere else.
+acts at the sort and nowhere else.
 
-**The eight inputs** (`features.py`, all of them in one function): the contact
-angle relative to the line to the nearest neighbour's edge; the push distance;
-the room the destination would have; the destination's distance to the zone
-edge and to the rack; how many neighbours sit within reach, as a count; the
-foot width; and the push height as a fraction of the topple limit at the worst
-friction believed. Every one is a length, an angle, a count or a ratio, and
-none is a position on the table: move the whole arrangement and only the two
-distances to fixed features of the cell change.
+**The eight inputs** are in one function in `features.py`. [The
+document](../../docs/03-push-glasses-apart/solutions/02-geometry-ranked.md#the-inputs-are-lengths-counts-and-ratios)
+lists them and explains why none is a position on the table.
 
 What the fit says mattered, in order: the topple ratio (0.43), the foot width
 (0.38), then the five geometric ones, with the push distance last (0.01). The
-model mostly learned *which glass is risky to push*, not *which push is good* —
-which is the same finding as the spread measurement, arrived at from the other
-side.
+model mostly learned *which glass is risky to push*, not *which push is good*.
 
-**The model** is 200 boosted regression trees of depth 3, fitted pointwise on
-4,844 labelled candidates from 190 training tables. The label is the clear room
-the whole table gained, read from the simulator's record, with a toppled glass
-set to −1 m so it sorts below everything. 57 of those candidates toppled a
-glass: the geometry passed them because the friction in its limit is a guess,
-and they are the rows that teach the model to stand further from the limit.
+**The model** is 200 boosted regression trees of depth 3. It is fitted
+pointwise on 4,844 labelled candidates from 190 training tables. The label is
+the room the whole table gained, read from the simulator's record. A toppled
+glass sets it to −1 m, so that push sorts below everything. 57 candidates
+toppled a glass. The geometry passed them because its friction is a guess.
 
 ## Demonstrations, which is what this solution is for
 
 Solutions 3 and 6 learn from this one's pushes. `demos.py` writes them to
 `demonstrations/demos.jsonl`, one JSON object per line, in the order things
-happened. The full field list is in that file's docstring; the shape is:
+happened. The full field list is in that file's docstring. The shape is:
 
 ```json
 {"record": "push", "table": 0, "step": 0, "kind": "straight_glass",
@@ -154,27 +124,23 @@ happened. The full field list is in that file's docstring; the shape is:
  "pushes": 1, "racked": 4, "outcome": "done", "refused": {}}
 ```
 
-Metres and radians throughout, except `room_gained_mm`. The observation is
-exactly what `look()` returned, carrying problem 2's measurement error. The
-action is given twice, in both forms the bench accepts: as the parameterised
-push, and as `waypoints`, the path the jaw really followed, which the bench
-samples on every action and `follow()` takes back. So a policy that emits
-waypoints is trained on the same demonstrations as one that emits push
-parameters. A table's number redraws that table exactly, so a consumer that
-needs pictures renders its own with `bench/top_view.py`, and nothing is
-archived that can be regenerated.
+Units are metres and radians, except `room_gained_mm`. The observation is
+exactly what `look()` returned, with problem 2's measurement error. The action
+is given in both forms the bench accepts. One is the parameterised push. The
+other is `waypoints`, the path the jaw really followed, which `follow()` takes
+back. So a policy that emits waypoints trains on the same demonstrations as one
+that emits push parameters. A table's number redraws that table exactly. A
+consumer that needs pictures renders its own with `bench/top_view.py`.
 
 `make demos` over the first 200 training tables gives **896 pushes on 200
-tables** (381 of them 5 mm test pushes) in 52 seconds and about 6 MB: 152
-tables done, 46 incomplete, 2 wrong, with 171 glasses refused and every reason
-kept. Two pushes left a glass down, and both are in the file with
-`"toppled": true` rather than removed.
+tables**, 381 of them 5 mm test pushes. It takes 52 seconds and about 6 MB. 152
+tables are done, 46 incomplete and 2 wrong, with 171 glasses refused and every
+reason kept. Two pushes left a glass down. Both stay in the file with
+`"toppled": true`.
 
-Two things to carry into training on it. A **refusal is a result**: a table
-with a non-empty `refused` is a correct answer, and dropping those tables
-removes the situations this teacher found hard. And **filtering to the pushes
-that worked biases which tables are covered**, not only which actions, so every
-push's outcome is recorded rather than the failures being dropped here.
+Keep the refusals and the failures when training on this file. [It is the
+teacher](../../docs/03-push-glasses-apart/solutions/02-geometry-ranked.md#it-is-the-teacher)
+explains why dropping them biases the training.
 
 ## Running it
 
@@ -189,17 +155,15 @@ make test        # the quick checks; no trained model needed
 ```
 
 Nothing here needs an accelerator and nothing downloads. `make train` spends
-about 5 minutes making pushes and **1.7 seconds** fitting the trees on a laptop
-processor; `data/rows.npz` is cached, so refitting is seconds. Run time is a
-few hundred threshold comparisons per candidate, which is the 75 ms per push
-above, and most of that is the enumeration rather than the trees: the printed
-rule, which scores nothing, spends 59 ms. Both figures were taken on an idle
-machine, because the same runs timed while the machine was busy read roughly
-twice as much.
+about 5 minutes making pushes and **0.9 seconds** fitting the trees on a laptop
+processor. `data/rows.npz` is cached, so refitting takes seconds. At run time
+the ranker spends 102 ms per push, as in the table above. Most of that is the
+enumeration, not the trees: the printed rule, which scores nothing, spends
+98 ms. Timings on a busy machine read roughly twice as much.
 
-`data/`, `model/`, `demonstrations/` and `videos/` are not in git, because each
-is regenerated from a list of table numbers. Any run shorter than the 50
-held-out tables writes `partial.json`, never `results.json`.
+`data/`, `model/`, `demonstrations/` and `videos/` are not in git. Each is
+regenerated from a list of table numbers. Any run shorter than the 50 held-out
+tables writes `partial.json`, never `results.json`.
 
 ## Where the code is
 
@@ -217,38 +181,33 @@ held-out tables writes `partial.json`, never `results.json`.
 | `../bench/` | The tables, the physics and the scoring, shared by all six |
 
 **The enumerator is imported, not copied.** `candidates.py` loads
-`../01-one-fixed-nudge/plan.py` by file path and calls it `nudge`, so the
+`../01-one-fixed-nudge/plan.py` by file path and calls it `nudge`. So the
 heading sweep, the stepped travel, the four tests, the tipping rule and the
-shortfall arithmetic have exactly one definition in this repository. It is
-loaded by file rather than by putting that folder on `sys.path`, because that
-folder's name starts with a digit — so it is not a package — and because a
-folder on the path brings its `run.py` with it, which silently shadowed this
-folder's own. The only enumeration code written here is the loop that keeps
-the survivors instead of choosing among them; a test checks that the printed
-rule over those survivors picks the same push solution 1 picks.
+shortfall have one definition in this repository. It is loaded by file, not
+through `sys.path`, for two reasons. The folder's name starts with a digit, so
+it is not a package. And a folder on the path brings its `run.py`, which
+silently shadowed this folder's own. The only new enumeration code is the loop
+that keeps all survivors instead of choosing one. A test checks that the
+printed rule over them picks the same push solution 1 picks.
 
 ## What this does not cover
 
 - **The push budget moved while this was written.** It now belongs to the
-  bench — 4 per glass, 16 per table — where solution 1 used to spend 3 and 15.
-  Both columns above were run under the shared budget, and solution 1 has since
-  been re-run under it too, which is why its `results.json` and this folder's
-  `rule.json` agree on every count. Earlier copies of either file are not
-  comparable with these.
+  bench: 4 per glass, 16 per table. Solution 1 used to spend 3 and 15. Both
+  columns above use the shared budget. Solution 1 was re-run under it too, so
+  its `results.json` and this folder's `rule.json` agree on every count.
+  Earlier copies of either file cannot be compared with these.
 - **The refusal wording differs from solution 1's.** Where no candidate
-  survives anywhere, solution 1 reports every remaining glass as "nowhere clear
-  to push it to"; this folder separates the glasses that had no candidate at all
-  from those whose candidates were all too slight to be worth making, which it
-  reports as "still without room after pushing". The counts are the same
-  glasses, grouped differently.
-- **One friction, never measured.** Every label here was decided by the
-  bench's private coefficients. A model fitted on them has learned what topples
-  on this bench.
-- **The fit is deterministic**, with no subsampling and every input considered
-  at each split, so training twice on the same rows gives the same trees and a
-  seed makes no difference. The spread quoted above therefore comes from
-  resampling the rows, which is the only variation this method has. The run
-  itself is deterministic too, so one run of it is a measurement.
+  survives, solution 1 reports "nowhere clear to push it to". This folder
+  splits those glasses in two. Some had no candidate at all. Others had only
+  candidates too slight to be worth making, reported as "still without room
+  after pushing". The glasses are the same, grouped differently.
+- **One friction, never measured.** The bench's private coefficients decided
+  every label. A model fitted on them has learned what topples on this bench.
+- **The fit is deterministic.** There is no subsampling, and every input is
+  considered at each split. Training twice on the same rows gives the same
+  trees, and the seed makes no difference. The run is deterministic too, so one
+  run is a measurement.
 - **It says nothing about the commonest refusal.** A ranking over an empty set
-  is still empty, and glasses with nowhere clear to go are refused before the
-  model is reached.
+  is still empty. Glasses with nowhere clear to go are refused before the model
+  is reached.

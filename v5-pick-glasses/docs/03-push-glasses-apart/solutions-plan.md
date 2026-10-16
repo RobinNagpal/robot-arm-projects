@@ -1,92 +1,59 @@
 # Plan — the six solutions for problem 3
 
-Short notes only. Each line is a decision. The documents carry the reasoning.
+Short notes only. Each line is a decision. The documents hold the reasoning.
 
 ## The destination, the same for all six
 
-Every glass has the required clear room around it, at least one usable
-side-on viewpoint, and nothing has been knocked over.
+Every glass has the clear room it needs, at least one usable side-on viewpoint,
+and nothing has been knocked over. [The problem](problem.md#what-done-means)
+defines this.
 
 ## The comparability contract
 
-**Same input.** What `look()` hands over — where each glass stands, how tall,
-how wide at its widest and at its foot, whether it is standing — carrying
-problem 2's measured error. Plus a rendered top-down view of the same table,
-for the cars that read pictures. No car reads the simulator's record.
-
-**Same output.** A jaw trajectory. A car that thinks in parameterised pushes
-emits one, and **the examiner owns the macro that expands it into a trajectory**,
-so the simple cars get no advantage and the policy cars are not crippled.
-
-**Same yardstick.** One scorecard, plus the displacement floor from the target
-layout.
-
-**Score the outcome, not the action.** That is what lets a three-number push
-and a chunk of waypoints be compared at all.
+All six get the same input, give the same kind of output, and are marked by the
+same scorecard. The score looks at the table afterwards, not at the action.
+[The examiner](the-examiner.md) sets out each part.
 
 ## The six
 
-| # | Car | Model | Framework | Fitted here |
-|---|---|---|---|---|
-| 1 | One fixed nudge, then look again | none | NumPy | nothing |
-| 2 | Geometry generates, a model ranks | gradient-boosted trees | scikit-learn | the ranker only |
-| 3 | Imitation from demonstrations | ACT | LeRobot | everything |
-| 4 | A world model, then plan with it | a small ensemble, then TD-MPC2 | PyTorch, LeRobot | everything |
-| 5 | A foundation model as it downloads | SmolVLA | LeRobot | nothing |
-| 6 | The same model, fine-tuned here | SmolVLA with LoRA | LeRobot | all of it |
-
-Three carry a second way:
-
-- **3** — ACT predicts an action chunk directly; Diffusion Policy denoises
-  towards one. Same job, different means, both in LeRobot.
-- **4** — the first way is the small ensemble **already written** in this project;
-  the second way is TD-MPC2 off the shelf.
-- **6** — the same fine-tune on π0.5, to measure whether a markedly larger
-  foundation model is worth it.
+The six, with their models and frameworks, are listed in
+[the overview](solutions/overview.md#the-seven-in-one-table). Three of them
+carry a second way, listed there too.
 
 ## Why these and not others
 
-**Model-free reinforcement learning is left out.** LeRobot's entry is
-HIL-SERL, which is built around human corrections on a real robot, so it is a
-poor fit for a pure simulator. TD-MPC2 already represents the reinforcement
-learning family, in its model-based half.
+**Model-free reinforcement learning is left out.** LeRobot's entry for it is
+HIL-SERL. HIL-SERL is built around human corrections on a real robot, so it
+fits a pure simulator badly. TD-MPC2 already stands for the reinforcement
+learning family, on its model-based side.
 
-**π0 full fine-tuning and GR00T N1.7 are left out** as too expensive: π0's
-full fine-tune floor is above 70 GB of accelerator memory. π0.5 appears only
-as a way, reached by low-rank adaptation, which is affordable.
+**π0 full fine-tuning and GR00T N1.7 are left out** as too expensive. A full
+fine-tune of π0 needs more than 70 GB of accelerator memory. π0.5 appears only
+as a second way, through low-rank adaptation, which is affordable.
 
-**Car 2 is the teacher.** Cars 3 and 6 need demonstrations, and ranked
-geometric pushes supply them for nothing. That is what earns car 2 its place
-beyond being a baseline.
+**Solution 2 is the teacher.** Solutions 3 and 6 need demonstrations, and
+solution 2's ranked pushes supply them at no cost. That earns solution 2 its
+place beyond being a baseline.
 
 ## What each comparison isolates
 
-| Question | Compare |
-|---|---|
-| Does any learning beat a fixed nudge? | 1 against the rest |
-| Is ranking hand-made candidates enough? | 2 against 3–6 |
-| Hand-built world model, or one off the shelf? | inside 4 |
-| Plan with a model, or learn the push directly? | 4 against 3 |
-| **What does fine-tuning a foundation model buy?** | **5 against 6** |
-| Does a much larger foundation model help? | inside 6 |
+[The overview](solutions/overview.md#what-each-comparison-isolates) has the
+table of questions and the pairs that answer them.
 
 ## Three shared documents, not cars
 
-- **The examiner** — the crowded tables, `look()`, `push()`, `take()`, the
-  scorecard. It already exists and problem 5 imports it.
-- **The target layout** — where the glasses should end up, computed rather
-  than learned: discs of known foot width placed with the required clearance,
-  minimising travel. Also the **displacement floor**, the least movement the
-  task needs, which is the yardstick every car is read against.
-- **Pushing without toppling** — how low the push has to be and why that is a
-  property of the glass; the refusal path; and the loop of plan, feel and look
-  again, with the learned change verifier and the learned early abort inside
-  it.
+- [**The examiner**](the-examiner.md): the crowded tables, `look()`, `push()`,
+  `take()` and the scorecard. Problem 5 imports it.
+- [**The target layout**](the-target-layout.md): where the glasses should end
+  up, computed rather than learned. It also gives the **displacement floor**,
+  the least movement the task needs.
+- [**Pushing without toppling**](pushing-without-toppling.md): how low a push
+  must be, the refusal path, and the loop of plan, feel and look again.
 
 ## The examiner had to grow before cars 3 to 6 could run
 
-Four parts of the contract above were missing, and they were the gate on every
-solution that reads pictures or emits waypoints. All four are now built.
+Four parts of the contract were missing. Every solution that reads pictures or
+gives waypoints needed them. All four are now built.
 
 | What was needed | What the examiner has |
 |---|---|
@@ -95,34 +62,26 @@ solution that reads pictures or emits waypoints. All four are now built.
 | one shared push budget | the budget belongs to the examiner, and every runner reads it from there |
 | repeats and a compute column | several evaluation runs with their spread, and the thinking time per push |
 
-The first two were the real cost of going off the shelf, because every LeRobot
-policy expects pictures and an action space at control rate. Cars 1 and 2 need
-none of it, which is one reason they were built first.
+The first two were the real cost of using models off the shelf. Every LeRobot
+policy expects pictures and an action at control rate. Solutions 1 and 2 need
+neither, which is one reason they were built first.
 
-Building them also bought something that was not asked for and matters more
-than any of the four. The examiner now records the path the jaw really followed on
-**every** action, including an ordinary parameterised push. So a demonstration
-is a picture together with a recorded path, and replaying a recorded path
-reproduces the push it came from. That means the solutions that learn from
-demonstrations can learn from the two that already work, rather than from paths
-invented for the purpose.
+Building them gave one more thing. The examiner now records the path the jaw
+really followed on **every** action, including an ordinary push. Replaying
+that path gives the same push again. So the solutions that learn from
+demonstrations can learn from the two solutions that already work.
 
 ## The scorecard needs two things problem 2's did not
 
-**Repeats.** These policies are stochastic and training varies by seed, so one
-run is not a measurement. Several training seeds, several evaluation runs,
-report the spread.
-
-**A compute column.** The fixed nudge costs nothing; TD-MPC2 plans at run
-time; SmolVLA is a large forward pass. A car that wins while taking a hundred
-times longer has not obviously won.
+Repeats with a spread, and the thinking time per push.
+[The examiner](the-examiner.md#two-things-this-scorecard-needs-that-problem-2s-did-not)
+explains both.
 
 ## Rented compute is allowed
 
-The old rule was that everything must run on this machine, with no NVIDIA
-card. That rule is lifted here. Each solution states what it needs and roughly
-what renting it costs, the way the licence is stated — so a reader knows the
-price of reproducing it.
+The old rule was that everything must run on this machine, which has no NVIDIA
+card. Problem 3 lifts that rule. Each solution states what it needs and roughly
+what renting it costs, the same way it states its licence.
 
 ## Code: what goes, what stays
 
@@ -133,8 +92,8 @@ price of reproducing it.
 | `03-push-glasses-apart/04-a-world-model` | car 4's first way, already written | keep |
 | `03-push-glasses-apart/results` | the two approaches compared; problem 5 cites it | keep |
 
-The eleven solution documents become six. Nothing in the code is superseded,
-so the deletions are documents and any diagram left without a home.
+The eleven old solution documents became six. No code was replaced, so only
+documents and orphaned diagrams were deleted.
 
 ## Naming
 
@@ -146,16 +105,14 @@ so the deletions are documents and any diagram left without a home.
 
 ## One measurement nobody can settle from the repository
 
-The two results documents disagree about the tuning sweep. One says the
-learned side toppled a single glass on those hundred tables and then lists
-three distinct causes; the other says it knocked over two. Nothing settles it:
-the committed scorecards cover only the fifty held-out tables, where nothing
-toppled at all, and re-running the sweep needs a trained model that is not in
-git.
+Two old results documents disagree about the tuning sweep. One says the
+learned side toppled one glass on those hundred tables, then lists three
+different causes. The other says it toppled two. Nothing settles it. The
+committed scorecards cover only the fifty held-out tables, where nothing
+toppled. Running the sweep again needs a trained model that is not in git.
 
-So no document here quotes a count for it. What all of them may say, because
-it is the load-bearing part and both sources agree on it, is that **the model
-had rated every topple it missed as safe**.
+So no document here gives a count for it. Both sources agree on the part that
+matters: **the model had rated every topple it missed as safe**.
 
 ## Milestones
 

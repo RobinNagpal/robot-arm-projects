@@ -1,24 +1,26 @@
 # Solution 7 — Evo-1, a newer and larger borrowed model, fitted here
 
-This solution answers one question: on a task this narrow, is a newer and
-larger borrowed model worth its cost? Solutions 5 and 6 already measure a
-450-million-number borrowed model, used as it downloads and fine-tuned on this
-bench's own pushes. This solution swaps that model for
-[Evo-1](https://arxiv.org/abs/2511.04555), published in November 2025, which
-is about 775 million numbers on an InternVL3-1B vision-language backbone, and
-changes nothing else. So what the scorecard shows is the model, not the data
-and not the loop.
+This solution asks one question: on a task this narrow, is a newer and larger
+borrowed model worth its cost? It swaps solution 6's model for
+[Evo-1](https://arxiv.org/abs/2511.04555), published in November 2025. Evo-1
+has about 775 million numbers on an InternVL3-1B vision-language backbone.
+Nothing else changes. So the scorecard shows the model, not the data and not
+the loop.
 
-Evo-1 is a vision-language-action model, which means it reads a picture and a
-sentence and answers with a run of actions. Its action half draws a chunk by
-**flow matching**: it starts from noise and walks that noise towards an answer
-in a fixed number of steps, the way solution 5's model does. That is why the
-same table asked twice is answered twice, and why every number here needs a
-spread.
+Evo-1 is a vision-language-action model, like
+[solution 5's](../../docs/03-push-glasses-apart/solutions/05-smolvla-as-it-downloads.md#a-model-that-sees-is-told-and-acts).
+It draws each chunk by **flow matching**, the way solution 5's model does, so
+every number here needs a spread.
+[Solution 5's document](../../docs/03-push-glasses-apart/solutions/05-smolvla-as-it-downloads.md#flow-matching-and-why-one-run-is-not-enough)
+explains flow matching, and
+[solution 6's document](../../docs/03-push-glasses-apart/solutions/06-smolvla-fine-tuned.md#fine-tuning--continuing-somebody-elses-training)
+explains fine-tuning. The reasoning for this solution is in
+[its document](../../docs/03-push-glasses-apart/solutions/07-evo1-fine-tuned.md).
 
 ## What is the same as solution 6, and what is different
 
-The whole value of this solution is that the list of differences is short.
+The table below compares the two solutions row by row. The bold entries are the
+differences.
 
 | | solution 6 | solution 7 |
 |---|---|---|
@@ -31,24 +33,18 @@ The whole value of this solution is that the list of differences is short.
 | fitting effort | 1000 steps, batch 4, rate 1e-4 | the same |
 | the test | 50 held-out tables, 251 glasses | the same |
 
-Two of those differences are forced by the checkpoint rather than chosen, and
-both are recorded because they are still differences:
+Two differences are forced by the checkpoint, not chosen:
 
-- **The picture has to grow.** Evo-1 refuses any size but its checkpoint's own
-  448 pixels, because the number of image tokens is fixed in the checkpoint. So
-  this cell's 384-pixel view is scaled up. Scaling up adds no information, so
-  it is not an advantage; it is a cost paid in tokens.
-- **The answer is 24 numbers wide.** The model always answers 24 numbers a
-  waypoint whatever the cell needs, and its own post-processing trims that to
-  the 6 this cell uses.
+- **The picture has to grow.** Evo-1 accepts only 448 pixels, so the 384-pixel
+  view is scaled up.
+- **The answer is 24 numbers wide.** The model's own post-processing trims it
+  to the 6 this cell uses.
 
 ## Does it run on this machine?
 
-It does, and **with no change to its code** — only to its configuration. That
-was the open question in the task that asked for it, because Evo-1's source
-mentions CUDA in three places. All three turned out to be either a default
-argument or a guard that simply switches a CUDA-only path off, so the three
-settings below were enough.
+Yes, **with no change to its code**, only to its configuration. Evo-1's source
+mentions CUDA in three places, but each is a default argument or a guard that
+switches a CUDA-only path off. These three settings were enough:
 
 | setting | why |
 |---|---|
@@ -76,8 +72,8 @@ Measured while building it:
 
 ## Running it
 
-Solution 6's demonstrations have to exist first, because this solution is
-fitted on that very folder rather than on a collection of its own.
+Solution 6's demonstrations must exist first, because this solution is fitted
+on that same folder.
 
 ```
 pixi run python 06-smolvla-fine-tuned/demonstrations.py          # if not already made
@@ -90,47 +86,35 @@ make test
 ```
 
 `make film FILM=3` writes videos of the first three held-out tables into
-`videos/`. Anything shorter than the full held-out set writes `partial.json`
-and never `results.json`, because one short run is not a result.
+`videos/`. A run shorter than the full held-out set writes `partial.json`, never
+`results.json`, because one short run is not a result.
 
 ## Results
 
-**The fits were made and the scoring run was not, and this section says why.**
+**The fits were made. The scoring run was not.**
 
-Three fits, one for each seed, a thousand steps apiece at about a hundred
-minutes each. What they learned, measured against the teacher's own waypoints
-on tuning tables nothing was fitted on:
+Three fits, one per seed, a thousand steps each at about a hundred minutes
+each. The table shows the distance from the teacher's own waypoints, on tuning
+tables nothing was fitted on, with the spread across seeds.
 
 | | step 0 | step 500 | step 1,000 |
 |---|---|---|---|
 | Distance from the teacher | 302 mm (±6) | 293 mm (±8) | **288 mm (±1)** |
 
-The glass zone is 320 mm across, so every one of those numbers describes a
-motion somewhere else on the table rather than a push aimed at the wrong
-glass. **The fit did not learn the task**, and the three seeds agree closely
-enough that there is nothing left to find out by running it again. Solution 6,
-on the same demonstrations and the same budget, had reached 85 mm by step
-1,000.
+The glass zone is 320 mm across, so these answers move somewhere else on the
+table entirely. **The fit did not learn the task.** Solution 6, on the same
+demonstrations and budget, reached 85 mm by step 1,000.
 
-The scoring run was stopped rather than finished. It would have cost about two
-hours of this machine's graphics chip to produce a scorecard for a policy that
-aims nowhere near the glasses, and [solution
-5](../05-smolvla-as-it-downloads/README.md) already measures what an unfitted
-borrowed model does on this bench. A row saying "it does nothing" is not worth
-two hours when the row above already says it.
+The scoring run was stopped. It would have cost about two hours of the graphics
+chip to score a policy that aims nowhere near the glasses.
+[Solution 5](../05-smolvla-as-it-downloads/README.md) already measures what an
+unfitted borrowed model does here.
 
-**The reason is not that the model is worse, and it matters.** Solution 6
-adjusts 3.8 million numbers beside a model that already produces robot
-trajectories; this solution fits a **122 million** number action head that
-starts from random values, because Evo-1's first training stage freezes the
-vision-language half and that half has never produced a motion. Four thousand
-examples is plausible for the first job and almost nothing for the second.
-Matching the step count hid a thirty-fold difference in what had to be
-learned, which is a fault in how the comparison was set up rather than a
-verdict on the model.
-
+This does not show that the model is worse. Solution 6 adjusts 3.8 million
+numbers. This solution fits a **122 million** number action head from random
+values. Four thousand examples is far too few for that, so matching the step
+count was unfair to Evo-1.
+[The solution's document](../../docs/03-push-glasses-apart/solutions/07-evo1-fine-tuned.md#results)
+explains this.
 [Issue #24](https://github.com/RobinNagpal/robot-arm-projects/issues/24) is the
-cheap test that would tell us whether this head can fit anything at all:
-give it fifty demonstrations and see whether it can memorise those fifty. A
-network with 122 million free numbers should manage that easily, and if it
-cannot, more training would never have helped.
+cheap next test: can the head memorise fifty demonstrations?

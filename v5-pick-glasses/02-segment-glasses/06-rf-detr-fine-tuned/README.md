@@ -1,12 +1,12 @@
 # Problem 2 — RF-DETR-Seg, fine-tuned here
 
-Solution 6 of six. A transformer that detects and segments in one pass,
-borrowed already fitted to ordinary labelled pictures and then trained on this
-cell's own pictures with the class list cut down to one entry, "glass".
+Solution 6 of six. A transformer that detects and segments in one pass. It
+arrives fitted to ordinary labelled pictures. Then it is trained on this cell's
+pictures with one class, "glass".
 
-The document is
-[`06-rf-detr-fine-tuned.md`](../../docs/02-segment-glasses/solutions/06-rf-detr-fine-tuned.md)
-and it carries the explanation. This file says what is here and how to run it.
+The reasoning is in
+[`06-rf-detr-fine-tuned.md`](../../docs/02-segment-glasses/solutions/06-rf-detr-fine-tuned.md).
+This file says what is here, how to run it, and what it produced.
 
 ## What is here
 
@@ -22,43 +22,42 @@ and it carries the explanation. This file says what is here and how to run it.
 
 ## The two rungs
 
-The model carries a fixed number of queries, each of which either reports one
-glass or reports nothing, and each query's mask is computed over the whole
-picture rather than inside a rectangle. So two glasses whose outlines join are
-two slots from the beginning, and a mask has no rectangle to escape.
+Each mask is computed over the whole picture, not inside a rectangle. [What a
+transformer segmenter does
+differently](../../docs/02-segment-glasses/solutions/06-rf-detr-fine-tuned.md#what-a-transformer-segmenter-does-differently)
+explains why that matters.
 
-`--target` chooses what the masks are trained against, and that is the whole
+`--target` chooses what the masks are trained against. That is the only
 difference between the two rungs:
 
 - `modal` — the pixels the camera can see of a glass.
-- `amodal` — the glass's **whole silhouette**, which the bench renders by
-  drawing the scene again with the other glasses taken away. The labels cost
-  one more render and no judgement, which is true in a simulator and in no
-  other setting.
+- `amodal` — the glass's **whole silhouette**. The bench renders it by drawing
+  the scene again with the other glasses removed. The label costs one more
+  render and no judgement.
 
 ## The trap, which is what most of the code is about
 
-A mask covering a whole silhouette claims pixels where the camera saw the glass
-in front of it. **The depth reading at such a pixel belongs to that other
-glass**, so feeding it into the shared arithmetic drags the computed place
-across the gap and onto the glass in front — and nothing objects, because the
-mask looks better, the footprint stays round and the width stays legal.
+A whole-silhouette mask claims pixels where the camera saw the glass in front.
+The depth reading there belongs to that other glass. Feeding it in drags the
+place onto the glass in front, and nothing objects. [The
+trap](../../docs/02-segment-glasses/solutions/06-rf-detr-fine-tuned.md#the-trap-and-it-is-the-one-thing-most-easily-got-wrong)
+explains it in full.
 
-So every mask is split before the arithmetic runs, and
-`masks_to_glasses.one_glass` is handed the asserted pixels and leaves their
-readings out.
+So every mask is split before the arithmetic runs. `masks_to_glasses.one_glass`
+gets the asserted pixels and leaves their readings out.
 
-**How the split is read off the answer.** A camera looking straight down throws
-every outline outwards from the point below it, so of two reports whose masks
-overlap, the one standing nearer that point is the one in front. Every pixel
-two reports both claim therefore belongs to whichever stands nearer the point
-below the camera, and the other must call it asserted. Nothing in that needs
-the truth: each report's place comes from the pixels no other report claims,
-and the point below the camera comes from the camera's own pose.
+**How the split is read off the answer.** Of two overlapping reports, the one
+nearer the point below the camera is in front, and it owns the shared pixels.
+[The code at the heart of
+it](../../docs/02-segment-glasses/solutions/06-rf-detr-fine-tuned.md#the-code-at-the-heart-of-it)
+shows the function. It needs no truth: each report's place comes from the
+pixels no other report claims, and the point below the camera comes from the
+camera's pose.
 
-Measured the way `bench/floor.py --crowded` measures it, over 20 crowded
-held-out scenes and the 133 partly hidden glasses in them, with the bench's own
-exact silhouettes and no model anywhere in the chain:
+The table below is measured the way `bench/floor.py --crowded` measures it. It
+covers 20 crowded held-out scenes and the 133 partly hidden glasses in them. It
+uses the bench's own exact silhouettes, with no model in the chain. Each row is
+one way of handling the asserted pixels.
 
 | the asserted pixels are | place of a partly hidden glass |
 |---|---|
@@ -66,43 +65,39 @@ exact silhouettes and no model anywhere in the chain:
 | named by this split, worked out from the answer | 12.2 mm median, 51.3 mm worst |
 | fed in with the rest | 46.1 mm median, 130.5 mm worst |
 
-The last line is the trap. `test_rf_detr_seg.py` holds both measurements, so a
-change that quietly starts feeding asserted pixels in fails the tests.
+The last line is the trap. `test_rf_detr_seg.py` holds both measurements. A
+change that starts feeding asserted pixels in fails the tests.
 
-The split agrees with the exact one to the tenth of a millimetre, and the
-asserted part it names overlaps the true hidden part completely for more than
-half the glasses. Not for all of them: where two glasses of the same kind stand
-at almost the same distance from the point below the camera, which of them is
-in front is decided by a few millimetres, and the split can get it the wrong
-way round. It then gives away pixels it should have kept, which costs width and
-never poisons a place.
+The split matches the exact one to the tenth of a millimetre. For more than
+half the glasses, the asserted part it names covers the true hidden part
+completely. Not for all: two glasses of one kind may stand at almost the same
+distance from the point below the camera. Then a few millimetres decide which
+is in front, and the split can get it backwards. It then gives away pixels it
+should keep. That costs width but never spoils a place.
 
 **What the split cannot see** is a glass hidden by something the model never
-reported. There is nothing in the picture to work that out from either, and it
-is the same boundary [looking again at what was
-hidden](../../docs/02-segment-glasses/hidden-glasses.md) exists for.
+reported. Nothing in the picture shows that. [Looking again at what was
+hidden](../../docs/02-segment-glasses/hidden-glasses.md) exists for it.
 
 ## The two checks, each of which can only refuse
 
-- **The width must lie inside the range the kind allows, unless the picture ran
-  out before the glass did.** One region over two glasses is wider than any
-  glass of the kind can be, and that is the loud failure the quiet one is traded
-  against. A mask reaching the edge of the frame is a different thing: at the
-  cell's own survey height one picture does not hold the glass zone, so a glass
-  at the far side of a station's frame is cut in half and the width read off the
-  half is not the glass's width. `_width_refuses` reads
-  `masks_to_glasses.Found.cut_off` and does not refuse those.
-- **The asserted part must lie where the camera could not see.** A mask
-  claiming glass across a patch the camera had a clear view of, where the
-  reading comes back off a surface standing further away than the kind's widest
-  footprint, is contradicting an observation. Its share is held below
-  `masks_to_glasses.SPREAD`'s own tail, so the two checks do different work.
+[The risk of inventing
+glass](../../docs/02-segment-glasses/solutions/06-rf-detr-fine-tuned.md#the-risk-of-inventing-glass-and-what-bounds-it)
+explains both checks. In the code:
 
-A glass failing either is reported as doubtful, with the reason, and the reason
-says as well whether the glass ran off the edge of the frame. **The frame turns
-out to be the whole story about false refusals.** Handed the bench's own exact
-silhouettes on 20 held-out scenes — the best masks that exist, so every refusal
-here is a false one — with every glass a station saw any pixel of counted once:
+- **The width must lie inside the range the kind allows, unless the picture ran
+  out before the glass did.** A mask at the frame edge may hold only half a
+  glass. `_width_refuses` reads `masks_to_glasses.Found.cut_off` and does not
+  refuse those.
+- **The asserted part must lie where the camera could not see.** Its share is
+  held below `masks_to_glasses.SPREAD`'s own tail, so the two checks do
+  different work.
+
+A glass failing either is reported as doubtful, with the reason. The reason also
+says whether the glass ran off the frame edge. **The frame explains almost every false
+refusal.** The table below hands the checks the bench's exact silhouettes on 20
+held-out scenes. These are the best masks that exist, so every refusal is a
+false one. Each glass a station saw any pixel of is counted once.
 
 | | spawned: before · after | crowded: before · after |
 |---|---|---|
@@ -110,21 +105,20 @@ here is a false one — with every glass a station saw any pixel of counted once
 | refused, and the glass ran off the edge of the frame | 26.7% · 13.0% | 20.1% · 9.0% |
 | refused with the whole glass in frame | 0.0% · 0.0% | 3.1% · 3.1% |
 
-"Before" is the width check made on every report; "after" is the same check
-reading `cut_off` first. Half the false refusals go, and the ones that remain
-all run off the frame edge for the *other* reason — too little of the glass was
-in frame to place it at all, or the mask claims glass where the camera saw past
-it. Not one refusal with the whole glass in frame changes, which is the check
-still doing its own work.
+"Before" is the width check on every report. "After" is the same check reading
+`cut_off` first. Half the false refusals go. The ones left all run off the
+frame for another reason: too little of the glass was in frame to place, or
+the mask claims glass where the camera saw past it. No refusal with the whole
+glass in frame changes, so the check still does its own work.
 
-The survey stands at three overlapping stations for exactly this: a glass cut
-off in one picture sits well inside another's, and `run.py` keeps the report
-from the station the glass stood nearest the middle of.
+The survey uses three overlapping stations for this reason. A glass cut off in
+one picture sits well inside another. `run.py` keeps the report from the
+station whose middle the glass stood nearest.
 
 Every report carries its **visible fraction**, the observed share of its own
-mask, because every consumer further down has its own tolerance for how much of
-an answer was asserted and none of them can apply it once the two parts have
-been merged.
+mask. [What the completion actually
+buys](../../docs/02-segment-glasses/solutions/06-rf-detr-fine-tuned.md#what-the-completion-actually-buys)
+says why.
 
 ## Running it
 
@@ -135,21 +129,22 @@ pixi run python 06-rf-detr-fine-tuned/run.py --target amodal --crowded
 pixi run pytest -q 06-rf-detr-fine-tuned
 ```
 
-`--target modal` does the same for the first rung. The two are saved apart,
-`weights/fitted-modal.pth` and `weights/fitted-amodal.pth`, because scoring one
-fit and calling it the other would be the easiest mistake in the folder.
+`--target modal` does the same for the first rung. The two fits are saved
+apart, as `weights/fitted-modal.pth` and `weights/fitted-amodal.pth`. Scoring
+one fit and calling it the other would be the easiest mistake in the folder.
 
 ## What it costs
 
 - **The borrowed weights** are 128 MB, fetched once into `weights/roboflow/`.
-  They are the one thing here that needs the network, and no test touches them.
-- **The labels are free**, as the document says: the bench renders which glass
-  owns each pixel, and the whole silhouette costs one more render per glass.
-- **The fine-tune** is the largest cost. It runs here, on this machine's
-  graphics processor through PyTorch's MPS backend; there is no NVIDIA card and
-  no CUDA. The measured times are in the table below.
-- **Running it** is cheap: one pass over one picture is a small fraction of the
-  seconds an arm movement costs.
+  They are the only thing here that needs the network. No test touches them.
+- **The labels are free.** The bench renders which glass owns each pixel. The
+  whole silhouette costs one more render per glass.
+- **The fine-tune** is the largest cost. It runs on this machine's graphics
+  processor through PyTorch's MPS backend. There is no NVIDIA card and no CUDA.
+- **Running it** is cheap: one picture takes a small part of the seconds an arm
+  movement takes.
+
+The table below gives the times measured here.
 
 | | measured here |
 |---|---|
@@ -157,20 +152,22 @@ fit and calling it the other would be the easiest mistake in the folder.
 | fine-tuning `modal`, 60 scenes (180 pictures), 10 epochs | 932 s |
 | one picture through the fitted model | about a second |
 
-The machine is an Apple M4 with no NVIDIA card. It was shared with other
-training runs throughout, so these are upper bounds rather than the model's own
-times. No accelerator had to be rented: a fine-tune of this size fits on the
-laptop, which is the whole argument for fine-tuning rather than starting from
-random numbers.
+The machine is an Apple M4 with no NVIDIA card. Other training runs shared it
+the whole time, so these times are upper bounds. Nothing had to be rented. A
+fine-tune of this size fits on the laptop.
 
 ## Results
 
-Both rungs are scored on the bench's 20 held-out scenes, which no fine-tune
-here has seen. Beside each is the **floor**: the same arithmetic handed the
-masks the renderer itself drew, which no segmenter can improve on.
-`bench/floor.py --scenes 20` and `--scenes 20 --crowded` produce the floor rows.
+Both rungs are scored on the bench's 20 held-out scenes. No fine-tune here has
+seen them. Beside each is the **floor**: the same arithmetic given the
+renderer's own masks, which no segmenter can beat. `bench/floor.py --scenes 20`
+and `--scenes 20 --crowded` produce the floor rows. [The
+results](../results/README.md) compare all six solutions.
 
 ### Spawned layouts, 20 scenes, 100 glasses
+
+Each row is one set of masks. The columns are the examiner's counts and
+measures.
 
 | | found | missed | merged | split | false | place | covered | not the glass |
 |---|---|---|---|---|---|---|---|---|
@@ -178,18 +175,19 @@ masks the renderer itself drew, which no segmenter can improve on.
 | the floor, exact masks | 100 | 0 | 0 | 0 | 0 | 6.3 mm median, 46.5 worst | 100% | 0.0% |
 
 By kind, `modal` covered 96.8% of a straight glass, 97.3% of a tapered one,
-96.4% of a stemmed one and 96.1% of a short stemmed one, and claimed 0.0–0.1%
-of pixels that were not the glass. All four kinds come out within two points of
-each other, stem included, which is what [the test
-examiner](../../docs/02-segment-glasses/the-examiner.md) says to expect of a solution
-fitted on this cell's own pictures and not of one built from written rules.
+96.4% of a stemmed one and 96.1% of a short stemmed one. It claimed 0.0–0.1% of
+pixels that were not the glass. All four kinds are within two points of each
+other, stem included. [The test
+examiner](../../docs/02-segment-glasses/the-examiner.md) expects that of a
+solution fitted on this cell's pictures.
 
-The four missed glasses are not masks the model got wrong. They are glasses
-refused at every station they appeared in, and 42 of the 44 refusals in that run
-say the glass ran off the edge of a frame. Only 2 of the 44 are the width check
-with the whole glass in frame.
+The four missed glasses are not bad masks. They were refused at every station
+they appeared in. 42 of the 44 refusals in that run say the glass ran off a
+frame edge. Only 2 of the 44 are the width check with the whole glass in frame.
 
 ### Crowded layouts, 20 scenes, 101 glasses
+
+The rows are read the same way as above.
 
 | | found | missed | merged | split | false | place |
 |---|---|---|---|---|---|---|
@@ -198,26 +196,24 @@ with the whole glass in frame.
 | the floor, whole masks with the asserted pixels named | 83 | 18 | 1 | 1 | 0 | 0.4 mm median, 50.0 worst |
 | the floor, the same masks fed in whole | 69 | 32 | **14** | 2 | 0 | 0.1 mm median, 72.7 worst |
 
-The last floor row is the trap again, in the counts rather than in one glass's
-place: feeding the asserted pixels in turns 1 merged report into 14 and loses
-14 glasses, with exact masks and no model anywhere. That is the row this
-folder's split exists to stay off.
+The last floor row is the trap again, this time in the counts. Feeding the
+asserted pixels in turns 1 merged report into 14 and loses 14 glasses. That is
+with exact masks and no model. The split exists to avoid that row.
 
-`modal` covered 97.3% of each glass it reported here and claimed 0.0% that was
-not the glass, which is the same quality as on the easy layouts; what crowding
-costs it is glasses it never reports at all, not outlines it draws badly.
+`modal` covered 97.3% of each glass it reported and claimed 0.0% that was not
+the glass. That is the same quality as on the easy layouts. Crowding costs it
+glasses it never reports, not outlines it draws badly.
 
-The split is doing work on this run even though the target is the visible
-pixels. 185 of its 272 reports had an asserted part named and left out, and the
-least visible of them was 11% observed — a predicted mask bleeds over the glass
-in front of it whether or not it was trained to, and the reading under the
-bleed belongs to that other glass either way. So the first rung needs the split
-as well; the second rung only needs it more.
+The split does work even on the visible target. 185 of its 272 reports had an
+asserted part named and left out. The least visible was 11% observed. A
+predicted mask bleeds over the glass in front, even when not trained to. The
+reading under the bleed belongs to that other glass. So the first rung
+needs the split too; the second rung needs it more.
 
 ### What not refusing on a cut-off mask was worth
 
-Same weights, same settings, same scenes, with `_width_refuses` reading
-`cut_off` first:
+Same weights, settings and scenes, with `_width_refuses` reading `cut_off`
+first. Each cell gives before · after.
 
 | | spawned: before · after | crowded: before · after |
 |---|---|---|
@@ -230,35 +226,32 @@ Same weights, same settings, same scenes, with `_width_refuses` reading
 | refused for claiming glass past a clear view | 14 · 39 | 3 · 36 |
 | refused for too little of it to place | 3 · 3 | 5 · 8 |
 
-Ten glasses came back for the price of one more merged report and one more
-split one on the crowded layouts, and the place did not move. **Every width
-refusal that went was one made on a mask the frame had cut short**, and the two
-the check keeps on the spawned layouts and the fifteen on the crowded ones — the
-refusals with the whole glass in frame — are untouched.
+Ten glasses came back. The price was one more merged and one more split report
+on the crowded layouts. The place did not move. **Every width refusal that went
+was on a mask the frame had cut short.** The refusals with the whole glass in
+frame (2 spawned, 15 crowded) are untouched.
 
-The other two rows move because a report refused on its width used to stop
-there. Now it goes on to the clear-view check, and some of them fail that
-instead — which is the stronger of the two checks, since it is geometry on the
-kind's own limits rather than a comparison against a range.
+The other two rows move because a report refused on width used to stop there.
+Now it goes on to the clear-view check, and some fail that instead. That is the
+stronger check, since it is geometry on the kind's own limits.
 
 ### The amodal rung
 
-**Not scored.** The fine-tune was started with the same settings as `modal` and
-reached epoch 4 of 10, with validation segmentation mAP@50:95 rising 0.725 →
-0.760 → 0.814 → 0.826. A dozen other training runs then filled the machine, the
-run fell to a few per cent of one core, and it was stopped unfinished. No
-`results-amodal.json` is written and no amodal score is claimed here.
+**Not scored.** The fine-tune used the same settings as `modal`. It reached
+epoch 4 of 10, with validation segmentation mAP@50:95 rising 0.725 → 0.760 →
+0.814 → 0.826. Then a dozen other training runs filled the machine. The run
+fell to a few per cent of one core and was stopped. No `results-amodal.json` is
+written and no amodal score is claimed.
 
-What *is* measured about that rung is its split, in the table further up: exact
-to the tenth of a millimetre against the answer the bench knows. What is not
-measured is how well the model draws a whole silhouette in the first place.
+What *is* measured for that rung is its split, in the trap table above: exact
+to the tenth of a millimetre. What is not measured is how well the model draws
+a whole silhouette.
 
-The chain itself has been run end to end on that target, with a one-epoch
-fine-tune, so what is missing is the training time and not any of the code:
-that model found nothing, which is what a one-epoch model does, and it found
-nothing without complaining about anything either.
+The chain has run end to end on that target with a one-epoch fine-tune. So
+only training time is missing, not code. That model found nothing, as a
+one-epoch model does, and raised no errors.
 
-Run `make train TARGET=amodal` followed by `make crowded TARGET=amodal` on a
-quiet machine to fill the numbers in. On the evidence of `modal`, which reached
-validation segmentation mAP 0.902 in 932 s, it is about a quarter of an hour.
-Nothing has to be rented for it.
+Run `make train TARGET=amodal` and then `make crowded TARGET=amodal` on a quiet
+machine to fill the numbers in. `modal` reached validation segmentation mAP
+0.902 in 932 s, so this should take about a quarter of an hour. Nothing has to
+be rented.

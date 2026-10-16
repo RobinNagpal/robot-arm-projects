@@ -2,421 +2,332 @@
 
 ## Introduction
 
-This problem is answered six different ways, and six answers are only
-comparable if they were asked the same question and marked the same way. The
-examiner is the program that does both. It draws the crowded tables, holds
-the physics the glasses slide and tip in, hands each solution the same
-measurements, carries out whatever push comes back, and then marks the result
-against what it knows really happened. By the end of this document you will
-understand what a solution is given, what the examiner keeps to itself, why the
-shared output is a jaw trajectory rather than a push, why the marking looks at
-the outcome and never at the action, and which two things this scorecard needs
-that problem 2's did not.
+This problem is answered several different ways. Answers can only be compared
+if they get the same question and the same marking. The examiner is the
+program that does both. It draws the crowded tables and holds the physics. It
+gives each solution the same measurements, carries out the push that comes
+back, and marks the result against what really happened.
 
-Read this before any of the solution documents, because every one of them
-assumes it.
+This page covers what a solution is given, what the examiner keeps hidden, why
+the shared output is a jaw trajectory, why the marking looks only at the
+outcome, and the two things this scorecard needs that problem 2's did not.
+Read it before any solution document, because every one of them assumes it.
 
-The examiner is built. It lives in `03-push-glasses-apart/bench/`, and all six
-solutions run on it, as does problem 5.
+The examiner is built. It lives in `03-push-glasses-apart/bench/`. Every
+solution runs on it, and so does problem 5.
 
 ## Why there is an examiner at all
 
-Without one, each of the six would arrive with its own tables, its own idea of
-a good push and its own way of counting success, and nothing could be concluded
-by setting their results side by side. The examiner exists to remove every
-difference between the six except the one being studied.
-
-It does that by holding three things fixed. The **input** is the same
-measurements of the same tables, in the same order. The **output** is the same
-kind of thing, carried out by the same machinery. The **marking** is the same
-set of counts, computed the same way. Everything a solution is free to change
-sits between the input and the output, and that middle part is exactly what we
-want to compare. So when a learned policy clears more tables than a fixed
-nudge, the difference belongs to the policy and not to a kinder table or a
-gentler scorecard.
+The reason is the same as in
+[problem 2](../02-segment-glasses/the-examiner.md#why-there-is-an-examiner-at-all).
+The examiner fixes the **input**, the **output** and the **marking**. Only the
+part between input and output is left free, and that part is the method. So
+when a learned policy clears more tables than a fixed nudge, the difference
+comes from the policy, not from an easier table.
 
 ## What the examiner draws
 
-The tables are the first of those three fixed things, so they come first.
+The tables come first, because they are the input.
 
 **Every table is crowded on purpose.** It holds four to six glasses of one
-kind, with the kind and the count cycling from one table to the next so that
-all four kinds are met in turn — the straight glass, the tapered glass, the
-stemmed glass and the short stemmed glass. The glasses stand inside the glass
-zone, and none of them touch: there is always a little daylight between any
-two.
+kind. The kind and the count change from table to table, so all four kinds
+appear in turn: straight, tapered, stemmed and short stemmed. The glasses stand
+inside the glass zone. None of them touch.
 
-**The crowding comes from where the glasses are stood, not from their
-shapes.** When the examiner places a glass, it mostly stands it deliberately
-close to a glass already down — closer than the gripper can work with, but
-still not touching. The rest go anywhere on the glass zone they fit, which
-crowds some of them as well by accident. A table is only accepted if at least
-one glass on it has no room, so there is never a table where the right answer
-is to do nothing.
+**The crowding comes from where the glasses stand, not from their shapes.**
+The examiner places most glasses close to a glass already down. They are
+closer than the gripper can work with, but still not touching. The rest go
+anywhere they fit, and some of them are crowded by chance. A table is accepted
+only if at least one glass has no room. So doing nothing is never the right
+answer.
 
-**Having room is a test on a pair, and it is not symmetric.** A glass has room
-when no other glass's edge lies within 76 mm of its middle. That 76 mm is the
-gripper's own number, described in [the problem](problem.md): half the widest
-jaw opening, a finger and a pad on each side, and a little to spare. Because
-the test measures to the neighbour's *edge*, a narrow glass standing beside a
-wide one is crowded before the wide one is, and a solution that only looks at
-distances between middles will get that case wrong.
+**A glass has room when no other glass's edge lies within 76 mm of its
+middle.** [The problem](problem.md#the-gap-that-matters-is-not-the-gap-between-the-glasses)
+explains where 76 mm comes from and why the test is not symmetric.
 
 **The tables are numbered, and the numbers are split.** Each table is drawn
-from a single number, so the same number always gives the same table, and any
-solution can be run on exactly the tables another was run on. Numbers above a
-fixed dividing line are for testing only; training draws from below it. This
-means no solution is ever marked on a table it was fitted on, which matters
-here more than it did in problem 2, because four of the six solutions are
-trained.
+from a single number, so the same number always gives the same table. Any
+solution can run on exactly the tables another solution ran on. Numbers above a
+fixed line are for testing only. Training draws from below it. So no solution
+is marked on a table it was fitted on. This matters here because most of the
+solutions are trained.
 
-**The physics is MuJoCo, standing in for Gazebo.** There are two reasons, and
-the examiner's own description gives both. The first is speed: a learned approach
-needs thousands of pushes, and Gazebo runs each one at the speed of real time,
-so a training set that MuJoCo produces in hours would take weeks. The second
-reason is fairness, and it is the more interesting one. MuJoCo is physics that
-neither approach wrote. If the examiner pushed glasses around using a push model
-written for this project, then a programmed solution built on that same model
-would win by knowing the answer, and the comparison would measure nothing. A
-contact solver nobody here authored is a thing both sides are equally ignorant
-of.
+**The physics is MuJoCo, standing in for Gazebo.** There are two reasons. The
+first is speed. A learned solution needs thousands of pushes. Gazebo runs at
+real time, so data that MuJoCo makes in hours would take weeks. The second
+reason is fairness. Nobody here wrote MuJoCo. If the examiner used a push model
+written for this project, a solution built on that same model would win by
+knowing the answer. A contact solver nobody here wrote is equally unknown to
+every solution.
 
-The glasses in it are not simplified away. Each one is built as a stack of
-cylinders, each cylinder as wide as the glass is at its widest anywhere inside
-it, so the collision shape is never thinner than the real glass. The bottom
-cylinder is the foot, which is the edge the glass tips over.
+The glasses are not simplified away. Each one is a stack of cylinders. Each
+cylinder is as wide as the glass at its widest point inside it, so the
+collision shape is never thinner than the real glass. The bottom cylinder is
+the foot, which is the edge the glass tips over.
 
 ![Every glass the examiner stands on a table is a stack of cylinders, each one as wide as the glass is anywhere inside it, and the bottom cylinder is the foot it would tip over; the height at which a push starts tipping a glass rather than sliding it follows from that foot and from a friction the examiner keeps to itself.](../../images/03-push-glasses-apart/examiner-the-model-that-was-built.png)
 
 ## What a solution is given
 
-Given those tables, the next fixed thing is what a solution may read off them.
+With the tables fixed, the next question is what a solution may read from
+them.
 
-The examiner offers exactly three calls and nothing else: `look()`, `push()` and
+The examiner offers three calls and nothing else: `look()`, `push()` and
 `take()`.
 
 **`look()` returns one reading per glass still on the table.** For each glass:
-where it stands, how tall it is, how wide it is at its widest, how wide it is
-at its foot, and whether it is still standing. That is the whole input. It is
-the same list of facts problem 2's camera work produces, which is why this
-problem can begin where that one ended.
+where it stands, how tall it is, how wide it is at its widest and at its foot,
+and whether it is still standing. That is the whole input. It is the same list
+that problem 2's camera work produces, so this problem starts where that one
+ended.
 
-**Each reading carries problem 2's measured error.** The numbers are not the
-true ones. The examiner adds a small random error to the position, to both widths
-and to the height, with sizes taken from what problem 2's programmed solution
-actually scored — the width error being the largest of the three, and the
-position error the smallest. The error is fresh on every look, so looking twice
-is worth something, but it is drawn from the table's number and the number of
-the look, which means the first look at a given table is identical for all six
-solutions. Nobody gets an easier first measurement than anybody else.
+**Each reading carries problem 2's measured error.** The examiner adds a small
+random error to the position, both widths and the height. The sizes come from
+what problem 2's programmed solution really scored. The width error is the
+largest and the position error is the smallest. The error is new on every
+look, so looking twice is useful. But it is drawn from the table's number and
+the look's number. So the first look at a table is the same for every solution.
 
-**Solutions that read pictures also get a rendered top-down view of the same
-table.** Three of the six read pictures rather than numbers — an imitation
-policy trained on images, and the two vision-language models — so a list of
-numbers is not an input they can use. Giving them a picture rendered by the
-examiner, of the same table at the same moment, keeps the input the same
-information in a different form. This is now built, in `bench/top_view.py`: a
-camera fixed 750 mm above the middle of the glass zone, looking straight down,
-returning a 384 by 384 RGB picture that frames the whole zone. It is separate
-from the camera `film.py` uses, which looks steeply down from the arm's side
-and exists only for watching a run by eye.
+**Solutions that read pictures also get a top-down view of the same table.**
+Three of the six read pictures, not numbers. A picture of the same table at the
+same moment keeps the input the same information in a different form. It is
+built in `bench/top_view.py`. A camera sits 750 mm above the middle of the
+glass zone, looking straight down. It returns a 384 by 384 RGB picture of the
+whole zone. It is separate from the camera that `film.py` uses, which only
+exists for watching a run.
 
-Keeping the two apart matters more than it first appears, because a solution
-that reads a picture decides from what is in it. If filming a table added
-anything to the world, a filmed table could be a different table from the one
-the same solution was scored on, and the comparison would quietly stop being a
-comparison. So the film is drawn in a second world of its own, built beside the
-scored one and never stepped, and the scored world is the same whether a table
-is filmed or not. The bench's tests check it by running one table both ways and
-requiring every glass to end in the same place.
+The two are kept apart on purpose. A solution that reads a picture decides from
+what is in it. If filming added anything to the world, a filmed table could
+differ from the scored table. So the film is drawn in a second world of its
+own, which is never stepped. The scored world is the same whether a table is
+filmed or not. The bench's tests check this. They run one table both ways and
+require every glass to end in the same place.
 
-**What a solution is never given is the simulator's record.** The examiner knows
-each glass's true position, its true shape and its mass, and it keeps all of
-it. Only the scoring code reads those, and only after a run has finished. A
-learned solution may use them as training labels on the training tables, but
-nothing reads them while answering, because a solution that read the truth
-would not be answering this problem.
+**A solution is never given the simulator's record.** The examiner knows each
+glass's true position, shape and mass, and keeps them. Only the scoring code
+reads them, after the run. A learned solution may use them as training labels
+on training tables. Nothing reads them while answering.
 
-**It is also never given the friction.** The examiner holds three coefficients
-privately: glass on the table, glass on glass, and the jaw's own aluminium and
+**A solution is also never given the friction.** The examiner holds three
+values privately: glass on table, glass on glass, and the jaw's aluminium and
 silicone on glass. Every table uses the same three. They are hidden because
-hiding them is honest — **nothing in the cell measures friction**. There is no
-sensor for it, and there is no way to find it out. This single omission is
-what makes the problem hard, for the reason the next section explains.
+**nothing in the cell measures friction**. This one hidden number is what makes
+the problem hard. [Pushing without toppling](pushing-without-toppling.md#the-number-nobody-has)
+explains why.
 
 ## What `push()` does, and what it reports back
 
-`look()` tells a solution where things are; `push()` is the only way it can
-change them.
+`look()` tells a solution where things are. `push()` is the only way to change
+them.
 
-One push runs as a fixed sequence. The closed jaw is held level, pointing the
-way it will travel. It comes down at the start point the solution chose, to the
-lowest height the gripper can reach. It then feels forward very slowly
-until the force it feels passes a small threshold, which means it has touched
-something. From there it pushes the asked-for distance at a steady speed, backs
-off a couple of centimetres, and lifts clear to a travel height above the
-tallest glass. Three things can interrupt this: the jaw can touch something on
-the way down, in which case it goes straight back up without pushing at all; it
-can reach the end of its forward feel without ever touching anything; or the
-force can pass a much higher threshold during the push, which means something
-is wedged, and the push stops where it is.
+One push runs as a fixed sequence:
 
-**The push then reports what it felt**, and this report is the only thing that
-comes back. It says whether the jaw was blocked on the way down, how far
-forward it travelled before touching or that it never touched, whether it
-jammed, the most force it felt at any moment, and how far it actually moved
-after touching.
+1. The closed jaw is held level, pointing the way it will travel.
+2. It comes down at the chosen start point, to the lowest height the gripper
+   can reach.
+3. It moves forward very slowly until the force passes a small threshold. That
+   means it has touched something.
+4. It pushes the asked-for distance at a steady speed.
+5. It backs off a couple of centimetres and lifts clear above the tallest
+   glass.
 
-That force reading is more important than it looks, and it is worth being
-precise about why. The rule that decides whether a pushed glass slides or tips
-over compares the push height against half the glass's base width divided by
-the friction coefficient — and the height that counts is the **top edge of the
-jaw**, not its middle, because a glass that is wider higher up meets the top
-edge first. A solution can measure the base width, because `look()` gives it.
-It knows the jaw's top edge, because that is the gripper's own number. The one
-term it cannot have is the friction. So the rule gives a limit that is only as
-good as a guessed number.
+Three things can interrupt this. The jaw can touch something on the way down;
+then it goes straight back up without pushing. It can reach the end of its
+forward feel without touching anything. Or the force can pass a much higher
+threshold during the push; then something is wedged, and the push stops.
 
-**This means the force reading is the only channel through which friction is
-observable at all.** How much force it took to start the glass moving, and how
-far the glass went for that push, are consequences of the friction, so they are
-indirect evidence about it. A glass that leaned and fell back where it stood
-felt different from one that slid. Every solution that does better than a blind
-nudge does so by reading that channel, either by reasoning about it or by
-learning from it, which is why an examiner that reported only success or failure
-would have made the interesting half of this problem invisible.
+**The push then reports what it felt.** This report is the only thing that
+comes back. It says whether the jaw was blocked on the way down, how far it
+moved before touching (or that it never touched), whether it jammed, the
+largest force it felt, and how far it moved after touching.
 
-`take()` is the third call. It lifts a glass off the table and racks it, which
-is problem 1's job done for free here, and the examiner quietly records whether
-the glass really had room at the moment it was taken. That recording is how the
-marking later knows whether the arm's own belief about room was correct.
+**The force reading is the only way to observe friction at all.** The topple
+limit needs the friction, and a solution cannot know it. But the force needed
+to start a glass moving, and how far the glass went, both depend on the
+friction. A glass that leaned and fell back felt different from one that slid.
+Every solution that beats a blind nudge does it by reading this signal. An
+examiner that reported only success or failure would hide the interesting half
+of the problem.
 
-**"For free" is doing real work in that sentence, and it is worth saying what
-it hides.** `take()` asks one question — did this glass have room around it? —
-and if the answer is yes the glass leaves the table. It never asks the other
-question, which is whether problem 1 could have picked that glass up at all.
-Those are not the same question, and the gap between them is large. Problem 1's
-own grip rule, asked about each of the 251 held-out glasses with the real
-gripper's measurements, **finds somewhere to hold only 97 of them**. The
-commonest reason it gives is not width but reach: the tool comes in level, the
-force sensor behind the fingers hangs below the tool's axis, and so the pads
-cannot be put lower than 50 mm up the glass without the sensor meeting the
-table. A glass with nothing to hold between 50 mm and halfway up is refused.
+`take()` is the third call. It lifts a glass off the table and racks it. This
+is problem 1's job, done for free here. The examiner records whether the glass
+really had room when it was taken. The marking later uses that record.
 
-This is a limitation of problem 1 rather than of problem 3, and
-[known-gaps.md](../known-gaps.md) already records it: the grip search only
-chooses a height and always comes in level from the side, so short glasses fall
-between two limits that cancel each other out. It is noted here because the
-scorecard's word *racked* quietly assumes a pick that often could not happen.
-No solution's score depends on it, because all six are marked the same way, and
-the films draw the pick as a plain stand-in and say on screen that problem 1
-does the real one.
+**"For free" hides something.** `take()` asks one question: did this glass have
+room? If yes, the glass leaves the table. It never asks whether problem 1 could
+really pick that glass up. The two questions differ a lot. Problem 1's own grip
+rule, asked about each of the 251 held-out glasses with the real gripper's
+measurements, **finds somewhere to hold only 97 of them**. The most common
+reason is reach, not width. The tool comes in level. The force sensor behind
+the fingers hangs below the tool's axis. So the pads cannot go lower than 50 mm
+up the glass without the sensor hitting the table. A glass with nothing to hold
+between 50 mm and halfway up is refused.
 
-**Room around a glass is also not the same as a way in for the hand**, and that
-is the examiner's own assumption rather than problem 1's. `has_room()` asks
-whether anything stands within a radius of the glass, which is the right
-question for an open hand coming straight down on it. The hand does not come
-straight down. It comes in level, and from fingertips to the back of the force
-sensor it is 266 mm long, so it occupies a corridor reaching right across the
-table rather than a circle around one glass. Whether that corridor is clear
-depends on which side the hand comes from, and on a crowded table most sides
-are blocked by something far outside the radius `has_room()` looks at. Checking
-every side for the glasses the examiner says have room, over twenty of the
-fifty tables, **a clear way in exists for 14 of 19 and the hand would have to
-stop short for the other 5**. The films check the same thing before drawing a
-pick, come in from a side that is clear when one is, and when none is, draw the
-hand stopping where it would have touched and say so on the picture. A drawn
-hand cannot collide with anything, so without that check a film would show the
-hand sliding through a glass and a viewer would read it as room that is not
-there. Across the six films eleven picks are drawn and one of them stops short,
-which is lower than the figure above because by the time a glass is racked the
-solution has already pushed its neighbours away from it.
+This is a limit of problem 1, not of problem 3.
+[known-gaps.md](../known-gaps.md) already records it. It is noted here because
+the scorecard's word *racked* assumes a pick that often could not happen. No
+score depends on it, because every solution is marked the same way. The films
+draw the pick as a plain stand-in and say on screen that problem 1 does the
+real one.
+
+**Room around a glass is also not the same as a way in for the hand.** This is
+the examiner's own assumption. `has_room()` asks whether anything stands within
+a radius of the glass. That is the right question for a hand coming straight
+down. But the hand comes in level, and it is 266 mm long from fingertips to the
+back of the force sensor. So it needs a corridor across the table, not a circle
+round one glass. On a crowded table, most sides are blocked by something
+outside the radius `has_room()` checks. Over twenty of the fifty tables, every
+side was checked for the glasses the examiner says have room. **A clear way in
+exists for 14 of 19, and the hand would have to stop short for the other 5.**
+
+The films check the same thing before they draw a pick. They come in from a
+clear side when there is one. When there is none, they draw the hand stopping
+where it would touch, and say so on screen. Across the six films, eleven picks
+are drawn and one stops short. That is fewer than above, because by the time a
+glass is racked its neighbours have already been pushed away.
 
 ## The shared output, and why it is a jaw trajectory
 
-The input is now fixed and the physics is fixed, so the remaining question is
-what a solution hands back. This is the most important decision in the whole
-arrangement, because the six do not naturally hand back the same kind of thing.
+The input and the physics are now fixed. The last question is what a solution
+hands back. The six do not naturally hand back the same kind of thing, so this
+is the most important decision here.
 
 **The shared output is a jaw trajectory**: a path for the jaw to follow.
 
-Some of the six do not think in trajectories at all. A geometric solution
-thinks in a **parameterised push** — a handful of numbers saying which glass
-to move, where to put the fingertips down, which way to point, how far to feel
-forward and how far to push. That is exactly what the examiner's `push()` already
-accepts today, and `push()` itself is the machinery that turns those numbers
-into the descend, feel, push, back off and lift described above. So **the
-expansion from a push into a trajectory is a macro the examiner owns**, not
-something a solution writes. Every parameterised push is expanded the same way,
-by the same code, so no solution gains or loses anything in that step.
+Some solutions think in a **parameterised push**: a few numbers saying which
+glass, where to put the fingertips down, which way to point, how far to feel
+forward and how far to push. `push()` accepts exactly that and turns it into
+the sequence above. So **the examiner owns the step that expands a push into a
+trajectory**. Every push is expanded by the same code, so no solution gains or
+loses anything there.
 
-Other solutions think in trajectories natively. A modern imitation policy does
-not emit one target at a time; it emits an **action chunk**, which is a short
-run of consecutive waypoints predicted together in one forward pass. Those
-solutions emit their waypoints directly, and the examiner carries them out without
-an expansion step, because there is nothing to expand.
+Other solutions think in trajectories already. A modern imitation policy emits
+an **action chunk**: a short run of waypoints predicted together in one pass.
+Those solutions give their waypoints directly, and the examiner carries them
+out with no expansion.
 
-It is worth saying plainly why the obvious alternative would be worse. The
-examiner could insist that every solution emit the same small set of push
-parameters, which sounds like the fairest possible rule. It would in fact be
-the unfair one, because **it would destroy the action chunking that makes those
-policies work**. Predicting a chunk is not a convenience in these
-architectures; it is the mechanism by which they stay consistent over a motion
-instead of wobbling from one step to the next. Squeeze such a policy down to
-three numbers and you have not made it comparable, you have crippled it — and
-what you then measure is a damaged version of the method rather than the method
-that exists. A comparison is only worth running if each side is allowed to be
-itself.
+The obvious alternative would be to make every solution emit the same few push
+numbers. That sounds fair but is not. **It would destroy the action chunking
+that makes those policies work.** Chunking is how they stay steady over a
+motion instead of wobbling from step to step. Squeeze such a policy down to
+three numbers and you measure a damaged version of it. A comparison is only
+worth running if each side can be itself.
 
-Both paths are now built. `push()` takes the parameterised push and owns its
-expansion; `follow()` takes a `Chunk` of jaw waypoints and carries them out in
-the same physics, reporting the same `Felt` into the same record, so the
-scorecard cannot tell which door an action came through. The examiner also writes
-down the path the jaw really followed on every action, sampled at a fixed rate,
-which is what turns a parameterised push into a demonstration a policy that
-emits waypoints can be trained on.
+Both paths are built. `push()` takes the parameterised push. `follow()` takes a
+`Chunk` of jaw waypoints and carries them out in the same physics. It reports
+the same `Felt` into the same record, so the scorecard cannot tell which path
+an action used. The examiner also records the path the jaw really followed on
+every action, at a fixed rate. That record turns a parameterised push into a
+demonstration that a waypoint policy can learn from.
 
 ## The score is the outcome, not the action
 
-Allowing two different kinds of output raises an obvious objection: if one
-solution hands over three numbers and another hands over twenty waypoints, how
-can their results be compared at all?
+Two kinds of output raise an obvious question. If one solution gives three
+numbers and another gives twenty waypoints, how can they be compared?
 
-The answer is that **the examiner never marks the action**. It does not ask
-whether a push was the push it would have chosen, whether the heading was
-sensible, or whether the waypoints were smooth. It looks only at the state of
-the table afterwards: which glasses have room, which are still standing, where
-each one ended up, and how many pushes it took to get there.
+The answer is that **the examiner never marks the action**. It does not judge
+the heading or the smoothness of the waypoints. It looks only at the table
+afterwards: which glasses have room, which are standing, where each one ended,
+and how many pushes it took.
 
-This is what makes the two outputs comparable. A score that looked at the
-action would need a single language to express every action in, and there is no
-such language that is fair to both a three-number push and a learned chunk of
-waypoints. A score that looks at the table needs no such language, because the
-table is the same table either way. Both solutions are asked the one question
-that the problem actually cares about: are the glasses far enough apart now,
-and is everything still standing?
+Marking the action would need one fair language for every kind of action, and
+there is none. Marking the table needs no such language, because the table is
+the same table either way. Both solutions answer the one question the problem
+cares about: are the glasses far enough apart, and is everything still
+standing?
 
 ## What the examiner measures
 
-The scoring code reads the simulator's record after a run has finished and
-turns it into one scorecard, in the same shape for every solution.
+The scoring code reads the simulator's record after a run. It turns it into one
+scorecard, in the same shape for every solution.
 
-**Each table gets one of three outcomes**, which are the three
-[the problem](problem.md) defines. A table is **done** when every glass was
-racked, and each one was racked while it really had room. It is **correct but
-incomplete** when some glasses are still on the table, each one reported with a
-reason, and nothing went wrong. It is **wrong** when anything went wrong at
-all.
+**Each table gets one of three outcomes**, as [the problem](problem.md#what-done-means)
+defines them. A table is **done** when every glass was racked while it really
+had room. It is **correct but incomplete** when some glasses are left, each
+with a reason, and nothing went wrong. It is **wrong** when anything went
+wrong.
 
-**Each glass is then counted individually**, which is where the detail lives.
-A glass may have been racked; or refused with a reason; or it may have gone
-wrong in one of several ways. The problem names three wrong endings — a glass
-**toppled**, a glass **pushed off the table**, and a glass **pushed into the
-rack** — and the examiner detects all three with two tests. Toppling it decides
-by how far the glass leans from upright. The other two are the same thing
-geometrically, because in both the glass has ended up outside the region it
-was allowed to be in, so one test covers them: the glass **left the glass
-zone**. The examiner adds two more wrong endings of its own. A glass **picked
-without room** is one the arm believed it could grip when it could not, which
-is a mistake the arm would not otherwise notice. A glass **left with no
-reason** is one abandoned on the table in silence.
+**Each glass is then counted on its own.** A glass may be racked, refused with
+a reason, or wrong in one of several ways. The problem names three wrong
+endings: **toppled**, **pushed off the table**, and **pushed into the rack**.
+The examiner detects toppling by how far the glass leans. The other two are the
+same test: the glass **left the glass zone**. The examiner adds two wrong
+endings of its own. A glass **picked without room** is one the arm thought it
+could grip when it could not. A glass **left with no reason** is one abandoned
+in silence.
 
 **Glasses grippable at the end** is the measurement the problem is really
-about, and the examiner gets it from racking rather than by measuring gaps. A
-glass is only counted as racked if it had genuine room at the moment it was
-taken, so a run that clears the table has demonstrated grippability rather than
-asserted it.
+about. The examiner gets it from racking, not from measuring gaps. A glass
+counts as racked only if it had real room when taken. So a run that clears the
+table has shown grippability, not claimed it.
 
-**Pushes are counted against a budget.** The scorecard records how many pushes
-were spent in total, how many of them were repeat pushes on a glass already
-pushed, and how many went wrong in each of the ways a push can: blocked on the
-way down, never touching anything, or jamming. The budget itself — a fixed
-maximum per glass and per table, after which the remaining glasses must be
-refused — used to live in the code that drives each run, so the counts were not
+**Pushes are counted against a budget.** The scorecard records the total
+pushes, the repeat pushes on a glass already pushed, and the pushes that went
+wrong: blocked on the way down, never touching, or jamming. The budget is a
+fixed maximum per glass and per table. After it, the remaining glasses must be
+refused. It used to live in each solution's own runner, so the counts were not
 comparable. It now lives in the examiner, as `PUSHES_PER_GLASS` and
-`PUSHES_PER_TABLE`, so all six are given the same number. One solution predates
-it: the fixed nudge spends 3 and 15 rather than 4 and 16, because its committed
-scorecard was measured at those and would change under the shared budget.
+`PUSHES_PER_TABLE`. One solution predates it: the fixed nudge spends 3 and 15
+rather than 4 and 16, because its committed scorecard was measured at those
+values.
 
-**Refusals are counted with their reason, and a refusal is a result rather
-than a failure.** Some glasses cannot be pushed safely at all, because they tip
-before they slide, and for those the only correct answer is to refuse. So the
-examiner groups refusals by the reason given and reports the groups. A solution
-that refuses the glasses it should refuse scores *correct but incomplete*,
-which is a good outcome; a solution that quietly leaves those same glasses with
-no reason scores *wrong*. Saying "I cannot do this, and here is why" is part of
-the answer.
+**Refusals are counted with their reason.** A refusal is a result, not a
+failure. The examiner groups refusals by reason. A solution that refuses the
+glasses it should refuse scores *correct but incomplete*, which is good. A
+solution that leaves the same glasses with no reason scores *wrong*.
+[Pushing without toppling](pushing-without-toppling.md#some-glasses-cannot-be-pushed-at-all)
+explains why some glasses must be refused.
 
-**Finally, the examiner records how far each glass ended from where the push aimed
-it.** Every push carries the place the solution expected the glass to arrive,
-and once the glass has settled the examiner measures the real distance between the
-two, reporting the middle value and the worst. For most of the six that
-expected place comes from [the target layout](the-target-layout.md), which
-computes where the glasses should end up. This number is a **reference and not
-a pass mark**. A push that lands some way from its aim is not wrong, because
-the problem never asked for the glasses to be anywhere in particular — only
-far enough apart. What the number is good for is reading a solution's own
-model of pushing: a method whose glasses land close to its aim understands
-what a push does, and a method whose glasses scatter is succeeding by looking
-again rather than by predicting, which is a real strategy but a different
-one.
+**The examiner records how far each glass ended from where the push aimed
+it.** Every push carries the place the solution expected the glass to arrive.
+Once the glass settles, the examiner measures the real distance, and reports
+the middle value and the worst. This is **a reference, not a pass mark**. The
+problem never asks for glasses to be in a particular place. The number shows
+how well a solution predicts a push. Glasses that land near their aim mean the
+method understands pushing. Glasses that scatter mean it succeeds by looking
+again instead. That is a real strategy too, just a different one.
 
-**The examiner also adds up how far the glasses were really moved**, over every
-push and every table. On its own that total says little, because a solution
-that pushes nothing scores best on it, and pushing nothing is useless. It
-becomes meaningful next to the **displacement floor**, which
-[the target layout](the-target-layout.md) computes: the least total movement
-any legal arrangement of the same glasses needs. The floor belongs to the
-geometry of the table rather than to any method, so no solution can beat it,
-and every solution can be read as a multiple of it. A solution spending twice
-the floor moved the glasses twice as far as the problem required, and that is a
-cost worth seeing beside the tables it finished, because moving a glass further
-than necessary is extra risk taken for nothing.
+**The examiner adds up how far the glasses really moved**, over every push and
+table. On its own that total says little, because pushing nothing scores best.
+It means something next to the **displacement floor**, the least movement any
+legal layout of the same glasses needs. [The target layout](the-target-layout.md#the-displacement-floor)
+computes the floor and explains how to read a solution against it.
 
 ## Two things this scorecard needs that problem 2's did not
 
-Problem 2's examiner could run each solution once and read the result. This one
-cannot, and there are two reasons. Both are consequences of four of the six
-solutions being trained rather than written, and both are now in `scoring.py`:
-`Repeats` holds several evaluation runs and reports the spread across every
-number, and `Scorecard` reports the time per push beside the counts.
+Problem 2's examiner could run each solution once. This one cannot, for two
+reasons. Both come from most solutions here being trained rather than written.
+Both are now in `scoring.py`. `Repeats` holds several evaluation runs and
+reports the spread of every number. `Scorecard` reports the time per push
+beside the counts.
 
-**One run is not a measurement.** The learned policies here are stochastic:
-asked the same question twice they may act differently, because the action is
-drawn rather than computed. On top of that, training itself varies with its own
-random seed, so the same method trained twice gives two different policies of
-different quality. The uncomfortable part is that this variation is sometimes
-**larger than the gap between two methods**, which means a single run of each
-can easily report the wrong winner — and report it with no sign that anything
-is uncertain. So each trained solution has to be trained with several seeds and
-evaluated over several runs, and the scorecard has to carry the **spread** and
-not only the middle. A result quoted without a spread is not a result. A method
-that wins by less than its own spread has not been shown to win.
+**One run is not a measurement.** The learned policies here are random: asked
+the same question twice, they may act differently. Training also varies with
+its random seed, so the same method trained twice gives two policies of
+different quality. This variation is sometimes **larger than the gap between
+two methods**. Then a single run of each can name the wrong winner, with no
+sign of doubt. So each trained solution is trained with several seeds and run
+several times, and the scorecard reports the **spread**, not only the middle.
+A result without a spread is not a result. A method that wins by less than its
+own spread has not been shown to win.
 
-**Running cost differs by orders of magnitude, so it belongs on the
-scorecard.** The six are not equally expensive to run for a single push, and
-the range is enormous. A fixed nudge is arithmetic and costs essentially
-nothing. A planner that uses a learned world model searches over candidate
-actions at run time, simulating each one forward through the model before
-committing, so its cost per push is hundreds or thousands of times the
-arithmetic. A foundation model is a large neural network forward pass, which
-is a different kind of expense again, and one that usually needs rented
-hardware. Leaving this out would make the scorecard misleading, because **a
-solution that wins while taking a hundred times longer has not obviously
-won** — on a real arm it may not be runnable at all, and the honest comparison
-is not "which scored best" but "which scored best for what it cost". So each
-solution reports what it needs and roughly what renting that costs, in the same
-way its licence is stated, and the time per push sits on the scorecard beside
-the counts.
+**Running cost differs hugely, so it belongs on the scorecard.** A fixed nudge
+is arithmetic and costs almost nothing. A planner with a learned world model
+tries many candidate actions through the model before each push. That costs
+hundreds or thousands of times more. A foundation model is one large network
+pass, which usually needs rented hardware. **A solution that wins while taking
+a hundred times longer has not clearly won.** On a real arm it may not be
+usable at all. So each solution states what it needs and roughly what renting
+it costs, as it states its licence. The time per push sits on the scorecard
+beside the counts.
 
 ## Where to go next
 
-- [The problem](problem.md) — why dragging rather than lifting, the three
+- [The problem](problem.md): why dragging rather than lifting, the three
   distances that matter, and what "done" means.
-- [The target layout](the-target-layout.md) — where the glasses should end up,
-  computed rather than learned, and the least movement the task needs.
-- [Pushing without toppling](pushing-without-toppling.md) — how low the push
-  has to be, why that is a property of the glass, the refusal path, and the
-  loop of plan, feel and look again.
-- [The six solutions](solutions/overview.md) — what each method puts between
-  the input and the output.
+- [The target layout](the-target-layout.md): where the glasses should end up,
+  and the least movement the task needs.
+- [Pushing without toppling](pushing-without-toppling.md): how low a push must
+  be, the refusal path, and the loop of plan, feel and look again.
+- [The solutions](solutions/overview.md): what each method puts between the
+  input and the output.
