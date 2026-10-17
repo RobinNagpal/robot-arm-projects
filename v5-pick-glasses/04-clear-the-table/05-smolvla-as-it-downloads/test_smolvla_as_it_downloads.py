@@ -32,7 +32,7 @@ from borrowed import joining
 
 from contract import Done, Look
 from open_run import HOME, clear_table
-from partners import JAW_HALF_HEIGHT, PUSH_HEIGHT, TRAVEL_HEIGHT, Chunk, Seen, Waypoint
+from partners import PUSH_HEIGHT, TRAVEL_HEIGHT, Chunk, Seen, Waypoint
 from stopping import QUIET_ANSWERS
 
 # A picture of the shape the policy takes, which nothing in these tests reads.
@@ -171,19 +171,21 @@ def test_the_shape_of_an_answer_is_measured_in_millimetres(seed: int) -> None:
 
 
 @pytest.mark.parametrize("height", [PUSH_HEIGHT, PUSH_HEIGHT + 0.0005, 0.10, 0.18, 0.25])
-def test_a_table_ends_only_after_enough_answers_that_could_not_touch_a_glass(height: float) -> None:
-    """One answer decides nothing; ``QUIET_ANSWERS`` of them end the table.
+def test_a_flat_path_between_the_two_safe_heights_is_raised_and_then_counted_as_quiet(
+    height: float,
+) -> None:
+    """What now happens to the answers that used to break the glasses.
 
-    The family is heights either side of what the hand can reach, because that
-    is the whole of the rule: a path low enough for any part of the hand to
-    meet a glass is the policy acting, and one above everything on the table is
-    the policy saying it sees nothing to do.
+    The family is heights either side of what the hand can reach. A path that
+    travels across the table at the height the jaw pushes at is a push and is
+    carried out; one at travel height is a look and is carried out; one anywhere
+    in between carries the fingers through the tops of the glasses, and
+    ``keeping_clear`` raises it to travel height before the cell ever sees it.
 
-    The height that divides the two is not the height the jaw pushes at. A
-    waypoint's number is the middle of the jaw and the fingers hang
-    ``JAW_HALF_HEIGHT`` below it, so a path clearing the pushing height can
-    still sweep a glass standing taller than that. The rule was corrected after
-    a run broke a glass while every one of its answers was counted as quiet.
+    So what the stopping rule then counts is the *raised* answer, which touches
+    nothing — and a solution that keeps answering that way is saying, in the only
+    language it has, that it has nothing to do. ``QUIET_ANSWERS`` of them end the
+    table, which is what this checks.
     """
     seen = glass()
     solution = AsItDownloads(Stub([flat_path(height)]))
@@ -195,13 +197,24 @@ def test_a_table_ends_only_after_enough_answers_that_could_not_touch_a_glass(hei
         if isinstance(answer, Done):
             break
 
-    could_touch = height - JAW_HALF_HEIGHT <= max(seen.height, PUSH_HEIGHT) + 0.001
-    if could_touch:
+    at_the_table = height <= PUSH_HEIGHT + 0.001
+    carried_out = [a for a in answers if isinstance(a, Chunk)]
+    if at_the_table:
+        # A push at the glass in the picture, carried out as it was drawn, and
+        # the table never ends while the model keeps proposing one.
         assert not any(isinstance(a, Done) for a in answers)
+        assert all(point.z <= PUSH_HEIGHT + 0.001 for a in carried_out for point in a.waypoints)
     else:
         assert isinstance(answers[-1], Done)
         assert len(answers) == QUIET_ANSWERS
         assert answers[-1].why
+        # Every answer the arm was given rides at travel height, whether it was
+        # drawn there or raised to it.
+        assert all(point.z == TRAVEL_HEIGHT for a in carried_out for point in a.waypoints)
+    # Every answer is counted as it is drawn, including the one that completed
+    # the quiet spell and was not carried out.
+    between = PUSH_HEIGHT + 0.001 < height < TRAVEL_HEIGHT
+    assert sum(solution.raised.values()) == (len(answers) if between else 0)
 
 
 def test_one_push_among_the_quiet_answers_starts_the_count_again() -> None:

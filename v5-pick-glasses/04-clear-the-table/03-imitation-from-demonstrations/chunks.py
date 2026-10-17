@@ -37,6 +37,16 @@ the path, and where a path ends is the hardest and most useful thing about it.
 **Heading is carried as its cosine and sine.** Problem 3's reason, unchanged: an
 angle wraps at pi and a model fitted to a wrapping number learns the wrap as a
 cliff. Two columns that do not wrap cost one number and remove the problem.
+
+**A push is written in its own glass's frame, and a look in the table's.** This
+was added after the first held-out walk. A push's waypoints are where they are
+because of where the glass is, so written in the table's own numbers the same
+shove at two different glasses is two unrelated answers and the model has to
+learn the table's layout before it can learn the shove. Measured from the glass
+being pushed, it is one answer, and a push learned at one glass is a push
+everywhere. ``origin`` is that glass's place, and it is subtracted on the way in
+and added back on the way out. A look is aimed at no glass, so its origin is the
+middle of the table and nothing changes for it.
 """
 
 from __future__ import annotations
@@ -76,18 +86,30 @@ GOING = 0.5
 PULLED_BY = 1e-6
 
 
-def to_action(waypoints: Sequence[Waypoint]) -> np.ndarray | None:
+def to_action(
+    waypoints: Sequence[Waypoint], origin: tuple[float, float] = (0.0, 0.0)
+) -> np.ndarray | None:
     """One path as a ``(CHUNK, ACTION_WIDTH)`` training target, or None if it will not fit.
 
     None rather than an error, because a path longer than a chunk is an
     ordinary thing to meet in a demonstration set and the collector counts it.
+
+    ``origin`` is the place the path is measured from, which is the pushed
+    glass for a push and nothing for a look.
     """
     if not waypoints:
         raise ValueError("a path has at least one waypoint; follow() refuses an empty one")
     if len(waypoints) > CHUNK:
         return None
     rows = [
-        [point.x, point.y, point.z, math.cos(point.heading), math.sin(point.heading), 1.0]
+        [
+            point.x - origin[0],
+            point.y - origin[1],
+            point.z,
+            math.cos(point.heading),
+            math.sin(point.heading),
+            1.0,
+        ]
         for point in waypoints
     ]
     # The padding holds the last pose with the column turned off, so the target
@@ -109,7 +131,9 @@ def length_of(action: np.ndarray) -> int:
     return len(going) if not len(ended) else max(1, int(ended[0]))
 
 
-def to_waypoints(action: np.ndarray) -> tuple[tuple[Waypoint, ...], int]:
+def to_waypoints(
+    action: np.ndarray, origin: tuple[float, float] = (0.0, 0.0)
+) -> tuple[tuple[Waypoint, ...], int]:
     """A policy's chunk as waypoints the bench will take, and how many had to be pulled in.
 
     Nothing stops a network answering with a number the jaw cannot reach, so
@@ -122,7 +146,9 @@ def to_waypoints(action: np.ndarray) -> tuple[tuple[Waypoint, ...], int]:
     action = np.asarray(action, dtype=float)
     if action.ndim != 2 or action.shape[1] != ACTION_WIDTH:
         raise ValueError(f"a chunk is (n, {ACTION_WIDTH}), not {action.shape}")
-    rows = action[: length_of(action)]
+    rows = action[: length_of(action)].copy()
+    rows[:, 0] += origin[0]
+    rows[:, 1] += origin[1]
     half_x, half_y = TABLE_SIZE[0] / 2, TABLE_SIZE[1] / 2
     inside = np.stack(
         [

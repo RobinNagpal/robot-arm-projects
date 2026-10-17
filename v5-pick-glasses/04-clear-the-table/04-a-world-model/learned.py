@@ -42,6 +42,7 @@ answer. ``measure.py`` measures both.
 from __future__ import annotations
 
 import math
+from collections import Counter
 from dataclasses import replace
 
 import encoding
@@ -51,6 +52,7 @@ from borrowed import WEIGHTS, jaw_paths, nudge
 from push_model import Ensemble
 
 from contract import Answer, Done, Look
+from keeping_clear import why_not_clear
 from open_run import interlocked
 from partners import Seen, in_zone
 
@@ -61,6 +63,14 @@ class WorldModel(nudge.OneFixedNudge):
     """The geometry reference's loop, with the model and the search deciding."""
 
     name = "a world model"
+
+    # What the test push has to show before a long push is made. The reference
+    # asks the glass to *keep up* with the probe, because by then it has already
+    # poked the glass and taken up the slack. This solution makes no ranging
+    # push, so its test push is the first thing to touch the glass and the first
+    # millimetre or two go into taking up contact. So the question here is
+    # problem 3's own: did it move at all?
+    kept_up = plan.PROBE_MOVED
 
     def __init__(
         self, model: Ensemble | None = None, *, predicting: bool = False, seed: int | None = None
@@ -77,13 +87,42 @@ class WorldModel(nudge.OneFixedNudge):
         # wants one run repeated exactly passes a seed, and ``measure.py``
         # does, so the numbers in the README can be reproduced.
         self.generator = np.random.default_rng(seed)
+        # What the model believed about every push this solution answered with,
+        # over every table. See ``believed``.
+        self.risked: list[dict] = []
+        # Pushes the search chose and the clearance check would not let through,
+        # counted by reason over the whole run. A model that keeps proposing a
+        # push across a neighbour is worth knowing about.
+        self.dropped: Counter = Counter()
         super().__init__()
 
     def begin(self, seed: int) -> None:
         super().begin(seed)
+        self.seed = seed
         # What the model said the table would look like after the last push.
         # Only used when nobody is going to look.
         self.expected: dict[int, tuple[float, float]] = {}
+
+    # ---------------------------------------------------------- what it believed
+
+    def believed(self, push: str, choice: search.Choice) -> None:
+        """Keep what the model said about a push this solution is about to make.
+
+        The first held-out walk could say that eight glasses were broken and not
+        whether the model had been confident about those pushes, because nothing
+        wrote down what it believed. This costs no arm time -- it is all on the
+        laptop's side of the fence -- and ``measure.py`` is what reads it back.
+        """
+        self.risked.append(
+            {
+                "table": self.seed,
+                "kind": push,
+                "glass": choice.target,
+                "chance_of_a_topple": round(choice.risk, 5),
+                "travel_mm": round(1000 * choice.travel, 1),
+                "reach_mm": round(1000 * choice.reach, 1),
+            }
+        )
 
     # ------------------------------------------------------------- the deciding
 
@@ -124,6 +163,7 @@ class WorldModel(nudge.OneFixedNudge):
         # same place either way.
         self.reach_for[choice.target] = choice.reach
         self.expected = search.predicted_table(self.model, glasses, target, choice)
+        self.believed(nudge.PUSHING, choice)
         return self._make(look, self._push(target, choice), nudge.PUSHING)
 
     def _verdicts(self, glasses: list[Seen], skip: set[int]) -> dict[int, search.Verdict]:
@@ -157,9 +197,22 @@ class WorldModel(nudge.OneFixedNudge):
         )
         for choice in wanted:
             target = next(glass for glass in glasses if glass.id == choice.target)
-            if interlocked(self._path(look, target, choice), glasses) is None:
-                return choice
-            self._leave(choice.target, "the cell's interlock would refuse the push of it")
+            path = self._path(look, target, choice)
+            if interlocked(path, glasses) is not None:
+                self._leave(choice.target, "the cell's interlock would refuse the push of it")
+                continue
+            # The search weighs where the glasses will *end up* and never asks
+            # what the hand passes through on the way in. The model is free to
+            # choose a push whose approach crosses a neighbour, and a hand
+            # sweeping a glass puts it over as surely as a shove does. So the
+            # path is checked against every glass this solution has measured,
+            # and a push that would reach one it did not choose is dropped here
+            # rather than carried out.
+            why = why_not_clear(path, glasses, target=choice.target)
+            if why:
+                self.dropped[why] += 1
+                continue
+            return choice
         return None
 
     def _push(self, target: Seen, choice: search.Choice):

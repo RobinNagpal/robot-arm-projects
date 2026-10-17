@@ -115,6 +115,15 @@ class ByModel:
     enumerated and the rule is three comparisons. That count is the cheapest
     reading there is of whether the ordering is doing anything, and it needs no
     second run of the bench to get it.
+
+    **What was tried here and left out.** The trees are fitted on the room a
+    push gains and know nothing about what the push costs to make, so the
+    obvious improvement is to price its length, as problem 3's solution 4 prices
+    its own. Measured on forty tuning tables at four prices, from nothing to
+    three times that solution's figure, it changes nothing: fifteen, fifteen,
+    fourteen and fifteen tables separated, no glass broken at any price, and the
+    same arm time to within a tenth of a second. So the ordering is not what the
+    length of its pushes costs it, and the knob is not here.
     """
 
     def __init__(self, score: ranker.Scorer) -> None:

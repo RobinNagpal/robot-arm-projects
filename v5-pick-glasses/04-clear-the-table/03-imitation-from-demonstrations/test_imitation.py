@@ -70,21 +70,31 @@ def a_look_path(x: float = MIDDLE[0], y: float = MIDDLE[1]) -> np.ndarray:
     return chunks.to_action([Waypoint(x, y, TRAVEL_HEIGHT, 0.5)])
 
 
-def a_push_path(across: float) -> np.ndarray:
-    """A chunk that comes down and shoves, in the shape the teacher writes one."""
-    heading = 0.4
-    points = [Waypoint(*MIDDLE, TRAVEL_HEIGHT, heading)]
+def a_push_path(across: float, behind: float = 0.06) -> np.ndarray:
+    """A chunk that comes down behind a glass and shoves it, in the teacher's own shape.
+
+    Written in the glass's own frame, which is how a push is written now: the
+    waypoints are measured from the glass being pushed, so ``(0, 0)`` is that
+    glass and the path comes down ``behind`` millimetres short of it. ``clear.py``
+    adds the glass's place back on before the answer goes to the bench.
+    """
+    heading = 0.0
+    start = (-behind, 0.0)
+    points = [Waypoint(*start, TRAVEL_HEIGHT, heading)]
     drops = max(1, math.ceil((TRAVEL_HEIGHT - PUSH_HEIGHT) / 0.01))
     for step in range(1, drops + 1):
         z = TRAVEL_HEIGHT - step * (TRAVEL_HEIGHT - PUSH_HEIGHT) / drops
-        points.append(Waypoint(*MIDDLE, z, heading))
-    steps = max(1, round(across / 0.001))
+        points.append(Waypoint(*start, z, heading))
+    # A millimetre a waypoint, which is the speed the teacher pushes at, up to
+    # the point where the whole path would not fit in a chunk. The longest push
+    # tested here is longer than any the teacher makes, so it is spaced wider.
+    steps = max(1, min(chunks.CHUNK - drops - 1, round((behind + across) / 0.001)))
     for step in range(1, steps + 1):
-        gone = step * across / steps
+        gone = step * (behind + across) / steps
         points.append(
             Waypoint(
-                MIDDLE[0] + gone * math.cos(heading),
-                MIDDLE[1] + gone * math.sin(heading),
+                start[0] + gone * math.cos(heading),
+                start[1] + gone * math.sin(heading),
                 PUSH_HEIGHT,
                 heading,
             )
@@ -110,23 +120,51 @@ class Canned:
         return self.answers[min(len(self.asked) - 1, len(self.answers) - 1)]
 
 
+@dataclass
+class Told:
+    """A gate that always decides the same thing, for testing the wrapping around it.
+
+    It stands in for a fitted gate the way ``Canned`` stands in for a fitted
+    policy, and it records what it was shown, because handing the gate the
+    decision it is supposed to be making would be a quiet way for this folder to
+    be wrong.
+    """
+
+    kind: int = readings.LOOK
+    slot: int = readings.NO_GLASS
+    asked: list[tuple[np.ndarray, np.ndarray]] = field(default_factory=list)
+
+    def decide(self, picture: np.ndarray, numbers: np.ndarray) -> tuple[int, int]:
+        self.asked.append((picture, numbers))
+        return self.kind, self.slot
+
+
+def solution_with(answers: list[np.ndarray], kind: int = readings.LOOK, slot: int = readings.NO_GLASS):
+    """A solution built from a canned policy and a gate that always says one thing."""
+    return Imitation(Canned(answers), Told(kind, slot))
+
+
 # ------------------------------------------------------- what the model is shown
 
 
 def test_the_model_is_shown_the_picture_the_readings_and_the_pose():
-    model = Canned([a_look_path()])
-    solution = Imitation(model)
+    model, told = Canned([a_look_path()]), Told()
+    solution = Imitation(model, told)
     look = look_at([a_glass(), a_glass((0.05, 0.6), number=1)])
     solution.answer(look)
     picture, state = model.asked[0]
     assert picture.shape == (*WRIST_VIEW_SIZE, 3)
-    assert np.allclose(state, readings.to_state(look.jaw, look.seen))
+    # The readings and the pose come first, exactly as the gate is shown them,
+    # and the policy is shown the gate's decision after them.
+    assert np.allclose(state[: readings.STATE_WIDTH], readings.to_state(look.jaw, look.seen))
+    assert len(state) == readings.ASKED_WIDTH
+    assert np.allclose(told.asked[0][1][: readings.STATE_WIDTH], state[: readings.STATE_WIDTH])
 
 
 def test_two_stands_over_one_table_are_two_different_observations():
     """The camera rides on the arm, so where the jaw is standing is part of the look."""
     model = Canned([a_look_path()])
-    solution = Imitation(model)
+    solution = Imitation(model, Told())
     glasses = [a_glass()]
     solution.answer(look_at(glasses, HOME))
     solution.answer(look_at(glasses, Waypoint(0.1, 0.42, TRAVEL_HEIGHT, -1.0)))
@@ -139,7 +177,7 @@ def test_two_stands_over_one_table_are_two_different_observations():
 def test_every_answer_is_a_path_the_bench_would_take():
     """Off the table, under the jaw's reach, too long: the three things follow() refuses."""
     for across in (0.002, 0.02, 0.05, 0.15):
-        solution = Imitation(Canned([a_push_path(across)]))
+        solution = solution_with([a_push_path(across)], readings.PUSH, 0)
         answer = solution.answer(look_at([a_glass()]))
         assert isinstance(answer, Chunk)
         assert 1 <= len(answer.waypoints) <= MAX_WAYPOINTS
@@ -150,7 +188,7 @@ def test_every_answer_is_a_path_the_bench_would_take():
 def test_a_wild_answer_is_pulled_in_and_counted():
     wild = a_push_path(0.04)
     wild[:, :2] += 9.0  # nine metres off the side of the table
-    solution = Imitation(Canned([wild]))
+    solution = solution_with([wild], readings.PUSH, 0)
     answer = solution.answer(look_at([a_glass()]))
     assert isinstance(answer, Chunk)
     assert solution.pulled_in == len(answer.waypoints)
@@ -175,7 +213,7 @@ def test_the_aim_is_where_the_path_ends():
 
 
 def test_a_quiet_run_is_taken_as_the_model_saying_it_is_finished():
-    solution = Imitation(Canned([a_look_path()]))
+    solution = solution_with([a_look_path()])
     look = look_at([a_glass()])
     for _ in range(QUIET_ANSWERS - 1):
         assert isinstance(solution.answer(look), Chunk)
@@ -186,7 +224,10 @@ def test_a_quiet_run_is_taken_as_the_model_saying_it_is_finished():
 
 def test_a_push_between_the_looks_starts_the_count_again():
     """Otherwise a solution that is working steadily would stop itself partway."""
-    solution = Imitation(Canned([*[a_look_path()] * (QUIET_ANSWERS - 1), a_push_path(0.03), a_look_path()]))
+    paths = [*[a_look_path()] * (QUIET_ANSWERS - 1), a_push_path(0.03), a_look_path()]
+    # The gate asks for a push at the glass in the picture, so the push in the
+    # middle of the spell is carried out as a push rather than raised.
+    solution = Imitation(Canned(paths), Told(readings.PUSH, 0))
     look = look_at([a_glass()])
     for _ in range(QUIET_ANSWERS - 1):
         assert isinstance(solution.answer(look), Chunk)
@@ -199,7 +240,7 @@ def test_a_push_between_the_looks_starts_the_count_again():
 
 
 def test_begin_forgets_the_last_table_s_quiet_spell():
-    solution = Imitation(Canned([a_look_path()]))
+    solution = solution_with([a_look_path()])
     look = look_at([a_glass()])
     for _ in range(QUIET_ANSWERS - 1):
         solution.answer(look)
@@ -209,36 +250,32 @@ def test_begin_forgets_the_last_table_s_quiet_spell():
 
 def test_the_quiet_rule_is_the_bench_s_own_and_is_not_overridden():
     """The number belongs to the bench, so that every solution reads the same one."""
-    solution = Imitation(Canned([a_look_path()]))
+    solution = solution_with([a_look_path()])
     assert solution.quiet_for == QUIET_ANSWERS
 
 
-def test_the_quiet_rule_is_asked_against_the_tallest_glass_measured():
-    """A path can clear the jaw's working height and still sweep through a tall glass.
+def test_a_sweep_the_gate_called_a_look_is_raised_rather_than_carried_out():
+    """The failure that broke glasses on the first walks, and what now happens to it.
 
-    So a model that is sweeping the tops of the glasses must not be recorded as
-    proposing nothing, and the only way the rule can know is the height the
-    solution has measured.
+    The fingers hang ``JAW_HALF_HEIGHT`` below the number a waypoint carries, so
+    a path that looks high in its own numbers can drag the hand through the tops
+    of the glasses. The gate called this answer a look, and a look has to ride at
+    travel height, so the answer is raised. The arm goes to the same place and
+    touches nothing on the way.
     """
-    # The fingers hang JAW_HALF_HEIGHT below the number a waypoint carries, so
-    # this path carries them 150 mm over the table: clear of a short glass and
-    # straight through a tall one. Neither height is written down anywhere; both
-    # are measurements a look would report.
     sweeping_path = a_look_path()
     sweeping_path[:, 2] = JAW_HALF_HEIGHT + 0.15
 
     tall = Seen(id=0, x=MIDDLE[0], y=MIDDLE[1], height=0.22, widest=0.07, foot=0.05, standing=True)
-    over_a_tall_glass = Imitation(Canned([sweeping_path]))
-    over_a_tall_glass.answer(look_at([tall]))
-    assert over_a_tall_glass.pushes == 1
-    assert over_a_tall_glass.tallest == tall.height
-
-    # The same path over a short glass touches nothing, and the difference is
-    # the measurement rather than the path.
-    short = Seen(id=0, x=MIDDLE[0], y=MIDDLE[1], height=0.07, widest=0.06, foot=0.05, standing=True)
-    over_a_short_glass = Imitation(Canned([sweeping_path]))
-    over_a_short_glass.answer(look_at([short]))
-    assert over_a_short_glass.looks == 1
+    solution = solution_with([sweeping_path])
+    answer = solution.answer(look_at([tall]))
+    assert isinstance(answer, Chunk)
+    assert all(point.z == TRAVEL_HEIGHT for point in answer.waypoints)
+    assert sum(solution.raised.values()) == 1
+    assert solution.looks == 1
+    # The tallest glass it has measured is still kept, because the stopping rule
+    # is asked against it.
+    assert solution.tallest == tall.height
 
 
 # ----------------------------------------------------------- through the real loop
@@ -285,7 +322,7 @@ class Stubbed:
 
 def test_a_model_that_only_looks_ends_the_table_by_saying_done():
     cell = Stubbed([a_glass()])
-    solution = Imitation(Canned([a_look_path(0.0, 0.46)]))
+    solution = solution_with([a_look_path(0.0, 0.46)])
     result = clear_table(solution, 0, 240.0, cell=cell)
     assert result.said_done
     # The answer that completed the quiet spell is not carried out, so one fewer
@@ -297,7 +334,7 @@ def test_a_model_that_keeps_pushing_is_stopped_by_the_clock():
     # An empty table, so that the cell's tipping interlock has nothing to refuse
     # and what is being tested is the clock and not the interlock.
     cell = Stubbed([])
-    solution = Imitation(Canned([a_push_path(0.05)]))
+    solution = solution_with([a_push_path(0.05)])
     result = clear_table(solution, 0, 20.0, cell=cell)
     assert not result.said_done
     assert result.arm_seconds > 0.0

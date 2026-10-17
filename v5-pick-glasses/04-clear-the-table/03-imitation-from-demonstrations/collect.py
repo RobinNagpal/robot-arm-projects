@@ -46,6 +46,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import shutil
 import sys
 import time
@@ -55,7 +56,23 @@ from pathlib import Path
 import numpy as np
 from chunks import ACTION_WIDTH, CHUNK, to_action
 from loading import FITTING, HELD_BACK, NAMES, RECORD, REPO
-from readings import CAMERA, INSTRUCTION, STATE_WIDTH, to_state
+from readings import (
+    AS_KIND,
+    ASKED_WIDTH,
+    CAMERA,
+    DONE,
+    INSTRUCTION,
+    LOOK,
+    NO_GLASS,
+    PROBE,
+    PUSH,
+    STATE_WIDTH,
+    about_itself,
+    conditioning,
+    in_slots,
+    to_asked,
+    to_state,
+)
 
 from open_run import clear_table, open_cell
 from partners import TEST_SEEDS, TRAVEL_HEIGHT, in_zone
@@ -89,8 +106,13 @@ ROOM_TO_WORK = 100_000.0
 # shape on every episode when a frame's feature is one-dimensional.
 FEATURES = {
     CAMERA: {"dtype": "image", "shape": (*WRIST_VIEW_SIZE, 3), "names": ["height", "width", "channel"]},
-    "observation.state": {"dtype": "float32", "shape": (STATE_WIDTH,), "names": None},
+    "observation.state": {"dtype": "float32", "shape": (ASKED_WIDTH,), "names": None},
     "action": {"dtype": "float32", "shape": (CHUNK * ACTION_WIDTH,), "names": None},
+    # What the teacher decided, which is what the gate is fitted on: which of
+    # the four kinds of answer this was, and which slot the glass it was aimed
+    # at sits in. A look and a done are aimed at no glass, and their slot is the
+    # one past the last, which is what "none of them" is called.
+    "gate": {"dtype": "float32", "shape": (2,), "names": None},
 }
 
 LOOK_KINDS = ("drive", "stay")
@@ -125,6 +147,14 @@ class Watched:
         self.teacher = teacher
         self.seen_last: tuple[np.ndarray, tuple, object] | None = None
         self.frames: list[dict] = []
+        # What the solution would know about itself while answering: how many
+        # answers it has given on this table, how many since it last touched a
+        # glass, and how far the jaw has travelled since then. Kept here because
+        # the collector is the only place that sees every answer in order.
+        self.answers = 0
+        self.since_touch = 0
+        self.travelled = 0.0
+        self.jaw_was: object | None = None
 
     # ------------------------------------------------- the two interesting calls
 
@@ -137,16 +167,64 @@ class Watched:
         was_over, was_out = self.inner.toppled(), self._outside()
         record = self.inner.follow(chunk)
         picture, seen, jaw = self.seen_last
+        kind = self._kind(chunk, jaw)
+        slots = in_slots(seen)
+        target = next((glass for glass in slots if glass.id == chunk.glass), None)
+        aimed = AS_KIND[kind] in (PROBE, PUSH)  # a look is aimed at no glass
         self.frames.append(
             {
                 "picture": picture,
                 "state": to_state(jaw, seen),
+                "itself": about_itself(self.answers, self.since_touch, self.travelled),
+                "kind": kind,
+                "target": target if aimed else None,
+                "slot": slots.index(target) if aimed and target is not None else NO_GLASS,
                 "path": chunk.waypoints,
-                "kind": self._kind(chunk, jaw),
                 "why_not": self._why_not(record, was_over, was_out),
             }
         )
+        self._count(kind, jaw, chunk)
         return record
+
+    def _count(self, kind: str, jaw, chunk) -> None:
+        """Keep the three numbers a solution would know about its own behaviour."""
+        self.answers += 1
+        last = chunk.waypoints[-1]
+        if self.jaw_was is not None:
+            self.travelled += math.dist((self.jaw_was.x, self.jaw_was.y), (last.x, last.y))
+        self.jaw_was = last
+        if AS_KIND[kind] == LOOK:
+            self.since_touch += 1
+        else:
+            self.since_touch = 0
+            self.travelled = 0.0
+
+    def finished(self) -> dict | None:
+        """The teacher's own "this table needs nothing more", as a frame to copy.
+
+        The loop never asks the cell to follow anything for a ``Done``, so
+        without this the demonstrations would hold no example of a table being
+        finished -- and the first held-out walk measured what that costs: the
+        fitted policy declared nine of its ten tables finished while they were
+        still crowded, because the only rule it had was a count of answers that
+        touched nothing.
+
+        There is no path to copy here, so the frame carries the last look and
+        the decision, and ``collect`` keeps it for the gate alone.
+        """
+        if self.seen_last is None:
+            return None
+        picture, seen, jaw = self.seen_last
+        return {
+            "picture": picture,
+            "state": to_state(jaw, seen),
+            "itself": about_itself(self.answers, self.since_touch, self.travelled),
+            "kind": "done",
+            "target": None,
+            "slot": NO_GLASS,
+            "path": None,
+            "why_not": None,
+        }
 
     # ------------------------------------------------------------- the rest of it
 
@@ -219,8 +297,13 @@ def demonstrate(seed: int, pick) -> list[dict]:
     """One table cleared by the teacher. Returns the frames it is worth keeping."""
     cell = Watched(open_cell(seed), pick)
     try:
-        clear_table(pick, seed, ROOM_TO_WORK, cell=cell)
-        return cell.frames
+        result = clear_table(pick, seed, ROOM_TO_WORK, cell=cell)
+        frames = list(cell.frames)
+        # The teacher's declaration, when it made one. A table the clock stopped
+        # was not finished, so nothing about it is worth copying as "done".
+        if result.said_done and (last := cell.finished()) is not None:
+            frames.append(last)
+        return frames
     finally:
         cell.inner.camera.close()
 
@@ -248,16 +331,29 @@ def collect(first: int, count: int, root: Path, show: bool = False) -> dict:
             if frame["why_not"] is not None:
                 dropped[frame["why_not"]] += 1
                 continue
-            action = to_action(frame["path"])
-            if action is None:
-                dropped[f"a path of more than {CHUNK} waypoints"] += 1
-                continue
-            lengths.append(len(frame["path"]))
+            kind = DONE if frame["kind"] == "done" else AS_KIND[frame["kind"]]
+            target = frame["target"]
+            origin = (target.x, target.y) if target is not None else (0.0, 0.0)
+            if frame["path"] is None:
+                # The teacher's "done". There is no path, and the frame is kept
+                # for the gate: a chunk of one waypoint where the jaw already
+                # stands, which moves the arm nowhere and is never followed,
+                # because a run answers ``Done`` without asking for a path.
+                action = np.zeros((CHUNK, ACTION_WIDTH), dtype=np.float32)
+            else:
+                action = to_action(frame["path"], origin)
+                if action is None:
+                    dropped[f"a path of more than {CHUNK} waypoints"] += 1
+                    continue
+                lengths.append(len(frame["path"]))
             data.add_frame(
                 {
                     CAMERA: frame["picture"],
-                    "observation.state": frame["state"],
+                    "observation.state": to_asked(
+                        frame["state"], frame["itself"], conditioning(kind, target)
+                    ),
                     "action": action.reshape(-1),
+                    "gate": np.array([kind, frame["slot"]], dtype=np.float32),
                     "task": INSTRUCTION,
                 }
             )
@@ -287,6 +383,7 @@ def collect(first: int, count: int, root: Path, show: bool = False) -> dict:
         "chunk": CHUNK,
         "action_width": ACTION_WIDTH,
         "state_width": STATE_WIDTH,
+        "asked_width": ASKED_WIDTH,
         "picture": list(WRIST_VIEW_SIZE),
         "waypoints_a_path": _band(lengths),
         "seconds": round(spent, 1),

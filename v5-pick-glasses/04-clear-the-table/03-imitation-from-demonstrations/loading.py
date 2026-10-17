@@ -63,7 +63,12 @@ def collected(root: Path | None = None) -> dict:
 
 
 def load(root: Path, shrink: Shrink | None = None, most: int | None = None) -> dict[str, np.ndarray]:
-    """One collected set as arrays: pictures, states, actions and the episode each came from.
+    """One collected set as arrays: pictures, states, actions, decisions and episodes.
+
+    ``gate`` is what the teacher decided on each frame, as two numbers: which of
+    the four kinds of answer it gave, and which slot the glass it aimed at sits
+    in. It is what ``gate.py`` is fitted on, and it is also how ``train.py``
+    tells a push from a look when it balances the mixture.
 
     ``shrink`` takes one picture and hands back a batch of one at the size the
     model reads; leave it out and the pictures come back at the size they were
@@ -85,13 +90,21 @@ def load(root: Path, shrink: Shrink | None = None, most: int | None = None) -> d
     states = np.empty((count, len(data[0]["observation.state"])), dtype=np.float32)
     actions = np.empty((count, CHUNK, ACTION_WIDTH), dtype=np.float32)
     episodes = np.empty(count, dtype=np.int64)
+    decisions = np.empty((count, 2), dtype=np.int64)
     for i in range(count):
         frame = data[i]
         pictures[i] = _picture(frame, shrink)
         states[i] = frame["observation.state"].numpy()
         actions[i] = frame["action"].numpy().reshape(CHUNK, ACTION_WIDTH)
         episodes[i] = int(frame["episode_index"])
-    return {"pictures": pictures, "states": states, "actions": actions, "episodes": episodes}
+        decisions[i] = frame["gate"].numpy().round().astype(np.int64)
+    return {
+        "pictures": pictures,
+        "states": states,
+        "actions": actions,
+        "episodes": episodes,
+        "gate": decisions,
+    }
 
 
 def _picture(frame: dict, shrink: Shrink | None) -> np.ndarray:

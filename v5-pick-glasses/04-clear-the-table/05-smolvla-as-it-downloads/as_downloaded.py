@@ -34,15 +34,26 @@ whole care in reading the result.
    at problem 3's parked pose so that the two can be told apart.
 
 **What this file does not do.** It does not rack a glass, because problem 4
-racks nothing. It does not count pushes, because problem 4 has no push budget.
-And it does not check a path against the glasses that would tip, because in
-problem 4 the cell keeps that interlock itself and simply declines to carry
-such a path out. Problem 3's ``clear.py`` did all three, which is why it is
-not borrowed and this file exists instead.
+racks nothing. And it does not count pushes, because problem 4 has no push
+budget. Problem 3's ``clear.py`` did both, which is why it is not borrowed and
+this file exists instead.
+
+**What it does do, since the first measurement, is keep the hand clear.** The
+first walk of the held-out queue broke twenty glasses, and the model's own page
+measures how: its paths travel across the table at a height that looks like a
+look and drags the fingers through the tops of the glasses, because the hand
+hangs below the number a waypoint carries. The cell does not save a solution
+from that -- its interlock refuses only a path into a glass the tipping rule
+flatly refuses -- so the solution has to. Every answer now goes through
+``keeping_clear``: a path that cannot be shown to reach only the glass it names
+is raised to travel height, where it touches nothing and costs the same arm
+time. The model still chooses every answer. What it no longer does is carry one
+out that nobody can account for.
 """
 
 from __future__ import annotations
 
+from collections import Counter
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -50,6 +61,7 @@ from borrowed import joining
 
 from clock import crossing_seconds, path_seconds
 from contract import Answer, Done, Look
+from keeping_clear import kept_clear
 from partners import PUSH_HEIGHT, TABLE_TOP_Z, Chunk, Seen, Waypoint
 from stopping import A_WHISKER, Quiet, is_a_push
 
@@ -159,6 +171,11 @@ class AsItDownloads:
         # The glasses from the last look that showed any, for the glass index a
         # Chunk has to carry. See ``_glasses_for_the_record``.
         self.last_seen: tuple[Seen, ...] = ()
+        # Why answers had to be raised to travel height, counted by reason. It
+        # is the one thing worth reporting about the check: a model whose every
+        # answer is raised is a model proposing nothing anybody can account for,
+        # and the counts say which of the reasons it fails on.
+        self.raised: Counter = Counter()
 
     def begin(self, seed: int) -> None:
         self.model.reset()
@@ -178,6 +195,15 @@ class AsItDownloads:
         if look.seen:
             self.last_seen = look.seen
         chunk = joining.chunk_for(path, list(self._glasses_for_the_record()))
+        # The glass the path is aimed at, in so far as it is aimed at anything:
+        # ``chunk_for`` reads back the glass the jaw comes nearest to while low
+        # enough to touch it. That read-back is bookkeeping for the record, so
+        # the check treats it as a claim to be tested rather than as a decision:
+        # a path that does not actually reach that glass, or that would reach a
+        # second one on the way, is raised like any other.
+        chunk, why = kept_clear(chunk, self.last_seen, target=chunk.glass)
+        if why:
+            self.raised[why] += 1
 
         # The tallest glass this solution has measured is what decides whether a
         # path could touch anything, because the hand hangs below the number a

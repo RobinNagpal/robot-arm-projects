@@ -222,8 +222,15 @@ def main() -> None:
         help="perfect play on the scored queue: how separable those arrangements are",
     )
     parser.add_argument("--show", action="store_true", help="print why each table ended")
+    parser.add_argument("--judge", action="store_true", help="the held-out queue, through bench/judging.py")
     parser.add_argument("--save", type=str, default="", help="write the numbers to this file")
     arguments = parser.parse_args()
+
+    if arguments.judge:
+        import judging
+
+        judging.judge(lambda: GeometryRanked(None), Path(__file__).parent / "results.json")
+        return
 
     if arguments.ceiling:
         # The one measurement allowed to touch the held-out tables, because it

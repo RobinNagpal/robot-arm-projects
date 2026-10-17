@@ -64,8 +64,9 @@ import json
 from collections import Counter
 from pathlib import Path
 
+import gate
 from clear import Imitation
-from wiring import policy
+from wiring import pictures, policy
 
 from clock import crossing_seconds, path_seconds
 from contract import Done
@@ -87,16 +88,35 @@ SEEDS = 3
 
 
 def fits(first: int, count: int) -> list[Path]:
-    """The fitted seeds on disk, in order, or a plain statement of what is missing."""
+    """The fitted seeds on disk, in order, or a plain statement of what is missing.
+
+    A fit is two files now: the gate that decides and the policy that draws. A
+    seed is only usable when both are there, so both are looked for and a
+    missing one is named.
+    """
     found = [WEIGHTS / f"act-{seed}" for seed in range(first, first + count)]
-    missing = [folder for folder in found if not folder.exists()]
+    missing = [folder.name for folder in found if not folder.exists()]
+    seeds = range(first, first + count)
+    missing += [gate.saved(seed).name for seed in seeds if not gate.saved(seed).exists()]
     if missing:
         raise SystemExit(
             "these fits are not on disk: "
-            + ", ".join(folder.name for folder in missing)
+            + ", ".join(missing)
             + "\nFit them with `pixi run python -u 03-imitation-from-demonstrations/train.py`."
         )
     return found
+
+
+def built(folder: Path) -> Imitation:
+    """One fitted seed as a solution: its gate and its chunked policy together.
+
+    The seed is read off the policy's folder name, because the two are fitted in
+    one run under one seed and a gate from one seed with a policy from another
+    would be a pair nothing was measured on.
+    """
+    seed = int(folder.name.rsplit("-", 1)[1])
+    decider = gate.Decider.load(gate.saved(seed), pictures.shrink)
+    return Imitation(policy.Imitator.load(folder), decider)
 
 
 class Watched:
@@ -159,7 +179,7 @@ class Watched:
 
 def one_fit(folder: Path, seeds: range, show: bool) -> tuple[Scorecard, dict]:
     """One fitted seed over every table in the list, one table at a time."""
-    solution = Imitation(policy.Imitator.load(folder))
+    solution = built(folder)
     counted = Watched(solution)
     card = Scorecard()
     tally = Tally()
@@ -258,10 +278,7 @@ def _judge(folders: list[Path]) -> None:
             f"and {len(folders)} fits were asked for"
         )
     waiting = iter(folders)
-    judging.judge(
-        lambda: Imitation(policy.Imitator.load(next(waiting))),
-        HERE / "results.json",
-    )
+    judging.judge(lambda: built(next(waiting)), HERE / "results.json")
 
 
 def main() -> None:

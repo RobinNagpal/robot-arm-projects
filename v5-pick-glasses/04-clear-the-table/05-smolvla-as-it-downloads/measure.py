@@ -39,6 +39,7 @@ from __future__ import annotations
 import argparse
 import json
 import time
+from collections import Counter
 from pathlib import Path
 
 import torch
@@ -66,7 +67,12 @@ def main() -> None:
         help="hand the model problem 3's parked jaw pose as its state; a sensitivity check",
     )
     parser.add_argument("--save", type=str, default="", help="write the numbers to this file")
+    parser.add_argument("--judge", action="store_true", help="the held-out queue, through bench/judging.py")
     arguments = parser.parse_args()
+
+    if arguments.judge:
+        _judge(arguments)
+        return
 
     last = arguments.first + arguments.tables - 1
     if last >= TEST_SEEDS:
@@ -142,6 +148,46 @@ def main() -> None:
     }
     out.with_name(out.stem + "-asking.json").write_text(json.dumps(extra, indent=2) + "\n")
     print(f"saved the asking to {out.with_name(out.stem + '-asking.json')}")
+
+
+def _judge(arguments) -> None:
+    """The held-out queue, walked through the bench's own judging.
+
+    The score lives in ``bench/judging.py`` and not here, so that this solution
+    cannot mark itself on a kinder list. The walk is seeded per run for the same
+    reason the measurement above is: the policy denoises from fresh noise, so a
+    walk that could not be repeated would be a number nobody could check.
+
+    Why it is worth a flag of its own rather than a one-off script: this
+    solution's answers now pass through ``keeping_clear``, so the queue has to
+    be walked again, and the next person to change anything here will have to
+    walk it again too.
+    """
+    import torch
+
+    import judging
+
+    where = arguments.device or policy.device_for()
+    print(f"loading {policy.WEIGHTS} on {where}")
+    model = policy.Downloaded.load(where)
+    raised: Counter = Counter()
+    walks = iter(range(judging.RUNS))
+
+    def build():
+        torch.manual_seed(next(walks))
+        solution = AsItDownloads(model, pinned=arguments.pinned)
+        built.append(solution)
+        return solution
+
+    built: list[AsItDownloads] = []
+    summary = judging.judge(build, HERE / "results.json")
+    for solution in built:
+        raised += solution.raised
+    print()
+    for reason, count in raised.most_common():
+        print(f"  {count:5} answers raised to travel height: {reason}")
+    (HERE / "results-raised.json").write_text(json.dumps(dict(raised), indent=2) + "\n")
+    print(f"\n{summary['spread']['outcome.separated']['median']:g} tables separated (median of the walks)")
 
 
 def _reach(card, budget: float) -> int:

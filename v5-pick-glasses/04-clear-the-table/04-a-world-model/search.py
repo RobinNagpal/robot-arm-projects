@@ -35,6 +35,7 @@ from push_model import Ensemble, sigmoid
 from work_cell.arm.dimensions import COMFORTABLE_REACH
 from work_cell.table.layout import ROBOT_BASE, TABLE_CENTRE_XY, TABLE_SIZE
 
+from keeping_clear import why_not_clear
 from partners import GLASS_ZONE, GRIP_ROOM, Seen
 
 import plan
@@ -80,6 +81,24 @@ TRAVEL_COST = 0.1
 # making.
 WORTH_IT = 0.002
 
+# What a chance of toppling something costs a candidate, in metres of crowding
+# per unit of chance. This is the search's answer to the winner's curse, and it
+# is the one number here that was added after the first held-out walk rather
+# than inherited from problem 3.
+#
+# **Why a price and not just a limit.** A limit alone makes every push under it
+# equally attractive, so the search is free to pick the candidate at the very
+# edge of what the model will allow -- and because it is maximising over the
+# model's own estimates, that edge is exactly where the model is most likely to
+# be wrong. The first walk of the held-out queue broke eight glasses, every one
+# of them on a push the model called safe. With a price, a candidate that is
+# nearly as useful and much less frightening wins instead.
+#
+# At the limit the price costs a candidate five millimetres of crowding, which
+# is what a fifty-millimetre push costs in travel, so a push at the edge of the
+# limit has to be worth about that much more room than a safe one to be chosen.
+RISK_COST = 0.5
+
 # A push has to look safe on the table as measured and on this many copies of
 # it moved by about the camera's own error. The search asks about thousands of
 # pushes and will find the few where the model is wrong by luck; a hole that
@@ -87,6 +106,16 @@ WORTH_IT = 0.002
 JITTERS = 2
 JITTER_POSITION = 0.001
 JITTER_WIDTH = 0.003
+
+# How many of a round's best candidates are put through the clearance check
+# before the round is given up on. The corridor filter in ``score`` has already
+# thrown out the candidates that sweep a neighbour, so this is the second and
+# stricter reading of the same question, asked of the path the push would really
+# be carried out as: it includes the descent at the touchdown point, which the
+# corridor rule does not. Twelve, because it is the only part of the search that
+# is not vectorised, and measured on the tuning band it changes the answer for
+# about one candidate in ten.
+CLEARANCE_TRIES = 12
 
 # The cross-entropy search: draws a round, how many of the best aim the next
 # round, and how many rounds. Smaller than problem 3's, because problem 4's
@@ -165,6 +194,12 @@ class Choice:
     reach: float  # how far the fingertips go in before the model expects to meet the glass
     cost: float  # the crowding the table is expected to be left with, plus the push's own price
     aim: tuple[float, float]  # where the model says the glass will end up
+    # The chance the model's least favourable copy gives this push of putting
+    # something over. It is kept so that a run can record what it believed
+    # before it pushed, which is the one thing the first held-out walk could
+    # not say: whether the pushes that toppled a glass were ones the model was
+    # confident about or ones its copies disagreed over.
+    risk: float = 0.0
 
 
 @dataclass
@@ -195,18 +230,28 @@ def score(
     target: Seen,
     draws: np.ndarray,
     rng: np.random.Generator,
-) -> tuple[np.ndarray, np.ndarray, dict[str, int]]:
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, dict[str, int]]:
     """What the table would be left like after each candidate push, and what was dropped.
 
     ``draws`` is one row per candidate: heading, offset, travel, reach.
     Returns the cost of each candidate, infinite where it was dropped; where
-    the model says the pushed glass would end up; and how many candidates each
-    reason dropped.
+    the model says the pushed glass would end up; the chance it gives each
+    candidate of putting something over; and how many candidates each reason
+    dropped.
+
+    **Every reading of the model here is its least favourable copy and not its
+    average, and that is the change the first held-out walk asked for.** Three
+    copies of the network are fitted from different starting weights, so where
+    they agree the model has seen pushes like this one and where they disagree
+    it has not. A search that averages them is at its most confident exactly
+    where it is most ignorant, because it is choosing the best of a few thousand
+    noisy estimates. Taking the worst copy of the crowding, the worst copy of
+    the topple chance and the worst copy of every map check turns disagreement
+    from something the search can exploit into something that costs it.
     """
     heading, offset, travel, reach = (draws[:, i] for i in range(4))
     rows = encoding.encode(seen, target, heading, offset, travel, reach)
     out = model.predict(rows)
-    move = out.mean(0)
     topple = sigmoid(out[:, :, encoding.TOPPLED]).max(0)
     for _ in range(JITTERS):
         shifted = jittered(seen, rng)
@@ -219,11 +264,18 @@ def score(
     where = {glass.id: i for i, glass in enumerate(seen)}
     now = np.array([[glass.x, glass.y] for glass in seen])
     widest = np.array([glass.widest for glass in seen])
-    after = np.repeat(now[None], len(draws), 0)
+    # One table per copy of the model, per candidate: (copies, candidates,
+    # glasses, 2). The copies are what the pessimism below is taken over.
+    after = np.broadcast_to(now, (out.shape[0], len(draws), len(seen), 2)).copy()
     for slot, glass in enumerate(slots):
-        step = (move[:, 2 * slot, None] * along + move[:, 2 * slot + 1, None] * left) * encoding.MOVE_SCALE
-        after[:, where[glass.id]] += step
-    landing = after[:, where[target.id]]
+        across = out[:, :, 2 * slot, None] * along[None]
+        sideways = out[:, :, 2 * slot + 1, None] * left[None]
+        after[:, :, where[glass.id]] += (across + sideways) * encoding.MOVE_SCALE
+    # Where the glass is expected to land is the average of the copies, because
+    # it is written into the push as its aim and reported as what the model
+    # believes. The pessimism belongs in what a candidate costs, not in what the
+    # solution is told to expect.
+    landing = after.mean(0)[:, where[target.id]]
 
     # Where the fingertips come down and where they end up, which are the two
     # poses the arm has to be able to hold. The touchdown point is the one
@@ -233,19 +285,24 @@ def score(
     tip_end = start + (reach + travel)[:, None] * along
     usable = in_reach(start) & in_reach(tip_end) & on_table(start) & on_table(tip_end)
     # A glass the push leaves where it is may already stand near the zone's
-    # edge; only one the push moves has to land well inside it.
-    moves = np.linalg.norm(after - now[None], axis=-1) > STILL
-    inside = np.all(in_zone(after) | ~moves, axis=-1)
-    went_far = np.linalg.norm(landing - now[where[target.id]], axis=1) > travel + ENVELOPE
+    # edge; only one the push moves has to land well inside it. A candidate is
+    # kept only if every copy of the model says the table stays inside the zone.
+    moves = np.linalg.norm(after - now[None, None], axis=-1) > STILL
+    inside = np.all(in_zone(after) | ~moves, axis=-1).all(0)
+    gone = np.linalg.norm(after[:, :, where[target.id]] - middle, axis=-1)
+    went_far = (gone > travel[None] + ENVELOPE).any(0)
 
-    cost = shortfall(after, widest) + TRAVEL_COST * travel
+    cost = shortfall(after, widest).max(0) + TRAVEL_COST * travel + RISK_COST * topple
     dropped = {
         "topple": ~(topple <= TOPPLE_LIMIT),
         "map": ~(inside & usable),
         "unsure": went_far,
+        "swept": ~corridor_is_clear(seen, target, draws),
     }
-    cost = np.where(dropped["topple"] | dropped["map"] | dropped["unsure"], math.inf, cost)
-    return cost, landing, {reason: int(flags.sum()) for reason, flags in dropped.items()}
+    cost = np.where(
+        dropped["topple"] | dropped["map"] | dropped["unsure"] | dropped["swept"], math.inf, cost
+    )
+    return cost, landing, topple, {reason: int(flags.sum()) for reason, flags in dropped.items()}
 
 
 def bounds(target: Seen) -> tuple[np.ndarray, np.ndarray]:
@@ -261,24 +318,109 @@ def bounds(target: Seen) -> tuple[np.ndarray, np.ndarray]:
     return low, np.maximum(high, low + 1e-6)
 
 
+def segment_distances(centres: np.ndarray, starts: np.ndarray, ends: np.ndarray) -> np.ndarray:
+    """How far each centre is from each candidate's line, as ``(candidates, centres)``.
+
+    ``plan.segment_distance`` answers this for one line and one point, and the
+    search asks it about a few hundred lines and a few points at once, so it is
+    written out here over whole arrays. ``test_world_model.py`` holds the two
+    against each other on drawn tables, which is what keeps them the same
+    arithmetic rather than two versions of it.
+    """
+    line = ends - starts
+    length = np.maximum((line * line).sum(-1), 1e-18)
+    offset = centres[None, :, :] - starts[:, None, :]
+    part = np.clip((offset * line[:, None, :]).sum(-1) / length[:, None], 0.0, 1.0)
+    nearest = starts[:, None, :] + part[..., None] * line[:, None, :]
+    return np.linalg.norm(centres[None, :, :] - nearest, axis=-1)
+
+
+def corridor_is_clear(seen: list[Seen], target: Seen, draws: np.ndarray) -> np.ndarray:
+    """Whether each candidate push leaves every other glass alone on the way in.
+
+    **Why the search has to ask this at all.** The model is asked where the
+    glasses will end up and is never asked what the hand passes through to get
+    there, so nothing in the search as it first stood stopped it choosing a push
+    whose approach crosses a neighbour. A hand sweeping a glass puts it over as
+    surely as a shove does, and the first walk of the held-out queue lost seven
+    tables and eight glasses that way.
+
+    **The rule is the geometry reference's own**, written out over arrays
+    instead of one push at a time: the glass must not be driven into a
+    neighbour, and no stretch of the hand may sweep within ``CLEARANCE`` of one.
+    The hand is not one shape -- rolled, it stays narrow for the first hundred
+    and thirty millimetres and then widens to the body -- so each stretch is
+    checked against its own width, which is what ``JAW_SEGMENTS`` holds.
+
+    It is asked here, as a filter on the candidates, and not of the push that
+    won. A glass whose best push happens to cross a neighbour has other pushes,
+    and measured on forty tuning tables, vetoing the winner separated eight
+    tables where searching among clear pushes separates seventeen.
+    """
+    others = [glass for glass in seen if glass.id != target.id]
+    if not others:
+        return np.ones(len(draws), dtype=bool)
+    heading, offset, travel, reach = (draws[:, i] for i in range(4))
+    along, left = encoding.frame(heading)
+    middle = np.array([target.x, target.y])
+    radius = target.widest / 2
+    start = middle - (radius + plan.APPROACH_GAP) * along + offset[:, None] * left
+    tip_end = start + (reach + travel)[:, None] * along
+    landing = middle + travel[:, None] * along
+
+    centres = np.array([[glass.x, glass.y] for glass in others])
+    radii = np.array([glass.widest / 2 for glass in others])
+    # A glass may already stand closer to its neighbour than the clearance
+    # asks; moving it is fine as long as it gets no closer. The reference's own
+    # allowance, and the reason the limit is a minimum of two numbers.
+    gap = np.linalg.norm(centres - middle, axis=-1) - 0.001
+    passing = np.minimum(radius + radii + plan.CLEARANCE, gap)
+    clear = segment_distances(centres, np.broadcast_to(middle, landing.shape), landing) >= passing[None]
+    for near, far, half in plan.JAW_SEGMENTS:
+        swept = segment_distances(centres, start - far * along, tip_end - near * along)
+        clear &= swept >= (half + radii + plan.CLEARANCE)[None]
+    return clear.all(-1)
+
+
+def keeps_clear(seen: list[Seen], target: Seen, choice: Choice) -> bool:
+    """Whether the path this push would be carried out as passes the clearance check.
+
+    ``corridor_is_clear`` above asks the geometry reference's question about the
+    corridor the hand sweeps. This asks ``keeping_clear``'s question about the
+    waypoints themselves, which is the one every solution in this problem can
+    ask of its own answer, and it covers one thing the corridor rule does not:
+    the hand standing at the touchdown point while it comes down.
+    """
+    push = encoding.push_of(target, choice.heading, choice.offset, choice.travel, choice.aim)
+    path = borrowed.jaw_paths.to_push(None, push, choice.reach)
+    return not why_not_clear(path, seen, target=target.id)
+
+
 def best_push(model: Ensemble, seen: list[Seen], target: Seen, rng: np.random.Generator) -> Verdict:
     """The cross-entropy method over heading, offset, travel and reach for one glass."""
     low, high = bounds(target)
     # The first round is spread over the whole box, and twice as wide, because
     # nothing is known yet about where the good pushes are.
     draws = rng.uniform(low, high, (2 * DRAWS, 4))
-    tally = {"topple": 0, "map": 0, "unsure": 0}
+    tally = {"topple": 0, "map": 0, "unsure": 0, "swept": 0}
     best = None
     for _ in range(ROUNDS):
         draws[:, 0] = encoding.angle_wrap(draws[:, 0])
         draws[:, 1:] = np.clip(draws[:, 1:], low[1:], high[1:])
-        cost, landing, dropped = score(model, seen, target, draws, rng)
-        for reason in tally:
+        cost, landing, risk, dropped = score(model, seen, target, draws, rng)
+        for reason in dropped:
             tally[reason] += dropped[reason]
         order = np.argsort(cost)
-        if math.isfinite(cost[order[0]]) and (best is None or cost[order[0]] < best.cost):
-            i = order[0]
-            best = Choice(
+        # The cheapest candidate whose own path passes the clearance check every
+        # solution in this problem can run. Only the first few are worth asking
+        # about: they are already in the order the model prefers them and the
+        # corridor filter has already removed the ones that sweep a neighbour,
+        # so a round whose whole head fails is a round to draw again rather than
+        # one to take a worse push from.
+        for i in order[:CLEARANCE_TRIES]:
+            if not math.isfinite(cost[i]):
+                break
+            candidate = Choice(
                 target=target.id,
                 heading=float(draws[i, 0]),
                 offset=float(draws[i, 1]),
@@ -286,7 +428,14 @@ def best_push(model: Ensemble, seen: list[Seen], target: Seen, rng: np.random.Ge
                 reach=float(draws[i, 3]),
                 cost=float(cost[i]),
                 aim=(float(landing[i, 0]), float(landing[i, 1])),
+                risk=float(risk[i]),
             )
+            if not keeps_clear(seen, target, candidate):
+                tally["swept"] += 1
+                continue
+            if best is None or candidate.cost < best.cost:
+                best = candidate
+            break
         elite = draws[order[:ELITES]][np.isfinite(cost[order[:ELITES]])]
         if len(elite) < 3:
             # Nothing worth aiming at, so start again rather than draw tighter
@@ -301,6 +450,8 @@ def best_push(model: Ensemble, seen: list[Seen], target: Seen, rng: np.random.Ge
         draws = mean + spread * rng.standard_normal((DRAWS, 4))
     if best is not None:
         return Verdict(best, "")
+    if tally["swept"] and tally["swept"] >= max(tally["topple"], tally["map"]):
+        return Verdict(None, "every push worth making would sweep another glass on the way in")
     if tally["topple"] and tally["topple"] >= tally["map"]:
         return Verdict(None, "every push the model was asked about might tip something over")
     return Verdict(None, "nowhere inside the zone and within reach to push it to")

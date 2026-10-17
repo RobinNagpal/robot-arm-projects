@@ -188,6 +188,14 @@ class OneFixedNudge:
 
     name = "one fixed nudge"
 
+    # How far the glass has to go under the test push to count as sliding. It is
+    # an attribute rather than the module's constant read straight out so that a
+    # solution built on this loop can say what its own test push means: this one
+    # pokes a glass before testing it, so the slack is already taken up and the
+    # glass has to keep up, while a solution that tests a glass nothing has
+    # touched yet has to allow for the slack and ask only whether it moved.
+    kept_up = KEPT_UP
+
     def __init__(self) -> None:
         self.begin(0)
         # Arm seconds this solution asked for, split by what it asked for them
@@ -343,7 +351,7 @@ class OneFixedNudge:
         if made.doing == RANGING:
             self._read_the_ranging(made, moved)
         elif made.doing == TESTING:
-            if moved >= KEPT_UP:
+            if moved >= self.kept_up:
                 self.proven.add(made.glass)
             else:
                 self._leave(made.glass, "tipped when tried")

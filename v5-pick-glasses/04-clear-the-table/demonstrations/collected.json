@@ -3,27 +3,28 @@
     "teacher": "02-geometry-ranked, with problem 3's ranker, which was fitted on problem 3's tables",
     "band": {
       "first_table": 1000,
-      "tables": 300,
+      "tables": 3,
       "held_out_from": 10000
     },
-    "demonstrations": 11016,
-    "answers": 11027,
-    "answers_a_table": 36.8,
+    "demonstrations": 111,
+    "answers": 112,
+    "answers_a_table": 37.3,
     "kinds": {
-      "drive": 4822,
-      "stay": 4143,
-      "ranging": 1416,
-      "testing": 331,
-      "pushing": 315
+      "stay": 44,
+      "drive": 43,
+      "ranging": 8,
+      "pushing": 8,
+      "testing": 6,
+      "done": 3
     },
-    "looking_share": 0.813,
+    "looking_share": 0.777,
     "dropped": {
-      "a glass left the glass zone": 8,
-      "a glass went over": 3
+      "a glass left the glass zone": 1
     },
     "chunk": 200,
     "action_width": 6,
     "state_width": 35,
+    "asked_width": 47,
     "picture": [
       384,
       384
@@ -31,12 +32,12 @@
     "waypoints_a_path": {
       "least": 1,
       "median": 1,
-      "90th": 44,
-      "most": 190
+      "90th": 40,
+      "most": 180
     },
-    "seconds": 516.6,
-    "seconds_a_table": 1.72,
-    "seconds_a_demonstration": 0.047
+    "seconds": 6.0,
+    "seconds_a_table": 2.0,
+    "seconds_a_demonstration": 0.054
   },
   "held-back": {
     "teacher": "02-geometry-ranked, with problem 3's ranker, which was fitted on problem 3's tables",

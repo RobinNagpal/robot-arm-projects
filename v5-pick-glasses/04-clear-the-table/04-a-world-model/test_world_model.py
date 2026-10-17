@@ -15,6 +15,7 @@ does.
 from __future__ import annotations
 
 import math
+from dataclasses import replace
 
 import collect
 import encoding
@@ -173,6 +174,29 @@ def test_a_glass_not_seen_again_carries_no_label(seed: int) -> None:
         assert mask[2 * slot] == 0.0
 
 
+
+
+def pushes_found(model, seen: list, rng) -> list[tuple]:
+    """Every glass on this table the search finds a clear push for, with the push.
+
+    A crowded glass can genuinely have no push left to make: the search now
+    throws out every candidate whose hand would sweep a neighbour on the way in,
+    which is the geometry reference's own rule, and on a tight table that can
+    leave a glass with nothing. So a test about what a push looks like asks for
+    the pushes the table really offers rather than insisting on one for a
+    particular glass, and a refusal has to say why it refused.
+    """
+    found = []
+    for target in seen:
+        verdict = search.best_push(model, seen, target, rng)
+        if verdict.choice is None:
+            assert verdict.reason, "a refusal always says why"
+            continue
+        found.append((target, verdict.choice))
+    return found
+
+
+
 # ------------------------------------------------------------------- the search
 
 
@@ -203,17 +227,15 @@ def test_a_model_that_sees_a_topple_everywhere_stops_every_push(seed: int) -> No
 
 @pytest.mark.parametrize("seed", range(8))
 def test_a_safe_model_is_believed_and_the_push_is_on_the_map(seed: int) -> None:
-    """A push the search returns has to be one the cell could carry out."""
+    """Every push the search returns has to be one the cell could carry out."""
     seen = as_seen(seed)
     rng = np.random.default_rng(seed)
     # A model that says the glass goes where it is pushed and nothing tips.
-    verdict = search.best_push(Fixed(along=0.04, topple=-12.0), seen, seen[0], rng)
-    assert verdict.choice is not None, verdict.reason
-    choice = verdict.choice
-    low, high = search.bounds(seen[0])
-    for i, value in enumerate((choice.heading, choice.offset, choice.travel, choice.reach)):
-        assert low[i] - 1e-9 <= value <= high[i] + 1e-9
-    assert search.in_zone(np.array(choice.aim)).all()
+    for target, choice in pushes_found(Fixed(along=0.04, topple=-12.0), seen, rng):
+        low, high = search.bounds(target)
+        for i, value in enumerate((choice.heading, choice.offset, choice.travel, choice.reach)):
+            assert low[i] - 1e-9 <= value <= high[i] + 1e-9
+        assert search.in_zone(np.array(choice.aim)).all()
 
 
 @pytest.mark.parametrize("seed", range(8))
@@ -225,14 +247,13 @@ def test_the_push_the_search_returns_is_one_the_cell_would_carry_out(seed: int) 
     learned and nothing is charged, and one of that glass's tries is gone.
     """
     seen = as_seen(seed)
-    verdict = search.best_push(Fixed(along=0.04, topple=-12.0), seen, seen[0], np.random.default_rng(seed))
-    assert verdict.choice is not None, verdict.reason
-    target, choice = seen[0], verdict.choice
-    push = encoding.push_of(target, choice.heading, choice.offset, choice.travel, choice.aim)
-    for point in jaw_paths.to_push(HOME, push, choice.reach).waypoints:
-        assert PUSH_HEIGHT - 1e-9 <= point.z <= TRAVEL_HEIGHT + 1e-9
-        assert abs(point.x - TABLE_CENTRE_XY[0]) <= TABLE_SIZE[0] / 2
-        assert abs(point.y - TABLE_CENTRE_XY[1]) <= TABLE_SIZE[1] / 2
+    rng = np.random.default_rng(seed)
+    for target, choice in pushes_found(Fixed(along=0.04, topple=-12.0), seen, rng):
+        push = encoding.push_of(target, choice.heading, choice.offset, choice.travel, choice.aim)
+        for point in jaw_paths.to_push(HOME, push, choice.reach).waypoints:
+            assert PUSH_HEIGHT - 1e-9 <= point.z <= TRAVEL_HEIGHT + 1e-9
+            assert abs(point.x - TABLE_CENTRE_XY[0]) <= TABLE_SIZE[0] / 2
+            assert abs(point.y - TABLE_CENTRE_XY[1]) <= TABLE_SIZE[1] / 2
 
 
 @pytest.mark.parametrize("seed", range(8))
@@ -250,12 +271,11 @@ def test_the_predicted_table_moves_the_pushed_glass_where_the_aim_says(seed: int
     seen = as_seen(seed)
     rng = np.random.default_rng(seed)
     model = Fixed(along=0.03, topple=-12.0)
-    verdict = search.best_push(model, seen, seen[0], rng)
-    assert verdict.choice is not None, verdict.reason
-    places = search.predicted_table(model, seen, seen[0], verdict.choice)
-    assert set(places) <= {glass.id for glass in seen}
-    assert places[seen[0].id][0] == pytest.approx(verdict.choice.aim[0], abs=1e-6)
-    assert places[seen[0].id][1] == pytest.approx(verdict.choice.aim[1], abs=1e-6)
+    for target, choice in pushes_found(model, seen, rng):
+        places = search.predicted_table(model, seen, target, choice)
+        assert set(places) <= {glass.id for glass in seen}
+        assert places[target.id][0] == pytest.approx(choice.aim[0], abs=1e-6)
+        assert places[target.id][1] == pytest.approx(choice.aim[1], abs=1e-6)
 
 
 # ------------------------------------------------------------------- the solution
@@ -326,3 +346,60 @@ def test_collecting_one_table_labels_what_it_saw() -> None:
         assert example.mask[encoding.TOPPLED] == 1.0
         # Nothing is learned where nothing was measured.
         assert np.all(example.outputs[example.mask == encoding.MASKED] == 0.0)
+
+
+# ------------------------------------------------- the corridor the hand sweeps
+
+
+@pytest.mark.parametrize("seed", range(8))
+def test_the_search_still_finds_pushes_on_a_crowded_table(seed: int) -> None:
+    """The clearance rules have to leave the search something to do.
+
+    Without this the tests above would pass on a search that refused
+    everything, because each of them checks the pushes a table offers and a
+    table may offer none.
+    """
+    seen = as_seen(seed)
+    found = pushes_found(Fixed(along=0.04, topple=-12.0), seen, np.random.default_rng(seed))
+    assert found, "a safe model and a crowded table should leave at least one glass pushable"
+
+
+@pytest.mark.parametrize("seed", range(6))
+def test_the_arrays_measure_the_same_distance_the_reference_does(seed: int) -> None:
+    """``segment_distances`` over arrays against ``plan.segment_distance`` one at a time.
+
+    The search weighs hundreds of candidates at once, so it cannot call the
+    reference's own function; this is what keeps the two from drifting into two
+    different arithmetics.
+    """
+    rng = np.random.default_rng(seed)
+    centres = rng.uniform(0.3, 0.7, (3, 2))
+    starts = rng.uniform(0.3, 0.7, (5, 2))
+    ends = starts + rng.uniform(-0.1, 0.1, (5, 2))
+    mine = search.segment_distances(centres, starts, ends)
+    for candidate in range(len(starts)):
+        for centre in range(len(centres)):
+            theirs = plan.segment_distance(centres[centre], starts[candidate], ends[candidate])
+            assert mine[candidate, centre] == pytest.approx(theirs, abs=1e-12)
+
+
+def test_a_push_straight_through_a_neighbour_is_not_clear() -> None:
+    """The rule the first held-out walk was lost on, stated as a test.
+
+    Two glasses standing ninety millimetres apart in a row: pushing the far one
+    straight away from the near one means standing the hand between them and
+    driving it forward, and there is no room for the hand there. The same push
+    is clear when the other glass stands well to the side instead, which is the
+    direction the corridor does not reach.
+
+    The corridor is long, because the tool is: the widest part of the hand
+    sweeps the table as far as a quarter of a metre behind the fingertips, which
+    is why a neighbour *behind* the glass blocks a push as surely as one in
+    front of it.
+    """
+    glass = as_seen(0)[0]
+    behind = replace(glass, id=99, x=glass.x - 0.09, y=glass.y)
+    beside = replace(glass, id=99, x=glass.x, y=glass.y + 0.30)
+    forwards = np.array([[0.0, 0.0, 0.04, plan.APPROACH_GAP]])
+    assert not search.corridor_is_clear([glass, behind], glass, forwards)[0]
+    assert search.corridor_is_clear([glass, beside], glass, forwards)[0]
