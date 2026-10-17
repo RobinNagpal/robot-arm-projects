@@ -90,6 +90,16 @@ hand is checked against it. That is also why rule 1 is written against travel
 height and not against the tallest glass seen so far: a glass the arm has not
 looked at yet is in no list at all, and a path that keeps to a height belonging
 to the cell is safe without appealing to any measurement.
+
+**Which glasses to hand it is a decision of its own, and ``Measured`` is the
+answer.** The camera rides on the arm, so one ``Look`` holds the glasses inside
+one picture rather than the glasses on the table. A solution that hands this
+module the current picture is asking it about part of the table, and the part
+left out is where a shove can drive its glass into a neighbour nobody is looking
+at. So a solution keeps every reading it has taken on this table and hands all
+of them over. Measured on the borrowed model, which aims worst and therefore
+shoves most blindly, that one change took the glasses it broke over twenty
+tables from two in three runs to none in any.
 """
 
 from __future__ import annotations
@@ -192,6 +202,59 @@ class Shoves:
             for glass in glasses
             if self.shoves_at(glass.id) and self.moved(glass) > room
         )
+
+
+class Measured:
+    """Every glass this solution has measured on this table, at its newest reading.
+
+    The camera rides on the arm, so a ``Look`` holds the glasses inside one
+    picture and not the glasses on the table. A path checked against that
+    picture alone is therefore checked against part of the table: a shove can
+    drive its glass into a neighbour that is real, that this solution measured
+    two answers ago, and that happens to be out of frame now. Of the glasses
+    these solutions put on the floor, that is the case the clearance rule could
+    not see.
+
+    So a solution keeps every reading it has taken and checks against all of
+    them. One of these lives for the length of a table and is thrown away with
+    it, like ``Shoves``, and everything in it is a measurement the solution made
+    itself.
+
+    **The newest reading of a glass replaces the older one**, because a glass
+    that has been shoved has moved, and a path checked against where a glass
+    used to stand is checked against nothing. The cost of this is a reading that
+    is out of date: a glass pushed while out of frame is remembered where it was
+    last seen. That is the right way round for this rule, because the rule is
+    there to refuse, and refusing a push near a stale reading loses a push while
+    allowing one would lose a glass.
+    """
+
+    def __init__(self) -> None:
+        self.newest: dict[int, Seen] = {}
+
+    def saw(self, glasses: tuple[Seen, ...] | list[Seen]) -> None:
+        """Take the readings of one look, replacing what was known of those glasses."""
+        for glass in glasses:
+            self.newest[glass.id] = glass
+
+    def all(self) -> tuple[Seen, ...]:
+        """Every glass measured on this table, newest reading each, in slot order.
+
+        Sorted the same way the models' slots are sorted, so that a record of
+        this list and a record of a model's input can be read against each
+        other.
+        """
+        return tuple(sorted(self.newest.values(), key=lambda glass: (glass.x, glass.y)))
+
+    def out_of_frame(self, seen: tuple[Seen, ...] | list[Seen]) -> tuple[Seen, ...]:
+        """The remembered glasses this picture does not hold.
+
+        For the record rather than for the rule: it is what says whether
+        remembering mattered on a table, and a solution that is always looking
+        at everything would report none.
+        """
+        inside = {glass.id for glass in seen}
+        return tuple(glass for glass in self.all() if glass.id not in inside)
 
 
 def with_room(glass: Seen, room: float = CLEAR_ROOM) -> Seen:
@@ -547,6 +610,7 @@ def driven_home(
     target: int,
     room: float = CLEAR_ROOM,
     tested: tuple[int, ...] = (),
+    no_further_than: float | None = None,
 ) -> tuple[Chunk, float]:
     """The same shove carried on along its own line until the glass has room.
 
@@ -577,6 +641,18 @@ def driven_home(
     the checks above. Nothing is added that is not then put through the whole
     rule again, so an extension that would sweep a second glass, drive this one
     into a neighbour, or leave the table is never made.
+
+    ``no_further_than`` is the caller's own limit on how far the glass may be
+    driven, in metres, and it exists because of a measurement. Every glass the
+    fitted solutions lost went over on a push that had passed every check here
+    and was then carried on, and two of them went over while the arithmetic
+    thought the glass would barely move -- which is a glass tipping under the
+    hand rather than being driven into a neighbour. The evidence that a glass
+    slides is the distance it has already been *watched* sliding, and that
+    distance is what a solution may reasonably drive it. A solution that passes
+    its own reading of how far this glass has moved therefore grows its pushes
+    as the glass earns them, which is how the reference solution frees a glass:
+    over several answers rather than in one shove.
 
     It returns the answer and how far the glass would be moved by it, so that a
     run can record what the arithmetic added to what the model drew.
@@ -611,7 +687,10 @@ def driven_home(
         further = replace(chunk, waypoints=tuple(carried))
         if why_not_clear(further, glasses, target, room, tested):
             break
-        best, moved = further, _would_move(further, aimed)
+        would = _would_move(further, aimed)
+        if no_further_than is not None and would > no_further_than:
+            break
+        best, moved = further, would
     return best, moved
 
 

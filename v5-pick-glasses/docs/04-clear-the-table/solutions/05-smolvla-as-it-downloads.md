@@ -162,17 +162,17 @@ with the three values beside it.
 |---|---|---|---|
 | Tables attempted | 26 | 11 (11, 11, 11) | 15 |
 | Glasses on those tables | 102 | 40 (40, 40, 40) | 57 |
-| Tables separated, nothing broken | **10** | 0 (1, 0, 0) | **0** |
+| Tables separated, nothing broken | **10** | 1 (1, 0, 1) | **0** |
 | Tables failed by a topple | **0** | **0** | 14 |
-| Tables left unfinished | 16 | 11 (10, 11, 11) | 1 |
-| Glasses pickable at the end | 64 | 16 (18, 16, 16) | 1 |
+| Tables left unfinished | 16 | 10 (10, 11, 10) | 1 |
+| Glasses pickable at the end | 64 | 18 (18, 16, 18) | 1 |
 | Of those, had room already | 39 | 16 (16, 16, 16) | 2 |
-| Glasses it gave room to | +25 | 0 (+2, 0, 0) | **−1** |
-| Share of glasses pickable | **0.627** | 0.400 (0.450, 0.400, 0.400) | 0.018 |
+| Glasses it gave room to | +25 | +2 (+2, 0, +2) | **−1** |
+| Share of glasses pickable | **0.627** | 0.439 (0.450, 0.400, 0.439) | 0.018 |
 | Glasses broken | **0** | **0** | 20 |
-| It declared a table finished | 24 of 26 | 10 of 11 (10, 10, 9) | 0 of 15 |
-| Arm seconds for a table it separated | 43.6 | 122.8, once | nothing separated |
-| Thinking an answer | 15 ms | 279 ms | 776 ms |
+| It declared a table finished | 24 of 26 | 10 of 11 (10, 9, 10) | 0 of 15 |
+| Arm seconds for a table it separated | 43.6 | 123, in the two walks that did | nothing separated |
+| Thinking an answer | 15 ms | 280 ms | 776 ms |
 
 Read the two right-hand columns against each other, because the weights are the
 same weights and nothing was retrained between them.
@@ -183,20 +183,21 @@ pushes: they were being swept by a hand travelling at the height of their rims,
 which the next section but one explains, and the check raises such a path before
 the arm moves.
 
-**Its share goes from 0.018 to 0.400, and almost all of that is glasses it never
+**Its share goes from 0.018 to 0.439, and most of that is glasses it never
 touched.** That sounds like a contradiction and is not. A table where a glass
 went over earns nothing at all — not even for the glasses that already had room
 when the arm arrived — because if a lost table still paid out, a risky shove
 would be close to free and a method could gamble its way up the card. So when no
-table is lost, the glasses that arrived with room are counted, and the row above
-says what the solution added to them in two walks of three: nothing.
+table is lost, the glasses that arrived with room are counted, and those are
+sixteen of the eighteen in this column.
 
-**One walk of the three freed two glasses and separated one table**, which is
-why the separated row reads 0 with a spread of 0 to 1 rather than a flat zero. A
-model that has never seen this cell will occasionally shove a crowded glass in a
-direction that happens to help. Three walks is the smallest number that can tell
-that apart from a solution that does it on purpose, and the other two walks left
-every table as they found it.
+**Two walks of the three freed two glasses each and separated a table**, which
+is why the separated row reads 1 with a spread of 0 to 1. A model that has never
+seen this cell will occasionally shove a crowded glass in a direction that
+happens to help. Three walks is the smallest number that can tell that apart
+from a solution that does it on purpose, and the third walk left every table as
+it found it. The honest reading is "one table, sometimes, by luck" rather than
+"one table a queue".
 
 **It reaches eleven tables where it used to reach fifteen.** A raised answer
 still costs the arm the move it asked for, and the stopping rule asks for sixteen
@@ -204,14 +205,16 @@ answers in a row that could not touch a glass before it takes the policy at its
 word, so a table now costs about nineteen answers and eighty arm seconds. Before
 the check, tables ended sooner because a glass fell.
 
-**On the tables below the held-out line it does break glasses, up to four in a
-run**, and that is in the solution's own folder rather than here because those
-tables are not the score. The reason is worth knowing: the clearance arithmetic
-now carries a shove on until the glass it names has room, once the solution has
-watched that glass move, so a few of this policy's answers become real pushes.
-A real push from a model that is not aiming at anything sometimes topples
-something. The held-out walks happened not to contain one; the building tables
-did.
+**It took two separate pieces of arithmetic to get the breakage to nothing, and
+the second one is the more interesting.** The clearance check stopped the hand
+being carried across the table at the height of the glasses' rims, which is what
+the twenty broken glasses were. After that the solution still broke up to four
+glasses a run on the tables below the held-out line, because the check was being
+shown the glasses in the current picture: a shove drove its glass into a
+neighbour that the solution had measured a moment earlier and that was out of
+frame when the answer was drawn. Checking against every glass it has measured
+took that to none in any run, and on the held-out queue it cost nothing — two of
+three walks now free two glasses where one of three did before.
 
 It is worth noting what is *not* on that list. It is not slow at the arm in the
 old sense: it spends the whole fifteen minutes, like every other solution. Under
@@ -377,12 +380,12 @@ a move at travel height, where nothing on the table can be reached, or a push at
 one named glass, carried out at the height a push works at? A path at the height
 of the glasses' rims is neither, so it is raised. The cell is unchanged and
 refuses exactly what it refused before; what changed is that the solution no
-longer hands it a path that nobody can account for. Six hundred and twenty-two of
-the 624 answers it gave over the three walks were raised, and the reasons have
-spread out since the first walk: 341 of them because the path comes down at no
-glass in particular, 140 because it rides at the height of the glasses' rims, 83
-because nothing has yet tested whether the glass it names would slide, and 53
-because the hand would meet a glass it is not aimed at.
+longer hands it a path that nobody can account for. Over the three walks it drew
+658 answers that could not account for themselves and every one was raised, and
+the reasons have spread out since the first walk: 345 of them because the path
+comes down at no glass in particular, 158 because it rides at the height of the
+glasses' rims, 79 because the hand would meet a glass it is not aimed at, and 69
+because nothing has yet tested whether the glass it names would slide.
 
 ## What the saved numbers do not settle
 
@@ -420,18 +423,17 @@ this measurement can make.
 | fifty tables offered from 10,000 | 1 geometry | 2 ranked geometry | 4 world model | **5 as it downloads** |
 |---|---|---|---|---|
 | Tables attempted | 26 | 25 | **40** | 11 |
-| Tables separated | 10 | 7 | **14** | **0** |
+| Tables separated | 10 | 7 | **14** | 1 |
 | Tables failed by a topple | **0** | **0** | 1 | **0** |
-| Glasses it gave room to | +25 | +19 | **+39** | **0** |
-| Share pickable | **0.627** | 0.582 | 0.598 | **0.400** |
+| Glasses it gave room to | +25 | +19 | **+39** | +2 |
+| Share pickable | **0.627** | 0.582 | 0.598 | 0.439 |
 | Glasses broken | **0** | **0** | 1 | **0** |
-| Thinking an answer | 15 ms | 15 ms | **10 ms** | **279 ms** |
+| Thinking an answer | 15 ms | 15 ms | **10 ms** | **280 ms** |
 
 It is last on every line that measures work done, and it is now last without
-being dangerous. Its share of 0.400 is almost exactly the share of glasses that
-arrived with room: the column says, as plainly as a column can, that the
-solution added nothing to the table in two walks of three and took nothing away
-from it in any of them.
+being dangerous. Sixteen of the eighteen glasses in its share arrived with room,
+so the column says, as plainly as a column can, that nearly everything it is
+credited with was already there — and that it took nothing away in any walk.
 
 The nearest comparison is the [world model](04-a-world-model.md), which also
 answers from a fitted model and which separates fourteen tables. The difference

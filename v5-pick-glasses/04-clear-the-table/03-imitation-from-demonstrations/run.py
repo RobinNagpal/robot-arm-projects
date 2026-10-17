@@ -215,6 +215,14 @@ def one_fit(folder: Path, seeds: range, show: bool) -> tuple[Scorecard, dict]:
                 "answers": result.answers,
                 "interlocks": result.interlocks,
                 "thinking_seconds": round(result.thinking_seconds, 1),
+                # The answer the solution gave last on this table, which on a
+                # table that ended with a glass on its side is the answer that
+                # put it there. The solution cannot report this for itself: the
+                # table ends the moment a glass goes over, so it never gets the
+                # look that would show it the damage. Pairing its last answer
+                # with the table's outcome here is the only way to ask which
+                # kind of answer breaks glasses.
+                "last_answer": solution.last_answer,
             }
         )
         if show:

@@ -57,6 +57,15 @@ nothing. It is the same check solutions 5 and 6 run, and the reason all three ru
 it is measured: most of the glasses this problem broke were broken by a hand
 travelling at the height of the glasses' rims, not by a push aimed badly.
 
+The check is given **every glass this solution has measured on the table**, which
+`Measured` in the same file keeps, and not the glasses in the current picture.
+The camera rides on the arm, so one picture is part of the table, and the part
+left out is where a shove can drive its glass into a neighbour nobody is looking
+at — the hand is never near the glass that breaks, so nothing about the hand can
+catch it. The geometry solutions have had a belief about the whole table since
+problem 4 began, in `01-one-fixed-nudge/remembered.py`; this is the same idea in
+its simplest form, and the models are still shown only what the camera caught.
+
 What is left is `gate.py`, which is the new model and its fitting, `clear.py`,
 which wraps the two models to problem 4's contract, `train.py`, which fits the
 gate and points the borrowed fitting loop at this problem's data, and `run.py`,
@@ -184,41 +193,51 @@ counted, so "tables attempted" means tables the arm really worked on.
 
 | | `act-0` | `act-1` | `act-2` | spread |
 | --- | --- | --- | --- | --- |
-| tables attempted | 13 | 12 | 16 | 13 ± 2.1 (12 to 16) |
-| glasses on them | 49 | 45 | 61 | |
-| tables separated | 1 | 1 | 0 | 1 (0 to 1) |
-| glasses pickable at the end | 20 of 49 | 14 of 45 | 23 of 61 | share 0.377 ± 0.05 |
-| glasses made pickable | +3 | +3 | +2 | +3 (+2 to +3) |
-| glasses broken | 2 | 5 | 2 | 2 (2 to 5) |
-| said done, of the tables it reached | 10 | 6 | 13 | 10 ± 3.5 (6 to 13) |
-| said done while still crowded | 9 | 5 | 13 | 9 ± 4.0 (5 to 13) |
-| refused by the interlock | 0 | 4 | 13 | 6 ± 6.7 (0 to 13) |
-| thinking per answer | 21.2 ms | 19.0 ms | 16.5 ms | 19 ms |
+| tables attempted | 15 | 10 | 12 | 12 ± 2.5 (10 to 15) |
+| glasses on them | 57 | 38 | 45 | |
+| tables separated | 1 | 0 | 0 | 0 (0 to 1) |
+| glasses pickable at the end | 23 of 57 | 12 of 38 | 18 of 45 | share 0.400 ± 0.05 |
+| glasses made pickable | +2 | −1 | +2 | +2 (−1 to +2) |
+| glasses broken | 1 | 2 | 3 | 2 (1 to 3) |
+| said done, of the tables it reached | 12 | 6 | 9 | 9 ± 3 (6 to 12) |
+| said done while still crowded | 11 | 6 | 9 | 9 (6 to 11) |
+| refused by the interlock | 0 | 0 | 2 | 0 (0 to 2) |
+| thinking per answer | 17.0 ms | 18.6 ms | 29.8 ms | 19 ms |
 
-**All three fits now push, and two of the three separate a table.** That is the
-first thing to say, because the first version of this solution reached ten
-tables and handed every one of them back exactly as it was drawn. Two or three
-glasses a queue are now given room they did not start with.
+**All three fits push, one of the three separates a table, and all three break a
+glass.** That is the state of this solution. One or two glasses a queue are given
+room they did not start with, where the first version of it handed every table
+back exactly as it was drawn.
 
-**The share is lower than the first version's, and the broken glasses are
-why.** A share of 0.377 against 0.400 looks like a step backwards, and reading
-it beside the gain row is what makes sense of it: a forfeited table pays nothing
-at either end, so two to five broken glasses can cost more share than three
-freed glasses earn. The two rows together are the honest result — the solution
-is doing the task, and it is doing it badly rather than not at all.
+**The two newest changes were chosen on the twenty tables below this band, and
+this walk is where they are scored.** One of them — showing the clearance check
+every glass the solution has measured rather than the glasses in the current
+picture — took this card's broken glasses from 2 (2 to 5) to 1 (1 to 2) and its
+share from 0.377 to 0.400. The other — carrying a push no further than the glass
+has been watched sliding — was chosen on evidence that it halved the breakage on
+those twenty tables, and on this queue it put one glass back: 1 (1 to 2) became
+2 (1 to 3). One of the three walks is identical with and without it.
 
-**The spread is now about what the fits do, not how far they get.** In the first
-version one fit reached eleven tables and another reached one, because the third
-never answered at all; the walks were comparable on a single table. Now all three
-reach twelve to sixteen tables, and they differ in the work: `act-0` separates a
-table and breaks two glasses, `act-1` separates a table and breaks five, and
-`act-2` separates none and breaks two.
+**That disagreement is reported rather than resolved, and the rule stays.**
+Choosing between two versions of a solution by their held-out numbers is the one
+thing the band at ten thousand exists to prevent, so the choice was made below it
+and this walk is the score as it came. With three walks either way and spreads
+this wide, the honest reading is that the second change cannot be told from
+noise here.
+[`what-changed.md`](../../docs/04-clear-the-table/what-changed.md) has both
+measurements side by side.
 
-**The tipping interlock refuses between nothing and thirteen answers**, where
-the first version was refused nothing here and fourteen thousand times on the
-twenty tables below the line. Which tables a livelock happens on is a matter of
-the draw, so the two runs disagree about how much of the budget goes that way;
-both are reported rather than averaged.
+**The share of 0.400 is the best this solution has scored.** A table that loses a
+glass pays nothing at either end, so what the share mostly measures for this
+solution is how often it keeps its glasses standing; the gain row is what says
+how much work it did. Reading the two together is the only honest reading.
+
+**The tipping interlock now refuses almost nothing**, between none and two
+answers in a walk, where an earlier walk of this solution was refused between
+nothing and thirteen times and the first version fourteen thousand times over
+twenty tables. The clearance arithmetic
+refuses those answers first, from the solution's own side, and a refused answer
+is one the arm never spends time on.
 
 ## The same three fits on twenty training tables
 
@@ -233,43 +252,64 @@ no clock.
 | | solution 1 | solution 2 | **solution 3** | ceiling |
 | --- | --- | --- | --- | --- |
 | tables separated | 5 | 4 | **0 to 1** | 11 |
-| glasses pickable at the end, of 84 | 47 | 43 | **31 to 36** | 66 |
-| glasses made pickable | +14 | +10 | **−2 to +3** | +33 |
-| glasses toppled | 0 | 0 | **1 to 4** | — |
-| arm seconds a table | 42.6 | 41.1 | **49 to 70** | — |
-| share of arm time looking | 46% | 44% | **52% to 65%** | — |
-| said done while still crowded | 15 of 20 | 16 of 20 | **15 to 19 of 20** | — |
-| thinking per answer | 16.2 ms | 18.3 ms | **17 to 19 ms** | — |
+| glasses pickable at the end, of 84 | 47 | 43 | **31 to 37** | 66 |
+| glasses made pickable | +14 | +10 | **−2 to +4** | +33 |
+| glasses toppled | 0 | 0 | **0 to 2** | — |
+| arm seconds a table | 42.6 | 41.1 | **56 to 72** | — |
+| share of arm time looking | 46% | 44% | **49% to 71%** | — |
+| said done while still crowded | 15 of 20 | 16 of 20 | **18 to 20 of 20** | — |
+| thinking per answer | 16.2 ms | 18.3 ms | **16 to 20 ms** | — |
 
-Taken fit by fit: `act-0` separates one table of the twenty and frees three
-glasses while toppling four, `act-1` frees none and loses one while toppling
-one, and `act-2` frees two while toppling two. The three fits of one recipe
+Taken fit by fit: `act-0` separates one table of the twenty and frees four
+glasses while toppling one, `act-1` loses two glasses and topples two, and
+`act-2` walks all twenty tables without toppling anything and leaves the
+eighty-four glasses as it found them. The three fits of one recipe still
 disagree with each other more than two of them disagree with doing nothing,
-which is the plainest statement of how early this solution still is.
+which is the plainest statement of how early this solution still is — but a fit
+that walks twenty tables with nothing broken is new, and it arrived with the
+last two changes.
 
 What the answers are made of is in `measurement-fits.json`, and these are the
 numbers to read if you want to know where the work goes:
 
 | over twenty tables, per fit | |
 | --- | --- |
-| what the gate asked for | 322 to 487 looks, 149 to 196 probes, 64 to 90 pushes, 12 to 13 declarations |
-| the gate named a glass the picture does not hold | 11, 22, 32 times |
-| answers pulled down onto the two heights the cell accounts for | 114, 137, 191 |
-| answers raised to travel height, because they could not account for themselves | 137, 107, 112 |
-| the commonest reason for raising one | the hand would meet a glass it is not aimed at: 63 to 92 |
-| pushes carried on until the glass had room | 16, 29, 34 |
-| how far a carried-on push moves its glass | 5, 18 and 25 mm |
-| tables the gate finished, of 20 | 12, 13, 13 |
-| tables the quiet rule finished instead | 4, 6, 5 |
+| what the gate asked for | 308 to 446 looks, 157 to 217 probes, 62 to 115 pushes, 9 to 13 declarations |
+| the gate named a glass the picture does not hold | 12, 19, 28 times |
+| answers pulled down onto the two heights the cell accounts for | 109, 114, 172 |
+| answers raised to travel height, because they could not account for themselves | 117, 166, 173 |
+| the commonest reason for raising one | the hand would meet a glass it is not aimed at: 99 to 141 |
+| glasses it had measured but could not see at the time | 3, 17, 25 |
+| pushes carried on until the glass had room | 15, 16, 21 |
+| how far a carried-on push moves its glass | 4, 14 and 23 mm |
+| tables the gate finished, of 20 | 9, 10, 13 |
+| tables the quiet rule finished instead | 6, 9, 10 |
+
+**Every glass this solution lost went over on the same kind of answer**, and the
+record says so exactly. `run.py` keeps each table's last answer beside how that
+table ended, because the solution itself cannot: a table ends the moment a glass
+goes over, so the look that would show it the damage is never taken. Of the three
+glasses lost over the three fits, all three followed a push that was aimed at a
+glass, passed the whole clearance check, and was then **carried on** by the
+arithmetic until the glass would have room. Two of the three went over while that
+arithmetic expected the glass to move almost nowhere — 0.0 and 2.7 millimetres —
+which is a glass tipping under the hand rather than being driven into a
+neighbour, and nothing the solution can compute would have refused those pushes:
+the glasses had been watched sliding, and the tipping rule answers "try it and
+see" for every glass this cell draws. In all three the picture held two or three
+glasses, on tables of four or five.
+
+That is where arithmetic stops being able to help this solution. What is left is
+the model that draws the shove.
 
 Three measured things stand between this and a result like the geometry
 solutions', and all three are quantities rather than opinions.
 
 **One push is too small for the room a glass needs.** A glass needs about 76 mm
 of clear space for the hand to get round it, and a push this policy draws,
-carried on until the clearance rule says the glass has room, moves it 5 to
-25 mm. So a glass needs three or four such pushes, each of which has to be
-decided and aimed again.
+carried on as far as the glass has been watched sliding, moves it 4 to 23 mm. So
+a glass needs three or four such pushes, each of which has to be decided and
+aimed again, and each of which earns the next one its length.
 
 **No push can be predicted safe, so every one costs two answers.** The tipping
 rule answers "it will slide" for no glass this cell draws — over 1,600 drawn
@@ -277,12 +317,15 @@ glasses it is always "no" or "try it and see" — so a push is allowed only afte
 a probe has shown the glass slides. The gate has to choose the probe and then
 the push, at the same glass, in that order.
 
-**The direction the policy draws is often blocked by a neighbour.** Between 63
-and 92 times over twenty tables the drawn path would take the hand through a
+**The direction the policy draws is often blocked by a neighbour.** Between 99
+and 141 times over twenty tables the drawn path would take the hand through a
 glass it is not aimed at, so the clearance rule raises it and nothing moves.
 Choosing that direction arithmetically would repair it, and it is deliberately
 not done here: it would make this solution the geometry reference with a learned
-chooser in front, which answers a different question.
+chooser in front, which answers a different question. Asking the gate for its
+*next* choice of glass instead was built and measured, and it made things worse;
+[`what-changed.md`](../../docs/04-clear-the-table/what-changed.md) has the
+numbers.
 
 ### What the fitting cost
 

@@ -405,8 +405,10 @@ running one piece of arithmetic over its own answer before handing it over:
 height the jaw travels at, where nothing on the table can be reached, or a push
 at one named glass carried out at the height a push works at — and which raises
 anything else to travel height, where it goes to the same place and touches
-nothing. That check works only from what the solution has measured, it costs the
-same arm time as the path it replaces, and **nothing in the examiner calls it**.
+nothing. That check works only from what the solution has measured — every
+reading it has taken on this table, which is more than the glasses in the
+current picture and is still nothing the examiner told it — it costs the same arm
+time as the path it replaces, and **nothing in the examiner calls it**.
 A solution that does not call it is treated exactly as before. The measured
 effect was large: the borrowed model's twenty broken glasses in a walk became
 none. The distinction matters for reading this problem's card, because it means

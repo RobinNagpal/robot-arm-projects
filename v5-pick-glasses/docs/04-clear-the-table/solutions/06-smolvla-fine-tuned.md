@@ -350,14 +350,14 @@ measurement a method is tuned against stops being a measurement.
 
 | the held-out queue | geometry reference | small fitted model | borrowed, untrained | **borrowed, fitted here** |
 |---|---|---|---|---|
-| Tables attempted | 26 | 13 (12 to 16) | 11 | **10 (10 to 16)** |
-| Tables separated | 10 | 1 (0 to 1) | 0 (0 to 1) | **0** |
-| Tables failed by a topple | 0 | 2 (2 to 5) | 0 | **1 (0 to 2)** |
-| Share of glasses pickable at the end | 0.627 | 0.377 | 0.400 | **0.378** |
-| Glasses it made pickable | +25 | +3 | 0 (0 to +2) | **0** |
-| Glasses broken | 0 | 2 (2 to 5) | 0 | **1 (0 to 2)** |
-| Said done while still crowded | 14 of 26 | 9 of 13 | 9 of 11 | **9 of 10** |
-| Thinking an answer | 15 ms | 19 ms | 279 ms | **281 ms** |
+| Tables attempted | 26 | 11 (10 to 15) | 11 | **11 (10 to 13)** |
+| Tables separated | 10 | 0 (0 to 1) | 1 (0 to 1) | **0** |
+| Tables failed by a topple | 0 | 2 (1 to 2) | 0 | **0 (0 to 1)** |
+| Share of glasses pickable at the end | 0.627 | 0.400 | 0.439 | **0.405** |
+| Glasses it made pickable | +25 | +2 | +2 | **0** |
+| Glasses broken | 0 | 2 (1 to 3) | 0 | **0 (0 to 1)** |
+| Said done while still crowded | 14 of 26 | 9 of 11 | 9 of 11 | **9 of 11** |
+| Thinking an answer | 15 ms | 19 ms | 280 ms | **282 ms** |
 
 Four things in that table need reading carefully.
 
@@ -369,20 +369,20 @@ at all in every one of the three walks.
 **Its own history is the comparison that flatters it most, and it is a
 comparison of safety and not of skill.** The first walk of this solution broke
 eight glasses, forfeited six tables of eight, and scored a share of 0.103. This
-one breaks one glass, forfeits one table of ten, and scores 0.378. Everything in
-that improvement is damage not done; the separated column and the gain column
-read exactly as they did before.
+one breaks nothing in two walks of three, forfeits nothing in those two, and
+scores 0.405. Everything in that improvement is damage not done; the separated
+column and the gain column read exactly as they did before.
 
-**The pair is the comparison that matters, and it says the training bought
-nothing.** Untrained, the same weights score 0.400 and free nothing in two walks
-of three. Fitted, they score 0.378 and free nothing in any walk. The two numbers
-differ by less than the spread of either, and the next section measures the pair
-properly, on the same twenty tables with the same loop on both sides.
+**The pair is the comparison that matters, and it says what the training really
+bought.** On one set of twenty tables, through one loop, with the same
+arithmetic on both sides, the fitted model frees two glasses where the untrained
+one frees none — and topples two where the untrained one topples none. The next
+section measures that properly. Fitting bought work and it did not buy care.
 
 **The spread between the three corrections is still wider than most effects
-here.** One walk reached sixteen tables and the other two reached ten, from the
-same recipe, the same material and the same number of steps. Nothing in this
-result should be read at a finer resolution than that.
+here.** One walk reached thirteen tables and another ten, from the same recipe,
+the same material and the same number of steps. Nothing in this result should be
+read at a finer resolution than that.
 
 ## What the fit changed, and what it did not
 
@@ -395,25 +395,27 @@ over their answers. The training is the only difference between the columns.
 | twenty tables, 84 glasses | untrained | **fitted** |
 |---|---|---|
 | Tables separated | 0 | **0** |
-| Tables failed by a topple | 1 of 20 | **2 of 20** |
-| Glasses broken | 1 (0 to 3) | **2 (1 to 5)** |
-| Share of glasses pickable at the end | 0.369 | **0.369** |
-| Glasses it made pickable | 0 | **0** |
-| Answers over the twenty tables | 335 | **438** |
-| It said the table was finished | 17 of 20 | **13 of 20** |
+| Tables failed by a topple | 0 (0 to 0) | **2 (1 to 3)** |
+| Glasses broken | 0 (0 to 0) | **2 (1 to 3)** |
+| Share of glasses pickable at the end | 0.393 | **0.369** |
+| Glasses it made pickable | 0 (−1 to +1) | **+2 (0 to +3)** |
+| Answers over the twenty tables | 353 | **408** |
+| It said the table was finished | 18 of 20 | **17 of 20** |
 
-**On everything the problem scores, the two columns are the same column.** No
-table separated on either side, no glass freed on either side, and the same
-pickable share to three decimal places. The fitted side breaks one more glass,
-which is inside the spread of either. **A thousand steps of this cell's
-demonstrations did not make the borrowed model better at this cell's task**, and
-that is the result this folder exists to produce.
+**Fitting buys work and it does not buy care.** The fitted side frees two
+glasses where the untrained side frees none, and topples two where the untrained
+side topples none. A forfeited table pays nothing at either end, so its share
+comes out *lower* than the model it started from. Neither side separates a
+table.
 
-**What the training did change is how much the model acts.** It gives a third
-again as many answers, because it stops declaring the table finished so early:
-thirteen tables end with the stopping rule taking it at its word against the
-untrained side's seventeen. A model that keeps working at a table it cannot
-clear is what a third more answers at the same outcome describes.
+That is the sharpest reading this pair has supported, and it is better than the
+flat null result the same comparison gave before the shared arithmetic was
+finished: with a weaker clearance check on both sides, both columns broke
+glasses and the difference was buried in them.
+
+**The training also changed how much the model acts.** It gives about a sixth
+again as many answers, and it stops declaring the table finished quite so
+early.
 
 **And the training changed the shape of the answers, towards the teacher's.**
 This is the one place where the fit shows clearly. Measured by the same code on
@@ -421,11 +423,11 @@ both sides, over every answer:
 
 | median over every answer | untrained | **fitted** |
 |---|---|---|
-| Lowest point of a path | 150 mm | **115 mm** |
-| Distance travelled across the table | 832 mm | **360 mm** |
-| Step between waypoints | 15.0 mm | **4.9 mm** |
-| Answers that reach the pushing height | 13% to 16% | **20% to 26%** |
-| Shoves carried on until the glass had room | 5 to 7 a walk | **27 to 48 a walk** |
+| Lowest point of a path | 150 mm | **112 mm** |
+| Distance travelled across the table | 833 mm | **351 mm** |
+| Step between waypoints | 15.1 mm | **4.8 mm** |
+| Answers that reach the pushing height | 14% | **22% to 27%** |
+| Shoves carried on until the glass had room | 0 to 3 a walk | **13 to 35 a walk** |
 
 Read the first three rows together. The glass zone on a table is about 320 by
 360 millimetres, so the untrained model's answer is one long fast arc of eight
@@ -435,20 +437,19 @@ the length and the speed of its teacher's own answers, and it comes down to the
 height a push works at about twice as often. It ends up making five to nine
 times as many real shoves at a glass.
 
-**So the fit taught the model the size of the motion and not the place to put
-it.** That is the sharpest statement this pair supports, and it is worth holding
-on to, because it is a shape of result that is easy to mistake for progress:
-everything measurable about the *form* of the answers moved towards the teacher,
-and nothing measurable about the *outcome* moved at all. A path of the right
-length and the right speed that comes down beside no glass in particular leaves
-the table as it found it.
+**So the fit taught the model the size of the motion and where to put the hand
+down, and not what to be careful of.** Everything measurable about the *form* of
+the answers moved towards the teacher, the amount of work done moved with it —
+two glasses freed against none — and the number on the card did not, because the
+work is paid for in glasses.
 
-**What keeps that harmless is arithmetic and not the model.** Between three
-hundred and fifteen and three hundred and forty-three of the fitted side's
-answers are raised to travel height, because the solution cannot account for
-them as a push at one named glass. Before that arithmetic existed, the same
-model on the same tables broke twenty-two glasses a walk. The model has not
-become safe; the solution has stopped carrying out what it cannot justify.
+**What keeps either side from being destructive is arithmetic and not the
+model.** Between two hundred and seventy-four and three hundred and thirty of
+the fitted side's answers are raised to travel height, because the solution
+cannot account for them as a push at one named glass. Before that arithmetic
+existed, the same model on the same tables broke twenty-two glasses a walk. The
+model has not become safe; the solution has stopped carrying out what it cannot
+justify.
 
 ## The camera on the wrist, against the camera above the table
 
@@ -475,7 +476,7 @@ mirror image:
 |---|---|---|
 | What the demonstrations mostly are | pushes | looks, four in five |
 | What the fitting mixture was | the material's own | evened out between looks and pushes |
-| Lowest point of its paths | 75 mm, the pushing height | 115 mm, between the two heights |
+| Lowest point of its paths | 75 mm, the pushing height | 112 mm, between the two heights |
 | How it fails | comes down onto the glass instead of behind it | comes down beside no glass in particular |
 | Glasses broken against its untrained partner | 42 against 12 | 1 against 1 |
 
@@ -499,12 +500,13 @@ from, because the correction is folded into the weights. And the reading of a
 demonstration into the model's units is exact, so none of the failure above can
 be blamed on the material arriving distorted.
 
-**Broken.** It separates no table and frees no glass, and the pair measurement
-says the training is the reason for neither: the same weights untrained score the
-same. It reaches ten tables of fifty where plain geometry reaches twenty-six,
-because a table costs it about twenty-seven answers at a third of a second of
-thinking each and ninety arm seconds. And the three fits of one recipe still
-differ by half again in how far they get, so even the result is unstable.
+**Broken.** It separates no table, and on the scored queue it frees no glass.
+The pair measurement says what the training is responsible for: two glasses
+freed and two toppled, against an untrained model that does neither. It reaches
+eleven tables of fifty where plain geometry reaches twenty-six, because a table
+costs it about twenty-five answers at a third of a second of thinking each and
+eighty arm seconds. And the three fits of one recipe still differ by a third in
+how far they get, so even the result is unstable.
 
 **What the data cannot give it.** One of the teacher's answers in five is a
 push, and one in six of those is the small test shove that finds out whether a

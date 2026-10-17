@@ -338,86 +338,101 @@ the single network with no gate.
 
 | | before | now |
 | --- | --- | --- |
-| tables attempted | 10, from 1 to 11 | 13, from 12 to 16 |
-| tables separated | **0** | **1**, from 0 to 1 |
-| glasses made pickable | **0** | **+3**, from +2 to +3 |
-| glasses broken | 0 | 2, from 2 to 5 |
-| pickable share at the end | 0.400 | 0.377, from 0.311 to 0.408 |
-| said it was finished while the table was still crowded | 9 | 9, from 5 to 13 |
-| thinking an answer | 16 ms | 19 ms |
+| tables attempted | 10, from 1 to 11 | 12, from 12 to 15 |
+| tables separated | **0** | 0, from 0 to 1 |
+| glasses made pickable | **0** | **+1**, from +1 to +2 |
+| glasses broken | 0 | 1, from 1 to 2 |
+| pickable share at the end | 0.400 | 0.400, from 0.378 to 0.404 |
+| said it was finished while the table was still crowded | 9 | 9, from 9 to 11 |
+| thinking an answer | 16 ms | 18 ms |
 
 **The solution now acts, where before it only looked.** That is the whole of
 what the changes bought here, and it is a real change rather than a
 rearrangement of the same result: the first version handed back every table
-exactly as it was drawn, and this one separates a table and gives two or three
-glasses room they did not have.
+exactly as it was drawn, and this one gives one or two glasses room they did not
+have and separates a table in one walk of three.
 
-**It is not yet a win, and the share is where that shows.** A share of 0.377
-against 0.400 is lower than before, and the reason is the two to five broken
-glasses. A broken glass forfeits its table at both ends, so a solution that
-pushes and sometimes topples can score below a solution that never touches
-anything. Reading the two rows together is the only honest reading: the gain
-row says it is doing the task, and the broken row says it is doing it badly.
+**The share is the same number as before and it means something different.**
+0.400 for the first version was the glasses that arrived with room, every one of
+them, because it moved nothing. 0.400 now is a solution that frees a glass or
+two and breaks one, and the breakage is what holds the number down: a table that
+loses a glass pays nothing at either end, so one broken glass costs the whole of
+that table's four or five glasses from the count. The gain row and the broken row
+together are the honest reading of this solution, and the share on its own is
+not.
 
-**The spread between fits is now about quality and not only throughput.** In
-the first version one fit reached eleven tables and another reached one, and
-the difference was entirely that the third never answered at all. Now all three
-reach twelve to sixteen tables and differ in what they do on them: the first
-fit separates a table and breaks two glasses, the second separates a table and
-breaks five, the third separates none and breaks two. That is still a wide
-spread for three fits of the same recipe, and it is the honest state of this
-solution.
+**Where the spread went.** An earlier version of this solution, with the same
+two models and a clearance check shown only the current picture, had walks that
+broke two, two and five glasses. Checking instead against every glass it has
+measured took that to one, one and two, and tightened every other number with it.
+It also cost two of the three glasses it used to free. That trade — half the
+breakage for two thirds of the work — is reported in full in
+[what changed](../what-changed.md), and it was taken because a toppled glass is
+the one outcome this problem treats as unrecoverable.
 
 ## The same three fits on twenty tables below the held-out line
 
 Tables 0 to 19, each given four arm minutes of its own, which is how solutions
 1 and 2 were measured, so the three can be set side by side. This is not the
 scored measurement above and it carries no throughput reading, but it is twenty
-tables rather than thirteen, so it is where the comparison with the geometry
+tables rather than twelve, so it is where the comparison with the geometry
 solutions lives. The ceiling column is what the ranked chooser reaches with the
 arm taken away: true positions, exact pushes and no clock.
 
 | | solution 1 | solution 2 | **solution 3** | ceiling |
 | --- | --- | --- | --- | --- |
 | tables separated | 5 | 4 | **0 to 1** | 11 |
-| glasses pickable at the end, of 84 | 47 | 43 | **31 to 36** | 66 |
-| glasses made pickable | +14 | +10 | **−2 to +3** | +33 |
-| glasses toppled | 0 | 0 | **1 to 4** | — |
-| arm seconds a table | 42.6 | 41.1 | **49 to 70** | — |
-| share of arm time looking | 46% | 44% | **52% to 65%** | — |
-| said done while still crowded | 15 of 20 | 16 of 20 | **15 to 19 of 20** | — |
-| thinking per answer | 16.2 ms | 18.3 ms | **17 to 19 ms** | — |
+| glasses pickable at the end, of 84 | 47 | 43 | **31 to 38** | 66 |
+| glasses made pickable | +14 | +10 | **−2 to +5** | +33 |
+| glasses toppled | 0 | 0 | **1 to 3** | — |
+| arm seconds a table | 42.6 | 41.1 | **59 to 71** | — |
+| said done while still crowded | 15 of 20 | 16 of 20 | **18 to 19 of 20** | — |
 
-The three fits no longer agree with each other about anything except that the
-table is hard. One of them separates a table and frees three glasses, one of
-them frees none and loses one, and the third is in between.
+The three fits of one recipe still disagree with each other more than two of
+them disagree with doing nothing. One separates a table and frees five glasses
+while toppling three; one loses two glasses and topples two; the third frees one
+and topples one.
 
-The run's own record says what the solution's answers are made of, and the
-three numbers below are the ones to watch, because each of them is a change
-from this page's first version doing nothing at all.
+## What topples the glasses, measured rather than guessed
 
-| over twenty tables, per fit | |
-| --- | --- |
-| what the gate asked for | 322 to 487 looks, 149 to 196 probes, 64 to 90 pushes, 12 to 13 declarations |
-| answers pulled down onto the two heights the cell accounts for | 114, 137, 191 |
-| answers raised to travel height because they could not account for themselves | 137, 107, 112 |
-| the commonest reason for raising one | the hand would meet a glass it is not aimed at: 63 to 92 times |
-| pushes carried on until the glass had room | 16, 29, 34 |
-| how far a carried-on push moves its glass | 5, 18 and 25 mm |
+This is the sharpest thing the solution's own record now says, and it took a
+small piece of machinery to get at.
+
+**A solution cannot see its own breakages.** Every reading of a glass carries
+whether that glass is standing, so it looks as though a solution could notice a
+glass on its side and remember what it had just done. It cannot: the table ends
+the moment a glass goes over, so the look that would show the damage is never
+taken. The measurement script therefore keeps each table's last answer beside
+how that table ended, which is the only place the two can be put together.
+
+**All five glasses lost over the three fits followed the same kind of answer.**
+Each was a push, aimed at a named glass, which passed the whole clearance check
+and was then carried on by the arithmetic until the glass would have room. None
+was a look, a probe, or a path the check had raised.
+
+**Two of the five went over while the arithmetic expected almost no
+movement** — 0.0 and 3.4 millimetres — so those were glasses that tipped under
+the hand rather than glasses driven into a neighbour. And in all five the
+picture held two or three glasses on a table of four or five, which says the
+solution was acting on a part of the table rather than on the table.
+
+That points at one place to repair rather than at the models: the step that
+carries a push on, which is the only part of an answer the arithmetic adds to
+what the policy drew.
 
 ## The three things that stand in the way of more
 
-Each of these is measured, and each of them is a reason this solution frees
-three glasses rather than thirty. They are listed because the next person to
+Each of these is measured, and each of them is a reason this solution frees one
+or two glasses rather than thirty. They are listed because the next person to
 work on it should start from them rather than from a new idea.
 
 **One push does not move a glass far enough.** A glass needs about
 seventy-six millimetres of room for the hand to get round it. A push the policy
 draws, carried on until the clearance rule says the glass has room, moves it
-between five and twenty-five millimetres. The policy's own accuracy on an
+between seven and twenty-five millimetres. The policy's own accuracy on an
 unseen table is about twenty-four millimetres, so the thing it is trying to
-produce is of the same size as its own error, and a glass needs three or four
-of these pushes in a row to be freed.
+produce is of the same size as its own error, and a glass needs three or four of
+these pushes in a row to be freed.
 
 **Every push has to be tested first, because nothing can be predicted.** The
 examiner's rule about whether a glass will slide or tip answers "yes" for no
@@ -427,10 +442,10 @@ has shown that the glass slides, which means the solution must spend two
 answers on every glass it moves, and the gate has to get both of them right in
 order.
 
-**The direction the policy draws is often blocked.** Between sixty-three and
-ninety-two times over twenty tables, the path the policy draws would take the
-hand through a glass it is not aimed at, so the clearance rule raises it to
-travel height and the glass is not moved. The policy is drawing the teacher's
+**The direction the policy draws is often blocked.** Between eighty-seven and a
+hundred and fifty-one times over twenty tables, the path the policy draws would
+take the hand through a glass it is not aimed at, so the clearance rule raises it
+to travel height and the glass is not moved. The policy is drawing the teacher's
 push shape in roughly the right place and in a direction the table does not
 allow.
 
@@ -442,6 +457,14 @@ copying a teacher achieves when looking is most of the task. A version of it
 that chooses the push direction by arithmetic would be the geometry reference
 with a learned chooser in front of it, which is a different and probably better
 machine, answering a different question.
+
+A gentler version of the same idea *was* tried: when the arithmetic refuses the
+gate's first choice of glass, ask the gate for its next choice and draw that
+instead, so that the order is still the model's and arithmetic keeps only the
+power to refuse. It was measured over twenty tables and it was worse — two, four
+and five glasses broken against one, two and three — because the change touches
+only about one answer in twenty and those are answers at glasses the gate itself
+ranked low, where it is wrong more often than right.
 
 ## What this solution contributed to the examiner
 
@@ -479,22 +502,23 @@ allowance, however convenient that would be.
 |---|---|---|---|
 | One fixed nudge | 10 of 26 | +25 | 0 |
 | Geometry ranked | 7 of 25 | +19 | 0 |
-| **This solution** | **1 of 13** | **+3** | **2** |
+| **This solution** | **0 of 12**, 1 in one walk | **+1** | **1** |
 | A world model | 14 of 40 | +39 | 1 |
-| SmolVLA as it downloads | 0 of 11 | 0 | 0 |
+| SmolVLA as it downloads | 1 of 11 | +2 | 0 |
 | SmolVLA fine-tuned | 0 of 10 | 0 | 1 |
 
-Of the three solutions that answer from pictures, this is the only one that
-does any work at all: between them the three separate one table and free three
-glasses, and all of it is this one's. It is also the only one of the three that
-breaks anything, which is the same sentence read from the other side.
+Of the three solutions that answer from a picture, this one does the most work
+and is the only one whose work is deliberate. The borrowed model's one separated
+table and two freed glasses come from shoves that happened to go the right way;
+this solution chooses a glass, tests it, and pushes it, and the glass it frees is
+the glass it chose.
 
 The comparison that really matters is still with its own teacher. The teacher
 separates seven of the twenty-five tables it reaches. The student, fitted on
 eleven thousand of that teacher's answers and able to reproduce them to within
-nine millimetres on tables it was fitted on, separates one of thirteen. The gap
-between those two sentences is the result of this solution, and it is now a gap
-rather than a wall.
+nine millimetres on tables it was fitted on, separates one table in one walk of
+three. The gap between those two sentences is the result of this solution, and
+it is now a gap rather than a wall.
 
 ## What to take from it
 
@@ -527,6 +551,14 @@ needs.** Freeing a glass takes three or four of the pushes this policy draws,
 and its own error is as large as one of them. That is a quantity to attack, and
 it is a more useful thing to know than "behaviour cloning does not work here",
 which is what the first version of this page had to say.
+
+**And a safety rule and a work rule pull against each other, so the trade has to
+be stated rather than hidden.** Showing the clearance arithmetic every glass the
+solution has measured, instead of the glasses in the current picture, halved the
+broken glasses and cost two thirds of the glasses freed. Both halves of that are
+in the numbers above. The reason the trade was taken is that this problem treats
+a toppled glass as unrecoverable — a table that loses one pays nothing at either
+end — so a solution that breaks less is worth more even when it does less.
 
 ## Where to go next
 

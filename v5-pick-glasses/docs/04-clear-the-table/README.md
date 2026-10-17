@@ -74,10 +74,10 @@ table, so how quickly a solution works decides how far down the list it gets.
 |---|---|---|---|---|---|
 | [1 one fixed nudge](../../04-clear-the-table/01-one-fixed-nudge/) | 26 | 10 | +25 | **0.627** | **0** |
 | [2 geometry ranked](../../04-clear-the-table/02-geometry-ranked/) | 25 | 7 | +19 | 0.582 | **0** |
-| [3 imitation, ACT](../../04-clear-the-table/03-imitation-from-demonstrations/) | 13 | 1 | +3 | **0.377** | **2** |
+| [3 imitation, ACT](../../04-clear-the-table/03-imitation-from-demonstrations/) | 11 | 0 | +2 | **0.400** | **2** |
 | [4 a world model](../../04-clear-the-table/04-a-world-model/) | **40** | **14** | **+39** | 0.598 | 1 |
-| [5 SmolVLA as it downloads](../../04-clear-the-table/05-smolvla-as-it-downloads/) | 11 | **0** | **0** | 0.400 | **0** |
-| [6 SmolVLA fine-tuned](../../04-clear-the-table/06-smolvla-fine-tuned/) | **10** | **0** | **0** | 0.378 | 1 |
+| [5 SmolVLA as it downloads](../../04-clear-the-table/05-smolvla-as-it-downloads/) | 11 | 1 | +2 | 0.439 | **0** |
+| [6 SmolVLA fine-tuned](../../04-clear-the-table/06-smolvla-fine-tuned/) | 11 | 0 | **0** | 0.405 | **0** |
 
 Every row is the solution as it stands after a round of repairs. The six were
 measured once, then the three that were learning something and failing were
@@ -112,13 +112,15 @@ as many tables in the same quarter of an hour.
 chosen by geometry with nothing learned anywhere, separates ten of twenty-six
 and breaks no glass, which is the best pickable share on the card.
 
-**The three solutions that answer from a picture are now safe, and only one of
-them does any work.** Between them they separate one table and free three
-glasses. That is a poor result, and it is a far better one than the first walk,
-where the three of them freed nothing at all and broke twenty-eight glasses
-between them. The cause of the poor result is the same in each case: with the
-camera on the arm, four of the teacher's five answers only move it to see, so
-fitting on those answers teaches the looking rather than the pushing.
+**The three solutions that answer from a picture are now nearly harmless, and
+between them they free four glasses.** That is a poor result, and it is a far
+better one than the first walk, where the three of them freed nothing at all and
+broke twenty-eight glasses between them. The cause of the poor result is the same
+in each case: with the camera on the arm, four of the teacher's five answers only
+move it to see, so fitting on those answers teaches the looking rather than the
+pushing. Only one of the three is doing the task on purpose — the imitation
+policy chooses a glass, tests it and pushes it — while the borrowed model's two
+freed glasses come from shoves that happened to go a helpful way.
 
 The six solutions asked this question are problem 3's own, so each of them also
 has a standing under problem 3's per-push scorecard, and the two can be set

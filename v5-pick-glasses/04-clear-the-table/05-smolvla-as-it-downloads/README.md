@@ -103,42 +103,41 @@ are from the draw before that. Putting them here would compare the draws.
 | twenty tables, 84 glasses | solution 1 | run 0 | run 1 | run 2 |
 |---|---|---|---|---|
 | Tables separated, nothing broken | **5** | 0 | 0 | 0 |
-| Glasses broken | **0** | **0** | 2 | 4 |
-| Glasses pickable at the end | **47** of 84 (0.56) | 31 (0.37) | 31 (0.37) | 26 (0.31) |
-| Of which it made pickable | **+14** | −2 | 0 | 0 |
-| Arm seconds a table | **42.6** | 91.9 | 72.1 | 76.5 |
-| Of that, on paths that could not touch a glass | 46% | 94% | 99% | 94% |
-| Said done while the table was still crowded | 15 of 20 | 20 of 20 | 19 of 20 | 16 of 20 |
+| Glasses broken | **0** | 1 | **0** | **0** |
+| Glasses pickable at the end | **47** of 84 (0.56) | 30 (0.357) | 33 (0.393) | 34 (0.405) |
+| Of which it made pickable | **+14** | −1 | 0 | +1 |
+| Arm seconds a table | **42.6** | 77.1 | 80.5 | 71.9 |
+| Of that, on paths that could not touch a glass | 46% | 97% | 99% | 99% |
+| Said done while the table was still crowded | 15 of 20 | 19 of 20 | 20 of 20 | 20 of 20 |
 | Tables stopped by the clock | 0 | 0 | 0 | 0 |
-| Answers a table | 37 | 22 | 17 | 18 |
+| Answers a table | 37 | 18 | 19 | 17 |
 | Thinking per answer | **16 ms** | 0.28 s | 0.28 s | 0.28 s |
-| Paths the cell's interlock refused | 0 | **0** | **0** | 1 |
+| Paths the cell's interlock refused | 0 | **0** | **0** | **0** |
 
-**It frees nothing, and it is no longer harmless on these tables.** No table is
-separated in any of the three runs and no glass is given room it did not start
-with, which is the result this solution exists to produce: a model that has
-never seen this cell does not clear a table in it. What has changed since this
-page was first written is the second row. The clearance arithmetic the solution
-runs over its own answers used only to raise a path that could not account for
-itself; it now also carries a shove on until the glass it names has room, once
-the solution has watched that glass move. So a few of this policy's answers are
-now carried out as real pushes, and a real push by a model that is not aiming at
-anything sometimes puts a glass over: none in the first run, two in the second,
-four in the third.
+**It frees nothing and it breaks almost nothing.** No table is separated in any
+of the three runs and the eighty-four glasses end within one of where they
+started, which is the result this solution exists to produce: a model that has
+never seen this cell does not clear a table in it. One run of the three loses a
+glass; that is the ordinary difference between runs of a policy that denoises
+from fresh noise at every ask, and it is why three runs are made and all three
+are printed.
 
-**Those three runs are not an average, and reporting them apart matters.** The
-policy denoises from fresh noise at every ask, so the three columns are three
-draws of the same solution, and the glasses broken go 0, 2, 4 across them. A
-single run of this solution says very little, which is why three are run and all
-three are printed.
+**Three separate pieces of arithmetic had to be added before this row read like
+this, and the solution runs all of them over its own answers.** Before any of
+them, the same weights on the same twenty tables broke three glasses in one run
+and two in another, and quit after three answers a table.
 
-**This is still a different result from the one this page used to report.**
-Before any clearance arithmetic, the same weights on the same twenty tables
-broke three glasses in one run and two in another, and spent six to eight arm
-seconds a table because they quit after three answers. A table now costs
-seventy to ninety seconds, because seventeen to twenty-two answers are given
-before the stopping rule takes the policy at its word, and most of those answers
-are raised to travel height where they touch nothing.
+The first is the clearance check, which stopped the hand being carried across
+the table at the height of the glasses' rims. The second is *which glasses that
+check is shown*: with only the current picture it still broke 0, 2 and 4 glasses
+in the three runs, because a shove drove its glass into a neighbour that was
+real, measured a moment earlier, and out of frame when the answer was drawn.
+Shown every glass the solution has measured, it broke none in any run and its
+share rose from 0.369 to 0.393. The third carries a push no further than the
+glass has been watched sliding; this solution has almost nothing for that rule
+to act on, because it does not aim at glasses, and under it one run of three
+lost a glass again — which is the noise this solution is made of rather than a
+change in it.
 
 **Read the arm-time row beside the glasses row.** Eighty seconds a table for
 nothing is worse value than forty-three seconds a table for five separated
@@ -163,7 +162,7 @@ differs from problem 3 is the picture.
 | Lowest point of a chunk | 217 mm | **236 mm** | **146 mm** |
 | Travel across the table | 868 mm | 732 mm | 583 mm |
 | Step between waypoints | 14.6 mm | 11.4 mm | 10.0 mm |
-| Answers that reach the pushing height | — | 0 of 58 | 15.5% of 1,119 |
+| Answers that reach the pushing height | — | 0 of 58 | 14.2% of 1,076 |
 
 **The wrist view did not help. The state did.** Reading the columns right to
 left: the 72 mm the answers dropped between problem 3 and problem 4 is entirely
@@ -246,35 +245,33 @@ change is measured against.
 |---|---|---|---|
 | Tables attempted | 26 | 11 (11, 11, 11) | 15 |
 | Glasses on those tables | 102 | 40 (40, 40, 40) | 57 |
-| Tables separated, nothing broken | **10** | 0 (1, 0, 0) | **0** |
+| Tables separated, nothing broken | **10** | 1 (1, 0, 1) | **0** |
 | Tables failed by a topple | **0** | **0** | 14 |
-| Tables left unfinished | 16 | 11 (10, 11, 11) | 1 |
-| Glasses pickable at the end | 64 | 16 (18, 16, 16) | 1 |
+| Tables left unfinished | 16 | 10 (10, 11, 10) | 1 |
+| Glasses pickable at the end | 64 | 18 (18, 16, 18) | 1 |
 | Of those, had room already | 39 | 16 (16, 16, 16) | 2 |
-| Glasses it gave room to | +25 | **0** (+2, 0, 0) | −1 |
-| Pickable share | **0.627** | 0.400 (0.450, 0.400, 0.400) | 0.018 |
+| Glasses it gave room to | +25 | +2 (+2, 0, +2) | −1 |
+| Pickable share | **0.627** | 0.439 (0.450, 0.400, 0.439) | 0.018 |
 | Glasses broken | **0** | **0** | 20 |
-| It said a table was finished | 24 of 26 | 10 of 11 (10, 10, 9) | 0 of 15 |
-| Arm seconds for a table it separated | 43.6 | 122.8, in the one walk that separated one | nothing separated |
+| It said a table was finished | 24 of 26 | 10 of 11 (10, 9, 10) | 0 of 15 |
+| Arm seconds for a table it separated | 43.6 | 123 in the two walks that separated one | nothing separated |
 | Answers a table | 31 | 19 (20, 18, 19) | 22 |
-| Thinking an answer | 15 ms | 279 ms | 776 ms |
+| Thinking an answer | 15 ms | 280 ms | 776 ms |
 | Paths the cell's interlock refused | 0 | **0** | 10 |
 
-**Two rows carry the whole change: twenty glasses broken became none, and a
-share of 0.018 became 0.400.** Very little of that is the model doing anything
-better. The share rises because a table that loses a glass counts for nothing at
-either end, so once no table is lost the glasses that already had room are
-counted — and "the glasses that already had room" is almost the whole of this
-column, because the row above it says the solution gave room to none in two
-walks of three.
+**Two rows carry most of the change: twenty glasses broken became none, and a
+share of 0.018 became 0.439.** Very little of that is the model doing anything
+better. The share rises mostly because a table that loses a glass counts for
+nothing at either end, so once no table is lost the glasses that already had
+room are counted — and those are sixteen of the eighteen in this column.
 
-**One walk of the three separated a table, and it is worth neither hiding nor
-celebrating.** In the first walk two glasses were given room they did not start
-with and one table came out clean, which is why the separated row reads 0 with a
-spread of 0 to 1. A borrowed model that has never seen this cell will
-occasionally shove a crowded glass the right way, and three walks is exactly the
-number needed to tell that apart from a method that does it on purpose. The
-other two walks freed nothing.
+**Two walks of the three separate a table, and it is worth neither hiding nor
+celebrating.** Each of those walks gives two glasses room they did not start
+with. A borrowed model that has never seen this cell will occasionally shove a
+crowded glass in a direction that happens to help, and three walks is the
+smallest number that can tell that apart from a method that does it on purpose.
+The third walk freed nothing, so the honest reading of the separated row is
+"one, sometimes, by luck" and not "one a queue".
 
 **It breaks nothing here and breaks up to four glasses on the tables below the
 line.** The two runs disagree, and both are reported rather than averaged. The
@@ -294,7 +291,7 @@ arm time went up and the damage went to zero, and both come from the same fact:
 an answer that cannot be shown to be safe is still carried out as a move to a new
 viewpoint, and a move costs arm seconds.
 
-**The thinking time fell from 776 ms to 279 ms, and that is not this solution
+**The thinking time fell from 776 ms to 280 ms, and that is not this solution
 either.** The first walk ran on a laptop that was fitting other solutions at the
 same time. This one did not.
 
@@ -322,17 +319,21 @@ never arriving at all, and which the clearance check now turns into an answer
 that mostly changes nothing.
 
 **What the clearance check tells us about its answers, counted by reason.** Over
-the three walks, 622 of its 624 answers were raised to travel height, and the
-reasons are no longer all one reason:
+the three walks it drew 658 answers that could not account for themselves, and
+every one of them was raised to travel height. That is more than the 623 answers
+the card counts, because the last answer on a table is drawn and then not carried
+out: the stopping rule reads it as the policy proposing nothing. So very nearly
+everything this model draws is raised, and the reasons are no longer all one
+reason:
 
 | why an answer could not account for itself | over three walks |
 | --- | --- |
-| it comes down without reaching the glass it names | 341 |
-| it travels across the table at the height of the glasses' rims | 140 |
-| the glass it names may tip rather than slide, and nothing has tested it | 83 |
-| the hand would meet a glass it is not aimed at | 53 |
-| the glass it names would tip rather than slide | 3 |
-| it would drive the glass it names into another glass | 2 |
+| it comes down without reaching the glass it names | 345 |
+| it travels across the table at the height of the glasses' rims | 158 |
+| the glass it names may tip rather than slide, and nothing has tested it | 69 |
+| the hand would meet a glass it is not aimed at | 79 |
+| the glass it names would tip rather than slide | 6 |
+| it would drive the glass it names into another glass | 1 |
 
 The commonest reason has moved, and the move is informative. On the first walk
 every answer was raised for riding at the height of the glasses' rims, because

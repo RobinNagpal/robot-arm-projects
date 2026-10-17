@@ -574,7 +574,167 @@ is kept because its own measurement is sharp and it makes the student's push the
 same shape as the teacher's, and the record says plainly that the result did not
 move.
 
-## Three repairs that were measured and not kept
+### 13. A solution checks its answer against every glass it has measured
+
+**What it is.** A solution now keeps the newest reading of every glass this table
+has shown it, and hands all of them to the clearance check. Before this it handed
+over the glasses inside the current picture. `Measured` in
+`bench/keeping_clear.py` is the bookkeeping, and it lives there for the same
+reason `Shoves` does: three solutions need it and the check has to agree with it.
+
+**Why it is needed.** The camera rides on the arm, so a `Look` holds the glasses
+in one picture rather than the glasses on the table. A check given that picture
+is being asked about part of the table, and the part left out is exactly where a
+shove can do its damage: a push that drives its own glass into a neighbour breaks
+a glass the hand is never near, so nothing about the hand can catch it, and a
+neighbour that is out of frame is in no list to be checked against.
+
+**The geometry solutions never had this hole, and that is where the idea came
+from.** `01-one-fixed-nudge/remembered.py` builds a belief about the whole table
+out of several looks, averages repeated readings of the same glass, and starts a
+glass's average again once it has been pushed. Solutions 1, 2 and 4 all use it.
+The fitted solutions were built around answering from one look, so they held one
+look — and they are the solutions that broke glasses with pushes. The new class
+is the same idea in its simplest form.
+
+**What it bought**, on the twenty tables below the held-out line, three runs
+each:
+
+| twenty tables, three runs | glasses broken, before | after | pickable share |
+| --- | --- | --- | --- |
+| the borrowed model as it downloads | 2 (0 to 4) | **0 (0 to 0)** | 0.369 → **0.393** |
+| the same weights through solution 6's loop | 1 (0 to 3) | **0 (0 to 0)** | 0.369 → **0.393** |
+| the borrowed model fitted here | 2 (1 to 5) | 2 (1 to **2**) | 0.369 |
+| the imitation policy | 2 (1 to 4) | 2 (1 to **3**) | 0.357 → **0.381** |
+
+Those first two rows are the same weights run through two different folders'
+loops, so they are two independent measurements of one thing, and they agree
+exactly. **The change does most for the solution that aims worst**, which is
+what the cause predicts: a model that is not aiming at a particular glass shoves
+blindly, and a blind shove is the one most likely to drive its glass into
+something nobody is looking at.
+
+**Why it does least for the imitation policy.** Its own record says so: over
+twenty tables the memory held only 3 to 25 glasses that the current picture did
+not, because the wrist camera usually does see the whole of a four-glass table.
+A repair can only be worth the size of the hole it closes.
+
+**And on the held-out queue, which is the score:**
+
+| fifty tables offered from 10,000 | before | with the memory |
+| --- | --- | --- |
+| the imitation policy's glasses broken | 2 (2 to 5) | **1 (1 to 2)** |
+| its tables lost to a topple | 2 (2 to 5) | **1 (1 to 2)** |
+| its glasses freed | +3 (+2 to +3) | +1 (+1 to +2) |
+| its pickable share | 0.377 | **0.400** |
+| the borrowed model's glasses freed | 0 (0 to +2) | **+2 (0 to +2)** |
+| its tables separated | 0 (0 to 1) | **1 (0 to 1)** |
+| its pickable share | 0.400 | **0.439** |
+
+**The imitation policy's row is a trade and has to be read as one.** Half the
+breakage, a higher share, every spread tighter — and two of the three glasses it
+used to free are gone, because the arithmetic now refuses more of its pushes. The
+trade was taken because this problem treats a toppled glass as unrecoverable: a
+table that loses one pays nothing at either end, so one glass saved keeps a whole
+table's glasses in the count while one glass freed adds a single glass.
+
+**What was left undone, and the reason.** `Measured` keeps the newest reading
+of a glass where the geometry solutions average repeated readings and halve the
+camera's error. Averaging would be better, and it needs the caller to say when a
+glass has been pushed so that the average can start again — which `Shoves`
+already knows. It is not done because the check's whole job is to refuse, it
+already grows every glass by four millimetres before it measures, and a
+measurement that cannot be told from noise is not worth a change.
+
+### 14. A push is carried on no further than the glass has been watched sliding
+
+**What it is.** Change 11 carries a shove on along its own line until the glass
+it names has room. It now also stops at a distance the solution supplies: how
+far that glass has already moved under this solution's own shoves. A glass that
+has been watched sliding five millimetres has earned a five-millimetre drive, and
+one that has slid forty has earned forty, so a push grows as its glass earns it.
+The number is the solution's own reading, `Shoves.moved`, and `driven_home` only
+obeys it.
+
+**Why it was built, and what measured it.** Every glass the imitation solution
+lost went over on a push that had passed the whole clearance check and was then
+carried on by the arithmetic. That is a sharper statement than it sounds, and
+getting it took a small piece of machinery, because **a solution cannot see its
+own breakages**: the table ends the moment a glass goes over, so the look that
+would show the damage is never taken. The measurement script therefore keeps each
+table's last answer beside how that table ended. Of the five glasses lost over
+three fits, all five followed a carried-on push, and in all five the picture held
+two or three glasses on a table of four or five.
+
+The reasoning from that record to this rule is the one the reference solution
+embodies. Evidence that a glass slides comes from a five-millimetre probe, and a
+sixty-millimetre drive is a different action from the one the evidence was
+gathered about. The reference frees a glass over a run of small pushes, each
+judged by a fresh look, and this rule makes the fitted solutions do the same
+thing without taking the choice away from their models.
+
+**What it bought**, over twenty tables and three fits:
+
+| | memory only | with the cap |
+| --- | --- | --- |
+| the imitation policy's glasses broken | 2 (1 to 3) | **1 (0 to 2)** |
+| fit by fit | 3, 2, 1 | **1, 2, 0** |
+| its glasses freed | 0 (−1 to +5) | 0 (−1 to +4) |
+| its pickable share | 0.381 | **0.393** |
+| how far a carried-on push moves its glass | 7, 18, 25 mm | 4, 14, 23 mm |
+| pushes carried on | 8, 15, 20 | 15, 16, 21 |
+| the borrowed model's glasses broken | 0 (0 to 0) | 0 (0 to **1**) |
+
+The middle rows are the mechanism, and they are worth reading together: the same
+number of pushes are carried on, each a little less far, and one fit now walks
+all twenty tables without losing a glass — which no fit of this solution had done
+since it began pushing at all.
+
+**It does nothing for the borrowed model, and the reason is not noise.** The cap
+only applies to a push at a glass the solution has watched sliding, and that
+model does not aim at glasses: it comes down somewhere and the arithmetic reads
+back which glass the path came nearest. So there is almost nothing for the rule
+to act on, and the one glass broken in one run of three is the ordinary
+difference between runs of a policy that denoises from fresh noise at every ask.
+
+**What is left, and why no further arithmetic will reach it.** Two of the three
+glasses the imitation policy still loses went over while the arithmetic expected
+the glass to move 2.7 millimetres and 0.0 millimetres — that is, the extension
+added nothing and the shove the policy itself drew tipped the glass. Those
+glasses had already been watched sliding, and the tipping rule answers "try it
+and see" for every glass this cell draws, so nothing the solution can compute
+would have refused that push. What is left is the model that draws the shove, and
+that is a fitting problem rather than a checking one.
+
+**And then the held-out queue disagreed with the tables the change was chosen
+on.** This is the most useful thing in this entry, so it is written out rather
+than smoothed over.
+
+| the imitation policy | memory only | with the cap |
+| --- | --- | --- |
+| glasses broken, twenty building tables | 2 (1 to 3) | **1 (0 to 2)** |
+| glasses broken, the held-out queue | **1 (1 to 2)** | 2 (1 to 3) |
+| glasses freed, the held-out queue | +1 (+1 to +2) | **+2 (−1 to +2)** |
+| pickable share, the held-out queue | 0.400 (0.378 to 0.404) | 0.400 (0.316 to 0.404) |
+
+Walk by walk, one of the three queue walks is identical with and without the cap,
+and the other two each lose one more glass. With three samples on each side and
+spreads that overlap this far, **the cap's effect cannot be told from the
+noise of this solution on either set of tables** — it is two glasses better on
+one set and two worse on the other.
+
+**It is kept, and the reason is the measurement rule rather than the number.**
+The change was chosen on the tables below ten thousand, which is where every
+choice in this problem is made, and on those tables its evidence was the best
+available: one fit walked all twenty without losing a glass for the first time.
+The held-out queue is then the score, reported as it came. Reverting the change
+*because* the queue came out worse would be choosing by the held-out tables,
+which is the one thing the band is there to prevent, and it would make every
+earlier number on this page mean less. So the rule stays, the queue's verdict
+stands beside it, and the honest summary is that this repair closed a cause that
+was real and bought nothing that can be proved.
+
+## Five repairs that were measured and not kept
 
 A page that only lists what worked is not a record of what was learned.
 
@@ -588,6 +748,32 @@ nothing, so the length is left to the search.
 made things worse rather than better: over twenty tables the broken glasses went
 from 3 (1 to 3) to 4 (4 to 5), because the further back the hand comes down the
 longer it ploughs along the table. It was reverted.
+
+**Trying the gate's next choice of glass when the arithmetic refuses the first**
+was built, measured and taken out again. The gate scores every slot, so it has an
+order over the glasses and not only a favourite, and the idea was to walk that
+order and answer at the first glass the clearance check would allow — the model
+still choosing, the arithmetic keeping only the power to refuse. Over twenty
+tables the three fits broke 2, 4 and 5 glasses against 3, 2 and 1 with the
+memory alone, and the one separated table was lost.
+
+The run's own record says why it was never likely to help. The gate's first
+choice was accepted 401 to 751 times in a walk and its later choices only 23 to
+39 times, so the change touched about one answer in twenty — and those were
+answers at glasses the gate itself had ranked low, where its slot accuracy of 56
+to 61 per cent makes a lower choice more often wrong than right. **An answer the
+arithmetic refuses is sometimes the better outcome**, and a solution that keeps
+asking until something is allowed is choosing by what is allowed rather than by
+what it believes.
+
+**A solution cannot diagnose its own broken glasses, and finding that out cost a
+measurement.** Every reading carries whether the glass is standing, so a
+solution ought to be able to notice a glass on its side and record the answer it
+gave just before. That was built, and it recorded nothing at all on runs that
+broke eleven glasses between them. The reason is the examiner: a table ends the
+moment a glass goes over, so the look that would show the damage is never taken.
+The diagnosis now lives in the measurement script, which pairs each table's last
+answer with how that table ended, and that is the only place it can live.
 
 One measurement behind that third repair was also wrong, and is withdrawn. It
 reported that nine shoves in ten came down with the hand already on the glass,
@@ -613,11 +799,11 @@ measured walk, before any of the changes on this page.
 | A world model, before | 11 of 32 | +29 | 8 | 0.560 |
 | **A world model, after** | **14 of 40** | **+39** | **1** | **0.598** |
 | Imitation, before | 0 of 10 | 0 | 0 | 0.400 |
-| **Imitation, after** | **1 of 13** | **+3** | **2** | 0.377 |
+| **Imitation, after** | 0 of 11, 1 in one walk | **+2** | 2 | **0.400** |
 | SmolVLA as it downloads, before | 0 of 15 | −1 | 20 | 0.018 |
-| **SmolVLA as it downloads, after** | **0 of 11** | **0 to +2** | **0** | **0.400** |
+| **SmolVLA as it downloads, after** | **1 of 11** | **+2** | **0** | **0.439** |
 | SmolVLA fine-tuned, before | 0 of 8 | 0 | 8 | 0.103 |
-| **SmolVLA fine-tuned, after** | **0 of 10** | 0 | **1** | **0.378** |
+| **SmolVLA fine-tuned, after** | **0 of 11** | 0 | **0** | **0.405** |
 
 Three different kinds of outcome are in that table, and they are the result of
 this work.
@@ -628,26 +814,39 @@ broken glasses from eight to one, and pessimism in its search took its separated
 tables from eleven to fourteen while it also reached eight more tables. It beats
 the geometry reference it was measured against, which the first walk did not.
 
-**The two borrowed models went from the worst results in the problem to harmless
-ones.** Run exactly as it downloads, the model broke twenty glasses on its first
-walk and breaks none now, and its pickable share rose from 0.018 to 0.400.
-Fitted on this cell's demonstrations, it broke eight and now breaks one, and its
-share rose from 0.103 to 0.378. Neither separates anything, which is the honest
-result for a half-billion-number model given three hundred tables and a thousand
-steps: what changed is that they no longer destroy the table while failing. The
-pair measurement above says the rest of it plainly — on the same tables, with the
-same loop, fitting here made the model act a third again as often and no better.
+**The two borrowed models went from the worst results in the problem to
+harmless ones.** Run exactly as it downloads, the model broke twenty glasses on
+its first walk and breaks none now, and its pickable share rose from 0.018 to
+0.439. Fitted on this cell's demonstrations, it broke eight and now breaks none,
+and its share rose from 0.103 to 0.405. Neither separates a table on purpose,
+which is the honest result for a half-billion-number model given three hundred
+tables and a thousand steps: what changed is that they no longer destroy the
+table while failing.
+
+**The pair the fine-tuned model exists for says what fine-tuning bought, and it
+is not nothing.** On the same twenty tables, through the same loop, with the
+same arithmetic on both sides, the fitted model frees two glasses where the
+untrained one frees none — and topples two where the untrained one topples none,
+so its share comes out slightly lower. It draws its paths at the length and speed
+of its teacher's pushes and comes down to pushing height nearly twice as often.
+**Fitting bought work and it did not buy care.**
 
 **The imitation solution now acts, where before it only looked.** It went from
 leaving every table exactly as it found it — not one glass given room it did not
-start with — to freeing two or three glasses a queue and separating a table,
-while reaching three more tables. It also now breaks two to five, so by the
-share this problem scores on it has not yet won: 0.377 against 0.400. The gap
-between "it does the task badly" and "it does not do the task" is the whole of
-what the changes bought here, and the three things standing in the way of more
+start with — to freeing two glasses a queue and separating a table in one walk of
+three. It also breaks two, so by the share this problem scores on it has drawn
+level rather than won: 0.400 against the 0.400 it scored while doing nothing. The
+gap between "it does the task badly" and "it does not do the task" is the whole
+of what the changes bought here, and the three things standing in the way of more
 are all measured and written down above — one push moves a glass a fifth of what
 it needs, no glass in this cell is one the tipping rule can predict, and the
 direction the policy draws is blocked by a neighbour four times out of five.
+
+**And one honest word about the share.** The imitation policy scored 0.400 when
+it moved nothing and scores 0.400 now that it frees two glasses and breaks two.
+A share that cannot tell those two states apart is not a rich enough measure on
+its own, which is why every page here reports the glasses freed and the glasses
+broken beside it. The card for this problem is three numbers, not one.
 
 **The last of those three is where this stops, and the reason is worth stating.**
 It could be repaired the same way the distance was, by choosing the direction

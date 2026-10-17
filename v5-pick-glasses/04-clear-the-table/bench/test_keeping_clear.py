@@ -15,7 +15,9 @@ from keeping_clear import (
     MISSES_ITS_GLASS,
     UNTESTED,
     WOULD_TIP,
+    Measured,
     Shoves,
+    _would_move,
     a_look,
     driven_home,
     kept_clear,
@@ -550,3 +552,94 @@ def test_a_path_that_only_comes_straight_down_is_judged_on_what_it_reaches():
         aim=(WIDE_FOOT.x, WIDE_FOOT.y),
     )
     assert not travels_between_the_heights(straight_down)
+
+
+def test_what_a_table_has_shown_is_remembered_after_it_leaves_the_picture():
+    # The camera rides on the arm, so the glasses in one picture are some of the
+    # glasses on the table. A solution keeps every reading it has taken, which is
+    # what lets the clearance check ask about a neighbour that is out of frame.
+    measured = Measured()
+    measured.saw([WIDE_FOOT, TALL])
+    measured.saw([WIDE_FOOT])
+    assert {glass.id for glass in measured.all()} == {WIDE_FOOT.id, TALL.id}
+    assert measured.out_of_frame([WIDE_FOOT]) == (TALL,)
+    assert measured.out_of_frame([WIDE_FOOT, TALL]) == ()
+
+
+def test_the_newest_reading_of_a_glass_replaces_the_older_one():
+    # A glass that has been shoved has moved, so the older reading is of
+    # somewhere the glass no longer stands. Checking a path against that would
+    # be checking it against nothing.
+    measured = Measured()
+    measured.saw([WIDE_FOOT])
+    moved = replace(WIDE_FOOT, x=WIDE_FOOT.x + 0.040)
+    measured.saw([moved])
+    assert measured.all() == (moved,)
+
+
+def test_a_push_is_refused_by_a_glass_that_is_only_remembered():
+    # The point of remembering, stated as the rule sees it. The same push is
+    # allowed when the only glass the solution holds is the one it names, and
+    # refused once the neighbour it would drive that glass into is measured --
+    # even though the neighbour is in no picture at the time.
+    neighbour = replace(TALL, x=WIDE_FOOT.x + 0.090, y=WIDE_FOOT.y)
+    toward = _push_at(WIDE_FOOT, way=1)
+
+    alone = kept_clear(toward, [WIDE_FOOT], target=WIDE_FOOT.id, tested=(WIDE_FOOT.id,))
+    assert alone.why == ""
+
+    measured = Measured()
+    measured.saw([WIDE_FOOT, neighbour])
+    measured.saw([WIDE_FOOT])
+    both = kept_clear(
+        toward, measured.all(), target=WIDE_FOOT.id, tested=(WIDE_FOOT.id,)
+    )
+    assert both.why == DRIVES_INTO_ANOTHER
+
+
+def test_the_glasses_are_remembered_in_the_order_the_slots_use():
+    # One order, because a model's slots and this list are read against each
+    # other in the solutions' own records.
+    measured = Measured()
+    measured.saw([TALL, NARROW_FOOT, WIDE_FOOT])
+    assert measured.all() == tuple(
+        sorted([TALL, NARROW_FOOT, WIDE_FOOT], key=lambda glass: (glass.x, glass.y))
+    )
+
+
+def test_a_push_is_carried_no_further_than_the_caller_allows():
+    """The caller's own evidence can cap the drive, and the cap is obeyed.
+
+    A solution knows how far it has watched this glass slide, and that distance
+    is what it may reasonably drive the glass. A glass with a neighbour across
+    the table from it needs sixty millimetres of driving before it has room;
+    with a cap of ten the answer stops as soon as adding another step would
+    exceed the cap, so the push grows over several answers as the glass earns
+    it rather than arriving in one shove.
+    """
+    near = replace(TALL, id=9, x=WIDE_FOOT.x, y=WIDE_FOOT.y + 0.100)
+    glasses = [WIDE_FOOT, near]
+    tested = (WIDE_FOOT.id, near.id)
+    # Away from the neighbour, which is the direction that gives the glass room.
+    away = _push_at(WIDE_FOOT, way=-1)
+
+    far, far_moved = driven_home(away, glasses, WIDE_FOOT.id, tested=tested)
+    capped, capped_moved = driven_home(
+        away, glasses, WIDE_FOOT.id, tested=tested, no_further_than=0.010
+    )
+    assert far_moved > capped_moved
+    assert len(capped.waypoints) < len(far.waypoints)
+
+
+def test_a_cap_never_shortens_the_path_the_model_drew():
+    """A cap only refuses to add to a push; it cannot cut one down.
+
+    The shove the model drew is the model's own answer, and a solution that let
+    arithmetic shorten it would be answering with something nobody drew.
+    """
+    drawn = _push_at(WIDE_FOOT)
+    answer, moved = driven_home(
+        drawn, [WIDE_FOOT], WIDE_FOOT.id, tested=(WIDE_FOOT.id,), no_further_than=0.0
+    )
+    assert answer.waypoints == drawn.waypoints
+    assert moved == pytest.approx(_would_move(drawn, WIDE_FOOT))

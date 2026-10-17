@@ -61,7 +61,7 @@ from borrowed import joining
 
 from clock import crossing_seconds, path_seconds
 from contract import Answer, Done, Look
-from keeping_clear import Shoves, driven_home, kept_clear
+from keeping_clear import Measured, Shoves, driven_home, kept_clear
 from partners import PUSH_HEIGHT, TABLE_TOP_Z, Chunk, Seen, Waypoint
 from stopping import A_WHISKER, Quiet, is_a_push
 
@@ -184,13 +184,21 @@ class AsItDownloads:
         # a shove this solution has watched move a glass is the only evidence it
         # can have that the glass slides rather than tips.
         self.shoves = Shoves()
+        # Every glass measured on this table, which is more than the glasses in
+        # the last picture: the camera rides on the arm, so a neighbour this
+        # solution measured two answers ago may be out of frame while a path is
+        # drawn at the glass beside it. The clearance check is run against all
+        # of them.
+        self.measured = Measured()
+        self.out_of_frame = 0
 
     def begin(self, seed: int) -> None:
         self.model.reset()
         self.quiet = Quiet()
         self.last_seen = ()
-        # A new table is a table nothing has been tried on.
+        # A new table is a table nothing has been tried on, and nothing measured.
         self.shoves = Shoves()
+        self.measured = Measured()
 
     def answer(self, look: Look) -> Answer:
         """One forward pass, read as a path for the jaw -- or the end of the table.
@@ -205,6 +213,9 @@ class AsItDownloads:
         if look.seen:
             self.last_seen = look.seen
         self.shoves.saw(self.last_seen)
+        self.measured.saw(look.seen)
+        known = self.measured.all() or self.last_seen
+        self.out_of_frame += len(self.measured.out_of_frame(look.seen))
         chunk = joining.chunk_for(path, list(self._glasses_for_the_record()))
         # The glass the path is aimed at, in so far as it is aimed at anything:
         # ``chunk_for`` reads back the glass the jaw comes nearest to while low
@@ -212,8 +223,8 @@ class AsItDownloads:
         # the check treats it as a claim to be tested rather than as a decision:
         # a path that does not actually reach that glass, or that would reach a
         # second one on the way, is raised like any other.
-        tested = self.shoves.tested(self.last_seen)
-        kept = kept_clear(chunk, self.last_seen, target=chunk.glass, tested=tested)
+        tested = self.shoves.tested(known)
+        kept = kept_clear(chunk, known, target=chunk.glass, tested=tested)
         chunk, why = kept.chunk, kept.why
         if why:
             self.raised[why] += 1
@@ -226,7 +237,18 @@ class AsItDownloads:
             # that stops at the glass frees nothing. A shove at a glass nothing
             # has tested is left as it was, because that is how the evidence is
             # got.
-            chunk, moved = driven_home(chunk, self.last_seen, chunk.glass, tested=tested)
+            # How far it may be driven is this solution's own evidence: the
+            # distance it has already watched this glass slide. ``driven_home``
+            # says why, and the measurement behind it is that every glass these
+            # solutions lost went over on a carried-on push.
+            aimed_at = next((g for g in known if g.id == chunk.glass), None)
+            chunk, moved = driven_home(
+                chunk,
+                known,
+                chunk.glass,
+                tested=tested,
+                no_further_than=self.shoves.moved(aimed_at) if aimed_at else None,
+            )
             self.driven += 1
             self.driven_mm += 1000 * moved
         # An answer left as a shove at the glass it names is one this solution

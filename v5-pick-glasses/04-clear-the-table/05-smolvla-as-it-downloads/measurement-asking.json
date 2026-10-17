@@ -4,82 +4,82 @@
   "runs": [
     {
       "run": 0,
-      "arm_seconds_a_table": 91.88,
-      "looking_share": 0.942,
-      "tables_in_the_queue_budget": 10,
+      "arm_seconds_a_table": 77.1,
+      "looking_share": 0.97,
+      "tables_in_the_queue_budget": 11,
       "shape": {
-        "answers": 431,
-        "lowest_mm_median": 140.3,
+        "answers": 369,
+        "lowest_mm_median": 146.6,
         "lowest_mm_least": 75.0,
-        "lowest_mm_most": 271.2,
-        "across_mm_median": 817.7,
-        "across_mm_least": 344.1,
-        "across_mm_most": 1259.5,
-        "step_mm_median": 14.7,
-        "step_mm_least": 5.6,
-        "step_mm_most": 22.1,
-        "share_reaching_the_table": 0.167
+        "lowest_mm_most": 281.4,
+        "across_mm_median": 822.2,
+        "across_mm_least": 284.9,
+        "across_mm_most": 1218.6,
+        "step_mm_median": 14.8,
+        "step_mm_least": 4.1,
+        "step_mm_most": 24.1,
+        "share_reaching_the_table": 0.144
       }
     },
     {
       "run": 1,
-      "arm_seconds_a_table": 72.09,
-      "looking_share": 0.992,
-      "tables_in_the_queue_budget": 12,
+      "arm_seconds_a_table": 80.49,
+      "looking_share": 0.988,
+      "tables_in_the_queue_budget": 10,
       "shape": {
-        "answers": 331,
-        "lowest_mm_median": 145.8,
+        "answers": 370,
+        "lowest_mm_median": 143.8,
         "lowest_mm_least": 75.0,
-        "lowest_mm_most": 249.6,
-        "across_mm_median": 847.9,
+        "lowest_mm_most": 247.6,
+        "across_mm_median": 841.6,
         "across_mm_least": 371.3,
-        "across_mm_most": 1382.0,
-        "step_mm_median": 15.6,
+        "across_mm_most": 1526.9,
+        "step_mm_median": 15.3,
         "step_mm_least": 5.9,
-        "step_mm_most": 27.0,
-        "share_reaching_the_table": 0.133
+        "step_mm_most": 27.2,
+        "share_reaching_the_table": 0.159
       }
     },
     {
       "run": 2,
-      "arm_seconds_a_table": 76.45,
-      "looking_share": 0.939,
-      "tables_in_the_queue_budget": 13,
+      "arm_seconds_a_table": 71.92,
+      "looking_share": 0.989,
+      "tables_in_the_queue_budget": 11,
       "shape": {
-        "answers": 357,
-        "lowest_mm_median": 149.8,
+        "answers": 337,
+        "lowest_mm_median": 145.7,
         "lowest_mm_least": 75.0,
-        "lowest_mm_most": 260.6,
-        "across_mm_median": 820.6,
-        "across_mm_least": 280.7,
+        "lowest_mm_most": 286.0,
+        "across_mm_median": 838.9,
+        "across_mm_least": 239.3,
         "across_mm_most": 1518.7,
-        "step_mm_median": 14.9,
-        "step_mm_least": 4.9,
+        "step_mm_median": 15.1,
+        "step_mm_least": 4.7,
         "step_mm_most": 24.8,
-        "share_reaching_the_table": 0.16
+        "share_reaching_the_table": 0.122
       }
     }
   ],
   "shape_over_every_run": {
-    "answers": 1119,
-    "lowest_mm_median": 145.8,
+    "answers": 1076,
+    "lowest_mm_median": 145.3,
     "lowest_mm_least": 75.0,
-    "lowest_mm_most": 271.2,
-    "across_mm_median": 827.9,
-    "across_mm_least": 280.7,
-    "across_mm_most": 1518.7,
-    "step_mm_median": 15.0,
-    "step_mm_least": 4.9,
-    "step_mm_most": 27.0,
-    "share_reaching_the_table": 0.155
+    "lowest_mm_most": 286.0,
+    "across_mm_median": 833.0,
+    "across_mm_least": 239.3,
+    "across_mm_most": 1526.9,
+    "step_mm_median": 15.1,
+    "step_mm_least": 4.1,
+    "step_mm_most": 27.2,
+    "share_reaching_the_table": 0.142
   },
   "tally": {
     "tables": 60,
-    "paths_followed": 1063,
+    "paths_followed": 1016,
     "refused_by_the_bench": 0,
     "tables_that_ran_out_of_answers": 0,
     "said_done_because": {
-      "16 answers in a row that would not touch a glass": 55
+      "16 answers in a row that would not touch a glass": 59
     },
     "refused_because": {}
   }

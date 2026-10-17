@@ -62,7 +62,7 @@ import chunks
 import readings
 
 from contract import Answer, Done, Look
-from keeping_clear import driven_home, kept_clear
+from keeping_clear import Measured, driven_home, kept_clear
 from partners import Chunk
 from stopping import Quiet, is_a_push
 
@@ -119,6 +119,18 @@ class Imitation:
         # class, so that the gate is shown at run time the thing it was fitted
         # on rather than something computed a second way.
         self.shoves = readings.Shoves()
+        # Every glass measured on this table, which is not the same as the
+        # glasses in the current picture: the camera rides on the arm. The
+        # clearance check is run against all of them, because a shove can drive
+        # its glass into a neighbour that is out of frame at the moment the
+        # answer is drawn.
+        self.measured = Measured()
+        self.out_of_frame = 0
+        # What the last answer on this table was. ``run.py`` pairs it with how
+        # the table ended, which is the only way to ask which kind of answer
+        # breaks a glass: the table ends the moment one goes over, so the
+        # solution never gets the look that would show it the damage.
+        self.last_answer: dict | None = None
 
     def answer(self, look: Look) -> Answer:
         # The tallest glass measured so far on this table, which is what the
@@ -127,6 +139,7 @@ class Imitation:
         self.tallest = max(self.tallest, *(glass.height for glass in look.seen), 0.0)
 
         self.shoves.saw(look.seen)
+        self.measured.saw(look.seen)
         state = readings.to_state(look.jaw, look.seen)
         itself = readings.about_itself(self.answers, self.since_touch, self.travelled)
         shoves = self.shoves.row(look.seen)
@@ -155,27 +168,27 @@ class Imitation:
             self.said_done += 1
             return Done("the gate says this table needs nothing more")
 
-        condition = readings.conditioning(kind, target)
-        action = self.model.chunk(look.picture, readings.to_asked(state, itself, condition))
-        origin = (target.x, target.y) if target is not None else (0.0, 0.0)
-        waypoints, pulled = chunks.to_waypoints(action, origin)
-        chunk = Chunk(
-            glass=target.id if target is not None else _glass(waypoints, look),
-            waypoints=waypoints,
-            aim=_aim(waypoints),
-        )
+        # The check is given every glass this table has shown, and the models
+        # are given the picture's own glasses. The two are different on purpose:
+        # a model may only answer about what it can see, and the arithmetic that
+        # keeps the hand clear may use every measurement the solution holds.
+        known = self.measured.all()
+        self.out_of_frame += len(self.measured.out_of_frame(look.seen))
+        tested = self.shoves.tested(known)
+
+        chunk, pulled = self._draw(look, state, itself, kind, target)
         # The answer the gate called a look is checked as a look, which is to say
         # it has to ride at travel height; the answer it aimed at a glass is
         # checked as a push at that glass. So the check asks of each answer what
         # the solution itself claimed it was.
-        tested = self.shoves.tested(look.seen)
         kept = kept_clear(
             chunk,
-            look.seen,
+            known,
             target=None if kind == readings.LOOK else chunk.glass,
             tested=tested,
         )
         chunk, why = kept.chunk, kept.why
+        moved = 0.0
         if why:
             self.raised[why] += 1
         self.pulled_onto_the_heights += kept.pulled
@@ -187,7 +200,22 @@ class Imitation:
             # at the glass instead of driving it, and a shove that moves a glass
             # nowhere frees nothing. A probe is left exactly as it was drawn,
             # because a probe is how the evidence for a push is got.
-            chunk, moved = driven_home(chunk, look.seen, target.id, tested=tested)
+            #
+            # How far it may be driven is this solution's own evidence: the
+            # distance it has already watched this glass slide. Every glass
+            # these solutions lost went over on a push that had passed every
+            # check and was then carried on, and two of them went over while
+            # the arithmetic expected the glass to barely move, which is a glass
+            # tipping under the hand rather than being driven into a neighbour.
+            # A glass that has slid five millimetres has earned a five
+            # millimetre drive; one that has slid forty has earned forty.
+            chunk, moved = driven_home(
+                chunk,
+                known,
+                target.id,
+                tested=tested,
+                no_further_than=self.shoves.moved(target),
+            )
             self.driven += 1
             self.driven_mm += 1000 * moved
 
@@ -209,6 +237,14 @@ class Imitation:
         else:
             self.looks += 1
         self._count(chunk, acted)
+        self.last_answer = {
+            "kind": readings.KINDS[kind],
+            "aimed_at_a_glass": target is not None,
+            "raised": bool(why),
+            "driven_home": not why and kind == readings.PUSH and target is not None,
+            "the_push_moves_its_glass_mm": round(1000 * moved, 1) if moved else 0.0,
+            "glasses_the_picture_held": len(look.seen),
+        }
         self.quiet.saw(chunk, self.tallest)
 
         if self.quiet.finished:
@@ -249,6 +285,27 @@ class Imitation:
         else:
             self.since_touch += 1
 
+    def _draw(self, look: Look, state, itself, kind: int, target) -> tuple[Chunk, int]:
+        """One chunk from the policy, for one decision, in the frame of its glass.
+
+        The policy writes a push as an offset from the glass it is aimed at, so
+        the glass's place is added back here. A look is aimed at nothing and is
+        written in the table's own numbers, which is what an origin of zero
+        means.
+        """
+        condition = readings.conditioning(kind, target)
+        action = self.model.chunk(look.picture, readings.to_asked(state, itself, condition))
+        origin = (target.x, target.y) if target is not None else (0.0, 0.0)
+        waypoints, pulled = chunks.to_waypoints(action, origin)
+        return (
+            Chunk(
+                glass=target.id if target is not None else _glass(waypoints, look),
+                waypoints=waypoints,
+                aim=_aim(waypoints),
+            ),
+            pulled,
+        )
+
     def summary(self) -> dict:
         """What the wrapping did, for a run's record."""
         return {
@@ -262,6 +319,7 @@ class Imitation:
             "answers_raised_to_travel_height": dict(self.raised.most_common()),
             "answers_pulled_onto_the_two_heights": self.pulled_onto_the_heights,
             "pushes_driven_home": self.driven,
+            "glasses_remembered_but_out_of_frame": self.out_of_frame,
             "a_driven_push_moves_its_glass_mm": (
                 round(self.driven_mm / self.driven, 1) if self.driven else 0.0
             ),

@@ -55,12 +55,12 @@ tried and thrown away.
 
 | | tables attempted | tables separated | failed by a topple | glasses | glasses freed | pickable share | glasses broken | said done while crowded | thinking an answer |
 |---|---|---|---|---|---|---|---|---|---|
-| [1 one fixed nudge](../01-one-fixed-nudge/) | 26 | 10 | **0** | 102 | 25 | **0.627** | **0** | 14 | 15 ms |
-| [2 geometry ranked](../02-geometry-ranked/) | 25 | 7 | **0** | 98 | 19 | 0.582 | **0** | 17 | 15 ms |
-| [3 imitation, ACT](../03-imitation-from-demonstrations/) | 13 | 1 | **2** | 49 | 3 | **0.377** | **2** | 9 | 19 ms |
-| [4 a world model](../04-a-world-model/) | **40** | **14** | 1 | 160 | **39** | 0.598 | 1 | 25 | **10 ms** |
-| [5 SmolVLA as it downloads](../05-smolvla-as-it-downloads/) | 11 | **0** | **0** | 40 | **0** | 0.400 | **0** | 9 | 279 ms |
-| [6 SmolVLA fine-tuned](../06-smolvla-fine-tuned/) | **10** | **0** | 1 | 37 | **0** | 0.378 | 1 | 9 | **281 ms** |
+| [1 one fixed nudge](../01-one-fixed-nudge/) | 26 | 10 | **0** | 102 | +25 | **0.627** | **0** | 14 | 15 ms |
+| [2 geometry ranked](../02-geometry-ranked/) | 25 | 7 | **0** | 98 | +19 | 0.582 | **0** | 17 | 15 ms |
+| [3 imitation, ACT](../03-imitation-from-demonstrations/) | **11** | 0 | **2** | 45 | +2 | **0.400** | **2** | 9 | 19 ms |
+| [4 a world model](../04-a-world-model/) | **40** | **14** | 1 | 160 | **+39** | 0.598 | 1 | 25 | **10 ms** |
+| [5 SmolVLA as it downloads](../05-smolvla-as-it-downloads/) | **11** | 1 | **0** | 40 | +2 | 0.439 | **0** | 9 | 280 ms |
+| [6 SmolVLA fine-tuned](../06-smolvla-fine-tuned/) | **11** | 0 | **0** | 41 | **0** | 0.405 | **0** | 9 | **282 ms** |
 
 **Tables separated** is the clean pass: every glass on the table has room for
 the hand, and nothing fell. **Glasses freed** is how many more glasses had room
@@ -80,8 +80,8 @@ fit each walk, and each one's own page gives the spread of every number.
 The table above has a difficulty in it that is easy to miss. Because the clock
 belongs to the queue, a faster solution reaches further down the list, and the
 tables it reaches there are not the tables the slower rows were scored on. So
-the fourth row is being credited with forty tables while the sixth is being
-credited with ten, and the two numbers are not of the same thing.
+the fourth row is being credited with forty tables while the others are credited
+with eleven or twelve, and the numbers are not of the same thing.
 
 The repair is to cut every walk to the same prefix of the queue and count only
 those tables. The queue is always walked in order, so the first ten tables of
@@ -93,10 +93,10 @@ nudge reached, which is the prefix the two leading rows share.
 |---|---|---|---|---|
 | 1 one fixed nudge | 5 | +11 | 0.703 | 0 |
 | 2 geometry ranked | 5 | +10 | 0.676 | 0 |
-| 3 imitation, ACT | 0 (0 to 1) | +1 (+1 to +2) | 0.378 | 2 (2 to 5) |
+| 3 imitation, ACT | 0 (0 to 1) | +1 (−1 to +2) | 0.378 | 2 (1 to 3) |
 | 4 a world model | 5 | +10 (+10 to +11) | 0.676 | 0 |
-| 5 SmolVLA as it downloads | 0 (0 to 1) | 0 (0 to +2) | 0.405 | 0 |
-| 6 SmolVLA fine-tuned | 0 | 0 | 0.378 | 1 (0 to 2) |
+| 5 SmolVLA as it downloads | 1 (0 to 1) | +2 (0 to +2) | 0.459 | 0 |
+| 6 SmolVLA fine-tuned | 0 | 0 | 0.405 | 0 (0 to 1) |
 | perfect play | 8 | +16 | 0.838 | 0 |
 
 | the first twenty-six tables | tables separated | glasses freed | pickable share | glasses broken |
@@ -111,13 +111,19 @@ glass is left out of the pickable count at both ends, while every glass on it
 still counts in the total the share is taken out of.
 
 On the ten tables the three competent solutions are indistinguishable: five
-tables each, within a glass of each other, nothing broken. On the twenty-six
-the world model is ahead of the reference on both columns of work done, and its
+tables each, within a glass of each other, nothing broken. On the twenty-six the
+world model is ahead of the reference on both columns of work done, and its
 spread of eight to twelve separated tables holds the reference's ten, so the
 honest reading is that it is level or a little ahead rather than clearly ahead.
 What is no longer in doubt is the breakage: on these tables it now breaks
 nothing, where the first measured walk of it broke eight glasses over the whole
 queue.
+
+**The three picture-driven rows are closer together than their columns suggest.**
+On the ten tables they all reached, the imitation policy frees one glass and
+breaks two, the borrowed model frees two and breaks none, and the fine-tuned one
+frees and breaks nothing. None of them separates a table except by luck, and
+the differences between them are inside their own spreads.
 
 ## What was possible, and how far short each row fell
 
@@ -137,10 +143,10 @@ ceiling on exactly the prefix it reached.
 |---|---|---|---|---|
 | 1 one fixed nudge | 10 of 26 | 16 | 0.627 | 0.775 |
 | 2 geometry ranked | 7 of 25 | 15 | 0.582 | 0.765 |
-| 3 imitation, ACT | 1 of 13 | 9 | 0.377 | 0.776 |
+| 3 imitation, ACT | 0 of 12 | 9 | 0.400 | 0.822 |
 | 4 a world model | 14 of 40 | 26 | 0.598 | 0.806 |
-| 5 SmolVLA as it downloads | 0 of 11 | 9 | 0.400 | 0.850 |
-| 6 SmolVLA fine-tuned | 0 of 10 | 8 | 0.378 | 0.838 |
+| 5 SmolVLA as it downloads | 1 of 11 | 9 | 0.439 | 0.850 |
+| 6 SmolVLA fine-tuned | 0 of 11 | 9 | 0.405 | 0.850 |
 
 **The two leading rows reach between a half and five eighths of the ceiling on
 tables, and about three quarters to four fifths of it on glasses.** So the task
@@ -169,16 +175,16 @@ tables by solutions that behave nothing alike.
 
 **A share can be high because nothing was touched.** Of the glasses counted in
 a share, the ones that already had room when the table was drawn cost a
-solution nothing. The borrowed model run as it downloads scores 0.400 having
-freed no glass in two of its three walks, so almost every glass in that share
-was free; the fixed nudge scores 0.627 having freed twenty-five, so a third of
-its share was earned.
-Always read the share beside the glasses-freed column, which is the part a
-solution is responsible for.
+solution nothing. The fine-tuned borrowed model scores 0.405 having freed no
+glass at all, so every glass in that share was free; the fixed nudge scores
+0.627 having freed twenty-five, so a third of its share was earned. Always read
+the share beside the glasses-freed column, which is the part a solution is
+responsible for.
 
-**Zero glasses broken is only praise beside work done.** Three rows break
-nothing. Two of them do so while separating ten and seven tables, and the third
-does so while freeing no glass, which means it is harmless rather than safe.
+**Zero glasses broken is only praise beside work done.** Four rows break
+nothing. Two of them do so while separating ten and seven tables; the other two
+do so while freeing two glasses and none, which means they are harmless rather
+than safe.
 
 ## What the six results say
 
@@ -205,14 +211,23 @@ choosing even when nothing can go wrong in carrying it out. The trees were
 fitted to judge whether a push would tip a glass, which is about risk, and not
 whether a push would actually free one.
 
-**The three solutions that answer from pictures are now safe, and only one of
-them does any work.** Between them they separate one table and free three
-glasses. That is a poor result, and it is a different poor result from the one
-the first walk produced: then the three of them freed nothing at all and broke
-twenty-eight glasses between them, and two of the three never said a table was
-finished because a glass went over before they could. The imitation policy now
-frees two or three glasses a queue and separates a table, the borrowed model
-run as it downloads breaks nothing, and the fine-tuned one breaks about one.
+**The three solutions that answer from a picture are now nearly harmless, and
+between them they free four glasses.** That is a poor result, and it is a very
+different poor result from the one the first walk produced: then the three of
+them freed nothing at all and broke twenty-eight glasses between them, and two
+of the three never said a table was finished because a glass went over before
+they could. Now the imitation policy frees two glasses a queue and breaks two,
+the borrowed model run as it downloads frees two and breaks none, and the
+fine-tuned one frees and breaks nothing.
+
+**One of those three is doing the task and two are not, and the columns do not
+show it.** The imitation policy chooses a glass, tests whether it slides, and
+pushes it, so the glasses it frees are the glasses it chose. The borrowed
+model's two freed glasses come from shoves that happened to go a helpful way: it
+comes down at no glass in particular, and the arithmetic afterwards reads back
+which glass the path came nearest. Equal numbers in a column can be earned or
+stumbled into, and the only way to tell is to read what the solution was trying
+to do.
 
 **Looking is most of what the task is, so looking is what gets learned.** With
 the camera on the arm, four of the teacher's five answers move the arm only to
@@ -225,13 +240,16 @@ split into a part that decides which kind of answer is wanted and a part that
 draws it, and the fine-tuned model was fitted on a mixture of looks and pushes
 weighted evenly instead of on the teacher's own four-to-one.
 
-**Fitting the borrowed model on this cell buys safety and reach, and no
-competence.** Its own page measures the pair it exists for: the same weights,
-on the same twenty tables, with and without this cell's demonstrations. Fitted,
-it gives a third again as many answers, because it stops declaring the table
-finished so early. It separates no more tables, frees no more glasses, and ends
-with the same pickable share. A thousand steps over three hundred tables makes
-a half-billion-number model act more rather than act better.
+**Fitting the borrowed model on this cell buys work and does not buy care.**
+Its own page measures the pair it exists for: the same weights, the same loop and
+the same twenty tables, with and without this cell's demonstrations. Fitted, it
+draws paths less than half as long in steps a third as long — the length and
+speed of its teacher's pushes — comes down to pushing height nearly twice as
+often, and frees two glasses where the untrained model frees none. It also
+topples two where the untrained model topples none, so its share comes out
+slightly *lower* than the model it started from. A thousand steps over three
+hundred tables taught it to go and act on a glass, and not to do so without
+sometimes putting it over.
 
 **The untrained borrowed model is worse here than in problem 3, and the camera
 is not why.** The sensitivity check separates the two things that changed. The
@@ -247,9 +265,9 @@ would travel across the table at the height of the glasses' rims.
 
 **Thinking time divides the six into two groups.** The four solutions that
 compute or fit something small answer in ten to nineteen milliseconds. The two
-borrowed foundation models need two hundred and seventy-nine and two hundred
-and eighty-one milliseconds an answer, which is fifteen to thirty times more,
-for results that are worse on every column of work done. That gap is not part
+borrowed foundation models need about two hundred and eighty milliseconds an
+answer, which is fifteen to thirty times more, for results that are worse on
+every column of work done. That gap is not part
 of the score, because the budget is the arm's time, but it is what decides
 whether a method could run on a real arm at all.
 

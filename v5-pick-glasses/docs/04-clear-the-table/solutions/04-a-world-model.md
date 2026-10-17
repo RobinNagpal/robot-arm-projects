@@ -433,12 +433,12 @@ pessimism had not already bought.
 | fifty tables offered from 10,000 | 1 geometry | 2 ranked geometry | **4 world model** | 5 model as it downloads |
 |---|---|---|---|---|
 | Tables attempted | 26 | 25 | **40** | 11 |
-| Tables separated | 10 | 7 | **14** | 0 |
+| Tables separated | 10 | 7 | **14** | 1 |
 | Tables failed by a topple | **0** | **0** | 1 | **0** |
-| Glasses it gave room to | +25 | +19 | **+39** | 0 |
-| Share pickable | **0.627** | 0.582 | 0.598 | 0.400 |
+| Glasses it gave room to | +25 | +19 | **+39** | +2 |
+| Share pickable | **0.627** | 0.582 | 0.598 | 0.439 |
 | Glasses broken | **0** | **0** | 1 | **0** |
-| Thinking an answer | 15 ms | 15 ms | **10 ms** | 279 ms |
+| Thinking an answer | 15 ms | 15 ms | **10 ms** | 280 ms |
 
 Read across the row of tables separated and then across the row of shares. This
 solution separates four more tables than anything else here and gives room to
@@ -446,7 +446,8 @@ fourteen more glasses, and it still holds the second share rather than the
 first, because it reaches so much further down the queue that the tables it
 leaves crowded are counted against it too. The two columns on either side of it
 are the two ends of this problem: geometry that is slower and finishes what it
-starts, and a borrowed model that is safe now and does nothing.
+starts, and a borrowed model that is safe now and frees a glass or two by
+accident.
 
 **The one thing this solution is plainly best at is thinking.** Ten
 milliseconds an answer, against the geometry's fifteen, where in problem 3 the
