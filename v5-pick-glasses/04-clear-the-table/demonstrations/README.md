@@ -42,8 +42,7 @@ two things about the answer itself:
   was aimed at.
 
 The **action** is the path the jaw followed, as the teacher wrote it and the
-bench carried it out — and for a push it is written **measured from the glass
-being pushed** rather than in the table's own numbers.
+bench carried it out, in the cell's own numbers.
 
 **The last two of those were added after the first fits, and both are there for
 the same measured reason.** A model fitted to copy this set has to produce two
@@ -52,10 +51,18 @@ five are looks, what it produced was always a look: the first fitted policy
 freed no glasses on any table. So the decision is now recorded beside the path,
 which lets one model learn to choose and another learn to draw, and the three
 numbers about the table's history are what let a model tell a table it has just
-arrived at from one it has already been round. Writing a push from its own glass
-is the third part of the same idea: measured from the glass, one shove is one
-answer wherever the glass stands, where in the table's numbers it is a different
-answer at every glass.
+arrived at from one it has already been round.
+
+**The set itself keeps one convention, and each solution reads it.** A push
+measured from the glass it pushes is one answer wherever that glass stands, and
+in the table's own numbers it is a different answer at every glass — which is
+worth a great deal to the model that has to draw one. But it is a *reading*
+rather than what happened, and the other solution fitted on this set refused a
+path written that way, because a path measured from a glass is not a path its
+model can express. So the set holds the plain truth and the reading is done
+where it is wanted: ``loading.aimed_at`` reads the glass's place back out of the
+row the policy is shown, and solution 3's own fitting subtracts it. Nothing is
+kept in step by hand, because the place is already in the row.
 
 **The teacher's own "this table is finished" is in the set too.** The loop never
 asks the cell to carry anything out for it, so there is no path to copy; the
@@ -238,7 +245,7 @@ models take:
 | --- | --- |
 | `observation.images.wrist` | the picture, at the size the camera renders |
 | `observation.state` | the jaw's pose, the glasses the picture caught, the three numbers about the table so far, and the decision |
-| `action` | the chunk, flat, measured from the pushed glass for a push |
+| `action` | the chunk, flat, in the cell's own numbers |
 | `gate` | the decision as two numbers: which kind of answer, and which slot it named |
 | `task` | one sentence, the same every time |
 
