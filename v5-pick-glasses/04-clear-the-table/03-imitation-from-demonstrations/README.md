@@ -1,13 +1,26 @@
 # Imitation from demonstrations
 
-Problem 4 by copying the ranked geometry. A small model with action chunking,
-fitted here from random numbers on [the demonstrations](../demonstrations), is
-shown what problem 4 shows every solution and answers with a path for the jaw.
+Problem 4 by copying the ranked geometry. **Two models are fitted here from
+random numbers on [the demonstrations](../demonstrations)**, and each has one
+job. The **gate** is shown what problem 4 shows every solution and says which of
+four kinds of answer to give — go and look, probe a glass, push a glass, or say
+the table is finished — and which glass to give it at. The **policy** is then
+shown the same thing plus that decision, and draws the path.
 
-Nothing is downloaded. The model is
+**Why two and not one.** The first version of this solution was one model doing
+both, and it freed no glasses at all on the held-out queue. Four of every five
+answers the teacher gives are a move to see from somewhere else, and fitting
+minimises the distance to the teacher's answer, so wherever the picture did not
+say which kind of answer was wanted the model produced something between the
+two — and something between a look and a push is a look. Splitting the decision
+out of the drawing is the change that makes the pushing learnable at all, and
+`gate.py` argues it in full.
+
+Nothing is downloaded. The policy is
 [LeRobot](https://github.com/huggingface/lerobot)'s ACT, which is Apache-2.0,
 and its vision backbone starts from random numbers rather than from ImageNet,
-because a downloaded backbone would make "fitted from nothing" untrue.
+because a downloaded backbone would make "fitted from nothing" untrue. The gate
+is four convolutions and two linear heads, written in this folder.
 
 ## What is new here, and what is borrowed
 
@@ -28,13 +41,26 @@ and the size a picture is read at. None of it is written again here. The two
 problems exist to be compared, so if the model or the fitting loop were rewritten
 a difference between them could be the wiring rather than the problem.
 
-**`bench/stopping.py`** is how the model says it has finished. Nothing is added
-to that rule; read its docstring for why reading the declaration out of the
-policy's behaviour is the fair choice.
+**`bench/stopping.py`** is how a policy with no words for it says it has
+finished, and it is now the *backstop* rather than the rule. The teacher's own
+declarations are in the demonstrations — `collect.py` records the answer it never
+had to carry out — so the gate is fitted on them and a table ends when the gate
+says it is finished. The quiet rule is still consulted, because a gate that never
+said "done" would otherwise spend a whole queue's budget on one table, and the
+two reasons are counted apart in a run's record.
 
-What is left is `clear.py`, which wraps the model to problem 4's contract,
-`train.py`, which points the borrowed fitting loop at this problem's data, and
-`run.py`, which measures.
+**`bench/keeping_clear.py`** is the arithmetic this solution runs over its own
+answer before handing it over. A look has to ride at travel height and a push has
+to reach only the glass the gate named, at the height a push works at; anything
+else is raised to travel height, where it goes to the same place and touches
+nothing. It is the same check solutions 5 and 6 run, and the reason all three run
+it is measured: most of the glasses this problem broke were broken by a hand
+travelling at the height of the glasses' rims, not by a push aimed badly.
+
+What is left is `gate.py`, which is the new model and its fitting, `clear.py`,
+which wraps the two models to problem 4's contract, `train.py`, which fits the
+gate and points the borrowed fitting loop at this problem's data, and `run.py`,
+which measures.
 
 ## Two things this problem asks of a chunk that problem 3 did not
 
@@ -71,10 +97,25 @@ picture caught — the same three things `Look` carries.
 
 ## Saying it is done
 
-`stopping.Quiet` reads the declaration out of the behaviour: a run of answers
-that would not touch a glass is the policy saying, in the only language it has,
-that it sees nothing worth doing. The rule is used exactly as written and its
-number is the bench's own, so every solution in this problem reads the same one.
+**The gate says it, and it was fitted on the teacher saying it.** Problem 4's
+teacher answers a table it considers finished with a statement rather than a
+path, and the collector now records that answer: the last picture, the readings,
+and "done" as the kind. So "the table needs nothing more" is one of the four
+things the gate chooses between, learned from 297 examples of the teacher
+choosing it, and a table ends when the gate chooses it.
+
+That is a change from the first version of this solution, and the reason is on
+its card. With no way to say it, the solution relied entirely on the shared quiet
+rule — and declared nine of its ten tables finished while they were still
+crowded, because the only thing the rule can see is that the answers have stopped
+touching anything, and this policy's answers had never touched anything.
+
+**The quiet rule is still there, as the backstop.** A gate that never said "done"
+would spend a whole queue's budget on one table, so a run of answers that could
+not touch a glass is still taken as the policy saying it sees nothing worth
+doing. The rule is used exactly as written and its number is the bench's own, so
+every solution in this problem reads the same one. A run's record counts the two
+endings apart, which is the measurement of whether the gate learned to stop.
 
 That number had to come from somewhere, and the right place is the teacher:
 however many answers in a row the geometry reference gives without touching a
@@ -94,7 +135,14 @@ solution is marked on, so that no part of the solution was set by watching its
 own score. Being wrong high costs a few arm seconds of waving at a table that is
 already finished; being wrong low ends the table.
 
-The rule wants one thing back from the solution: the tallest glass it has
+Those two measurements — the teacher's quiet spells and the teacher's own
+declarations — are the same fact read two ways, and the gate reads the better of
+them. A spell of quiet answers says the teacher *happens not to be pushing*; the
+declaration says it *has decided the table is finished*. The first is all a model
+with no spare output can be given; the second is what the teacher actually did,
+and it is now in the material.
+
+The backstop wants one thing back from the solution: the tallest glass it has
 **measured** on this table. A path can clear the height the jaw works at and
 still sweep its fingers through a glass standing taller than it, and without that
 number a policy knocking glasses over would be recorded as proposing nothing.
@@ -111,11 +159,19 @@ taught it what to do if it could. So a refused path leaves this solution
 answering the same way again: the arm has not moved, the clock has not advanced,
 the picture is the same, and the model is deterministic.
 
-Only the bench's cap on answers breaks that loop, and that cap is read off the
-arm time left. **So a measurement run must leave the clock switched on.**
-Solution 2's own measurement turns it off altogether, with a hundred thousand arm
+Two things break that loop now. The bench's cap on answers is one, and it is read
+off the arm time left, **so a measurement run must leave the clock switched on**:
+solution 2's own measurement turns it off altogether, with a hundred thousand arm
 seconds, which for a geometry solution is right and for this one would spin for
 two million answers. `run.py` gives each table four arm minutes instead.
+
+The other is the three numbers the gate is given about this solution's own
+behaviour — how many answers it has given on this table, how many since it last
+touched a glass, and how far the jaw has travelled since then. A refused path
+still counts as an answer, so the gate's input changes even when the picture does
+not, and a solution stuck in that loop eventually says it is finished instead of
+spinning. Those three numbers are facts about the solution rather than about the
+table, which is why it is allowed to keep them.
 
 ## The held-out queue
 

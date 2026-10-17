@@ -156,6 +156,14 @@ def main() -> None:
                     "looking_seconds": [round(row[1], 2) for row in split],
                     "pushing_seconds": [round(row[2], 2) for row in split],
                     "tally": tally.summary(),
+                    # What the model believed about every push it answered with,
+                    # beside what the table did. The solution's own page asks
+                    # for exactly this: it is what says whether the pushes that
+                    # topple a glass are the ones the model was confident about.
+                    # It costs no arm time, because it is all on the laptop's
+                    # side of the fence.
+                    "believed": solution.risked,
+                    "pushes_dropped_for_clearance": dict(solution.dropped),
                 },
                 indent=2,
             )

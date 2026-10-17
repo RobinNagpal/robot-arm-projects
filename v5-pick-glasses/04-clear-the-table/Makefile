@@ -4,8 +4,8 @@
 # Tests run one folder at a time on purpose. The bench and the solutions have
 # modules of the same name — run.py, plan.py, scoring.py — and collecting them
 # together would let one shadow another.
-
-SOLUTIONS := 01-one-fixed-nudge
+SOLUTIONS := 01-one-fixed-nudge 02-geometry-ranked 03-imitation-from-demonstrations \
+             04-a-world-model 05-smolvla-as-it-downloads 06-smolvla-fine-tuned
 
 # Problem 3's folder, for two reasons. Its bench is what this problem borrows
 # rather than copies, and its environment already holds everything problem 4

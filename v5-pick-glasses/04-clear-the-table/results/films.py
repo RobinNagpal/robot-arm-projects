@@ -110,12 +110,21 @@ def geometry_ranked() -> Solution:
 
 
 def imitation() -> Solution:
-    """The chunked policy fitted on the ranked chooser's own answers."""
-    folder = _on_path("03-imitation-from-demonstrations")
-    from clear import Imitation
-    from wiring import policy
+    """The fitted gate and the chunked policy, both from the first seed.
 
-    return Imitation(policy.Imitator.load(folder / "weights" / "act-0"))
+    The two are fitted in one run under one seed, so a gate from one seed with a
+    policy from another would be a pair nothing was measured on. ``run.py`` pairs
+    them the same way.
+    """
+    folder = _on_path("03-imitation-from-demonstrations")
+    import gate
+    from clear import Imitation
+    from wiring import pictures, policy
+
+    return Imitation(
+        policy.Imitator.load(folder / "weights" / "act-0"),
+        gate.Decider.load(gate.saved(0), pictures.shrink),
+    )
 
 
 def a_world_model() -> Solution:

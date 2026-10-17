@@ -88,6 +88,9 @@ def main() -> None:
     parser.add_argument("--most", type=int, default=None, help="read only this many demonstrations")
     parser.add_argument("--gate-steps", type=int, default=gate.STEPS, help="steps for the gate's own fit")
     parser.add_argument("--gate-only", action="store_true", help="fit the gate and leave the policy alone")
+    parser.add_argument(
+        "--policy-only", action="store_true", help="fit the chunked policy and leave the gate alone"
+    )
     arguments = parser.parse_args()
 
     held = loading.load(loading.FITTING, pictures.shrink, arguments.most)
@@ -100,8 +103,9 @@ def main() -> None:
         f"fitting on {device} with {held['states'].shape[1]} readings beside each picture"
     )
     WEIGHTS.mkdir(exist_ok=True)
-    for seed in range(arguments.first_seed, arguments.first_seed + arguments.seeds):
-        fit_the_gate(held, checking, seed, arguments.gate_steps)
+    if not arguments.policy_only:
+        for seed in range(arguments.first_seed, arguments.first_seed + arguments.seeds):
+            fit_the_gate(held, checking, seed, arguments.gate_steps)
     if arguments.gate_only:
         return
 
@@ -221,8 +225,6 @@ def how_long_off(model, set_of: dict, most: int = 200) -> dict:
     }
 
 
-if __name__ == "__main__":
-    main()
 
 
 def balanced(kinds: np.ndarray, rng: np.random.Generator) -> np.ndarray:
@@ -293,3 +295,6 @@ def torch_save(net, path) -> None:
     import torch
 
     torch.save(net.state_dict(), path)
+
+if __name__ == "__main__":
+    main()

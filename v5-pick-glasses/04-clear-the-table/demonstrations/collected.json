@@ -3,21 +3,62 @@
     "teacher": "02-geometry-ranked, with problem 3's ranker, which was fitted on problem 3's tables",
     "band": {
       "first_table": 1000,
-      "tables": 3,
+      "tables": 300,
       "held_out_from": 10000
     },
-    "demonstrations": 111,
-    "answers": 112,
-    "answers_a_table": 37.3,
+    "demonstrations": 11313,
+    "answers": 11324,
+    "answers_a_table": 37.7,
     "kinds": {
-      "stay": 44,
-      "drive": 43,
-      "ranging": 8,
-      "pushing": 8,
-      "testing": 6,
-      "done": 3
+      "drive": 4822,
+      "stay": 4143,
+      "ranging": 1416,
+      "testing": 331,
+      "pushing": 315,
+      "done": 297
     },
-    "looking_share": 0.777,
+    "looking_share": 0.792,
+    "dropped": {
+      "a glass left the glass zone": 8,
+      "a glass went over": 3
+    },
+    "chunk": 200,
+    "action_width": 6,
+    "state_width": 35,
+    "asked_width": 47,
+    "picture": [
+      384,
+      384
+    ],
+    "waypoints_a_path": {
+      "least": 1,
+      "median": 1,
+      "90th": 44,
+      "most": 190
+    },
+    "seconds": 493.6,
+    "seconds_a_table": 1.65,
+    "seconds_a_demonstration": 0.044
+  },
+  "held-back": {
+    "teacher": "02-geometry-ranked, with problem 3's ranker, which was fitted on problem 3's tables",
+    "band": {
+      "first_table": 8000,
+      "tables": 50,
+      "held_out_from": 10000
+    },
+    "demonstrations": 1900,
+    "answers": 1901,
+    "answers_a_table": 38.0,
+    "kinds": {
+      "drive": 802,
+      "stay": 701,
+      "ranging": 233,
+      "pushing": 58,
+      "testing": 57,
+      "done": 50
+    },
+    "looking_share": 0.791,
     "dropped": {
       "a glass left the glass zone": 1
     },
@@ -32,49 +73,11 @@
     "waypoints_a_path": {
       "least": 1,
       "median": 1,
-      "90th": 40,
-      "most": 180
-    },
-    "seconds": 6.0,
-    "seconds_a_table": 2.0,
-    "seconds_a_demonstration": 0.054
-  },
-  "held-back": {
-    "teacher": "02-geometry-ranked, with problem 3's ranker, which was fitted on problem 3's tables",
-    "band": {
-      "first_table": 8000,
-      "tables": 50,
-      "held_out_from": 10000
-    },
-    "demonstrations": 1850,
-    "answers": 1851,
-    "answers_a_table": 37.0,
-    "kinds": {
-      "drive": 802,
-      "stay": 701,
-      "ranging": 233,
-      "pushing": 58,
-      "testing": 57
-    },
-    "looking_share": 0.812,
-    "dropped": {
-      "a glass left the glass zone": 1
-    },
-    "chunk": 200,
-    "action_width": 6,
-    "state_width": 35,
-    "picture": [
-      384,
-      384
-    ],
-    "waypoints_a_path": {
-      "least": 1,
-      "median": 1,
       "90th": 44,
       "most": 184
     },
-    "seconds": 86.8,
-    "seconds_a_table": 1.74,
-    "seconds_a_demonstration": 0.047
+    "seconds": 92.4,
+    "seconds_a_table": 1.85,
+    "seconds_a_demonstration": 0.049
   }
 }

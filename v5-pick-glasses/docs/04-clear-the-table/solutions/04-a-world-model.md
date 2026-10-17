@@ -42,21 +42,24 @@ push and looking at the result, and looking was free. Here that test push is
 arm seconds, and arm seconds are the budget. So a solution that can predict
 what the test push would have shown is buying something real.
 
-The measurement says it does buy that, and then loses more than it bought
-somewhere else. **It separates more tables than any other solution so far, and
-it is the only one that puts glass on the floor.** A table that loses a glass
-is worth nothing at all, so the seven tables a walk that end that way are not a
-discount on the score — they are removed from it. By the end of this page you
-will know:
+The measurement says it does buy that. **It separates more tables than any
+other solution to this problem, gives room to half again as many glasses as the
+geometry reference, and reaches nearly twice as many tables in the same fifteen
+arm minutes.** It got there in two stages, and the second one is the useful
+part of this page. The first measurement of it broke eight glasses in a walk and
+scored below the geometry because of them; a table that loses a glass is worth
+nothing at all, so those tables were removed from its score rather than
+discounted. Nothing about the model was then changed. What changed is how the
+search treats the model's own estimates, and the breakages fell from eight to
+one. By the end of this page you will know:
 
 - how this solution was put to a problem with no view of the whole table;
-- what the held-out queue measured, and what the two different bands of tables
-  in its folder each answer;
-- why it reaches further down the queue than the geometry does;
-- which tables it breaks glasses on, and why those are exactly the tables its
-  extra wins come from;
-- what the saved numbers can and cannot say about *why* a push it believed was
-  safe was not.
+- why a search that asks a model about thousands of pushes and takes the best
+  answer is choosing the model's largest error, and the three changes that stop
+  it doing that;
+- what the held-out queue measured, before and after those changes;
+- which tables it still breaks a glass on, and what the model believed about
+  the pushes that broke them.
 
 Read [the examiner](../the-examiner.md) first. It defines what a solution is
 shown, what it may answer, why saying "done" is part of the job, and how a walk
@@ -232,52 +235,49 @@ The geometry reference's column is beside it, because it is the thing this
 solution is a replacement for. Both spend essentially the whole fifteen
 minutes, so how far each got down the list is set by what a table costs it.
 
-| fifty tables offered from 10,000 | the geometry reference | **this, the model** |
-|---|---|---|
-| Tables attempted | 26 | **32** (32, 33, 32) |
-| Glasses on those tables | 102 | 125 (125, 130, 125) |
-| Tables separated, nothing broken | 10 | **11** (12, 8, 11) |
-| Tables failed by a topple | **0** | 7 (5, 8, 7) |
-| Tables left unfinished | 16 | 15 (15, 17, 14) |
-| Glasses pickable at the end | 64 | 70 (70, 64, 71) |
-| Of those, had room already | 39 | 39 (41, 39, 38) |
-| Glasses it gave room to | +25 | **+29** (+29, +25, +33) |
-| Share of glasses pickable | **0.627** | 0.560 (0.560, 0.492, 0.568) |
-| Glasses broken | **0** | 8 (6, 8, 8) |
-| It declared a table finished | 24 of 26 | 24 of 32 (25, 24, 24) |
-| …while the table was still crowded | 14 | 13 (13, 16, 13) |
-| Arm seconds for a table it separated | 43.6 | **26.7** (26.9, 24.1, 26.7) |
-| Thinking an answer | 15 ms | **6 ms** |
-| Pushes the cell's interlock refused | 0 | 0 |
+| fifty tables offered from 10,000 | the geometry reference | **this, the model** | this, before the search was changed |
+|---|---|---|---|
+| Tables attempted | 26 | **45** (41, 46, 45) | 32 |
+| Glasses on those tables | 102 | 179 (164, 182, 179) | 125 |
+| Tables separated, nothing broken | 10 | **14** (10, 15, 14) | 11 |
+| Tables failed by a topple | **0** | 1 (1, 1, 3) | 7 |
+| Tables left unfinished | 16 | 29 (29, 30, 29) | 15 |
+| Glasses pickable at the end | 64 | 102 (100, 108, 102) | 70 |
+| Of those, had room already | 39 | 65 (61, 66, 65) | 39 |
+| Glasses it gave room to | +25 | **+39** (+39, +42, +37) | +29 |
+| Share of glasses pickable | **0.627** | 0.603 (0.560, 0.610, 0.603) | 0.560 |
+| Glasses broken | **0** | 1 (1, 1, 4) | 8 |
+| It declared a table finished | 24 of 26 | 41 of 45 (38, 43, 41) | 24 of 32 |
+| …while the table was still crowded | 14 | 28 (27, 28, 28) | 13 |
+| Arm seconds for a table it separated | 43.6 | **25.5** (25.7, 24.2, 25.5) | 26.7 |
+| Thinking an answer | 15 ms | **10 ms** | 6 ms |
+| Pushes the cell's interlock refused | 0 | 0 | 0 |
 
-**Three readings come out of that card, and they point in different
-directions.**
+**Three readings come out of that card.**
 
 The first is that **the saving it was ported to make is real.** A table it
-separates costs it 26.7 arm seconds against the reference's 43.6. That number
+separates costs it 25.5 arm seconds against the reference's 43.6. That number
 is worth more than it looks, because it is averaged over tables that were
 actually finished, so a table cut short by a falling glass cannot flatter it.
-Its own folder could not show this on the band of tables it was tuned on: there
-the figure quoted was arm seconds over *all* tables, and most of the apparent
-saving there was tables that ended early. The queue priced the same thing
-honestly, and the honest price is about forty per cent off a win. That saving is
-the whole of the extra reach: 32 tables attempted against 26.
+The saving is about forty per cent off a win, and it is the whole of the extra
+reach: forty-five tables attempted against twenty-six.
 
-The second is that **it is, by a small margin, the best separator measured so
-far.** Eleven tables against the reference's ten. The margin should be read with
-the examiner's own rule in mind: the three walks gave 12, 8 and 11, while the
-reference is deterministic and gives 10 every time. A method that wins by less
-than its own spread has not been shown to win, so the right statement is that it
-is level with the geometry on separations and ahead of it on glasses given room,
-+29 against +25, while reaching six more tables.
+The second is that **it is the best separator measured on this problem, and now
+by more than its own spread.** Fourteen tables against the reference's ten, with
+the three walks giving 10, 15 and 14 while the reference is deterministic and
+gives 10 every time. Before the search was changed the three walks gave 12, 8
+and 11 around a median of 11, which is a win smaller than the spread and
+therefore not a win at all. It is also furthest ahead on glasses given room:
++39 against +25, over nineteen more tables.
 
-The third is that **its share of pickable glasses is below both of the geometry
-solutions'**, 0.560 against 0.627. That is the one the rest of this
-page is about, because it is not a worse push anywhere. It is the eight broken
-glasses, and the twenty-seven glasses that were standing on the tables those
-breakages happened on.
+The third is that **its share of pickable glasses is still a little below the
+geometry's**, 0.603 against 0.627, and that the reason has changed. It used to
+be the breakages. It is now the tables left crowded: this solution reaches
+nineteen more tables than the geometry does, and the share is taken over every
+glass on every table attempted, so the tables it reached and did not finish are
+counted against it. The section after next separates the two.
 
-## Why breaking glasses costs it the win it otherwise had
+## Why breaking glasses used to cost it the win, and what is left of that
 
 A table where a glass went over earns nothing at all. Not a reduced amount:
 nothing. Every glass on it leaves the pickable count while all of them stay in
@@ -286,212 +286,195 @@ The examiner is explicit about why — if a lost table still paid out for its
 other glasses, a hard and risky shove would be close to free, and a method
 could gamble its way up the card.
 
-Here is what that rule costs this solution. Of the 125 glasses it saw on a
-walk, 19, 30 and 27 of them were standing on tables it broke a glass on, which
-is between a seventh and a quarter of everything it touched.
+That rule used to decide this solution's score. Of the 125 glasses it met on a
+walk, 19, 30 and 27 stood on tables it broke a glass on, which is between a
+seventh and a quarter of everything it touched; doing nothing at all on those
+tables would have been worth about seven points of share, and seven points was
+the whole of the gap to the geometry. **The breakages were not what stopped it
+winning by more. They were what stopped it winning.**
+
+They are now one table in a walk, and the same arithmetic says so:
 
 | | walk 1 | walk 2 | walk 3 |
 |---|---|---|---|
-| Share of glasses pickable, as scored | 0.560 | 0.492 | 0.568 |
-| …had those tables merely been left crowded | 0.616 | 0.577 | 0.648 |
-| …had those tables been separated instead | 0.664 | 0.662 | 0.720 |
+| Share of glasses pickable, as scored | 0.560 | 0.603 | 0.610 |
+| …had the broken tables merely been left crowded | 0.577 | 0.609 | 0.616 |
+| …had they been separated instead | 0.621 | 0.626 | 0.634 |
 
-The middle row is the interesting one, and it is not a hypothetical about
-pushing better. It is the score this solution would have had if, on those seven
-tables, it had simply done nothing at all. Doing nothing on them would have
-been worth about seven points of share, which is the whole of the gap to the
-geometry reference's 0.627. **The breakages are not what stops it from winning
-by more. They are what stops it from winning.**
+The middle row is what doing nothing at all on those tables would have been
+worth, and it is now within two points of what the solution really scored. So
+breakage is no longer what holds this solution back. The bottom row is the
+interesting one instead: separating every table it broke a glass on would still
+only bring it to about the geometry's 0.627, because what is really left is
+twenty-nine tables reached and left crowded.
 
 ## Which tables it breaks, and which it separates
 
-The per-table rows settle this question with unusual clarity, because the
-breakages are not scattered over the queue. They sit entirely in one part of
-it.
+The per-table rows settle this with unusual clarity, because the breakages are
+not scattered over the queue. They sit in one part of it, and that part has
+moved.
 
 | tables | walks | separated | failed by a topple | glasses given room | glasses broken |
 |---|---|---|---|---|---|
-| The first eighteen, 10,000 to 10,017 | 54 | 9, 6, 7 of 18 | **0** | +22, +19, +22 | **0 of 68** |
-| 10,018 to 10,025 | 24 | 2, 2, 2 of 8 | 3, 3, 4 | +8, +6, +8 | 4, 3, 4 of 34 |
-| 10,026 onwards | 19 | 1, 0, 2 | 2, 5, 3 | +2, +1, +5 | 2, 5, 4 |
+| The first eighteen, 10,000 to 10,017 | 54 | 7, 7, 5 of 18 | **0** | +17, +20, +20 | **0 of 216** |
+| 10,018 to 10,025 | 24 | 2, 3, 2 of 8 | **0** | +6, +7, +7 | **0 of 100** |
+| 10,026 onwards | 54 | 5, 5, 3 | 3, 1, 1 | +14, +16, +13 | 4, 1, 1 |
 
-**On the first eighteen tables it broke nothing, in fifty-four attempts at
-them.** All twenty breakages across all three walks happened on table 10,018 or
-later. That is not a coincidence of the clock running low, because no solution
-in problem 4 reads how much time is left, and the budget still held more than
-five minutes when the first breakage happened.
+**It now breaks nothing at all on the twenty-six tables the geometry reference
+also reaches**, in seventy-eight attempts at them. Before the search was
+changed, the line fell eight tables earlier: tables 10,018 to 10,025 broke a
+glass in nearly every walk, and those eight are the hard stretch of this queue —
+the geometry reference walks them with time to spare, separates **none** of
+them, and gives room to **one** glass in total. Being willing to act where the
+geometry declines used to cost three or four glasses there. It now costs none,
+and still separates two or three of the eight in every walk.
 
-It is a property of those tables, and the geometry reference proves it
-independently. The reference is deterministic and walks the same list, and it
-reached tables 10,018 to 10,025 with room to work: on six of the eight it said
-the table was finished rather than being stopped by the clock. On those eight
-tables it separated **none**, and gave room to **one** glass in total. On two of
-them it walked the ring, found no push worth making at all, and said the table
-was finished after eight seconds. On the eighteen tables before them it separated
-ten and gave room to twenty-four. So the queue happens to contain an easy
-stretch followed by a hard one, and "hard" here has a precise meaning: the
-crowding is such that the geometry can find no push whose corridor for a
-139 mm hand is clear of every neighbour.
+What is left is table 10,035, which loses a glass in all three walks, and
+10,029 and 10,034 in one walk each. All three are past where the geometry ever
+gets, so nothing can be said about them by comparison; they are simply the
+tables where this solution's willingness still costs it.
 
-That is the distinction the question was asking for. Lining the two solutions up
-table by table over the twenty-six tables both of them reached:
+Lining the two solutions up table by table over the twenty-six tables both of
+them reached in every walk:
 
-- The model broke a glass on five of them. The reference separated **none** of
-  those five.
-- The model separated five tables the reference never separates in any walk.
-  All five are tables the reference leaves crowded.
-- The model never once separates three tables that the reference does separate.
-- There is **no table** where the reference succeeds and the model breaks a
-  glass.
+- The model breaks a glass on **none** of them.
+- It separates six tables the reference never separates in any walk. All six
+  are tables the reference leaves crowded.
+- The reference separates five tables the model never separates. On a table
+  where a safe push exists and the geometry can see it, the two make much the
+  same push, and this one is a little more willing to leave a glass that two
+  pushes have not freed.
+- It separates six of the twenty-six in every walk, and eleven in at least one,
+  against the reference's ten every time.
 
-**So the breakages and the extra wins come out of the same decision.** On a
-table where a safe push exists and the geometry can see it, this solution makes
-much the same push and finishes much the same table, a little cheaper and a
-little less often. On a table where the geometry declines, it pushes anyway.
-Two of those eight tables it wins in every single walk; three or four of the
-eight end on the floor. Table 10,023 is the clearest case: the reference sweeps
-it, finds nothing it is willing to do, and says so in eight seconds; the model
-attacks it and loses a glass in two of three walks.
+**So the extra wins and the remaining breakages come out of the same decision**
+— being willing to act where the geometry finds no clear corridor — but they no
+longer come out of the same tables. The willingness is now confined to pushes
+the search can account for, and what it costs shows up past the end of the
+geometry's reach rather than among the tables both solutions are measured on.
 
-Being willing to act where the geometry declines is not a fault. It is the only
-reason this solution separates more tables than the geometry, and in problem 3
-it was the whole of its advantage. Problem 4 simply charges a different price
-for being wrong about it.
+## What the model believed about the pushes that broke a glass
 
-## Is the model wrong, or does the search trust it too far?
+This page used to end its argument here with a question it could not answer: is
+the model wrong, or does the search trust it too far? Both readings fitted the
+rows equally well, and what would have settled it was a record of what the model
+believed about every push it made, beside what the table then did. Nothing saved
+that. It is saved now.
 
-This is the question a reader should ask next, and the saved rows answer part of
-it and not all of it. What follows separates the two.
+**The answer is that the model was confident and wrong.** On the twenty tuning
+tables, where four glasses went over, the four pushes that put them over were
+given a chance of toppling something of **one in ten thousand or less**. The
+copies of the model did not disagree about them, so the pessimism that removed
+most of the breakages cannot help here: there was no disagreement to charge for.
 
-**Two things the rows do settle.**
+**And they were long.** The four pushes that broke a glass travelled 57 mm at
+the median; every other push made on those tables travelled 19 mm. A long push
+is where this model has the least data and the most to be wrong about, and it is
+also where being wrong does the most damage, because the glass has further to go
+and more neighbours to meet on the way.
 
-The cell's safety interlock refused nothing, in all three walks. The interlock
-is the cell's refusal to drive the hand into a glass that the public tipping
-rule says would tip rather than slide, and it fired zero times, because this
-solution runs that same test itself and drops such a push before answering. So
-every one of the eight broken glasses came from a push that the model called
-safe *and* that the arithmetic anybody could do also called acceptable. Nothing
-was bypassed, and nothing in the cell was in a position to save it.
+That is a statement about the *data* rather than about the search, and it is the
+first time this solution's failures have pointed there. The next rung is
+therefore more pushes in the band where it is weakest, which costs arm time in
+the simulator and nothing in the cell.
 
-The breakages are not a stale belief, either. Nine of the twenty happened on
-the ninth answer of the table — eight answers to walk the ring of stands, and
-then one push. That is the push made on the most complete and freshest
-information this solution ever has about a table, immediately after looking at
-it from all eight sides. Seventeen of the twenty happened within the first
-twenty answers. So this is not error piling up over a long table; it is the
-first considered push.
+## The knob that trades some of it back, and why it was not turned
 
-**One thing the rows strongly suggest.** On tables nothing was fitted on, the
-filter at one chance in a hundred let through 13 of the 70 pushes that really
-toppled something, while passing 472 of the 588 that did not. So of every
-hundred pushes the filter passes in that validation set, about three put a glass
-over. A table here takes only a handful of pushes, so three in a hundred per
-push should break a glass on well under a tenth of tables. The observed figure
-on the hard stretch is about half of them. The pushes the search chooses are
-therefore several times more dangerous than the pushes the same filter passed
-when the pushes were drawn at random.
+The search pays a price for every millimetre it pushes, and that price is the
+setting that trades room against arm time and against risk. A longer push makes
+more room, takes longer, and is more likely to put something over — and the
+record above says the pushes that broke a glass were three times longer than the
+rest, so this is the knob that bears on what is left.
 
-That is what a search over a model's own estimates does. It does not sample the
-model's opinions, it maximises over them, so it lands by preference exactly
-where the model is most optimistic. The familiar name for it is the winner's
-curse: pick the best of many noisy estimates and you have mostly picked the
-largest error.
+It was measured again after the search was changed, on a hundred tuning tables:
 
-**What the rows cannot settle.** There is a second reading that fits them just
-as well. On the hard tables there may be no safe push at all, so the model is
-not being exploited by the search — it is being asked a question whose true
-answer is "every candidate is dangerous", and a model with a leaky filter will
-pass some of them however they are chosen. The two readings call for different
-fixes, and the per-table rows cannot tell them apart, because a row records the
-outcome of a table and not the push that ended it.
+| price of a millimetre pushed | tables separated of 100 | glasses it gave room to | glasses broken | arm seconds a table |
+|---|---|---|---|---|
+| **0.1, problem 3's figure, kept** | **48** | **+136** | 3 | 25.7 |
+| 0.3 | 33 | +93 | 2 | 20.9 |
 
-**The measurement that would settle it** is to record, for every push this
-solution answers with, the model's predicted topple chance and its predicted
-movements, beside what actually happened. Two numbers come out of that
-immediately: how often a push the search *chose* topples something, against the
-three in a hundred measured on randomly drawn pushes, and whether the pushes
-that topple are ones the model was confident about or ones its three copies
-disagreed over. Grouped by whether the geometry reference would have made any
-push on that table, it separates the two readings cleanly. Nothing in the run
-saves that today, and it costs no arm time to save, because it is all on the
-laptop's side of the fence.
+**Raising it loses fifteen tables of a hundred to save one glass**, which is not
+a trade worth making: a table left crowded scores nothing either, and the share
+counts every glass on it. The same knob measured on the search as it stood before
+gave the same shape — at 0.5 it separated ten and eleven tables of forty against
+fourteen and seventeen at 0.1 — so the pessimism has not changed the trade. What
+the pessimism changed is how many glasses are broken at the price that was
+already there: nine of two hundred tuning tables, where the same price used to
+break thirty-one.
 
-## The knob that would trade some of it back, and why it was not turned
+There is a general lesson in that about a queue budget, and it is worth keeping
+even though the setting did not move. A setting chosen on a sample of tables is
+chosen for the difficulty of that sample, and a solution fast enough to reach
+past the sample is then measured on tables the setting was never weighed
+against. This solution now reaches forty-five tables of fifty, which is further
+past its own tuning band than any other solution here gets.
 
-The search pays a small price for every millimetre it pushes, and that price is
-the setting that trades room against arm time and against risk. A longer push
-makes more room, takes longer, and is more likely to put something over. It was
-chosen on forty tuning tables, where raising the price from the inherited 0.1 to
-0.5 dropped the glasses over from four and six to one and three, and dropped the
-tables separated from fourteen and seventeen to ten and eleven, out of forty.
-
-It is worth being clear that the setting was chosen honestly and still cost it.
-On those tuning tables the cheap setting was better by *both* readings: it
-separated more tables and it also left a higher share of glasses pickable, 0.61
-to 0.66 against 0.53 to 0.56, breakages and all. The held-out queue returned
-0.560 for the same setting. Nothing was tuned on the wrong band and nothing was
-measured twice. What happened is that the queue reaches further than the tuning
-band went, into a stretch of tables where the same willingness to push buys
-fewer separations and more floor.
-
-That is a general lesson about a queue budget rather than about this solution. A
-setting chosen on a sample of tables is chosen for the difficulty of that
-sample. A solution fast enough to reach past it is measured on tables the
-setting was never weighed against.
-
-**The next rung is not a better model.** It is to put the geometry reference's
-five-millimetre test push back in front of the model's long pushes, so that the
-one thing the model is worst at is measured rather than predicted, and let the
-model choose everything else. The test push costs a second or two of arm time,
-against a table and every glass on it. That is a different solution from this
-one and should be built as one.
+**The rung this page used to name has been tried and dropped.** It was to put
+the geometry reference's five-millimetre test push back in front of the model's
+long pushes, so that the one thing the model is worst at is measured rather than
+predicted. Built and measured on forty tuning tables, it cut the glasses broken
+from four to one — and cut the tables separated from seventeen to **eight**,
+because a glass that does not keep up with a probe is then left alone for the
+rest of the table. Once the search was pessimistic it bought nothing that
+pessimism had not already bought.
+[`what-changed.md`](../what-changed.md) holds those numbers.
 
 ## Where it sits beside the others
 
 | fifty tables offered from 10,000 | 1 geometry | 2 ranked geometry | **4 world model** | 5 model as it downloads |
 |---|---|---|---|---|
-| Tables attempted | 26 | 25 | **32** | 15 |
-| Tables separated | 10 | 7 | **11** | 0 |
-| Tables failed by a topple | **0** | **0** | 7 | 14 |
-| Glasses it gave room to | +25 | +19 | **+29** | −1 |
-| Share pickable | **0.627** | 0.582 | 0.560 | 0.018 |
-| Glasses broken | **0** | **0** | 8 | 20 |
-| Thinking an answer | 15 ms | 15 ms | **6 ms** | 776 ms |
+| Tables attempted | 26 | 25 | **45** | 12 |
+| Tables separated | 10 | 7 | **14** | 0 |
+| Tables failed by a topple | **0** | **0** | 1 | **0** |
+| Glasses it gave room to | +25 | +19 | **+39** | 0 |
+| Share pickable | **0.627** | 0.582 | 0.603 | 0.400 |
+| Glasses broken | **0** | **0** | 1 | **0** |
+| Thinking an answer | 15 ms | 15 ms | **10 ms** | 283 ms |
 
-Read across the row of glasses broken and then across the row of shares. The
-two solutions that break nothing hold the two best shares, and they are the two
-that only ever make a push they can justify from geometry. This solution gives
-more glasses room than either of them and still scores below both. The borrowed
-model in the last column is a different failure altogether and has
-[its own page](05-smolvla-as-it-downloads.md).
+Read across the row of tables separated and then across the row of shares. This
+solution separates four more tables than anything else here and gives room to
+fourteen more glasses, and it still holds the second share rather than the
+first, because it reaches so much further down the queue that the tables it
+leaves crowded are counted against it too. The two columns on either side of it
+are the two ends of this problem: geometry that is slower and finishes what it
+starts, and a borrowed model that is safe now and does nothing.
 
-**The one thing this solution is plainly best at is thinking.** Six
+**The one thing this solution is plainly best at is thinking.** Ten
 milliseconds an answer, against the geometry's fifteen, where in problem 3 the
 same method thought four times *longer* than the geometry it was compared with.
 The geometry walks seventy-two directions by seventy-five push lengths in plain
 Python for every crowded glass; the search asks three small networks about eight
-hundred candidates in one array. Arm time is the budget, so this buys nothing on
-the card — but it answers the question of whether a world model can be afforded
-in a cell like this one, and the answer is yes.
+hundred candidates in one array and then checks a handful of corridors. Arm time
+is the budget, so this buys nothing on the card — but it answers the question of
+whether a world model can be afforded in a cell like this one, and the answer is
+yes.
 
 ## What to take from it
 
-A learned model of the physics is affordable here, and it does buy what it was
-expected to buy: a win costs it forty per cent less arm time than the geometry's
-win, so it gets six tables further down the same list in the same fifteen
-minutes.
+**A learned model of the physics is affordable here, and it is now the best
+answer this problem has.** It separates fourteen tables of the forty-five it
+reaches against the geometry's ten of twenty-six, gives room to +39 glasses
+against +25, and a table it separates costs it forty per cent less arm time.
 
-It is also the first solution in this problem to meet the no-free-breakage rule
-head on, and the rule is what decides its score. Eight glasses, over seven
-tables, on a stretch of the queue where the geometry achieves nothing at all,
-remove enough from the card to turn the best separations and the best gain
-measured so far into a share below both of the geometry solutions'.
+**What made the difference was not the model but how it is used.** The fitted
+file did not change: the same thirteen hours of arm time, the same fourteen
+millimetres of error at the median. What changed is that the search stopped
+taking its model at its most optimistic. Reading the least favourable of three
+copies, pricing a predicted chance of toppling rather than merely obeying a
+limit, and refusing a push whose hand would sweep a neighbour took the glasses
+broken on a walk from eight to one and raised the separations from eleven to
+fourteen at the same time. **A search over a model is a place where being
+careful costs nothing and buys both halves of the card.**
 
-The honest summary is that this is a method with the right instinct and no
-measurement behind it at the one moment that matters. It is willing to act where
-the geometry gives up, which is where the remaining tables are; and the thing it
-substitutes for the geometry's test push — a prediction, right fifty-seven times
-in seventy — is not good enough to act on when being wrong costs a whole table.
+**What is left is the data, and the record now says so.** The few glasses it
+still breaks go over on pushes the model was confident about and that were three
+times longer than the pushes that broke nothing. That is where the fitted set is
+thinnest, and it is a reason to collect more long pushes rather than to search
+differently again.
+
+**And the geometry's advantage is now a narrow one.** It finishes what it
+starts and breaks nothing at all, which still gives it the best share. What it
+cannot do is reach the end of the queue.
 
 ## Where to go next
 

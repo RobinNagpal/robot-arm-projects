@@ -38,6 +38,7 @@ back **no lower than problem 3's, and if anything slightly higher**.
 | `joining.py` in problem 3's solution 5 | **borrowed, unchanged.** How six of somebody else's joint readings become jaw waypoints, and how the jaw's pose becomes the model's state. Every number in it is read off the checkpoint or off the cell. |
 | `policy.py` in problem 3's solution 5 | **borrowed, unchanged.** Loading the weights and asking them. |
 | `bench/stopping.py` | **borrowed.** How a trained policy says it has finished, when it has no words for it. This solution invents no second rule. |
+| `bench/keeping_clear.py` | **borrowed.** The clearance check every solution in this problem runs over its own answer. Added after the first walk of the held-out queue, which broke twenty glasses. |
 | `bench/wrist.py`, through the contract's `Look` | **borrowed.** The picture comes from the cell. Nothing here builds a camera. |
 | `borrowed.py` | **new.** Loads the two problem 3 files under the plain names they import each other by. |
 | `as_downloaded.py` | **new.** The model sat in problem 4's conversation, and the shape of its answers. |
@@ -52,22 +53,39 @@ joins and would say nothing at all about the wrist camera.
 **Problem 3's `clear.py` is not borrowed, because there is nothing left of it
 to borrow.** Its loop racks every glass that has room, counts pushes against a
 push budget, and refuses a path that would reach a glass that would tip.
-Problem 4 racks nothing, has no push budget, and keeps the tipping refusal in
-the cell itself. `as_downloaded.py` is the replacement and is the only new
-thinking in this folder.
+Problem 4 racks nothing and has no push budget. `as_downloaded.py` is the
+replacement and is the only new thinking in this folder.
+
+**One thing problem 3's loop did is back, for a measured reason.** It checked a
+path against the glasses before letting it be carried out, and the first version
+of this solution did not, because problem 4's cell keeps a tipping interlock of
+its own. That interlock is narrow on purpose — it refuses only a path into a
+glass the public rule says would topple rather than slide — and the first walk
+of the held-out queue broke twenty glasses inside it. Not by aiming badly: by
+travelling. The fingers hang seventy millimetres below the number a waypoint
+carries, so a path that looks high in its own numbers drags the hand through the
+tops of the glasses, and this model had learned to travel at exactly that
+height. So every answer now goes through `keeping_clear`, which raises a path
+that cannot be shown to reach only the glass it names. The model still chooses
+every answer; what it no longer does is carry one out that nobody can account
+for.
 
 ## How it says it is done
 
 Problem 4 asks every solution to declare a table finished, and that is a
 sentence this policy cannot utter: it answers with a path for the jaw and has
 no spare output meaning "nothing here needs moving". `bench/stopping.py` is the
-shared answer, and this solution uses it unchanged — a run of three answers
-that do not come down to the height a push happens at is taken as the policy
-saying it sees nothing to do. The third such answer is the declaration and is
-not carried out, because following it would spend arm seconds to change
-nothing.
+shared answer, and this solution uses it unchanged — a run of answers that could
+not touch any glass is taken as the policy saying it sees nothing to do, and the
+count that is enough is the bench's own, measured from the teacher's longest
+quiet spell. The answer that completes the run is the declaration and is not
+carried out, because following it would spend arm seconds to change nothing.
 
-In practice that is what ends almost every table, after **three answers**.
+In practice that is what ends every table now, after **sixteen answers**. Before
+the clearance check went in, this solution never gave even three quiet answers in
+a row and declared no table finished at all: its paths came down low, so every
+one of them counted as the policy acting. Now they are raised, and a raised path
+touches nothing, so the rule reads them for what they are.
 
 ## What it costs and achieves — twenty tables, seeds 0 to 19, three runs
 
@@ -84,35 +102,42 @@ are from the draw before that. Putting them here would compare the draws.
 
 | twenty tables, 84 glasses | solution 1 | run 0 | run 1 | run 2 |
 |---|---|---|---|---|
-| Tables separated, nothing broken | **5** | 2 | 1 | 0 |
-| Glasses broken | **0** | 3 | 0 | 2 |
-| Glasses pickable at the end | **47** of 84 (0.56) | 33 (0.39) | 35 (0.42) | 32 (0.38) |
-| Of which it made pickable | **+14** | +4 | +2 | +1 |
-| Arm seconds a table | 42.6 | **6.4** | **8.0** | **6.8** |
-| Of that, on paths that never came down | 46% | 93% | 84% | 86% |
-| Said done while the table was still crowded | 15 of 20 | 16 of 20 | 19 of 20 | 19 of 20 |
+| Tables separated, nothing broken | **5** | 0 | 0 | 0 |
+| Glasses broken | **0** | **0** | **0** | **0** |
+| Glasses pickable at the end | **47** of 84 (0.56) | 33 (0.39) | 33 (0.39) | 33 (0.39) |
+| Of which it made pickable | **+14** | 0 | 0 | 0 |
+| Arm seconds a table | **42.6** | 66.9 | 68.9 | 68.0 |
+| Of that, on paths that could not touch a glass | 46% | 100% | 100% | 100% |
+| Said done while the table was still crowded | 15 of 20 | 20 of 20 | 20 of 20 | 20 of 20 |
 | Tables stopped by the clock | 0 | 0 | 0 | 0 |
-| Answers a table | 37 | 3.2 | 3.6 | 3.3 |
-| Thinking per answer | **16 ms** | 1.33 s | 1.30 s | 1.29 s |
-| Paths the cell's interlock refused | 0 | 5 | 6 | 6 |
+| Answers a table | 37 | 16 | 16 | 16 |
+| Thinking per answer | **16 ms** | 0.29 s | 0.29 s | 0.30 s |
+| Paths the cell's interlock refused | 0 | **0** | **0** | **0** |
 
-**It is six times faster at the arm, eighty times slower at the laptop, and it
-frees a seventh as many glasses.** The arm time is low for one reason only:
-it quits after three answers, so a table costs three chunks and is handed back
-very nearly as it was found. Against problem 4's queue budget of 900 arm
-seconds it would reach all twenty tables and have most of the budget left, but
-"how far down the list it got" is not a reading worth having when the tables it
-reached were left crowded.
+**It breaks nothing and changes nothing.** Every one of its sixty tables ends
+the same way: sixteen answers, none of which could touch a glass, and the table
+handed back exactly as it was found. The three runs agree to the glass, which is
+itself worth noticing — the policy denoises from fresh noise at every ask, so
+three identical results mean the answers differ in their numbers and not in what
+they amount to.
 
-**It breaks glasses, and that is where the gain goes.** Two of the three runs
-lost glasses, and a table that loses one pays nothing at all, which is why the
-pickable share moves below the share it started with on run 2. Solution 1 broke
-none.
+**This is a different result from the one this page used to report, and the
+difference is the clearance check.** Before it, the same weights on the same
+twenty tables broke three glasses in one run and two in another, separated one
+or two tables by luck, and spent six to eight arm seconds a table because they
+quit after three answers. Now nothing is broken, nothing is freed, and a table
+costs sixty-seven seconds because sixteen answers are given before the stopping
+rule takes the policy at its word. **The arm time went up and the damage went to
+zero**, and both come from the same fact: an answer that cannot be shown to be
+safe is still carried out as a move to a new viewpoint, and a move costs arm
+seconds.
 
-**One number in this table should be read narrowly**, and it is the one
-labelled "never came down". It is the share of arm seconds spent on paths whose
-lowest waypoint stayed above the height a push happens at. It is *not* the
-share spent harmlessly, and the section after next says why.
+**Read the arm-time row beside the glasses row.** Sixty-seven seconds a table
+for nothing is worse value than forty-three seconds a table for five separated
+tables, so the geometry reference is better by every reading here. What this
+column is for is the comparison with [solution
+6](../06-smolvla-fine-tuned/README.md), which is the same weights fine-tuned on
+this cell's own demonstrations.
 
 ## The shape of its answers, which is the heart of it
 
@@ -202,99 +227,90 @@ here and in the hand-back.
 Everything above was measured on tables below `TEST_SEEDS`. **This is the
 score**: fifty tables offered in order from table 10,000, fifteen arm minutes
 for the **whole queue**, walked three times through the bench's own judging.
-Medians of the three walks, with the three values in brackets, and the geometry
-reference's walk of the same queue as a scale.
+Medians of the three walks, with the three values in brackets, the geometry
+reference's walk of the same queue as a scale, and this solution's own first
+walk — before it ran the clearance check over its answers — as the thing the
+change is measured against.
 
-**One note before the numbers, so that they stay readable later.** This walk
-ran while the stopping rule asked for three quiet answers in a row, and the
-rule now asks for sixteen, because the teacher itself takes up to eleven quiet
-answers before pushing again. That change cannot move anything in this walk.
-This solution never gave even three quiet answers in a row, which is why it
-declared itself finished on no table at all, so asking for more of them leaves
-every table ending exactly where it ended. Raising the threshold can only
-reduce how often a solution is called finished, and this one was never called
-finished.
+| | geometry reference | **this, as it downloads** | before the clearance check |
+|---|---|---|---|
+| Tables attempted | 26 | 12 (11, 13, 12) | 15 |
+| Glasses on those tables | 102 | 45 (40, 49, 45) | 57 |
+| Tables separated, nothing broken | **10** | **0** | **0** |
+| Tables failed by a topple | **0** | **0** | 14 |
+| Tables left unfinished | 16 | 12 (11, 13, 12) | 1 |
+| Glasses pickable at the end | 64 | 18 (16, 19, 18) | 1 |
+| Of those, had room already | 39 | 18 (16, 19, 18) | 2 |
+| Glasses it gave room to | +25 | **0** | −1 |
+| Pickable share | **0.627** | 0.400 (0.388, 0.400, 0.400) | 0.018 |
+| Glasses broken | **0** | **0** | 20 |
+| It said a table was finished | 24 of 26 | 11 of 12 (10, 12, 11) | 0 of 15 |
+| Arm seconds for a table it separated | 43.6 | nothing separated | nothing separated |
+| Answers a table | 31 | 17 (17, 17, 18) | 22 |
+| Thinking an answer | 15 ms | 283 ms | 776 ms |
+| Paths the cell's interlock refused | 0 | **0** | 10 |
 
-| | geometry reference | **this, as it downloads** |
-|---|---|---|
-| Tables attempted | 26 | 15 (15, 13, 15) |
-| Glasses on those tables | 102 | 57 (57, 49, 57) |
-| Tables separated, nothing broken | **10** | **0** |
-| Tables failed by a topple | **0** | 14 (14, 12, 14) |
-| Tables left unfinished | 16 | 1 |
-| Glasses pickable at the end | 64 | 1 (2, 0, 1) |
-| Of those, had room already | 39 | 2 (2, 1, 2) |
-| Glasses it gave room to | +25 | **−1** (0, −1, −1) |
-| Pickable share | **0.627** | **0.018** (0.035, 0, 0.018) |
-| Glasses broken | **0** | 20 (22, 19, 20) |
-| It said a table was finished | 24 of 26 | **0 of 15** |
-| Arm seconds for a table it separated | 43.6 | nothing separated |
-| Answers a table | 31 | 22 (19, 22, 41) |
-| Thinking an answer | 15 ms | 776 ms |
-| Paths the cell's interlock refused | 0 | 10 (10, 1, 251) |
+**Two rows carry the whole change: twenty glasses broken became none, and a
+share of 0.018 became 0.400.** Neither is the model doing anything better. The
+share rises because a table that loses a glass counts for nothing at either end,
+so once no table is lost the glasses that already had room are counted — and
+"the glasses that already had room" is the whole of this column, because the row
+above it says the solution gave room to none.
 
-**What makes the two cards unrecognisable is the rule, not the tables.** Both
-bands are the same draw and the same policy, but both faults this folder
-reported were fixed in the bench between the two measurements, and the
-committed twenty-table numbers are from before the fix. So its "said done",
-"arm seconds a table", "answers a table" and "interlock refused" lines describe
-a stopping rule and an interlock that no longer exist. The shape-of-answers table is still good, with one
-caveat: under the old rule the policy was asked about three times a table, so
-those medians describe a table's opening answers.
+**Why it reaches fewer tables than it did.** Its answers are raised, a raised
+answer touches nothing, and the stopping rule asks for sixteen answers in a row
+that could not touch a glass before it takes a policy at its word. So a table
+costs seventeen answers and the crossings that go with them, where before the
+policy was stopped by a falling glass after a handful of them. The arm time went
+up and the damage went to zero, and both come from the same fact: an answer that
+cannot be shown to be safe is still carried out as a move to a new viewpoint,
+and a move costs arm seconds.
 
-**It never once says a table is finished, and that is the stopping rule being
-right.** The median answer bottoms out at 145 mm, the hand hangs
-`JAW_HALF_HEIGHT` below that, so the hand's lower edge is at about 76 mm —
-within a millimetre or two of the pushing height and below the top of every
-glass on the table. The corrected rule counts almost every answer as a push, so
-the quiet counter resets and never reaches three. The proof that this is the
-mechanism and not just tables ending early is the one table in walk 3 that the
-clock stopped: **369 answers, and never three quiet ones in a row.** Under the
-old rule the same answers at the same height were all quiet and it declared
-nearly every table finished after three.
+**The thinking time fell from 776 ms to 283 ms, and that is not this solution
+either.** The first walk ran on a laptop that was fitting other solutions at the
+same time. This one did not.
 
-**A table now costs it about 60 arm seconds where it cost 6.8, and nothing about
-the policy changed.** That is why it reaches 15 tables rather than all 50. The
-policy was always sweeping the glasses; the old rule let it leave before the
-damage was done.
-
-**Forty of the 43 tables it was given ended with a glass on the floor.** The
-other three are the table each walk was in the middle of when the clock ran out,
-and those three tables are the *whole* of the pickable column: a table that
-loses a glass pays nothing for any glass on it, including the ones that already
-had room. In walk 2 that surviving table started with one glass that had room
-and ended with none, which is where the negative gain comes from.
+**It now says a table is finished, and the reason is worth reading carefully.**
+Its median answer bottoms out at 146 mm; the hand hangs `JAW_HALF_HEIGHT` below
+that, so the fingers ride at about 76 mm, below the top of every glass on the
+table and within a millimetre or two of the pushing height. Before the clearance
+check, such a path was carried out as drawn, the stopping rule rightly counted it
+as the policy acting, and the quiet counter never reached its threshold. Now the
+same path is raised to travel height first, so it really does touch nothing, and
+sixteen of them in a row really are the policy saying it sees nothing to do. The
+rule has not changed. What it is reading has.
 
 **The prediction this solution was ported to test is answered, and the answer is
-no**, now with the queue behind it as well as the sensitivity check. The wrist
-view moved the answers not at all: with the picture changed and the pose pinned
-the chunks come back at 236 mm, no lower than problem 3's 217. The 90 mm drop to
-145 mm is the **state**, because this model emits absolute targets near the pose
+no.** Giving the model the wrist camera it was pretrained with did not make it
+better at this task; it made it worse, and the sensitivity check says which half
+of the change did it. The wrist picture moved its answers not at all: with the
+picture changed and the pose pinned to problem 3's parked pose, the chunks come
+back at 236 mm, no lower than problem 3's 217. The ninety-millimetre drop to
+146 mm is the **state**, because this model emits absolute targets near the pose
 it is told about, and problem 4's `Look.jaw` is a real pose inside the join's box
-where problem 3's parked pose clipped to the ceiling. Closer to the model's home
-ground made it worse, because a path that reaches the glasses without aiming at
-them is more destructive than one that never arrives: in the twenty-table band
-the same policy broke 2 glasses of 84 because it left after three answers, and
-given the whole clock it breaks 20 of 57.
+where problem 3's parked pose clipped to the ceiling. So it now reaches the
+glasses without aiming at them, which on its first walk was more destructive than
+never arriving at all, and which the clearance check now turns into an answer
+that changes nothing.
 
-**A third thing about the bench, smaller than the two above and in the same
-place.** The interlock's height test was corrected, but the physics test behind
-it was not: `plan.slides` answers whether a push **at the jaw's own working
-height** slides a glass, and the draw guarantees every crowded glass slides at
-that height, so there is almost never a glass for the interlock to refuse. A
-path that meets a glass 70 mm higher up tips the same glass and the interlock
-has no question of that shape to ask. That is why it refused almost nothing
-while 20 glasses went over on paths it passed. The examiner already says the
-interlock is one test at one moment and not a promise, so this is a note for
-whoever revisits it rather than a fault report.
+**What the clearance check tells us about its answers, counted by reason.** Over
+the three walks, 737 answers were raised because they travelled across the table
+at the height of the glasses' rims, and that is every answer it gave. Not one was
+raised for naming the wrong glass or for crossing a second glass, because it
+never got as far as proposing a push that could be read as aimed at anything.
 
-**What is not settled.** The held-out walk saved no shape tally, so whether the
-median answer stays at 145 mm over twenty-odd answers a table rather than three is
-unmeasured; saving those three numbers from a queue walk costs no arm time. The
-pinned check is one walk of twenty tables, not three. And nothing here measures
-whether the model uses the picture at all — the direct test is to ask it the
-same table from the same pose with the picture replaced by an empty table or by
-noise, and see whether the answers move.
+**A note about the interlock, since it refused nothing.** `plan.slides` answers
+whether a push **at the jaw's own working height** slides a glass, and the draw
+guarantees that every crowded glass does, so there is almost never a glass for
+the interlock to refuse. A path that meets a glass seventy millimetres higher up
+tips that glass, and the interlock has no question of that shape to ask. That is
+why it refused almost nothing while twenty glasses went over on paths it passed,
+and it is exactly the gap `keeping_clear` fills from the solution's side.
+
+**What is not settled.** The pinned check is one walk of twenty tables, not
+three. And nothing here measures whether the model uses the picture at all — the
+direct test is to ask it the same table from the same pose with the picture
+replaced by an empty table or by noise, and see whether the answers move.
 
 ## Running it
 

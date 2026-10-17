@@ -398,6 +398,20 @@ forfeits its table is doing the real work of discouraging breakage. If the
 interlock caught every sweep, it would be taking the decision back out of the
 solution's hands, and problem 4 exists to find out what each solution decides.
 
+**What the solutions did about it, and why it is not part of the examiner.**
+After the first walks, every solution with a fitted model inside it began
+running one piece of arithmetic over its own answer before handing it over:
+`bench/keeping_clear.py`, which says that an answer is either a move at the
+height the jaw travels at, where nothing on the table can be reached, or a push
+at one named glass carried out at the height a push works at — and which raises
+anything else to travel height, where it goes to the same place and touches
+nothing. That check works only from what the solution has measured, it costs the
+same arm time as the path it replaces, and **nothing in the examiner calls it**.
+A solution that does not call it is treated exactly as before. The measured
+effect was large: the borrowed model's twenty broken glasses in a walk became
+none. The distinction matters for reading this problem's card, because it means
+the safety came from the solutions and not from the marking being softened.
+
 The cell also **never racks a glass**. Problem 3 had a call that lifted a
 glass off the table, and clearing was demonstrated by racking every glass.
 Here the table ends with the glasses still standing on it, and the question

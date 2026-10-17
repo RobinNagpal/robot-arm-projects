@@ -27,6 +27,7 @@ from dataclasses import dataclass, field
 import chunks
 import loading
 import numpy as np
+import pytest
 import readings
 from clear import Imitation, _aim, _glass
 from wiring import pictures, policy
@@ -375,3 +376,67 @@ def test_an_unfitted_model_answers_with_a_chunk_of_the_right_shape():
     assert answer.shape == (chunks.CHUNK, chunks.ACTION_WIDTH)
     points, _ = chunks.to_waypoints(answer)
     assert 1 <= len(points) <= chunks.CHUNK
+
+
+# ----------------------------------------------------------------- the gate
+
+
+def test_the_gate_saying_done_ends_the_table_at_once():
+    """The teacher's own declaration is in the demonstrations, so the gate can learn it.
+
+    Before this, a table ended only when the answers had stopped touching
+    anything for sixteen answers in a row, and the fitted policy declared nine
+    of its ten tables finished while they were still crowded. A gate that says
+    "done" says it for a reason it was fitted on.
+    """
+    solution = solution_with([a_look_path()], readings.DONE)
+    answer = solution.answer(look_at([a_glass()]))
+    assert isinstance(answer, Done)
+    assert answer.why
+    assert solution.said_done == 1
+    assert solution.went_quiet == 0
+
+
+def test_a_push_is_drawn_in_its_glass_s_frame_and_lands_at_that_glass():
+    """The change ticket 19 asks for: one shove is one answer wherever the glass stands.
+
+    The same drawn chunk is answered at two tables whose glass stands in two
+    different places, and it arrives at the glass both times.
+    """
+    drawn = a_push_path(0.03)
+    for at in ((0.0, 0.5), (0.12, 0.62)):
+        glass = a_glass(at)
+        solution = solution_with([drawn], readings.PUSH, 0)
+        answer = solution.answer(look_at([glass]))
+        assert isinstance(answer, Chunk)
+        assert answer.glass == glass.id
+        # The path comes down behind the glass and ends past its middle, which is
+        # what a push is, and it does it at whichever place the glass stands.
+        came_down = answer.waypoints[0]
+        assert math.dist((came_down.x, came_down.y), at) < 0.08
+        assert min(point.z for point in answer.waypoints) == pytest.approx(PUSH_HEIGHT)
+
+
+def test_a_push_at_a_glass_that_is_not_in_the_picture_becomes_a_look():
+    """Nothing can be aimed at a glass nobody can see, and the answer is still safe.
+
+    The gate names a slot the picture does not hold, which a fitted gate will do
+    sometimes. The answer is then taken as a look, raised to travel height, and
+    counted, so that a gate doing this often can be seen doing it.
+    """
+    solution = solution_with([a_push_path(0.03)], readings.PUSH, 4)
+    answer = solution.answer(look_at([a_glass()]))
+    assert isinstance(answer, Chunk)
+    assert all(point.z == TRAVEL_HEIGHT for point in answer.waypoints)
+    assert solution.decided["asked for a glass that is not in the picture"] == 1
+
+
+def test_what_it_knows_about_itself_changes_as_the_table_goes_on():
+    """The three numbers are what let a model tell a fresh table from a finished one."""
+    solution = solution_with([a_look_path()])
+    look = look_at([a_glass()])
+    solution.answer(look)
+    solution.answer(look)
+    first, second = solution.decider.asked[0][1], solution.decider.asked[1][1]
+    assert first[readings.STATE_WIDTH] < second[readings.STATE_WIDTH]  # answers so far
+    assert len(first) == readings.GATE_WIDTH

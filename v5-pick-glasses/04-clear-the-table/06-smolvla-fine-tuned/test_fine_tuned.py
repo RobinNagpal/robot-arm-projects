@@ -316,20 +316,25 @@ def test_a_push_in_the_middle_of_a_spell_starts_the_count_again():
     assert result.answers == 6
 
 
-def test_an_answer_that_would_sweep_a_tall_glass_is_not_quiet():
-    """The tallest glass measured is what decides, not the height the jaw pushes at.
+def test_an_answer_that_would_sweep_a_tall_glass_is_raised_before_the_arm_moves():
+    """What the fit's own commonest answer now meets, and it is not the cell.
 
     A waypoint's height is the middle of the jaw and the hand hangs below it, so
     a path well clear of the pushing height can still drag the hand through the
-    top of a glass. Such a path is not the policy saying it sees nothing to do.
+    top of a glass. That is what this fit learned to do and what broke a glass on
+    three tables in four. ``keeping_clear``, which solution 5 runs and this
+    solution inherits, raises such an answer to travel height first: the arm goes
+    to the same place, touches nothing, and the stopping rule then counts the
+    answer as the policy proposing nothing, which by then is the truth.
     """
     tall = 0.22
     sweeping = flat_chunk(tall + JAW_HALF_HEIGHT - 0.005)
     solution = FineTuned(Stub([sweeping]), quiet_for=3)
     cell = Cell(seen=(glass(height=tall),))
     result = answers(solution, cell, seconds=60.0)
-    assert not result.said_done, "a path through the top of a glass is not a declaration"
-    assert len(cell.followed) > 3
+    assert result.said_done, "once every answer is raised, the policy is proposing nothing"
+    assert all(point.z == TRAVEL_HEIGHT for chunk in cell.followed for point in chunk.waypoints)
+    assert sum(solution.raised.values()) == result.answers
 
 
 def test_a_table_is_forgotten_between_tables():

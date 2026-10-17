@@ -47,6 +47,25 @@ between named things -- cross-entropy -- added over the two heads, and the
 measurement printed at the end is how often each head agrees with the teacher on
 tables the fit never saw.
 
+**Each kind is weighted by how rare it is, and the first fit shows why.** Of the
+teacher's answers, four in five are looks and only one in thirty-six is a push at
+the task. Fitted without weights, the gate learned three of the four kinds well
+and **never once answered "push"** -- which is the right guess for minimising the
+average mistake and useless as a decision, because the push is the answer that
+changes the table. So each kind's part of the loss is divided by how many
+examples of it there are, which is to say a missed push costs as much as a missed
+look. Being wrong in the other direction is cheap: a push proposed where none was
+wanted is a short shove at a glass that did not need it, and the clearance check
+is still in front of it.
+
+**The slot head is asked only about the answers that name a glass.** A look and a
+"done" are aimed at nothing, so a slot head trained on them would spend five
+sixths of itself learning to answer "none" -- and the first fit did exactly that,
+getting the slot right 85% of the time over everything and 17% of the time on the
+answers where a glass was really chosen. The frames that name no glass are now
+masked out of its loss, so the head learns the one thing it is used for: given
+that something is to be acted on, which glass is it?
+
 It is small by design: a few convolutions over the picture, the numbers joined
 on at the end, and two linear heads. A fit takes minutes rather than the hour
 the chunked policy takes, which is what makes it cheap to try at all.
@@ -99,7 +118,9 @@ class Gate(nn.Module):
             nn.Linear(was + numbers, 128), nn.ReLU(), nn.Linear(128, 128), nn.ReLU()
         )
         self.kinds = nn.Linear(128, len(readings.KINDS))
-        self.slots = nn.Linear(128, readings.GLASSES + 1)
+        # One answer per slot, and no answer for "none of them": the head is
+        # asked only about the answers that name a glass.
+        self.slots = nn.Linear(128, readings.GLASSES)
 
     def forward(self, pictures: torch.Tensor, numbers: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         joined = self.joining(torch.cat([self.seeing(pictures), numbers], dim=1))
@@ -151,19 +172,20 @@ def fit(
 ) -> tuple[Gate, list[float]]:
     """One fit of the gate on the teacher's decisions. Returns it and its loss curve.
 
-    The mixture is left exactly as the teacher gave it, which is the opposite of
-    what ``train.py`` does for the chunked policy, and the difference is the
-    point. The policy has to *draw* a push, so it needs to see pushes as often as
-    looks or the average of its material swamps them. The gate has to *choose*
-    between the kinds, so how often each kind really happens is part of what it
-    is being asked to learn.
+    The frames arrive in the order and the proportions the teacher gave them,
+    and the *loss* is what is balanced rather than the batches: each kind's part
+    of it is divided by how many examples of that kind there are. The docstring
+    at the top of this file argues why, and what happened without it.
     """
     device = where_to_run()
     torch.manual_seed(seed)
     net = Gate(numbers.shape[1]).to(device)
     net.train()
     optimiser = torch.optim.AdamW(net.parameters(), lr=LEARNING_RATE)
-    loss_of = nn.CrossEntropyLoss()
+    loss_of = nn.CrossEntropyLoss(weight=by_how_rare(decisions[:, 0], len(readings.KINDS)).to(device))
+    # The slot head is asked only about the answers that name a glass, so the
+    # rest are masked out of its loss and ``ignore_index`` is what does that.
+    slot_loss_of = nn.CrossEntropyLoss(ignore_index=-1)
     rng = np.random.default_rng(seed)
     curve, running, clock = [], [], time.time()
     for step in range(steps):
@@ -172,7 +194,8 @@ def fit(
         told = torch.from_numpy(numbers[rows])
         kinds, slots = net(shown.to(device), told.to(device))
         wanted = torch.from_numpy(decisions[rows]).to(device)
-        loss = loss_of(kinds, wanted[:, 0]) + loss_of(slots, wanted[:, 1])
+        aimed = torch.where(wanted[:, 1] < readings.NO_GLASS, wanted[:, 1], -1)
+        loss = loss_of(kinds, wanted[:, 0]) + slot_loss_of(slots, aimed)
         loss.backward()
         optimiser.step()
         optimiser.zero_grad(set_to_none=True)
@@ -186,6 +209,20 @@ def fit(
                 flush=True,
             )
     return net, curve
+
+
+def by_how_rare(kinds: np.ndarray, how_many: int) -> torch.Tensor:
+    """A weight per kind, one divided by how many examples of it there are.
+
+    Scaled so the weights average one, which keeps the size of the loss
+    comparable with an unweighted fit and so keeps the learning rate meaningful.
+    A kind with no examples at all is given a weight of zero rather than an
+    infinite one.
+    """
+    counted = np.bincount(kinds, minlength=how_many).astype(np.float64)
+    weights = np.where(counted > 0, 1.0 / np.maximum(counted, 1.0), 0.0)
+    weights *= len(weights) / weights.sum()
+    return torch.tensor(weights, dtype=torch.float32)
 
 
 def how_often_right(
@@ -210,16 +247,21 @@ def how_often_right(
             kinds[at : at + batch] = said.argmax(1).cpu().numpy()
             slots[at : at + batch] = slot.argmax(1).cpu().numpy()
     net.train()
+    names_a_glass = decisions[:, 1] != readings.NO_GLASS
     right = {
         "kind_right": round(float((kinds == decisions[:, 0]).mean()), 3),
-        "slot_right": round(float((slots == decisions[:, 1]).mean()), 3),
+        # Over the answers that name a glass, which is the only place the slot
+        # head is asked anything.
+        "slot_right": round(float((slots[names_a_glass] == decisions[names_a_glass, 1]).mean()), 3),
+        "glasses_a_table": round(float(1 + decisions[:, 1][names_a_glass].max()), 1),
     }
     for kind, name in enumerate(readings.KINDS):
         wanted = decisions[:, 0] == kind
         if not wanted.any():
             continue
         right[f"{name}_found"] = round(float((kinds[wanted] == kind).mean()), 3)
-        aimed = wanted & (decisions[:, 1] != readings.NO_GLASS)
+        right[f"{name}_offered"] = round(float((kinds == kind).mean()), 3)
+        aimed = wanted & names_a_glass
         if aimed.any():
             right[f"{name}_slot_right"] = round(float((slots[aimed] == decisions[aimed, 1]).mean()), 3)
     return right

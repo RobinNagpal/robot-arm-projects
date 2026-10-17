@@ -10,6 +10,14 @@ is the whole of why this file is short. The pair is only clean while everything
 but the weights is the same code, and a second copy of the loop here would be a
 second thing that could vary.
 
+**Keeping the hand clear is inherited too.** Solution 5 now runs
+``keeping_clear`` over its own answer before handing it over, so this solution
+does as well, and for the same measured reason: the fit learned the teacher's
+travelling height and swept the tops of the glasses at it, breaking a glass on
+three tables in four. An answer that cannot be shown to reach only the glass it
+names is raised to travel height, where it goes to the same place and touches
+nothing. The pair stays clean, because both halves of it are the same code.
+
 One thing is added, and nothing else is.
 
 **The weights.** ``borrowed.correction.Fitted`` is problem 3's loader: the
@@ -91,6 +99,7 @@ class FineTuned(as_downloaded.AsItDownloads):
             "pushing_seconds": round(pushing, 1),
             "looking_share": round(looking / (looking + pushing), 3) if looking + pushing else 0.0,
             "refused_because": dict(self.refusals),
+            "answers_raised_to_travel_height": dict(self.raised.most_common()),
             "shape": self.shape.summary(),
         }
 

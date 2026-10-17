@@ -43,20 +43,30 @@ problem 4 is **closer to its home ground** than problem 3's was, and the
 prediction written down before the run was that its answers should therefore
 look more like pushes.
 
-Its answers did come down. They came down into the glasses. Across three walks
-of the held-out queue it reached fifteen tables, separated none of them, broke
+Its answers did come down. They came down into the glasses. On its first walk of
+the held-out queue it reached fifteen tables, separated none of them, broke
 twenty of the fifty-seven glasses it met, and never once said that a table was
 finished.
+
+**It has since been measured again, with one thing added and nothing retrained,**
+and the second card is the one this page reports beside the first. The thing
+added is the clearance check every solution in this problem can run over its own
+answer: a path that cannot be shown to reach only the glass it names is raised to
+travel height, where it goes to the same place and touches nothing. With it, the
+same weights on the same fifty tables break **no** glasses at all — and free no
+glasses either. The model was never doing anything but travelling at the height
+of the glasses' rims, and the check makes that visible instead of expensive.
 
 By the end of this page you will know:
 
 - how a policy that has no words for "I am finished" is allowed to say so
   anyway, and why that rule decides most of this solution's card;
-- what the held-out queue measured;
+- what the held-out queue measured, before and after the clearance check;
 - why the answers came down, which turns out not to be the camera at all;
 - why a path that reaches the table without aiming at anything is worse than a
   path that never reaches it;
-- why the cell's own safety interlock could not prevent any of it;
+- why the cell's own safety interlock could not prevent any of it, and what the
+  solution's own check does that the cell's cannot;
 - which of these conclusions the saved numbers support, and which still need a
   measurement.
 
@@ -145,81 +155,89 @@ policy draws its answer from fresh noise at every ask. The geometry reference's
 column is beside it as a scale. Every figure is the median of the three walks
 with the three values beside it.
 
-| fifty tables offered from 10,000 | the geometry reference | **this, as it downloads** |
-|---|---|---|
-| Tables attempted | 26 | 15 (15, 13, 15) |
-| Glasses on those tables | 102 | 57 (57, 49, 57) |
-| Tables separated, nothing broken | **10** | **0** |
-| Tables failed by a topple | **0** | 14 (14, 12, 14) |
-| Tables left unfinished | 16 | 1 |
-| Glasses pickable at the end | 64 | 1 (2, 0, 1) |
-| Of those, had room already | 39 | 2 (2, 1, 2) |
-| Glasses it gave room to | +25 | **−1** (0, −1, −1) |
-| Share of glasses pickable | **0.627** | **0.018** (0.035, 0, 0.018) |
-| Glasses broken | **0** | 20 (22, 19, 20) |
-| It declared a table finished | 24 of 26 | **0 of 15** |
-| Arm seconds for a table it separated | 43.6 | nothing separated |
-| Thinking an answer | 15 ms | 776 ms |
+| fifty tables offered from 10,000 | the geometry reference | **this, with the clearance check** | this, without it |
+|---|---|---|---|
+| Tables attempted | 26 | 12 (11, 13, 12) | 15 |
+| Glasses on those tables | 102 | 45 (40, 49, 45) | 57 |
+| Tables separated, nothing broken | **10** | **0** | **0** |
+| Tables failed by a topple | **0** | **0** | 14 |
+| Tables left unfinished | 16 | 12 (11, 13, 12) | 1 |
+| Glasses pickable at the end | 64 | 18 (16, 19, 18) | 1 |
+| Of those, had room already | 39 | 18 (16, 19, 18) | 2 |
+| Glasses it gave room to | +25 | **0** | **−1** |
+| Share of glasses pickable | **0.627** | 0.400 (0.388, 0.400, 0.400) | 0.018 |
+| Glasses broken | **0** | **0** | 20 |
+| It declared a table finished | 24 of 26 | 11 of 12 (10, 12, 11) | 0 of 15 |
+| Arm seconds for a table it separated | 43.6 | nothing separated | nothing separated |
+| Thinking an answer | 15 ms | 283 ms | 776 ms |
 
-Four facts in that card deserve to be stated in words, because each of them is
-worse than the number looks.
+Read the two right-hand columns against each other, because the weights are the
+same weights and nothing was retrained between them.
 
-**It separated nothing, in forty-three attempts at a table.** Not one table in
-three walks ended with every glass on it having room.
+**Without the check, forty of its forty-three tables ended with a glass on the
+floor.** With it, none do. The glasses were not being broken by badly aimed
+pushes: they were being swept by a hand travelling at the height of their rims,
+which the next section but one explains, and the check raises such a path before
+the arm moves.
 
-**Forty of those forty-three tables ended with a glass on the floor.** The other
-three are the table each walk happened to be in the middle of when the clock
-ran out.
+**Its share goes from 0.018 to 0.400, and it has still freed nothing.** That
+sounds like a contradiction and is not. A table where a glass went over earns
+nothing at all — not even for the glasses that already had room when the arm
+arrived — because if a lost table still paid out, a risky shove would be close to
+free and a method could gamble its way up the card. So when no table is lost, the
+glasses that arrived with room are counted, and the row above says what the
+solution added to them: nothing.
 
-**The whole of its pickable column is that one unfinished table.** A table where
-a glass went over earns nothing at all — not even for the glasses that already
-had room when the arm arrived — because if a lost table still paid out, a risky
-shove would be close to free and a method could gamble its way up the card. So
-the one or two glasses in the "pickable at the end" row are the glasses standing
-on the single table per walk that the clock stopped before anything fell.
+**It separates nothing, in thirty-six attempts at a table.** That is unchanged,
+and it is the result this solution exists to report. Not one table in three walks
+has ended with every glass on it having room.
 
-**Its gain is negative.** On two of the three walks it ends with fewer glasses
-having room than the tables started with. In the second walk the one surviving
-table began with one glass that had room and ended with none: the policy moved
-the glass that needed nothing until it no longer had room.
+**It reaches twelve tables where it used to reach fifteen.** A raised answer
+still costs the arm the move it asked for, and the stopping rule asks for sixteen
+answers in a row that could not touch a glass before it takes the policy at its
+word, so a table now costs seventeen answers and about seventy-five arm seconds.
+Before the check, tables ended sooner because a glass fell.
 
 It is worth noting what is *not* on that list. It is not slow at the arm in the
-old sense: it spends the whole fifteen minutes, like every other solution, and
-reaches fifteen tables because a table now costs it about sixty arm seconds.
-Under the earlier stopping rule a table cost it about seven arm seconds and it
-would have reached the whole queue with most of the budget unspent. That is a
-nine-fold change in what a table costs, and the policy did not change at all.
-The rule that reads it did.
+old sense: it spends the whole fifteen minutes, like every other solution. Under
+the earliest version of the stopping rule a table cost it about seven arm seconds
+and it would have reached the whole queue with most of the budget unspent. That
+is a ten-fold change in what a table costs, and the policy did not change at all.
+The rules that read it did.
 
-## Why it never says it is finished
+## What it takes for this policy to say it is finished
 
 This is the plainest fact on the card, and the explanation is short.
 
 Three numbers describe one of this policy's answers: how low it comes, how far
 across the table it travels, and how far apart its waypoints are. Measured over
-two hundred answers, the middle answer comes down to about 145 mm. The hand
-hangs about seventy millimetres below that, so the lower edge of the hand on the
-middle answer is at about 76 mm — within a millimetre or two of the height the
-jaw pushes at, and below the top of every glass on the table.
+nearly a thousand answers, the middle answer comes down to about 146 mm. The
+hand hangs about seventy millimetres below that, so the lower edge of the hand on
+the middle answer is at about 76 mm — within a millimetre or two of the height
+the jaw pushes at, and below the top of every glass on the table.
 
-So **the shared rule counts almost every answer as a push.** That is not a
-quirk of the rule; it is the rule being right. A hand crossing the table at that
-height really is in among the glasses, and it really would move one. The counter
-of quiet answers is therefore reset by nearly every answer and never reaches
-three, so the policy is never taken to have declared anything, and a table ends
-only when a glass goes over or when the clock stops.
+So **as the policy draws them, almost every answer is a push.** That is not a
+quirk of the shared rule; it is the rule being right. A hand crossing the table
+at that height really is in among the glasses, and it really would move one. On
+the walk without the clearance check the counter of quiet answers was therefore
+reset by nearly every answer and never reached its threshold, the policy was
+never taken to have declared anything, and a table ended only when a glass went
+over or the clock stopped. The evidence that this was the mechanism, rather than
+tables merely ending early, is the one table in that walk which the clock
+stopped: the policy was asked 369 times on it and never produced three answers in
+a row that the rule would call quiet.
 
-The evidence that this is the mechanism, and not merely a consequence of tables
-ending early, is the one table in the third walk that the clock stopped. On that
-table the policy was asked 369 times. It never produced three answers in a row
-that the rule would call quiet.
+**With the clearance check the same answers are raised before the arm moves, and
+a raised answer touches nothing.** So the counter now runs, sixteen in a row are
+reached on almost every table, and the policy is recorded as saying the table
+needs nothing more. It is saying something true. What it proposed could not be
+carried out, so it proposed nothing.
 
-Under the first version of the rule, the same answers at the same height were
-all counted as quiet, so it declared nearly every table finished after exactly
-three answers. **The policy's behaviour under the two rules is identical. Only
-the reading of it changed**, and that one change moves this solution from
-"harmless and useless" to "destructive", which is why the rule's wording
-mattered enough to fix.
+Three readings of one unchanged behaviour, then: under the first rule it looked
+busy and quit after three answers; under the corrected rule it looked busy and
+broke twenty glasses; with its own answers checked it is plainly idle. **Only
+the last of those is a fair description of the policy**, which is the argument for
+the check being part of a solution rather than part of the examiner.
 
 ## Why the answers came down, which is not the camera
 
@@ -337,6 +355,16 @@ moment and was never a promise that nothing can fall over. It is worth recording
 anyway, because a reader looking at twenty broken glasses and a safety interlock
 in the same cell deserves to know why the second did not stop the first.
 
+**That gap is exactly what this solution now closes from its own side.** The
+cell's interlock asks about one glass at one height. `keeping_clear`, which the
+solution runs over its own answer, asks a different question: is this path either
+a move at travel height, where nothing on the table can be reached, or a push at
+one named glass, carried out at the height a push works at? A path at the height
+of the glasses' rims is neither, so it is raised. The cell is unchanged and
+refuses exactly what it refused before; what changed is that the solution no
+longer hands it a path that nobody can account for. Every one of the 737 answers
+raised over the three walks was raised for that one reason.
+
 ## What the saved numbers do not settle
 
 Three things in this write-up are weaker than the rest, and it is better to name
@@ -372,29 +400,35 @@ this measurement can make.
 
 | fifty tables offered from 10,000 | 1 geometry | 2 ranked geometry | 4 world model | **5 as it downloads** |
 |---|---|---|---|---|
-| Tables attempted | 26 | 25 | **32** | 15 |
-| Tables separated | 10 | 7 | **11** | **0** |
-| Tables failed by a topple | **0** | **0** | 7 | **14** |
-| Glasses it gave room to | +25 | +19 | **+29** | **−1** |
-| Share pickable | **0.627** | 0.582 | 0.560 | **0.018** |
-| Glasses broken | **0** | **0** | 8 | **20** |
-| Thinking an answer | 15 ms | 15 ms | **6 ms** | **776 ms** |
+| Tables attempted | 26 | 25 | **45** | 12 |
+| Tables separated | 10 | 7 | **14** | **0** |
+| Tables failed by a topple | **0** | **0** | 1 | **0** |
+| Glasses it gave room to | +25 | +19 | **+39** | **0** |
+| Share pickable | **0.627** | 0.582 | 0.603 | **0.400** |
+| Glasses broken | **0** | **0** | 1 | **0** |
+| Thinking an answer | 15 ms | 15 ms | **10 ms** | **283 ms** |
 
-It is last on every line, and it is last by a distance that no other pair of
-solutions is separated by. The nearest comparison is the
-[world model](04-a-world-model.md), which also breaks glasses: eight against
-twenty, over twice as many tables, while separating eleven. The difference
-between them is that the world model's breakages come from acting on a
-prediction that is right fifty-seven times in seventy, and this solution's come
-from not aiming at anything.
+It is last on every line that measures work done, and it is now last without
+being dangerous. Its share of 0.400 is the share of glasses that arrived with
+room: the column says, as plainly as a column can, that the solution added
+nothing to the table and took nothing away from it.
+
+The nearest comparison is the [world model](04-a-world-model.md), which also
+answers from a fitted model and which separates fourteen tables. The difference
+between them is not that one is careful and the other is not — both now run the
+same clearance check — it is that the world model is asked for a *push at a
+named glass* and this one is asked for a path, and a path drawn by a model that
+was never shown this cell's glasses is not aimed at anything.
 
 **This result was expected to be poor and is still worth having**, for the
 reason it was built: it is the baseline the same model fine-tuned on this cell
 has to beat, and a baseline that is only interesting when it scores well is not
 a baseline. What was not expected was the direction. Problem 3 ended with this
-model harmless; problem 4 ends with it as the most destructive solution
-measured, having changed nothing about the model and only one thing about what
-it is told.
+model harmless; problem 4's first measurement ended with it as the most
+destructive solution on the card, having changed nothing about the model and only
+one thing about what it is told. Its second measurement ends with it harmless
+again — not because the model improved, but because the solution now declines to
+carry out what it cannot account for.
 
 ## What to take from it
 
@@ -417,6 +451,16 @@ after three answers, and under it the same policy looked almost harmless. The
 corrected rule does not punish it; it simply declines to call a hand that is
 sweeping through the glasses "finished", and the damage then shows up where it
 belongs.
+
+**And a solution that cannot aim can still be made safe, which is worth having
+even when it leaves the card unchanged.** Twenty broken glasses became none with
+no retraining, because the arithmetic that says what a safe answer looks like in
+this cell — travel high, or push one named glass at the height a push works at —
+is available to every solution and costs nothing to apply. What it cannot do is
+make a model competent: the same check applied to the
+[fine-tuned model](06-smolvla-fine-tuned.md) and to the
+[imitation policy](03-imitation-from-demonstrations.md) leaves each of them doing
+whatever it had learned to do, minus the damage.
 
 ## Where to go next
 

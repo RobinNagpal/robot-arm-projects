@@ -13,17 +13,21 @@ this cell's jaw, the correction's shape and the fitting recipe are all
 
 ## What came out
 
-**The fit learned the looking and not the pushing.** Four of the teacher's
-answers in five move the arm only to see, so that is what the correction picked
-up: its chunks now carry the jaw high and sweep shorter and slower, and only one
-answer in fifty comes down far enough to move a glass.
+**The first fit learned the looking and not the pushing.** Four of the teacher's
+answers in five move the arm only to see, and a fit drawn from that mixture
+spends four fifths of itself on the kind of answer that changes nothing: its
+chunks carried the jaw high, swept shorter and slower, and only one answer in
+fifty came down far enough to move a glass. On the held-out queue that left no
+table separated, no glass freed, and a glass broken on three tables in four. The
+fit bought safety and not competence.
 
-On the held-out queue that leaves **no table separated, no glass freed, and one
-glass in four of the ones it reached broken.** The training is still a clear
-improvement on the same weights untrained, which break twenty glasses a walk
-where this breaks eight, and it is nowhere near the hundred lines of arithmetic
-in the geometry reference, which separates ten tables and breaks nothing. **The
-fit bought safety and not competence.**
+**Two things were changed after that, and neither is a different model.** Each
+batch is now drawn evenly from the looks and the pushes, so that the material's
+own four-to-one mixture cannot drown the answers that matter; and every answer
+goes through the clearance check that solution 5 runs, which raises a path that
+cannot be shown to reach only the glass it names. What those two bought is
+measured below and in
+[`what-changed.md`](../../docs/04-clear-the-table/what-changed.md).
 
 ## What is borrowed and what is new
 
@@ -37,6 +41,7 @@ fit bought safety and not competence.**
 | `chunks.py` in problem 3's solution 6 | **borrowed in part.** Cutting a recorded push down to its flat part, resampling, and the round-trip check that a target is one the model can express. |
 | `loading.py`, `chunks.py`, `readings.py` in problem 4's solution 3 | **borrowed, unchanged.** Where the demonstrations are and what one holds. The two fitted solutions read one set through one reader. |
 | `bench/stopping.py` | **borrowed.** How a trained policy says it has finished. Its count is taken as it comes; this folder sets no number of its own. |
+| `bench/keeping_clear.py` | **borrowed, through solution 5.** The clearance check a solution runs over its own answer. It is inherited rather than called here, which keeps the pair one piece of code. |
 | `borrowed.py` | **new.** Loads all nine of those under the plain names they import each other by. Nothing is put on `sys.path`. |
 | `targets.py` | **new.** One stored demonstration, read as something the borrowed model can be fitted towards. The only new thinking about the data. |
 | `train.py`, `run.py` | **new.** Three fits, and the two measurements. |

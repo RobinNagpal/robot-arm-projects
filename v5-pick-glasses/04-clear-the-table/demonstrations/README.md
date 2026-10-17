@@ -28,15 +28,41 @@ and those conventions from there.
 
 ## What a demonstration is
 
-The **observation** is what problem 4 hands every solution in one `Look`:
+The **observation** is what problem 4 hands every solution in one `Look`, plus
+two things about the answer itself:
 
 - the picture the camera on the arm rendered from where the jaw was standing,
   at the size the camera renders it,
-- the readings of the glasses that picture caught, as slots, and
-- where the jaw was standing.
+- the readings of the glasses that picture caught, as slots,
+- where the jaw was standing,
+- three numbers about how this table has gone so far: how many answers the
+  teacher had given on it, how many since it last touched a glass, and how far
+  the jaw had travelled since then, and
+- **the decision**: which of four kinds of answer this was, and which glass it
+  was aimed at.
 
 The **action** is the path the jaw followed, as the teacher wrote it and the
-bench carried it out.
+bench carried it out — and for a push it is written **measured from the glass
+being pushed** rather than in the table's own numbers.
+
+**The last two of those were added after the first fits, and both are there for
+the same measured reason.** A model fitted to copy this set has to produce two
+very different kinds of answer out of one output, and because four answers in
+five are looks, what it produced was always a look: the first fitted policy
+freed no glasses on any table. So the decision is now recorded beside the path,
+which lets one model learn to choose and another learn to draw, and the three
+numbers about the table's history are what let a model tell a table it has just
+arrived at from one it has already been round. Writing a push from its own glass
+is the third part of the same idea: measured from the glass, one shove is one
+answer wherever the glass stands, where in the table's numbers it is a different
+answer at every glass.
+
+**The teacher's own "this table is finished" is in the set too.** The loop never
+asks the cell to carry anything out for it, so there is no path to copy; the
+frame holds the last look and the decision, and the model that learns to choose
+is fitted on it. Without it, a learned solution has no way to say a table is
+done except by going quiet, and the first fitted policy declared nine of its ten
+tables finished while they were still crowded.
 
 **One answer is one demonstration, and that is the difference from problem 3.**
 Problem 3 counted only pushes, because its camera hangs above the table and a
@@ -66,17 +92,29 @@ for itself, so a chunk that asked for it would be asking for the lift twice.
 | --- | --- |
 | tables | 300, numbered 1000 to 1299 |
 | folder | `fitted-on/` |
-| demonstrations | 11,016 |
-| answers a table | 36.8 |
-| of them looking | 8,965 — 4,822 drives to a stand and 4,143 extra frames from where the jaw already stood — **81%** |
+| demonstrations | 11,313 |
+| answers a table | 37.7 |
+| of them looking | 8,965 — 4,822 drives to a stand and 4,143 extra frames from where the jaw already stood — **79%** |
 | of them pushing | 2,062 — 1,416 ranging, 331 testing, 315 pushing the glass somewhere |
+| of them finishing | 297 — the teacher saying the table needs nothing more |
 | dropped | 11: 8 shoved a glass out of the zone, 3 put one over |
 | a path | 1 waypoint to look, 39 to 190 to push; the median over all of them is 1 and the ninetieth is 44 |
-| on disk | 342 MB |
+| on disk | about 350 MB |
+
+**Read the three middle rows together, because they are the whole difficulty of
+fitting anything on this set.** Four answers in five change nothing about the
+table. Of the ones that touch a glass, five in six are a five-millimetre poke
+made to find something out rather than to move the glass anywhere. **One answer
+in thirty-six is a push at the task.** A fit drawn evenly from this material
+spends almost all of itself on the answer that is easy and does nothing, which
+is why the two models fitted on it now take it differently: the one that chooses
+is shown the mixture as it is, with each kind's part of the loss divided by how
+common it is, and the one that draws is given batches drawn evenly from the
+kinds.
 
 A second set is collected the same way from tables 8000 to 8049 into
-`held-back/`: 1,850 demonstrations in 86.8 s, with the same 37 answers a table
-and the same 81% looking, so it is the fitting set in miniature. It is not a score — the score is
+`held-back/`: 1,900 demonstrations in 92 s, with the same 38 answers a table
+and the same 79% looking, so it is the fitting set in miniature. It is not a score — the score is
 the outcome on the tables, which each solution's own runner measures — but it is
 what says whether a fit has memorised its tables or learned something: the
 distance between the student's chunk and the teacher's, on pictures the fit never
@@ -176,9 +214,19 @@ waypoint every time.
 That is the price of counting every answer as a demonstration, and the
 alternative has a price too. A set of pushes alone — problem 3's choice — would
 give a student no way to learn where to drive the arm to see, which in this
-problem is half the job. Whether a set should be balanced between the two is a
-real question and this set does not answer it: it records what the teacher did,
-in the proportions the teacher did it.
+problem is half the job.
+
+**So the set still records what the teacher did, in the proportions the teacher
+did it, and the balancing happens where the fitting is.** That is the answer this
+folder arrived at after the first fits, and it is the better place for it: a
+dataset that had been balanced when it was written down could not have told
+anybody what the teacher's real mixture was, and that mixture is a measurement of
+the problem rather than of the teacher. Two models are now fitted on the same
+rows and treat the mixture differently — the one that *draws* a path sees the
+kinds in equal measure, because it has to draw a push as well as it draws a look;
+the one that *chooses* between them sees the mixture as it is, with each kind's
+part of the loss divided by how common it is, because how often each kind happens
+is part of what it has to learn.
 
 ## The format
 
@@ -189,9 +237,19 @@ models take:
 | key | what it is |
 | --- | --- |
 | `observation.images.wrist` | the picture, at the size the camera renders |
-| `observation.state` | the jaw's pose and the glasses the picture caught |
-| `action` | the chunk, flat |
+| `observation.state` | the jaw's pose, the glasses the picture caught, the three numbers about the table so far, and the decision |
+| `action` | the chunk, flat, measured from the pushed glass for a push |
+| `gate` | the decision as two numbers: which kind of answer, and which slot it named |
 | `task` | one sentence, the same every time |
+
+**Why the decision is in both `observation.state` and `gate`.** The model that
+draws a path is *told* the decision, so for it the decision is part of the
+observation. The model that makes the decision cannot be told it, so it is given
+the front of the same row — the table, the pose and the three numbers — and the
+decision is its label, which is what `gate` is. One dataset serves both because
+the row is laid out in that order and the deciding model simply reads less of
+it. `readings.py` is where the widths are named, and a test holds the two
+against each other so they cannot drift apart.
 
 One episode is one table. One frame is one answer.
 

@@ -1,0 +1,42 @@
+{
+  "seeds": [
+    {
+      "seed": 0,
+      "steps": 400,
+      "minutes": 0.9,
+      "loss": [
+        2.8111,
+        2.5898,
+        2.5414,
+        2.4728,
+        2.3811,
+        2.2829,
+        2.1738,
+        2.1713,
+        2.1428,
+        2.1157
+      ],
+      "on_tables_it_never_saw": {
+        "kind_right": 0.688,
+        "slot_right": 0.407,
+        "glasses_a_table": 5.0,
+        "look_found": 0.741,
+        "look_offered": 0.672,
+        "probe_found": 0.5,
+        "probe_offered": 0.257,
+        "probe_slot_right": 0.41,
+        "push_found": 0.053,
+        "push_offered": 0.018,
+        "push_slot_right": 0.393,
+        "done_found": 0.9,
+        "done_offered": 0.054
+      }
+    }
+  ],
+  "kinds": [
+    "look",
+    "probe",
+    "push",
+    "done"
+  ]
+}

@@ -118,6 +118,21 @@ broken, tables failed by a topple, tables left unfinished, glasses made
 pickable out of all glasses, the average arm time for a table that succeeded,
 and how often the solution declared itself done.
 
+`keeping_clear.py` is the one module here that **no part of the examiner
+calls.** It is arithmetic offered to the solutions, which each run it over their
+own answer before handing it over, and it lives in this folder for the same
+reason `clock.py` does: every solution can reach the bench's modules, and one
+copy of a piece of arithmetic cannot drift away from another. What it says is
+that an answer is either a move at the height the jaw travels at, which nothing
+on the table reaches, or a push at one named glass carried out at the height a
+push works at — and that anything else, in particular a path travelling at the
+height of the glasses' rims, is raised to travel height before the arm moves.
+The cell's own interlock is narrower on purpose and is unchanged by it: that
+refuses a path into a glass the tipping rule flatly refuses, and nothing more.
+The first walks of the learned solutions broke most of their glasses on paths
+the interlock had no question to ask about, which is why the solutions now ask
+one of their own.
+
 `film.py` records a table being cleared, for looking at by eye. It changes
 nothing: the table is scored in the world the bench builds and everything the
 film draws is drawn in a second world of its own, which `test_film.py` checks

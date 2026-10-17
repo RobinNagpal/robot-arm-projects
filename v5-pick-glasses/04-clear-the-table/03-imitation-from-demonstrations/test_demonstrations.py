@@ -17,7 +17,23 @@ import math
 import numpy as np
 import pytest
 from chunks import ACTION_WIDTH, CHUNK, length_of, to_action, to_waypoints
-from readings import GLASSES, JAW_WIDTH, PER_GLASS, STATE_WIDTH, to_state
+from readings import (
+    ASKED_WIDTH,
+    GATE_WIDTH,
+    GLASSES,
+    JAW_WIDTH,
+    KINDS,
+    PER_GLASS,
+    PROBE,
+    PUSH,
+    SELF_WIDTH,
+    STATE_WIDTH,
+    about_itself,
+    conditioning,
+    to_asked,
+    to_gate,
+    to_state,
+)
 
 import tables
 from partners import PUSH_HEIGHT, TRAVEL_HEIGHT, Seen, Waypoint
@@ -178,3 +194,76 @@ def test_the_slots_follow_the_draw():
     """The slot count is read off the draw, so a wider draw widens the row with it."""
     assert GLASSES == tables.MOST
     assert all(len(tables.table(seed)) <= GLASSES for seed in range(8))
+
+
+# --------------------------------------------- the frame a push is written in
+
+
+@pytest.mark.parametrize("at", [(0.0, 0.55), (0.12, 0.42), (-0.14, 0.66)])
+def test_a_push_written_from_its_glass_comes_back_where_it_started(at: tuple[float, float]) -> None:
+    """The round trip, with the glass's place taken off on the way in and put back on.
+
+    A push is stored measured from the glass it pushes, so that one shove is one
+    answer wherever the glass stands. What has to hold is that the path the bench
+    is handed is the path the teacher followed, whichever glass it was at.
+    """
+    path = a_push(0.04)
+    action = to_action(path, at)
+    back, pulled = to_waypoints(action, at)
+    assert pulled == 0
+    for before, after in zip(path, back, strict=True):
+        assert after.x == pytest.approx(before.x, abs=1e-6)
+        assert after.y == pytest.approx(before.y, abs=1e-6)
+        assert after.z == pytest.approx(before.z, abs=1e-6)
+
+
+def test_the_same_shove_at_two_glasses_is_one_stored_answer() -> None:
+    """Which is the whole point of storing a push in its glass's frame.
+
+    Two glasses standing in different places, each given the same shove. Measured
+    from the table the two answers are different numbers; measured from the glass
+    they are the same answer, so a model has one thing to learn instead of two.
+    """
+    here, there = (0.0, 0.55), (0.12, 0.42)
+    at_one = [Waypoint(here[0] + p.x, here[1] + p.y, p.z, p.heading) for p in a_push(0.04)]
+    at_other = [Waypoint(there[0] + p.x, there[1] + p.y, p.z, p.heading) for p in a_push(0.04)]
+    assert np.allclose(to_action(at_one, here), to_action(at_other, there), atol=1e-6)
+    assert not np.allclose(to_action(at_one), to_action(at_other), atol=1e-6)
+
+
+# ------------------------------------------- what the gate and the policy see
+
+
+def test_what_the_gate_is_shown_is_what_the_policy_is_shown_without_the_decision() -> None:
+    """The gate cannot be shown the decision it is making, and the policy must be.
+
+    So the readings are laid out in one order -- the table, then the solution's
+    own history, then the decision -- and the gate is handed the first part of
+    that row. A test, because the two widths are easy to let drift apart.
+    """
+    jaw = Waypoint(0.0, 0.5, TRAVEL_HEIGHT, 0.0)
+    glass = Seen(id=0, x=0.05, y=0.55, height=0.15, widest=0.07, foot=0.06, standing=True)
+    state = to_state(jaw, [glass])
+    itself = about_itself(7, 3, 1.25)
+    asked = to_asked(state, itself, conditioning(PUSH, glass))
+    gate = to_gate(state, itself)
+    assert len(gate) == GATE_WIDTH
+    assert len(asked) == ASKED_WIDTH
+    assert np.allclose(asked[:GATE_WIDTH], gate)
+
+
+def test_the_kind_of_answer_is_one_hot_and_a_look_is_aimed_at_nothing() -> None:
+    glass = Seen(id=0, x=0.05, y=0.55, height=0.15, widest=0.07, foot=0.06, standing=True)
+    for kind in range(len(KINDS)):
+        row = conditioning(kind, glass if kind in (PROBE, PUSH) else None)
+        assert row[: len(KINDS)].sum() == 1.0
+        assert row[kind] == 1.0
+        aimed = row[len(KINDS) :]
+        assert (aimed != 0).any() if kind in (PROBE, PUSH) else not aimed.any()
+
+
+def test_what_it_knows_about_itself_is_three_numbers_near_one() -> None:
+    """A unit rather than a limit: a solution that goes further reports above one."""
+    assert len(about_itself(0, 0, 0.0)) == SELF_WIDTH
+    assert np.allclose(about_itself(0, 0, 0.0), 0.0)
+    assert (about_itself(40, 40, 4.0) > 1.0).all()

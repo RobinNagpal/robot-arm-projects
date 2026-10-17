@@ -30,6 +30,16 @@ the teacher driving the arm somewhere it can see from, so one median over the
 mixture would be a median over looks. Problem 3 never had to split them, because
 its camera hangs above the table and a push was the only answer there was.
 
+**And they are now fitted on in equal measure**, which is the change the first
+held-out walk asked for. Fitted on the teacher's own mixture, what the model
+learned was the travelling: the middle of its paths sat 233 mm up, only one
+answer in fifty ever came down to the height a glass can be moved at, and it
+freed no glasses on any table. The fault is not the recipe but the material --
+a fit on four parts looking to one part pushing spends four fifths of itself on
+the answer that does not change the table -- so each batch is now drawn evenly
+from the two kinds. Nothing else about the recipe changes, so the fits before
+and after differ in their mixture and in nothing else.
+
 **The recipe is problem 3's, imported and not chosen again** -- the step count,
 the batch, the rate and its warm-up, the pre-processing of a batch and the
 distance itself all come from
@@ -65,7 +75,7 @@ import torch
 import weights
 from borrowed import MODEL_CHUNK, correction, fitting, loading, policy
 from targets import LOOKING, PUSHING, SQUEEZED
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, WeightedRandomSampler
 
 # How often to print the loss and the rate between checks. Nothing is measured
 # there, so it is not one of problem 3's numbers.
@@ -151,6 +161,31 @@ def main() -> None:
     )
 
 
+def evenly_by_kind(fitted_on: targets.Targets, how_many: int, seed: int) -> WeightedRandomSampler:
+    """Draw demonstrations so that the looks and the pushes arrive in equal measure.
+
+    Each kind is given a weight of one divided by how many of it there are, so a
+    row of a rare kind is as likely to be drawn as a row of a common one. The
+    squeezed pushes count as pushes, because that is what they are.
+
+    This is the change the first held-out walk asked for, and the docstring at
+    the top of this file is where it is argued. It replaces the plain shuffle,
+    which drew the teacher's own mixture of four looks to every push.
+    """
+    kinds = targets.by_kind(fitted_on)
+    pushing = set(kinds[PUSHING] + kinds[SQUEEZED])
+    looking = set(kinds[LOOKING])
+    share = {}
+    for name, rows in (("pushing", pushing), ("looking", looking)):
+        share[name] = 1.0 / len(rows) if rows else 0.0
+    drawn = [
+        share["pushing"] if row in pushing else share["looking"] if row in looking else 0.0
+        for row in range(len(fitted_on))
+    ]
+    generator = torch.Generator().manual_seed(seed)
+    return WeightedRandomSampler(drawn, num_samples=how_many, replacement=True, generator=generator)
+
+
 def one_fit(seed: int, arguments, where: str, fitted_on: targets.Targets, each: dict) -> dict:
     """One seed, from the borrowed weights to a saved correction. Returns its record."""
     torch.manual_seed(seed)
@@ -170,7 +205,7 @@ def one_fit(seed: int, arguments, where: str, fitted_on: targets.Targets, each: 
     loader = DataLoader(
         fitted_on,
         batch_size=arguments.batch,
-        shuffle=True,
+        sampler=evenly_by_kind(fitted_on, arguments.steps * arguments.batch, seed),
         num_workers=0,
         drop_last=True,
         collate_fn=lambda items: fitting.ready(items, pre),

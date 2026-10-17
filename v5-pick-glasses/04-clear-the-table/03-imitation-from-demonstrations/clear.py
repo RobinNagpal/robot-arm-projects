@@ -123,7 +123,7 @@ class Imitation:
         kind, slot = self.decider.decide(look.picture, readings.to_gate(state, itself))
         slots = readings.in_slots(look.seen)
         target = slots[slot] if slot < len(slots) else None
-        if kind != readings.LOOK and target is None:
+        if kind in (readings.PROBE, readings.PUSH) and target is None:
             # The gate asked for a push at a glass that is not in this picture.
             # Nothing can be aimed at a glass nobody can see, so the answer is
             # taken as a look, which is what the solution does when it has
