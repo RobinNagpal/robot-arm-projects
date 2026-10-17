@@ -393,7 +393,27 @@ def keeps_clear(seen: list[Seen], target: Seen, choice: Choice) -> bool:
     """
     push = encoding.push_of(target, choice.heading, choice.offset, choice.travel, choice.aim)
     path = borrowed.jaw_paths.to_push(None, push, choice.reach)
-    return not why_not_clear(path, seen, target=target.id)
+    return not why_not_clear(path, seen, target=target.id, tested=accounted_for(target, choice))
+
+
+def accounted_for(target: Seen, choice: Choice) -> tuple[int, ...]:
+    """The glass this push is at, when this solution can account for it sliding.
+
+    The clearance rule asks a solution to account for driving a glass at all,
+    because every glass this cell draws is one the public tipping rule answers
+    "it depends on the friction" for. The reference solution accounts for it by
+    probing the glass and watching whether it moved. **This solution accounts
+    for it with the model it fitted**, which was fitted on pushes in this cell
+    including the ones that put a glass over, and whose least favourable copy
+    gives this push at most ``TOPPLE_LIMIT`` chance of toppling anything.
+
+    That is evidence of the same kind and arguably of a better kind, because it
+    is about this push at this glass rather than about one earlier shove. It is
+    written out here rather than left implicit in the search's own dropping of
+    risky candidates, so that the link between the two is visible and survives
+    somebody changing either of them.
+    """
+    return (target.id,) if choice.risk <= TOPPLE_LIMIT else ()
 
 
 def best_push(model: Ensemble, seen: list[Seen], target: Seen, rng: np.random.Generator) -> Verdict:

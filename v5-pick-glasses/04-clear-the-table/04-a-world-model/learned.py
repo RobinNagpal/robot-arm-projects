@@ -208,7 +208,9 @@ class WorldModel(nudge.OneFixedNudge):
             # path is checked against every glass this solution has measured,
             # and a push that would reach one it did not choose is dropped here
             # rather than carried out.
-            why = why_not_clear(path, glasses, target=choice.target)
+            why = why_not_clear(
+                path, glasses, target=choice.target, tested=search.accounted_for(target, choice)
+            )
             if why:
                 self.dropped[why] += 1
                 continue

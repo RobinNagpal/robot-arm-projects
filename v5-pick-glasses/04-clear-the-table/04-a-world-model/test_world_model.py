@@ -403,3 +403,23 @@ def test_a_push_straight_through_a_neighbour_is_not_clear() -> None:
     forwards = np.array([[0.0, 0.0, 0.04, plan.APPROACH_GAP]])
     assert not search.corridor_is_clear([glass, behind], glass, forwards)[0]
     assert search.corridor_is_clear([glass, beside], glass, forwards)[0]
+
+
+def test_a_push_the_model_is_unsure_of_is_not_accounted_for():
+    """What this solution offers in place of a probe, and where that offer stops.
+
+    Every glass this cell draws is one the public tipping rule cannot predict, so
+    the clearance rule asks a solution to account for driving one. This solution
+    accounts for it with its fitted model rather than with a test shove, and the
+    account is only good while the model's least favourable copy says the push is
+    safe. Past that the glass is not accounted for and the rule treats the push
+    as one nothing has tested.
+    """
+    glass = Seen(id=0, x=0.50, y=-0.20, height=0.150, widest=0.070, foot=0.070, standing=True)
+    sure = search.Choice(
+        target=glass.id, heading=0.0, offset=0.0, travel=0.05, reach=0.01,
+        cost=0.0, aim=(glass.x + 0.05, glass.y), risk=0.0,
+    )
+    assert search.accounted_for(glass, sure) == (glass.id,)
+    unsure = replace(sure, risk=search.TOPPLE_LIMIT + 0.01)
+    assert search.accounted_for(glass, unsure) == ()

@@ -250,7 +250,35 @@ gate's decision as the claim the check tests: an answer the gate called a look
 has to ride at travel height, and an answer it aimed at a glass has to reach
 that glass and no other.
 
-<!-- the numbers for change 4 appear here when the fits are measured -->
+**What it bought, and what it did not.** The split is what made pushing
+*learnable*, and on its own it was still not enough to make the solution push.
+
+The two models each learned their own job well. Measured on tables the fit never
+saw, the gate gets the kind of answer right about seven times in ten and finds
+most of the teacher's pushes, where the single model had never proposed one at
+all. The policy, now told the decision instead of having to guess it, agrees
+with the teacher about whether this is a moment for pushing **97% of the time,
+against 84% before** — and that rise matters more than it looks, because the old
+figure was almost entirely agreement about *not* pushing. Four answers in five
+are looks, so a model that never pushes already scores 80% on that question. The
+new figure is agreement about the pushes themselves, and the distance between
+the student's push and the teacher's, measured over the pushes alone, is about
+20 mm a waypoint.
+
+| the gate, on tables it never saw | over the three fits |
+| --- | --- |
+| the kind of answer right | 70% to 71% |
+| the glass right, over the answers that name one | 56% to 61% |
+| the teacher's pushes found | 56% to 77% |
+| the teacher's "finished" found | 92% to 96% |
+| pushes offered, of all its answers | 16% to 21% |
+
+**And yet the first walk after the split freed nothing at all.** Every table
+ended with the solution having spent 100% of its arm time on paths that could not
+touch a glass. Four separate faults stood between a gate that asked for pushes
+and an arm that made one, and they had to be found one at a time; they are
+changes 6 to 9 below. Nothing about the split was wrong, and nothing about it was
+sufficient.
 
 ### 5. The fine-tuned model is fitted on an even mixture
 
@@ -274,3 +302,303 @@ is about a third of one pass over the material, and that is still true. It is
 left alone here so that this measurement is of the mixture and of nothing else.
 
 <!-- the numbers for change 5 appear here when the fits are measured -->
+
+### 6. The gate is shown what it has already tried on each glass
+
+**What it is.** The gate is shown two more numbers for each glass on the table:
+how many of its own answers have been aimed at that glass, and how far that glass
+has moved since it was first measured.
+
+**Why it needs them.** The teacher's push at the task is the last step of a short
+sequence. It reaches in until the jaw touches the glass, shoves it five
+millimetres to find out whether it slides, and only then pushes it somewhere. So
+which step is wanted depends entirely on what has already been tried on that
+glass — and a gate shown one picture cannot see any of it. At the states the
+student actually reaches, nothing in its input distinguished "I have not touched
+this glass" from "I have shoved it twice and it slid".
+
+Both numbers are facts about the solution's own actions and about readings it
+took itself, so a solution is allowed to keep them, and nothing in the examiner
+is involved. They are stored as a feature of their own beside the demonstrations
+rather than added to the row the chunked policy is shown, which is what let them
+be added without refitting the policy — an hour a seed — or disturbing solution
+6, which reads the same demonstrations.
+
+**What it bought.** Every head of the gate improved, and the two that matter most
+improved most.
+
+| the gate, on tables it never saw | without the history | with it |
+| --- | --- | --- |
+| the kind of answer right | 68% to 70% | 70% to 71% |
+| the glass right, over the answers that name one | 53% to 55% | 56% to 61% |
+| the teacher's probes found | 37% to 52% | 49% to 68% |
+| the glass right when it asks for a push | 50% to 57% | 63% to 68% |
+
+### 7. Three faults that were bugs rather than choices
+
+These are not design changes and they are recorded because each one hid the
+others, and because two of them are mistakes worth not making again.
+
+**A look was being drawn in the frame of a glass it was not aimed at.** The
+change that made the gate learn which glass to act on was removing the "none of
+them" answer from its slot head, so the head now names a glass for *every*
+answer, including a look. The solution took that name at face value: it
+conditioned the look on that glass and drew the path in that glass's frame, then
+added the glass's position back. Every look therefore landed about half a metre
+from where it was meant to, out at the table's edge, where the camera sees one
+glass and the gate reasonably says the table is finished. Fixing it took tables
+from two or three answers to nine or eleven, and revealed that the policy's
+travelling was in fact excellent: it walks the teacher's ring of viewpoints
+almost exactly.
+
+**The gate's own input meant different things at fit time and at run time.** Two
+of the three numbers the gate keeps about itself — answers since it last touched
+a glass, and metres travelled since then — were reset by *what the teacher
+intended* while the demonstrations were collected, and by *whether the fingers
+came low enough to touch something* while the solution ran. Since every drawn
+answer was being raised to travel height at that point, the fingers never came
+low, so at run time those numbers never reset and climbed into the corner of the
+input where the teacher only ever says the table is finished. There is now one
+class that computes them, shared by the collector and by every solution, because
+two copies of one piece of bookkeeping are two chances to disagree.
+
+**Two crashes had stopped solution 6 entirely.** One looped over the frames a
+set had kept and indexed the dataset underneath it, so it eventually read the
+teacher's "finished" frame, which has no path. The other demanded a stored
+observation of exactly the table's own width, and stopped the fit the first time
+that row grew to carry what the gate and the policy need.
+
+### 8. A drawn answer is pulled onto the two heights the cell accounts for
+
+**What it is.** When an answer fails the clearance check of change 1, it is not
+thrown away immediately. It is first put into the shape the check asks for and
+checked again: every waypoint goes to one of the two heights the cell has a rule
+for, and where a stretch both travels and changes height a corner is inserted so
+the hand stops moving sideways before it comes down. Which of the two heights a
+waypoint goes to is decided by the hand rather than by splitting the difference —
+if the fingers would come below the top of the glass the answer names, the answer
+meant to touch that glass and the waypoint goes down to where a shove slides a
+glass; otherwise it was travelling and the waypoint goes up.
+
+**Why it is needed.** The check of change 1 asks a horizontal stretch to sit at
+*exactly* the height a push works at. A solution that computes its answer puts it
+there, because that is the number it worked from. A solution that *draws* its
+answer predicts that height and is out by a centimetre or two. So the check was
+satisfiable by arithmetic and unsatisfiable by a fitted model, and the
+measurement is blunt: over twenty tables the gate asked for between 45 and 109
+shoves and **every single one was refused**, all for travelling at the height of
+the glasses' rims.
+
+**What it bought.** The first pushes this solution has ever had carried out: from
+none at all to between 73 and 129 a run. It is also what the two borrowed-model
+solutions needed, for the same reason and to the same effect.
+
+### 9. A push may not drive its glass into another
+
+**What it is.** The check now also works out where the pushed glass would end up
+and tests *its* path against every other measured glass. A glass that already
+stands closer to a neighbour than two glasses need may still be moved, as long as
+it ends no closer than it began — which is the reference solution's own rule, and
+it has to be, because the draw leaves some glasses nearly touching and those are
+exactly the glasses the task is about.
+
+**Why it is needed.** Everything in the check until now asked where the *hand*
+goes. Nothing asked where the *glass* goes, so a shove that slid its own glass
+into a neighbour passed every test, and the glass that broke was one the hand was
+never near.
+
+**What it bought: very little, and that is worth recording.** Over twenty tables
+the broken glasses went from 3 (2 to 5) to 3 (1 to 3). The hole in the check was
+real and is now closed, but one glass driven into another was not how these
+solutions were mostly breaking them.
+
+### 10. A push at the task needs evidence that the glass will slide
+
+**What it is.** A shove that would *move* a glass is allowed only at a glass the
+solution has itself watched move. A shove that merely comes to rest against a
+glass is allowed anywhere, because that is how the evidence is got. Whether a
+path would move a glass is read off what it would **do** — where the glass would
+end up — and not off how long the path is, because a cap on the length of a push
+was measured earlier in this problem and bought nothing.
+
+**Why it is needed, and a measurement nobody had written down.** The public
+tipping rule gives three answers: the glass will slide, it will tip, or it
+depends on a friction nothing in this cell can see. The examiner refuses only the
+flat "it will tip", and its own words say what the third answer means — a probe
+is safe, and a push at the task is a gamble. Measured over sixteen hundred glasses
+drawn the way this problem draws them:
+
+| the tipping rule's answer | share of drawn glasses |
+| --- | --- |
+| it will slide | **none at all** |
+| it depends on the friction | 83.8% |
+| it will tip | 16.2% |
+
+A glass's foot would have to be over 107 mm across to slide for certain, and the
+widest foot the draw makes is 94 mm. **So every glass on every table in this
+problem is one whose behaviour nobody can predict**, which is why the teacher
+probes before it pushes, and it is exactly the discipline the fitted solutions
+had skipped.
+
+**The check that it is the right rule.** The reference solution's own 686 answers
+over twenty tables were put through the rule without changing what it did: 99.0%
+are kept exactly as drawn, 0.6% are pulled onto the heights, and 0.4% are refused
+for a reason the examiner's interlock refuses them for anyway. **None** are
+refused for want of evidence. The teacher's probe-then-push sequence satisfies the
+rule without a single exception.
+
+**Each solution offers its own account, and that had to be learned the hard way.**
+Solutions 3, 5 and 6 account for a glass by having shoved it and watched it move.
+Solution 4 never probes at all: it predicts what a push will do with a fitted
+ensemble and prices the risk of toppling. The rule was added with only the
+probing solutions in mind, and solution 4 immediately fell from 14 separated
+tables and 39 glasses freed to 9 and 29, because it had no way to offer the
+evidence it in fact had. Its account is now written out: the least favourable copy
+of its ensemble must give the push at most the search's own topple limit, which is
+the bar its search already applied. With that, it is back to 14 and 39.
+
+**What it bought.** Over twenty tables the broken glasses went from 3 (1 to 3) to
+**2 (2 to 3)**, the lowest measured at any point.
+
+### 11. A push is carried on until its glass has room
+
+**What it is.** When a push at the task passes every check, the solution carries
+that shove on **along the model's own line**, one step at a time at the spacing
+the model asked for, and stops at the first of two things: the glass has the room
+it needs, or the next step would fail one of the checks. A probe is left exactly
+as drawn.
+
+**Why it is needed.** Three measured numbers cannot be reconciled by better
+fitting.
+
+| | |
+| --- | --- |
+| how far one of the teacher's pushes moves a glass | 13 mm |
+| how much room a glass needs before it can be gripped | 76 mm |
+| how accurately the chunked policy places a waypoint | 20 mm |
+
+The teacher frees a glass over a *run* of small pushes, feeling its way. So the
+thing the student is asked to copy is smaller than its own error, and it draws
+shoves that stop at the glass's near edge instead of driving past its middle:
+measured over twenty tables, the shoves it carried out moved their glass a median
+of **zero** millimetres. No amount of further fitting fixes a target below the
+noise.
+
+**What the model decides and what it does not.** The model still chooses
+everything that is hard — whether to act, which glass, and which way to shove it.
+The distance is arithmetic. That division is stated here rather than hidden,
+because the alternative would be to claim the model learned to free glasses, and
+it did not; and a run's record now carries how many pushes were driven home and
+how far they move their glass, so the split shows up in the numbers too.
+
+**What it bought.** Over twenty tables, glasses freed went from 0 to +1 (1 to 2),
+with between 16 and 44 pushes driven home a run, each moving its glass 5 to 25 mm.
+It is also where this solution's remaining ceiling becomes visible: the extension
+is stopped by the surrounding glasses, and "the hand would meet a glass it is not
+aimed at" is now by far the commonest refusal, 69 to 82 times per twenty tables.
+
+### 12. The stretch that drives along the table is made straight
+
+**What it is.** The driving stretch of a push is replaced by evenly spaced points
+along the straight line between its own ends, all at that line's heading, and the
+hand is turned to that heading before it comes down. The glass, the direction, the
+distance and the number of waypoints are all the model's and all kept — the count
+matters because in this cell the spacing of the waypoints is the speed of the jaw.
+A look that wanders is left wandering, because where a look goes is the model's
+business and only a driving stretch touches a glass.
+
+**Why it was tried.** Every toppling left in the runs was a push that had passed
+every positional check, which pointed at the shape of the path rather than at
+where it goes. The cell turns the hand to each leg's own heading as that leg
+starts, so a wandering stretch turns the hand while the fingers are against the
+glass, and a glass twisted at the foot goes over instead of sliding.
+
+| the driving stretch of a push | strays from straight | the hand turns between waypoints |
+| --- | --- | --- |
+| the reference solution's 57 pushes | **0.0 mm** | **0.0°** |
+| the student's shoves | median 4.2 to 6.2 mm, most 13.4 mm | up to 3.6° |
+
+**What it bought: nothing that can be told apart from noise.** Over twenty tables
+the broken glasses went from 3 (1 to 3) to 2 (1 to 4) and the glasses freed from
++1 (1 to 2) to 0 (−1 to 3). With three fits those spreads overlap completely. It
+is kept because its own measurement is sharp and it makes the student's push the
+same shape as the teacher's, and the record says plainly that the result did not
+move.
+
+## Three repairs that were measured and not kept
+
+A page that only lists what worked is not a record of what was learned.
+
+**A price on a measured push in the ranked trees** (change 3 above) cost nine
+tables and was removed.
+
+**A cap on how long a push may be** was tried on the world model and bought
+nothing, so the length is left to the search.
+
+**Moving a shove's touchdown backwards until the fingers were over bare table**
+made things worse rather than better: over twenty tables the broken glasses went
+from 3 (1 to 3) to 4 (4 to 5), because the further back the hand comes down the
+longer it ploughs along the table. It was reverted.
+
+One measurement behind that third repair was also wrong, and is withdrawn. It
+reported that nine shoves in ten came down with the hand already on the glass,
+and it asked that question with the arithmetic that treats the hand as a long box
+reaching back from the fingertips — which is true at the touchdown point of a
+perfectly ordinary push, as the notes in `keeping_clear.py` already said. Asked
+of the fingertips against the glass's own circle, which is the thing that
+matters, the answer is different. The rule built on the wrong reading refused
+every push in the project, including the reference solution's, and the world
+model's search stopped finding any push at all on a crowded table, which is how
+it was caught.
+
+## What it all came to
+
+The table below is the held-out queue, which is the measurement this problem
+exists to make: fifty tables offered in order from table ten thousand, fifteen
+arm minutes for the whole queue, walked three times. "Before" is the first
+measured walk, before any of the changes on this page.
+
+| | tables separated | glasses freed | glasses broken | pickable share |
+| --- | --- | --- | --- | --- |
+| Geometry ranked, before and after | 7 of 25 | +19 | 0 | — |
+| A world model, before | 11 of 32 | +29 | 8 | 0.560 |
+| **A world model, after** | **14 of 40** | **+39** | **1** | **0.598** |
+| Imitation, before | 0 of 10 | 0 | 0 | 0.400 |
+| **Imitation, after** | **1 of 13** | **+3** | **2** | 0.377 |
+| SmolVLA as it downloads, before | 0 of 15 | −1 | 20 | 0.018 |
+| **SmolVLA as it downloads, after** | **0 of 11** | **0 to +2** | **0** | **0.400** |
+
+Three different kinds of outcome are in that table, and they are the result of
+this work.
+
+**The world model is now clearly the best solution in the problem**, and it got
+there by two changes of different kinds: the shared clearance arithmetic took its
+broken glasses from eight to one, and pessimism in its search took its separated
+tables from eleven to fourteen while it also reached eight more tables. It beats
+the geometry reference it was measured against, which the first walk did not.
+
+**The borrowed model, run exactly as it downloads, went from the worst result in
+the problem to a harmless one.** It broke twenty glasses on its first walk and
+breaks none now, and its pickable share rose from 0.018 to 0.400. It still
+separates nothing, which is the honest result for a model that has never seen
+this cell: what changed is that it no longer destroys the table while failing.
+
+**The imitation solution now acts, where before it only looked.** It went from
+leaving every table exactly as it found it — not one glass given room it did not
+start with — to freeing two or three glasses a queue and separating a table,
+while reaching three more tables. It also now breaks two to five, so by the
+share this problem scores on it has not yet won: 0.377 against 0.400. The gap
+between "it does the task badly" and "it does not do the task" is the whole of
+what the changes bought here, and the three things standing in the way of more
+are all measured and written down above — one push moves a glass a fifth of what
+it needs, no glass in this cell is one the tipping rule can predict, and the
+direction the policy draws is blocked by a neighbour four times out of five.
+
+**The last of those three is where this stops, and the reason is worth stating.**
+It could be repaired the same way the distance was, by choosing the direction
+arithmetically from the measured neighbours. That would leave the model choosing
+only which glass to act on, and the solution would have become the geometry
+reference with a learned chooser in front of it. That may well be the right thing
+to build, and it is not this solution: solution 3 exists to measure what copying
+a teacher achieves, and a version of it that no longer copies the teacher's
+choice of push would answer a different question.
