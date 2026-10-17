@@ -48,22 +48,33 @@ is to drive there. The push-by-push hand-over is gone, so a solution runs
 continuously and has to say when it is finished. Both changes matter here more
 than they look, and the reason is the second half of this document.
 
-**The result is that the training bought safety and not competence.** Given
-fifteen arm minutes and a queue of fifty held-out tables, this solution gets to
-eight of them, separates none, and frees no glass at all: every glass that could
-be picked when a walk ended could already be picked when it began. It breaks a
-glass on three of the tables it reaches in four. That is better
-than the same weights untrained, which break twenty glasses a walk against this
-solution's eight, and it is far behind the hundred lines of arithmetic in
+**The first measurement said that the training bought safety and not
+competence.** Given fifteen arm minutes and a queue of fifty held-out tables,
+that fit got to eight of them, separated none, and freed no glass at all: every
+glass that could be picked when a walk ended could already be picked when it
+began. It broke a glass on three of the tables it reached in four. That was
+better than the same weights untrained, which broke twenty glasses a walk
+against its eight, and far behind the hundred lines of arithmetic in
 [solution 1](01-one-fixed-nudge.md), which separates ten tables and breaks
 nothing.
 
-**The reason is visible in what the model learned.** Four of the teacher's
+**The reason was visible in what the model learned.** Four of the teacher's
 answers in five move the arm only to see, because the camera is on the arm. The
-correction learned that habit and little else: its paths now carry the jaw high
-and sweep shorter and slower than the untrained model's, and only one answer in
-fifty comes down far enough to move a glass. A policy that has learned to
-look and not to push cannot tidy a table, and this one is a clean example of it.
+correction learned that habit and little else: its paths carried the jaw high
+and swept shorter and slower than the untrained model's, and only one answer in
+fifty came down far enough to move a glass. A policy that has learned to look
+and not to push cannot tidy a table, and that fit was a clean example of it.
+
+**So two things were changed, and neither is a different model or a different
+recipe.** Each batch is now drawn evenly from the looks and the pushes, so that
+the material's own four-to-one mixture cannot drown the answers that matter —
+the fault above is a fault of the mixture rather than of the recipe. And every
+answer now goes through the clearance check that [solution
+5](05-smolvla-as-it-downloads.md) runs and this solution inherits, which raises
+a path that cannot be shown to reach only the glass it names. What the two
+bought is the second half of this document, and
+[`what-changed.md`](../what-changed.md) is the record of it beside the other
+solutions' changes.
 
 By the end of this document you will know what fine-tuning and low-rank
 adaptation are, what the demonstrations are and what is odd about problem 4's
@@ -174,7 +185,7 @@ and not about the material. Collecting it cost eight and a half minutes of
 simulator time, because nobody holds a controller: the tables are drawn from
 numbers and the teacher is a program.
 
-The set holds **11,016 answers from tables numbered 1000 to 1299**, with 1,850
+The set holds **11,313 answers from tables numbered 1000 to 1299**, with 1,900
 more from a separate band kept back to measure against. And here is the fact
 that governs this whole document: **8,965 of those answers — four in five — are
 the teacher driving the arm somewhere it can see from, not pushing anything.**
@@ -191,6 +202,15 @@ A model fitted by copying can only be as good as what it copies, which is called
 answer than the teacher's. This set adds a second ceiling on top of that. Four
 answers in five say "go and stand over there", and that is the answer the fit
 learns best.
+
+**That second ceiling is the one this solution now steps around, and the step is
+small.** The set is left exactly as it is, because what the teacher really did,
+in the proportions it did it, is a measurement of problem 4 and not something to
+tidy away. What changed is how a batch is drawn from it: the looks are thinned
+and the pushes repeated so that each batch holds about as many of one as of the
+other. Nothing about the recipe moves — the same thousand steps, the same batch
+of four, the same rate and warm-up — so the fit before and the fit after differ
+in their mixture and in nothing else.
 
 ## Turning one recorded answer into something the model can be trained towards
 

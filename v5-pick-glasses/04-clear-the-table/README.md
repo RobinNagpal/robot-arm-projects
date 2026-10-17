@@ -64,15 +64,26 @@ glass's size is written down anywhere, which is this project's first rule.
 ```
 pixi.toml ruff.toml Makefile README.md   environment and entry points
 bench/                                   the shared bench, see bench/README.md
-  contract.py    the shapes a solution and the bench pass to each other
-  partners.py    everything borrowed from problem 3, in one place
-  tables.py      the draw
-  clock.py       simulated arm time
-  wrist.py       the camera carried by the arm
-  open_run.py    the loop: look, act, declare done, stop on the budget
-  scoring.py     the end-state scorecard
-  test_*.py      one test file per module above
+  contract.py       the shapes a solution and the bench pass to each other
+  partners.py       everything borrowed from problem 3, in one place
+  tables.py         the draw
+  clock.py          simulated arm time
+  wrist.py          the camera carried by the arm
+  open_run.py       the loop: look, act, declare done, stop on the budget
+  scoring.py        the end-state scorecard
+  judging.py        the held-out queue, and the one way a result is recorded
+  stopping.py       how a trained policy says it has finished
+  keeping_clear.py  the clearance check a solution runs over its own answer
+  film.py           recording a table being cleared, for looking at by eye
+  test_*.py         one test file per module above
+demonstrations/                          the teacher's answers, for the two fitted solutions
 01-one-fixed-nudge/                      the geometry reference, ported
+02-geometry-ranked/                      the same loop, with fitted trees ordering the pushes
+03-imitation-from-demonstrations/        a gate that decides and a chunked policy that draws
+04-a-world-model/                        a fitted model of what a push does, and a search
+05-smolvla-as-it-downloads/              a borrowed foundation model, nothing fitted
+06-smolvla-fine-tuned/                   the same weights, corrected on this cell
+results/                                 the six side by side, and the films
 ```
 
 The documents live apart from the code, in
@@ -96,15 +107,24 @@ model fitting that problem 3 does.
 
 ## What has been measured
 
-**Nothing yet.** Problem 4 has been designed and is being built; the examiner
-has not been run, and so this folder holds no results. Where problem 3's
-documents carry numbers — how often a glass topples, what a push costs, how the
-six solutions compare — problem 4 has none, and nothing here should be read as a
-measurement until a solution document says it was measured.
+**All six solutions, on the held-out queue of fifty tables, walked three times
+each.** [`results/README.md`](results/README.md) is the comparison: every
+column, what perfect play achieves on exactly the tables each solution reached,
+and which columns mislead when they are read on their own. Each solution's own
+folder holds its `results.json` and the per-table rows behind it, and each has a
+document of its own under
+[`../docs/04-clear-the-table/solutions/`](../docs/04-clear-the-table/solutions/).
 
-What does carry over is everything measured about the cell itself, because
-problem 4 pushes the same glasses through the same physics with the same jaw.
-Those numbers are in
+**Every solution was also measured twice over, before and after a round of
+changes made to the fitted ones.**
+[`../docs/04-clear-the-table/what-changed.md`](../docs/04-clear-the-table/what-changed.md)
+is the record of what was changed, what each change bought, and which proposed
+changes were measured and then dropped. Read it with the comparison page: the
+page says where each solution stands, and the record says how it got there.
+
+What carries over from problem 3 is everything measured about the cell itself,
+because problem 4 pushes the same glasses through the same physics with the same
+jaw. Those numbers are in
 [problem 3's bench README](../03-push-glasses-apart/bench/README.md), and
 `bench/README.md` here explains why problem 4 borrows that cell rather than
 copying it.
