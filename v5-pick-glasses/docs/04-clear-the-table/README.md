@@ -46,7 +46,10 @@ been measured so far, and which document to read next.
 3. [**The six solutions side by side**](../../04-clear-the-table/results/README.md)
    — every column of the result, the ceiling on the same tables, and which
    columns mislead when read on their own.
-4. **One page for each solution**, which gives its spread and what it found out
+4. [**Everything we tried to make it work better**](improving-the-results.md) —
+   why the fitted solutions failed, which repairs worked and why, which repairs
+   failed and why, and what is worth trying next.
+5. **One page for each solution**, which gives its spread and what it found out
    while being built: [one fixed nudge](solutions/01-one-fixed-nudge.md),
    [geometry ranked](solutions/02-geometry-ranked.md),
    [imitation from demonstrations](solutions/03-imitation-from-demonstrations.md),
