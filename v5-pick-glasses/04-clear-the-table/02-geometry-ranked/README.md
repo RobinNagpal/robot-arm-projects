@@ -195,6 +195,29 @@ carry four fifths of the importance are **push height over the topple limit**
 to push, not which push is good. That is a useful thing to know and it is not a
 thing that frees a glass.
 
+### The obvious repair, measured and not kept
+
+The trees are fitted on the room a push gains and are never shown what the push
+costs to make, so the obvious reading is that they prefer the longest push and
+that pricing a millimetre of push would fix the ordering. **Measured, it does
+nothing.** Four prices were tried on forty tuning tables, from nothing to three
+times the price problem 3's world model pays for the same trade:
+
+| what a millimetre of push costs the candidate asking for it | tables separated of 40 | glasses it gave room to | glasses broken |
+|---|---|---|---|
+| nothing, as the trees are used | 15 | +40 | **0** |
+| 0.05 | 15 | +40 | **0** |
+| 0.1, the world model's price | 14 | +39 | **0** |
+| 0.3 | 15 | +39 | **0** |
+
+Nothing moves, at any price, and the arm time a table moves by less than a tenth
+of a second. So the ordering's fault is not that its pushes are too long: it is
+that the thing the trees are good at predicting — whether a push would tip a
+glass — is not the thing a chooser needs to know, because the candidate set the
+geometry hands them has already thrown out the pushes that would tip anything.
+The knob is not in the solution, and `ranked.py` carries this measurement so that
+the next person to have the idea finds it answered.
+
 ## Whether these tables can be separated at all
 
 This is the measurement the solution exists for. `measure.py --perfect` takes

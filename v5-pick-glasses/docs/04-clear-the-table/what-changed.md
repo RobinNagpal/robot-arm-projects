@@ -194,4 +194,72 @@ forty, broke no glass at any price, and changed the arm time by less than a tent
 of a second. So the knob is not in the solution, and the measurement is written
 down in ``ranked.py`` where the next person will find it.
 
-<!-- the remaining changes appear here as each is measured -->
+### 4. The imitation policy decides first and draws second
+
+**What it is.** Solution 3 was one model doing two jobs, and it is now two models
+with one job each.
+
+The **gate** is a small network — four convolutions over the picture and two
+linear heads — which is shown what the problem shows every solution and says two
+things: which of four kinds of answer to give, and which glass to give it at. The
+four kinds are the teacher's own, grouped so that the ones that need telling
+apart are apart: go and look, probe a glass with a five-millimetre shove, push a
+glass at the task, or say the table is finished. The **policy** is the same
+chunked model as before, and it is now told that decision and draws only that.
+
+Four smaller changes come with it, and each answers a measured fault.
+
+**The push is drawn in its own glass's frame.** A push's waypoints are where
+they are because of where the glass is, so in the table's own numbers the same
+shove at two different glasses is two unrelated answers. Measured from the
+glass, it is one answer, and a push learned at one glass is a push everywhere.
+This is what ticket #19 asks for.
+
+**The policy's batches are drawn evenly from the kinds.** Of the teacher's
+answers, four in five are looks and one in thirty-six is a push at the task. The
+looks are thinned rather than the pushes copied, so a step costs exactly what it
+cost before.
+
+**The gate's loss is weighted by how rare each kind is, and its slot head is
+asked only about the answers that name a glass.** Fitted without either, the
+gate learned three of the four kinds well and **never once answered "push"** —
+which is the right guess for minimising the average mistake and useless as a
+decision — and it got the slot right 85% of the time over everything while
+being at chance on the answers where a glass was really chosen.
+
+**The teacher's own "this table is finished" is in the demonstrations.** The
+loop never asks the cell to carry anything out for a declaration, so the
+collector records the answer that has no path: the last look, and "done" as the
+kind. A table now ends when the gate says so, and the shared quiet rule is the
+backstop rather than the only rule. The first version declared nine of its ten
+tables finished while they were still crowded.
+
+**And the clearance check from change 1 applies to its answers too**, with the
+gate's decision as the claim the check tests: an answer the gate called a look
+has to ride at travel height, and an answer it aimed at a glass has to reach
+that glass and no other.
+
+<!-- the numbers for change 4 appear here when the fits are measured -->
+
+### 5. The fine-tuned model is fitted on an even mixture
+
+**What it is.** Two changes to solution 6, and neither is a different model or a
+different recipe.
+
+Each batch is drawn evenly from the looks and the pushes, by weighting the
+sampler rather than by touching the demonstrations. The solution's own page
+measured what the teacher's mixture did to it: the middle of its paths sat 233 mm
+up, only one answer in fifty came down to the height a glass can be moved at, and
+it freed nothing. That is what a fit spends four fifths of itself on looking
+produces.
+
+And it inherits the clearance check, because it inherits solution 5's loop. The
+pair that this solution exists to measure — the same weights, with and without
+this cell's demonstrations — therefore stays one piece of code on both sides.
+
+**What was left alone, on purpose.** The number of steps. Its own page says the
+first thing to try is more of them, because a thousand steps at a batch of four
+is about a third of one pass over the material, and that is still true. It is
+left alone here so that this measurement is of the mixture and of nothing else.
+
+<!-- the numbers for change 5 appear here when the fits are measured -->
