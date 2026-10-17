@@ -19,7 +19,13 @@ chunk that came back unchanged would decode to the path that was recorded.
 
 Three things happen on the way, and none of them invents a path.
 
-**The glasses are dropped from the state.** The model's state is six numbers and
+**The declarations are dropped, and the glasses are dropped from the state.**
+Problem 4's demonstrations hold the teacher's own "this table needs nothing
+more", which has no path in it at all; `Targets` leaves those frames out,
+because a model that answers with a path has nothing to be fitted towards on
+them. Solution 3's gate is the model those frames are for.
+
+The model's state is six numbers and
 they are joint readings, so the only thing in a ``Look`` that fits is where the
 jaw is standing. The glasses it caught are in the picture, which is what the
 model is expected to read them from. Problem 4's own students take the readings
@@ -198,9 +204,19 @@ class Targets:
             )
         self.data = LeRobotDataset(repo_id=loading.REPO, root=root)
         self.counts = Counts() if counts is None else counts
+        # The teacher's own "this table needs nothing more" is in the set, and it
+        # is not a path: there is nothing for this model to be fitted towards on
+        # such a frame. Solution 3's gate is what those frames are for. They are
+        # left out here by index rather than by copying the set, which is the one
+        # thing this class exists not to do.
+        self.frames = [i for i in range(len(self.data)) if not self._is_a_declaration(i)]
+
+    def _is_a_declaration(self, i: int) -> bool:
+        """Whether this frame is the teacher saying the table is finished."""
+        return int(round(float(self.data[i]["gate"][0].item()))) == readings.DONE
 
     def __len__(self) -> int:
-        return len(self.data)
+        return len(self.frames)
 
     @property
     def tables(self) -> int:
@@ -208,7 +224,7 @@ class Targets:
         return self.data.num_episodes
 
     def __getitem__(self, i: int) -> dict:
-        frame = self.data[i]
+        frame = self.data[self.frames[i]]
         path, pulled = path_of(frame["action"].numpy().reshape(chunks.CHUNK, chunks.ACTION_WIDTH))
         target, kind = as_target(path)
         self.counts.saw(kind, pulled)

@@ -333,7 +333,6 @@ def collect(first: int, count: int, root: Path, show: bool = False) -> dict:
                 continue
             kind = DONE if frame["kind"] == "done" else AS_KIND[frame["kind"]]
             target = frame["target"]
-            origin = (target.x, target.y) if target is not None else (0.0, 0.0)
             if frame["path"] is None:
                 # The teacher's "done". There is no path, and the frame is kept
                 # for the gate: a chunk of one waypoint where the jaw already
@@ -341,7 +340,12 @@ def collect(first: int, count: int, root: Path, show: bool = False) -> dict:
                 # because a run answers ``Done`` without asking for a path.
                 action = np.zeros((CHUNK, ACTION_WIDTH), dtype=np.float32)
             else:
-                action = to_action(frame["path"], origin)
+                # Stored in the cell's own numbers, which is what the teacher
+                # really did. A solution that wants a push measured from its
+                # glass subtracts the glass itself; ``loading.py`` is where that
+                # is done, so that the set holds one convention and not one
+                # solution's reading of it.
+                action = to_action(frame["path"])
                 if action is None:
                     dropped[f"a path of more than {CHUNK} waypoints"] += 1
                     continue

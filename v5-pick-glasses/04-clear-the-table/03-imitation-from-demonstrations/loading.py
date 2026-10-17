@@ -28,8 +28,10 @@ from collections.abc import Callable
 from pathlib import Path
 
 import numpy as np
+import readings
 from chunks import ACTION_WIDTH, CHUNK
 from readings import CAMERA
+from work_cell.table.layout import TABLE_CENTRE_XY
 
 HERE = Path(__file__).resolve().parent
 DEMONSTRATIONS = HERE.parent / "demonstrations"
@@ -70,6 +72,12 @@ def load(root: Path, shrink: Shrink | None = None, most: int | None = None) -> d
     in. It is what ``gate.py`` is fitted on, and it is also how ``train.py``
     tells a push from a look when it balances the mixture.
 
+    ``aimed_at`` is where the glass that answer was aimed at stood, or the middle
+    of the table where it was aimed at none. The actions themselves are stored in
+    the cell's own numbers, because that is what the teacher really did and
+    because solution 6 reads the same set; a reader that wants a push measured
+    from its own glass subtracts this.
+
     ``shrink`` takes one picture and hands back a batch of one at the size the
     model reads; leave it out and the pictures come back at the size they were
     stored at. ``most`` caps how many frames are read, which is for a smoke test
@@ -104,7 +112,26 @@ def load(root: Path, shrink: Shrink | None = None, most: int | None = None) -> d
         "actions": actions,
         "episodes": episodes,
         "gate": decisions,
+        "aimed_at": np.array([aimed_at(row) for row in states], dtype=np.float32),
     }
+
+
+def aimed_at(state: np.ndarray) -> tuple[float, float]:
+    """Where the glass this answer was aimed at stood, out of the row the policy is shown.
+
+    The decision at the end of that row holds the glass's place, scaled the way
+    every place in it is scaled, so this is a reading back rather than a second
+    record of the same thing. An answer aimed at no glass gives the middle of the
+    table, which subtracts to nothing.
+    """
+    at = readings.STATE_WIDTH + readings.SELF_WIDTH + len(readings.KINDS)
+    across, along = float(state[at]), float(state[at + 1])
+    if across == 0.0 and along == 0.0:
+        return (0.0, 0.0)
+    return (
+        TABLE_CENTRE_XY[0] + across * readings.PLACE_SCALE,
+        TABLE_CENTRE_XY[1] + along * readings.PLACE_SCALE,
+    )
 
 
 def _picture(frame: dict, shrink: Shrink | None) -> np.ndarray:

@@ -114,7 +114,7 @@ def main() -> None:
     # paths and the readings stay in step.
     rows = balanced(held["gate"][:, 0], np.random.default_rng(0))
     seen = held["pictures"][rows]
-    actions = held["actions"][rows]
+    actions = from_their_glasses(held["actions"][rows], held["aimed_at"][rows])
     states = held["states"][rows]
     scale = policy.Scale.of(seen, actions)
     summary = WEIGHTS / "training.json"
@@ -143,18 +143,17 @@ def main() -> None:
         )
         spent = time.time() - started
         model.save(WEIGHTS / f"{RUNG}-{seed}")
-        unseen = fitting.how_far_off(
-            model, checking["pictures"], checking["actions"], states=checking["states"]
-        )
+        measured = from_their_glasses(checking["actions"], checking["aimed_at"])
+        unseen = fitting.how_far_off(model, checking["pictures"], measured, states=checking["states"])
         pushing = checking["gate"][:, 0] != readings.LOOK
         unseen_pushes = fitting.how_far_off(
             model,
             checking["pictures"][pushing],
-            checking["actions"][pushing],
+            measured[pushing],
             states=checking["states"][pushing],
         )
         fitted = fitting.how_far_off(model, seen, actions, states=states)
-        lengths = how_long_off(model, checking)
+        lengths = how_long_off(model, checking | {"actions": measured})
         print(
             f"seed {seed}: loss {curve[0]:.3f} -> {curve[-1]:.3f} in {spent / 60:.0f} min\n"
             f"  per waypoint, against the teacher's own chunk: "
@@ -225,6 +224,24 @@ def how_long_off(model, set_of: dict, most: int = 200) -> dict:
     }
 
 
+
+
+def from_their_glasses(actions: np.ndarray, aimed_at: np.ndarray) -> np.ndarray:
+    """The same chunks, with a push measured from the glass it was aimed at.
+
+    The demonstrations hold what the teacher really did, in the cell's own
+    numbers, because solution 6 reads the same set. This is the reading ticket 19
+    asks for, and it is this solution's own: a push's waypoints are where they
+    are because of where the glass is, so measured from the table the same shove
+    at two glasses is two unrelated answers and the model has to learn the
+    table's layout before it can learn the shove. Measured from the glass it is
+    one answer. An answer aimed at no glass has an origin of nothing and is
+    unchanged. ``clear.py`` adds the glass's place back on at run time.
+    """
+    moved = actions.copy()
+    moved[:, :, 0] -= aimed_at[:, None, 0]
+    moved[:, :, 1] -= aimed_at[:, None, 1]
+    return moved
 
 
 def balanced(kinds: np.ndarray, rng: np.random.Generator) -> np.ndarray:

@@ -19,10 +19,12 @@ import pytest
 from chunks import ACTION_WIDTH, CHUNK, length_of, to_action, to_waypoints
 from readings import (
     ASKED_WIDTH,
+    DONE,
     GATE_WIDTH,
     GLASSES,
     JAW_WIDTH,
     KINDS,
+    LOOK,
     PER_GLASS,
     PROBE,
     PUSH,
@@ -267,3 +269,34 @@ def test_what_it_knows_about_itself_is_three_numbers_near_one() -> None:
     assert len(about_itself(0, 0, 0.0)) == SELF_WIDTH
     assert np.allclose(about_itself(0, 0, 0.0), 0.0)
     assert (about_itself(40, 40, 4.0) > 1.0).all()
+
+
+def test_where_an_answer_was_aimed_is_read_back_out_of_the_row() -> None:
+    """The set stores one place for the glass, not two, and this is the reading back.
+
+    A push is stored in the cell's own numbers, because that is what the teacher
+    really did and because solution 6 reads the same set. The reader that wants a
+    push measured from its own glass needs to know where that glass stood, and
+    the row the policy is shown already says: the decision at the end of it holds
+    the glass's place. So there is nothing to keep in step by hand.
+    """
+    import loading
+
+    jaw = Waypoint(0.0, 0.5, TRAVEL_HEIGHT, 0.0)
+    for at in ((0.05, 0.55), (-0.12, 0.42), (0.14, 0.66)):
+        glass = Seen(id=0, x=at[0], y=at[1], height=0.15, widest=0.07, foot=0.06, standing=True)
+        row = to_asked(to_state(jaw, [glass]), about_itself(3, 1, 0.4), conditioning(PUSH, glass))
+        read = loading.aimed_at(row)
+        assert read[0] == pytest.approx(at[0], abs=1e-6)
+        assert read[1] == pytest.approx(at[1], abs=1e-6)
+
+
+def test_an_answer_aimed_at_no_glass_is_measured_from_nothing() -> None:
+    """A look and a done are aimed at nothing, so subtracting their origin changes nothing."""
+    import loading
+
+    jaw = Waypoint(0.0, 0.5, TRAVEL_HEIGHT, 0.0)
+    glass = Seen(id=0, x=0.05, y=0.55, height=0.15, widest=0.07, foot=0.06, standing=True)
+    for kind in (LOOK, DONE):
+        row = to_asked(to_state(jaw, [glass]), about_itself(3, 1, 0.4), conditioning(kind, None))
+        assert loading.aimed_at(row) == (0.0, 0.0)
