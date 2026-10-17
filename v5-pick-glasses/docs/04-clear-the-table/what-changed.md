@@ -137,6 +137,17 @@ answer is choosing the largest error, not the best push.
 | and a price on risk | 17 | **1** |
 | and the corridor filter | 17 | **1** |
 
+**Two ways of shortening its pushes were measured and dropped.** The record above
+says the pushes that break a glass are about three times longer than the rest, so
+the obvious next move is to make the search prefer shorter ones. Raising the price
+of a millimetre pushed from 0.1 to 0.3 separated 33 tables of a hundred against
+48, and capping the push at sixty millimetres separated 39, while each saved one
+glass of the three. **Fifteen tables, or nine, for one glass is not a trade worth
+making**, because a table left crowded scores nothing either and the share counts
+every glass standing on it. So the pushes stay as long as the model asks for, and
+the next rung is more data in the band where it is weakest rather than a
+narrower search.
+
 **What was tried and dropped.** Putting the teacher's five-millimetre test push
 in front of every long push, which is what this solution's own page proposed as
 its next rung, measures the one thing the model is worst at instead of

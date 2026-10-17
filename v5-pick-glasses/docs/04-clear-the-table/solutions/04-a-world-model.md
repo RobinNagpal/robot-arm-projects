@@ -388,14 +388,15 @@ rest, so this is the knob that bears on what is left.
 
 It was measured again after the search was changed, on a hundred tuning tables:
 
-| price of a millimetre pushed | tables separated of 100 | glasses it gave room to | glasses broken | arm seconds a table |
+| what a longer push is made to cost | tables separated of 100 | glasses it gave room to | glasses broken | arm seconds a table |
 |---|---|---|---|---|
-| **0.1, problem 3's figure, kept** | **48** | **+136** | 3 | 25.7 |
-| 0.3 | 33 | +93 | 2 | 20.9 |
+| **0.1 a millimetre, problem 3's figure, kept** | **48** | **+136** | 3 | 25.7 |
+| 0.3 a millimetre | 33 | +93 | 2 | 20.9 |
+| 0.1, and no push longer than 60 mm | 39 | +120 | 2 | 25.2 |
 
-**Raising it loses fifteen tables of a hundred to save one glass**, which is not
-a trade worth making: a table left crowded scores nothing either, and the share
-counts every glass on it. The same knob measured on the search as it stood before
+**Both ways of shortening the pushes lose nine to fifteen tables of a hundred to
+save one glass**, which is not a trade worth making: a table left crowded scores
+nothing either, and the share counts every glass on it. The same knob measured on the search as it stood before
 gave the same shape — at 0.5 it separated ten and eleven tables of forty against
 fourteen and seventeen at 0.1 — so the pessimism has not changed the trade. What
 the pessimism changed is how many glasses are broken at the price that was

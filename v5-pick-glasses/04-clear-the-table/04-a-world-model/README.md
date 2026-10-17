@@ -263,13 +263,15 @@ it did, and the share spent looking rises without the looking changing.
 time.** It was measured again after the search was changed, on a hundred tuning
 tables with one search seed:
 
-| price of a millimetre pushed | tables separated of 100 | glasses it gave room to | glasses over | arm seconds a table |
+| what a longer push is made to cost | tables separated of 100 | glasses it gave room to | glasses over | arm seconds a table |
 |---|---|---|---|---|
-| **0.1 (problem 3's, kept)** | **48** | **+136** | 3 | 25.7 |
-| 0.3 | 33 | +93 | 2 | 20.9 |
+| **0.1 a millimetre (problem 3's, kept)** | **48** | **+136** | 3 | 25.7 |
+| 0.3 a millimetre | 33 | +93 | 2 | 20.9 |
+| 0.1, and no push longer than 60 mm | 39 | +120 | 2 | 25.2 |
 
-Raising it loses fifteen tables of a hundred to save one glass, which is not a
-trade worth making: a table that is left crowded is worth nothing either. The
+Both ways of shortening the pushes lose nine to fifteen tables of a hundred to
+save one glass, which is not a trade worth making: a table that is left crowded
+is worth nothing either. The
 same knob was measured on the search as it stood before — at 0.5 and above it
 separated five to eleven tables of forty against fourteen to seventeen at 0.1 —
 so the shape of the trade is the same and the pessimism has not changed it.
