@@ -92,14 +92,15 @@ glasses on its first walk of the held-out queue, now breaks none:
 | Tables failed by a topple | 14 | **0** |
 | Glasses broken | 20 | **0** |
 | Pickable share | 0.018 | **0.400** |
-| Glasses it gave room to | −1 | 0 |
-| Tables attempted | 15 | 12 |
+| Glasses it gave room to | −1 | 0 (0 to +2) |
+| Tables attempted | 15 | 11 |
 
 The share rises from almost nothing to 0.400 because a table that loses a glass
-counts for nothing at either end, and no table loses one any more. It still frees
-no glasses, and that is the honest result: of its answers, seven hundred and
-thirty-seven were raised for travelling at the height of the glasses' rims, which
-is the only thing it was doing.
+counts for nothing at either end, and no table loses one any more. It frees
+nothing in two walks of three and two glasses in the third, which is the honest
+result for a model that has never seen this cell: 622 of the 624 answers it gave
+over the three walks could not account for themselves and were raised, most of
+them because the path comes down beside no glass in particular.
 
 ### 2. The world model searches pessimistically and pays for risk
 
@@ -174,19 +175,23 @@ another:
 
 | fifty tables offered from 10,000 | before | after | the geometry reference |
 |---|---|---|---|
-| Tables attempted | 32 | **45** | 26 |
+| Tables attempted | 32 | **40** | 26 |
 | Tables separated | 11 | **14** | 10 |
 | Tables failed by a topple | 7 | **1** | 0 |
 | Glasses broken | 8 | **1** | 0 |
 | Glasses it gave room to | +29 | **+39** | +25 |
-| Pickable share | 0.560 | **0.603** | 0.627 |
+| Pickable share | 0.560 | **0.598** | 0.627 |
 | Thinking an answer | 6 ms | 10 ms | 15 ms |
 
 So the world model now separates more tables than any other solution to this
 problem, frees half again as many glasses as the geometry reference, and reaches
-nearly twice as many tables in the same fifteen arm minutes. What keeps its share
-a little below the geometry's is the one glass it still breaks, and the two
-solutions that break nothing hold the two best shares.
+half again as many tables in the same fifteen arm minutes. Cut to the twenty-six
+tables the reference also reached, it separates eleven against ten and breaks
+nothing, so on the same tables it is level or a little ahead. What keeps its
+share below the geometry's is no longer the breakages — doing nothing at all on
+the tables it broke a glass on would be worth about two points of share — but
+the tables it reaches and leaves crowded, which the geometry never reaches at
+all.
 
 ### 3. The ranked trees: a change that was measured and not kept
 
@@ -301,7 +306,51 @@ first thing to try is more of them, because a thousand steps at a batch of four
 is about a third of one pass over the material, and that is still true. It is
 left alone here so that this measurement is of the mixture and of nothing else.
 
-<!-- the numbers for change 5 appear here when the fits are measured -->
+**What it bought.** The fits ran for the first time here, because the two
+crashes in change 7 had been stopping them before they reached a single step.
+Each seed moves 3.81 million numbers of the model's 454 million, takes about
+twenty-six minutes and holds a little over one gigabyte, so the three seeds fit
+inside an hour and a half on this laptop.
+
+On the held-out queue the change is the same kind of change the borrowed model
+got, and it is just as large.
+
+| solution 6 on the held-out queue | before | after |
+| --- | --- | --- |
+| tables separated | 0 of 8 | 0 of 10 |
+| glasses freed | 0 | 0 |
+| glasses broken | 8 (1 to 10) | 1 (0 to 2) |
+| pickable share | 0.103 | 0.378 |
+| tables it ended by knocking a glass over | 6 of 8 | 1 of 10 |
+| tables it ended by saying the table was done | 0 | 9 of 10 |
+
+So the even mixture bought safety and reach, and it bought no competence at all.
+Before, the solution drew paths whose middle sat 233 mm above the table and then
+destroyed six tables out of eight on the way down, which is why it only reached
+eight. Now it comes down at the heights the cell accounts for, survives the
+table, and says the table is finished — while freeing nothing. Its distance to
+the teacher says the same thing twice: on the pushes it closed from about 90 mm
+to about 82 mm, and on the looks it did not close at all, staying near 200 mm
+through all three seeds.
+
+**The pair this solution exists for.** Twenty tables from below the held-out
+line, the same loop and the same clearance arithmetic on both sides, three walks
+each: the only difference is whether this cell's demonstrations were used.
+
+| twenty building tables | the same weights, untrained | fitted here |
+| --- | --- | --- |
+| tables separated | 0 | 0 |
+| glasses freed | 0 (−1 to 0) | 0 (0 to +1) |
+| glasses broken | 1 (0 to 3) | 2 (1 to 5) |
+| pickable share | 0.369 | 0.369 |
+| answers it gave | 335 | 438 |
+
+Read honestly, that is a null result, and it is the useful part of this
+solution's measurement. A thousand steps of this cell's demonstrations make the
+model act more — a third again as many answers, because it stops declaring the
+table finished so early — without making it act better. The single change most
+likely to move this is the one deliberately left alone above, which is the
+number of steps.
 
 ### 6. The gate is shown what it has already tried on each glass
 
@@ -567,6 +616,8 @@ measured walk, before any of the changes on this page.
 | **Imitation, after** | **1 of 13** | **+3** | **2** | 0.377 |
 | SmolVLA as it downloads, before | 0 of 15 | −1 | 20 | 0.018 |
 | **SmolVLA as it downloads, after** | **0 of 11** | **0 to +2** | **0** | **0.400** |
+| SmolVLA fine-tuned, before | 0 of 8 | 0 | 8 | 0.103 |
+| **SmolVLA fine-tuned, after** | **0 of 10** | 0 | **1** | **0.378** |
 
 Three different kinds of outcome are in that table, and they are the result of
 this work.
@@ -577,11 +628,15 @@ broken glasses from eight to one, and pessimism in its search took its separated
 tables from eleven to fourteen while it also reached eight more tables. It beats
 the geometry reference it was measured against, which the first walk did not.
 
-**The borrowed model, run exactly as it downloads, went from the worst result in
-the problem to a harmless one.** It broke twenty glasses on its first walk and
-breaks none now, and its pickable share rose from 0.018 to 0.400. It still
-separates nothing, which is the honest result for a model that has never seen
-this cell: what changed is that it no longer destroys the table while failing.
+**The two borrowed models went from the worst results in the problem to harmless
+ones.** Run exactly as it downloads, the model broke twenty glasses on its first
+walk and breaks none now, and its pickable share rose from 0.018 to 0.400.
+Fitted on this cell's demonstrations, it broke eight and now breaks one, and its
+share rose from 0.103 to 0.378. Neither separates anything, which is the honest
+result for a half-billion-number model given three hundred tables and a thousand
+steps: what changed is that they no longer destroy the table while failing. The
+pair measurement above says the rest of it plainly — on the same tables, with the
+same loop, fitting here made the model act a third again as often and no better.
 
 **The imitation solution now acts, where before it only looked.** It went from
 leaving every table exactly as it found it — not one glass given room it did not

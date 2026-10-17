@@ -72,12 +72,19 @@ table, so how quickly a solution works decides how far down the list it gets.
 
 | | attempted | separated | glasses freed | pickable share | broken |
 |---|---|---|---|---|---|
-| [1 one fixed nudge](../../04-clear-the-table/01-one-fixed-nudge/) | 26 | 10 | 25 | **0.627** | **0** |
-| [2 geometry ranked](../../04-clear-the-table/02-geometry-ranked/) | 25 | 7 | 19 | 0.582 | **0** |
-| [3 imitation, ACT](../../04-clear-the-table/03-imitation-from-demonstrations/) | 10 | **0** | **0** | 0.400 | **0** |
-| [4 a world model](../../04-clear-the-table/04-a-world-model/) | **32** | **11** | **29** | 0.560 | 8 |
-| [5 SmolVLA as it downloads](../../04-clear-the-table/05-smolvla-as-it-downloads/) | 15 | **0** | **-1** | **0.018** | **20** |
-| [6 SmolVLA fine-tuned](../../04-clear-the-table/06-smolvla-fine-tuned/) | **8** | **0** | **0** | 0.103 | 8 |
+| [1 one fixed nudge](../../04-clear-the-table/01-one-fixed-nudge/) | 26 | 10 | +25 | **0.627** | **0** |
+| [2 geometry ranked](../../04-clear-the-table/02-geometry-ranked/) | 25 | 7 | +19 | 0.582 | **0** |
+| [3 imitation, ACT](../../04-clear-the-table/03-imitation-from-demonstrations/) | 13 | 1 | +3 | **0.377** | **2** |
+| [4 a world model](../../04-clear-the-table/04-a-world-model/) | **40** | **14** | **+39** | 0.598 | 1 |
+| [5 SmolVLA as it downloads](../../04-clear-the-table/05-smolvla-as-it-downloads/) | 11 | **0** | **0** | 0.400 | **0** |
+| [6 SmolVLA fine-tuned](../../04-clear-the-table/06-smolvla-fine-tuned/) | **10** | **0** | **0** | 0.378 | 1 |
+
+Every row is the solution as it stands after a round of repairs. The six were
+measured once, then the three that were learning something and failing were
+changed, and then they were measured again.
+[What changed](what-changed.md) records each change beside the measurement that
+justified it, and it also records the three changes that were measured and
+thrown away.
 
 **Each of the six was also filmed clearing the same table**, so that what a row
 of the table above means can be watched rather than inferred. The six films are
@@ -91,15 +98,27 @@ exactly the tables each solution reached, and explains the three columns that
 mislead when read on their own — above all "tables attempted", which a solution
 that gives up instantly would win.
 
-The short version is that the plainest solution leads. One fixed nudge, chosen
-by arithmetic with nothing learned anywhere, separates ten of the twenty-six
-tables it reaches and breaks no glass. The world model separates one more table
-and frees the most glasses, but breaks eight, and a table that lost a glass
-pays nothing at either end, so the two are level. **The three solutions that
-answer from pictures separate no table and free no glass between them**, and
-the reason is the same in each case: with the camera on the arm, four of the
-teacher's five answers only move it to see, so fitting on those answers teaches
-the looking rather than the pushing.
+The short version has three parts.
+
+**The world model leads, and it is the only learned solution that beats
+arithmetic.** It separates fourteen of the forty tables it reaches, frees the
+most glasses of any solution, and now breaks one glass a walk where it used to
+break eight. Cut to the twenty-six tables the fixed nudge also reached, it
+separates eleven against ten and breaks nothing, so on the same tables it is
+level or a little ahead, and its clear advantage is that it reaches half again
+as many tables in the same quarter of an hour.
+
+**Arithmetic is still the best answer per table attempted.** One fixed nudge,
+chosen by geometry with nothing learned anywhere, separates ten of twenty-six
+and breaks no glass, which is the best pickable share on the card.
+
+**The three solutions that answer from a picture are now safe, and only one of
+them does any work.** Between them they separate one table and free three
+glasses. That is a poor result, and it is a far better one than the first walk,
+where the three of them freed nothing at all and broke twenty-eight glasses
+between them. The cause of the poor result is the same in each case: with the
+camera on the arm, four of the teacher's five answers only move it to see, so
+fitting on those answers teaches the looking rather than the pushing.
 
 The six solutions asked this question are problem 3's own, so each of them also
 has a standing under problem 3's per-push scorecard, and the two can be set

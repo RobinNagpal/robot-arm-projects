@@ -184,107 +184,131 @@ counted, so "tables attempted" means tables the arm really worked on.
 
 | | `act-0` | `act-1` | `act-2` | spread |
 | --- | --- | --- | --- | --- |
-| tables attempted | 11 | 10 | 1 | 10 ± 5.5 (1 to 11) |
-| glasses on them | 40 | 37 | 4 | |
-| tables separated | 0 | 0 | 0 | 0 (0 to 0) |
-| glasses pickable at the end | 16 of 40 | 15 of 37 | 1 of 4 | share 0.400 ± 0.088 |
-| glasses made pickable | 0 | 0 | 0 | 0 (0 to 0) |
-| glasses broken | 0 | 0 | 0 | 0 (0 to 0) |
-| said done, of the tables it reached | 9 | 9 | 0 | 9 ± 5.2 (0 to 9) |
-| said done while still crowded | 9 | 9 | 0 | 9 ± 5.2 (0 to 9) |
-| refused by the interlock | 0 | 0 | 0 | 0 |
-| thinking per answer | 16.3 ms | 16.4 ms | 16.3 ms | 16 ms |
+| tables attempted | 13 | 12 | 16 | 13 ± 2.1 (12 to 16) |
+| glasses on them | 49 | 45 | 61 | |
+| tables separated | 1 | 1 | 0 | 1 (0 to 1) |
+| glasses pickable at the end | 20 of 49 | 14 of 45 | 23 of 61 | share 0.377 ± 0.05 |
+| glasses made pickable | +3 | +3 | +2 | +3 (+2 to +3) |
+| glasses broken | 2 | 5 | 2 | 2 (2 to 5) |
+| said done, of the tables it reached | 10 | 6 | 13 | 10 ± 3.5 (6 to 13) |
+| said done while still crowded | 9 | 5 | 13 | 9 ± 4.0 (5 to 13) |
+| refused by the interlock | 0 | 4 | 13 | 6 ± 6.7 (0 to 13) |
+| thinking per answer | 21.2 ms | 19.0 ms | 16.5 ms | 19 ms |
 
-All three spend the whole budget and none of them frees a glass. The two numbers
-the queue exists to separate say different things here, and only one of them
-varies. **How far each got is the whole of the difference between the fits**: two
-reached ten or eleven tables and the third reached *one*, because `act-2` never
-said a word on table 10,000 and the clock ran out on it after 1,027 answers.
-**What they did on the tables they all reached is identical**: the list they
-share is one table long, all three left its four glasses with one pickable, and
-two of them said they were finished.
+**All three fits now push, and two of the three separate a table.** That is the
+first thing to say, because the first version of this solution reached ten
+tables and handed every one of them back exactly as it was drawn. Two or three
+glasses a queue are now given room they did not start with.
 
-So the share of 0.25 against 0.405 is not a difference in quality — it is one
-table's denominator against eleven tables'. The honest reading of this walk is
-that the solution makes no progress at all and differs between fits only in how
-long it takes to make none.
+**The share is lower than the first version's, and the broken glasses are
+why.** A share of 0.377 against 0.400 looks like a step backwards, and reading
+it beside the gain row is what makes sense of it: a forfeited table pays nothing
+at either end, so two to five broken glasses can cost more share than three
+freed glasses earn. The two rows together are the honest result — the solution
+is doing the task, and it is doing it badly rather than not at all.
 
-The tipping interlock refused nothing here, where on tables 0 to 19 it refused
-`act-0` fourteen thousand times. Which tables a livelock happens on is a matter
-of the draw, so the twenty-table run and this one disagree about how much of the
-budget goes that way; both are reported rather than averaged.
+**The spread is now about what the fits do, not how far they get.** In the first
+version one fit reached eleven tables and another reached one, because the third
+never answered at all; the walks were comparable on a single table. Now all three
+reach twelve to sixteen tables, and they differ in the work: `act-0` separates a
+table and breaks two glasses, `act-1` separates a table and breaks five, and
+`act-2` separates none and breaks two.
+
+**The tipping interlock refuses between nothing and thirteen answers**, where
+the first version was refused nothing here and fourteen thousand times on the
+twenty tables below the line. Which tables a livelock happens on is a matter of
+the draw, so the two runs disagree about how much of the budget goes that way;
+both are reported rather than averaged.
 
 ## The same three fits on twenty training tables
 
 Tables 0 to 19, each given four arm minutes of its own, which is how solutions 1
 and 2 were measured so that the three can be set side by side. It is not the
 measurement above and carries no throughput reading — "tables attempted" here is
-always twenty — but it is twenty tables rather than one, so it is where the
+always twenty — but it is twenty tables rather than thirteen, so it is where the
 comparison with the geometry solutions lives. The ceiling column is what the
 ranked chooser reaches with the arm taken away: true positions, exact pushes and
 no clock.
 
 | | solution 1 | solution 2 | **solution 3** | ceiling |
 | --- | --- | --- | --- | --- |
-| tables separated | 5 | 4 | **0** (0 to 0) | 11 |
-| glasses pickable at the end, of 84 | 47 | 43 | **33** (33 to 33) | 66 |
-| glasses made pickable | +14 | +10 | **0** (0 to 0) | +33 |
-| glasses toppled | 0 | 0 | **0** (0 to 0) | — |
-| arm seconds a table | 42.6 | 41.1 | **27 to 110** | — |
-| share of arm time looking | 46% | 44% | **40% to 67%** | — |
-| said done while still crowded | 15 of 20 | 16 of 20 | **11 to 18 of 20** | — |
-| thinking per answer | 16.2 ms | 18.3 ms | **16 ms** | — |
+| tables separated | 5 | 4 | **0 to 1** | 11 |
+| glasses pickable at the end, of 84 | 47 | 43 | **31 to 36** | 66 |
+| glasses made pickable | +14 | +10 | **−2 to +3** | +33 |
+| glasses toppled | 0 | 0 | **1 to 4** | — |
+| arm seconds a table | 42.6 | 41.1 | **49 to 70** | — |
+| share of arm time looking | 46% | 44% | **52% to 65%** | — |
+| said done while still crowded | 15 of 20 | 16 of 20 | **15 to 19 of 20** | — |
+| thinking per answer | 16.2 ms | 18.3 ms | **17 to 19 ms** | — |
 
-Every table ends unfinished, in all three fits. Nothing is broken, and nothing is
-freed: **the three fits leave the eighty-four glasses exactly as they were
-drawn**, and the spread of that number across the fits is zero. The student
-copies its teacher's chunks to within 18 to 21 mm a waypoint — on tables it was
-fitted on and on tables it never saw alike — and still changes nothing on the
-table. Eighteen millimetres is about a third of a glass.
+Taken fit by fit: `act-0` separates one table of the twenty and frees three
+glasses while toppling four, `act-1` frees none and loses one while toppling
+one, and `act-2` frees two while toppling two. The three fits of one recipe
+disagree with each other more than two of them disagree with doing nothing,
+which is the plainest statement of how early this solution still is.
 
-Three things in the run say why.
+What the answers are made of is in `measurement-fits.json`, and these are the
+numbers to read if you want to know where the work goes:
 
-**The teacher's choice between looking and pushing is not in a `Look`.** It
-depends on where the teacher is round its ring of stands and what it has already
-seen, and the student has no memory of either. Four answers in five in the
-demonstrations are a look, so when the picture and the pose do not say which the
-teacher would have done, an L1 objective answers with the common one. One fit
-shows that at its purest: `act-1` emits a chunk of **one waypoint** every single
-time, 5,442 answers over twenty tables.
+| over twenty tables, per fit | |
+| --- | --- |
+| what the gate asked for | 322 to 487 looks, 149 to 196 probes, 64 to 90 pushes, 12 to 13 declarations |
+| the gate named a glass the picture does not hold | 11, 22, 32 times |
+| answers pulled down onto the two heights the cell accounts for | 114, 137, 191 |
+| answers raised to travel height, because they could not account for themselves | 137, 107, 112 |
+| the commonest reason for raising one | the hand would meet a glass it is not aimed at: 63 to 92 |
+| pushes carried on until the glass had room | 16, 29, 34 |
+| how far a carried-on push moves its glass | 5, 18 and 25 mm |
+| tables the gate finished, of 20 | 12, 13, 13 |
+| tables the quiet rule finished instead | 4, 6, 5 |
 
-**A single waypoint is not harmless.** Under the bench's stopping rule a path is
-a push when the *fingers* come low enough to reach a measured glass, and the
-fingers hang below the number a waypoint carries. So `act-1` is not standing the
-jaw clear and looking: 4,803 of its 5,442 answers put the hand down among the
-glasses, which is why it reads as pushing two answers in three and still frees
-nothing. It is answering "stand here", at a height that touches things.
+Three measured things stand between this and a result like the geometry
+solutions', and all three are quantities rather than opinions.
 
-**Two of the three spend most of their budget on paths the cell will not carry
-out.** `act-0` is refused 14,374 times over twenty tables and `act-2` 4,782,
-against solution 2's nought. `Look.refused` tells the solution why each time, in
-a sentence of English, which a network cannot read — so the model is shown the
-same table from the same pose and answers the same way again. A refused path
-moves the arm nowhere, so it advances no clock, and only the bench's cap on
-answers ends such a table: five of the sixty tables walked here ended that way.
-That is also why arm seconds a table range from 27 to 110 while each fit's
-middling table is between 11 and 45.
+**One push is too small for the room a glass needs.** A glass needs about 76 mm
+of clear space for the hand to get round it, and a push this policy draws,
+carried on until the clearance rule says the glass has room, moves it 5 to
+25 mm. So a glass needs three or four such pushes, each of which has to be
+decided and aimed again.
 
-So the honest summary is that copying the ranked geometry one picture at a time
-does not reproduce it, and the gap is not a matter of millimetres.
+**No push can be predicted safe, so every one costs two answers.** The tipping
+rule answers "it will slide" for no glass this cell draws — over 1,600 drawn
+glasses it is always "no" or "try it and see" — so a push is allowed only after
+a probe has shown the glass slides. The gate has to choose the probe and then
+the push, at the same glass, in that order.
+
+**The direction the policy draws is often blocked by a neighbour.** Between 63
+and 92 times over twenty tables the drawn path would take the hand through a
+glass it is not aimed at, so the clearance rule raises it and nothing moves.
+Choosing that direction arithmetically would repair it, and it is deliberately
+not done here: it would make this solution the geometry reference with a learned
+chooser in front, which answers a different question.
 
 ### What the fitting cost
 
-| | |
-| --- | --- |
-| steps | 8,000 a seed, batch 16 |
-| wall time | 67, 78 and 68 minutes — 3 hours 33 minutes for the three |
-| loss | 6.0, 7.0, 6.7 down to 0.190, 0.186, 0.191 |
-| against the teacher, fitted tables | 18.9, 17.5, 19.3 mm a waypoint |
-| against the teacher, unseen tables | 18.5, 18.7, 20.5 mm a waypoint |
+| | the gate | the chunked policy |
+| --- | --- | --- |
+| steps | 4,000 a seed, batch 64 | 8,000 a seed, batch 16 |
+| wall time | 6.7 to 6.8 minutes a seed | 57 minutes a seed, 2 h 52 m for three |
+| loss | 2.3 to 2.4 down to 1.41 to 1.47 | 6.7 to 7.7 down to 0.058 to 0.066 |
 
-The two distances are the same to within a millimetre, which settles one
-question: this is not memorising, and more demonstrations would not fix it.
-`weights/training.json` holds the loss curves.
+| the policy against its teacher | |
+| --- | --- |
+| on tables it was fitted on | 8.7, 9.2, 9.8 mm a waypoint |
+| on tables it never saw | 23.7, 23.8, 23.7 mm a waypoint |
+| on the pushes alone, tables it never saw | 20 mm a waypoint, and 21° to 23° out in direction |
+
+**The two distances no longer agree, and that is a change in what to try
+next.** The first version of this solution was 18 to 19 mm from its teacher on
+both sets of tables, which said it had learned a habit rather than a set of
+tables, and that more demonstrations would teach the same habit. This version is
+twice as close on tables it saw and about a third further away on tables it did
+not, because it is no longer free to answer with the average of looking and
+pushing: it is really trying to draw pushes, and it is short of examples of them.
+A push is one answer in thirty-six in the demonstrations, so collecting more —
+or collecting them from tables chosen to be crowded — is now a reasonable thing
+to try. `weights/training.json` holds the loss curves and both distances, and
+`weights/gate.json` holds the gate's accuracy on tables it never saw.
 
 ## Running it
 

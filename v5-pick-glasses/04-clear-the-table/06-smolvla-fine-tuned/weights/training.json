@@ -7,7 +7,7 @@
       "batch": 4,
       "learning_rate": 0.0001,
       "warmup": 100,
-      "minutes": 26.4,
+      "minutes": 26.5,
       "memory_gib": 1.02,
       "moving_numbers": 3813376,
       "total_numbers": 453859552,
@@ -15,11 +15,11 @@
       "reading_the_demonstrations": {
         "demonstrations_read": 4000,
         "kinds": {
-          "looking": 3254,
-          "pushing": 672,
-          "squeezed": 74
+          "pushing": 1792,
+          "looking": 1970,
+          "squeezed": 238
         },
-        "squeezed_share": 0.0185,
+        "squeezed_share": 0.0595,
         "waypoints_pulled_inside_the_limits": 0
       },
       "history": [
@@ -42,37 +42,37 @@
         },
         {
           "step": 500,
-          "loss": 0.3413,
+          "loss": 0.4292,
           "tuning_mm": {
             "all": {
-              "median": 128.7,
-              "worst": 432.7
+              "median": 154.2,
+              "worst": 405.3
             },
             "looking": {
-              "median": 166.1,
-              "worst": 447.7
+              "median": 160.9,
+              "worst": 421.4
             },
             "pushing": {
-              "median": 96.8,
-              "worst": 439.4
+              "median": 92.2,
+              "worst": 404.3
             }
           }
         },
         {
           "step": 1000,
-          "loss": 0.2285,
+          "loss": 0.2764,
           "tuning_mm": {
             "all": {
-              "median": 110.1,
-              "worst": 308.8
+              "median": 134.4,
+              "worst": 316.7
             },
             "looking": {
-              "median": 181.1,
-              "worst": 406.3
+              "median": 198.2,
+              "worst": 455.3
             },
             "pushing": {
-              "median": 103.0,
-              "worst": 454.0
+              "median": 78.3,
+              "worst": 377.2
             }
           }
         }
@@ -85,7 +85,7 @@
       "batch": 4,
       "learning_rate": 0.0001,
       "warmup": 100,
-      "minutes": 26.4,
+      "minutes": 26.5,
       "memory_gib": 1.05,
       "moving_numbers": 3813376,
       "total_numbers": 453859552,
@@ -93,11 +93,11 @@
       "reading_the_demonstrations": {
         "demonstrations_read": 4000,
         "kinds": {
-          "looking": 3254,
-          "pushing": 663,
-          "squeezed": 83
+          "pushing": 1803,
+          "looking": 1995,
+          "squeezed": 202
         },
-        "squeezed_share": 0.0208,
+        "squeezed_share": 0.0505,
         "waypoints_pulled_inside_the_limits": 0
       },
       "history": [
@@ -120,37 +120,37 @@
         },
         {
           "step": 500,
-          "loss": 0.3468,
+          "loss": 0.4274,
           "tuning_mm": {
             "all": {
-              "median": 150.9,
-              "worst": 484.1
+              "median": 168.2,
+              "worst": 426.2
             },
             "looking": {
-              "median": 176.4,
-              "worst": 550.5
+              "median": 170.3,
+              "worst": 469.2
             },
             "pushing": {
-              "median": 101.4,
-              "worst": 365.2
+              "median": 74.6,
+              "worst": 316.3
             }
           }
         },
         {
           "step": 1000,
-          "loss": 0.2217,
+          "loss": 0.2578,
           "tuning_mm": {
             "all": {
-              "median": 122.2,
-              "worst": 491.3
+              "median": 141.8,
+              "worst": 447.5
             },
             "looking": {
-              "median": 187.5,
-              "worst": 450.5
+              "median": 206.1,
+              "worst": 413.2
             },
             "pushing": {
-              "median": 115.9,
-              "worst": 474.9
+              "median": 85.7,
+              "worst": 356.3
             }
           }
         }
@@ -163,7 +163,7 @@
       "batch": 4,
       "learning_rate": 0.0001,
       "warmup": 100,
-      "minutes": 27.1,
+      "minutes": 26.5,
       "memory_gib": 1.04,
       "moving_numbers": 3813376,
       "total_numbers": 453859552,
@@ -171,11 +171,11 @@
       "reading_the_demonstrations": {
         "demonstrations_read": 4000,
         "kinds": {
-          "looking": 3268,
-          "squeezed": 80,
-          "pushing": 652
+          "pushing": 1765,
+          "looking": 2028,
+          "squeezed": 207
         },
-        "squeezed_share": 0.02,
+        "squeezed_share": 0.0517,
         "waypoints_pulled_inside_the_limits": 0
       },
       "history": [
@@ -198,37 +198,37 @@
         },
         {
           "step": 500,
-          "loss": 0.3386,
+          "loss": 0.4064,
           "tuning_mm": {
             "all": {
-              "median": 150.0,
-              "worst": 320.7
+              "median": 137.0,
+              "worst": 387.1
             },
             "looking": {
-              "median": 231.4,
-              "worst": 489.4
+              "median": 254.7,
+              "worst": 443.9
             },
             "pushing": {
-              "median": 121.0,
-              "worst": 523.7
+              "median": 107.5,
+              "worst": 427.0
             }
           }
         },
         {
           "step": 1000,
-          "loss": 0.2143,
+          "loss": 0.2591,
           "tuning_mm": {
             "all": {
-              "median": 148.4,
-              "worst": 367.4
+              "median": 130.9,
+              "worst": 365.7
             },
             "looking": {
-              "median": 222.1,
-              "worst": 390.5
+              "median": 212.0,
+              "worst": 331.3
             },
             "pushing": {
               "median": 83.9,
-              "worst": 489.3
+              "worst": 455.1
             }
           }
         }

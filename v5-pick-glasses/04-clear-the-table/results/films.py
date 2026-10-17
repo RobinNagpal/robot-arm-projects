@@ -55,18 +55,17 @@ FILMS = PROBLEM.parent / "videos" / "04-clear-the-table"
 #
 # The table has to be one every solution reached. A solution is handed the
 # tables of the queue in order until its arm time runs out, and the shortest
-# walk of the six got through eight of them, so the film table is among the
-# first eight or some of the films would be of a table that solution was never
-# given.
+# walk of the six got through ten of them, so the film table is among the first
+# ten or some of the films would be of a table that solution was never given.
 #
-# And the table has to be worth watching. On most of those eight the geometry
+# And the table has to be worth watching. On most of those ten the geometry
 # reference looks round the table, finds no push it believes in, and says it is
 # finished, which is honest and shows nothing. So the film table is the first
 # of them on which the reference frees a glass. That is table 10001: the
-# reference and the ranked chooser both separate it, the world model separates
-# it on one walk of three, the imitation policy leaves it as it found it, and
-# both borrowed models break a glass on it. Those are the six findings of the
-# problem, on one table.
+# reference, the ranked chooser and the world model all separate it, and the
+# three solutions that answer from a picture all cross it without coming down
+# at a glass and then say it needs nothing more. Those are the two halves of
+# this problem's result, on one table.
 FILM_TABLE = 10_001
 
 # What each film says about itself beyond the solution's own name. Two of the

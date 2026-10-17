@@ -1,18 +1,19 @@
 # Solution 3 — imitation from the teacher's own demonstrations
 
 > **What it uses** — PyTorch and LeRobot's ACT, through
-> [problem 4's examiner](../the-examiner.md). Three copies of one network,
-> fitted in this cell on demonstrations collected in this cell. Nothing is
+> [problem 4's examiner](../the-examiner.md). **Two models are fitted here from
+> random numbers**, on demonstrations collected in this cell. Nothing is
 > downloaded.
-> **What it does** — it watches the ranked geometry solution clear three
-> hundred tables, records every answer that solution gave, and fits a network
-> to answer the same way. Then it is asked to clear tables on its own.
+> **What it does** — it watches the ranked geometry solution clear three hundred
+> tables and records every answer it gave. One small model is then fitted to
+> decide *what kind* of answer to give and at which glass, and a chunked policy
+> is fitted to draw the path for a decision it is handed.
 > **How it differs from the others** — it is the only solution here that learns
 > *what to do* from a teacher that already does it well. The world model learns
-> what a push does and searches; this one learns the answer directly.
-> **What it costs** — nine minutes of the arm's own time to collect eleven
-> thousand demonstrations, and three and a half hours of a laptop to fit three
-> copies. Answering is cheap, at sixteen milliseconds a turn.
+> what a push does and then searches; this one learns the answer directly.
+> **What it costs** — eight minutes of the arm's own time to collect eleven
+> thousand demonstrations, twenty minutes of a laptop to fit the three gates and
+> about three hours to fit the three policies. Answering is cheap.
 
 > **The cell is described once, in [the cell](../../the-cell.md).** The method
 > itself — what behaviour cloning is, what an action chunk is, and why ACT
@@ -33,47 +34,54 @@ already: the [ranked geometry solution](02-geometry-ranked.md) separates tables
 with arithmetic and no learning at all, so it can be asked to clear as many
 tables as anyone has patience for, and every answer it gives is a free label.
 
-By the end of this page you will know what was collected, what was fitted, and
-why the result is zero: not one table separated and not one glass given room it
-did not start with. The reason turns out to be a property of **problem 4's
-task** rather than a fault in the fitting, and it is the most useful thing this
-solution found.
+The first version of this solution was a single network fitted to copy that
+teacher, and **it freed no glasses at all**: not one table separated and not one
+glass given room it did not start with. That result was not a fault in the
+fitting, and the next two sections explain why. It is a property of what the
+task became once the overhead camera was taken away, and it pointed at a
+particular repair.
+
+By the end of this page you will understand that cause, the three changes made
+because of it — splitting the decision away from the drawing, teaching the rare
+answer to count as much as the common one, and writing a push down in the frame
+of the glass it pushes — and what each of them bought when the solution was
+measured again.
 
 ## A film of one table
 
-Here is one of the three fits clearing one table, or rather not clearing it.
-The film was recorded in the simulator and plays at one and a half times real
-speed.
+Here is the first of the three fits on one table. The film was recorded in the
+simulator and plays at one and a half times real speed.
 
-[Watch the film (12 s)](../../../videos/04-clear-the-table/03-imitation-from-demonstrations.mp4)
+[Watch the film (5 s)](../../../videos/04-clear-the-table/03-imitation-from-demonstrations.mp4)
 
 It is table 10001 of the held-out fifty, the one table every solution in
-problem 4 is filmed on, and this is the first of the three fits.
-[The comparison page](../../../04-clear-the-table/results/README.md#a-film-of-each-solution)
-says how the table was chosen and how to read a film. The film is worth
-watching beside [the teacher's own film](02-geometry-ranked.md#a-film-of-one-table),
-because the teacher separates this table and the student does not.
+problem 4 is filmed on, and
+[the comparison page](../../../04-clear-the-table/results/README.md#a-film-of-each-solution)
+says how the table was chosen and how to read a film. It is worth watching
+beside [the teacher's own film](02-geometry-ranked.md#a-film-of-one-table) of
+the same table, because the teacher separates it and the student does not.
 
-Three things in it are worth watching for, and together they are this page's
-result.
+The film is short, and what it shows is this solution's remaining weakness
+rather than its progress. The student gives nine answers in nine arm seconds,
+none of them comes down to a glass, the gate then says the table needs nothing
+more, and two of the four glasses are still short of room. All three fits do
+the same thing on this table, which is why the film is of the behaviour and not
+of one unlucky run.
 
-**No glass gains room.** The student gives twenty-five answers over fourteen
-arm seconds, and the table it hands back is the table it was given: two of the
-four glasses had room at the start and two have room at the end. That is what
-"freed no glasses" means on one table.
+Two things in it are worth watching for, and both are honest.
 
-**Almost every answer is a single waypoint.** Twenty-three of its twenty-four
-paths hold one point each, which is
-[the habit described below](#the-fit-that-put-its-hand-down-and-called-it-an-answer).
-On this table those twenty-three all stay above the glasses, so the arm hovers
-and the picture in the corner is the only thing that changes.
+**Nothing is broken, and the hand is never carried across the table at the
+height of the glasses' rims.** That was the commonest way this problem's fitted
+solutions broke glass, and the clearance arithmetic described below is what
+removed it. Every answer in this film either rides clear above the glasses or
+is not drawn at all.
 
-**The one real answer comes down in the right place and still moves nothing.**
-Answer nine is a path of thirty-nine waypoints that descends to exactly the
-height the jaw pushes at, and the writing across the top marks it as a push. So
-the failure a viewer sees here is not the student holding its hand too high. It
-is a properly shaped push aimed where no glass needs moving, and after it the
-student goes back to hovering and then says it is finished.
+**The gate stops too early here.** It has learned the teacher's declaration
+well — it finds the teacher's own "finished" in nine or ten cases out of ten —
+and on a table like this one it also offers that declaration when the teacher
+would still have been probing. That is the shape of the gate's error: it is
+accurate about the common answers and it is still too quick to agree that there
+is nothing to do.
 
 ## What a demonstration is here
 
@@ -87,8 +95,17 @@ time is left. What the teacher answers is a **path for the jaw**: a list of
 waypoints the arm is to follow, which may be a push into a glass or may only be
 a move to a new place to look from.
 
-Both halves have to become fixed-size arrays of numbers before a network can
-be fitted on them, and the choices made there matter more than they look.
+The collector now writes down two more things about every answer, and they are
+what makes the rest of this page possible. The first is **which kind** of answer
+it was, out of four: a move to go and look, a five-millimetre probe into a glass
+to test whether it will slide, a push at the task, or the statement that the
+table is finished. The second is **which glass** the answer was aimed at, given
+as a position in the list of glasses the picture caught, with one extra value
+meaning "none of them". A look is aimed at nothing. A push is aimed at exactly
+one glass.
+
+Both halves have to become fixed-size arrays of numbers before a network can be
+fitted on them, and the choices made there matter more than they look.
 
 **The picture is the wrist view, not an overhead view.** This is the whole
 difference between problem 4 and problem 3, and it is why this solution had to
@@ -105,41 +122,39 @@ cannot express.
 
 ## What was collected, and what it cost
 
-Eleven thousand and sixteen demonstrations from three hundred tables, drawn
+Eleven thousand three hundred demonstrations from three hundred tables, drawn
 from table one thousand onwards, which is well below the held-out band. A
-further one thousand eight hundred and fifty were collected from fifty tables
-the fitting never sees, so that copying can be told apart from learning.
+further set was collected from fifty tables the fitting never sees, so that
+copying can be told apart from learning.
 
-**Collecting cost eight and a half minutes of arm time for the fitting set.**
-That is about one and three quarter seconds a table and five hundredths of a
-second a demonstration, and it is worth comparing with problem 3, where a table
-cost three quarters of a second and a demonstration cost just over half a
-second. So a *table* costs more than twice as much here, because the teacher
-makes about six pushes a table against problem 3's three, and a push is where
-the settling time goes. But a *demonstration* costs a tenth as much, because
-every single answer is a demonstration and about thirty-seven of them come off
-one table.
+**Collecting cost eight minutes of arm time for the fitting set**, which is
+about one and two thirds of a second a table and about thirty-seven answers off
+each table. That is worth comparing with problem 3, where a table cost three
+quarters of a second. So a *table* costs more than twice as much here, because
+the teacher has to travel to see before it can push, and travelling is arm time.
 
-That difference has a shape worth naming. **The set is wide in frames and
-narrow in pushes.** It holds more demonstrations than problem 3's from a fifth
-as many tables, and only about two thousand of them are pushes against problem
-3's seven thousand. The reason is the next section, and it is the reason for
-everything that follows.
+That difference has a shape worth naming. **The set is wide in frames and narrow
+in pushes.** It holds more demonstrations than problem 3's from a fifth as many
+tables, and only three hundred and fifteen of them are pushes at the task
+against problem 3's seven thousand. The reason is the next section, and it is
+the reason for everything that follows.
 
 ## Four answers in five only move the arm to see
 
-With the camera above the table, a solution looks once and then pushes. With
-the camera on the arm, a solution has to travel to see, so most of what it does
-is travelling.
+With the camera above the table, a solution looks once and then pushes. With the
+camera on the arm, a solution has to travel to see, so most of what it does is
+travelling.
 
-Measured on the collected set, **eighty-one per cent of the teacher's answers
+Measured on the collected set, **seventy-nine per cent of the teacher's answers
 are looks**: paths that move the jaw to a new viewpoint without coming down to
-any glass. Only about one answer in five is a push.
+any glass. A probe, which is a short test shove to find out whether a glass
+slides or tips, is about one answer in six. A push at the task — the answer that
+actually gives a glass room — is **one answer in thirty-six**.
 
 This is not a flaw in the teacher. It is what the task is, once the overhead
 camera is taken away, and the whole point of problem 4 was to find out what
-happens when a solution has to pay for knowing. But it is fatal to copying, for
-a reason that belongs to the fitting rather than to the robot.
+happens when a solution has to pay for knowing. But it is fatal to plain
+copying, for a reason that belongs to fitting rather than to the robot.
 
 **Fitting a network on examples teaches it the average example.** A network
 fitted to minimise the distance between its answer and the teacher's answer
@@ -147,83 +162,286 @@ will, wherever the input does not clearly tell the two kinds apart, produce
 something between them — and when four examples in five are looks, something
 between them is a look. This is the same effect as fitting a straight line
 through a cloud of points that is mostly on one side: the line goes where the
-weight is. So the student learns the travelling, which is most of the data, and
+weight is. So the student learned the travelling, which is most of the data, and
 not the pushing, which is the part that changes the table.
 
-## What the fitting did, and that it worked
+## One model decides, the other draws
 
-The fitting itself is not where the problem is, and it is worth establishing
-that before blaming it.
+The repair follows directly from that cause. If the trouble is that one network
+has to produce two very different kinds of answer out of one output, and fitting
+makes it answer with the average of them, then **give the two jobs to two
+models**.
 
-Three copies of the network were fitted, because one fit is not a measurement.
-Each took eight thousand steps and between sixty-seven and seventy-eight
-minutes, which is three and a half hours in total. The loss fell from about six
-to about nineteen hundredths, so the fitting converged.
+The first model is called the **gate**, because it stands in front of the policy
+and decides what passes through it. It is shown exactly what the policy is
+shown, and it answers two questions: which of the four kinds of answer to give,
+and which glass to give it at. It is small on purpose — a few convolutions over
+the picture, the numbers joined on at the end, and two output heads — so one fit
+of it takes seven minutes rather than the hour the chunked policy takes.
 
-More importantly, the fits **generalise**. The distance between the student's
-waypoints and the teacher's is about nineteen millimetres, and it is the same
-on tables the student was fitted on as on tables it has never seen. A network
-that had memorised its examples would be close on the first and far on the
-second. So this student has learned the teacher's habit rather than the
-teacher's tables, and that tells you something useful about what to try next:
-**collecting more demonstrations would not help**, because the student is not
-short of examples, it is faithfully reproducing the wrong average.
+The second model is the chunked policy, unchanged from problem 3 except that the
+decision is now part of what it is shown. It no longer has to work out whether
+this is a moment for looking or for pushing, because it is told. Its only job is
+to draw the path for the kind of answer it has been handed.
+
+The comparison worth holding on to is a **classifier in front of a regressor**.
+Choosing between named things and predicting a position are different problems
+with different loss functions, and a loss that averages positions cannot express
+"these two answers are not on a line between each other". Separating them lets
+each loss do what it is good at.
+
+The gate is also where "the table is finished" now comes from. The teacher
+answers a table it considers done with a statement rather than a path, the
+collector records that answer, and so "done" is one of the four things the gate
+chooses between. In the first version the solution had no way to say it at all
+and relied on the examiner's rule that a long quiet spell means finished —
+which declared nine of its ten tables finished while they were still crowded.
+
+### The gate had to be taught that a rare answer still counts
+
+Splitting the models is not enough on its own, because the first fit of the gate
+reproduced the same failure in a smaller form: it learned three of the four
+kinds and **never once answered "push"**. That is the right thing to do if the
+goal is to be wrong as rarely as possible, since only one answer in thirty-six
+is a push, and it is useless as a decision, because the push is the answer that
+changes the table.
+
+Two changes fixed it, and both are about what the loss is asked to care about.
+
+**Each kind is weighted by how rare it is.** Each kind's part of the loss is
+divided by how many examples of that kind there are, so a missed push costs as
+much as a missed look. Being wrong in the other direction is cheap here: a push
+proposed where none was needed is a short shove at a glass that did not need
+moving, and the clearance check described below still stands in front of it.
+
+**The head that names the glass is asked only about answers that name one.** A
+look and a "done" are aimed at nothing, so a head trained on every frame spends
+most of itself learning to answer "none". The first fit did exactly that: it
+named the right glass eighty-five per cent of the time over all frames and
+seventeen per cent of the time on the frames where a glass was really chosen.
+The frames that name no glass are now left out of that head's loss, so it learns
+the one thing it is used for — given that something is to be acted on, which
+glass is it?
+
+Measured on tables the fit never saw, over the three fits:
+
+| | over the three gates |
+| --- | --- |
+| the kind right | 70% to 71% |
+| the glass right, over the answers that name one | 56% to 61% |
+| the teacher's probes found | 49% to 68% |
+| the teacher's pushes found | 56% to 77% |
+| "finished" found, of the teacher's declarations | 92% to 96% |
+| pushes offered, of all its answers | 16% to 21% |
+
+Two of those rows are the point of the change. The gate now finds most of the
+teacher's pushes, where before it found none, and it offers a push about one
+answer in five against the teacher's one in thirty-six. It is deliberately
+eager, and the two rows have to be read together: being eager is how a rare
+answer survives fitting at all, and the cost of an unnecessary push is small.
+
+### A push is written down in the frame of the glass it pushes
+
+The third change is about what the policy has to learn, and it is the cheapest
+of the three.
+
+A push is the same movement wherever on the table it happens: come down beside
+the glass and shove it away from its neighbour. Written in the table's own
+coordinates, that one movement looks like a different answer for every place a
+glass can stand, so the policy has to learn the movement once for each position.
+Written as an offset **from the glass it is aimed at**, it is one answer.
+
+This is possible only because the gate names the glass. The policy draws the
+path measured from that glass, and the solution adds the glass's place back on
+before handing the path to the arm. The idea is the same one behind choosing good
+coordinates for a physics problem: the motion is simple in the frame that moves
+with the object, and complicated in the frame that does not.
+
+One practical point is worth recording, because it cost a day. The
+demonstrations are shared with [solution 6](06-smolvla-fine-tuned.md), which
+reads the same files and does not have a gate to name a glass, so the stored
+answers cannot be relative. The demonstrations therefore keep one convention —
+every path is written in the table's own coordinates — and this solution's
+*training script* converts a push into its glass's frame as it builds each
+batch. The convention lives with the data, and each solution reads it the way it
+needs.
+
+### Every answer is checked for clearance before it is handed over
+
+The last change is shared with two other solutions rather than belonging to this
+one, and it is why nothing here breaks glass.
+
+Most of the glasses this problem broke on its early walks were not broken by a
+push aimed badly. They were broken by the hand **travelling across the table at
+the height of the glasses' rims**, because the fingers hang about seven
+centimetres below the point a waypoint names, so a path at a comfortable looking
+height sweeps the rims of everything it passes over.
+
+So before a drawn path is handed to the arm, this solution checks it against a
+rule written once in the examiner's folder and run by the solutions rather than
+by the examiner. The rule asks a path to account for itself: a path that only
+travels must ride at travel height, and a path that comes down must come down to
+the glass the gate named and nowhere else. A path that cannot account for itself
+is **raised to travel height**, where it goes to the same place and touches
+nothing.
+
+This is not the examiner refusing an answer. The examiner's own interlock is
+unchanged, and it still refuses only a path driven into a glass that would tip.
+The clearance rule is arithmetic the solution runs over its own answer, which is
+why the same rule is used by the two borrowed-model solutions as well, and why a
+run records how many answers were raised and for which reason.
+
+## What the fitting did, and what the two distances now say
+
+Three copies of each model were fitted, because one fit is not a measurement.
+The gate is small, so one fit of it takes four thousand steps and about seven
+minutes. The chunked policy is the expensive half: eight thousand steps at a
+batch of sixteen, fifty-seven minutes a seed, so two hours and fifty-two
+minutes for the three. The policy's loss falls from about seven to about six
+hundredths, so the fitting converges.
+
+Then comes the measurement that says what kind of learning happened, and the
+answer has changed from the first version of this solution. The distance is
+measured between the student's waypoints and the teacher's, on two sets of
+tables: the ones it was fitted on, and fifty it has never seen.
+
+| the policy against its teacher | a waypoint, on tables it was fitted on | a waypoint, on tables it never saw |
+| --- | --- | --- |
+| the first version, one model | 18 to 19 mm | 18 to 21 mm |
+| this version, told the kind and the glass | 9 to 10 mm | 24 mm |
+
+**The first version had no gap between the two columns, and this one has a
+gap of about fifteen millimetres.** That difference is worth understanding,
+because the two versions invite opposite conclusions about what to try next.
+
+The first version was equally close on both sets, which means it had learned a
+habit rather than a set of tables — and the habit it had learned was the
+average answer, which is a look. More demonstrations of a habit teach the same
+habit, so collecting more would not have helped.
+
+This version is told which kind of answer to draw, so it is no longer free to
+answer with the average, and it is now genuinely trying to draw pushes. On the
+tables it was fitted on it draws them to within about nine millimetres, which
+is twice as close as before. On tables it has never seen it is about
+twenty-four millimetres out, and on the pushes alone the direction it draws is
+about twenty-two degrees away from the teacher's. So this version is short of
+examples in a way the first one was not, and more demonstrations — especially
+more pushes, which are one answer in thirty-six — are now a reasonable thing to
+try.
 
 ## What the held-out queue measured
 
 Fifty tables offered in order from table ten thousand, fifteen minutes of arm
-time for the whole queue, walked once for each of the three fits.
+time for the whole queue, walked once for each of the three fits. The "before"
+column is the same measurement of the first version of this solution, which is
+the single network with no gate.
 
-| | over the three fits |
-|---|---|
-| Tables attempted | 10, from 1 to 11 |
-| Tables separated | **0** |
-| Glasses made pickable | **0** |
-| Glasses broken | 0 |
-| Pickable share at the end | 0.400, from 0.25 to 0.405 |
-| Said it was finished while the table was still crowded | 9 |
-| Thinking an answer | 16 ms |
+| | before | now |
+| --- | --- | --- |
+| tables attempted | 10, from 1 to 11 | 13, from 12 to 16 |
+| tables separated | **0** | **1**, from 0 to 1 |
+| glasses made pickable | **0** | **+3**, from +2 to +3 |
+| glasses broken | 0 | 2, from 2 to 5 |
+| pickable share at the end | 0.400 | 0.377, from 0.311 to 0.408 |
+| said it was finished while the table was still crowded | 9 | 9, from 5 to 13 |
+| thinking an answer | 16 ms | 19 ms |
 
-All three fits spend the whole fifteen minutes and change nothing.
+**The solution now acts, where before it only looked.** That is the whole of
+what the changes bought here, and it is a real change rather than a
+rearrangement of the same result: the first version handed back every table
+exactly as it was drawn, and this one separates a table and gives two or three
+glasses room they did not have.
 
-**Read the share of 0.400 carefully, because it is the one number here that
-flatters.** It is not partial credit for partial work. The glasses that have
-room at the end are exactly the glasses that had room when the table was drawn,
-which the line above it states: zero glasses made pickable. A share of 0.400
-and a gain of zero together mean the student left the table as it found it.
+**It is not yet a win, and the share is where that shows.** A share of 0.377
+against 0.400 is lower than before, and the reason is the two to five broken
+glasses. A broken glass forfeits its table at both ends, so a solution that
+pushes and sometimes topples can score below a solution that never touches
+anything. Reading the two rows together is the only honest reading: the gain
+row says it is doing the task, and the broken row says it is doing it badly.
 
-**The spread between the fits is throughput and not quality.** One fit reached
-eleven tables and another reached one, which looks like a large disagreement.
-But the one that reached a single table never said a word on it and was stopped
-by the clock after a thousand answers, and on the single table all three
-reached, all three left its four glasses with one pickable and two of them
-declared themselves finished. So the walks are comparable on one table and no
-further, and the 0.25 against 0.405 is one table's denominator against eleven
-rather than a difference in what the fits do.
+**The spread between fits is now about quality and not only throughput.** In
+the first version one fit reached eleven tables and another reached one, and
+the difference was entirely that the third never answered at all. Now all three
+reach twelve to sixteen tables and differ in what they do on them: the first
+fit separates a table and breaks two glasses, the second separates a table and
+breaks five, the third separates none and breaks two. That is still a wide
+spread for three fits of the same recipe, and it is the honest state of this
+solution.
 
-## The fit that put its hand down and called it an answer
+## The same three fits on twenty tables below the held-out line
 
-One of the three fits does something revealing. It emits a path of a **single
-waypoint** every single time, five and a half thousand times over twenty
-tables.
+Tables 0 to 19, each given four arm minutes of its own, which is how solutions
+1 and 2 were measured, so the three can be set side by side. This is not the
+scored measurement above and it carries no throughput reading, but it is twenty
+tables rather than thirteen, so it is where the comparison with the geometry
+solutions lives. The ceiling column is what the ranked chooser reaches with the
+arm taken away: true positions, exact pushes and no clock.
 
-The obvious reading is that it has learned to stand still and look, which would
-be the harmless version of learning the average. That reading is wrong, and a
-sharpening of the examiner's own rule is what showed it.
+| | solution 1 | solution 2 | **solution 3** | ceiling |
+| --- | --- | --- | --- | --- |
+| tables separated | 5 | 4 | **0 to 1** | 11 |
+| glasses pickable at the end, of 84 | 47 | 43 | **31 to 36** | 66 |
+| glasses made pickable | +14 | +10 | **−2 to +3** | +33 |
+| glasses toppled | 0 | 0 | **1 to 4** | — |
+| arm seconds a table | 42.6 | 41.1 | **49 to 70** | — |
+| share of arm time looking | 46% | 44% | **52% to 65%** | — |
+| said done while still crowded | 15 of 20 | 16 of 20 | **15 to 19 of 20** | — |
+| thinking per answer | 16.2 ms | 18.3 ms | **17 to 19 ms** | — |
 
-The rule that decides whether an answer counts as a push asks whether any part
-of the hand on that path comes low enough to touch a glass. It originally asked
-about the number a waypoint carries, and that number is the **middle of the
-jaw**, while the fingers hang about seventy millimetres below it. Once the rule
-was corrected to ask about the fingers, and to ask against the tallest glass
-the solution has actually measured, **nearly nine of those ten single waypoints
-count as pushes**. The fit is not standing clear of the glasses. It is putting
-the hand down among them and calling it an answer, and it gets away with
-breaking nothing only because a single waypoint goes nowhere.
+The three fits no longer agree with each other about anything except that the
+table is hard. One of them separates a table and frees three glasses, one of
+them frees none and loses one, and the third is in between.
 
-This is the clearest example in the project of why a measuring rule has to be
-written against what the machine really does. Under the old rule the same fit
-looked like a well-behaved policy that only ever looked.
+The run's own record says what the solution's answers are made of, and the
+three numbers below are the ones to watch, because each of them is a change
+from this page's first version doing nothing at all.
+
+| over twenty tables, per fit | |
+| --- | --- |
+| what the gate asked for | 322 to 487 looks, 149 to 196 probes, 64 to 90 pushes, 12 to 13 declarations |
+| answers pulled down onto the two heights the cell accounts for | 114, 137, 191 |
+| answers raised to travel height because they could not account for themselves | 137, 107, 112 |
+| the commonest reason for raising one | the hand would meet a glass it is not aimed at: 63 to 92 times |
+| pushes carried on until the glass had room | 16, 29, 34 |
+| how far a carried-on push moves its glass | 5, 18 and 25 mm |
+
+## The three things that stand in the way of more
+
+Each of these is measured, and each of them is a reason this solution frees
+three glasses rather than thirty. They are listed because the next person to
+work on it should start from them rather than from a new idea.
+
+**One push does not move a glass far enough.** A glass needs about
+seventy-six millimetres of room for the hand to get round it. A push the policy
+draws, carried on until the clearance rule says the glass has room, moves it
+between five and twenty-five millimetres. The policy's own accuracy on an
+unseen table is about twenty-four millimetres, so the thing it is trying to
+produce is of the same size as its own error, and a glass needs three or four
+of these pushes in a row to be freed.
+
+**Every push has to be tested first, because nothing can be predicted.** The
+examiner's rule about whether a glass will slide or tip answers "yes" for no
+glass this cell draws: over sixteen hundred drawn glasses it is always either
+"no" or "try it and see". So a push at a glass is only allowed after a probe
+has shown that the glass slides, which means the solution must spend two
+answers on every glass it moves, and the gate has to get both of them right in
+order.
+
+**The direction the policy draws is often blocked.** Between sixty-three and
+ninety-two times over twenty tables, the path the policy draws would take the
+hand through a glass it is not aimed at, so the clearance rule raises it to
+travel height and the glass is not moved. The policy is drawing the teacher's
+push shape in roughly the right place and in a direction the table does not
+allow.
+
+**Why the third one was not repaired.** It could be, and the repair is
+obvious: choose the direction arithmetically from the measured neighbours, as
+the geometry solutions do, and let the policy draw only the shape. That was not
+done, and the reason is what this solution is for. It exists to measure what
+copying a teacher achieves when looking is most of the task. A version of it
+that chooses the push direction by arithmetic would be the geometry reference
+with a learned chooser in front of it, which is a different and probably better
+machine, answering a different question.
 
 ## What this solution contributed to the examiner
 
@@ -259,42 +477,62 @@ allowance, however convenient that would be.
 
 | | tables separated | glasses freed | glasses broken |
 |---|---|---|---|
-| One fixed nudge | 10 of 26 | 25 | 0 |
-| Geometry ranked | 7 of 25 | 19 | 0 |
-| **This solution** | **0 of 10** | **0** | **0** |
-| A world model | 11 of 32 | 29 | 8 |
-| SmolVLA as it downloads | 0 of 15 | −1 | 20 |
-| SmolVLA fine-tuned | 0 of 8 | 0 | 8 |
+| One fixed nudge | 10 of 26 | +25 | 0 |
+| Geometry ranked | 7 of 25 | +19 | 0 |
+| **This solution** | **1 of 13** | **+3** | **2** |
+| A world model | 14 of 40 | +39 | 1 |
+| SmolVLA as it downloads | 0 of 11 | 0 | 0 |
+| SmolVLA fine-tuned | 0 of 10 | 0 | 1 |
 
-It is the safest of the three solutions that answer from pictures, and it is
-tied with the other two on everything that matters, because all three free
-nothing. Its one advantage over them is honest: it breaks nothing, and it
-answers fifty times faster than either borrowed model.
+Of the three solutions that answer from pictures, this is the only one that
+does any work at all: between them the three separate one table and free three
+glasses, and all of it is this one's. It is also the only one of the three that
+breaks anything, which is the same sentence read from the other side.
 
-The comparison that really matters is with its own teacher. The teacher
-separates seven of twenty-five tables. The student, fitted on eleven thousand
-of that teacher's answers and provably able to reproduce them to within
-nineteen millimetres, separates none. The gap between those two sentences is
-the result of this solution.
+The comparison that really matters is still with its own teacher. The teacher
+separates seven of the twenty-five tables it reaches. The student, fitted on
+eleven thousand of that teacher's answers and able to reproduce them to within
+nine millimetres on tables it was fitted on, separates one of thirteen. The gap
+between those two sentences is the result of this solution, and it is now a gap
+rather than a wall.
 
 ## What to take from it
 
 **Copying a teacher copies what the teacher mostly does, not what the teacher
-is for.** The teacher's purpose is to push glasses apart, but four fifths of its
-behaviour is travelling to see, and fitting cannot tell purpose from frequency.
+is for.** Four fifths of the teacher's behaviour is travelling to see, and
+fitting cannot tell purpose from frequency. This is the finding of the first
+version and it has not been overturned; what has changed is that it can be
+worked around.
 
-**The fix is not more data.** The student already generalises as well to unseen
-tables as to fitted ones, so it is not short of examples.
+**The way around it is to stop asking one model for two kinds of answer.**
+Deciding which kind of answer is wanted is a choice between named things, and
+drawing the path is a prediction of positions. Given to one network with one
+loss, the choice is answered by the average of the kinds, which is a look.
+Given to two models, each loss does what it is good at, and the pushing becomes
+learnable. That single change, with the rare answer weighted up so that the
+decision does not collapse onto the common one, is what moved this solution
+from nothing to something.
 
-**The fix would be to change what is counted as an example.** Weighting the
-pushes up, or fitting two things separately — where to go and what to do when
-you are there — would both attack the actual cause. Neither was tried here,
-because the purpose of this solution in problem 4 is to measure what plain
-behaviour cloning does when looking is most of the task, and the answer is that
-it learns the looking.
+**What is learned and what is arithmetic has to be decided on purpose.** This
+solution now hands three jobs to arithmetic that it could have learned: that a
+travelling path rides high, that a push reaches only the glass it names, and
+that a push carries on until the glass has room. Each was given away for a
+measured reason, and the one that was *not* given away — the direction of the
+push — is the one that now holds the solution back. That is the trade this
+method is really about, and it is more interesting than any number on this
+page.
+
+**The remaining weakness is the size of one push against the room a glass
+needs.** Freeing a glass takes three or four of the pushes this policy draws,
+and its own error is as large as one of them. That is a quantity to attack, and
+it is a more useful thing to know than "behaviour cloning does not work here",
+which is what the first version of this page had to say.
 
 ## Where to go next
 
+- [What changed, and what each change bought](../what-changed.md) — the twelve
+  changes made to this problem's fitted solutions, each beside the measurement
+  that justified it, including the three that were measured and thrown away.
 - [The six solutions side by side](../../../04-clear-the-table/results/README.md)
   — every row, with what perfect play achieves on the same tables as a scale.
 - [The examiner](../the-examiner.md) — the draw, the arm's clock, the camera on

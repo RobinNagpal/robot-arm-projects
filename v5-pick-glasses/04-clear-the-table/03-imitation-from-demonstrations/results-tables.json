@@ -4,15 +4,15 @@
       {
         "seed": 10000,
         "glasses": 4,
-        "outcome": "unfinished",
+        "outcome": "failed",
         "pickable_at_start": 1,
         "pickable_at_end": 1,
-        "broken": 0,
-        "ended_by": "said done",
+        "broken": 1,
+        "ended_by": "a glass went over",
         "interlocks": 0,
-        "arm_seconds": 13.36,
-        "thinking_seconds": 0.53,
-        "answers": 26
+        "arm_seconds": 112.59,
+        "thinking_seconds": 0.957,
+        "answers": 49
       },
       {
         "seed": 10001,
@@ -23,9 +23,9 @@
         "broken": 0,
         "ended_by": "said done",
         "interlocks": 0,
-        "arm_seconds": 14.21,
-        "thinking_seconds": 0.37,
-        "answers": 25
+        "arm_seconds": 8.56,
+        "thinking_seconds": 0.101,
+        "answers": 9
       },
       {
         "seed": 10002,
@@ -36,9 +36,9 @@
         "broken": 0,
         "ended_by": "said done",
         "interlocks": 0,
-        "arm_seconds": 8.23,
-        "thinking_seconds": 0.302,
-        "answers": 16
+        "arm_seconds": 60.04,
+        "thinking_seconds": 1.153,
+        "answers": 74
       },
       {
         "seed": 10003,
@@ -49,35 +49,35 @@
         "broken": 0,
         "ended_by": "said done",
         "interlocks": 0,
-        "arm_seconds": 18.71,
-        "thinking_seconds": 0.428,
-        "answers": 28
+        "arm_seconds": 129.06,
+        "thinking_seconds": 0.678,
+        "answers": 42
       },
       {
         "seed": 10004,
         "glasses": 3,
-        "outcome": "unfinished",
+        "outcome": "separated",
         "pickable_at_start": 1,
-        "pickable_at_end": 1,
+        "pickable_at_end": 3,
         "broken": 0,
         "ended_by": "said done",
         "interlocks": 0,
-        "arm_seconds": 14.22,
-        "thinking_seconds": 0.344,
-        "answers": 25
+        "arm_seconds": 77.82,
+        "thinking_seconds": 0.586,
+        "answers": 40
       },
       {
         "seed": 10005,
         "glasses": 3,
-        "outcome": "unfinished",
+        "outcome": "failed",
         "pickable_at_start": 1,
         "pickable_at_end": 1,
-        "broken": 0,
-        "ended_by": "said done",
+        "broken": 1,
+        "ended_by": "a glass went over",
         "interlocks": 0,
-        "arm_seconds": 113.86,
-        "thinking_seconds": 2.552,
-        "answers": 167
+        "arm_seconds": 48.75,
+        "thinking_seconds": 0.382,
+        "answers": 21
       },
       {
         "seed": 10006,
@@ -88,9 +88,9 @@
         "broken": 0,
         "ended_by": "said done",
         "interlocks": 0,
-        "arm_seconds": 39.44,
-        "thinking_seconds": 0.667,
-        "answers": 44
+        "arm_seconds": 218.45,
+        "thinking_seconds": 1.087,
+        "answers": 69
       },
       {
         "seed": 10007,
@@ -101,9 +101,9 @@
         "broken": 0,
         "ended_by": "said done",
         "interlocks": 0,
-        "arm_seconds": 13.01,
-        "thinking_seconds": 0.44,
-        "answers": 25
+        "arm_seconds": 8.66,
+        "thinking_seconds": 0.123,
+        "answers": 9
       },
       {
         "seed": 10008,
@@ -114,9 +114,9 @@
         "broken": 0,
         "ended_by": "said done",
         "interlocks": 0,
-        "arm_seconds": 8.59,
-        "thinking_seconds": 0.245,
-        "answers": 16
+        "arm_seconds": 8.61,
+        "thinking_seconds": 0.125,
+        "answers": 9
       },
       {
         "seed": 10009,
@@ -125,24 +125,50 @@
         "pickable_at_start": 2,
         "pickable_at_end": 2,
         "broken": 0,
-        "ended_by": "the clock",
+        "ended_by": "said done",
         "interlocks": 0,
-        "arm_seconds": 654.25,
-        "thinking_seconds": 27.135,
-        "answers": 1651
+        "arm_seconds": 25.06,
+        "thinking_seconds": 0.285,
+        "answers": 21
       },
       {
         "seed": 10010,
         "glasses": 3,
         "outcome": "unfinished",
         "pickable_at_start": 1,
+        "pickable_at_end": 2,
+        "broken": 0,
+        "ended_by": "said done",
+        "interlocks": 0,
+        "arm_seconds": 190.43,
+        "thinking_seconds": 3.175,
+        "answers": 62
+      },
+      {
+        "seed": 10011,
+        "glasses": 5,
+        "outcome": "unfinished",
+        "pickable_at_start": 2,
+        "pickable_at_end": 2,
+        "broken": 0,
+        "ended_by": "said done",
+        "interlocks": 0,
+        "arm_seconds": 8.49,
+        "thinking_seconds": 0.125,
+        "answers": 9
+      },
+      {
+        "seed": 10012,
+        "glasses": 4,
+        "outcome": "unfinished",
+        "pickable_at_start": 1,
         "pickable_at_end": 1,
         "broken": 0,
         "ended_by": "the clock",
         "interlocks": 0,
-        "arm_seconds": 1.57,
-        "thinking_seconds": 0.02,
-        "answers": 2
+        "arm_seconds": 3.12,
+        "thinking_seconds": 0.063,
+        "answers": 4
       }
     ],
     [
@@ -155,9 +181,9 @@
         "broken": 0,
         "ended_by": "said done",
         "interlocks": 0,
-        "arm_seconds": 4.16,
-        "thinking_seconds": 0.252,
-        "answers": 16
+        "arm_seconds": 42.19,
+        "thinking_seconds": 0.383,
+        "answers": 24
       },
       {
         "seed": 10001,
@@ -168,9 +194,9 @@
         "broken": 0,
         "ended_by": "said done",
         "interlocks": 0,
-        "arm_seconds": 10.42,
-        "thinking_seconds": 0.271,
-        "answers": 16
+        "arm_seconds": 8.73,
+        "thinking_seconds": 0.112,
+        "answers": 9
       },
       {
         "seed": 10002,
@@ -181,61 +207,61 @@
         "broken": 0,
         "ended_by": "said done",
         "interlocks": 0,
-        "arm_seconds": 5.63,
-        "thinking_seconds": 0.321,
-        "answers": 16
+        "arm_seconds": 126.05,
+        "thinking_seconds": 0.993,
+        "answers": 57
       },
       {
         "seed": 10003,
         "glasses": 3,
-        "outcome": "unfinished",
+        "outcome": "failed",
         "pickable_at_start": 1,
         "pickable_at_end": 1,
-        "broken": 0,
-        "ended_by": "said done",
+        "broken": 1,
+        "ended_by": "a glass went over",
         "interlocks": 0,
-        "arm_seconds": 10.14,
-        "thinking_seconds": 0.247,
-        "answers": 16
+        "arm_seconds": 69.69,
+        "thinking_seconds": 0.54,
+        "answers": 39
       },
       {
         "seed": 10004,
         "glasses": 3,
         "outcome": "unfinished",
         "pickable_at_start": 1,
-        "pickable_at_end": 1,
+        "pickable_at_end": 2,
         "broken": 0,
         "ended_by": "said done",
         "interlocks": 0,
-        "arm_seconds": 9.74,
-        "thinking_seconds": 0.265,
-        "answers": 16
+        "arm_seconds": 173.57,
+        "thinking_seconds": 1.689,
+        "answers": 75
       },
       {
         "seed": 10005,
         "glasses": 3,
-        "outcome": "unfinished",
+        "outcome": "failed",
         "pickable_at_start": 1,
         "pickable_at_end": 1,
-        "broken": 0,
-        "ended_by": "said done",
+        "broken": 1,
+        "ended_by": "a glass went over",
         "interlocks": 0,
-        "arm_seconds": 64.21,
-        "thinking_seconds": 1.784,
-        "answers": 114
+        "arm_seconds": 68.66,
+        "thinking_seconds": 0.418,
+        "answers": 29
       },
       {
         "seed": 10006,
         "glasses": 3,
-        "outcome": "unfinished",
+        "outcome": "failed",
         "pickable_at_start": 1,
-        "pickable_at_end": 1,
-        "broken": 0,
-        "ended_by": "said done",
+        "pickable_at_end": 0,
+        "broken": 1,
+        "ended_by": "a glass went over",
         "interlocks": 0,
-        "arm_seconds": 9.43,
-        "thinking_seconds": 0.261,
-        "answers": 16
+        "arm_seconds": 75.96,
+        "thinking_seconds": 0.404,
+        "answers": 27
       },
       {
         "seed": 10007,
@@ -246,9 +272,167 @@
         "broken": 0,
         "ended_by": "said done",
         "interlocks": 0,
-        "arm_seconds": 9.83,
-        "thinking_seconds": 0.265,
-        "answers": 16
+        "arm_seconds": 14.54,
+        "thinking_seconds": 0.142,
+        "answers": 11
+      },
+      {
+        "seed": 10008,
+        "glasses": 4,
+        "outcome": "failed",
+        "pickable_at_start": 2,
+        "pickable_at_end": 2,
+        "broken": 1,
+        "ended_by": "a glass went over",
+        "interlocks": 0,
+        "arm_seconds": 71.04,
+        "thinking_seconds": 0.68,
+        "answers": 28
+      },
+      {
+        "seed": 10009,
+        "glasses": 4,
+        "outcome": "failed",
+        "pickable_at_start": 2,
+        "pickable_at_end": 2,
+        "broken": 1,
+        "ended_by": "a glass went over",
+        "interlocks": 0,
+        "arm_seconds": 165.73,
+        "thinking_seconds": 1.293,
+        "answers": 62
+      },
+      {
+        "seed": 10010,
+        "glasses": 3,
+        "outcome": "separated",
+        "pickable_at_start": 1,
+        "pickable_at_end": 3,
+        "broken": 0,
+        "ended_by": "said done",
+        "interlocks": 4,
+        "arm_seconds": 74.05,
+        "thinking_seconds": 0.965,
+        "answers": 40
+      },
+      {
+        "seed": 10011,
+        "glasses": 5,
+        "outcome": "unfinished",
+        "pickable_at_start": 2,
+        "pickable_at_end": 2,
+        "broken": 0,
+        "ended_by": "the clock",
+        "interlocks": 0,
+        "arm_seconds": 9.34,
+        "thinking_seconds": 0.133,
+        "answers": 8
+      }
+    ],
+    [
+      {
+        "seed": 10000,
+        "glasses": 4,
+        "outcome": "failed",
+        "pickable_at_start": 1,
+        "pickable_at_end": 1,
+        "broken": 1,
+        "ended_by": "a glass went over",
+        "interlocks": 0,
+        "arm_seconds": 80.3,
+        "thinking_seconds": 0.849,
+        "answers": 34
+      },
+      {
+        "seed": 10001,
+        "glasses": 4,
+        "outcome": "unfinished",
+        "pickable_at_start": 2,
+        "pickable_at_end": 2,
+        "broken": 0,
+        "ended_by": "said done",
+        "interlocks": 0,
+        "arm_seconds": 9.5,
+        "thinking_seconds": 0.151,
+        "answers": 12
+      },
+      {
+        "seed": 10002,
+        "glasses": 5,
+        "outcome": "unfinished",
+        "pickable_at_start": 2,
+        "pickable_at_end": 2,
+        "broken": 0,
+        "ended_by": "said done",
+        "interlocks": 0,
+        "arm_seconds": 62.62,
+        "thinking_seconds": 0.8,
+        "answers": 51
+      },
+      {
+        "seed": 10003,
+        "glasses": 3,
+        "outcome": "unfinished",
+        "pickable_at_start": 1,
+        "pickable_at_end": 1,
+        "broken": 0,
+        "ended_by": "said done",
+        "interlocks": 0,
+        "arm_seconds": 8.31,
+        "thinking_seconds": 0.138,
+        "answers": 10
+      },
+      {
+        "seed": 10004,
+        "glasses": 3,
+        "outcome": "unfinished",
+        "pickable_at_start": 1,
+        "pickable_at_end": 2,
+        "broken": 0,
+        "ended_by": "said done",
+        "interlocks": 0,
+        "arm_seconds": 127.51,
+        "thinking_seconds": 0.908,
+        "answers": 41
+      },
+      {
+        "seed": 10005,
+        "glasses": 3,
+        "outcome": "failed",
+        "pickable_at_start": 1,
+        "pickable_at_end": 1,
+        "broken": 1,
+        "ended_by": "a glass went over",
+        "interlocks": 0,
+        "arm_seconds": 62.15,
+        "thinking_seconds": 0.457,
+        "answers": 33
+      },
+      {
+        "seed": 10006,
+        "glasses": 3,
+        "outcome": "unfinished",
+        "pickable_at_start": 1,
+        "pickable_at_end": 1,
+        "broken": 0,
+        "ended_by": "said done",
+        "interlocks": 0,
+        "arm_seconds": 202.56,
+        "thinking_seconds": 0.962,
+        "answers": 60
+      },
+      {
+        "seed": 10007,
+        "glasses": 4,
+        "outcome": "unfinished",
+        "pickable_at_start": 2,
+        "pickable_at_end": 2,
+        "broken": 0,
+        "ended_by": "said done",
+        "interlocks": 0,
+        "arm_seconds": 40.09,
+        "thinking_seconds": 0.275,
+        "answers": 20
       },
       {
         "seed": 10008,
@@ -259,9 +443,9 @@
         "broken": 0,
         "ended_by": "said done",
         "interlocks": 0,
-        "arm_seconds": 9.12,
-        "thinking_seconds": 0.291,
-        "answers": 16
+        "arm_seconds": 8.28,
+        "thinking_seconds": 0.113,
+        "answers": 9
       },
       {
         "seed": 10009,
@@ -270,16 +454,79 @@
         "pickable_at_start": 2,
         "pickable_at_end": 2,
         "broken": 0,
-        "ended_by": "the clock",
+        "ended_by": "said done",
         "interlocks": 0,
-        "arm_seconds": 766.98,
-        "thinking_seconds": 41.937,
-        "answers": 2549
-      }
-    ],
-    [
+        "arm_seconds": 133.5,
+        "thinking_seconds": 0.884,
+        "answers": 56
+      },
       {
-        "seed": 10000,
+        "seed": 10010,
+        "glasses": 3,
+        "outcome": "unfinished",
+        "pickable_at_start": 1,
+        "pickable_at_end": 2,
+        "broken": 0,
+        "ended_by": "said done",
+        "interlocks": 11,
+        "arm_seconds": 75.34,
+        "thinking_seconds": 0.964,
+        "answers": 62
+      },
+      {
+        "seed": 10011,
+        "glasses": 5,
+        "outcome": "unfinished",
+        "pickable_at_start": 2,
+        "pickable_at_end": 2,
+        "broken": 0,
+        "ended_by": "said done",
+        "interlocks": 2,
+        "arm_seconds": 56.65,
+        "thinking_seconds": 0.453,
+        "answers": 31
+      },
+      {
+        "seed": 10012,
+        "glasses": 4,
+        "outcome": "unfinished",
+        "pickable_at_start": 1,
+        "pickable_at_end": 1,
+        "broken": 0,
+        "ended_by": "said done",
+        "interlocks": 0,
+        "arm_seconds": 8.29,
+        "thinking_seconds": 0.129,
+        "answers": 9
+      },
+      {
+        "seed": 10013,
+        "glasses": 3,
+        "outcome": "unfinished",
+        "pickable_at_start": 1,
+        "pickable_at_end": 1,
+        "broken": 0,
+        "ended_by": "said done",
+        "interlocks": 0,
+        "arm_seconds": 7.35,
+        "thinking_seconds": 0.173,
+        "answers": 12
+      },
+      {
+        "seed": 10014,
+        "glasses": 5,
+        "outcome": "unfinished",
+        "pickable_at_start": 2,
+        "pickable_at_end": 2,
+        "broken": 0,
+        "ended_by": "said done",
+        "interlocks": 0,
+        "arm_seconds": 13.02,
+        "thinking_seconds": 0.173,
+        "answers": 11
+      },
+      {
+        "seed": 10015,
         "glasses": 4,
         "outcome": "unfinished",
         "pickable_at_start": 1,
@@ -287,9 +534,9 @@
         "broken": 0,
         "ended_by": "the clock",
         "interlocks": 0,
-        "arm_seconds": 900.35,
-        "thinking_seconds": 16.745,
-        "answers": 1027
+        "arm_seconds": 4.01,
+        "thinking_seconds": 0.082,
+        "answers": 5
       }
     ]
   ]

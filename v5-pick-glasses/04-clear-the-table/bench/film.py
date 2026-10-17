@@ -372,7 +372,10 @@ def save(cell: FilmedCell, path: Path, result: TableResult) -> None:
     what, spent = outcome_lines(result)
     cell.bench.save(path, what, (spent,))
     cell.close()
+    # The outcome is printed as well as written on the last picture, because the
+    # comparison page has a column for how each film ends and that column has to
+    # be read from somewhere other than watching six videos.
     print(
         f"filmed {path.name}: {result.answers} answers, {cell.pushes} of them pushes, "
-        f"{cell.refusals} refused, {result.arm_seconds:.0f} arm s"
+        f"{cell.refusals} refused, {result.arm_seconds:.0f} arm s, {what}"
     )

@@ -14,70 +14,99 @@
     {
       "correction": "correction-0",
       "quiet_answers_taken_as_done": 16,
-      "looking_seconds": 604.1,
-      "pushing_seconds": 2077.2,
-      "looking_share": 0.225,
-      "refused_because": {
-        "the tipping interlock": 65
+      "looking_seconds": 1355.4,
+      "pushing_seconds": 163.2,
+      "looking_share": 0.893,
+      "refused_because": {},
+      "answers_raised_to_travel_height": {
+        "the hand would meet a glass it is not aimed at": 91,
+        "it comes down without reaching the glass it names": 78,
+        "it travels across the table at the height of the glasses' rims": 71,
+        "the glass it names may tip rather than slide, and nothing has tested it": 69,
+        "the glass it names would tip rather than slide": 33,
+        "it would drive the glass it names into another glass": 1
       },
+      "answers_pulled_onto_the_two_heights": 83,
+      "pushes_driven_home": 27,
+      "a_driven_push_moves_its_glass_mm": 33.8,
       "shape": {
-        "answers": 745,
-        "lowest_mm_median": 230.6,
+        "answers": 438,
+        "lowest_mm_median": 114.8,
         "lowest_mm_least": 75.0,
         "lowest_mm_most": 300.0,
-        "across_mm_median": 316.4,
-        "across_mm_least": 136.1,
-        "across_mm_most": 749.7,
-        "step_mm_median": 4.6,
-        "step_mm_least": 2.1,
-        "step_mm_most": 12.1,
-        "share_reaching_the_table": 0.02
+        "across_mm_median": 369.9,
+        "across_mm_least": 166.7,
+        "across_mm_most": 1158.9,
+        "step_mm_median": 5.2,
+        "step_mm_least": 2.5,
+        "step_mm_most": 18.8,
+        "share_reaching_the_table": 0.26
       }
     },
     {
       "correction": "correction-1",
       "quiet_answers_taken_as_done": 16,
-      "looking_seconds": 767.3,
-      "pushing_seconds": 1993.1,
-      "looking_share": 0.278,
-      "refused_because": {
-        "the tipping interlock": 68
+      "looking_seconds": 1223.5,
+      "pushing_seconds": 118.6,
+      "looking_share": 0.912,
+      "refused_because": {},
+      "answers_raised_to_travel_height": {
+        "it comes down without reaching the glass it names": 94,
+        "it travels across the table at the height of the glasses' rims": 68,
+        "the hand would meet a glass it is not aimed at": 63,
+        "the glass it names may tip rather than slide, and nothing has tested it": 60,
+        "the glass it names would tip rather than slide": 29,
+        "it would drive the glass it names into another glass": 1
       },
+      "answers_pulled_onto_the_two_heights": 78,
+      "pushes_driven_home": 29,
+      "a_driven_push_moves_its_glass_mm": 42.6,
       "shape": {
-        "answers": 765,
-        "lowest_mm_median": 249.9,
+        "answers": 410,
+        "lowest_mm_median": 114.3,
         "lowest_mm_least": 75.0,
         "lowest_mm_most": 300.0,
-        "across_mm_median": 301.1,
-        "across_mm_least": 142.2,
-        "across_mm_most": 762.6,
-        "step_mm_median": 3.9,
-        "step_mm_least": 2.2,
-        "step_mm_most": 12.3,
-        "share_reaching_the_table": 0.014
+        "across_mm_median": 337.0,
+        "across_mm_least": 177.8,
+        "across_mm_most": 784.7,
+        "step_mm_median": 4.7,
+        "step_mm_least": 2.6,
+        "step_mm_most": 11.1,
+        "share_reaching_the_table": 0.224
       }
     },
     {
       "correction": "correction-2",
       "quiet_answers_taken_as_done": 16,
-      "looking_seconds": 677.7,
-      "pushing_seconds": 2027.3,
-      "looking_share": 0.251,
+      "looking_seconds": 1519.9,
+      "pushing_seconds": 171.1,
+      "looking_share": 0.899,
       "refused_because": {
-        "the tipping interlock": 52
+        "the tipping interlock": 1
       },
+      "answers_raised_to_travel_height": {
+        "it travels across the table at the height of the glasses' rims": 91,
+        "the hand would meet a glass it is not aimed at": 82,
+        "the glass it names may tip rather than slide, and nothing has tested it": 77,
+        "it comes down without reaching the glass it names": 67,
+        "the glass it names would tip rather than slide": 18,
+        "it would drive the glass it names into another glass": 3
+      },
+      "answers_pulled_onto_the_two_heights": 119,
+      "pushes_driven_home": 48,
+      "a_driven_push_moves_its_glass_mm": 26.2,
       "shape": {
-        "answers": 749,
-        "lowest_mm_median": 232.7,
+        "answers": 486,
+        "lowest_mm_median": 128.2,
         "lowest_mm_least": 75.0,
         "lowest_mm_most": 300.0,
-        "across_mm_median": 295.0,
-        "across_mm_least": 126.8,
-        "across_mm_most": 867.2,
-        "step_mm_median": 4.1,
-        "step_mm_least": 2.1,
-        "step_mm_most": 11.6,
-        "share_reaching_the_table": 0.028
+        "across_mm_median": 360.2,
+        "across_mm_least": 144.5,
+        "across_mm_most": 978.3,
+        "step_mm_median": 4.9,
+        "step_mm_least": 2.2,
+        "step_mm_most": 15.3,
+        "share_reaching_the_table": 0.198
       }
     }
   ]

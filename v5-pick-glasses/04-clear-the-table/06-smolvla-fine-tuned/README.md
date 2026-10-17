@@ -25,9 +25,18 @@ fit bought safety and not competence.
 batch is now drawn evenly from the looks and the pushes, so that the material's
 own four-to-one mixture cannot drown the answers that matter; and every answer
 goes through the clearance check that solution 5 runs, which raises a path that
-cannot be shown to reach only the glass it names. What those two bought is
-measured below and in
-[`what-changed.md`](../../docs/04-clear-the-table/what-changed.md).
+cannot be shown to reach only the glass it names.
+
+**What those two bought is safety and reach, and no competence at all.** On the
+held-out queue the broken glasses fell from eight a walk to one, the pickable
+share rose from 0.103 to 0.378, and the solution now says a table is finished
+instead of being stopped by a falling glass. It still separates no table and
+frees no glass. The pair this folder exists to measure — the same weights with
+and without this cell's demonstrations — says the same thing from the other
+side: fitting makes the model act a third again as often and leaves the outcome
+exactly where it was.
+[`what-changed.md`](../../docs/04-clear-the-table/what-changed.md) records both
+changes beside the measurements that justified them.
 
 ## What is borrowed and what is new
 
@@ -101,10 +110,10 @@ demonstrations. `weights/training.json` holds all of it.
 |---|---|
 | steps, batch, learning rate | 1,000, 4, 1e-4 — problem 3's own, imported |
 | numbers that move | 3.81M of 453.9M |
-| time a seed | 26.4, 26.4 and 27.1 minutes on this laptop's Metal GPU |
+| time a seed | 26.5 minutes each on this laptop's Metal GPU |
 | memory held | 1.02 to 1.05 GiB |
-| loss | 0.67 at step 50 to 0.21 to 0.23 at the end |
-| demonstrations read a seed | 4,000 of the 11,016, of which about 2% were squeezed |
+| loss | 0.86 to 0.96 at step 50, down to 0.26 to 0.28 at the end |
+| demonstrations read a seed | 4,000 of the 11,016, drawn evenly from the looks and the pushes, of which about 5% were squeezed |
 
 **One thousand steps at a batch of four is a third of one pass over this set.**
 Problem 3 chose that recipe on a set of 1,074 demonstrations, where it was
@@ -124,18 +133,18 @@ the three seeds' step-zero readings of that one model are the noise floor:
 
 | median distance from the teacher's waypoints | untrained | after 1,000 steps |
 |---|---|---|
-| over all three kinds | 152 to 163 mm | 110 to 148 mm |
-| on the teacher's looks | 185 to 204 mm | 181 to 222 mm |
-| on the teacher's pushes | 82 to 97 mm | 84 to 116 mm |
+| over all three kinds | 152 to 163 mm | 131 to 142 mm |
+| on the teacher's looks | 185 to 204 mm | 198 to 212 mm |
+| on the teacher's pushes | 82 to 97 mm | 78 to 86 mm |
 
 The loss fell threefold, so the correction learned something about the
-distribution it was shown. The decoded distance did not follow it: the bands
-overlap in every row, and on looks and pushes taken apart the fitted model is no
-closer to the teacher than the untrained one. Sixteen chunks a kind is a small
-sample and the answer is drawn, so this is a weak instrument; what it is strong
-enough to say is that the fit did not move the model's waypoints towards its
-teacher's by anything like the margin problem 3 saw, where the same measurement
-fell from about 300 mm to about 100 mm.
+distribution it was shown. The decoded distance moved much less: taken over all
+three kinds it closed by about twenty millimetres, on the pushes it closed by
+about eight, and on the looks it did not close at all. Sixteen chunks a kind is a
+small sample and the answer is drawn from fresh noise, so this is a weak
+instrument; what it is strong enough to say is that the fit did not move the
+model's waypoints towards its teacher's by anything like the margin problem 3
+saw, where the same measurement fell from about 300 mm to about 100 mm.
 
 ## How it says it is done
 
@@ -161,176 +170,176 @@ line, with one correction and every table given 120 arm seconds of its own:
 Sixteen is the best column of the three on every count that is scored, so the
 bench's own number is the one used and nothing here overrides it.
 
+**That comparison was made before the even mixture and the clearance check**, so
+its numbers describe a solution that no longer exists: with the clearance check
+in front of it, this solution breaks about one glass a walk rather than three on
+eight tables. It is kept because it is the record of how the count was chosen,
+and because the choice still stands — a fitted model copies its teacher's habit
+of driving about to see, so it needs a long quiet spell before anyone may call it
+finished.
+
 ## What the fit changed — the same tables, the same loop, one difference
 
 Twenty tables below the held-out line, each given 120 arm seconds of its own,
 walked three times: the fitted side by the three corrections, the untouched side
 by the same weights with nothing fitted. Both sides run through this folder's own
-loop under the same stopping count, so the training is the only difference
-between the columns. Each cell is the median of the three walks with the least
-and the most beside it.
+loop under the same stopping count, and both run the same clearance check over
+their answers, so the training is the only difference between the columns. Each
+cell is the median of the three walks with the least and the most beside it.
 
 | twenty tables, 84 glasses | the same weights, nothing fitted | **fitted here** |
 |---|---|---|
-| Tables separated | 0 | **1 (0 to 2)** |
-| Tables failed by a topple | 18 (17 to 19) | **9 (5 to 9)** |
-| Glasses broken | 22 (22 to 25) | **9 (7 to 9)** |
-| Glasses pickable at the end | 1, 0.012 (0.012 to 0.036) | **21, 0.25 (0.226 to 0.31)** |
-| Of which it made pickable | −1 (−4 to −1) | **+1 (0 to +2)** |
-| Said done | 0 of 20 | **0 of 20 (0 to 2)** |
-| Answers over the twenty tables | 2,308 (2,195 to 3,782) | **749 (745 to 765)** |
-| Arm seconds over the twenty | 795 (770 to 862) | **1,871 (1,805 to 2,090)** |
-| Paths the interlock refused | 1,688 (1,432 to 3,325) | **65 (52 to 68)** |
-| Thinking an answer | 0.280 s | **0.334 s** |
+| Tables separated | 0 | **0** |
+| Tables failed by a topple | 1 (0 to 3) | **2 (1 to 4)** |
+| Glasses broken | 1 (0 to 3) | **2 (1 to 5)** |
+| Glasses pickable at the end | 31, 0.369 (0.321 to 0.393) | **31, 0.369 (0.345 to 0.381)** |
+| Of which it made pickable | 0 (−1 to 0) | **0 (0 to +1)** |
+| Said done | 17 of 20 (16 to 18) | **13 of 20 (11 to 16)** |
+| Answers over the twenty tables | 335 (328 to 359) | **438 (410 to 486)** |
+| Arm seconds over the twenty | 1,416 (1,397 to 1,556) | **1,468 (1,311 to 1,661)** |
+| Paths the interlock refused | 0 (0 to 1) | **0 (0 to 1)** |
+| Thinking an answer | 0.281 s | **0.283 s** |
 
-**The training made the model markedly less destructive.** It halves the tables
-lost to a topple, halves the glasses broken, and takes the share of glasses with
-room at the end from one in a hundred to one in four. It also stops the model
-battering at paths the cell will not carry out: 65 refusals a walk against
-1,688.
+**This is a null result, and it is the honest headline of this folder.** The two
+columns separate the same number of tables, which is none; they free the same
+number of glasses, which is none; and they end with the same pickable share to
+three decimal places. The fitted side breaks one more glass than the untrained
+side, which is inside the spread of either. A thousand steps of this cell's
+demonstrations did not make the borrowed model better at this cell's task.
 
-**That is not the same as saying the fit is good, and solution 5's own published
-numbers show why.** Measured on these same twenty tables, solution 5 reports one
-table separated, two glasses broken and 39% of glasses pickable — better than
-anything in the table above. It reached that by stopping after three answers and
-handing the table back very nearly as it found it, 66 answers against 749. Two
-things about those numbers are not comparable with these, and both have to be
-said: the stopping count was three rather than sixteen, and the rule it was
-measured under asked only whether a path came down to the height the jaw pushes
-at, where the rule now asks whether the hand would sweep a glass standing taller
-than that. Under today's rule the same weights never go quiet at all, which is
-the left-hand column above. The comparison that holds is the held-out queue
-below: solution 5 walked it with the count at three and this solution with it at
-sixteen, and **neither said it was done on a single table**, so the count never
-bound on either and what separates the two columns there is the training.
+**What the fit did change is how much the model acts.** The fitted side gives a
+third again as many answers — 438 against 335 — because it stops declaring the
+table finished so early: thirteen of its twenty tables end with the stopping
+rule taking it at its word, against seventeen on the untrained side. More
+answers at the same outcome is the measurement of a model that has learned to
+keep working at a table it cannot clear.
 
-Either way, problem 3's finding turns up again in problem 4's numbers: **a
-policy that barely reaches a glass scores better than one that reaches the wrong
-part of it.**
-
-**What the fit actually taught the model is where to hold the jaw.** The shape
-of the answers says it plainly, measured by the same code on both sides:
+**And the fit did change the shape of the answers, towards the teacher's.** This
+is the one place where training shows clearly, measured by the same code on both
+sides:
 
 | median over every answer, on these twenty tables | the same weights, nothing fitted | **fitted** |
 |---|---|---|
-| Lowest point of a chunk | 128 mm (124 to 143) | **233 mm (231 to 250)** |
-| Travel across the table | 442 mm (424 to 490) | **301 mm (295 to 316)** |
-| Step between waypoints | 7.8 mm (7.4 to 8.6) | **4.1 mm (3.9 to 4.6)** |
-| Answers that reach the pushing height | 0.6% | **2.0%** |
-| Share of arm time on paths that could not touch a glass | 0.1% | **25%** |
+| Lowest point of a chunk | 150 mm (143 to 152) | **115 mm (114 to 128)** |
+| Travel across the table | 832 mm (816 to 850) | **360 mm (337 to 370)** |
+| Step between waypoints | 15.0 mm (14.8 to 15.3) | **4.9 mm (4.7 to 5.2)** |
+| Answers that reach the pushing height | 13% to 16% | **20% to 26%** |
+| Shoves carried on until the glass had room | 5 to 7 a walk | **27 to 48 a walk** |
+| Share of arm time on paths that could not touch a glass | 96% to 98% | **89% to 91%** |
 
-The fitted model carries the jaw **higher**, sweeps **shorter**, and moves
-**slower** — which is what four demonstrations in five look like, because four
-in five are the teacher going somewhere to see. That is the fit working: the
-teacher's commonest answer is "stand over there at travel height", and the
-student learned it. It is also why the fit cannot separate a table: it learned
-the looking and not the pushing, and one answer in fifty comes down far enough
-to move a glass at all. The held-out walks give the same three numbers to within
-their spread — 240 mm, 302 mm and 4.2 mm — so this is the shape of its answers
-and not a property of these twenty tables.
+Read the first three rows together and the fit is visible. The untrained model
+sweeps eight hundred millimetres across a table whose glass zone is 320 by
+360 mm, in steps of fifteen millimetres, which is one long fast arc over
+everything. The fitted model draws a path less than half as long in steps a
+third as long, which is the size and the speed of the teacher's own answers, and
+it comes down to the height a push works at twice as often. It also ends up
+making five to nine times as many real shoves at a glass.
 
-**It still breaks nine glasses a run while every one of those answers is
-recorded as quiet.** The height a path names is the middle of the jaw and the
-hand reaches 69.5 mm below it, so a path at 233 mm puts the hand's lower edge at
-163 mm, and glasses on these tables stand 97 to 224 mm tall. A sweep 300 mm long
-at that height drags the hand through the top of every tall glass it passes.
-Solution 5 reported this fault in `bench/stopping.py`'s stated reason, and this
-solution is the clearest case of it: a quarter of its arm time is spent on paths
-the rule counts as "proposing nothing", and those paths are what put the glasses
-on the floor.
+**So the fit taught the model the size of the motion and not the place to put
+it.** That is the sharpest statement this pair supports: everything measurable
+about the *form* of the answers moved towards the teacher, and nothing
+measurable about the *result* moved at all. A path of the right length and speed
+that comes down next to no glass in particular changes nothing on the table, and
+the clearance arithmetic is what keeps it from changing something for the worse:
+315 to 343 of the fitted side's answers are raised to travel height because they
+cannot account for themselves.
+
+**Problem 3's finding turns up again here.** A policy that barely reaches a
+glass scores the same as one that reaches the wrong part of it, because both
+leave the table as they found it, and the second one occasionally breaks
+something on the way.
 
 ## What it achieves on the held-out queue
 
 The measurement: fifty tables from table 10,000, in order, fifteen arm minutes
 for the whole list, walked three times, one walk a fitted correction. Run once,
-to `results.json`.
+to `results.json`. The right-hand column is this solution's own first walk of the
+same queue, before the even mixture and the clearance check.
 
-| | walk 1, correction 0 | walk 2, correction 1 | walk 3, correction 2 | median (least to most) |
-|---|---|---|---|---|
-| Tables attempted | 8 | 2 | 8 | **8 (2 to 8)** |
-| Glasses on them | 29 | 8 | 29 | |
-| Tables separated | 0 | 0 | 0 | **0** |
-| Tables failed by a topple | 6 | 1 | 7 | **6 (1 to 7)** |
-| Tables left unfinished | 2 | 1 | 1 | **1 (1 to 2)** |
-| Glasses pickable at the end | 3 of 29 | 2 of 8 | 2 of 29 | **0.103 (0.069 to 0.25)** |
-| Glasses it made pickable | 0 | 0 | 0 | **0** |
-| Glasses broken | 8 | 1 | 10 | **8 (1 to 10)** |
-| Said done while still crowded | 0 | 0 | 0 | **0** |
-| Said done at all | 0 | 0 | 0 | **0** |
-| Paths the interlock refused | 0 | 0 | 0 | **0** |
-| Answers | 321 | 302 | 316 | **316 (302 to 321)** |
-| Thinking an answer | 0.278 s | 0.279 s | 0.281 s | **0.279 s (0.278 to 0.281)** |
+| | walk 1 | walk 2 | walk 3 | median (least to most) | before |
+|---|---|---|---|---|---|
+| Tables attempted | 16 | 10 | 10 | **10 (10 to 16)** | 8 (2 to 8) |
+| Glasses on them | 61 | 37 | 37 | | 29 |
+| Tables separated | 0 | 0 | 0 | **0** | 0 |
+| Tables failed by a topple | 2 | 0 | 1 | **1 (0 to 2)** | 6 (1 to 7) |
+| Tables left unfinished | 14 | 10 | 9 | **10 (9 to 14)** | 1 (1 to 2) |
+| Glasses pickable at the end | 19 of 61 | 15 of 37 | 14 of 37 | **0.378 (0.311 to 0.405)** | 0.103 |
+| Glasses it made pickable | 0 | 0 | 0 | **0** | 0 |
+| Glasses broken | 2 | 0 | 1 | **1 (0 to 2)** | 8 (1 to 10) |
+| Said done at all | 13 | 9 | 8 | **9 (8 to 13)** | 0 |
+| Said done while still crowded | 13 | 9 | 8 | **9 (8 to 13)** | 0 |
+| Paths the interlock refused | 0 | 0 | 0 | **0** | 0 |
+| Answers | 271 | 277 | 267 | **271 (267 to 277)** | 316 |
+| Thinking an answer | 0.281 s | 0.281 s | 0.282 s | **0.281 s** | 0.279 s |
 
-**It separates nothing and frees nothing.** The gain over the glasses that
-already had room is exactly zero in all three walks, which is the plainest
-statement of the result: every glass that could be picked at the end of a walk
-could already be picked at the start. What the arm did in fifteen minutes was
-break one glass in four of the ones it reached.
+**It is now a harmless solution rather than a destructive one.** Seven of the
+eight glasses it used to break on a walk are no longer broken, and the pickable
+share nearly quadrupled — from 0.103 to 0.378 — without the model freeing a
+single glass. The share moved because a table that loses a glass counts for
+nothing at either end, so a walk that keeps its glasses standing is credited
+with the ones that arrived with room.
 
-**The pickable share of 0.25 in walk 2 is not a better walk.** That walk reached
-two tables before the clock stopped it, so its share is 2 glasses of 8 on two
-tables, where the other walks' are out of 29 on eight. The three walks are
-comparable on the tables they all reached, which is two, and on nothing beyond
-that. **Reading the spread as 0.069 to 0.25 would be reading the denominator.**
+**It separates nothing and frees nothing, in all three walks.** The gain over
+the glasses that already had room is exactly zero every time, which is the
+plainest statement of the result: every glass that could be picked at the end of
+a walk could already be picked at the start.
 
-**It never says it is done.** Not once in eighteen tables, so the whole budget
-goes on whatever table the arm is standing at when the clock stops. That is why
-it reaches 2 to 8 tables of 50 where the geometry reference reaches 26: it makes
-about 40 answers and spends 110 arm seconds a table, against the reference's 37
-answers and 43 seconds, and it never stops. One walk spent 834 of its 900 arm
-seconds on the first table alone, over 283 answers.
+**It now says a table is finished, where before it never did.** Eight to
+thirteen of its ten to sixteen tables end with the stopping rule taking it at
+its word, and every one of those declarations is made while the table is still
+crowded. That is not the gate learning anything about the table: it is sixteen
+answers in a row that the clearance check raised to travel height, which the
+shared rule rightly reads as a policy proposing nothing.
 
-**"Tables attempted" and "how far down the list it got" are not the same number
-here, and `results-tables.json` is where that shows.** Walk 1 acted on tables
-10,000 to 10,006, which left two and a half arm seconds in the budget — enough
-for no path this solution writes. The runner drops a table the arm never moved
-on and carries on, so the walk went through the next 39 tables without acting on
-any of them, and then found one short enough answer on table 10,046 to be
-charged 2.7 seconds and counted. So that walk's eighth table is a scrap of one
-answer, and the list it reached the end of is nearly the whole fifty. The
-dropped tables are rightly not counted — every glass on them would otherwise be
-a glass left crowded — but a reader comparing throughput should take 7 real
-tables and not 8.
+**The shape of its answers on these tables is the same shape as on the twenty
+below the line**, which is what says the pair measurement generalises: the
+chunks bottom out at 110 to 168 mm, travel 322 to 357 mm, step 4.4 to 4.9 mm,
+and 15% to 26% of them reach the pushing height. Between 180 and 245 answers a
+walk are raised, most often because the path comes down without reaching the
+glass it is nearest to.
 
-**The spread between the three corrections is wider than any effect in the
-table.** One correction reached two tables and another eight, from the same
-recipe, the same data and the same number of steps — a fourfold difference in
-throughput for no reason but the training seed. Nothing in this folder's result
-should be read at a finer resolution than that.
+**The spread between the three corrections is still wider than any effect in
+the table.** One walk reached sixteen tables and two reached ten, from the same
+recipe, the same data and the same number of steps. Nothing in this folder's
+result should be read at a finer resolution than that.
 
 ### Beside the other solutions, on the same queue
 
-Solution 5 has since been walked over the same queue, which is the comparison
-that matters: the same weights, the same loop and the same fifty tables, with
-the training as the difference. Neither said it was done on any table, so the
-stopping count never bound on either walk.
+Solution 5 walks the same queue with the same loop and the same clearance check,
+which is the comparison that matters: the training is the only difference.
 
 | the held-out queue, 15 arm minutes | geometry reference | small fitted model | borrowed, nothing fitted | **borrowed, fitted here** |
 |---|---|---|---|---|
-| Tables attempted | 26 | 10 (1 to 11) | 15 (13 to 15) | **8 (2 to 8)** |
-| Tables separated | 10 | 0 | 0 | **0** |
-| Tables failed by a topple | 0 | 0 | 14 (12 to 14) | **6 (1 to 7)** |
-| Glasses pickable at the end | 0.627 | 0.400 | 0.018 | **0.103** |
-| Glasses it made pickable | +25 | 0 | −1 | **0** |
-| Glasses broken | 0 | 0 | 20 (19 to 22) | **8 (1 to 10)** |
-| Said done while still crowded | 14 of 26 | 9 of 10 | 0 | **0** |
-| Thinking an answer | 15 ms | 16 ms | 776 ms | **279 ms** |
+| Tables attempted | 26 | 13 (12 to 16) | 11 | **10 (10 to 16)** |
+| Tables separated | 10 | 1 (0 to 1) | 0 (0 to 1) | **0** |
+| Tables failed by a topple | 0 | 2 (2 to 5) | 0 | **1 (0 to 2)** |
+| Glasses pickable at the end | 0.627 | 0.377 | 0.400 | **0.378** |
+| Glasses it made pickable | +25 | +3 | 0 (0 to +2) | **0** |
+| Glasses broken | 0 | 2 (2 to 5) | 0 | **1 (0 to 2)** |
+| Said done while still crowded | 14 of 26 | 9 of 13 | 9 of 11 | **9 of 10** |
+| Thinking an answer | 15 ms | 19 ms | 279 ms | **281 ms** |
 
-**The fit is a clear gain over the same weights untrained and a clear loss
-against geometry.** It halves the broken glasses and takes the pickable share
-from one in fifty to one in ten, and it still breaks a glass on three tables in
-four while a hundred lines of arithmetic separates ten tables and breaks
-nothing.
+**The fit is no longer a gain over the same weights untrained, and it is still a
+clear loss against geometry.** Untrained, the borrowed model breaks nothing and
+frees nothing in two walks of three; fitted, it breaks about one glass a walk
+and frees nothing in any walk. Both
+are beaten by the small fitted model, which at least frees three glasses, and
+all three are far behind a hundred lines of arithmetic that separates ten tables
+and breaks none.
+
+The one row where the fit still looks like an improvement over its untrained
+self is the one this page has to warn about. It is not there. Both borrowed
+columns now score their share almost entirely on glasses that arrived with room,
+and the fitted column's extra tenth of a point is noise beside a spread of 0.311
+to 0.405.
 
 Two notes on reading that table. The geometry reference's walk records tables
 10,000 to 10,025 with no gaps, so its 26 are 26 real attempts and the queue rule
-that now drops an untouched table would not change its number. And the two
-thinking figures for the borrowed model are the same forward pass measured under
-different machine load — solution 5's walk ran while the graphics chip was also
-fitting another model, and this one did not — so the honest reading is that the
-borrowed model costs twenty to fifty times the geometry's compute an answer, not
-that the fitted one is faster than the untrained one. The correction is
-multiplied into the weights, so both are a model of exactly the same size.
+that drops an untouched table would not change its number. And the two thinking
+figures for the borrowed model are the same forward pass on the same machine
+under the same load, so they are properly comparable now: the correction is
+multiplied into the weights, so both are a model of exactly the same size, and
+both cost about twenty times the geometry's compute an answer.
 
 ## Running it
 

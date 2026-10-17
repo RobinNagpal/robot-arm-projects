@@ -76,6 +76,15 @@ bought is the second half of this document, and
 [`what-changed.md`](../what-changed.md) is the record of it beside the other
 solutions' changes.
 
+**The answer, stated plainly before it is argued, is that the two changes
+bought safety and nothing else.** The broken glasses fell from eight a walk to
+one and the pickable share rose from 0.103 to 0.378, while the tables separated
+and the glasses freed both stayed at zero. And the pair this solution exists for
+— the same weights with and without this cell's demonstrations, on the same
+tables through the same loop — now comes out even on every column the problem
+scores. That is a null result about fine-tuning, measured carefully, and it is
+more useful than the first walk's apparent improvement was.
+
 By the end of this document you will know what fine-tuning and low-rank
 adaptation are, what the demonstrations are and what is odd about problem 4's
 set, how one recorded answer becomes something this model can be trained
@@ -88,7 +97,7 @@ hurt it, while taking the overhead camera away is.
 Here is one of the three fits on one table, recorded in the simulator and
 playing at one and a half times real speed.
 
-[Watch the film (1 min 14 s)](../../../videos/04-clear-the-table/06-smolvla-fine-tuned.mp4)
+[Watch the film (40 s)](../../../videos/04-clear-the-table/06-smolvla-fine-tuned.mp4)
 
 It is table 10001 of the held-out fifty, the one table every solution in
 problem 4 is filmed on, and the film to set beside it is
@@ -96,21 +105,26 @@ problem 4 is filmed on, and the film to set beside it is
 [The comparison page](../../../04-clear-the-table/results/README.md#a-film-of-each-solution)
 says how the table was chosen.
 
-**The pair is what makes this film worth watching, and it shows what the fit
-bought.** The untrained model gives seventy answers over two hundred and
-seventy-two arm seconds and every one of them brings the hand down among the
-glasses. This fit gives thirty-two answers over a hundred and three seconds,
-and eleven of them hold the hand clear. So the fitting did move the model
-towards the teacher's commonest answer, which is a move made only to see, and
-that is the whole of what it moved.
+**The pair is what makes this film worth watching, and what it shows is how
+little the fit changed.** This fit gives seventeen answers over fifty-six arm
+seconds and one of them comes down at a glass. Its untrained partner gives
+sixteen answers over seventy-one seconds and none of them comes down at all.
+Both end by saying the table is finished with two of its four glasses still
+short of room, and neither breaks anything.
 
-**Two thirds of its answers still come low enough to touch a glass**, which is
-what the writing across the top means by a push, and two glasses are over by
-the end. It is not aiming at them: it sweeps, and a glass standing taller than
-the hand is riding catches the fingers. That is the same thing
-[what the fit changed, and what it did not](#what-the-fit-changed-and-what-it-did-not)
-reports over the whole queue, where this fit breaks eight glasses against its
-untrained partner's twenty. Safer, and no better at the task.
+**The one answer that does come down is the whole of the difference.** Watch for
+it: the hand descends beside a glass, shoves, and the glass does not end up with
+room, so the table is left as it was found. That single answer is what a
+thousand steps of this cell's demonstrations bought on this table, and it is a
+fair picture of what they bought over the whole queue.
+
+**Nothing in this film is destructive, and that is new.** Filmed before the
+changes recorded in
+[what changed](../what-changed.md), both halves of this pair ended this table
+with glasses on their sides: the untrained model with one and this fit with two.
+The clearance arithmetic the solution now runs over its own answers raises a
+path that cannot be shown to reach only the glass it names, and most of this
+film is such a path, carried out high and harmlessly.
 
 ## The pair, and what is held still
 
@@ -263,9 +277,9 @@ document.
 |---|---|
 | steps, batch | 1,000 at a batch of 4 — problem 3's own recipe |
 | numbers that move | 3.8 million of 454 million |
-| time | 26.4, 26.4 and 27.1 minutes a seed |
+| time | 26.5 minutes a seed, so an hour and twenty for the three |
 | memory held | about 1.0 gigabytes |
-| loss | 0.67 early, 0.21 to 0.23 at the end |
+| loss | 0.86 to 0.96 early, 0.26 to 0.28 at the end |
 
 **A thousand steps is a third of one pass over this set.** A step shows the
 model four demonstrations, so a thousand of them show it four thousand of the
@@ -289,15 +303,16 @@ the noise, because the answer is drawn from fresh random numbers every time.
 
 | median distance from the teacher's waypoints | untrained | after the fit |
 |---|---|---|
-| over all kinds of answer | 152 to 163 mm | 110 to 148 mm |
-| on the teacher's looks | 185 to 204 mm | 181 to 222 mm |
-| on the teacher's pushes | 82 to 97 mm | 84 to 116 mm |
+| over all kinds of answer | 152 to 163 mm | 131 to 142 mm |
+| on the teacher's looks | 185 to 204 mm | 198 to 212 mm |
+| on the teacher's pushes | 82 to 97 mm | 78 to 86 mm |
 
-Every band overlaps. Taken apart by kind, the fitted model is no closer to its
-teacher than the untrained one. This is a weak instrument — sixteen chunks a
-kind, of a drawn answer — but it is strong enough to show that nothing like
-problem 3's improvement happened: there, the same measurement fell from about
-300 mm to about 100 mm.
+Taken over all kinds of answer the distance closed by about twenty millimetres,
+which is more than the noise between the three seeds. Taken apart by kind it
+barely moved: eight millimetres closer on the pushes, and no closer at all on
+the looks. This is a weak instrument — sixteen chunks a kind, of a drawn answer
+— but it is strong enough to show that nothing like problem 3's improvement
+happened: there, the same measurement fell from about 300 mm to about 100 mm.
 
 ## Saying when the table is finished
 
@@ -335,14 +350,14 @@ measurement a method is tuned against stops being a measurement.
 
 | the held-out queue | geometry reference | small fitted model | borrowed, untrained | **borrowed, fitted here** |
 |---|---|---|---|---|
-| Tables attempted | 26 | 10 (1 to 11) | 15 (13 to 15) | **8 (2 to 8)** |
-| Tables separated | 10 | 0 | 0 | **0** |
-| Tables failed by a topple | 0 | 0 | 14 (12 to 14) | **6 (1 to 7)** |
-| Share of glasses pickable at the end | 0.627 | 0.400 | 0.018 | **0.103** |
-| Glasses it made pickable | +25 | 0 | −1 | **0** |
-| Glasses broken | 0 | 0 | 20 (19 to 22) | **8 (1 to 10)** |
-| Said done while still crowded | 14 of 26 | 9 of 10 | 0 | **0** |
-| Thinking an answer | 15 ms | 16 ms | 776 ms | **279 ms** |
+| Tables attempted | 26 | 13 (12 to 16) | 11 | **10 (10 to 16)** |
+| Tables separated | 10 | 1 (0 to 1) | 0 (0 to 1) | **0** |
+| Tables failed by a topple | 0 | 2 (2 to 5) | 0 | **1 (0 to 2)** |
+| Share of glasses pickable at the end | 0.627 | 0.377 | 0.400 | **0.378** |
+| Glasses it made pickable | +25 | +3 | 0 (0 to +2) | **0** |
+| Glasses broken | 0 | 2 (2 to 5) | 0 | **1 (0 to 2)** |
+| Said done while still crowded | 14 of 26 | 9 of 13 | 9 of 11 | **9 of 10** |
+| Thinking an answer | 15 ms | 19 ms | 279 ms | **281 ms** |
 
 Four things in that table need reading carefully.
 
@@ -351,72 +366,89 @@ room already, so the share of pickable glasses starts well above zero on any
 table. What a solution did is the change, and this solution's change is nothing
 at all in every one of the three walks.
 
-**A high share can mean a short walk.** One of the three corrections reached two
-tables before the clock stopped it, and two glasses of the eight on those two
-tables could be picked, which reads as a share of 0.25 — the best of the three
-walks and the worst walk by every other measure. The three are comparable on the
-tables they all reached, which is two.
+**Its own history is the comparison that flatters it most, and it is a
+comparison of safety and not of skill.** The first walk of this solution broke
+eight glasses, forfeited six tables of eight, and scored a share of 0.103. This
+one breaks one glass, forfeits one table of ten, and scores 0.378. Everything in
+that improvement is damage not done; the separated column and the gain column
+read exactly as they did before.
 
-**The spread between the three corrections is wider than any effect here.** One
-reached two tables and another eight, from the same recipe, the same material and
-the same number of steps. Nothing in this result should be read at a finer
-resolution than that.
+**The pair is the comparison that matters, and it says the training bought
+nothing.** Untrained, the same weights score 0.400 and free nothing in two walks
+of three. Fitted, they score 0.378 and free nothing in any walk. The two numbers
+differ by less than the spread of either, and the next section measures the pair
+properly, on the same twenty tables with the same loop on both sides.
 
-**The two thinking figures for the borrowed model are the same forward pass.**
-The correction is multiplied into the weights, so the fitted and the untrained
-model are the same size and cost the same. They were measured while the machine
-was under different loads, which is the whole of the difference between 279 and
-776 milliseconds. What the pair of them says against the geometry is the real
-reading: a borrowed model costs roughly twenty to fifty times as much thinking
-an answer as a hundred lines of arithmetic.
+**The spread between the three corrections is still wider than most effects
+here.** One walk reached sixteen tables and the other two reached ten, from the
+same recipe, the same material and the same number of steps. Nothing in this
+result should be read at a finer resolution than that.
 
 ## What the fit changed, and what it did not
 
 The two halves of the pair were also walked over twenty tables below the
 held-out line, three times each, with every table given two arm minutes of its
 own. That is where the training's effect is clearest, because both sides ran
-through one loop under one rule.
+through one loop, under one stopping rule, with the same clearance arithmetic
+over their answers. The training is the only difference between the columns.
 
 | twenty tables, 84 glasses | untrained | **fitted** |
 |---|---|---|
-| Tables failed by a topple | 18 of 20 | **9 of 20** |
-| Glasses broken | 22 | **9** |
-| Share of glasses pickable at the end | 0.012 | **0.25** |
-| Paths the cell refused to carry out | 1,688 | **65** |
-| Answers over the twenty tables | 2,308 | **749** |
+| Tables separated | 0 | **0** |
+| Tables failed by a topple | 1 of 20 | **2 of 20** |
+| Glasses broken | 1 (0 to 3) | **2 (1 to 5)** |
+| Share of glasses pickable at the end | 0.369 | **0.369** |
+| Glasses it made pickable | 0 | **0** |
+| Answers over the twenty tables | 335 | **438** |
+| It said the table was finished | 17 of 20 | **13 of 20** |
 
-**The training halved the damage and stopped the model battering at the cell.**
-Twenty-six refused paths for every one of this solution's is the plainest
-statement of what the untrained model does: it proposes, over and over, a path
-the cell will not drive because the glass at the end of it would topple rather
-than slide.
+**On everything the problem scores, the two columns are the same column.** No
+table separated on either side, no glass freed on either side, and the same
+pickable share to three decimal places. The fitted side breaks one more glass,
+which is inside the spread of either. **A thousand steps of this cell's
+demonstrations did not make the borrowed model better at this cell's task**, and
+that is the result this folder exists to produce.
 
-**What it learned is where to hold the jaw.** Measured by the same code on both
-sides, over every answer:
+**What the training did change is how much the model acts.** It gives a third
+again as many answers, because it stops declaring the table finished so early:
+thirteen tables end with the stopping rule taking it at its word against the
+untrained side's seventeen. A model that keeps working at a table it cannot
+clear is what a third more answers at the same outcome describes.
+
+**And the training changed the shape of the answers, towards the teacher's.**
+This is the one place where the fit shows clearly. Measured by the same code on
+both sides, over every answer:
 
 | median over every answer | untrained | **fitted** |
 |---|---|---|
-| Lowest point of a path | 128 mm | **233 mm** |
-| Distance travelled across the table | 442 mm | **301 mm** |
-| Step between waypoints | 7.8 mm | **4.1 mm** |
-| Answers that reach the pushing height | 0.6% | **2.0%** |
+| Lowest point of a path | 150 mm | **115 mm** |
+| Distance travelled across the table | 832 mm | **360 mm** |
+| Step between waypoints | 15.0 mm | **4.9 mm** |
+| Answers that reach the pushing height | 13% to 16% | **20% to 26%** |
+| Shoves carried on until the glass had room | 5 to 7 a walk | **27 to 48 a walk** |
 
-The fitted model carries the jaw higher, sweeps shorter and moves slower. All
-three are the teacher's commonest answer, which is "go and stand over there at
-travel height" — and all three are why the fit cannot separate a table. The jaw
-pushes a glass at 75 mm. A path whose lowest point is 233 mm cannot drive a
-glass anywhere, and only one answer in fifty comes down to the height where one
-can.
+Read the first three rows together. The glass zone on a table is about 320 by
+360 millimetres, so the untrained model's answer is one long fast arc of eight
+hundred millimetres straight across everything, in steps of fifteen. The fitted
+model draws a path less than half that long in steps a third as long, which is
+the length and the speed of its teacher's own answers, and it comes down to the
+height a push works at about twice as often. It ends up making five to nine
+times as many real shoves at a glass.
 
-**It still breaks glasses, and it breaks them with answers the stopping rule
-calls quiet.** The point a path names is the middle of the hand, and the fingers
-hang about 70 mm below it, so a path at 233 mm puts the hand's lower edge at
-163 mm. Glasses on these tables stand between 97 and 224 mm tall. A sweep 300 mm
-long at that height therefore drags the hand through the top of every tall glass
-it passes, while the rule records the answer as the policy proposing nothing.
-Solution 5 found this fault in the rule's stated reason, and this solution is the
-clearest case of it: a quarter of its arm time goes on paths counted as quiet,
-and those paths are what put the glasses on the floor.
+**So the fit taught the model the size of the motion and not the place to put
+it.** That is the sharpest statement this pair supports, and it is worth holding
+on to, because it is a shape of result that is easy to mistake for progress:
+everything measurable about the *form* of the answers moved towards the teacher,
+and nothing measurable about the *outcome* moved at all. A path of the right
+length and the right speed that comes down beside no glass in particular leaves
+the table as it found it.
+
+**What keeps that harmless is arithmetic and not the model.** Between three
+hundred and fifteen and three hundred and forty-three of the fitted side's
+answers are raised to travel height, because the solution cannot account for
+them as a push at one named glass. Before that arithmetic existed, the same
+model on the same tables broke twenty-two glasses a walk. The model has not
+become safe; the solution has stopped carrying out what it cannot justify.
 
 ## The camera on the wrist, against the camera above the table
 
@@ -442,33 +474,37 @@ mirror image:
 | | problem 3's fit | problem 4's fit |
 |---|---|---|
 | What the demonstrations mostly are | pushes | looks, four in five |
-| Lowest point of its paths | 75 mm, the pushing height | 233 mm, near travel height |
-| How it fails | comes down onto the glass instead of behind it | sweeps over the glass and clips the tall ones |
-| Glasses broken against its untrained partner | 42 against 12 | 8 against 20 |
+| What the fitting mixture was | the material's own | evened out between looks and pushes |
+| Lowest point of its paths | 75 mm, the pushing height | 115 mm, between the two heights |
+| How it fails | comes down onto the glass instead of behind it | comes down beside no glass in particular |
+| Glasses broken against its untrained partner | 42 against 12 | 1 against 1 |
 
 Problem 3's fit learned the height of a push and not where to put the jaw down,
 so it crashed into glasses and scored worse than the model it started from.
-Problem 4's fit learned the height of a look, so it mostly misses the glasses and
-scores better than the model it started from. **Neither learned where to put the
-jaw down, which is the only thing the task actually needs.** The camera is not
-what separates them; the mixture of answers in the material is, and that mixture
-is a consequence of where the camera is.
+Problem 4's fit was given an even mixture of looks and pushes, so it learned the
+length and the speed of a push as well as the height — and it still comes down
+beside nothing in particular, so it scores the same as the model it started
+from. **Neither learned where to put the jaw down, which is the only thing the
+task actually needs.** The camera is not what separates them; the mixture of
+answers in the material is, and that mixture is a consequence of where the
+camera is.
 
 ## Where it is strong, where it breaks, and what is left undone
 
-**Strong.** It is a genuine improvement on the same weights untrained, on both
-sets of tables and by every measure of damage. The training costs 27 minutes on a
-laptop and about a gigabyte of memory, so this is a cheap thing to try. The fit
-runs at the speed of the model it started from, because the correction is folded
-into the weights. And the reading of a demonstration into the model's units is
-exact, so none of the failure above can be blamed on the material arriving
-distorted.
+**Strong.** It is harmless now, where its first measured walk was the second
+most destructive result in the problem: one glass broken a walk against eight.
+The training costs 27 minutes on a laptop and about a gigabyte of memory, so
+this is a cheap thing to try. The fit runs at the speed of the model it started
+from, because the correction is folded into the weights. And the reading of a
+demonstration into the model's units is exact, so none of the failure above can
+be blamed on the material arriving distorted.
 
-**Broken.** It separates no table and frees no glass. It never says it is done,
-so it spends a whole budget on a handful of tables and reaches eight of fifty
-where plain geometry reaches twenty-six. It breaks a glass on three tables in
-four. And the three fits of one recipe differ fourfold in throughput, so even the
-result is unstable.
+**Broken.** It separates no table and frees no glass, and the pair measurement
+says the training is the reason for neither: the same weights untrained score the
+same. It reaches ten tables of fifty where plain geometry reaches twenty-six,
+because a table costs it about twenty-seven answers at a third of a second of
+thinking each and ninety arm seconds. And the three fits of one recipe still
+differ by half again in how far they get, so even the result is unstable.
 
 **What the data cannot give it.** One of the teacher's answers in five is a
 push, and one in six of those is the small test shove that finds out whether a
@@ -479,9 +515,10 @@ drive and ask the teacher what it should have done — which puts the learner in
 the states it actually visits — and it is not built here.
 
 **What would be tried next, in order.** More steps, because a third of one pass
-over the material is not a fair trial of this recipe and the cost is known.
-Weighting the pushes up in the fitting mixture, so that a fifth of the material
-is not drowned by the other four fifths. And giving the model the glass
-readings it is not currently shown, which needs a model whose state input is
-wider than six numbers — and that is a different borrowed model, not a different
-fine-tune.
+over the material is not a fair trial of this recipe and the cost is known: this
+is the one change deliberately not made, so that the even mixture could be
+measured on its own. Then more demonstrations of pushes, since evening the
+mixture only re-weights the two thousand pushes this set already holds. And then
+giving the model the glass readings it is not currently shown, which needs a
+model whose state input is wider than six numbers — and that is a different
+borrowed model rather than a different fine-tune.
