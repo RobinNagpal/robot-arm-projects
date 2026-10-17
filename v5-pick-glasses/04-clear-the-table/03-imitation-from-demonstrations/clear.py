@@ -62,7 +62,7 @@ import chunks
 import readings
 
 from contract import Answer, Done, Look
-from keeping_clear import kept_clear
+from keeping_clear import driven_home, kept_clear
 from partners import Chunk
 from stopping import Quiet, is_a_push
 
@@ -86,6 +86,9 @@ class Imitation:
         self.looks = 0
         self.pushes = 0
         self.raised: Counter = Counter()
+        self.pulled_onto_the_heights = 0
+        self.driven = 0
+        self.driven_mm = 0.0
         self.decided: Counter = Counter()
         self.said_done = 0
         self.went_quiet = 0
@@ -111,6 +114,11 @@ class Imitation:
         self.since_touch = 0
         self.travelled = 0.0
         self.jaw_was: tuple[float, float] | None = None
+        # What this solution has already tried on each glass of this table. The
+        # same bookkeeping the demonstrations were recorded with, from the same
+        # class, so that the gate is shown at run time the thing it was fitted
+        # on rather than something computed a second way.
+        self.shoves = readings.Shoves()
 
     def answer(self, look: Look) -> Answer:
         # The tallest glass measured so far on this table, which is what the
@@ -118,19 +126,30 @@ class Imitation:
         # grows it: a glass that has gone out of the picture is still standing.
         self.tallest = max(self.tallest, *(glass.height for glass in look.seen), 0.0)
 
+        self.shoves.saw(look.seen)
         state = readings.to_state(look.jaw, look.seen)
         itself = readings.about_itself(self.answers, self.since_touch, self.travelled)
-        kind, slot = self.decider.decide(look.picture, readings.to_gate(state, itself))
+        shoves = self.shoves.row(look.seen)
+        kind, slot = self.decider.decide(look.picture, readings.to_gate(state, itself, shoves))
         slots = readings.in_slots(look.seen)
-        target = slots[slot] if slot < len(slots) else None
-        if kind in (readings.PROBE, readings.PUSH) and target is None:
+        # The slot head has no "none of them" answer -- that is what makes it
+        # learn which glass to act on -- so it names a glass whatever the kind
+        # is. Only a probe and a push are aimed at a glass, so for the other two
+        # the name it gave is meaningless and has to be dropped. Keeping it was
+        # a bug worth recording: a look was then conditioned on a glass it was
+        # not aimed at *and* drawn in that glass's frame, so every look landed
+        # about half a metre from where it was meant to, out at the table's
+        # edge, where the gate saw one glass and said the table was finished.
+        aimed = kind in (readings.PROBE, readings.PUSH)
+        target = slots[slot] if aimed and slot < len(slots) else None
+        if aimed and target is None:
             # The gate asked for a push at a glass that is not in this picture.
             # Nothing can be aimed at a glass nobody can see, so the answer is
             # taken as a look, which is what the solution does when it has
             # nothing to act on. Counted, because a gate doing this often is a
             # gate that has not learned the slots.
             self.decided["asked for a glass that is not in the picture"] += 1
-            kind, target = readings.LOOK, None
+            kind = readings.LOOK
         self.decided[readings.KINDS[kind]] += 1
         if kind == readings.DONE:
             self.said_done += 1
@@ -149,20 +168,47 @@ class Imitation:
         # it has to ride at travel height; the answer it aimed at a glass is
         # checked as a push at that glass. So the check asks of each answer what
         # the solution itself claimed it was.
-        chunk, why = kept_clear(chunk, look.seen, target=None if kind == readings.LOOK else chunk.glass)
+        tested = self.shoves.tested(look.seen)
+        kept = kept_clear(
+            chunk,
+            look.seen,
+            target=None if kind == readings.LOOK else chunk.glass,
+            tested=tested,
+        )
+        chunk, why = kept.chunk, kept.why
         if why:
             self.raised[why] += 1
+        self.pulled_onto_the_heights += kept.pulled
+        if not why and kind == readings.PUSH and target is not None:
+            # The gate asked for a push at the task, and a push at the task is
+            # meant to give the glass room. ``driven_home`` says why the distance
+            # is arithmetic and the choice is the model's: one push moves a glass
+            # about as far as this policy's own error, so the drawn shove stops
+            # at the glass instead of driving it, and a shove that moves a glass
+            # nowhere frees nothing. A probe is left exactly as it was drawn,
+            # because a probe is how the evidence for a push is got.
+            chunk, moved = driven_home(chunk, look.seen, target.id, tested=tested)
+            self.driven += 1
+            self.driven_mm += 1000 * moved
 
         self.asked += 1
         self.waypoints += len(chunk.waypoints)
         self.pulled_in += pulled
         self.chunks_pulled_in += pulled > 0
+        # An answer that was aimed at a glass and was left as it was drawn is one
+        # this solution really made at that glass, so it is what the history
+        # counts. A raised answer went to the same place at travel height and
+        # touched nothing, so counting it would tell the gate that a shove
+        # happened when none did.
+        acted = aimed and not why
+        if acted and target is not None:
+            self.shoves.aimed_at(target.id)
         touched = is_a_push(chunk, self.tallest)
         if touched:
             self.pushes += 1
         else:
             self.looks += 1
-        self._count(chunk, touched)
+        self._count(chunk, acted)
         self.quiet.saw(chunk, self.tallest)
 
         if self.quiet.finished:
@@ -175,19 +221,29 @@ class Imitation:
             return Done(self.quiet.why)
         return chunk
 
-    def _count(self, chunk: Chunk, touched: bool) -> None:
+    def _count(self, chunk: Chunk, acted: bool) -> None:
         """Keep the three numbers the gate is given about this solution's own behaviour.
 
         The same three the demonstrations were recorded with, kept the same way:
-        answers on this table, answers since the last one that could touch a
-        glass, and how far the jaw has travelled since then.
+        answers on this table, answers since the last one aimed at a glass, and
+        how far the jaw has travelled since then.
+
+        "Aimed at a glass" is what resets the last two, and it has to be, because
+        that is what resets them while the demonstrations are collected. An
+        earlier version reset them on the examiner's own test of whether the
+        fingers came low enough to touch something, which is a different
+        question, and the two numbers then meant one thing while the gate was
+        fitted and another while it ran: every answer was being raised to travel
+        height, so nothing ever counted as a touch, and the numbers climbed into
+        the corner of the input where the teacher only ever says the table is
+        finished.
         """
         self.answers += 1
         last = chunk.waypoints[-1]
         if self.jaw_was is not None:
             self.travelled += math.dist(self.jaw_was, (last.x, last.y))
         self.jaw_was = (last.x, last.y)
-        if touched:
+        if acted:
             self.since_touch = 0
             self.travelled = 0.0
         else:
@@ -204,6 +260,11 @@ class Imitation:
             "waypoints_pulled_inside_the_limits": self.pulled_in,
             "the_gate_decided": dict(self.decided.most_common()),
             "answers_raised_to_travel_height": dict(self.raised.most_common()),
+            "answers_pulled_onto_the_two_heights": self.pulled_onto_the_heights,
+            "pushes_driven_home": self.driven,
+            "a_driven_push_moves_its_glass_mm": (
+                round(self.driven_mm / self.driven, 1) if self.driven else 0.0
+            ),
             "tables_the_gate_finished": self.said_done,
             "tables_the_quiet_rule_finished": self.went_quiet,
             "quiet_answers_taken_as_done": self.quiet_for,

@@ -61,7 +61,7 @@ from borrowed import joining
 
 from clock import crossing_seconds, path_seconds
 from contract import Answer, Done, Look
-from keeping_clear import kept_clear
+from keeping_clear import Shoves, driven_home, kept_clear
 from partners import PUSH_HEIGHT, TABLE_TOP_Z, Chunk, Seen, Waypoint
 from stopping import A_WHISKER, Quiet, is_a_push
 
@@ -176,11 +176,21 @@ class AsItDownloads:
         # answer is raised is a model proposing nothing anybody can account for,
         # and the counts say which of the reasons it fails on.
         self.raised: Counter = Counter()
+        self.pulled_onto_the_heights = 0
+        self.driven = 0
+        self.driven_mm = 0.0
+        # What this solution has tried on each glass of the table in front of it.
+        # Every glass this cell draws is one the tipping rule is unsure about, so
+        # a shove this solution has watched move a glass is the only evidence it
+        # can have that the glass slides rather than tips.
+        self.shoves = Shoves()
 
     def begin(self, seed: int) -> None:
         self.model.reset()
         self.quiet = Quiet()
         self.last_seen = ()
+        # A new table is a table nothing has been tried on.
+        self.shoves = Shoves()
 
     def answer(self, look: Look) -> Answer:
         """One forward pass, read as a path for the jaw -- or the end of the table.
@@ -194,6 +204,7 @@ class AsItDownloads:
         self.shape.saw(path)
         if look.seen:
             self.last_seen = look.seen
+        self.shoves.saw(self.last_seen)
         chunk = joining.chunk_for(path, list(self._glasses_for_the_record()))
         # The glass the path is aimed at, in so far as it is aimed at anything:
         # ``chunk_for`` reads back the glass the jaw comes nearest to while low
@@ -201,9 +212,28 @@ class AsItDownloads:
         # the check treats it as a claim to be tested rather than as a decision:
         # a path that does not actually reach that glass, or that would reach a
         # second one on the way, is raised like any other.
-        chunk, why = kept_clear(chunk, self.last_seen, target=chunk.glass)
+        tested = self.shoves.tested(self.last_seen)
+        kept = kept_clear(chunk, self.last_seen, target=chunk.glass, tested=tested)
+        chunk, why = kept.chunk, kept.why
         if why:
             self.raised[why] += 1
+        self.pulled_onto_the_heights += kept.pulled
+        if not why and chunk.glass is not None and chunk.glass in tested:
+            # A shove at a glass this solution has watched move is a push at the
+            # task, and a push at the task is meant to give the glass room.
+            # ``driven_home`` says why the distance is arithmetic: one shove moves
+            # a glass about as far as a drawn path's own error, so a drawn shove
+            # that stops at the glass frees nothing. A shove at a glass nothing
+            # has tested is left as it was, because that is how the evidence is
+            # got.
+            chunk, moved = driven_home(chunk, self.last_seen, chunk.glass, tested=tested)
+            self.driven += 1
+            self.driven_mm += 1000 * moved
+        # An answer left as a shove at the glass it names is one this solution
+        # really made at that glass, so the next look's reading of where that
+        # glass stands is this solution's own evidence about whether it slides.
+        if not why and chunk.glass is not None:
+            self.shoves.aimed_at(chunk.glass)
 
         # The tallest glass this solution has measured is what decides whether a
         # path could touch anything, because the hand hangs below the number a

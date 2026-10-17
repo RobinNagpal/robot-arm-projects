@@ -5,49 +5,56 @@
       "steps": 8000,
       "batch": 16,
       "learning_rate": 0.0001,
-      "minutes": 66.8,
+      "minutes": 57.4,
       "loss": [
-        5.9782,
-        1.5573,
-        0.831,
-        0.5175,
-        0.3883,
-        0.3403,
-        0.3002,
-        0.2833,
-        0.2663,
-        0.2588,
-        0.2351,
-        0.2272,
-        0.2206,
-        0.2118,
-        0.2082,
-        0.2003,
-        0.1988,
-        0.1951,
-        0.1935,
-        0.1895
+        6.6862,
+        1.5473,
+        0.7888,
+        0.463,
+        0.3266,
+        0.264,
+        0.2214,
+        0.1923,
+        0.1716,
+        0.1501,
+        0.1342,
+        0.1185,
+        0.1109,
+        0.0955,
+        0.0896,
+        0.0807,
+        0.0758,
+        0.0699,
+        0.0671,
+        0.0658
       ],
       "against_the_teacher": {
         "tables_it_never_saw": {
           "chunks": 200,
-          "waypoint_mm_median": 18.5,
-          "waypoint_mm_90th": 233.0,
+          "waypoint_mm_median": 23.7,
+          "waypoint_mm_90th": 128.5,
           "heading_deg_median": 1.6,
-          "last_waypoint_mm_median": 18.6
+          "last_waypoint_mm_median": 23.7
         },
         "tables_it_was_fitted_on": {
           "chunks": 200,
-          "waypoint_mm_median": 18.9,
-          "waypoint_mm_90th": 146.6,
-          "heading_deg_median": 1.7,
-          "last_waypoint_mm_median": 18.9
+          "waypoint_mm_median": 8.7,
+          "waypoint_mm_90th": 33.9,
+          "heading_deg_median": 2.4,
+          "last_waypoint_mm_median": 8.9
+        },
+        "the_pushes_it_never_saw": {
+          "chunks": 200,
+          "waypoint_mm_median": 20.5,
+          "waypoint_mm_90th": 338.0,
+          "heading_deg_median": 21.2,
+          "last_waypoint_mm_median": 20.8
         }
       },
       "path_length": {
         "chunks": 200,
-        "agreed_about_pushing": 0.845,
-        "waypoints_out_when_both_push": 0.0
+        "agreed_about_pushing": 0.97,
+        "waypoints_out_when_both_push": 3.0
       }
     },
     {
@@ -55,49 +62,56 @@
       "steps": 8000,
       "batch": 16,
       "learning_rate": 0.0001,
-      "minutes": 77.9,
+      "minutes": 57.3,
       "loss": [
-        7.0077,
-        1.6027,
-        0.8212,
-        0.5028,
-        0.3808,
-        0.3398,
-        0.2985,
-        0.2763,
-        0.26,
-        0.2491,
-        0.2369,
-        0.2277,
-        0.2196,
-        0.2141,
-        0.2051,
-        0.21,
-        0.201,
-        0.1952,
-        0.1913,
-        0.1858
+        7.7229,
+        1.5772,
+        0.791,
+        0.4689,
+        0.3338,
+        0.2663,
+        0.2231,
+        0.1946,
+        0.1675,
+        0.1483,
+        0.1331,
+        0.1194,
+        0.105,
+        0.095,
+        0.0874,
+        0.0794,
+        0.074,
+        0.0687,
+        0.0656,
+        0.0622
       ],
       "against_the_teacher": {
         "tables_it_never_saw": {
           "chunks": 200,
-          "waypoint_mm_median": 18.7,
-          "waypoint_mm_90th": 195.5,
-          "heading_deg_median": 1.5,
-          "last_waypoint_mm_median": 18.7
+          "waypoint_mm_median": 23.8,
+          "waypoint_mm_90th": 159.1,
+          "heading_deg_median": 3.0,
+          "last_waypoint_mm_median": 23.7
         },
         "tables_it_was_fitted_on": {
           "chunks": 200,
-          "waypoint_mm_median": 17.5,
-          "waypoint_mm_90th": 100.4,
-          "heading_deg_median": 1.3,
-          "last_waypoint_mm_median": 17.6
+          "waypoint_mm_median": 9.2,
+          "waypoint_mm_90th": 27.9,
+          "heading_deg_median": 1.5,
+          "last_waypoint_mm_median": 8.8
+        },
+        "the_pushes_it_never_saw": {
+          "chunks": 200,
+          "waypoint_mm_median": 20.1,
+          "waypoint_mm_90th": 582.9,
+          "heading_deg_median": 22.7,
+          "last_waypoint_mm_median": 20.1
         }
       },
       "path_length": {
         "chunks": 200,
-        "agreed_about_pushing": 0.835,
-        "waypoints_out_when_both_push": null
+        "agreed_about_pushing": 0.975,
+        "waypoints_out_when_both_push": 5.0
       }
     },
     {
@@ -105,55 +119,62 @@
       "steps": 8000,
       "batch": 16,
       "learning_rate": 0.0001,
-      "minutes": 68.4,
+      "minutes": 57.3,
       "loss": [
-        6.6802,
-        1.58,
-        0.8449,
-        0.5282,
-        0.4116,
-        0.3307,
-        0.2893,
-        0.2854,
-        0.2528,
-        0.2418,
-        0.234,
-        0.2205,
-        0.2121,
-        0.2047,
-        0.2046,
-        0.1977,
-        0.1961,
-        0.1829,
-        0.1864,
-        0.1907
+        7.0334,
+        1.5816,
+        0.8487,
+        0.5097,
+        0.3566,
+        0.2782,
+        0.2361,
+        0.2007,
+        0.1697,
+        0.1507,
+        0.1353,
+        0.1197,
+        0.1045,
+        0.093,
+        0.083,
+        0.0759,
+        0.0682,
+        0.064,
+        0.0619,
+        0.058
       ],
       "against_the_teacher": {
         "tables_it_never_saw": {
           "chunks": 200,
-          "waypoint_mm_median": 20.5,
-          "waypoint_mm_90th": 288.1,
-          "heading_deg_median": 1.5,
-          "last_waypoint_mm_median": 20.4
+          "waypoint_mm_median": 23.7,
+          "waypoint_mm_90th": 106.1,
+          "heading_deg_median": 2.4,
+          "last_waypoint_mm_median": 23.7
         },
         "tables_it_was_fitted_on": {
           "chunks": 200,
-          "waypoint_mm_median": 19.3,
-          "waypoint_mm_90th": 127.2,
-          "heading_deg_median": 1.1,
-          "last_waypoint_mm_median": 19.2
+          "waypoint_mm_median": 9.8,
+          "waypoint_mm_90th": 30.8,
+          "heading_deg_median": 1.8,
+          "last_waypoint_mm_median": 9.3
+        },
+        "the_pushes_it_never_saw": {
+          "chunks": 200,
+          "waypoint_mm_median": 19.8,
+          "waypoint_mm_90th": 659.8,
+          "heading_deg_median": 22.9,
+          "last_waypoint_mm_median": 18.1
         }
       },
       "path_length": {
         "chunks": 200,
-        "agreed_about_pushing": 0.84,
-        "waypoints_out_when_both_push": 0.0
+        "agreed_about_pushing": 0.97,
+        "waypoints_out_when_both_push": 3.0
       }
     }
   ],
   "rung": "act",
   "device": "mps",
-  "demonstrations": 399,
+  "demonstrations": 11313,
   "band": {
     "first_table": 1000,
     "tables": 300,

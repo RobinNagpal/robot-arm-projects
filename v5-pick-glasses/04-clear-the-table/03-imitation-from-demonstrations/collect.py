@@ -66,7 +66,9 @@ from readings import (
     NO_GLASS,
     PROBE,
     PUSH,
+    SHOVE_WIDTH,
     STATE_WIDTH,
+    Shoves,
     about_itself,
     conditioning,
     in_slots,
@@ -113,6 +115,13 @@ FEATURES = {
     # at sits in. A look and a done are aimed at no glass, and their slot is the
     # one past the last, which is what "none of them" is called.
     "gate": {"dtype": "float32", "shape": (2,), "names": None},
+    # What had already been tried on each glass when this answer was given: how
+    # many answers had been aimed at it, and how far it had moved since it was
+    # first measured. A feature of its own rather than more columns on
+    # ``observation.state``, because the gate reads it and the chunked policy
+    # does not, and widening the state would mean refitting the policy and
+    # solution 6 along with it.
+    "shoves": {"dtype": "float32", "shape": (SHOVE_WIDTH,), "names": None},
 }
 
 LOOK_KINDS = ("drive", "stay")
@@ -155,12 +164,17 @@ class Watched:
         self.since_touch = 0
         self.travelled = 0.0
         self.jaw_was: object | None = None
+        # What has been tried on each glass so far, which is the other half of
+        # what the gate is shown. ``readings.Shoves`` is the one implementation
+        # of it, kept the same way here and in ``clear.py``.
+        self.shoves = Shoves()
 
     # ------------------------------------------------- the two interesting calls
 
     def view(self, jaw):
         picture, seen = self.inner.view(jaw)
         self.seen_last = (picture, seen, jaw)
+        self.shoves.saw(seen)
         return picture, seen
 
     def follow(self, chunk):
@@ -176,6 +190,7 @@ class Watched:
                 "picture": picture,
                 "state": to_state(jaw, seen),
                 "itself": about_itself(self.answers, self.since_touch, self.travelled),
+                "shoves": self.shoves.row(seen),
                 "kind": kind,
                 "target": target if aimed else None,
                 "slot": slots.index(target) if aimed and target is not None else NO_GLASS,
@@ -198,6 +213,7 @@ class Watched:
         else:
             self.since_touch = 0
             self.travelled = 0.0
+            self.shoves.aimed_at(chunk.glass)
 
     def finished(self) -> dict | None:
         """The teacher's own "this table needs nothing more", as a frame to copy.
@@ -219,6 +235,7 @@ class Watched:
             "picture": picture,
             "state": to_state(jaw, seen),
             "itself": about_itself(self.answers, self.since_touch, self.travelled),
+            "shoves": self.shoves.row(seen),
             "kind": "done",
             "target": None,
             "slot": NO_GLASS,
@@ -358,6 +375,7 @@ def collect(first: int, count: int, root: Path, show: bool = False) -> dict:
                     ),
                     "action": action.reshape(-1),
                     "gate": np.array([kind, frame["slot"]], dtype=np.float32),
+                    "shoves": frame["shoves"],
                     "task": INSTRUCTION,
                 }
             )

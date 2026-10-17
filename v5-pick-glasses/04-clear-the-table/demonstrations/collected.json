@@ -36,9 +36,9 @@
       "90th": 44,
       "most": 190
     },
-    "seconds": 493.6,
-    "seconds_a_table": 1.65,
-    "seconds_a_demonstration": 0.044
+    "seconds": 485.9,
+    "seconds_a_table": 1.62,
+    "seconds_a_demonstration": 0.043
   },
   "held-back": {
     "teacher": "02-geometry-ranked, with problem 3's ranker, which was fitted on problem 3's tables",
@@ -76,8 +76,8 @@
       "90th": 44,
       "most": 184
     },
-    "seconds": 92.4,
-    "seconds_a_table": 1.85,
-    "seconds_a_demonstration": 0.049
+    "seconds": 85.7,
+    "seconds_a_table": 1.71,
+    "seconds_a_demonstration": 0.045
   }
 }

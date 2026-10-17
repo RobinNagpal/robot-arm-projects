@@ -60,6 +60,7 @@ import numpy as np
 from work_cell.table.layout import TABLE_CENTRE_XY
 
 import tables
+from keeping_clear import Shoves as Kept
 from partners import Seen, Waypoint
 
 # The one line the task is described by, for the policies that take a sentence.
@@ -117,6 +118,28 @@ NO_GLASS = GLASSES
 
 # What the solution knows about itself: answers on this table, answers since it
 # last touched a glass, and metres travelled since then.
+
+# What the solution knows about what it has already done to each glass on this
+# table: how many answers it has aimed at that glass, and how far that glass has
+# moved since it was first measured. Two numbers a slot, laid out in the same
+# slot order as the readings, so the gate can read the two together.
+#
+# These exist because of a measurement. The teacher's push at the task is the
+# last step of a little sequence -- reach until the jaw touches the glass, shove
+# it five millimetres to find out whether it slides, and only then push it
+# somewhere -- and which step is wanted depends entirely on what has already
+# been tried on that glass. A gate shown one picture cannot see that, so the
+# first fits of this solution never asked for a push at all: at the states the
+# student actually reaches, nothing in its input distinguished "I have not
+# touched this glass" from "I have shoved it twice and it slid".
+PER_SHOVE = 2
+SHOVE_WIDTH = GLASSES * PER_SHOVE
+
+# How many answers aimed at one glass count as a unit, so that the first number
+# sits near one. The teacher rarely aims more than four at the same glass, so
+# this is a unit and not a limit.
+SHOVE_SCALE = 4.0
+
 SELF_WIDTH = 3
 # The glass an answer is aimed at: across, along, widest, height, foot. Zero
 # throughout when the answer is aimed at no glass, which a look and a done are.
@@ -125,8 +148,14 @@ CONDITION_WIDTH = len(KINDS) + TARGET_WIDTH
 
 # What the gate is shown, and what the chunked policy is shown. The gate decides
 # the kind and the glass, so it cannot be shown either.
-GATE_WIDTH = STATE_WIDTH + SELF_WIDTH
-ASKED_WIDTH = GATE_WIDTH + CONDITION_WIDTH
+#
+# The two are no longer one inside the other. The gate is shown what has already
+# been tried on each glass, because that is what its decision turns on, and the
+# policy is not, because the kind it is handed already says how long a shove to
+# draw. Keeping the history out of the policy's row is also what let the history
+# be added without refitting the policy, which takes an hour a seed.
+GATE_WIDTH = STATE_WIDTH + SELF_WIDTH + SHOVE_WIDTH
+ASKED_WIDTH = STATE_WIDTH + SELF_WIDTH + CONDITION_WIDTH
 
 
 def in_slots(seen: Sequence[Seen]) -> list[Seen]:
@@ -179,6 +208,31 @@ def about_itself(answers: int, since_touch: int, travelled: float) -> np.ndarray
     )
 
 
+class Shoves(Kept):
+    """The bench's own shove bookkeeping, with the row the gate is shown added.
+
+    Everything about *what* has been tried on each glass lives in
+    ``keeping_clear`` because three solutions need it and the clearance rule has
+    to agree with it. What belongs here is only how those facts are laid out as
+    numbers for a model: two a glass, in the same slot order the readings use, on
+    the same scale as everything else the models are shown.
+    """
+
+    def row(self, seen: Sequence[Seen]) -> np.ndarray:
+        """The two numbers a glass, in the slot order the readings use.
+
+        A glass the picture does not hold leaves its two numbers at zero, which
+        is the same thing its readings do, so a slot is either entirely filled or
+        entirely empty.
+        """
+        row = np.zeros(SHOVE_WIDTH, dtype=np.float32)
+        for slot, glass in enumerate(in_slots(seen)):
+            at = slot * PER_SHOVE
+            row[at] = self.shoves_at(glass.id) / SHOVE_SCALE
+            row[at + 1] = self.moved(glass) / PLACE_SCALE
+        return row
+
+
 def conditioning(kind: int, target: Seen | None) -> np.ndarray:
     """Which kind of answer to draw, and the glass to draw it at.
 
@@ -199,9 +253,13 @@ def conditioning(kind: int, target: Seen | None) -> np.ndarray:
     return row
 
 
-def to_gate(state: np.ndarray, itself: np.ndarray) -> np.ndarray:
-    """What the gate is shown: the table as measured, and the solution's own history."""
-    return np.concatenate([state, itself]).astype(np.float32)
+def to_gate(state: np.ndarray, itself: np.ndarray, shoves: np.ndarray) -> np.ndarray:
+    """What the gate is shown: the table as measured, and the solution's own history.
+
+    The history is both halves of "what have I done so far" -- the three numbers
+    about the table as a whole, and the two numbers about each glass on it.
+    """
+    return np.concatenate([state, itself, shoves]).astype(np.float32)
 
 
 def to_asked(state: np.ndarray, itself: np.ndarray, condition: np.ndarray) -> np.ndarray:

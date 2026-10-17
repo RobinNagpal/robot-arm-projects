@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import math
 import random
+from dataclasses import replace
 
 import numpy as np
 import pytest
@@ -32,7 +33,7 @@ from borrowed import joining
 
 from contract import Done, Look
 from open_run import HOME, clear_table
-from partners import PUSH_HEIGHT, TRAVEL_HEIGHT, Chunk, Seen, Waypoint
+from partners import JAW_HALF_HEIGHT, PUSH_HEIGHT, TRAVEL_HEIGHT, Chunk, Seen, Waypoint
 from stopping import QUIET_ANSWERS
 
 # A picture of the shape the policy takes, which nothing in these tests reads.
@@ -42,6 +43,19 @@ PICTURE = np.zeros((384, 384, 3), dtype=np.uint8)
 def glass(i: int = 0, x: float = 0.0, y: float = 0.5) -> Seen:
     """One reading of one glass, of a size nothing here depends on."""
     return Seen(id=i, x=x, y=y, height=0.14, widest=0.07, foot=0.055, standing=True)
+
+
+def already_tested(solution, glass: Seen) -> None:
+    """Tell the solution it has watched this glass move under its own shove.
+
+    Every glass this cell draws is one the tipping rule is unsure about, so a
+    solution may touch one it knows nothing about but may not drive it. What
+    settles it is this solution's own evidence: an answer aimed at the glass, and
+    a later reading showing the glass has moved. That is what this sets up, so
+    that a test about something else does not have to earn it first.
+    """
+    solution.shoves.saw([replace(glass, x=glass.x - 0.010)])
+    solution.shoves.aimed_at(glass.id)
 
 
 def flat_path(z: float, points: int = 50, across: float = 0.2) -> np.ndarray:
@@ -171,25 +185,30 @@ def test_the_shape_of_an_answer_is_measured_in_millimetres(seed: int) -> None:
 
 
 @pytest.mark.parametrize("height", [PUSH_HEIGHT, PUSH_HEIGHT + 0.0005, 0.10, 0.18, 0.25])
-def test_a_flat_path_between_the_two_safe_heights_is_raised_and_then_counted_as_quiet(
+def test_a_flat_path_between_the_two_safe_heights_is_pulled_onto_one_of_them(
     height: float,
 ) -> None:
     """What now happens to the answers that used to break the glasses.
 
     The family is heights either side of what the hand can reach. A path that
     travels across the table at the height the jaw pushes at is a push and is
-    carried out; one at travel height is a look and is carried out; one anywhere
-    in between carries the fingers through the tops of the glasses, and
-    ``keeping_clear`` raises it to travel height before the cell ever sees it.
+    carried out as it was drawn. One at travel height is a look and is carried
+    out as it was drawn. One anywhere in between carries the fingers through the
+    tops of the glasses, and ``keeping_clear`` pulls it onto one of the two
+    heights before the cell ever sees it.
 
-    So what the stopping rule then counts is the *raised* answer, which touches
-    nothing — and a solution that keeps answering that way is saying, in the only
-    language it has, that it has nothing to do. ``QUIET_ANSWERS`` of them end the
-    table, which is what this checks.
+    **Which of the two depends on the hand and not on the number.** If the
+    fingers would come below the top of the glass the answer names, the answer
+    meant to touch that glass, so the path goes down to the height where a shove
+    goes through the foot and slides it. If the fingers clear that glass, the
+    answer was travelling, so the path goes up to travel height — and a solution
+    that keeps answering that way is saying, in the only language it has, that it
+    has nothing to do, which ``QUIET_ANSWERS`` of them end the table on.
     """
     seen = glass()
     solution = AsItDownloads(Stub([flat_path(height)]))
     solution.begin(0)
+    already_tested(solution, seen)
     answers = []
     for _ in range(QUIET_ANSWERS + 1):
         answer = solution.answer(Look(picture=PICTURE, seen=(seen,), jaw=HOME, seconds_left=600.0))
@@ -198,10 +217,12 @@ def test_a_flat_path_between_the_two_safe_heights_is_raised_and_then_counted_as_
             break
 
     at_the_table = height <= PUSH_HEIGHT + 0.001
+    in_the_air = height >= TRAVEL_HEIGHT - 0.001
+    meant_to_touch = height - JAW_HALF_HEIGHT < seen.height
     carried_out = [a for a in answers if isinstance(a, Chunk)]
-    if at_the_table:
-        # A push at the glass in the picture, carried out as it was drawn, and
-        # the table never ends while the model keeps proposing one.
+    if at_the_table or meant_to_touch:
+        # A push at the glass in the picture, and the table never ends while the
+        # model keeps proposing one.
         assert not any(isinstance(a, Done) for a in answers)
         assert all(point.z <= PUSH_HEIGHT + 0.001 for a in carried_out for point in a.waypoints)
     else:
@@ -209,12 +230,46 @@ def test_a_flat_path_between_the_two_safe_heights_is_raised_and_then_counted_as_
         assert len(answers) == QUIET_ANSWERS
         assert answers[-1].why
         # Every answer the arm was given rides at travel height, whether it was
-        # drawn there or raised to it.
+        # drawn there or lifted to it.
         assert all(point.z == TRAVEL_HEIGHT for a in carried_out for point in a.waypoints)
-    # Every answer is counted as it is drawn, including the one that completed
-    # the quiet spell and was not carried out.
-    between = PUSH_HEIGHT + 0.001 < height < TRAVEL_HEIGHT
-    assert sum(solution.raised.values()) == (len(answers) if between else 0)
+    # Nothing here is refused. A path between the two heights is pulled onto one
+    # of them and still answers for itself, and every answer is counted as it is
+    # drawn, including the one that completed the quiet spell and was never
+    # carried out.
+    assert not sum(solution.raised.values())
+    changed = not (at_the_table or in_the_air)
+    assert solution.pulled_onto_the_heights == (len(answers) if changed else 0)
+
+
+def test_a_shove_at_a_glass_nothing_has_tested_is_raised() -> None:
+    """The rule the toppled glasses put in, seen from a solution that cannot probe.
+
+    This model has no notion of testing a glass first: it draws a path and the
+    path either drives a glass or it does not. So a drawn shove that would move
+    one is raised, every time, until something has watched that glass move -- and
+    since the cell never ends up moving it here, that never happens. A solution
+    that cannot establish a glass slides does not get to drive it, which is the
+    problem's own rule that a refused glass is a result rather than a failure.
+    """
+    seen = glass()
+    solution = AsItDownloads(Stub([flat_path(PUSH_HEIGHT)]))
+    solution.begin(0)
+    answers = [
+        solution.answer(Look(picture=PICTURE, seen=(seen,), jaw=HOME, seconds_left=600.0))
+        for _ in range(3)
+    ]
+    carried_out = [a for a in answers if isinstance(a, Chunk)]
+    assert carried_out
+    assert all(point.z == TRAVEL_HEIGHT for a in carried_out for point in a.waypoints)
+    assert sum(solution.raised.values()) == len(answers)
+
+    # The same model, once the glass has been seen to move, is allowed to drive it.
+    knowing = AsItDownloads(Stub([flat_path(PUSH_HEIGHT)]))
+    knowing.begin(0)
+    already_tested(knowing, seen)
+    answer = knowing.answer(Look(picture=PICTURE, seen=(seen,), jaw=HOME, seconds_left=600.0))
+    assert all(point.z == PUSH_HEIGHT for point in answer.waypoints)
+    assert not sum(knowing.raised.values())
 
 
 def test_one_push_among_the_quiet_answers_starts_the_count_again() -> None:
@@ -231,7 +286,9 @@ def test_one_push_among_the_quiet_answers_starts_the_count_again() -> None:
     answers_to_give = [high] * nearly + [low] + [high] * QUIET_ANSWERS
     solution = AsItDownloads(Stub(answers_to_give))
     solution.begin(0)
-    look = Look(picture=PICTURE, seen=(glass(),), jaw=HOME, seconds_left=600.0)
+    seen = glass()
+    already_tested(solution, seen)
+    look = Look(picture=PICTURE, seen=(seen,), jaw=HOME, seconds_left=600.0)
 
     quiet_then_a_push = [solution.answer(look) for _ in range(nearly + 1)]
     assert not any(isinstance(a, Done) for a in quiet_then_a_push), "the push restarted the count"
@@ -287,7 +344,9 @@ def test_the_arm_time_split_counts_a_high_path_as_looking() -> None:
     """The split goes by whether a path comes down to the pushing height, and by nothing else."""
     solution = AsItDownloads(Stub([flat_path(0.25), flat_path(PUSH_HEIGHT)]))
     solution.begin(0)
-    look = Look(picture=PICTURE, seen=(glass(),), jaw=HOME, seconds_left=600.0)
+    seen = glass()
+    already_tested(solution, seen)
+    look = Look(picture=PICTURE, seen=(seen,), jaw=HOME, seconds_left=600.0)
     solution.answer(look)
     assert solution.look_seconds > 0.0
     assert solution.push_seconds == 0.0

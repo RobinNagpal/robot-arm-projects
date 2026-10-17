@@ -22,7 +22,7 @@ fifty is the exact fault a single case cannot catch.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 import chunks
 import loading
@@ -148,6 +148,19 @@ def solution_with(answers: list[np.ndarray], kind: int = readings.LOOK, slot: in
 # ------------------------------------------------------- what the model is shown
 
 
+def already_tested(solution, glass) -> None:
+    """Tell the solution it has watched this glass move under its own shove.
+
+    Every glass this cell draws is one the tipping rule is unsure about, so a
+    solution may touch one it knows nothing about but may not drive it. What
+    settles it is the solution's own evidence: an answer aimed at the glass, and
+    a later reading showing the glass has moved. This sets that up, so a test
+    about something else does not have to earn it first.
+    """
+    solution.shoves.saw([replace(glass, x=glass.x - 0.010)])
+    solution.shoves.aimed_at(glass.id)
+
+
 def test_the_model_is_shown_the_picture_the_readings_and_the_pose():
     model, told = Canned([a_look_path()]), Told()
     solution = Imitation(model, told)
@@ -229,7 +242,9 @@ def test_a_push_between_the_looks_starts_the_count_again():
     # The gate asks for a push at the glass in the picture, so the push in the
     # middle of the spell is carried out as a push rather than raised.
     solution = Imitation(Canned(paths), Told(readings.PUSH, 0))
-    look = look_at([a_glass()])
+    seen = a_glass()
+    already_tested(solution, seen)
+    look = look_at([seen])
     for _ in range(QUIET_ANSWERS - 1):
         assert isinstance(solution.answer(look), Chunk)
     pushed = solution.answer(look)
@@ -255,14 +270,14 @@ def test_the_quiet_rule_is_the_bench_s_own_and_is_not_overridden():
     assert solution.quiet_for == QUIET_ANSWERS
 
 
-def test_a_sweep_the_gate_called_a_look_is_raised_rather_than_carried_out():
+def test_a_sweep_the_gate_called_a_look_is_lifted_rather_than_carried_out():
     """The failure that broke glasses on the first walks, and what now happens to it.
 
     The fingers hang ``JAW_HALF_HEIGHT`` below the number a waypoint carries, so
     a path that looks high in its own numbers can drag the hand through the tops
-    of the glasses. The gate called this answer a look, and a look has to ride at
-    travel height, so the answer is raised. The arm goes to the same place and
-    touches nothing on the way.
+    of the glasses. The gate called this answer a look, so it is aimed at no glass
+    and there is nothing it could have meant to touch: every waypoint goes up to
+    travel height. The arm goes to the same place and touches nothing on the way.
     """
     sweeping_path = a_look_path()
     sweeping_path[:, 2] = JAW_HALF_HEIGHT + 0.15
@@ -272,7 +287,10 @@ def test_a_sweep_the_gate_called_a_look_is_raised_rather_than_carried_out():
     answer = solution.answer(look_at([tall]))
     assert isinstance(answer, Chunk)
     assert all(point.z == TRAVEL_HEIGHT for point in answer.waypoints)
-    assert sum(solution.raised.values()) == 1
+    # Lifted rather than refused: the route it asked for is kept and only the
+    # height changes, so this counts as a pull and not as a reason.
+    assert not sum(solution.raised.values())
+    assert solution.pulled_onto_the_heights == 1
     assert solution.looks == 1
     # The tallest glass it has measured is still kept, because the stopping rule
     # is asked against it.
@@ -407,6 +425,7 @@ def test_a_push_is_drawn_in_its_glass_s_frame_and_lands_at_that_glass():
     for at in ((0.0, 0.5), (0.12, 0.62)):
         glass = a_glass(at)
         solution = solution_with([drawn], readings.PUSH, 0)
+        already_tested(solution, glass)
         answer = solution.answer(look_at([glass]))
         assert isinstance(answer, Chunk)
         assert answer.glass == glass.id

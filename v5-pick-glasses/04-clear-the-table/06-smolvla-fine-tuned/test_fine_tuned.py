@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import math
 import random
+from dataclasses import replace
 
 import numpy as np
 import pytest
@@ -175,6 +176,19 @@ def flat_chunk(z: float, points: int = MODEL_CHUNK, across: float = 0.1) -> np.n
 # --------------------------------------------------------------- the demonstrations
 
 
+def already_tested(solution, glass) -> None:
+    """Tell the solution it has watched this glass move under its own shove.
+
+    Every glass this cell draws is one the tipping rule is unsure about, so a
+    solution may touch one it knows nothing about but may not drive it. What
+    settles it is the solution's own evidence: an answer aimed at the glass, and
+    a later reading showing the glass has moved. This sets that up, so a test
+    about something else does not have to earn it first.
+    """
+    solution.shoves.saw([replace(glass, x=glass.x - 0.010)])
+    solution.shoves.aimed_at(glass.id)
+
+
 def test_a_look_is_read_as_one_pose_held_for_the_whole_chunk():
     draw = random.Random(1)
     for _ in range(40):
@@ -286,8 +300,25 @@ def test_a_sample_is_spread_across_a_set_rather_than_taken_from_its_front():
 # --------------------------------------------------------------- the conversation
 
 
-def answers(solution: FineTuned, cell: Cell, seconds: float = 120.0):
-    """Walk one table with this solution and hand back how it ended."""
+def answers(solution: FineTuned, cell: Cell, seconds: float = 120.0, tested: bool = False):
+    """Walk one table with this solution and hand back how it ended.
+
+    ``tested`` starts the table with the solution already knowing that the
+    glasses on it slide, which is what lets it drive one. The table runner is
+    what calls ``begin``, and ``begin`` is what forgets the last table, so the
+    knowing has to be put back afterwards rather than before. A test about the
+    stopping rule or about the record would otherwise have to earn that evidence
+    first, and it is not what those tests are about.
+    """
+    if tested:
+        began = solution.begin
+
+        def begin(seed: int) -> None:
+            began(seed)
+            for one in cell.seen:
+                already_tested(solution, one)
+
+        solution.begin = begin
     return clear_table(solution, seed=0, seconds_left=seconds, cell=cell)
 
 
@@ -310,31 +341,38 @@ def test_it_says_done_after_a_quiet_spell_and_not_before():
 def test_a_push_in_the_middle_of_a_spell_starts_the_count_again():
     quiet, push = flat_chunk(TRAVEL_HEIGHT), flat_chunk(PUSH_HEIGHT)
     solution = FineTuned(Stub([quiet, quiet, push, quiet, quiet, quiet]), quiet_for=3)
-    result = answers(solution, Cell(seen=(glass(),)))
+    result = answers(solution, Cell(seen=(glass(),)), tested=True)
     assert result.said_done
     # Two quiet, a push, and then three more before the spell is long enough.
     assert result.answers == 6
 
 
-def test_an_answer_that_would_sweep_a_tall_glass_is_raised_before_the_arm_moves():
+def test_an_answer_that_would_sweep_a_tall_glass_is_pulled_down_to_its_foot():
     """What the fit's own commonest answer now meets, and it is not the cell.
 
     A waypoint's height is the middle of the jaw and the hand hangs below it, so
     a path well clear of the pushing height can still drag the hand through the
     top of a glass. That is what this fit learned to do and what broke a glass on
-    three tables in four. ``keeping_clear``, which solution 5 runs and this
-    solution inherits, raises such an answer to travel height first: the arm goes
-    to the same place, touches nothing, and the stopping rule then counts the
-    answer as the policy proposing nothing, which by then is the truth.
+    three tables in four.
+
+    ``keeping_clear``, which solution 5 runs and this solution inherits, does not
+    throw such an answer away. The hand is below the top of the glass the answer
+    names, so the answer plainly meant to touch that glass, and the path is
+    pulled down to the height where a shove goes through the foot and slides it.
+    The arm therefore still shoves the glass the model chose, at the one height
+    the cell has a rule for, and nothing is swept at the rim.
     """
     tall = 0.22
     sweeping = flat_chunk(tall + JAW_HALF_HEIGHT - 0.005)
     solution = FineTuned(Stub([sweeping]), quiet_for=3)
     cell = Cell(seen=(glass(height=tall),))
-    result = answers(solution, cell, seconds=60.0)
-    assert result.said_done, "once every answer is raised, the policy is proposing nothing"
-    assert all(point.z == TRAVEL_HEIGHT for chunk in cell.followed for point in chunk.waypoints)
-    assert sum(solution.raised.values()) == result.answers
+    result = answers(solution, cell, seconds=60.0, tested=True)
+    assert cell.followed, "the answer is carried out rather than thrown away"
+    assert all(point.z == PUSH_HEIGHT for chunk in cell.followed for point in chunk.waypoints)
+    assert not sum(solution.raised.values())
+    # Every answer is counted as it is drawn, including the one the table ended
+    # on, which the arm was never given.
+    assert solution.pulled_onto_the_heights == result.answers
 
 
 def test_a_table_is_forgotten_between_tables():
@@ -369,7 +407,7 @@ def test_why_the_cell_refused_is_counted_by_kind():
 
 def test_the_answers_it_gave_are_summarised_for_the_record():
     solution = FineTuned(Stub([flat_chunk(PUSH_HEIGHT, across=0.2)]), quiet_for=3)
-    answers(solution, Cell(seen=(glass(),)), seconds=30.0)
+    answers(solution, Cell(seen=(glass(),)), seconds=30.0, tested=True)
     summary = solution.summary()
     assert summary["quiet_answers_taken_as_done"] == 3
     assert summary["shape"]["answers"] > 0

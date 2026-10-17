@@ -64,6 +64,7 @@ from bench import (  # noqa: E402
     has_room,
     in_zone,
     scene,
+    segment_distance,
 )
 
 # The cell's own numbers, which `bench` itself reads from here. A draw and a
@@ -89,6 +90,10 @@ __all__ = [
     "PUSH_HEIGHT",
     "PUSH_SPEED",
     "JAW_HALF_HEIGHT",
+    # How close a straight stretch comes to a point. The shape of the hand and
+    # the shape of a glass are both the bench's, so everything that has to ask
+    # whether one would be dragged through the other asks it the same way.
+    "segment_distance",
     # How many waypoints one path may hold. Any solution that writes its own
     # paths rather than borrowing them has to check against it, because the
     # bench rejects a longer path and the arm never moves.

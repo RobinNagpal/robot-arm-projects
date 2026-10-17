@@ -108,15 +108,25 @@ class Counts:
 def jaw_from(state: np.ndarray) -> Waypoint:
     """Where the jaw was standing, out of a stored observation.
 
-    The first five of the thirty-five numbers are the jaw, and this undoes what
+    The first five numbers of the row are the jaw, and this undoes what
     ``readings.to_state`` did to them: the flat position is measured from the
     middle of the table and everything is divided by ``readings.PLACE_SCALE``,
     which is a unit for putting metres near one rather than any measurement. The
     heading is carried as a cosine and a sine, because an angle wraps at pi.
+
+    The stored row is longer than the table's own numbers, because solution 3's
+    gate and policy are fitted on the same demonstrations and the row carries
+    what they need as well. This model reads the jaw and nothing else, so what
+    the row holds after the table is no concern of this function's; what it must
+    not do is assume a length, which is what it used to do and what stopped a
+    fit the first time the row grew.
     """
     row = np.asarray(state, dtype=float)
-    if row.shape != (readings.STATE_WIDTH,):
-        raise ValueError(f"a stored observation is {readings.STATE_WIDTH} numbers, not {row.shape}")
+    if row.ndim != 1 or len(row) < readings.STATE_WIDTH:
+        raise ValueError(
+            f"a stored observation holds the table's {readings.STATE_WIDTH} numbers "
+            f"before anything else, and this one is {row.shape}"
+        )
     return Waypoint(
         x=row[0] * readings.PLACE_SCALE + readings.TABLE_CENTRE_XY[0],
         y=row[1] * readings.PLACE_SCALE + readings.TABLE_CENTRE_XY[1],
@@ -277,10 +287,17 @@ def by_kind(sets: Targets) -> dict[str, list[int]]:
     Read out of the stored action rather than assumed, because what a
     demonstration is was decided by the teacher. It costs one pass over the set
     and is worth it: the two kinds are measured apart.
+
+    The rows are read through the set's own list of frames, because a set
+    leaves the teacher's declarations out and they are still in the dataset
+    underneath. Reading the dataset at the set's own numbering walks off the
+    end of the frames it kept and eventually lands on a declaration, which has
+    no path at all, and the fit then stops on a path it cannot express.
     """
     found: dict[str, list[int]] = {LOOKING: [], PUSHING: [], SQUEEZED: []}
     for i in range(len(sets)):
-        action = sets.data[i]["action"].numpy().reshape(chunks.CHUNK, chunks.ACTION_WIDTH)
+        row = sets.data[sets.frames[i]]
+        action = row["action"].numpy().reshape(chunks.CHUNK, chunks.ACTION_WIDTH)
         path, _ = path_of(action)
         found[as_target(path)[1]].append(i)
     return found

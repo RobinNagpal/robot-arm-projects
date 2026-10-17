@@ -99,6 +99,7 @@ def load(root: Path, shrink: Shrink | None = None, most: int | None = None) -> d
     actions = np.empty((count, CHUNK, ACTION_WIDTH), dtype=np.float32)
     episodes = np.empty(count, dtype=np.int64)
     decisions = np.empty((count, 2), dtype=np.int64)
+    shoves = np.empty((count, readings.SHOVE_WIDTH), dtype=np.float32)
     for i in range(count):
         frame = data[i]
         pictures[i] = _picture(frame, shrink)
@@ -106,12 +107,14 @@ def load(root: Path, shrink: Shrink | None = None, most: int | None = None) -> d
         actions[i] = frame["action"].numpy().reshape(CHUNK, ACTION_WIDTH)
         episodes[i] = int(frame["episode_index"])
         decisions[i] = frame["gate"].numpy().round().astype(np.int64)
+        shoves[i] = frame["shoves"].numpy()
     return {
         "pictures": pictures,
         "states": states,
         "actions": actions,
         "episodes": episodes,
         "gate": decisions,
+        "shoves": shoves,
         "aimed_at": np.array([aimed_at(row) for row in states], dtype=np.float32),
     }
 

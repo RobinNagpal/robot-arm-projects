@@ -275,16 +275,28 @@ def balanced(kinds: np.ndarray, rng: np.random.Generator) -> np.ndarray:
     return rows
 
 
+def for_the_gate(held: dict) -> np.ndarray:
+    """The numbers the gate is shown, out of a loaded set.
+
+    The stored row holds the table, the three numbers about the solution itself
+    and the decision that was taken, in that order, and the gate must not be
+    shown the decision because the decision is what it is being asked for. So
+    the row is cut before it and the per-glass history is joined on, which is the
+    same thing ``readings.to_gate`` does one look at a time.
+    """
+    return np.concatenate(
+        [held["states"][:, : readings.STATE_WIDTH + readings.SELF_WIDTH], held["shoves"]], axis=1
+    )
+
+
 def fit_the_gate(held: dict, checking: dict, seed: int, steps: int) -> None:
     """One fit of the gate, saved beside the policy's weights, with what it got right."""
-    numbers = held["states"][:, : readings.GATE_WIDTH]
+    numbers = for_the_gate(held)
     started = time.time()
     net, curve = gate.fit(held["pictures"], numbers, held["gate"], seed, steps=steps)
     gate.saved(seed).parent.mkdir(exist_ok=True)
     torch_save(net, gate.saved(seed))
-    right = gate.how_often_right(
-        net, checking["pictures"], checking["states"][:, : readings.GATE_WIDTH], checking["gate"]
-    )
+    right = gate.how_often_right(net, checking["pictures"], for_the_gate(checking), checking["gate"])
     print(
         f"gate {seed}: loss {curve[0]:.3f} -> {curve[-1]:.3f} in {(time.time() - started) / 60:.1f} min\n"
         f"  on tables it never saw: the kind right {100 * right['kind_right']:.0f}% of the time, "

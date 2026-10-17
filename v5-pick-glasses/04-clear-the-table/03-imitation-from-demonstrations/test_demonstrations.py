@@ -13,12 +13,14 @@ push and fails for a longer one is the exact fault a single case cannot catch.
 from __future__ import annotations
 
 import math
+from dataclasses import replace
 
 import numpy as np
 import pytest
 from chunks import ACTION_WIDTH, CHUNK, length_of, to_action, to_waypoints
 from readings import (
     ASKED_WIDTH,
+    CONDITION_WIDTH,
     DONE,
     GATE_WIDTH,
     GLASSES,
@@ -26,10 +28,15 @@ from readings import (
     KINDS,
     LOOK,
     PER_GLASS,
+    PER_SHOVE,
+    PLACE_SCALE,
     PROBE,
     PUSH,
     SELF_WIDTH,
+    SHOVE_SCALE,
+    SHOVE_WIDTH,
     STATE_WIDTH,
+    Shoves,
     about_itself,
     conditioning,
     to_asked,
@@ -236,22 +243,62 @@ def test_the_same_shove_at_two_glasses_is_one_stored_answer() -> None:
 # ------------------------------------------- what the gate and the policy see
 
 
-def test_what_the_gate_is_shown_is_what_the_policy_is_shown_without_the_decision() -> None:
+def test_the_gate_and_the_policy_share_the_table_and_differ_after_it() -> None:
     """The gate cannot be shown the decision it is making, and the policy must be.
 
-    So the readings are laid out in one order -- the table, then the solution's
-    own history, then the decision -- and the gate is handed the first part of
-    that row. A test, because the two widths are easy to let drift apart.
+    Both rows start with the same two things, the table as measured and the three
+    numbers the solution keeps about itself. After that they part: the gate is
+    shown what has already been tried on each glass, because that is what its
+    decision turns on, and the policy is shown the decision instead. A test,
+    because the widths are easy to let drift apart and nothing would complain
+    until a fitted model were handed a row of the wrong length.
     """
     jaw = Waypoint(0.0, 0.5, TRAVEL_HEIGHT, 0.0)
     glass = Seen(id=0, x=0.05, y=0.55, height=0.15, widest=0.07, foot=0.06, standing=True)
     state = to_state(jaw, [glass])
     itself = about_itself(7, 3, 1.25)
+    shoves = Shoves()
+    shoves.saw([glass])
     asked = to_asked(state, itself, conditioning(PUSH, glass))
-    gate = to_gate(state, itself)
+    gate = to_gate(state, itself, shoves.row([glass]))
     assert len(gate) == GATE_WIDTH
     assert len(asked) == ASKED_WIDTH
-    assert np.allclose(asked[:GATE_WIDTH], gate)
+    shared = STATE_WIDTH + SELF_WIDTH
+    assert np.allclose(asked[:shared], gate[:shared])
+    assert len(gate) - shared == SHOVE_WIDTH
+    assert len(asked) - shared == CONDITION_WIDTH
+
+
+def test_the_history_counts_the_shoves_and_how_far_the_glass_came() -> None:
+    """Two numbers a glass: how many answers were aimed at it, and how far it moved.
+
+    The second is measured from where the glass stood the first time this table
+    showed it, so a glass that has not been touched reads zero however often the
+    arm has driven past it.
+    """
+    glass = Seen(id=4, x=0.05, y=0.55, height=0.15, widest=0.07, foot=0.06, standing=True)
+    shoves = Shoves()
+    shoves.saw([glass])
+    assert np.allclose(shoves.row([glass]), 0.0)
+
+    shoves.aimed_at(glass.id)
+    shoves.aimed_at(glass.id)
+    moved = replace(glass, x=glass.x + 0.02)
+    shoves.saw([moved])  # seeing it again must not move the place it started from
+    row = shoves.row([moved])
+    assert row[0] == pytest.approx(2 / SHOVE_SCALE)
+    assert row[1] == pytest.approx(0.02 / PLACE_SCALE)
+
+
+def test_a_glass_the_picture_does_not_hold_leaves_its_history_empty() -> None:
+    """A slot is either entirely filled or entirely empty, as the readings are."""
+    here = Seen(id=0, x=0.05, y=0.55, height=0.15, widest=0.07, foot=0.06, standing=True)
+    gone = Seen(id=1, x=0.25, y=0.55, height=0.15, widest=0.07, foot=0.06, standing=True)
+    shoves = Shoves()
+    shoves.saw([here, gone])
+    shoves.aimed_at(gone.id)
+    row = shoves.row([here])
+    assert np.allclose(row[PER_SHOVE:], 0.0)
 
 
 def test_the_kind_of_answer_is_one_hot_and_a_look_is_aimed_at_nothing() -> None:

@@ -100,6 +100,11 @@ class FineTuned(as_downloaded.AsItDownloads):
             "looking_share": round(looking / (looking + pushing), 3) if looking + pushing else 0.0,
             "refused_because": dict(self.refusals),
             "answers_raised_to_travel_height": dict(self.raised.most_common()),
+            "answers_pulled_onto_the_two_heights": self.pulled_onto_the_heights,
+            "pushes_driven_home": self.driven,
+            "a_driven_push_moves_its_glass_mm": (
+                round(self.driven_mm / self.driven, 1) if self.driven else 0.0
+            ),
             "shape": self.shape.summary(),
         }
 
