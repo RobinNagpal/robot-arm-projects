@@ -3,6 +3,7 @@
     pixi run python measure.py                       # the same twenty the reference used
     pixi run python measure.py --predicting          # and without a look between pushes
     pixi run python measure.py --judge               # the held-out queue, once, at the end
+    pixi run python measure.py --toppled --first 5300 --tables 300   # which glass goes over
 
 **The twenty tables are seeds 0 to 19**, which are the tables the geometry
 reference's own calibration run used, so the two sets of numbers are about the
@@ -92,6 +93,49 @@ def headline(card: Scorecard, split: list[tuple]) -> dict:
     }
 
 
+def which_glass(first: int, count: int) -> None:
+    """Which glass goes over: the one the fingers touch, or one standing beside it.
+
+    ``measurement.json`` says what the model believed about the push that broke
+    a glass, but it cannot say *which* glass broke, because the examiner ends
+    the table the moment one goes over, so the look that would show it is never
+    taken. The bench knows, and asking the bench is allowed in a diagnosis
+    because nothing here decides a push. The answer separates two very
+    different faults: a neighbour going over means the clearance arithmetic let
+    the hand pass too close, and the pushed glass going over means that glass
+    tipped instead of sliding, which is the model's account of toppling and not
+    the arithmetic.
+    """
+    import collect
+
+    from contract import GLASS_OVER
+    from open_run import STANDING_TILT_DEG, clear_table
+
+    pushed = neighbour = 0
+    believed = []
+    for seed in range(first, first + count):
+        solution = learned.WorldModel()
+        cell = collect.blind_cell(seed)
+        if clear_table(solution, seed, ROOM_TO_WORK, cell=cell).ended_by != GLASS_OVER:
+            continue
+        over = [i for i in cell.bench.on_table() if cell.bench.tilt(i) >= STANDING_TILT_DEG]
+        last = solution.risked[-1] if solution.risked else None
+        target = last["glass"] if last else None
+        pushed += target in over
+        neighbour += bool([i for i in over if i != target])
+        believed.append(last["chance_of_a_topple"] if last else None)
+        print(f"  table {seed}: pushed {target}, over {over}, believed {believed[-1]}")
+    chances = sorted(c for c in believed if c is not None)
+    print(f"{count} tables from {first}: {len(believed)} ended with a glass over")
+    print(f"  the glass being pushed went over: {pushed}")
+    print(f"  a glass not being pushed went over: {neighbour}")
+    if chances:
+        print(
+            f"  the model's own chance on those pushes: {chances[len(chances) // 2]} "
+            f"in the middle, {chances[-1]} at worst"
+        )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--tables", type=int, default=TABLES)
@@ -107,6 +151,11 @@ def main() -> None:
     parser.add_argument("--save", type=str, default="", help="write the numbers to this file")
     parser.add_argument("--seed", type=int, default=0, help="the search's own draws, for repeatability")
     parser.add_argument("--show", action="store_true", help="print why each table ended")
+    parser.add_argument(
+        "--toppled",
+        action="store_true",
+        help="for every table a glass went over on, say whether it was the pushed glass or a neighbour",
+    )
     arguments = parser.parse_args()
 
     if arguments.judge or arguments.select:
@@ -136,6 +185,10 @@ def main() -> None:
             f"seeds {arguments.first}..{last} reach the held-out tables, which start at {TEST_SEEDS}. "
             f"They are walked once, through judging.py: pixi run python measure.py --judge"
         )
+
+    if arguments.toppled:
+        which_glass(arguments.first, arguments.tables)
+        return
 
     # Seeded, so that the numbers this prints can be printed again. The
     # held-out run is not seeded, because three identical walks of the queue

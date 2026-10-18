@@ -204,6 +204,12 @@ and the glass that broke was one the hand never came near. Interestingly, closin
 this hole changed the numbers very little, which told us that driving one glass
 into another was not the main way glasses were being lost. A repair is only worth
 the size of the hole it closes, and measuring that size is the only way to know.
+Much later, and by then on three hundred tables rather than twenty, the hole was
+measured again and found completely shut: every one of the thirty glasses lost in
+that band was the glass the fingers were touching, and not one was a glass
+standing beside it. **The part of this group that guards the neighbours now has
+nothing left to repair**, which is why the rest of this page spends its attention
+on the glass under the fingers instead.
 
 ### Group 2: remember the whole table, not only the current picture
 
@@ -533,6 +539,30 @@ see either, so the remaining breakages are a limit of the information and not of
 the caution. The instrument stayed in the code, because a model checked on the
 wrong distribution reports an accuracy nobody can use.
 
+**One more measurement pins down where that ceiling is, and it is the reason the
+next step can be named with confidence.** A table ends the same way whichever of
+two quite different faults caused it, so the two had to be separated: either the
+hand passed too close to a glass it was not aimed at, which would be a fault in
+the arithmetic, or the glass under the fingers tipped where it should have slid,
+which would be a fault in the model's idea of toppling. The run's own record
+cannot tell them apart, because the examiner ends a table the moment a glass goes
+over and the look that would show which glass fell is never taken, so the
+question was put to the table itself over three hundred tables.
+
+| three hundred tables, thirty glasses lost | how many |
+| --- | --- |
+| the glass being pushed went over | 30 |
+| a glass standing beside it went over | 0 |
+
+**Every loss is the pushed glass, and the model thought every one of those
+pushes was safe** — it gave them about two chances in ten thousand of toppling
+anything at the median, against a limit of one in a hundred, so none of them was
+a risk the search understood and accepted. Those two facts together say that
+nothing is left for more caution to buy and nothing is left for better clearance
+to buy: what remains is a glass tipping instead of sliding under fingers the
+model was confident about, which is a single, named, measurable thing to work on
+next.
+
 **The same lesson caught a second solution, in a form that is easier to miss.**
 The ranking trees take eight inputs, and the one they lean on hardest is the
 jaw's top edge divided by the height at which that glass would tip. The jaw's top
@@ -638,9 +668,9 @@ project, including the teacher's own pushes, which is how it was caught. **When
 a new rule refuses the teacher, the measurement behind the rule is what is
 wrong, not the teacher.**
 
-## What the three rounds of repair came to
+## What the rounds of repair came to
 
-Putting the groups together, the outcome divides into four kinds.
+Putting the groups together, the outcome divides into five kinds.
 
 **Arithmetic safety was decisive and cheap.** Across the three picture-driven
 solutions, broken glasses went from twenty-eight in a walk to one, and the world
@@ -665,12 +695,24 @@ twenty-five arm seconds against the geometry reference's forty-four. On the
 twenty-six tables the two of them both reach they are level. That is a reminder
 that in a problem with one shared budget, speed is part of accuracy.
 
-**The last round bought tables and paid for them in glasses, which is the
-clearest trade in the record.** More pushes and a heavier charge for a missed
+**The last round of changes bought tables and paid for them in glasses, which is
+the clearest trade in the record.** More pushes and a heavier charge for a missed
 topple made the world model separate more tables, and it now breaks five glasses
 over a queue where the version before it broke one. The two measurements
 disagree about whether that was worth it, and the next section explains why they
 can disagree at all.
+
+**And the two most recent rounds changed no solution at all, which does not make
+them wasted.** Every repair they tried was measured and rejected, so the code
+that ships is exactly the code they started with. What they left behind instead
+is knowledge and instruments: the world model's remaining breakages are now
+known to be one single fault rather than three possible ones, a borrowed model is
+now known to be reading a number it was never fitted on, and both of those
+findings came out of checks that are now commands anybody can run again. **A
+round that produces a measurement and no change is still progress, as long as
+the measurement removes a candidate.** The danger in a long repair effort is not
+a failed experiment; it is a failed experiment that nobody writes down, because
+the next person then pays for it twice.
 
 ### The instrument has to ask the score's own question
 
@@ -721,9 +763,10 @@ three times the material.
 
 **Give the world model a different account of toppling, rather than a better
 number for it.** This is now the best-supported candidate for the breakages,
-because the section above rules out the alternatives: the judgement of toppling
-is good on random pushes, poor on the pushes the search chooses, and fitting it
-on those pushes improves the judgement without improving the result. What
+because the sections above rule out every alternative: the clearance arithmetic
+loses no neighbours at all over three hundred tables, the judgement of toppling
+is good on random pushes and poor on the pushes the search chooses, and fitting
+it on those pushes improves the judgement without improving the result. What
 decides whether a glass slides or tips is friction and the exact point the
 finger meets it, and the camera sees neither, so a number predicted from the
 picture will keep being confidently wrong. The shapes of account worth trying
@@ -769,6 +812,25 @@ of history to the deciding network improved every part of it, which suggests the
 same deficiency exists in the network that draws the path, since it also sees
 only one picture. Letting it see a short series of recent pictures and actions is
 the natural next version of that repair.
+
+### Where this work stands today
+
+One last thing a new reader needs, before the rules below, is the state of the
+work rather than its history. **Nothing on this page is half-finished.** Every
+repair described above is in one of exactly two states: it is kept, which means
+it is in the code that ships and its numbers are on the comparison page; or it
+was measured and rejected, which means the code it needed was removed and only
+its *instrument* was kept, as a command that can be run again. Nothing is
+running in the background, no fit is waiting to be judged, and no measurement
+above is still being collected, so a reader starting today starts from a clean
+tree.
+
+That means the candidates in the section above are untried in the plain sense of
+the word: nobody has written the code for any of them yet. The one with the most
+evidence behind it is the geometric account of toppling, because the fault it
+addresses has now been narrowed to a single mechanism, and the cheapest one to
+settle is the refitting of the ranking trees, because its measurement needs no
+arm time and has no randomness in it at all.
 
 ## The rules that make this record trustworthy
 

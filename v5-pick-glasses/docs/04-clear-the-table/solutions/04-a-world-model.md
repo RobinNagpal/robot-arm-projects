@@ -460,6 +460,45 @@ the remaining topples is friction and the exact contact between a finger and a
 glass, which no camera in this cell can see, so the next thing worth building is
 a different account of toppling rather than another setting in front of this one.
 
+## Which glass falls, which says where the repair belongs
+
+That last sentence is a claim about *where* the fault lies, so it is worth
+checking rather than believing, because two faults of very different kinds end a
+table in the same way. One possibility is that a glass standing *beside* the one
+being pushed goes over, which would mean the hand passed too close to a glass it
+was never aimed at, and the repair would belong in the clearance arithmetic that
+keeps the fingers clear. The other possibility is that the glass *under the
+fingers* goes over, which means it tipped where it should have slid, and the
+repair would belong in the model's account of toppling. These two need opposite
+work, so telling them apart decides what to build next.
+
+The run's own record cannot answer it, because the examiner ends a table the
+moment any glass goes over, so the look that would show which glass fell is
+never taken. The bench that holds the table knows, however, and asking the bench
+is allowed in a diagnosis, since nothing in the measurement decides a push. Over
+three hundred tables below the held-out line the answer was the same every
+single time.
+
+| three hundred tables, thirty glasses over | how many |
+| --- | --- |
+| the glass being pushed went over | **30** |
+| a glass standing beside it went over | **0** |
+
+**Not one breakage was a neighbour.** The clearance arithmetic, which measures
+every glass and then keeps the hand a measured distance from all of them, is
+therefore doing its whole job, and nothing in this solution's record asks for
+more caution there. The model's own belief about those thirty pushes closes the
+other half of the argument: it gave them a chance of toppling of about two in
+ten thousand in the middle and eight in a thousand at the worst, against a limit
+of one in a hundred, so not one of them was a push the solution understood to be
+risky and chose anyway.
+
+**So the whole of what remains is one thing: a glass tipping instead of sliding,
+under fingers the model was confident about.** That is why the next step named
+below is a geometric account of toppling — one built from the contact height and
+the glass's own measured foot, which the arm can measure — and not another
+setting in front of a learned chance the camera has no way to see.
+
 ## The knob that trades some of it back, and why it was not turned
 
 The search pays a price for every millimetre it pushes, and that price is the
@@ -583,9 +622,14 @@ back failed in the same way: a tighter threshold cannot refuse a push the model
 gives no chance at all, a five-millimetre test cannot predict a fifty-millimetre
 push in a cell where the tipping rule predicts nothing, and collecting the
 pushes the copies disagree about teaches the model about pushes it will then be
-no better at refusing. What this solution needs next is a *separate* model of
-toppling, fitted and calibrated as its own question, rather than one more output
-of a network whose loss is dominated by where the glass lands.
+no better at refusing. And the fault those attempts were aimed at is now located
+exactly: over three hundred tables every one of the thirty glasses lost was the
+glass the fingers were touching, never a glass beside it, so the clearance
+arithmetic has nothing left to give and the whole of the remainder is one glass
+tipping instead of sliding. What this solution needs next is a *separate* account
+of toppling, calibrated as its own question and resting on what the arm can
+measure, rather than one more output of a network whose loss is dominated by
+where the glass lands.
 
 **And the geometry's advantage is still the same one.** It finishes what it
 starts and breaks nothing at all, which gives it the best share. What it cannot

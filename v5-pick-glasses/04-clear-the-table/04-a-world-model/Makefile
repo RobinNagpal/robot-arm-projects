@@ -9,7 +9,7 @@ HERE := 04-a-world-model
 TABLES ?= 600
 PIXI = cd $(PROBLEM) && pixi run
 
-.PHONY: help collect collect-more collect-planned collect-doubted collect-check check-planned train measure measure-predicting reference select judge test lint
+.PHONY: help collect collect-more collect-planned collect-doubted collect-check check-planned train toppled measure measure-predicting reference select judge test lint
 
 help: ## This list
 	@grep -hE '^[a-z0-9-]+:.*##' $(MAKEFILE_LIST) | sed 's/:.*##/\t/' | sort
@@ -34,6 +34,9 @@ collect-check: ## A planned round kept out of the fit, for reading the topple he
 
 check-planned: ## Read the fitted copies on that set, which is where the broken glasses are explained
 	$(PIXI) python $(HERE)/train.py --check $(HERE)/data/validation_planned.npz
+
+toppled: ## For every table a glass went over on, whether it was the pushed glass or a neighbour
+	$(PIXI) python $(HERE)/measure.py --toppled --first 5300 --tables 300
 
 measure: ## The twenty tables the geometry reference was calibrated on
 	$(PIXI) python $(HERE)/measure.py --save $(HERE)/measurement.json

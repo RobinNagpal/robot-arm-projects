@@ -592,6 +592,38 @@ what the camera can see — friction and the exact contact decide them — and n
 limit of the arithmetic in front of the model, which is why the next thing to
 try is a different model of toppling rather than another setting.
 
+### Which glass goes over, and what the model thought of the push
+
+The sentence above names friction and the contact point as what decides a
+breakage, and that claim can be checked, because two quite different faults end
+a table the same way. If a glass *beside* the one being pushed goes over, the
+clearance arithmetic let the hand pass too close and the repair belongs in the
+arithmetic. If the glass *under the fingers* goes over, it tipped where it
+should have slid, and the repair belongs in the model's account of toppling.
+`measurement.json` cannot tell them apart, because the examiner ends the table
+the moment a glass goes over and the look that would show which one is never
+taken — so `make toppled` asks the bench instead, which is allowed in a
+diagnosis because nothing in it decides a push.
+
+| 300 tables from 5300 | glasses over |
+| --- | --- |
+| the glass being pushed went over | **30** |
+| a glass not being pushed went over | **0** |
+
+**Every breakage is the pushed glass, and not one is a neighbour.** The
+clearance arithmetic is therefore doing its whole job: it is keeping the hand
+away from glasses it is not aimed at, over three hundred tables, with no
+exception. And the model's own belief about those thirty pushes was a chance of
+2 in 10,000 at the median and 8 in 1,000 at the worst, against a limit of 1 in
+100, so none of them was a push the search knew to be risky and took anyway.
+
+That is the same winner's curse as the section above, now narrowed to one
+sentence: **what is left to repair is a glass tipping instead of sliding under
+fingers the model was confident about**, which is why the next thing to build is
+a different account of toppling — a geometric one, resting on the contact height
+against the glass's own measured foot, rather than a learned chance that the
+camera has no way to see.
+
 ## Running it
 
 ```
@@ -603,6 +635,7 @@ make collect-planned    # round 2: the search's own pushes on 300 new tables
 make train              # again, on every round collected
 make collect-check      # a planned round kept out of the fit, for reading the head
 make check-planned      # read the fit on it: 13 of 40 topples caught, against 56 of 70 on random pushes
+make toppled            # which glass went over on each table that lost one: 30 pushed, 0 neighbours
 make select             # fifty tables below the held-out line, under the real clock
 make measure            # the twenty tables above
 make reference          # the geometry reference's own numbers, to sit beside
