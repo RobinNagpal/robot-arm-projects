@@ -40,9 +40,12 @@ counts for nothing at either end.
 
 There is also a summary number called the **pickable share**, which is the
 fraction of all the glasses in a set of tables that a gripper could pick up at
-the end. It is convenient, and it has one weakness we keep running into: a
-solution that does nothing at all scores the same as a solution that frees two
-glasses and breaks two. That is why every result here is reported as the three
+the end. It is convenient, and it has one weakness we keep running into. The copying
+solution scored 0.400 in the measurement where it left every table exactly as it
+found it, and it scores 0.359 now that it pushes glasses about, because a table
+where it topples a glass is thrown away and a table it attempts and leaves
+crowded still counts every glass on it. **A share can fall when a solution
+starts doing the task.** That is why every result here is reported as the three
 numbers together, and why no claim on this page rests on the share alone.
 
 Two more rules shape everything below. First, **the budget is the arm's own
@@ -341,6 +344,44 @@ five-millimetre action, and a sixty-millimetre drive is a different action. On
 the tables where it was chosen, this was the first time any version of the
 solution walked all twenty tables without losing a glass.
 
+### Group 5: give a model more examples only where its own record asks for them
+
+The four groups above change what a solution is asked to do. This last group
+changes only how much material it is fitted on, and it is placed last because it
+is the weakest of the five — which is itself a result, since more data is usually
+the first thing anyone reaches for.
+
+**A model's two distances say whether it is short of examples.** Every fitted
+solution here measures how far its answers sit from its teacher's twice over:
+once on tables it was fitted on, and once on tables it has never seen. When the
+two distances are close, the model is doing as well on new tables as on old ones,
+so it is limited by what it can represent. When the distance on fitted tables is
+much the smaller of the two, the model has learned the particular tables rather
+than the task, which is called memorising, and memorising is the one fault that
+more examples is the right cure for.
+
+**The copying solution had exactly that signature, so its material was tripled.**
+Its drawing network sat about nine millimetres from its teacher on fitted tables
+and about twenty-four on unseen ones. Collecting from nine hundred tables instead
+of three hundred closed that gap from the wrong end, as it should: the error on
+fitted tables rose by three millimetres and the error on unseen tables fell by
+one. On the tables it halved the broken glasses, from two a walk to one, and
+moved nothing else outside its spread. **So the diagnosis was right and the cure
+was small**, which together say that what limits this solution is the model and
+the task rather than the number of examples.
+
+**The world model's extra pushes only worked with a second change beside them.**
+Doubling its random pushes improved its aim and, as a side effect, made its
+topple head stop sounding the alarm: with more pushes it flagged fewer safe
+pushes, and a fixed caution threshold turns that straight into broken glasses.
+Charging the fit ten times as much for a topple it fails to predict put the alarm
+back. Neither change is any good alone — more pushes alone breaks glasses, and
+the heavier charge on the smaller set refuses so much that it frees thirty-four
+fewer glasses — and together they separate about one and a half more tables a
+walk and lose about half as many glasses on the tables they were chosen on.
+**Two changes that each fail alone and work together are worth remembering**,
+because a method that tries changes one at a time will reject both.
+
 ## What did not work, and why
 
 A record of only the successes would teach the next person very little, so the
@@ -360,6 +401,26 @@ four to one, exactly as hoped, and cut separated tables from seventeen to eight,
 because a glass that does not visibly move during the test is then left alone for
 the rest of the table. Tightening the allowed chance of toppling cost two
 separated tables and saved nothing at all.
+
+Both of those were tried again in a narrower form, on the chance that they
+failed only because they were applied to every push. They failed in the same
+way. The allowed chance of toppling was tightened at four settings on two
+different fits of the world model, from one chance in a hundred down to three in
+ten thousand, and the broken glasses went up rather than down. The test shove
+was put in front of only those pushes the three copies of the model disagreed
+about, which is the smallest set it could sensibly be applied to, and at three
+thresholds it cost between one and four separated tables a walk and saved no
+glass at all.
+
+**Those two failures share one cause, and it is the most useful thing in this
+section.** A threshold can only refuse an answer the model thinks is risky, and
+the pushes that actually topple glasses are the ones the model gives almost no
+chance of toppling, so there is nothing for a threshold to catch. A test shove
+can only report what a small push does, and in this cell a glass goes over under
+a *long* push for reasons the tipping rule cannot predict for any glass, so
+there is nothing for the test to report. **Neither instrument can see the thing
+that is going wrong**, and tightening an instrument that cannot see a fault only
+costs work.
 
 **Why this whole family fails.** It is tempting to think that caution is free
 because a broken glass is so expensive. It is not free, because **a table left
@@ -411,6 +472,46 @@ choosing a glass is barely better than a coin toss. **A refusal is sometimes the
 better outcome, and a solution that keeps asking until something is permitted is
 choosing by what is permitted rather than by what it believes.**
 
+### Collecting the examples the model is least sure about
+
+The world model is three copies of the same network fitted from different
+starting points, and where the three disagree is where the model does not know
+what a push will do. That makes an obvious proposal: collect training pushes
+there instead of at random. It was built — forty candidate pushes are drawn, and
+the one the copies disagree about most is the one carried out — and the pushes it
+collects are genuinely the interesting ones, because 17.3 per cent of them put a
+glass over against 10.4 per cent of random pushes.
+
+Fitted on them, the model separated the same number of tables and lost two and a
+half more glasses. **The reason is that a model cannot learn to refuse from
+examples it cannot tell apart.** The pushes the copies disagree about are not
+pushes with a visible warning sign in them; they are pushes whose outcome
+depends on the friction and the exact contact that no camera here can see. More
+of them teaches the topple head that the same-looking situation sometimes ends
+badly, which makes it less certain everywhere rather than more accurate
+anywhere. The collecting round is kept behind its own switch, and the file it
+writes is named so that a fit cannot read it by accident, because the
+measurement is worth repeating and the data is not worth training on.
+
+### More training steps, when the copying is already better than the task needs
+
+The fine-tuned borrowed model was fitted for three times as many steps, on three
+times the demonstrations, which is the one change its own record had been asking
+for. Everything about the *form* of its answers moved towards its teacher: the
+distance from the teacher's waypoints halved, the paths came lower and shorter,
+and more of them reached the height at which a push works. Nothing about the
+table moved. It broke the same two glasses over three walks, its share of
+pickable glasses was identical to the third decimal place, and the glasses it
+freed went from two to none, which is a change the size of its own spread.
+
+The fit measures its distance from the teacher every five hundred steps, so the
+same run also says which half of the change did the work: at the same thousand
+steps, three times the demonstrations moved nothing, and the extra steps moved
+everything. **So the limit on this solution is not how closely it copies its
+teacher.** It is that the teacher's answers are mostly looking, so a close copy
+of them is a solution that mostly looks. Copying better cannot fix a target that
+is wrong, and this is the sharpest demonstration of cause 1 on this page.
+
 ### Two repairs that were impossible rather than merely unhelpful
 
 These two are different in kind, because they could not work at all, and knowing
@@ -452,31 +553,67 @@ project, including the teacher's own pushes, which is how it was caught. **When
 a new rule refuses the teacher, the measurement behind the rule is what is
 wrong, not the teacher.**
 
-## What the two rounds of repair came to
+## What the three rounds of repair came to
 
-Putting the groups together, the outcome divides into three kinds.
+Putting the groups together, the outcome divides into four kinds.
 
 **Arithmetic safety was decisive and cheap.** Across the three picture-driven
-solutions, broken glasses went from twenty-eight in a walk to two, and the world
+solutions, broken glasses went from twenty-eight in a walk to one, and the world
 model's eight became one. None of this required any retraining, because none of
 it was a learning problem.
 
 **Reshaping the learning problem made a trained solution act, and did not make
 it good.** The copying solution went from leaving every table exactly as it found
-it to freeing a couple of glasses and separating a table in one walk of three.
-The fine-tuned borrowed model gives the clearest reading of all, because it can
-be compared against the same weights with no training on this task at all:
-trained,
-it moves at the length and speed of its teacher's pushes and frees glasses the
-untrained one does not, and it also topples glasses the untrained one does not.
-**Fitting bought work, and it did not buy care.**
+it — not one glass given room it did not start with — to pushing glasses about,
+separating two tables in one of its three walks, and ending a queue one glass
+down on balance. The fine-tuned borrowed model gives the clearest reading of all,
+because it can be compared against the same weights with no training on this task
+at all: trained, it moves at the length and speed of its teacher's pushes and
+frees glasses the untrained one does not, and it also topples glasses the
+untrained one does not. **Fitting bought work, and it did not buy care.**
 
 **The best solution in the problem is now a trained one, and for a specific
 reason.** The world model leads because it reaches many more tables inside the
 same arm-time budget and separates more of them, and the reason it reaches more
-is that it stopped wasting tables on breakages and became quicker per table. That
-is a reminder that in a problem with one shared budget, speed is part of
-accuracy.
+is that it became much quicker per table: a separated table costs it about
+twenty-five arm seconds against the geometry reference's forty-four. On the
+twenty-six tables the two of them both reach they are level. That is a reminder
+that in a problem with one shared budget, speed is part of accuracy.
+
+**The last round bought tables and paid for them in glasses, which is the
+clearest trade in the record.** More pushes and a heavier charge for a missed
+topple made the world model separate more tables, and it now breaks five glasses
+over a queue where the version before it broke one. The two measurements
+disagree about whether that was worth it, and the next section explains why they
+can disagree at all.
+
+### The instrument has to ask the score's own question
+
+This finding cost two wrong turns, and it changes how every number above was
+produced, so it is worth a section of its own.
+
+**A measurement that gives every table as much arm time as it wants asks a
+different question from the score.** The score hands fifty tables fifteen arm
+minutes between them, so it asks how much a solution finishes before the clock
+stops. A measurement with no clock asks only whether a table *can* be separated.
+A change that trades time for thoroughness — looking more often, testing before
+pushing, pushing in smaller steps — wins the second and loses the first.
+
+**That is exactly what happened.** Two configurations of the world model were
+chosen on the unclocked measurement and both came back from the scored queue
+with a lower share than the version they replaced. The repair was to build a
+clocked queue of fifty tables below the held-out line, walked three times and
+pooled over three different starting tables, which is the score's own shape on
+tables that may be chosen on. Every choice in the last round was made on that
+instrument instead.
+
+**One such queue is still not enough**, because the same model scored 0.647 on
+one band of fifty tables and 0.570 on another. This is also why the world model's
+kept change looks good below the line and bad on the held-out queue: fifty
+tables is a small sample, and a single walk of one band cannot settle a
+difference of one or two glasses. The rule the project follows is that choices
+are made below the held-out line, so the change was kept and the disagreement
+was written down beside it rather than quietly resolved in its favour.
 
 ## What is worth trying next, and why
 
@@ -484,33 +621,18 @@ The useful thing about the measurements above is that they do not leave the next
 step to taste. Each candidate below has a measured reason behind it, and they are
 roughly in order of how much evidence supports them.
 
-**More demonstrations of pushing, taken from crowded tables.** This is the
-strongest candidate, because the evidence for it is new. The copying solution's
-drawing network is now about ten millimetres away from its teacher on the tables
-it was trained on and about twenty-four millimetres away on tables it has never
-seen. Those two distances used to be similar, and when they separate like this
-it means the model is genuinely trying to do the hard thing and is short of
-examples rather than short of ideas. Since a real push is about one answer in
-thirty-five in the current material, collecting demonstrations specifically on
-crowded tables would raise that proportion directly, which is the one thing
-reweighting a batch cannot do: reweighting makes rare examples appear more often,
-but it cannot add information that was never recorded.
-
-**More training steps for the fine-tuned borrowed model.** This is the one change
-that was deliberately left alone, so that the effect of the even mixture could be
-measured on its own. The current fit is roughly a third of one pass over the
-material, which is very little, and the model's own distances say where it is
-stuck: it closed the gap to the teacher on pushes a little and did not close it
-on looks at all. It is cheap to test, since each fit takes under half an hour on
-this laptop and changes only a small fraction of the model's numbers.
-
-**More data for the world model in the region where its copies disagree.** The
-search is now pessimistic, which means it avoids the places where the three
-copies disagree rather than being lured into them. Avoiding those places costs
-opportunities, so the way to get them back is to make the copies agree there,
-and that means collecting pushes of the kind they currently disagree about. This
-is the honest alternative to narrowing the search, which was measured twice and
-cost more than it saved.
+**Change the mixture of the demonstrations, not their number.** Simply
+collecting three times as many was measured and is reported above: it stopped the
+copying solution from memorising and halved its broken glasses, and it moved
+nothing else. What it could not change is the *proportion* of the material that
+shows a push at a crowded glass, which stayed at about one answer in
+thirty-five, because tripling the tables triples the looks as well. The version
+of this idea that remains untried is to collect only on crowded tables, so that
+pushes are a much larger share of what the model is shown. That is the one thing
+reweighting a batch cannot do, since reweighting makes rare examples appear more
+often but cannot add information that was never recorded. The honest expectation
+is small, because the same solution's deciding network got no better at all on
+three times the material.
 
 **Retrain the ranking trees on the question they are being asked.** As explained
 above, they judge risk and are used to judge gain. Training them on how much room
@@ -567,6 +689,15 @@ several separately trained copies and is reported with that range. Most of the a
 they produced was smaller than that range, and most of the mistakes that were
 caught were caught because someone compared a single run against a single run.
 
+**Choose on an instrument shaped like the score.** Choosing below the held-out
+line is not enough on its own, because a measurement below the line can still
+ask a different question from the score. Two choices here were made on a
+measurement that gave every table unlimited arm time, and both of them lost on
+the clocked queue. The section above explains the repair, and the rule that came
+out of it is short: when you build a measurement to choose on, give it the
+score's own budget, its own number of tables and its own way of walking them,
+and only change which tables it uses.
+
 **Measure the size of the hole before celebrating the repair.** Two of the
 successful changes above closed causes that were real, clearly described and
 almost irrelevant in practice. Writing that down is more useful than hiding it,
@@ -576,7 +707,7 @@ because the next person's time should go to the big holes.
 
 - [What changed, and what each change bought](what-changed.md) — the same
   changes taken one at a time, each beside the before-and-after measurement that
-  justified it, including the eight that were measured and thrown away.
+  justified it, including the nine that were measured and thrown away.
 - [The six solutions side by side](../../04-clear-the-table/results/README.md) —
   every column of every result, what perfect play achieves on the same tables,
   and which columns mislead when read alone.

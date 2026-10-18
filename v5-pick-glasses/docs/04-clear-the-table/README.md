@@ -77,10 +77,10 @@ table, so how quickly a solution works decides how far down the list it gets.
 |---|---|---|---|---|---|
 | [1 one fixed nudge](../../04-clear-the-table/01-one-fixed-nudge/) | 26 | 10 | +25 | **0.627** | **0** |
 | [2 geometry ranked](../../04-clear-the-table/02-geometry-ranked/) | 25 | 7 | +19 | 0.582 | **0** |
-| [3 imitation, ACT](../../04-clear-the-table/03-imitation-from-demonstrations/) | 11 | 0 | +2 | **0.400** | **2** |
-| [4 a world model](../../04-clear-the-table/04-a-world-model/) | **40** | **14** | **+39** | 0.598 | 1 |
+| [3 imitation, ACT](../../04-clear-the-table/03-imitation-from-demonstrations/) | 14 | 0 | **−1** | **0.359** | 1 |
+| [4 a world model](../../04-clear-the-table/04-a-world-model/) | **39** | **14** | **+33** | 0.550 | **5** |
 | [5 SmolVLA as it downloads](../../04-clear-the-table/05-smolvla-as-it-downloads/) | 11 | 1 | +2 | 0.439 | **0** |
-| [6 SmolVLA fine-tuned](../../04-clear-the-table/06-smolvla-fine-tuned/) | 11 | 0 | **0** | 0.405 | **0** |
+| [6 SmolVLA fine-tuned](../../04-clear-the-table/06-smolvla-fine-tuned/) | 11 | 0 | 0 | 0.405 | **0** |
 
 Every row is the solution as it stands after a round of repairs. The six were
 measured once, then the three that were learning something and failing were
@@ -104,19 +104,22 @@ that gives up instantly would win.
 The short version has three parts.
 
 **The world model leads, and it is the only learned solution that beats
-arithmetic.** It separates fourteen of the forty tables it reaches, frees the
-most glasses of any solution, and now breaks one glass a walk where it used to
-break eight. Cut to the twenty-six tables the fixed nudge also reached, it
-separates eleven against ten and breaks nothing, so on the same tables it is
-level or a little ahead, and its clear advantage is that it reaches half again
-as many tables in the same quarter of an hour.
+arithmetic.** It separates fourteen of the thirty-nine tables it reaches and
+frees the most glasses of any solution. Cut to the twenty-six tables the fixed
+nudge also reached, it separates ten against ten and frees twenty-four glasses
+against twenty-five, which is a tie, so what it really wins on is the clock: a
+separated table costs it about twenty-five arm seconds against the reference's
+forty-four, and that is why it gets through half again as many tables in the
+same quarter of an hour. It is also the only solution that breaks glasses now,
+five over a walk against the reference's none, and
+[what changed](what-changed.md) explains why that trade was accepted.
 
 **Arithmetic is still the best answer per table attempted.** One fixed nudge,
 chosen by geometry with nothing learned anywhere, separates ten of twenty-six
 and breaks no glass, which is the best pickable share on the card.
 
 **The three solutions that answer from a picture are now nearly harmless, and
-between them they free four glasses.** That is a poor result, and it is a far
+between them they free one glass.** That is a poor result, and it is a far
 better one than the first walk, where the three of them freed nothing at all and
 broke twenty-eight glasses between them. The cause of the poor result is the same
 in each case: with the camera on the arm, four of the teacher's five answers only

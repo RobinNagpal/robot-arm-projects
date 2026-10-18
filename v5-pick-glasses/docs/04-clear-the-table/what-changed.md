@@ -878,7 +878,7 @@ than on the unclocked two hundred.
 the band from 500 and 0.570 on the held-out band, which is why three bands are
 walked and pooled rather than one.
 
-## Eight repairs that were measured and not kept
+## Nine repairs that were measured and not kept
 
 A page that only lists what worked is not a record of what was learned.
 
@@ -973,6 +973,46 @@ glass over a run of small pushes judged one at a time; this solution makes one
 long push, so the test tells it nothing it can use. The branch was taken out
 again and the arithmetic it needed stayed, because the collector uses it.
 
+**Fitting the borrowed model for three times as many steps, on three times the
+demonstrations**, was the last thing tried and it bought nothing on the tables.
+The distance from its teacher was the one number in that solution's record still
+falling when the fit stopped, and solution 3's larger demonstration set was
+already collected, so the two were raised together: three thousand steps instead
+of a thousand, over the twelve thousand frames collected from nine hundred
+tables. It costs eighty minutes a seed instead of twenty-seven.
+
+**The fit's own record separates the steps from the data**, because it measures
+the distance to the teacher every five hundred steps. At the same thousand steps,
+three times the demonstrations moved the median distance over all kinds from
+134 mm to 136 mm, which is nothing beside a spread thirty millimetres wide, and
+it moved the distance over the pushes the wrong way. The extra two thousand steps
+then took the distance over all kinds to 85 mm and over the pushes to 74 mm. **So
+the steps did the work and the larger set never showed**, which is the opposite
+of change 16, where the data was what moved and the step count was already
+enough.
+
+On the tables, measured on the same twenty below the held-out line that this
+solution's pair measurement uses, three walks a side:
+
+| twenty tables, three walks | 1,000 steps on 4,000 frames | 3,000 steps on 12,000 frames |
+| --- | --- | --- |
+| tables separated | 0 (0 to 0) | 0 (0 to 1) |
+| glasses broken | 2 (1 to 3) | 2 (1 to 2) |
+| glasses freed | +2 (0 to +3) | 0 (0 to +2) |
+| pickable share | 0.369 | 0.369 |
+| lowest point of a chunk | 112 mm | 91 mm |
+| travel across the table | 351 mm | 330 mm |
+
+Everything about the *form* of the answers moved further towards the teacher and
+nothing about the outcome moved with it, which is change 5's finding in a
+sharper form: what limits this solution is not how well it copies its teacher's
+motion. One of the three walks separated a table, which no fit of this solution
+had managed before, and one table in sixty is not yet a result. The longer fit
+was not kept, because below the line the two fits tie on every scored count and
+the longer one costs three times the machine time. The held-out queue agrees
+without being asked: it scored 0.345 there against 0.405, and one of its three
+walks broke three glasses.
+
 ## What it all came to
 
 The table below is the held-out queue, which is the measurement this problem
@@ -984,9 +1024,9 @@ measured walk, before any of the changes on this page.
 | --- | --- | --- | --- | --- |
 | Geometry ranked, before and after | 7 of 25 | +19 | 0 | — |
 | A world model, before | 11 of 32 | +29 | 8 | 0.560 |
-| **A world model, after** | **14 of 40** | **+39** | **1** | **0.598** |
+| **A world model, after** | **14 of 39** | **+33** | 5 | 0.550 |
 | Imitation, before | 0 of 10 | 0 | 0 | 0.400 |
-| **Imitation, after** | 0 of 11, 1 in one walk | **+2** | 2 | **0.400** |
+| **Imitation, after** | 0 of 14, 2 in one walk | −1 | 1 | 0.359 |
 | SmolVLA as it downloads, before | 0 of 15 | −1 | 20 | 0.018 |
 | **SmolVLA as it downloads, after** | **1 of 11** | **+2** | **0** | **0.439** |
 | SmolVLA fine-tuned, before | 0 of 8 | 0 | 8 | 0.103 |
@@ -995,11 +1035,16 @@ measured walk, before any of the changes on this page.
 Three different kinds of outcome are in that table, and they are the result of
 this work.
 
-**The world model is now clearly the best solution in the problem**, and it got
-there by two changes of different kinds: the shared clearance arithmetic took its
-broken glasses from eight to one, and pessimism in its search took its separated
-tables from eleven to fourteen while it also reached eight more tables. It beats
-the geometry reference it was measured against, which the first walk did not.
+**The world model is now the best solution in the problem**, and it got there by
+changes of three different kinds. The shared clearance arithmetic took its broken
+glasses from eight to one. Pessimism in its search took its separated tables from
+eleven to fourteen while it also reached seven more tables. Then change 15 traded
+some of the first gain back for the second: fitted on twice the pushes and
+charged more for a missed topple, it breaks five glasses a queue instead of one.
+On the twenty-six tables the geometry reference also reaches it is level with it,
+ten tables and twenty-four glasses against ten tables and twenty-five, and what
+it wins on is the clock, because a separated table costs it twenty-five arm
+seconds against the reference's forty-four.
 
 **The two borrowed models went from the worst results in the problem to
 harmless ones.** Run exactly as it downloads, the model broke twenty glasses on
@@ -1020,20 +1065,25 @@ of its teacher's pushes and comes down to pushing height nearly twice as often.
 
 **The imitation solution now acts, where before it only looked.** It went from
 leaving every table exactly as it found it — not one glass given room it did not
-start with — to freeing two glasses a queue and separating a table in one walk of
-three. It also breaks two, so by the share this problem scores on it has drawn
-level rather than won: 0.400 against the 0.400 it scored while doing nothing. The
-gap between "it does the task badly" and "it does not do the task" is the whole
-of what the changes bought here, and the three things standing in the way of more
-are all measured and written down above — one push moves a glass a fifth of what
-it needs, no glass in this cell is one the tipping rule can predict, and the
-direction the policy draws is blocked by a neighbour four times out of five.
+start with — to pushing glasses about, separating two tables in one walk of
+three, and reaching fourteen tables instead of ten. By the share this problem
+scores on it has not won anything: 0.359 against the 0.400 it scored while doing
+nothing, with a spread from 0.303 to 0.423 that holds both. It ends a queue one
+glass down on balance and breaks one. **So what the changes bought here is a
+solution that attempts the task and fails at it, in place of one that did not
+attempt it**, and the three things standing in the way of more are all measured
+and written down above — one push moves a glass a fifth of what it needs, no
+glass in this cell is one the tipping rule can predict, and the direction the
+policy draws is blocked by a neighbour four times out of five.
 
 **And one honest word about the share.** The imitation policy scored 0.400 when
-it moved nothing and scores 0.400 now that it frees two glasses and breaks two.
-A share that cannot tell those two states apart is not a rich enough measure on
-its own, which is why every page here reports the glasses freed and the glasses
-broken beside it. The card for this problem is three numbers, not one.
+it moved nothing and scores 0.359 now that it pushes glasses about, which reads
+like a solution that got worse when what it really did was start acting: a glass
+it topples forfeits its table, and a table it attempts and leaves crowded still
+counts every glass on it. A single share cannot tell "moved nothing" from
+"tried and failed", which is why every page here reports the glasses freed and
+the glasses broken beside it. The card for this problem is three numbers, not
+one.
 
 **The last of those three is where this stops, and the reason is worth stating.**
 It could be repaired the same way the distance was, by choosing the direction

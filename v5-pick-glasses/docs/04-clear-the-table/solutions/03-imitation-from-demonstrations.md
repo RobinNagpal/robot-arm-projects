@@ -542,16 +542,22 @@ allowance, however convenient that would be.
 |---|---|---|---|
 | One fixed nudge | 10 of 26 | +25 | 0 |
 | Geometry ranked | 7 of 25 | +19 | 0 |
-| **This solution** | **0 of 12**, 1 in one walk | **+1** | **1** |
-| A world model | 14 of 40 | +39 | 1 |
+| **This solution** | **0 of 14**, 2 in one walk | **−1** | **1** |
+| A world model | 14 of 39 | +33 | 5 |
 | SmolVLA as it downloads | 1 of 11 | +2 | 0 |
-| SmolVLA fine-tuned | 0 of 10 | 0 | 1 |
+| SmolVLA fine-tuned | 0 of 11 | 0 | 0 |
 
 Of the three solutions that answer from a picture, this one does the most work
 and is the only one whose work is deliberate. The borrowed model's one separated
 table and two freed glasses come from shoves that happened to go the right way;
-this solution chooses a glass, tests it, and pushes it, and the glass it frees is
-the glass it chose.
+this solution chooses a glass, tests it, and pushes it, so what it does to a
+glass it did on purpose.
+
+**That cuts both ways, and the three fits show it.** One of them separates two
+tables and gives room to four glasses while crowding one. The other two give
+room to no glass at all and crowd one and two, which is how the freed column
+comes out at minus one. A solution that pushes can end a queue below where it
+started, and this one does.
 
 The comparison that really matters is still with its own teacher. The teacher
 separates seven of the twenty-five tables it reaches. The student, fitted on

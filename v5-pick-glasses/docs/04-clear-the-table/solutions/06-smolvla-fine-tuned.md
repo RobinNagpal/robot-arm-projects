@@ -314,6 +314,45 @@ the looks. This is a weak instrument — sixteen chunks a kind, of a drawn answe
 — but it is strong enough to show that nothing like problem 3's improvement
 happened: there, the same measurement fell from about 300 mm to about 100 mm.
 
+### Was it simply fitted for too short a time?
+
+The distance above barely moved and the loss was still falling when the fit
+stopped, so the first thing anyone would ask is whether a thousand steps is
+simply not enough. That question was asked properly, and the answer is no. The
+correction was fitted again for three thousand steps instead of one thousand,
+on the larger set of demonstrations that solution 3 had already collected from
+nine hundred tables instead of three hundred, which costs eighty minutes a seed
+instead of twenty-seven.
+
+The fit measures its distance from the teacher every five hundred steps, so one
+longer fit answers two questions at once. The reading at step one thousand says
+what the larger set did on its own, and the reading at step three thousand says
+what the extra steps added on top of it. At the same thousand steps the larger
+set moved the distance over all kinds of answer from 134 mm to 136 mm, which is
+nothing beside a spread that is thirty millimetres wide. The two thousand extra
+steps then brought it to 85 mm. **So the steps did the work, and the larger set
+of demonstrations never showed at all.**
+
+The pair measurement was then walked again with the longer fit on the fitted
+side. The form of its answers moved further towards the teacher, exactly as the
+distance said it should: the lowest point of a chunk fell from 112 mm to 91 mm,
+the travel across the table from 351 mm to 330 mm, and between a fifth and a
+third of its answers now reach the height a push works at. The state of the
+table did not move with it. It still breaks two glasses over the three walks,
+its share is still 0.369, and the glasses it gives room to went from two to
+none, which is a change of the same size as the spread on either side. One of
+the three walks separated a table, which no fit of this solution had managed
+before, and one table in sixty is not yet a result.
+
+**The longer fit was therefore not kept**, because on the tables below the
+held-out line the two fits are level on every scored count and the longer one
+costs three times the machine time. What the measurement leaves behind is the
+mechanism, and it is the useful part: the correction copied its teacher's motion
+twice as closely and the glasses on the table ended in the same state, so
+**what limits this solution is not how well it copies the teacher**. It is that
+copying a teacher whose answers are mostly looking does not produce a solution
+that pushes.
+
 ## Saying when the table is finished
 
 Problem 4 asks every solution to declare a table done, and a policy has no
@@ -350,14 +389,14 @@ measurement a method is tuned against stops being a measurement.
 
 | the held-out queue | geometry reference | small fitted model | borrowed, untrained | **borrowed, fitted here** |
 |---|---|---|---|---|
-| Tables attempted | 26 | 11 (10 to 15) | 11 | **11 (10 to 13)** |
-| Tables separated | 10 | 0 (0 to 1) | 1 (0 to 1) | **0** |
-| Tables failed by a topple | 0 | 2 (1 to 2) | 0 | **0 (0 to 1)** |
-| Share of glasses pickable at the end | 0.627 | 0.400 | 0.439 | **0.405** |
-| Glasses it made pickable | +25 | +2 | +2 | **0** |
-| Glasses broken | 0 | 2 (1 to 3) | 0 | **0 (0 to 1)** |
-| Said done while still crowded | 14 of 26 | 9 of 11 | 9 of 11 | **9 of 11** |
-| Thinking an answer | 15 ms | 19 ms | 280 ms | **282 ms** |
+| Tables attempted | 26 | 14 (9 to 36) | 11 | **11 (10 to 13)** |
+| Tables separated | 10 | 0 (0 to 2) | 1 (0 to 1) | **0** |
+| Tables failed by a topple | 0 | 1 | 0 | **0 (0 to 1)** |
+| Share of glasses pickable at the end | 0.627 | 0.359 | 0.439 | **0.405** |
+| Glasses it made pickable | +25 | −1 | +2 | **0** |
+| Glasses broken | 0 | 1 | 0 | **0 (0 to 1)** |
+| Said done while still crowded | 14 of 26 | 9 of 14 | 9 of 11 | **9 of 11** |
+| Thinking an answer | 15 ms | 21 ms | 280 ms | **282 ms** |
 
 Four things in that table need reading carefully.
 

@@ -146,6 +146,59 @@ instrument; what it is strong enough to say is that the fit did not move the
 model's waypoints towards its teacher's by anything like the margin problem 3
 saw, where the same measurement fell from about 300 mm to about 100 mm.
 
+### Three times the steps, on three times the demonstrations — measured and not kept
+
+The table above says the distance to the teacher barely moved, and the loss was
+still falling when the fit stopped, so the plain question is whether this
+correction was simply fitted for too short a time. Solution 3's larger
+demonstration set — nine hundred tables instead of three hundred — was already
+collected, so both were raised together: three thousand steps over twelve
+thousand frames, which costs eighty minutes a seed instead of twenty-seven.
+
+**The fit's own record separates the two changes**, because `train.py` measures
+the distance to the teacher every five hundred steps, so a longer fit on a
+larger set still reports its step-1,000 reading.
+
+| median distance from the teacher | untrained | 1,000 steps, 4,000 frames | 1,000 steps, 12,000 frames | 3,000 steps, 12,000 frames |
+|---|---|---|---|---|
+| over all three kinds | 152 to 163 mm | 131 to 142 mm | 103 to 146 mm | **83 to 126 mm** |
+| on the teacher's pushes | 82 to 97 mm | 78 to 86 mm | 76 to 108 mm | **57 to 91 mm** |
+
+At the same thousand steps the larger set moved the all-kinds median from 134 mm
+to 136 mm, and the push median the wrong way, both well inside a spread thirty
+millimetres wide. The two thousand extra steps then closed another fifty
+millimetres. **So the steps did the work and the larger set never showed.**
+
+The pair was then walked again with the longer fit in place of the fitted side.
+The untrained side is the same weights with no correction at all, so it is
+unaffected by any of this, and it repeated its earlier walk exactly — which is
+what makes the two fitted columns comparable.
+
+| twenty tables, three walks | untrained | 1,000 steps, 4,000 frames | 3,000 steps, 12,000 frames |
+|---|---|---|---|
+| Tables separated | 0 | 0 (0 to 0) | 0 (0 to 1) |
+| Glasses broken | 0 | 2 (1 to 3) | 2 (1 to 2) |
+| Glasses it made pickable | 0 | +2 (0 to +3) | 0 (0 to +2) |
+| Share of glasses pickable | 0.393 | 0.369 | 0.369 |
+| Said done | 18 of 20 | 17 of 20 | 15 of 20 |
+| Lowest point of a chunk | 150 mm | 112 mm | 91 mm |
+| Travel across the table | 834 mm | 351 mm | 330 mm |
+| Step between waypoints | 15.1 mm | 4.8 mm | 4.6 mm |
+| Answers reaching the pushing height | 14% | 22% to 27% | 21% to 34% |
+
+Everything about the *form* of the answers moved further towards the teacher,
+and nothing about the state of the table moved with it. One of the three walks
+separated a table, which no fit of this solution had managed before, and one
+table in sixty is not a result.
+
+**It was not kept.** Below the held-out line the two fits tie on every scored
+count and the longer one costs three times the machine time, so the step count
+stays at problem 3's thousand. The held-out queue agrees without being asked:
+the longer fit scored 0.345 there against 0.405, and one of its three walks
+broke three glasses. What the measurement adds to the record is the mechanism:
+**what limits this solution is not how well the correction copies its teacher's
+motion**, because the copy got better by half and the table did not change.
+
 ## How it says it is done
 
 Problem 4 asks every solution to declare a table finished, and that is a
@@ -307,20 +360,23 @@ which is the comparison that matters: the training is the only difference.
 
 | the held-out queue, 15 arm minutes | geometry reference | small fitted model | borrowed, nothing fitted | **borrowed, fitted here** |
 |---|---|---|---|---|
-| Tables attempted | 26 | 11 (10 to 15) | 11 | **11 (10 to 13)** |
-| Tables separated | 10 | 0 (0 to 1) | 1 (0 to 1) | **0** |
-| Tables failed by a topple | 0 | 2 (1 to 2) | 0 | **0 (0 to 1)** |
-| Glasses pickable at the end | 0.627 | 0.400 | 0.439 | **0.405** |
-| Glasses it made pickable | +25 | +2 | +2 | **0** |
-| Glasses broken | 0 | 2 (1 to 3) | 0 | **0 (0 to 1)** |
-| Said done while still crowded | 14 of 26 | 9 of 11 | 9 of 11 | **9 of 11** |
-| Thinking an answer | 15 ms | 19 ms | 280 ms | **282 ms** |
+| Tables attempted | 26 | 14 (9 to 36) | 11 | **11 (10 to 13)** |
+| Tables separated | 10 | 0 (0 to 2) | 1 (0 to 1) | **0** |
+| Tables failed by a topple | 0 | 1 | 0 | **0 (0 to 1)** |
+| Glasses pickable at the end | 0.627 | 0.359 | 0.439 | **0.405** |
+| Glasses it made pickable | +25 | −1 | +2 | **0** |
+| Glasses broken | 0 | 1 | 0 | **0 (0 to 1)** |
+| Said done while still crowded | 14 of 26 | 9 of 14 | 9 of 11 | **9 of 11** |
+| Thinking an answer | 15 ms | 21 ms | 280 ms | **282 ms** |
 
 **The fit is no longer a gain over the same weights untrained, and it is still a
 clear loss against geometry.** Untrained, the borrowed model breaks nothing and
-frees two glasses; fitted, it breaks almost nothing and frees none. Both are
-beaten by the small fitted model on work done, and all three are far behind a
-hundred lines of arithmetic that separates ten tables and breaks none.
+frees two glasses; fitted, it breaks almost nothing and frees none. The small
+fitted model attempts more tables than either and separates two of them in one
+of its three walks, which neither borrowed model manages, but it ends its queue
+a glass down, so none of the three can be said to be doing the task. All three
+are far behind a hundred lines of arithmetic that separates ten tables and
+breaks none.
 
 **The column that looks like an improvement over its untrained self is not
 one.** A share of 0.405 against 0.439 is the wrong way round, and the two walks

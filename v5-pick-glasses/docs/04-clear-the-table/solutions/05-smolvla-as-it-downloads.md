@@ -422,13 +422,13 @@ this measurement can make.
 
 | fifty tables offered from 10,000 | 1 geometry | 2 ranked geometry | 4 world model | **5 as it downloads** |
 |---|---|---|---|---|
-| Tables attempted | 26 | 25 | **40** | 11 |
+| Tables attempted | 26 | 25 | **39** | 11 |
 | Tables separated | 10 | 7 | **14** | 1 |
-| Tables failed by a topple | **0** | **0** | 1 | **0** |
-| Glasses it gave room to | +25 | +19 | **+39** | +2 |
-| Share pickable | **0.627** | 0.582 | 0.598 | 0.439 |
-| Glasses broken | **0** | **0** | 1 | **0** |
-| Thinking an answer | 15 ms | 15 ms | **10 ms** | **280 ms** |
+| Tables failed by a topple | **0** | **0** | 5 | **0** |
+| Glasses it gave room to | +25 | +19 | **+33** | +2 |
+| Share pickable | **0.627** | 0.582 | 0.550 | 0.439 |
+| Glasses broken | **0** | **0** | 5 | **0** |
+| Thinking an answer | 15 ms | 15 ms | **11 ms** | **280 ms** |
 
 It is last on every line that measures work done, and it is now last without
 being dangerous. Sixteen of the eighteen glasses in its share arrived with room,
@@ -437,10 +437,13 @@ credited with was already there — and that it took nothing away in any walk.
 
 The nearest comparison is the [world model](04-a-world-model.md), which also
 answers from a fitted model and which separates fourteen tables. The difference
-between them is not that one is careful and the other is not — both now run the
-same clearance check — it is that the world model is asked for a *push at a
-named glass* and this one is asked for a path, and a path drawn by a model that
-was never shown this cell's glasses is not aimed at anything.
+between them is not that one runs a safety check and the other does not, because
+both now run the same clearance check. It is that the world model is asked for a
+*push at a named glass* and this one is asked for a path, and a path drawn by a
+model that was never shown this cell's glasses is not aimed at anything. The
+world model breaks five glasses over a queue where this one breaks none, and
+that is the price of aiming at something: a solution that never pushes a glass
+can never topple one.
 
 **This result was expected to be poor and is still worth having**, for the
 reason it was built: it is the baseline the same model fine-tuned on this cell
