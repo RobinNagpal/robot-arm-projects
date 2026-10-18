@@ -536,7 +536,7 @@ search pushed anyway. The model was confident and wrong, and it was confident
 and wrong about exactly the longest pushes, which is where it has least data and
 most to get wrong.
 
-**That reading has now been acted on twice, and it is where this solution's
+**That reading has now been acted on four times, and it is where this solution's
 ceiling is.** The data was doubled, which improved the aim and did not stop the
 long pushes going wrong. The limit on the predicted chance was tightened four
 times, from one in a hundred down to three in ten thousand, and it never saved a
@@ -544,11 +544,53 @@ glass — because a threshold cannot refuse what the model gives no chance at al
 Testing a doubted glass with the reference's five-millimetre shove was built and
 measured at three thresholds, and it cost up to four tables a walk while saving
 nothing, because a short test says nothing about a long push in a cell where the
-tipping rule can predict no glass at all. What is left is the one knob this
-solution still has — the price of a millimetre pushed, which trades fifteen
-separated tables of a hundred for one glass and therefore stays where it is —
-and a different model of toppling, which is a change of method rather than of
-setting.
+tipping rule can predict no glass at all. The fourth attempt is the section
+below, which is the one that says why the first three could not have worked.
+
+### What the topple head reads, and what the search asks it
+
+The head's accuracy is reported on `validation.npz`, which is pushes drawn at
+random. That is the wrong set to judge it on, and the right one costs one
+command: `make collect-check` lets the search choose the pushes on 150 tables
+nothing was fitted on, and `make check-planned` reads a fit on them. The set is
+named outside the `train*.npz` glob, because a check set the model was fitted on
+measures nothing.
+
+| at a chance of 0.01 | topples caught | safe pushes flagged |
+| --- | --- | --- |
+| the kept fit, on random pushes | 56 of 70 | 109 of 588 |
+| the kept fit, on the search's own pushes | **13 of 40** | 33 of 725 |
+| fitted on a second planned round, on the same pushes | **22 of 40** | 51 of 725 |
+
+**The head is good on the pushes it was trained on and poor on the pushes it is
+asked about**, and the two sets differ because the search chose one of them. A
+search that maximises over the model's own estimates picks the candidates the
+model is confident and wrong about, so the head's false negatives *are* this
+solution's broken glasses. That is the winner's curse stated in numbers, and it
+is why no setting of the limit could ever have helped: the glasses go over on
+pushes the head puts below any threshold worth having.
+
+Two things follow, and the second is the one worth remembering. **The search is
+already doing half the work of staying safe**, because its own pushes topple 5.2
+per cent of the time against 10.4 per cent for random pushes. And **teaching the
+head on exactly those pushes works on the head and not on the table.** A second
+planned round of 300 tables, collected with this model rather than the one of
+three weeks ago, takes the catch rate from 13 of 40 to 22 of 40 and the aim on
+those pushes from 7.1 mm to 6.3 mm — and over nine clocked walks the solution
+built on it separates 16.6 tables against 15.7, frees 45.0 glasses against 42.3,
+and breaks 3.1 against 1.7. The caution limit was tried again at 0.003 and 0.001
+on that better head, where it does now cut breakages for the first time, from
+3.1 to 2.3, and never below the kept fit's 1.7. The price on risk was tried at
+2.0 and 8.0 on both fits: 2.0 buys one glass and costs a hundredth and a half of
+share, and 8.0 costs two separated tables. Eight configurations in all, and the
+share runs from 0.604 to 0.640 with no ordering that survives the spreads.
+
+**So the better model is not a better solution, and the round two fit is not
+kept.** What a more capable model buys here is more work, and more work on this
+table means more glasses on their sides. The remaining breakages are a limit of
+what the camera can see — friction and the exact contact decide them — and not a
+limit of the arithmetic in front of the model, which is why the next thing to
+try is a different model of toppling rather than another setting.
 
 ## Running it
 
@@ -559,6 +601,8 @@ make collect-more       # round 1 again on later tables, about 5 minutes
 make train              # about a minute
 make collect-planned    # round 2: the search's own pushes on 300 new tables
 make train              # again, on every round collected
+make collect-check      # a planned round kept out of the fit, for reading the head
+make check-planned      # read the fit on it: 13 of 40 topples caught, against 56 of 70 on random pushes
 make select             # fifty tables below the held-out line, under the real clock
 make measure            # the twenty tables above
 make reference          # the geometry reference's own numbers, to sit beside

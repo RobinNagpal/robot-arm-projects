@@ -404,7 +404,61 @@ right and the remedy was not enough**, and the three things tried alongside it
 all failed for one reason: a threshold cannot refuse a push the model gives no
 chance at all, and a five-millimetre test cannot tell you what a fifty-millimetre
 push will do in a cell where the tipping rule can predict no glass whatsoever.
-What is left is a different model of toppling rather than more of this one.
+
+## Why the model is confident and wrong, which is a property of the search
+
+The last section leaves one question open, and it is the important one: the part
+of the model that judges toppling was fitted on thousands of pushes and told
+what each of them did, so why is it so badly wrong about these few? The answer
+is not that it is a poor judge of pushes. It is that nobody had ever asked it
+about the pushes it is actually used on.
+
+**The set a model is checked on has to be made the way the model is used.** The
+check set this solution has always reported is pushes drawn at random, because
+that is how the first collecting round was made. The search does not make random
+pushes: it looks at a few thousand candidates and takes the one the model likes
+best. So a second check set was collected, on 150 tables nothing was fitted on,
+with the search choosing every push exactly as it does in a run. The same model
+was then read on both sets.
+
+| at a chance of one in a hundred | toppling pushes caught | safe pushes flagged |
+| --- | --- | --- |
+| on pushes drawn at random | 56 of 70 | 109 of 588 |
+| on pushes the search chose | **13 of 40** | 33 of 725 |
+
+**A model that catches four topples in five becomes a model that catches one in
+three, and the only thing that changed is who chose the pushes.** This is the
+winner's curse, and it is worth stating plainly because it applies to every
+solution that searches over its own predictions. The search is maximising over
+estimates that carry error, so it is drawn to the candidates whose estimates are
+wrong in its favour. Among the pushes it brings back, the ones the model
+mis-judges are over-represented by construction. The head's mistakes are not
+scattered through the solution's answers — they *are* the solution's answers
+that break glasses.
+
+Two consequences follow. The first is that the three repairs above could not
+have worked: a limit, a price and a test all act on the number the head
+produces, and on these pushes that number is near zero however it is treated.
+The second is the obvious cure, which is to teach the head on the pushes the
+search chooses, and that was measured too.
+
+**Fitting on the search's own pushes fixes the head and not the table.** A
+second planned round of 300 tables was collected with this model, rather than
+the first planned round's model of three weeks earlier, and the fit on it catches
+22 of 40 instead of 13, while its aim on those pushes improves from 7.1 mm to
+6.3 mm. Over nine clocked walks of fifty tables it separates 16.6 tables against
+15.7, frees 45.0 glasses against 42.3, and breaks 3.1 against 1.7. With the
+better head the caution limit at last does something — tightened to three in a
+thousand it takes breakages from 3.1 to 2.3 — and never below the kept fit's
+1.7. Eight configurations of the two fits were walked in all, and the share
+ranges from 0.604 to 0.640 with no ordering that survives the spreads.
+
+So the round-two fit was not kept, and the reason is the clearest sentence this
+solution's record has produced: **a more capable model here buys more work, and
+more work on a crowded table means more glasses on their sides.** What decides
+the remaining topples is friction and the exact contact between a finger and a
+glass, which no camera in this cell can see, so the next thing worth building is
+a different account of toppling rather than another setting in front of this one.
 
 ## The knob that trades some of it back, and why it was not turned
 

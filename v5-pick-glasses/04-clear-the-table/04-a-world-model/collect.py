@@ -77,6 +77,18 @@ TRAIN_SEEDS = 1000
 MORE_SEEDS = 2200
 PLANNED_SEEDS = 4000
 DOUBTED_SEEDS = 5000
+# Round 2 again, with the model as it stands now. The first planned round was
+# collected from the model of the time, and every change since has altered
+# which pushes the search chooses, so the pushes it is wrong about have moved
+# too. A second round on its own tables is what asks the present model about
+# the present model's own choices.
+PLANNED_AGAIN_SEEDS = 6000
+# A planned round kept out of the fit, for measuring how well the topple head
+# reads the pushes the search really makes. ``validation.npz`` is random
+# pushes, and the head is good on those; the pushes that break glasses are the
+# ones the search chose, so telling the two models apart needs a check set of
+# that kind.
+PLANNED_CHECK_SEEDS = 8000
 VALIDATION_SEEDS = 9000
 
 # How often a random push goes to a glass that has no room, and how often it
@@ -419,6 +431,14 @@ def main() -> None:
     parser.add_argument(
         "--more", action="store_true", help="another batch of round 1's random pushes, on later tables"
     )
+    parser.add_argument(
+        "--planned-again", action="store_true", help="round 2 again, with the model as it stands now"
+    )
+    parser.add_argument(
+        "--planned-check",
+        action="store_true",
+        help="a planned round kept out of the fit, for checking the topple head on the search's own pushes",
+    )
     parser.add_argument("--save", type=str, default="", help="write what collecting cost to this file")
     arguments = parser.parse_args()
 
@@ -440,6 +460,21 @@ def main() -> None:
         # kept, so a name outside that glob is what stops it from being fitted
         # on by accident. ``train.py --doubted`` is how to fit on it again.
         cost = {"doubted": collect(list(seeds), DATA / "doubted.npz", model, doubting=True)}
+    elif arguments.planned_again or arguments.planned_check:
+        import push_model
+        from borrowed import WEIGHTS
+
+        again = arguments.planned_again
+        first = PLANNED_AGAIN_SEEDS if again else PLANNED_CHECK_SEEDS
+        seeds = range(first, first + arguments.tables)
+        limit = PLANNED_CHECK_SEEDS if again else VALIDATION_SEEDS
+        if seeds[-1] >= limit:
+            raise SystemExit(f"this would reach the tables that start at {limit}")
+        model = push_model.Ensemble.load(WEIGHTS)
+        # The check set's name is outside the ``train*.npz`` glob on purpose,
+        # because a check set the model was fitted on measures nothing.
+        where = DATA / ("train_planned_again.npz" if again else "validation_planned.npz")
+        cost = {"planned_again" if again else "planned_check": collect(list(seeds), where, model)}
     elif arguments.planned:
         import push_model
         from borrowed import WEIGHTS

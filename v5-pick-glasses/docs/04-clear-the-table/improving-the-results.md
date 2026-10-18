@@ -415,7 +415,11 @@ glass at all.
 **Those two failures share one cause, and it is the most useful thing in this
 section.** A threshold can only refuse an answer the model thinks is risky, and
 the pushes that actually topple glasses are the ones the model gives almost no
-chance of toppling, so there is nothing for a threshold to catch. A test shove
+chance of toppling, so there is nothing for a threshold to catch. The next
+section says why the model is so sure about exactly those pushes, and it was
+measured by building a model whose judgement of them is twice as good: with that
+model the threshold does cut breakages, from 3.1 glasses a walk to 2.3, which
+confirms the cause — and it still does not beat the solution that is shipped. A test shove
 can only report what a small push does, and in this cell a glass goes over under
 a *long* push for reasons the tipping rule cannot predict for any glass, so
 there is nothing for the test to report. **Neither instrument can see the thing
@@ -471,6 +475,51 @@ answers at glasses the network itself had ranked low, where its accuracy at
 choosing a glass is barely better than a coin toss. **A refusal is sometimes the
 better outcome, and a solution that keeps asking until something is permitted is
 choosing by what is permitted rather than by what it believes.**
+
+### Checking a model on examples it will never be asked about
+
+This one is a measurement mistake rather than a failed repair, and it is the
+most reusable thing on the page, because nothing about it is particular to
+robots.
+
+**The world model's judgement of toppling was always reported on the wrong
+set.** Its training pushes were drawn at random, and so was the set its accuracy
+was read on, where it catches 56 of 70 toppling pushes. But the solution does
+not make random pushes: its search looks at a few thousand candidate pushes and
+makes the one the model likes best. So a second check set was collected on fresh
+tables with the search choosing every push, and the same model read 13 of 40 on
+it.
+
+| at the same threshold | toppling pushes caught |
+| --- | --- |
+| pushes drawn at random | 56 of 70 |
+| pushes the search chose | 13 of 40 |
+
+**Four in five becomes one in three, and the only thing that changed is who
+chose the pushes.** The reason is worth learning once and remembering: a search
+that maximises over its model's own estimates is pulled towards the candidates
+whose estimates are wrong in its favour, because that is what "best" means when
+the estimates carry error. So the model's mistakes are not sprinkled evenly
+through the solution's behaviour — they are concentrated in exactly the answers
+it acts on. This is called the winner's curse, and the pessimism in group 4 is
+the repair for the half of it that shows up as disagreement between the copies.
+
+**The obvious cure works on the model and not on the result.** Three hundred
+tables of the search's own pushes were collected with the present model and the
+copies refitted on them, which took the catch rate from 13 of 40 to 22 of 40 and
+improved the aim on those pushes as well. Over nine clocked walks the solution
+built on that better model separated 16.6 tables against 15.7, freed 45.0
+glasses against 42.3, and broke 3.1 against 1.7, for the same share. Eight
+settings of the caution limit and the risk price were walked around it and none
+of them beat the shipped pair.
+
+**So a more capable model bought more work, and more work on a crowded table
+means more glasses on their sides.** That is the plainest statement of this
+solution's ceiling: what decides whether a glass slides or tips is friction and
+the exact contact between a finger and the glass, and no camera in this cell can
+see either, so the remaining breakages are a limit of the information and not of
+the caution. The instrument stayed in the code, because a model checked on the
+wrong distribution reports an accuracy nobody can use.
 
 ### Collecting the examples the model is least sure about
 
@@ -634,6 +683,22 @@ often but cannot add information that was never recorded. The honest expectation
 is small, because the same solution's deciding network got no better at all on
 three times the material.
 
+**Give the world model a different account of toppling, rather than a better
+number for it.** This is now the best-supported candidate for the breakages,
+because the section above rules out the alternatives: the judgement of toppling
+is good on random pushes, poor on the pushes the search chooses, and fitting it
+on those pushes improves the judgement without improving the result. What
+decides whether a glass slides or tips is friction and the exact point the
+finger meets it, and the camera sees neither, so a number predicted from the
+picture will keep being confidently wrong. The shapes of account worth trying
+are ones that do not need those unseen quantities: refuse a push whose contact
+point sits above the height the tipping rule allows for that glass's own
+measured foot and height, which is arithmetic the project already has; or ask
+the model for the *height* at which the finger will meet the glass and treat
+that as the risk, instead of asking it for a chance of toppling. Both replace a
+learned probability with a measured geometric fact, which is the direction every
+repair on this page that worked has taken.
+
 **Retrain the ranking trees on the question they are being asked.** As explained
 above, they judge risk and are used to judge gain. Training them on how much room
 a push actually frees, measured by carrying the push out rather than by asking the
@@ -707,7 +772,7 @@ because the next person's time should go to the big holes.
 
 - [What changed, and what each change bought](what-changed.md) — the same
   changes taken one at a time, each beside the before-and-after measurement that
-  justified it, including the nine that were measured and thrown away.
+  justified it, including the ten that were measured and thrown away.
 - [The six solutions side by side](../../04-clear-the-table/results/README.md) —
   every column of every result, what perfect play achieves on the same tables,
   and which columns mislead when read alone.

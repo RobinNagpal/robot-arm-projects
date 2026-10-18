@@ -27,6 +27,7 @@ from borrowed import jaw_paths
 from push_model import Ensemble, PushNet
 from work_cell.table.layout import TABLE_CENTRE_XY, TABLE_SIZE
 
+import judging
 import tables
 from open_run import HOME, clear_table, open_cell
 from partners import GRIP_ROOM, PUSH_HEIGHT, TRAVEL_HEIGHT, Seen, in_zone
@@ -503,3 +504,24 @@ def test_the_two_disagreements_are_weighed_against_each_other() -> None:
     room = GRIP_ROOM / 4
     assert collect.most_doubted(Divided([room, 0], [0, 0.10]), seen, drawn) is drawn[0]
     assert collect.most_doubted(Divided([room, 0], [0, 0.40]), seen, drawn) is drawn[1]
+
+
+def test_the_collecting_bands_are_in_order_and_do_not_overlap() -> None:
+    """Every round's tables sit after the round before it, and all of them below the score.
+
+    A band put in the wrong place is a silent fault: the round still collects,
+    the fit still runs, and a measurement taken on tables the model was fitted
+    on quietly flatters it. One diagnosis in this folder's record was taken on
+    an overlapping band before this test existed.
+    """
+    bands = [
+        collect.TRAIN_SEEDS,
+        collect.MORE_SEEDS,
+        collect.PLANNED_SEEDS,
+        collect.DOUBTED_SEEDS,
+        collect.PLANNED_AGAIN_SEEDS,
+        collect.PLANNED_CHECK_SEEDS,
+        collect.VALIDATION_SEEDS,
+    ]
+    assert bands == sorted(set(bands))
+    assert bands[-1] < judging.HELD_OUT

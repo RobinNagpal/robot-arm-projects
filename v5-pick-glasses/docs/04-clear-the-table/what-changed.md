@@ -878,7 +878,7 @@ than on the unclocked two hundred.
 the band from 500 and 0.570 on the held-out band, which is why three bands are
 walked and pooled rather than one.
 
-## Nine repairs that were measured and not kept
+## Ten repairs that were measured and not kept
 
 A page that only lists what worked is not a record of what was learned.
 
@@ -1012,6 +1012,62 @@ was not kept, because below the line the two fits tie on every scored count and
 the longer one costs three times the machine time. The held-out queue agrees
 without being asked: it scored 0.345 there against 0.405, and one of its three
 walks broke three glasses.
+
+**Fitting the world model on a second round of the search's own pushes** is the
+last of these, and it is the one that explains the three before it. The record
+above says four times that the glasses go over on pushes the model gives no
+chance at all; what it did not say is why a head fitted on thousands of labelled
+pushes should be so wrong about these few.
+
+**The check set was made the wrong way.** The head's accuracy has always been
+reported on pushes drawn at random, because that is how round 1 was collected,
+and the search does not make random pushes: it takes the best of a few thousand
+candidates. So a planned check set was collected — 150 tables nothing was fitted
+on, with the search choosing every push — and the same model read on both.
+
+| at a chance of 0.01 | topples caught | safe pushes flagged |
+| --- | --- | --- |
+| the kept fit, on random pushes | 56 of 70 | 109 of 588 |
+| the kept fit, on the search's own pushes | **13 of 40** | 33 of 725 |
+| fitted on round two again, on the same pushes | **22 of 40** | 51 of 725 |
+
+**Four topples in five becomes one in three, and the only thing that changed is
+who chose the pushes.** That is the winner's curse in numbers: a search
+maximising over estimates that carry error is drawn to the candidates whose
+estimates are wrong in its favour, so the head's false negatives are not
+scattered among the answers — they are the answers that break glasses. It also
+says the search is doing half the work of staying safe already, because its own
+pushes topple 5.2 per cent of the time against 10.4 per cent for random ones.
+
+The cure was measured. Three hundred tables of the present model's own chosen
+pushes were collected and the copies refitted on them, which took the catch rate
+from 13 of 40 to 22 of 40 and the aim on those pushes from 7.1 mm to 6.3 mm at
+the median. Then eight configurations were walked on three clocked bands below
+the held-out line, nine walks each:
+
+| fit, caution limit, risk price | separated | freed | broken | share |
+| --- | --- | --- | --- | --- |
+| the kept fit, 0.01, 0.5 | 15.7 | +42.3 | **1.7** | 0.632 |
+| the kept fit, 0.01, 2.0 | 15.7 | +43.3 | 2.0 | 0.617 |
+| the kept fit, 0.01, 8.0 | 13.8 | +40.0 | 2.2 | 0.604 |
+| round two again, 0.01, 0.5 | 16.6 | +45.0 | 3.1 | 0.629 |
+| round two again, 0.003, 0.5 | 16.0 | +44.6 | 2.3 | 0.636 |
+| round two again, 0.001, 0.5 | 16.7 | +45.1 | 3.6 | 0.614 |
+| round two again, 0.01, 2.0 | 16.1 | +45.0 | 2.4 | **0.640** |
+| round two again, 0.01, 8.0 | **16.8** | **+46.6** | 3.2 | 0.628 |
+
+**The better head is not a better solution.** Every configuration of the refit
+breaks more glasses than the fit it would replace, the share runs from 0.604 to
+0.640 with no ordering that survives the spreads, and the committed limit of
+0.01 and price of 0.5 are not beaten by any of the six settings tried around
+them. One thing is new and is worth keeping: with a head that reads these pushes
+at all, tightening the limit cuts breakages for the first time, from 3.1 to 2.3
+— and still not below 1.7.
+
+What stays in the code is the instrument. `collect.py --planned-check` makes the
+set and `train.py --check` reads a fit on it, because **a model checked on the
+wrong distribution reports an accuracy nobody can use**, and this solution spent
+three repairs finding that out the slow way.
 
 ## What it all came to
 

@@ -9,7 +9,7 @@ HERE := 04-a-world-model
 TABLES ?= 600
 PIXI = cd $(PROBLEM) && pixi run
 
-.PHONY: help collect collect-more collect-planned collect-doubted train measure measure-predicting reference select judge test lint
+.PHONY: help collect collect-more collect-planned collect-doubted collect-check check-planned train measure measure-predicting reference select judge test lint
 
 help: ## This list
 	@grep -hE '^[a-z0-9-]+:.*##' $(MAKEFILE_LIST) | sed 's/:.*##/\t/' | sort
@@ -28,6 +28,12 @@ collect-doubted: ## Round 3: the pushes the copies disagree about, which needs a
 
 train: ## Fit the copies of the model on every round collected (about 2 minutes)
 	$(PIXI) python $(HERE)/train.py --save $(HERE)/training.json
+
+collect-check: ## A planned round kept out of the fit, for reading the topple head on the search's own pushes
+	$(PIXI) python $(HERE)/collect.py --planned-check --tables 150
+
+check-planned: ## Read the fitted copies on that set, which is where the broken glasses are explained
+	$(PIXI) python $(HERE)/train.py --check $(HERE)/data/validation_planned.npz
 
 measure: ## The twenty tables the geometry reference was calibrated on
 	$(PIXI) python $(HERE)/measure.py --save $(HERE)/measurement.json

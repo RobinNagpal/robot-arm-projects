@@ -73,6 +73,12 @@ def main() -> None:
         "--doubted", action="store_true", help="also fit on round 3, which was measured and not kept"
     )
     parser.add_argument(
+        "--check",
+        type=str,
+        default="",
+        help="read the fitted copies on this set instead of fitting, as data/validation_planned.npz",
+    )
+    parser.add_argument(
         "--topple-scale",
         type=float,
         default=TOPPLE_SCALE,
@@ -82,6 +88,17 @@ def main() -> None:
     # Held down on purpose: the machine this was fitted on was also running
     # another solution's measurement.
     torch.set_num_threads(arguments.threads)
+
+    # Reading a fit is not fitting, and the one reading that matters is on a
+    # set of the search's own pushes. ``validation.npz`` is random pushes, and
+    # the topple head is good on those: it catches 56 of 70. On pushes the
+    # search chose it catches 13 of 40, because the search picks the candidates
+    # the head is confident and wrong about. ``collect.py --planned-check``
+    # makes that set, and this is how to read a model on it.
+    if arguments.check:
+        check = np.load(arguments.check)
+        report(Ensemble.load(WEIGHTS), check["inputs"], check["outputs"], check["mask"])
+        return
 
     x, y, mask = load(DATA, arguments.doubted)
     toppled = float(y[:, encoding.TOPPLED].mean())
