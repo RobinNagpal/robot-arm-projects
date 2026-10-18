@@ -878,7 +878,7 @@ than on the unclocked two hundred.
 the band from 500 and 0.570 on the held-out band, which is why three bands are
 walked and pooled rather than one.
 
-## Ten repairs that were measured and not kept
+## Eleven repairs that were measured and not kept
 
 A page that only lists what worked is not a record of what was learned.
 
@@ -1068,6 +1068,31 @@ What stays in the code is the instrument. `collect.py --planned-check` makes the
 set and `train.py --check` reads a fit on it, because **a model checked on the
 wrong distribution reports an accuracy nobody can use**, and this solution spent
 three repairs finding that out the slow way.
+
+**Correcting the stale input in the ranking trees** is the eleventh, and it
+belongs beside the tenth because it is the same kind of fault. The trees score
+every push the geometry has approved, and the input they lean on hardest — four
+tenths of the fitted importance — is the jaw's top edge over the height at which
+the glass would tip. That top edge is a constant of the gripper, and it changed
+from 65 mm to 107 mm when problem 3 moved to the real gripper, after these trees
+were fitted and never refitted. At run time they therefore read a number about
+one and two thirds the size of anything they learned from: over the candidates
+scored on sixty tables, seven inputs have about one per cent of their values
+outside the range the fit covered and **this one has a quarter**.
+
+The input is an exact function of another input and that constant, so it can be
+corrected and the same trees fitted again on the same labels, without pushing a
+glass. In perfect play over three hundred tables below the held-out line, with
+the arm and the clock taken away so that only the ordering is judged, the printed
+rule separates 215 and needs 543 pushes, the shipped trees separate 206 and need
+753, and the corrected trees separate 209 and need 646 — **a third of the
+ordering's deficit and half of its extra pushes recovered.** On three clocked
+queues of fifty tables, which is what the problem scores, the corrected trees
+separate 12 against the shipped trees' 14, with a share of 0.548 against 0.571
+and nothing broken either way. So it is not kept, and the reason is that only
+half of the staleness can be mended this way: every label is the room a table
+gained when the *old* jaw pushed a glass, and those have to be collected again
+rather than recomputed.
 
 ## What it all came to
 

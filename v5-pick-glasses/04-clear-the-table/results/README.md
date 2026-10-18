@@ -224,9 +224,14 @@ twenty-five. Perfect play settles where that comes from, because with the arm
 taken away and no clock the printed rule separates **thirty-four** of the fifty
 tables while the fitted ranker separates **twenty-nine**, and the ranker needs
 a hundred and ten pushes to the rule's eighty-six. So the ordering is worse at
-choosing even when nothing can go wrong in carrying it out. The trees were
-fitted to judge whether a push would tip a glass, which is about risk, and not
-whether a push would actually free one.
+choosing even when nothing can go wrong in carrying it out. It is not that the
+trees were fitted on the wrong question: their label is the room the whole table
+gained from a push, and on problem 3's own per-decision test they predict it
+better than the printed rule does. What differs is the tables they were shown.
+Problem 3 racks every glass that already has room before it plans, so a glass
+with room was never on a training table; problem 4 lifts nothing, so every
+glass with room stays where it is and gets in the way. The ordering is being
+asked about tables of a kind it never saw.
 
 **The three solutions that answer from a picture are now nearly harmless, and
 between them they free one glass.** That is a poor result, and it is a very

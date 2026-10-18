@@ -452,12 +452,24 @@ ranker separates twenty-nine, needing more pushes to do it.
 
 The obvious explanation is that the ranker prefers long pushes because it does
 not know what a push costs. That explanation was tested at four different prices
-per millimetre and is **wrong**: the prices changed nothing. The real reason is
-what the trees were trained to answer. They were trained to judge whether a push
-would tip a glass, which is a question about risk, and they are being used to
-judge whether a push will free a glass, which is a question about gain. A model
-asked a question next to the one it was trained on will answer confidently and
-badly, and no amount of adjusting the surrounding arithmetic repairs that.
+per millimetre and is **wrong**: the prices changed nothing.
+
+The second obvious explanation is that the trees were fitted on the wrong
+question, and that is wrong too. Their label is the room the whole table gained
+from the push, measured by carrying it out, and on the problem they were fitted
+for they predict it better than the printed rule does — the room they leave on
+the table after a decision is four millimetres short of the best available
+against the printed rule's nineteen.
+
+**What differs is the tables they were shown.** The problem they were fitted on
+lifts each glass away once it has room, and its training states were recorded
+after that lifting, so a glass with room was never standing on a training table.
+Problem 4 lifts nothing: a glass that has room stays exactly where it is, and it
+is an obstacle to every push near it for the rest of the table. So the ordering
+is being asked about tables of a kind it has never seen, which is the same
+failure as the world model's judgement of toppling two sections below — a model
+reading a distribution it was not fitted on — and it is the reason this page puts
+the two next to each other.
 
 ### Letting a model keep asking until something is allowed
 
@@ -520,6 +532,30 @@ the exact contact between a finger and the glass, and no camera in this cell can
 see either, so the remaining breakages are a limit of the information and not of
 the caution. The instrument stayed in the code, because a model checked on the
 wrong distribution reports an accuracy nobody can use.
+
+**The same lesson caught a second solution, in a form that is easier to miss.**
+The ranking trees take eight inputs, and the one they lean on hardest is the
+jaw's top edge divided by the height at which that glass would tip. The jaw's top
+edge is a constant of the gripper, and it changed from 65 mm to 107 mm when the
+earlier problem moved to the real gripper — after these trees were fitted, and
+they were never fitted again. So at run time they read a number about one and two
+thirds the size of anything they learned from, and a quarter of the values fall
+beyond every threshold the trees hold, where a tree can tell nothing apart.
+Nothing failed when that happened, which is why it sat unnoticed through several
+rounds of measurement: a model fed an impossible input still returns a number,
+and the number still sorts.
+
+Correcting it is cheap, because the stale input can be computed from another
+input, and it was measured: in perfect play over three hundred tables it recovers
+a third of the ordering's deficit against the printed rule and half of its extra
+pushes, and under the clock it separates twelve tables of a hundred and fifty
+against the shipped fourteen, so it was not kept either. Only half of the
+staleness can be mended that way, because every label was measured with the old
+jaw as well. **The lesson to carry is about habits rather than about this
+constant:** a fitted model is only valid for the code that made its inputs, so a
+model loaded from an earlier problem needs a check that its inputs still land
+where its training rows did — and that check costs one page of arithmetic, where
+finding it the slow way costs a round of measurement.
 
 ### Collecting the examples the model is least sure about
 
@@ -699,11 +735,15 @@ that as the risk, instead of asking it for a chance of toppling. Both replace a
 learned probability with a measured geometric fact, which is the direction every
 repair on this page that worked has taken.
 
-**Retrain the ranking trees on the question they are being asked.** As explained
-above, they judge risk and are used to judge gain. Training them on how much room
-a push actually frees, measured by carrying the push out rather than by asking the
-tipping rule, turns a mismatched model into a matched one, and that costs nothing
-but a new set of labels.
+**Fit the ranking trees on this problem's own tables.** As explained above, the
+trees predict the room a push frees and predict it well, on states recorded after
+every roomy glass had been lifted away — and this problem lifts nothing. The
+repair is to collect the labels again from the states this problem really plans
+in, with every glass still standing, and fit the same trees on those. The
+measurement that would settle it is cheap and has no noise in it at all: with the
+arm and the clock taken away, the printed rule separates thirty-four of the fifty
+tables and the borrowed ordering separates twenty-nine, so a fitted ordering that
+reaches thirty-four has earned its place and one that does not has not.
 
 **Average repeated readings of a glass instead of keeping only the newest one.**
 The geometry solutions average their readings, which halves the camera's error,
@@ -772,7 +812,7 @@ because the next person's time should go to the big holes.
 
 - [What changed, and what each change bought](what-changed.md) — the same
   changes taken one at a time, each beside the before-and-after measurement that
-  justified it, including the ten that were measured and thrown away.
+  justified it, including the eleven that were measured and thrown away.
 - [The six solutions side by side](../../04-clear-the-table/results/README.md) —
   every column of every result, what perfect play achieves on the same tables,
   and which columns mislead when read alone.

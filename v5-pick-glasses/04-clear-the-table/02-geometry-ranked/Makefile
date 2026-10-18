@@ -4,7 +4,7 @@
 .DEFAULT_GOAL := help
 TABLES ?= 20
 
-.PHONY: help setup measure rule perfect test lint
+.PHONY: help setup measure rule inputs perfect test lint
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*##"} /^[a-z-]+:.*##/ { printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
@@ -18,6 +18,9 @@ measure: ## What this achieves and spends on TABLES training tables
 
 rule: ## The same loop and the same candidates, with the model deleted
 	cd .. && pixi run python 02-geometry-ranked/measure.py --tables $(TABLES) --rule
+
+inputs: ## Whether the inputs handed to the borrowed trees are the kind they were fitted on
+	cd .. && pixi run python 02-geometry-ranked/measure.py --inputs --tables $(TABLES)
 
 perfect: ## The chooser with the arm taken away: is the draw separable at all
 	cd .. && pixi run python 02-geometry-ranked/measure.py --tables $(TABLES) --perfect \

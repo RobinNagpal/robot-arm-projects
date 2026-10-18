@@ -52,6 +52,10 @@ RANKED = partners.PUSHING / "02-geometry-ranked"  # problem 3's ranked solution
 # regenerates it with ``make train`` -- so this can be missing, and
 # ``ranked.py`` says so plainly rather than failing on a pickle.
 RANKER = RANKED / "model" / "ranker.joblib"
+# The rows the trees were fitted on. Nothing at run time needs them; a check
+# that the inputs this problem hands the trees still land where those rows do
+# needs them, and one of the eight did not. See ``measure.py --inputs``.
+ROWS = RANKED / "data" / "rows.npz"
 
 
 def _module(name: str, path: Path) -> ModuleType:
@@ -81,6 +85,7 @@ ranker = _module("ranker", RANKED / "ranker.py")
 __all__ = [
     "RANKED",
     "RANKER",
+    "ROWS",
     "REFERENCE",
     "candidates",
     "features",

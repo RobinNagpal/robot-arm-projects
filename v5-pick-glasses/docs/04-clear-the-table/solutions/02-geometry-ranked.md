@@ -263,18 +263,64 @@ tables where no ordering can win, every ordering is equally good. On a set where
 ten tables of twenty-six are winnable, a worse ordering has something to spoil
 — and the same disagreement that was free before now costs three tables.
 
-**What the model learned is which glass is risky, not which push helps.** Two
-of its eight inputs carry four fifths of the importance in the fit: how high
-the push is relative to the height at which that glass would topple, and how
-wide the glass's foot is. Both are about whether the glass would go over.
-Neither is about whether the push leaves the glass with room. So the model is a
-good judge of danger and was never asked to be a judge of usefulness, and
-sorting by danger is harmless when nothing can be won and harmful when
-something can.
+**The model was asked the right question and shown the wrong tables.** It is
+worth being exact here, because the obvious reading is wrong. The number the
+trees were fitted to predict is the room the whole table gains from a push,
+measured by carrying the push out, with a toppled glass counted as the worst
+push there is — and only one labelled push in eighty toppled anything, so the
+label is about room and almost nothing else. On the problem they were fitted
+for they predict it well: after a decision they leave the table four
+millimetres short of the best room available, where the printed rule leaves
+nineteen.
+
+What differs between the two problems is the tables a decision is made on.
+Problem 3 lifts each glass away as soon as it has room, and its training states
+were recorded after that lifting, so **a glass that already had room was never
+standing on a training table.** This problem lifts nothing: a roomy glass stays
+exactly where it is and obstructs every push near it until the table ends. So
+the ordering is reading tables of a kind it has never seen.
+
+Two of its eight inputs carry four fifths of the importance in the fit — how
+high the push is relative to the height at which that glass would topple, and
+how wide the glass's foot is — and both are facts about the glass's shape
+rather than about the room around it. On tables where the room around a glass
+is the thing that changed, leaning that hard on the glass's shape is exactly
+how an ordering goes stale.
 
 The shape of the losses fits that reading. Nothing toppled, the cell never
 refused a path, and not one table was lost to a safety decision — the glasses
 were simply left where the chosen pushes put them.
+
+### And one of the eight inputs is not the number the trees were fitted on
+
+There is a second thing wrong, and it is the kind of fault that hides for a long
+time because nothing fails when it happens. The input the trees lean on hardest
+is the jaw's top edge divided by the height at which that glass would tip. The
+jaw's top edge is a constant of the gripper, and that constant changed: problem 3
+later moved to the real gripper, which is taller, and the jaw's top edge went
+from 65 mm to 107 mm. The trees were fitted before that and were never fitted
+again, so **at run time they read a number about one and two thirds the size of
+anything they learned from.**
+
+How much that matters can be measured without guessing. Over the candidates this
+solution scored on sixty tables, seven of its eight inputs sit inside the range
+the fitted rows covered, each with about one per cent outside. The stale one has a
+quarter of its values outside that range. A decision tree answers by comparing an
+input against thresholds it learned, so a value beyond every threshold carries no
+information at all: a quarter of the time, the ordering's most important input has
+gone blank.
+
+The repair is cheap and it was measured. The stale input is an exact function of
+the glass's foot, which is another input, so it can be recomputed and the same
+trees fitted again on the same labels, with no pushing. In perfect play over
+three hundred tables — the arm and the clock taken away, so only the ordering is
+being judged — that recovers three of the nine tables the ordering loses to the
+printed rule and half of its extra pushes. Under the clock, which is what the
+problem scores, it separates twelve tables of a hundred and fifty against the
+shipped trees' fourteen. **So it was not kept**, and the honest reason is that
+only half of the staleness can be repaired this way: the labels were measured
+with the old jaw too, and those have to be collected again rather than
+recomputed.
 
 ## What these rows cannot settle
 

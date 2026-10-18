@@ -189,11 +189,16 @@ does not match the result: it separates one table fewer and frees four glasses
 fewer, and it does so for slightly *less* arm time. The sort has stopped being
 free.
 
-The reason is in the fit, and problem 3 already named it. The two inputs that
-carry four fifths of the importance are **push height over the topple limit**
-(0.43) and **foot width** (0.38): the model mostly learned which glass is risky
-to push, not which push is good. That is a useful thing to know and it is not a
-thing that frees a glass.
+The reason is not the label. The trees were fitted on the room the whole table
+gains from a push, 4,844 labelled pushes of which 57 toppled anything, and on
+problem 3's own per-decision test they leave 4.4 mm of room on the table against
+the printed rule's 18.7 mm. **What differs is the states.** Problem 3 records a
+decision after lifting every glass that has room, so a roomy glass was never
+standing on a training table; this problem lifts nothing, so a roomy glass stays
+and obstructs. The two inputs that carry four fifths of the importance are
+**push height over the topple limit** (0.43) and **foot width** (0.38), which are
+facts about the glass's shape rather than about the room around it — and the room
+around it is precisely what differs between the two problems' tables.
 
 ### The obvious repair, measured and not kept
 
@@ -211,12 +216,54 @@ times the price problem 3's world model pays for the same trade:
 | 0.3 | 15 | +39 | **0** |
 
 Nothing moves, at any price, and the arm time a table moves by less than a tenth
-of a second. So the ordering's fault is not that its pushes are too long: it is
-that the thing the trees are good at predicting — whether a push would tip a
-glass — is not the thing a chooser needs to know, because the candidate set the
-geometry hands them has already thrown out the pushes that would tip anything.
-The knob is not in the solution, and `ranked.py` carries this measurement so that
-the next person to have the idea finds it answered.
+of a second. So the ordering's fault is not that its pushes are too long. The
+knob is not in the solution, and `ranked.py` carries this measurement so that the
+next person to have the idea finds it answered.
+
+### One of its eight inputs is stale, which was measured and could not be used
+
+**The trees are fed one number that is not the number they were fitted on.**
+Their most important input is the jaw's top edge over the height at which that
+glass would tip, which is the constant `JAW_TOP` divided by the glass's measured
+foot. Every row in the cached training set was labelled when that constant was
+65 mm. Today's code computes it as 107 mm, because problem 3 later moved to the
+real gripper and the jaw grew taller, and the trees were never refitted — "loaded
+and not refitted" is this solution's own design.
+
+The consequence is measurable. Over 78,362 candidates this solution scored on
+sixty tables, seven of the eight inputs sit inside the first and ninety-ninth
+percentile of the fitted rows, each with 0.4 to 1.6 per cent outside. The stale
+one has **24 per cent outside**, and its median is 1.9 where the fit saw 1.2. So
+a quarter of the time the ordering is being decided by a tree reading a value
+beyond every threshold it learned.
+
+That can be put right without pushing a glass again, because the stale input is
+an exact function of the glass's foot — which is another input — and one
+constant. Recomputing it and refitting the same trees on the same labels gives an
+ordering that is better in perfect play, where the arm and the clock are taken
+away and only the ordering is measured, over three hundred tables below the
+held-out line:
+
+| perfect play, 300 tables | tables separated | glasses with room | pushes used |
+|---|---|---|---|
+| the printed rule | **215** | **1,028 of 1,205** | **543** |
+| the borrowed trees, as shipped | 206 | 1,006 | 753 |
+| the same trees, input corrected | 209 | 1,011 | 646 |
+
+**It recovers a third of the ordering's deficit and half of its extra pushes, and
+it still loses under the clock.** Walked on three clocked queues of fifty tables
+below the held-out line, which is the instrument a choice has to be made on, the
+corrected trees separate 12 tables against the shipped trees' 14 and hold a
+pickable share of 0.548 against 0.571, with nothing broken either way. So it is
+not kept.
+
+**What is left untried is the half that cannot be recomputed.** The labels were
+measured with the old jaw as well: each one is the room a table gained when that
+shorter jaw pushed a glass. Those can only be collected again, by making the
+pushes with today's gripper, and that is the one repair this solution has not
+had. It would also answer the question above about the states, because the rows
+would then be recorded from the tables this problem plans in rather than from
+problem 3's, where every roomy glass had already been lifted away.
 
 ## Whether these tables can be separated at all
 
@@ -435,14 +482,16 @@ disagreed just as constantly there and cost nothing at all, because on a set of
 tables where no ordering can win any ordering is as good as any other. This
 draw has something to spoil, and a worse order spoils it.
 
-**What the model learned is which glass is risky, not which push helps.** The
-two inputs carrying four fifths of the fitted importance are the push height
-over the topple limit, at 0.43, and the width of the glass's foot, at 0.38.
-Both are about whether the glass would go over, and neither is about whether
-the push leaves the glass with room. Sorting by that is harmless when nothing
-can be won and harmful when something can, and it fits the shape of the losses:
-nothing was toppled, nothing was refused by the interlock, and the glasses were
-simply left where the pushes put them.
+**The ordering is stale rather than mis-aimed.** The trees predict the room a
+push frees, and they predict it better than the printed rule on the problem they
+were fitted for. They lean four fifths of their importance on two inputs about
+the glass's own shape — push height over the topple limit at 0.43 and foot width
+at 0.38 — and they were shown only tables from which every roomy glass had
+already been lifted. This problem lifts nothing, so the room around a glass is
+both what the ordering has to judge and the thing most changed from the tables it
+learned on. It fits the shape of the losses: nothing was toppled, nothing was
+refused by the interlock, and the glasses were simply left where the pushes put
+them.
 
 **Where the rows run out, and the one measurement that would settle it.** The
 held-out rows hold a table's outcome, its arm seconds, its answers and how many
@@ -474,6 +523,7 @@ rows merely do not keep them.
 make help
 make measure     # the twenty tables above, about 35 seconds; writes measurement.json
 make rule        # the same loop and candidates with the model deleted
+make inputs      # whether the trees are being fed the kind of numbers they were fitted on
 make perfect     # the arm taken away; writes perfect.json
 make test        # the quick checks, about 10 seconds
 make lint

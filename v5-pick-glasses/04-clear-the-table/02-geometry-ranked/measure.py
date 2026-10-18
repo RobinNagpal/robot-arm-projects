@@ -43,11 +43,11 @@ from collections import Counter
 from pathlib import Path
 from typing import NamedTuple
 
-from borrowed import nudge
+from borrowed import candidates, features, nudge
 from ranked import ByModel, Chooser, GeometryRanked, by_rule, load_ranker
 
 import tables
-from open_run import Tally, clear_queue
+from open_run import Tally, clear_queue, clear_table
 from partners import TEST_SEEDS, Seen, in_zone
 
 import plan
@@ -210,6 +210,55 @@ def measure_perfect(seeds: range, choose: Chooser, name: str) -> dict:
     return {"summary": summary, "tables": rows}
 
 
+def compare_inputs(seeds: range) -> dict:
+    """Whether the inputs this problem hands the trees are the kind they were fitted on.
+
+    A fitted model is only valid for the code that computed its inputs, and this
+    solution loads trees fitted in another problem whose gripper has since grown
+    taller. A tree answers by comparing an input against thresholds it learned,
+    so a value beyond every threshold carries no information at all -- and
+    nothing fails when that happens, which is why this is worth a command of its
+    own rather than an afternoon's puzzlement. One of the eight inputs had a
+    quarter of its values outside the fitted range when this was first run.
+    """
+    import numpy as np
+    from borrowed import ROWS
+
+    asked: list = []
+
+    class Watched(GeometryRanked):
+        """The same solution, keeping every candidate it scored."""
+
+        def _choose(self, glasses, skip):
+            kept, _ = candidates.survivors(glasses, skip)
+            if kept:
+                asked.append(features.rows(glasses, kept))
+            return super()._choose(glasses, skip)
+
+    for seed in seeds:
+        clear_table(Watched(), seed, ROOM_TO_WORK)
+    here = np.concatenate(asked) if asked else np.zeros((0, features.INPUTS))
+    fitted = np.load(ROWS)["rows"]
+    print(
+        f"{len(here)} candidates scored on {len(seeds)} tables, "
+        f"against the {len(fitted)} rows the trees were fitted on"
+    )
+    out = {}
+    for i, name in enumerate(features.NAMES):
+        low, high = np.percentile(fitted[:, i], [1, 99])
+        share = float(((here[:, i] < low) | (here[:, i] > high)).mean())
+        out[name] = {
+            "fitted_median": round(float(np.median(fitted[:, i])), 3),
+            "asked_median": round(float(np.median(here[:, i])), 3),
+            "outside_the_fitted_range": round(share, 3),
+        }
+        print(
+            f"  {name:48} fitted {np.median(fitted[:, i]):8.3f}   here {np.median(here[:, i]):8.3f}"
+            f"   {100 * share:5.1f}% outside"
+        )
+    return out
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--tables", type=int, default=20)
@@ -221,6 +270,11 @@ def main() -> None:
         action="store_true",
         help="perfect play on the scored queue: how separable those arrangements are",
     )
+    parser.add_argument(
+        "--inputs",
+        action="store_true",
+        help="whether the inputs handed to the trees are the kind they were fitted on",
+    )
     parser.add_argument("--show", action="store_true", help="print why each table ended")
     parser.add_argument("--judge", action="store_true", help="the held-out queue, through bench/judging.py")
     parser.add_argument("--save", type=str, default="", help="write the numbers to this file")
@@ -230,6 +284,13 @@ def main() -> None:
         import judging
 
         judging.judge(lambda: GeometryRanked(None), Path(__file__).parent / "results.json")
+        return
+
+    if arguments.inputs:
+        written = compare_inputs(range(arguments.first, arguments.first + arguments.tables))
+        if arguments.save:
+            Path(arguments.save).write_text(json.dumps(written, indent=2) + "\n")
+            print(f"written to {arguments.save}")
         return
 
     if arguments.ceiling:
