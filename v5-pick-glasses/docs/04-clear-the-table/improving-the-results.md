@@ -576,7 +576,7 @@ because the next person's time should go to the big holes.
 
 - [What changed, and what each change bought](what-changed.md) — the same
   changes taken one at a time, each beside the before-and-after measurement that
-  justified it, including the five that were measured and thrown away.
+  justified it, including the eight that were measured and thrown away.
 - [The six solutions side by side](../../04-clear-the-table/results/README.md) —
   every column of every result, what perfect play achieves on the same tables,
   and which columns mislead when read alone.

@@ -347,3 +347,59 @@ def test_an_answer_aimed_at_no_glass_is_measured_from_nothing() -> None:
     for kind in (LOOK, DONE):
         row = to_asked(to_state(jaw, [glass]), about_itself(3, 1, 0.4), conditioning(kind, None))
         assert loading.aimed_at(row) == (0.0, 0.0)
+
+
+def test_the_cap_keeps_every_answer_that_touches_a_glass() -> None:
+    """Thinning the looks must not thin the pushes, because the pushes are the scarce ones.
+
+    The set is four looks to every push, so a fit on a wider band reads three
+    times as many looks for nothing. ``loading.to_read`` is what makes the wider
+    band affordable, and the one thing it may never do is drop an answer that
+    touches a glass.
+    """
+    import loading
+
+    kinds = np.array([LOOK] * 80 + [PROBE] * 10 + [PUSH] * 5 + [DONE] * 5)
+    rows = loading.to_read(kinds, looks=20)
+    kept = kinds[rows]
+    assert (kept == LOOK).sum() == 20
+    for touching in (PROBE, PUSH, DONE):
+        assert (kept == touching).sum() == (kinds == touching).sum()
+
+
+def test_the_cap_reads_the_frames_in_the_order_they_were_collected() -> None:
+    """An episode's frames are its table's answers in order, so the order has to hold."""
+    import loading
+
+    kinds = np.array([LOOK, PUSH, LOOK, LOOK, PROBE, LOOK, DONE])
+    rows = loading.to_read(kinds, looks=2)
+    assert list(rows) == sorted(rows)
+    assert len(set(rows)) == len(rows)
+
+
+def test_a_cap_larger_than_the_set_reads_all_of_it() -> None:
+    """A cap is a ceiling and not a target, so a small set is read whole."""
+    import loading
+
+    kinds = np.array([LOOK] * 5 + [PUSH] * 2)
+    assert list(loading.to_read(kinds, looks=50)) == list(range(7))
+    assert list(loading.to_read(kinds)) == list(range(7))
+
+
+def test_two_runs_read_the_same_frames() -> None:
+    """The draw is seeded, so a second fit sees the set the first one saw."""
+    import loading
+
+    kinds = np.array(([LOOK] * 9 + [PUSH]) * 10)
+    assert list(loading.to_read(kinds, looks=12)) == list(loading.to_read(kinds, looks=12))
+
+
+def test_the_smoke_test_cap_still_takes_the_first_few_frames() -> None:
+    """``most`` is for a smoke test and reads the start of the set, cap or no cap."""
+    import loading
+
+    kinds = np.array([LOOK, PUSH, LOOK, PROBE, LOOK, LOOK])
+    assert list(loading.to_read(kinds, most=3)) == [0, 1, 2]
+    rows = loading.to_read(kinds, most=4, looks=1)
+    assert set(rows) <= {0, 1, 2, 3}
+    assert list(kinds[rows]).count(LOOK) == 1

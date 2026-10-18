@@ -70,7 +70,13 @@ PUSHES_PER_TABLE = 6
 # Where the training tables, the tuning tables and the validation tables sit.
 # All below TEST_SEEDS, and all clear of the twenty the README reports.
 TRAIN_SEEDS = 1000
+# More of round 1, on tables past the band round 1 itself used. A second batch
+# of pushes drawn the same way is the plainest kind of "more data" there is, and
+# it is the one to measure before any cleverer choice of push: it cannot shift
+# the mixture the model is fitted on, because it is drawn from the same one.
+MORE_SEEDS = 2200
 PLANNED_SEEDS = 4000
+DOUBTED_SEEDS = 5000
 VALIDATION_SEEDS = 9000
 
 # How often a random push goes to a glass that has no room, and how often it
@@ -84,6 +90,12 @@ AWAY_SPREAD = math.radians(50)
 # Round 2: how often the search's choice is swapped for a random push, so that
 # the model keeps seeing pushes the search would not make.
 EXPLORE = 0.25
+
+# Round 3: how many candidate pushes to draw on one table before asking the
+# copies which of them they disagree about most. Forty is enough that the most
+# doubted of them is well clear of the middle of the draw, and small enough that
+# asking about all of them costs less than making one push.
+CANDIDATES = 40
 
 
 @dataclass
@@ -238,13 +250,22 @@ class Collector(nudge.OneFixedNudge):
         return None
 
 
-def table(seed: int, model=None, explore: float = EXPLORE) -> tuple[list[Example], float, int]:
+def table(
+    seed: int, model=None, explore: float = EXPLORE, doubting: bool = False
+) -> tuple[list[Example], float, int]:
     """Every push made on one table: the examples, the arm seconds, and the glasses toppled.
 
-    With a ``model``, the search chooses most of the pushes, which is round 2.
+    With a ``model``, the search chooses most of the pushes, which is round 2;
+    with ``doubting`` as well, the copies' own disagreement chooses them, which
+    is round 3.
     """
     rng = random.Random(f"collect:{seed}")
-    collector = Collector(rng) if model is None else Planner(rng, model, explore)
+    if model is None:
+        collector: Collector = Collector(rng)
+    elif doubting:
+        collector = Doubted(rng, model, explore)
+    else:
+        collector = Planner(rng, model, explore)
     result = clear_table(collector, seed, ROOM_TO_WORK, cell=blind_cell(seed))
     examples = [example for example in collector.examples if example.outputs is not None]
     if result.ended_by == GLASS_OVER and collector.examples and collector.examples[-1].outputs is None:
@@ -292,12 +313,75 @@ class Planner(Collector):
         return super()._decide(look)
 
 
-def collect(seeds: list[int], save: Path, model=None) -> dict:
+class Doubted(Collector):
+    """Round 3: of many candidate pushes, the one the copies disagree about most.
+
+    **Why this round exists.** The search was made pessimistic, because a search
+    that maximises over an uncertain prediction lands where the model is most
+    wrongly optimistic, and that cured almost all of this solution's broken
+    glasses. Pessimism has a price, and the price is opportunities: a push the
+    three copies disagree about is now a push the search turns down, whether or
+    not it was a good one. The way to get those pushes back is not to make the
+    search braver, because that is the change that broke the glasses. It is to
+    make the copies agree, and copies only agree where they have seen something.
+    So this round goes looking for the pushes they disagree about and writes down
+    what really happens.
+
+    **How it differs from round 2.** Round 2 lets the search choose, so it finds
+    the pushes the model *likes* most, which are the ones it is optimistically
+    wrong about. This round ignores what the copies expect to happen and looks
+    only at how far apart they are, so it finds the pushes the model knows
+    nothing about -- which is a different set, and the one pessimism is paid for.
+    """
+
+    name = "collecting, doubted"
+
+    def __init__(
+        self, rng: random.Random, model, explore: float = EXPLORE, candidates: int = CANDIDATES
+    ) -> None:
+        super().__init__(rng)
+        self.model = model
+        self.explore = explore
+        self.candidates = candidates
+
+    def _decide(self, look: Look) -> Answer:
+        glasses = [glass for glass in self.table.glasses() if glass.standing]
+        if self.made >= self.allowed or len(glasses) < 2:
+            return Done("collected what this table had to give")
+        if self.rng.random() >= self.explore:
+            drawn = [self._draw(glasses) for _ in range(self.candidates)]
+            drawn = [one for one in drawn if one is not None]
+            if drawn:
+                return self._answer_with(look, *most_doubted(self.model, glasses, drawn))
+        # A share is still drawn at random and taken as it comes, for round 2's
+        # reason: a set made only of what the model doubts is a set the model's
+        # own weaknesses chose, and the ordinary pushes have to stay in it.
+        return super()._decide(look)
+
+
+def disagreement(model, glasses: list[Seen], drawn: list[tuple]) -> np.ndarray:
+    """How far apart the copies are about each of these candidate pushes.
+
+    One call to the copies for each candidate, because the candidates are at
+    different glasses and the encoding is written for a stack of pushes at one
+    glass. ``search.disagreement`` is the arithmetic, so that the round that
+    collects these pushes and the solution that tests a glass before making one
+    cannot disagree about what a doubt is.
+    """
+    return np.concatenate([search.disagreement(model, glasses, *one) for one in drawn])
+
+
+def most_doubted(model, glasses: list[Seen], drawn: list[tuple]) -> tuple:
+    """The one of these pushes the copies disagree about most."""
+    return drawn[int(np.argmax(disagreement(model, glasses, drawn)))]
+
+
+def collect(seeds: list[int], save: Path, model=None, doubting: bool = False) -> dict:
     """Walk the tables, gather the pushes, and say what the arm spent doing it."""
     started = time.perf_counter()
     rows, arm, toppled = [], 0.0, 0
     for seed in seeds:
-        examples, seconds, over = table(seed, model)
+        examples, seconds, over = table(seed, model, doubting=doubting)
         rows += examples
         arm += seconds
         toppled += over
@@ -329,10 +413,34 @@ def main() -> None:
     parser.add_argument("--tables", type=int, default=400)
     parser.add_argument("--validation", type=int, default=80)
     parser.add_argument("--planned", action="store_true", help="round 2: the search chooses the pushes")
+    parser.add_argument(
+        "--doubted", action="store_true", help="round 3: the pushes the copies disagree about"
+    )
+    parser.add_argument(
+        "--more", action="store_true", help="another batch of round 1's random pushes, on later tables"
+    )
     parser.add_argument("--save", type=str, default="", help="write what collecting cost to this file")
     arguments = parser.parse_args()
 
-    if arguments.planned:
+    if arguments.more:
+        seeds = range(MORE_SEEDS, MORE_SEEDS + arguments.tables)
+        if seeds[-1] >= PLANNED_SEEDS:
+            raise SystemExit(f"this would reach round 2's tables, which start at {PLANNED_SEEDS}")
+        cost = {"round_1_more": collect(list(seeds), DATA / "train_more.npz")}
+    elif arguments.doubted:
+        import push_model
+        from borrowed import WEIGHTS
+
+        seeds = range(DOUBTED_SEEDS, DOUBTED_SEEDS + arguments.tables)
+        if seeds[-1] >= VALIDATION_SEEDS:
+            raise SystemExit(f"round 3 would reach the validation tables, which start at {VALIDATION_SEEDS}")
+        model = push_model.Ensemble.load(WEIGHTS)
+        # Deliberately not ``train_doubted.npz``: ``train.py`` reads every
+        # ``train*.npz`` in the folder, and this round was measured and not
+        # kept, so a name outside that glob is what stops it from being fitted
+        # on by accident. ``train.py --doubted`` is how to fit on it again.
+        cost = {"doubted": collect(list(seeds), DATA / "doubted.npz", model, doubting=True)}
+    elif arguments.planned:
         import push_model
         from borrowed import WEIGHTS
 

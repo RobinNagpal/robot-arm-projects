@@ -24,10 +24,33 @@ import torch
 from borrowed import DATA, WEIGHTS
 from push_model import ENSEMBLE, Ensemble, PushNet, fit, sigmoid
 
+# What a missed topple costs the fit, over and above the weight that already
+# balances the rare answer against the common one.
+#
+# It is ten because the random pushes were doubled, and the two changes only
+# work together. More pushes make the topple head stop sounding the alarm: on
+# the 658 validation pushes the doubled set catches 51 topples of 70 against 57,
+# while flagging 94 safe pushes against 116. Raising this cost puts the alarm
+# back. Measured on nine clocked walks of a hundred and fifty tables below the
+# held-out line, against the fit before either change: this separates 15.7
+# tables a walk against 14.3, frees 42.3 glasses against 40.3, and loses 1.7
+# against 3.0. Thirty was measured too and is worse on breakages; the README has
+# all four corners.
+TOPPLE_SCALE = 10.0
 
-def load(folder: Path) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Every collected round, with each push's mirror image beside it."""
-    rounds = [np.load(path) for path in sorted(folder.glob("train*.npz"))]
+
+def load(folder: Path, doubted: bool = False) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Every collected round, with each push's mirror image beside it.
+
+    ``doubted`` adds round 3, the pushes the copies disagreed about. It is off
+    by default because that round was measured and not kept: over four search
+    seeds on two hundred tuning tables it separated the same number of tables
+    and put two and a half more glasses over, and the README says why.
+    """
+    paths = sorted(folder.glob("train*.npz"))
+    if doubted:
+        paths.append(folder / "doubted.npz")
+    rounds = [np.load(path) for path in paths]
     if not rounds:
         raise SystemExit(f"no pushes in {folder}. Collect them first: pixi run python collect.py")
     x = np.concatenate([part["inputs"] for part in rounds])
@@ -46,12 +69,21 @@ def main() -> None:
     parser.add_argument("--epochs", type=int, default=200)
     parser.add_argument("--threads", type=int, default=4)
     parser.add_argument("--save", type=str, default="", help="write the validation numbers to this file")
+    parser.add_argument(
+        "--doubted", action="store_true", help="also fit on round 3, which was measured and not kept"
+    )
+    parser.add_argument(
+        "--topple-scale",
+        type=float,
+        default=TOPPLE_SCALE,
+        help="multiply what a missed topple costs the fit; 1 is the balance before the pushes doubled",
+    )
     arguments = parser.parse_args()
     # Held down on purpose: the machine this was fitted on was also running
     # another solution's measurement.
     torch.set_num_threads(arguments.threads)
 
-    x, y, mask = load(DATA)
+    x, y, mask = load(DATA, arguments.doubted)
     toppled = float(y[:, encoding.TOPPLED].mean())
     print(
         f"{len(x) // 2} pushes, {len(x)} with their mirror images; "
@@ -72,7 +104,7 @@ def main() -> None:
             mask,
             epochs=arguments.epochs,
             seed=copy,
-            topple_weight=(1 - toppled) / max(toppled, 1e-6),
+            topple_weight=arguments.topple_scale * (1 - toppled) / max(toppled, 1e-6),
         )
         print(
             f"copy {copy}: loss {history[0]:.3f} -> {history[-1]:.3f} "
@@ -88,7 +120,10 @@ def main() -> None:
     if arguments.save:
         where = Path(arguments.save)
         held = json.loads(where.read_text()) if where.exists() else {}
-        held["model"] = numbers
+        # What a missed topple cost this fit, beside what the fit achieved. The
+        # setting and the numbers belong together: the same data at a different
+        # cost is a different model, and the README compares four of them.
+        held["model"] = {"topple_scale": arguments.topple_scale} | numbers
         where.write_text(json.dumps(held, indent=2) + "\n")
 
 

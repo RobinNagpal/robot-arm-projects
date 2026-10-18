@@ -98,17 +98,35 @@ def main() -> None:
     parser.add_argument("--first", type=int, default=0)
     parser.add_argument("--predicting", action="store_true", help="no look between pushes; believe the model")
     parser.add_argument("--judge", action="store_true", help="the held-out queue, through bench/judging.py")
+    parser.add_argument(
+        "--select",
+        type=int,
+        default=0,
+        help="a clocked queue of fifty tables from here, for choosing on: the score's own shape",
+    )
     parser.add_argument("--save", type=str, default="", help="write the numbers to this file")
     parser.add_argument("--seed", type=int, default=0, help="the search's own draws, for repeatability")
     parser.add_argument("--show", action="store_true", help="print why each table ended")
     arguments = parser.parse_args()
 
-    if arguments.judge:
+    if arguments.judge or arguments.select:
         import judging
 
+        # A clocked queue below the held-out line, for choosing on. The plain
+        # ``--tables`` measurement gives every table as much arm time as it
+        # wants, so it says whether a table *can* be separated; the score gives
+        # fifteen arm minutes for fifty tables, so it says how much gets done
+        # before the clock stops. A change that trades time for thoroughness
+        # wins the first and can lose the second, which is what two of this
+        # solution's changes did, so a choice is made on this instead.
+        # ``judging.judge`` refuses to write a partial run to ``results.json``.
+        first = judging.HELD_OUT if arguments.judge else arguments.select
+        if arguments.select and arguments.select >= judging.HELD_OUT:
+            raise SystemExit(f"tables {judging.HELD_OUT} and up are the score; choose below them")
         judging.judge(
             lambda: learned.WorldModel(predicting=arguments.predicting),
             Path(__file__).parent / "results.json",
+            first=first,
         )
         return
 

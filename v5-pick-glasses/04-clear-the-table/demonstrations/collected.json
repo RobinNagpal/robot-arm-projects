@@ -3,24 +3,24 @@
     "teacher": "02-geometry-ranked, with problem 3's ranker, which was fitted on problem 3's tables",
     "band": {
       "first_table": 1000,
-      "tables": 300,
+      "tables": 900,
       "held_out_from": 10000
     },
-    "demonstrations": 11313,
-    "answers": 11324,
-    "answers_a_table": 37.7,
+    "demonstrations": 33687,
+    "answers": 33721,
+    "answers_a_table": 37.5,
     "kinds": {
-      "drive": 4822,
-      "stay": 4143,
-      "ranging": 1416,
-      "testing": 331,
-      "pushing": 315,
-      "done": 297
+      "drive": 14371,
+      "stay": 12322,
+      "ranging": 4311,
+      "testing": 972,
+      "done": 888,
+      "pushing": 857
     },
     "looking_share": 0.792,
     "dropped": {
-      "a glass left the glass zone": 8,
-      "a glass went over": 3
+      "a glass left the glass zone": 22,
+      "a glass went over": 12
     },
     "chunk": 200,
     "action_width": 6,
@@ -36,7 +36,7 @@
       "90th": 44,
       "most": 190
     },
-    "seconds": 485.9,
+    "seconds": 1461.7,
     "seconds_a_table": 1.62,
     "seconds_a_demonstration": 0.043
   },

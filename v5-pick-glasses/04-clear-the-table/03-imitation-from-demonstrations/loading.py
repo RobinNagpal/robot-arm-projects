@@ -64,7 +64,12 @@ def collected(root: Path | None = None) -> dict:
     return record if root is None else record[NAMES[root]]
 
 
-def load(root: Path, shrink: Shrink | None = None, most: int | None = None) -> dict[str, np.ndarray]:
+def load(
+    root: Path,
+    shrink: Shrink | None = None,
+    most: int | None = None,
+    looks: int | None = None,
+) -> dict[str, np.ndarray]:
     """One collected set as arrays: pictures, states, actions, decisions and episodes.
 
     ``gate`` is what the teacher decided on each frame, as two numbers: which of
@@ -83,13 +88,27 @@ def load(root: Path, shrink: Shrink | None = None, most: int | None = None) -> d
     stored at. ``most`` caps how many frames are read, which is for a smoke test
     rather than for fitting: the first few hundred frames of a set are its first
     few tables.
+
+    ``looks`` caps how many *looking* frames are read, and it is for fitting
+    rather than for a smoke test. A set collected from three times as many
+    tables holds three times as many looks, and a look is the one kind of answer
+    a fit already has far more of than it can use: ``train.balanced`` throws most
+    of them away again before a single step is taken. Reading them all costs a
+    gigabyte of memory and several minutes a run for frames no step will ever
+    see. Every answer that touches a glass is kept whatever the cap, because
+    those are the scarce ones, and the frames are chosen with a fixed seed so
+    that two runs read the same set.
+
+    The cap changes the mixture, so a model that has to learn how often each
+    kind of answer really happens -- the gate -- must be fitted without it.
     """
     from lerobot.datasets.lerobot_dataset import LeRobotDataset
 
     data = LeRobotDataset(repo_id=REPO, root=root)
-    count = len(data) if most is None else min(most, len(data))
-    if not count:
+    if not len(data):
         raise ValueError(f"there are no demonstrations in {root}")
+    rows = to_read(kinds_of(data), most, looks)
+    count = len(rows)
 
     # The size is taken from the first picture after shrinking rather than from a
     # constant, so that nothing here has to agree with the model's own size.
@@ -100,8 +119,8 @@ def load(root: Path, shrink: Shrink | None = None, most: int | None = None) -> d
     episodes = np.empty(count, dtype=np.int64)
     decisions = np.empty((count, 2), dtype=np.int64)
     shoves = np.empty((count, readings.SHOVE_WIDTH), dtype=np.float32)
-    for i in range(count):
-        frame = data[i]
+    for i, row in enumerate(rows):
+        frame = data[int(row)]
         pictures[i] = _picture(frame, shrink)
         states[i] = frame["observation.state"].numpy()
         actions[i] = frame["action"].numpy().reshape(CHUNK, ACTION_WIDTH)
@@ -117,6 +136,38 @@ def load(root: Path, shrink: Shrink | None = None, most: int | None = None) -> d
         "shoves": shoves,
         "aimed_at": np.array([aimed_at(row) for row in states], dtype=np.float32),
     }
+
+
+def kinds_of(data) -> np.ndarray:
+    """Which kind of answer every frame in a set holds, without reading a picture.
+
+    The decisions are stored as plain numbers beside the pictures rather than
+    inside them, so this column comes back in a tenth of a second where reading
+    the frames themselves takes minutes. That is what lets ``to_read`` choose
+    which frames are worth reading before any of them is read.
+    """
+    stored = np.asarray(data.hf_dataset.select_columns("gate")["gate"], dtype=np.float32)
+    return stored[:, 0].round().astype(np.int64)
+
+
+def to_read(kinds: np.ndarray, most: int | None = None, looks: int | None = None) -> np.ndarray:
+    """Which frames of a set to read, in the order they were collected.
+
+    ``most`` takes the first few, which is a smoke test. ``looks`` keeps every
+    answer that touches a glass and thins the looking ones down to that many,
+    which is what makes a set collected from a wider band affordable to read.
+    The order is kept because an episode's frames are its table's answers in the
+    order the teacher gave them.
+    """
+    count = len(kinds) if most is None else min(most, len(kinds))
+    rows = np.arange(count)
+    if looks is None:
+        return rows
+    looking = rows[kinds[:count] == readings.LOOK]
+    if len(looking) <= looks:
+        return rows
+    kept = np.random.default_rng(0).choice(looking, size=looks, replace=False)
+    return np.sort(np.concatenate([rows[kinds[:count] != readings.LOOK], kept]))
 
 
 def aimed_at(state: np.ndarray) -> tuple[float, float]:

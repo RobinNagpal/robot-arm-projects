@@ -4,21 +4,21 @@
     "tables": 20,
     "glasses": 84,
     "separated": 4,
-    "pickable_at_end": 40,
-    "pickable_at_start": 27,
-    "pickable_share": 0.476,
-    "gain": 13,
-    "toppled": 4,
-    "arm_seconds_a_table": 18.92,
-    "arm_seconds_middling": 15.71,
-    "arm_seconds_most": 44.83,
-    "arm_seconds_for_the_queue": 378.37,
-    "looking_share": 0.634,
-    "said_done": 16,
-    "said_done_while_crowded": 12,
+    "pickable_at_end": 37,
+    "pickable_at_start": 25,
+    "pickable_share": 0.44,
+    "gain": 12,
+    "toppled": 5,
+    "arm_seconds_a_table": 19.36,
+    "arm_seconds_middling": 17.19,
+    "arm_seconds_most": 36.59,
+    "arm_seconds_for_the_queue": 387.25,
+    "looking_share": 0.647,
+    "said_done": 15,
+    "said_done_while_crowded": 11,
     "interlocks": 0,
-    "answers": 313,
-    "thinking_seconds": 3.646
+    "answers": 312,
+    "thinking_seconds": 3.685
   },
   "tables": [
     {
@@ -31,63 +31,11 @@
       "ended_by": "said done",
       "interlocks": 0,
       "arm_seconds": 8.05,
-      "thinking_seconds": 0.101,
+      "thinking_seconds": 0.107,
       "answers": 9
     },
     {
       "seed": 1,
-      "glasses": 5,
-      "outcome": "unfinished",
-      "pickable_at_start": 2,
-      "pickable_at_end": 4,
-      "broken": 0,
-      "ended_by": "said done",
-      "interlocks": 0,
-      "arm_seconds": 44.83,
-      "thinking_seconds": 0.628,
-      "answers": 32
-    },
-    {
-      "seed": 2,
-      "glasses": 5,
-      "outcome": "unfinished",
-      "pickable_at_start": 2,
-      "pickable_at_end": 2,
-      "broken": 0,
-      "ended_by": "said done",
-      "interlocks": 0,
-      "arm_seconds": 8.05,
-      "thinking_seconds": 0.099,
-      "answers": 9
-    },
-    {
-      "seed": 3,
-      "glasses": 3,
-      "outcome": "failed",
-      "pickable_at_start": 1,
-      "pickable_at_end": 1,
-      "broken": 1,
-      "ended_by": "a glass went over",
-      "interlocks": 0,
-      "arm_seconds": 15.58,
-      "thinking_seconds": 0.054,
-      "answers": 9
-    },
-    {
-      "seed": 4,
-      "glasses": 4,
-      "outcome": "unfinished",
-      "pickable_at_start": 1,
-      "pickable_at_end": 1,
-      "broken": 0,
-      "ended_by": "said done",
-      "interlocks": 0,
-      "arm_seconds": 8.05,
-      "thinking_seconds": 0.077,
-      "answers": 9
-    },
-    {
-      "seed": 5,
       "glasses": 5,
       "outcome": "separated",
       "pickable_at_start": 2,
@@ -95,12 +43,12 @@
       "broken": 0,
       "ended_by": "said done",
       "interlocks": 0,
-      "arm_seconds": 30.97,
-      "thinking_seconds": 0.461,
+      "arm_seconds": 36.59,
+      "thinking_seconds": 0.355,
       "answers": 26
     },
     {
-      "seed": 6,
+      "seed": 2,
       "glasses": 5,
       "outcome": "unfinished",
       "pickable_at_start": 2,
@@ -113,33 +61,20 @@
       "answers": 9
     },
     {
-      "seed": 7,
-      "glasses": 5,
+      "seed": 3,
+      "glasses": 3,
       "outcome": "failed",
-      "pickable_at_start": 2,
-      "pickable_at_end": 2,
+      "pickable_at_start": 1,
+      "pickable_at_end": 1,
       "broken": 1,
       "ended_by": "a glass went over",
       "interlocks": 0,
-      "arm_seconds": 15.31,
-      "thinking_seconds": 0.131,
+      "arm_seconds": 17.19,
+      "thinking_seconds": 0.063,
       "answers": 9
     },
     {
-      "seed": 8,
-      "glasses": 4,
-      "outcome": "separated",
-      "pickable_at_start": 1,
-      "pickable_at_end": 4,
-      "broken": 0,
-      "ended_by": "said done",
-      "interlocks": 0,
-      "arm_seconds": 30.19,
-      "thinking_seconds": 0.208,
-      "answers": 23
-    },
-    {
-      "seed": 9,
+      "seed": 4,
       "glasses": 4,
       "outcome": "unfinished",
       "pickable_at_start": 1,
@@ -148,24 +83,11 @@
       "ended_by": "said done",
       "interlocks": 0,
       "arm_seconds": 8.05,
-      "thinking_seconds": 0.082,
+      "thinking_seconds": 0.086,
       "answers": 9
     },
     {
-      "seed": 10,
-      "glasses": 5,
-      "outcome": "unfinished",
-      "pickable_at_start": 2,
-      "pickable_at_end": 2,
-      "broken": 0,
-      "ended_by": "said done",
-      "interlocks": 0,
-      "arm_seconds": 31.27,
-      "thinking_seconds": 0.514,
-      "answers": 29
-    },
-    {
-      "seed": 11,
+      "seed": 5,
       "glasses": 5,
       "outcome": "unfinished",
       "pickable_at_start": 2,
@@ -178,29 +100,107 @@
       "answers": 9
     },
     {
-      "seed": 12,
-      "glasses": 4,
+      "seed": 6,
+      "glasses": 5,
       "outcome": "unfinished",
       "pickable_at_start": 2,
       "pickable_at_end": 2,
       "broken": 0,
       "ended_by": "said done",
       "interlocks": 0,
-      "arm_seconds": 21.53,
-      "thinking_seconds": 0.169,
-      "answers": 20
+      "arm_seconds": 8.05,
+      "thinking_seconds": 0.108,
+      "answers": 9
     },
     {
-      "seed": 13,
-      "glasses": 4,
+      "seed": 7,
+      "glasses": 5,
       "outcome": "failed",
       "pickable_at_start": 2,
       "pickable_at_end": 2,
       "broken": 1,
       "ended_by": "a glass went over",
       "interlocks": 0,
-      "arm_seconds": 15.71,
-      "thinking_seconds": 0.075,
+      "arm_seconds": 14.72,
+      "thinking_seconds": 0.146,
+      "answers": 9
+    },
+    {
+      "seed": 8,
+      "glasses": 4,
+      "outcome": "separated",
+      "pickable_at_start": 1,
+      "pickable_at_end": 4,
+      "broken": 0,
+      "ended_by": "said done",
+      "interlocks": 0,
+      "arm_seconds": 29.65,
+      "thinking_seconds": 0.189,
+      "answers": 23
+    },
+    {
+      "seed": 9,
+      "glasses": 4,
+      "outcome": "unfinished",
+      "pickable_at_start": 1,
+      "pickable_at_end": 1,
+      "broken": 0,
+      "ended_by": "said done",
+      "interlocks": 0,
+      "arm_seconds": 32.39,
+      "thinking_seconds": 0.467,
+      "answers": 29
+    },
+    {
+      "seed": 10,
+      "glasses": 5,
+      "outcome": "unfinished",
+      "pickable_at_start": 2,
+      "pickable_at_end": 2,
+      "broken": 0,
+      "ended_by": "said done",
+      "interlocks": 0,
+      "arm_seconds": 33.53,
+      "thinking_seconds": 0.555,
+      "answers": 29
+    },
+    {
+      "seed": 11,
+      "glasses": 5,
+      "outcome": "separated",
+      "pickable_at_start": 2,
+      "pickable_at_end": 5,
+      "broken": 0,
+      "ended_by": "said done",
+      "interlocks": 0,
+      "arm_seconds": 35.02,
+      "thinking_seconds": 0.433,
+      "answers": 26
+    },
+    {
+      "seed": 12,
+      "glasses": 4,
+      "outcome": "failed",
+      "pickable_at_start": 2,
+      "pickable_at_end": 3,
+      "broken": 1,
+      "ended_by": "a glass went over",
+      "interlocks": 0,
+      "arm_seconds": 13.7,
+      "thinking_seconds": 0.07,
+      "answers": 9
+    },
+    {
+      "seed": 13,
+      "glasses": 4,
+      "outcome": "failed",
+      "pickable_at_start": 2,
+      "pickable_at_end": 3,
+      "broken": 1,
+      "ended_by": "a glass went over",
+      "interlocks": 0,
+      "arm_seconds": 16.4,
+      "thinking_seconds": 0.077,
       "answers": 9
     },
     {
@@ -213,7 +213,7 @@
       "ended_by": "said done",
       "interlocks": 0,
       "arm_seconds": 8.05,
-      "thinking_seconds": 0.061,
+      "thinking_seconds": 0.058,
       "answers": 9
     },
     {
@@ -225,9 +225,9 @@
       "broken": 0,
       "ended_by": "said done",
       "interlocks": 0,
-      "arm_seconds": 27.04,
-      "thinking_seconds": 0.184,
-      "answers": 23
+      "arm_seconds": 22.48,
+      "thinking_seconds": 0.153,
+      "answers": 20
     },
     {
       "seed": 16,
@@ -238,35 +238,35 @@
       "broken": 0,
       "ended_by": "said done",
       "interlocks": 0,
-      "arm_seconds": 8.05,
-      "thinking_seconds": 0.084,
-      "answers": 9
+      "arm_seconds": 22.65,
+      "thinking_seconds": 0.284,
+      "answers": 20
     },
     {
       "seed": 17,
       "glasses": 3,
       "outcome": "failed",
       "pickable_at_start": 1,
-      "pickable_at_end": 1,
+      "pickable_at_end": 2,
       "broken": 1,
       "ended_by": "a glass went over",
       "interlocks": 0,
-      "arm_seconds": 16.77,
-      "thinking_seconds": 0.057,
-      "answers": 9
+      "arm_seconds": 33.36,
+      "thinking_seconds": 0.18,
+      "answers": 20
     },
     {
       "seed": 18,
       "glasses": 4,
-      "outcome": "separated",
+      "outcome": "unfinished",
       "pickable_at_start": 2,
-      "pickable_at_end": 4,
+      "pickable_at_end": 2,
       "broken": 0,
       "ended_by": "said done",
       "interlocks": 0,
-      "arm_seconds": 41.37,
-      "thinking_seconds": 0.385,
-      "answers": 32
+      "arm_seconds": 8.05,
+      "thinking_seconds": 0.072,
+      "answers": 9
     },
     {
       "seed": 19,
@@ -277,54 +277,54 @@
       "broken": 0,
       "ended_by": "said done",
       "interlocks": 0,
-      "arm_seconds": 23.4,
-      "thinking_seconds": 0.071,
+      "arm_seconds": 23.22,
+      "thinking_seconds": 0.078,
       "answers": 20
     }
   ],
   "looking_seconds": [
     8.05,
-    15.35,
+    15.82,
     8.05,
     8.05,
     8.05,
-    15.47,
+    8.05,
     8.05,
     8.05,
     16.25,
-    8.05,
-    15.69,
-    8.05,
-    15.92,
-    8.05,
-    8.05,
-    16.14,
+    15.78,
+    16.32,
+    15.81,
     8.05,
     8.05,
-    15.43,
-    16.23
+    8.05,
+    16.08,
+    15.39,
+    16.11,
+    8.05,
+    16.22
   ],
   "pushing_seconds": [
     0.0,
-    23.98,
+    17.46,
     0.0,
-    6.43,
+    7.69,
     0.0,
+    0.0,
+    0.0,
+    5.57,
+    11.19,
     12.2,
+    12.81,
+    15.9,
+    4.55,
+    7.25,
     0.0,
+    5.31,
     6.16,
-    11.73,
+    14.95,
     0.0,
-    15.03,
-    0.0,
-    4.51,
-    6.56,
-    0.0,
-    8.7,
-    0.0,
-    6.82,
-    20.43,
-    6.08
+    5.9
   ],
   "tally": {
     "tables": 20,
@@ -333,14 +333,13 @@
     "tables_that_ran_out_of_answers": 0,
     "said_done_because": {
       "2 of 4 have room; the rest left alone: 2 no safe push left": 3,
-      "4 of 5 have room; the rest left alone: 1 no safe push left": 1,
+      "every one of the 5 glasses has room": 2,
       "2 of 5 have room; the rest left alone: 3 no safe push left": 4,
-      "1 of 4 have room; the rest left alone: 3 no safe push left": 2,
-      "3 of 4 have room; the rest left alone: 1 no safe push left": 1,
-      "2 of 5 have room; the rest left alone: 2 no safe push left, 1 pushed and did not move": 1,
+      "1 of 4 have room; the rest left alone: 3 no safe push left": 1,
+      "every one of the 4 glasses has room": 1,
+      "1 of 4 have room; the rest left alone: 2 no safe push left, 1 pushed and did not move": 1,
+      "2 of 5 have room; the rest left alone: 2 no safe push left, 1 pushed 4 times and still without room": 1,
       "1 of 3 have room; the rest left alone: 2 no safe push left": 1,
-      "2 of 5 have room; the rest left alone: 1 every push worth making would sweep another glass on the way in, 2 no safe push left": 1,
-      "2 of 4 have room; the rest left alone: 1 no safe push left, 1 pushed 4 times and still without room": 1,
       "every one of the 3 glasses has room": 1
     },
     "refused_because": {}
@@ -349,146 +348,162 @@
     {
       "table": 1,
       "kind": "pushing",
-      "glass": 3,
+      "glass": 2,
       "chance_of_a_topple": 0.0,
-      "travel_mm": 23.1,
-      "reach_mm": 14.4
+      "travel_mm": 97.3,
+      "reach_mm": 17.0
     },
     {
       "table": 1,
       "kind": "pushing",
-      "glass": 0,
+      "glass": 3,
       "chance_of_a_topple": 0.0,
-      "travel_mm": 88.1,
-      "reach_mm": 21.8
+      "travel_mm": 52.6,
+      "reach_mm": 21.0
     },
     {
       "table": 1,
       "kind": "pushing",
       "glass": 2,
       "chance_of_a_topple": 0.0,
-      "travel_mm": 30.4,
-      "reach_mm": 22.7
-    },
-    {
-      "table": 1,
-      "kind": "pushing",
-      "glass": 1,
-      "chance_of_a_topple": 0.0,
-      "travel_mm": 40.3,
-      "reach_mm": 20.5
-    },
-    {
-      "table": 1,
-      "kind": "pushing",
-      "glass": 3,
-      "chance_of_a_topple": 0.0,
-      "travel_mm": 14.3,
-      "reach_mm": 21.5
+      "travel_mm": 10.0,
+      "reach_mm": 24.4
     },
     {
       "table": 3,
       "kind": "pushing",
       "glass": 2,
-      "chance_of_a_topple": 0.0,
-      "travel_mm": 47.6,
-      "reach_mm": 19.0
-    },
-    {
-      "table": 5,
-      "kind": "pushing",
-      "glass": 3,
-      "chance_of_a_topple": 0.00174,
-      "travel_mm": 35.0,
-      "reach_mm": 17.9
-    },
-    {
-      "table": 5,
-      "kind": "pushing",
-      "glass": 2,
-      "chance_of_a_topple": 0.0,
-      "travel_mm": 11.2,
-      "reach_mm": 24.9
-    },
-    {
-      "table": 5,
-      "kind": "pushing",
-      "glass": 4,
-      "chance_of_a_topple": 0.0,
-      "travel_mm": 13.8,
-      "reach_mm": 23.8
+      "chance_of_a_topple": 0.00015,
+      "travel_mm": 78.3,
+      "reach_mm": 14.7
     },
     {
       "table": 7,
       "kind": "pushing",
       "glass": 0,
-      "chance_of_a_topple": 0.00012,
-      "travel_mm": 56.9,
-      "reach_mm": 25.9
+      "chance_of_a_topple": 0.0,
+      "travel_mm": 47.5,
+      "reach_mm": 22.9
     },
     {
       "table": 8,
       "kind": "pushing",
       "glass": 1,
       "chance_of_a_topple": 0.0,
-      "travel_mm": 66.1,
-      "reach_mm": 26.2
+      "travel_mm": 59.9,
+      "reach_mm": 28.3
     },
     {
       "table": 8,
+      "kind": "pushing",
+      "glass": 2,
+      "chance_of_a_topple": 0.0,
+      "travel_mm": 10.1,
+      "reach_mm": 24.9
+    },
+    {
+      "table": 9,
+      "kind": "pushing",
+      "glass": 3,
+      "chance_of_a_topple": 0.0,
+      "travel_mm": 16.9,
+      "reach_mm": 15.8
+    },
+    {
+      "table": 9,
+      "kind": "pushing",
+      "glass": 3,
+      "chance_of_a_topple": 0.0,
+      "travel_mm": 12.2,
+      "reach_mm": 13.5
+    },
+    {
+      "table": 9,
+      "kind": "pushing",
+      "glass": 3,
+      "chance_of_a_topple": 0.0,
+      "travel_mm": 10.8,
+      "reach_mm": 13.7
+    },
+    {
+      "table": 9,
+      "kind": "pushing",
+      "glass": 3,
+      "chance_of_a_topple": 0.0,
+      "travel_mm": 17.8,
+      "reach_mm": 15.2
+    },
+    {
+      "table": 10,
+      "kind": "pushing",
+      "glass": 3,
+      "chance_of_a_topple": 0.0,
+      "travel_mm": 10.0,
+      "reach_mm": 16.7
+    },
+    {
+      "table": 10,
+      "kind": "pushing",
+      "glass": 3,
+      "chance_of_a_topple": 0.0,
+      "travel_mm": 10.9,
+      "reach_mm": 15.0
+    },
+    {
+      "table": 10,
+      "kind": "pushing",
+      "glass": 3,
+      "chance_of_a_topple": 0.0,
+      "travel_mm": 10.0,
+      "reach_mm": 15.9
+    },
+    {
+      "table": 10,
+      "kind": "pushing",
+      "glass": 3,
+      "chance_of_a_topple": 0.0,
+      "travel_mm": 10.8,
+      "reach_mm": 14.6
+    },
+    {
+      "table": 11,
+      "kind": "pushing",
+      "glass": 1,
+      "chance_of_a_topple": 0.0,
+      "travel_mm": 93.4,
+      "reach_mm": 21.5
+    },
+    {
+      "table": 11,
       "kind": "pushing",
       "glass": 0,
       "chance_of_a_topple": 0.0,
-      "travel_mm": 16.4,
-      "reach_mm": 17.9
+      "travel_mm": 33.2,
+      "reach_mm": 14.8
     },
     {
-      "table": 10,
+      "table": 11,
       "kind": "pushing",
       "glass": 1,
       "chance_of_a_topple": 0.0,
-      "travel_mm": 12.5,
-      "reach_mm": 24.2
-    },
-    {
-      "table": 10,
-      "kind": "pushing",
-      "glass": 1,
-      "chance_of_a_topple": 0.0,
-      "travel_mm": 14.5,
-      "reach_mm": 24.7
-    },
-    {
-      "table": 10,
-      "kind": "pushing",
-      "glass": 1,
-      "chance_of_a_topple": 2e-05,
-      "travel_mm": 17.7,
-      "reach_mm": 24.1
-    },
-    {
-      "table": 10,
-      "kind": "pushing",
-      "glass": 1,
-      "chance_of_a_topple": 0.00011,
-      "travel_mm": 18.8,
-      "reach_mm": 24.4
+      "travel_mm": 27.3,
+      "reach_mm": 17.4
     },
     {
       "table": 12,
       "kind": "pushing",
       "glass": 2,
       "chance_of_a_topple": 0.0,
-      "travel_mm": 32.9,
-      "reach_mm": 12.0
+      "travel_mm": 13.4,
+      "reach_mm": 32.2
     },
     {
       "table": 13,
       "kind": "pushing",
-      "glass": 2,
-      "chance_of_a_topple": 1e-05,
-      "travel_mm": 47.6,
-      "reach_mm": 12.1
+      "glass": 1,
+      "chance_of_a_topple": 0.0036,
+      "travel_mm": 47.9,
+      "reach_mm": 21.3
     },
     {
       "table": 15,
@@ -496,71 +511,39 @@
       "glass": 1,
       "chance_of_a_topple": 0.0,
       "travel_mm": 10.0,
-      "reach_mm": 21.9
+      "reach_mm": 27.9
     },
     {
-      "table": 15,
+      "table": 16,
       "kind": "pushing",
-      "glass": 1,
-      "chance_of_a_topple": 0.0,
-      "travel_mm": 10.0,
-      "reach_mm": 35.0
+      "glass": 4,
+      "chance_of_a_topple": 0.00039,
+      "travel_mm": 43.0,
+      "reach_mm": 17.6
     },
     {
       "table": 17,
       "kind": "pushing",
       "glass": 0,
       "chance_of_a_topple": 4e-05,
-      "travel_mm": 69.3,
-      "reach_mm": 11.0
+      "travel_mm": 67.0,
+      "reach_mm": 29.5
     },
     {
-      "table": 18,
+      "table": 17,
       "kind": "pushing",
-      "glass": 3,
-      "chance_of_a_topple": 0.0,
-      "travel_mm": 10.0,
-      "reach_mm": 27.6
-    },
-    {
-      "table": 18,
-      "kind": "pushing",
-      "glass": 3,
-      "chance_of_a_topple": 0.0,
-      "travel_mm": 12.7,
-      "reach_mm": 28.1
-    },
-    {
-      "table": 18,
-      "kind": "pushing",
-      "glass": 3,
-      "chance_of_a_topple": 3e-05,
-      "travel_mm": 27.0,
-      "reach_mm": 33.5
-    },
-    {
-      "table": 18,
-      "kind": "pushing",
-      "glass": 3,
-      "chance_of_a_topple": 0.0,
-      "travel_mm": 30.0,
-      "reach_mm": 26.0
-    },
-    {
-      "table": 18,
-      "kind": "pushing",
-      "glass": 2,
-      "chance_of_a_topple": 3e-05,
-      "travel_mm": 35.2,
-      "reach_mm": 20.2
+      "glass": 0,
+      "chance_of_a_topple": 1e-05,
+      "travel_mm": 69.6,
+      "reach_mm": 29.4
     },
     {
       "table": 19,
       "kind": "pushing",
       "glass": 1,
       "chance_of_a_topple": 0.0,
-      "travel_mm": 22.8,
-      "reach_mm": 30.5
+      "travel_mm": 16.3,
+      "reach_mm": 33.2
     }
   ],
   "pushes_dropped_for_clearance": {}

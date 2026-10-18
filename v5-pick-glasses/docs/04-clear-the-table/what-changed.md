@@ -734,7 +734,151 @@ earlier number on this page mean less. So the rule stays, the queue's verdict
 stands beside it, and the honest summary is that this repair closed a cause that
 was real and bought nothing that can be proved.
 
-## Five repairs that were measured and not kept
+### 15. The world model is fitted on twice the pushes, and made to pay more for a missed topple
+
+**What it is.** Two changes to solution 4 that only work as a pair. Another
+1,200 tables of pushes drawn exactly the way its first round was drawn, which
+takes five minutes of laptop time and raises its training set from 6,886 pushes
+to 12,253; and ten times the cost, inside the fit, for a topple the model fails
+to predict.
+
+**Why the pair.** More pushes make the model aim better and refuse worse, and
+the second half of that is not obvious. On the 658 validation pushes the doubled
+set cuts the error in where the glass lands from 5.7 mm to 4.3 mm at the median
+and from 38.3 mm to 31.7 mm at the ninetieth — and it catches 51 topples of 70
+where the old fit caught 57, while raising 94 false alarms where the old fit
+raised 116. A model fitted on more data is simply less easily alarmed, and the
+search's caution is a *fixed* threshold, so a less alarmed model lets more
+marginal pushes through. Raising what a missed topple costs puts the alarm back:
+at ten times, the doubled fit catches 56 of 70 and raises 109 false alarms,
+which is the old fit's refusal with the new fit's aim.
+
+**What each half does alone, measured on nine clocked walks of a hundred and
+fifty tables below the held-out line:**
+
+| | tables separated | glasses freed | glasses lost |
+| --- | --- | --- | --- |
+| as committed | 14.3 | +40.3 | 3.0 |
+| twice the pushes, same cost | — | — | nine more a walk on the unclocked band |
+| ten times the cost, same pushes | — | — | thirty-four fewer glasses freed |
+| **both** | **15.7** | **+42.3** | **1.7** |
+
+The two middle rows are the point: on the unclocked tuning band, doubling the
+pushes alone separated three more tables of two hundred and put nine more
+glasses over, and raising the cost alone — on the set before it was doubled —
+refused so much that it freed thirty-four fewer glasses. Neither is an
+improvement by itself.
+
+**The cost was swept rather than guessed**: at one, ten, twenty and thirty times.
+Thirty loses the fewest glasses on the unclocked band and ten wins on the clocked
+one, which is the instrument the next section is about, so ten is what the
+solution carries.
+
+**And on the held-out queue the change comes out worse**, which is written here
+rather than smoothed over:
+
+| fifty tables from 10,000 | as committed | with both changes |
+| --- | --- | --- |
+| tables attempted | 40 to 41 | 39 to 45 |
+| tables separated | 14 | 14 |
+| glasses freed | +39 | +36 and +33, in two walk-sets |
+| glasses broken | 1 (0 to 2), and 1.5 over six fresh walks | **5** in both walk-sets |
+| pickable share | 0.598, and 0.601 over six fresh walks | 0.570 and 0.550 |
+
+Three things were checked before accepting that. The committed model's single
+broken glass is not luck: walked six more times it breaks one and a half. The new
+model's thirteen broken glasses over three walks fall on nine different tables,
+so it is not one bad layout. And the queue is one band of about forty tables
+where the selection evidence is three bands of fifty. **It is kept, for the
+reason change 14 was kept**: the choice was made below ten thousand on the best
+evidence available there, and reverting because the held-out tables disagree is
+the one thing the band exists to prevent.
+
+### 16. The imitation policy is fitted on three times the demonstrations
+
+**What it is.** The demonstration set grows from 300 tables to 900, which is
+33,687 demonstrations instead of 11,313 and 857 pushes at the task instead of
+315. Nothing else about the fit changes. It costs twenty-four minutes of
+simulator time and a gigabyte of disk.
+
+**Why it was the next thing to try.** The solution's own record asked for it.
+Its policy sat about nine millimetres from its teacher on tables it had been
+fitted on and about twenty-four on tables it had not, and two distances that far
+apart are the signature of memorising rather than of a model that is short of
+ideas — for which the cure is more examples, not more steps.
+
+**A fit does not read every look.** Looks are four answers in five, and the
+policy's sampler throws most of them away again before a step is taken, so
+reading them all would cost a gigabyte of memory and twenty minutes a run for
+frames no step would ever see. The loader therefore takes a cap on looking
+frames and keeps every answer that touches a glass, which is why a fit on the
+larger set reads 14,994 frames and costs the same fifty-seven minutes it always
+did. The gate is fitted without the cap, because how often each kind of answer
+really happens is part of what it has to learn.
+
+**What it bought: a millimetre, and half the broken glasses.**
+
+| the policy, three fits each side | 300 tables | 900 tables |
+| --- | --- | --- |
+| mm a waypoint on tables it was fitted on | 8.7 to 9.8 | 11.5 to 12.2 |
+| mm a waypoint on tables it never saw | 23.7 to 23.8 | **22.6 to 23.2** |
+| mm a waypoint over the pushes it never saw | 19.8 to 20.5 | **17.7 to 20.4** |
+
+The memorising did stop — the error on fitted tables rose by three millimetres
+while the error on unseen tables fell by one — and the error that matters barely
+moved. **So the diagnosis was a third right.** The policy was memorising, and
+stopping it from memorising did not make it much better, which means what limits
+it is the model and the task rather than the number of examples.
+
+The gate says the same thing more bluntly. Fitted on three times the material,
+every one of its readings got *wider* rather than better: the kind of answer
+right 69 to 74 per cent against 70 to 71, the glass right 56 to 61 against 56 to
+61, the teacher's pushes found 56 to 86 per cent against 56 to 77. It was not
+short of data either.
+
+**On the tables, the one thing that moved is the breakages.** Over six walks of
+the held-out queue a side — six rather than three, because this solution attempts
+between nine and thirty-six tables a walk and three walks cannot separate
+anything:
+
+| fifty tables from 10,000, six walks | 300 tables | 900 tables |
+| --- | --- | --- |
+| tables separated | 0 (0 to 1) | 0 (0 to 2) |
+| glasses broken | 2 (1 to 2) | **1 (0 to 1)** |
+| glasses freed | +2 (−1 to 2) | −1 (−2 to 3) |
+| pickable share | 0.400 (0.316 to 0.404) | 0.361 (0.303 to 0.423) |
+
+With a spread of about half a glass on each side, halving the broken glasses is
+a real difference; the share differs by about one and a half standard errors of
+the difference and the freed glasses overlap completely. **It is kept for the
+breakages**, and the record says plainly that it bought nothing else.
+
+### A choice made on the wrong instrument, and the instrument that replaced it
+
+This belongs with the two changes above because it cost two wrong turns, and
+because every number on this page from here on is measured differently.
+
+**The tuning band and the score ask different questions.** A measurement run
+over two hundred tables gives every table as much arm time as it wants, so it
+says whether a table *can* be separated. The score gives fifteen arm minutes for
+fifty tables, so it says how much gets done before the clock stops. A change
+that trades time for thoroughness wins the first and loses the second, and that
+is exactly what happened: two configurations of the world model were chosen on
+the unclocked band, and both came back from the held-out queue with a lower
+share than the model they replaced.
+
+**The examiner already had what was needed.** Its judging takes the band of
+tables as an argument, so a clocked queue of fifty tables below the held-out
+line, walked three times, is the score's own shape on tables that may be chosen
+on. Solution 4 now has a ``select`` command for it, and the choices above were
+made on three such bands — nine walks over a hundred and fifty tables — rather
+than on the unclocked two hundred.
+
+**One fifty-table queue is still not enough.** The same model scored 0.647 on
+the band from 500 and 0.570 on the held-out band, which is why three bands are
+walked and pooled rather than one.
+
+## Eight repairs that were measured and not kept
 
 A page that only lists what worked is not a record of what was learned.
 
@@ -785,6 +929,49 @@ matters, the answer is different. The rule built on the wrong reading refused
 every push in the project, including the reference solution's, and the world
 model's search stopped finding any push at all on a crowded table, which is how
 it was caught.
+
+**Collecting the pushes the copies disagree about** was built, measured and left
+out of the fit, and it is the most interesting of these because the idea is
+sound and the consequence is not. A third collecting round draws forty candidate
+pushes a time and makes the one the three copies disagree about most, where
+disagreement is the spread of their predicted landings divided by the room a
+glass needs, plus the spread of their chances of a topple. Those pushes are
+genuinely the dangerous ones: **17.3% of them put a glass over, against 10.4%
+for pushes drawn at random and 6.3% for the pushes the search itself chooses.**
+Fitted on them, the model separated the same number of tables and lost two and a
+half more glasses a seed on the tuning band. The round stays in the collector
+behind its own flag, with the file named so that the fit cannot read it by
+accident, because the measurement is worth repeating and the data is not worth
+fitting on.
+
+**Tightening the search's caution** was measured on four settings and two
+models, and it never bought anything. Against the standard one chance in a
+hundred, the three-round model at three in a thousand lost four fewer glasses
+and a table, and at one in a thousand it lost five more; the doubled-pushes model
+lost 19, 24, 26 and 27 glasses at one in a hundred, three in a thousand, one in
+a thousand and three in ten thousand. **A threshold cannot refuse what the model
+gives no chance at all**, and the pushes that topple glasses are exactly those.
+
+**Testing a glass the copies disagree about, before pushing it**, is the
+synthesis of all of the above and it does not work. The world model never probes;
+the reference does, and the disagreement number says which pushes are worth
+probing, so a doubted push was answered with the reference's own five-millimetre
+shove first. Measured on nine clocked walks at three thresholds:
+
+| | tables separated | glasses freed | glasses lost | share |
+| --- | --- | --- | --- | --- |
+| no testing | **15.7** | **+42.3** | 1.7 | **0.632** |
+| test when the doubt is 0.10 or more | 14.7 | +41.0 | 1.7 | 0.621 |
+| test when the doubt is 0.05 or more | 13.7 | +37.7 | 1.7 | 0.604 |
+| test when the doubt is 0.03 or more | 11.3 | +34.7 | 2.3 | 0.591 |
+
+Every threshold costs tables and saves no glasses at all. The reason is the
+measurement in change 10: a five-millimetre test says whether a glass slides a
+little, and a glass goes over under a long push that the tipping rule cannot
+predict for any glass in this cell. The reference survives that by freeing a
+glass over a run of small pushes judged one at a time; this solution makes one
+long push, so the test tells it nothing it can use. The branch was taken out
+again and the arithmetic it needed stayed, because the collector uses it.
 
 ## What it all came to
 

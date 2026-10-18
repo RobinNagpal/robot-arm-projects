@@ -305,6 +305,29 @@ def score(
     return cost, landing, topple, {reason: int(flags.sum()) for reason, flags in dropped.items()}
 
 
+def disagreement(model: Ensemble, glasses: list[Seen], target: Seen, heading, offset, travel, reach):
+    """How far apart the copies are about each of these pushes, as one number each.
+
+    Two disagreements are added up, and each is divided by the thing it decides,
+    so that neither can drown the other. The first is about toppling: the copies
+    answer a chance between nothing and one, so the spread of those chances is
+    already on that scale. The second is about where the pushed glass ends up:
+    the spread of the predicted landings is a distance, and it is divided by the
+    room a glass needs before it can be gripped, which is the distance the whole
+    task is measured in. A push the copies place half a glass's room apart
+    therefore counts the same as a push they cannot agree is safe.
+
+    Three places want this number and they must agree about it: the collector,
+    which went looking for the pushes the copies doubt, the solution, which
+    tests a glass before making a push it doubts, and the record.
+    """
+    said = model.predict(encoding.encode(glasses, target, heading, offset, travel, reach))
+    about_toppling = sigmoid(said[:, :, encoding.TOPPLED]).std(axis=0)
+    landings = said[:, :, :2] * encoding.MOVE_SCALE
+    about_the_glass = np.linalg.norm(landings.std(axis=0), axis=1)
+    return about_toppling + about_the_glass / GRIP_ROOM
+
+
 def bounds(target: Seen) -> tuple[np.ndarray, np.ndarray]:
     """The box the search draws its pushes from: heading, offset, travel, reach.
 

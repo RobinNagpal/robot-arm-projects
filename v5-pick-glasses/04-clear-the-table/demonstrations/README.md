@@ -97,22 +97,41 @@ for itself, so a chunk that asked for it would be asking for the lift twice.
 
 | | |
 | --- | --- |
-| tables | 300, numbered 1000 to 1299 |
+| tables | 900, numbered 1000 to 1899 |
 | folder | `fitted-on/` |
-| demonstrations | 11,313 |
-| answers a table | 37.7 |
-| of them looking | 8,965 — 4,822 drives to a stand and 4,143 extra frames from where the jaw already stood — **79%** |
-| of them pushing | 2,062 — 1,416 ranging, 331 testing, 315 pushing the glass somewhere |
-| of them finishing | 297 — the teacher saying the table needs nothing more |
-| dropped | 11: 8 shoved a glass out of the zone, 3 put one over |
-| a path | 1 waypoint to look, 39 to 190 to push; the median over all of them is 1 and the ninetieth is 44 |
-| on disk | about 350 MB |
+| demonstrations | 33,687 |
+| answers a table | 37.5 |
+| of them looking | 26,693 — 14,371 drives to a stand and 12,322 extra frames from where the jaw already stood — **79%** |
+| of them pushing | 6,140 — 4,311 ranging, 972 testing, 857 pushing the glass somewhere |
+| of them finishing | 888 — the teacher saying the table needs nothing more |
+| dropped | 34: 22 shoved a glass out of the zone, 12 put one over |
+| a path | 1 waypoint to look, up to 190 to push; the median over all of them is 1 and the ninetieth is 44 |
+| on disk | about 1.0 GB |
+
+**The band was three hundred tables and is now nine hundred**, and that change
+is a measurement of its own rather than a tidy-up. The policy fitted on the
+three hundred sat about nine millimetres from its teacher on tables it had been
+fitted on and about twenty-four on tables it had not, and two distances that far
+apart mean a model that is memorising rather than one that is short of ideas —
+for which the cure is more demonstrations. The mixture is identical at the new
+size, 79% looking and 37.5 answers a table, so this is the same material three
+times over; what changes is the scarce kind, where pushes at the task go from
+315 to 857. [What changed](../../docs/04-clear-the-table/what-changed.md)
+records what that bought.
+
+**A fit does not read every look.** Looks are four answers in five and the
+policy's sampler throws most of them away again before a step is taken, so
+reading them all would cost a gigabyte of memory and twenty minutes a run for
+frames no step would ever see. ``loading.load`` therefore takes a cap on the
+looking frames, and every answer that touches a glass is kept whatever the cap.
+The gate is fitted without the cap, because how often each kind of answer really
+happens is part of what it has to learn.
 
 **Read the three middle rows together, because they are the whole difficulty of
 fitting anything on this set.** Four answers in five change nothing about the
-table. Of the ones that touch a glass, five in six are a five-millimetre poke
+table. Of the ones that touch a glass, six in seven are a five-millimetre poke
 made to find something out rather than to move the glass anywhere. **One answer
-in thirty-six is a push at the task.** A fit drawn evenly from this material
+in thirty-nine is a push at the task.** A fit drawn evenly from this material
 spends almost all of itself on the answer that is easy and does nothing, which
 is why the two models fitted on it now take it differently: the one that chooses
 is shown the mixture as it is, with each kind's part of the loss divided by how
@@ -133,10 +152,11 @@ measured on tables it had already seen.
 
 ### What it cost
 
-**Eight and a half minutes of wall time for the whole set**: 516.6 s for 300
-tables, which is 1.72 s a table and 0.047 s a demonstration. Nobody holds a
+**Twenty-four minutes of wall time for the whole set**: 1,461.7 s for 900
+tables, which is 1.62 s a table and 0.043 s a demonstration. Nobody holds a
 controller — the tables are drawn from numbers and the teacher is a program — so
-the only cost is simulator time.
+the only cost is simulator time, and that is what makes the band cheap to widen:
+three times the demonstrations cost three times eight minutes and nothing else.
 
 It is worth setting that against problem 3, because the expectation going in was
 that problem 4's demonstrations would cost several times more, and the two
@@ -144,8 +164,8 @@ numbers pull in opposite directions.
 
 | | problem 3's set | this set |
 | --- | --- | --- |
-| a table | 0.74 s | 1.72 s |
-| a demonstration | 0.55 s | 0.047 s |
+| a table | 0.74 s | 1.62 s |
+| a demonstration | 0.55 s | 0.043 s |
 
 **A table costs twice as much**, and that is the camera: the teacher has to
 drive the arm around before it can act, so it makes about six pushes a table
@@ -156,8 +176,9 @@ each one settles the table for half a simulated second.
 other way. Problem 3 kept 1.3 demonstrations from a table because only a push
 counted. Here every answer is one, and 37 of them come off a table, so the
 rendering of 37 pictures is cheap beside the six pushes that had to happen
-anyway. The set is therefore wide in frames and narrow in *pushes*: 2,062 of
-them against problem 3's 6,935, from a fifth of the tables.
+anyway. The set is therefore wide in frames and narrow in *pushes*: 6,140 of
+them against problem 3's 6,935, from three fifths of the tables. At three
+hundred tables it held 2,062, which is where that narrowness was sharpest.
 
 ## The teacher was trained somewhere else
 

@@ -9,16 +9,22 @@ HERE := 04-a-world-model
 TABLES ?= 600
 PIXI = cd $(PROBLEM) && pixi run
 
-.PHONY: help collect collect-planned train measure measure-predicting reference judge test lint
+.PHONY: help collect collect-more collect-planned collect-doubted train measure measure-predicting reference select judge test lint
 
 help: ## This list
 	@grep -hE '^[a-z0-9-]+:.*##' $(MAKEFILE_LIST) | sed 's/:.*##/\t/' | sort
 
-collect: ## Round 1: pushes drawn at random on TABLES training tables (about 12 minutes)
+collect: ## Round 1: pushes drawn at random on TABLES training tables (about 5 minutes)
 	$(PIXI) python $(HERE)/collect.py --tables $(TABLES) --save $(HERE)/training.json
+
+collect-more: ## Round 1 again, on the tables after it: the plainest kind of more data
+	$(PIXI) python $(HERE)/collect.py --more --tables 1200 --save $(HERE)/training.json
 
 collect-planned: ## Round 2: the search's own pushes, which needs a trained model (about 15 minutes)
 	$(PIXI) python $(HERE)/collect.py --planned --tables 300 --save $(HERE)/training.json
+
+collect-doubted: ## Round 3: the pushes the copies disagree about, which needs a trained model
+	$(PIXI) python $(HERE)/collect.py --doubted --tables 300 --save $(HERE)/training.json
 
 train: ## Fit the copies of the model on every round collected (about 2 minutes)
 	$(PIXI) python $(HERE)/train.py --save $(HERE)/training.json
@@ -31,6 +37,9 @@ measure-predicting: ## The same twenty, with the model believed instead of looki
 
 reference: ## The geometry reference's own numbers on the same twenty, to sit beside
 	$(PIXI) python 01-one-fixed-nudge/calibrate.py --tables 20 --save $(HERE)/reference.json
+
+select: ## A clocked queue of fifty tables below the held-out line, for choosing on
+	$(PIXI) python $(HERE)/measure.py --select 500
 
 judge: ## The held-out queue, once, through the bench's own judging
 	$(PIXI) python $(HERE)/measure.py --judge

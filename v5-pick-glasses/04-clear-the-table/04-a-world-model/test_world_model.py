@@ -29,7 +29,7 @@ from work_cell.table.layout import TABLE_CENTRE_XY, TABLE_SIZE
 
 import tables
 from open_run import HOME, clear_table, open_cell
-from partners import PUSH_HEIGHT, TRAVEL_HEIGHT, Seen, in_zone
+from partners import GRIP_ROOM, PUSH_HEIGHT, TRAVEL_HEIGHT, Seen, in_zone
 
 import plan
 
@@ -423,3 +423,83 @@ def test_a_push_the_model_is_unsure_of_is_not_accounted_for():
     assert search.accounted_for(glass, sure) == (glass.id,)
     unsure = replace(sure, risk=search.TOPPLE_LIMIT + 0.01)
     assert search.accounted_for(glass, unsure) == ()
+
+
+# ------------------------------------------------- round 3, the doubted pushes
+
+
+class Divided:
+    """Copies that disagree by an amount chosen per candidate.
+
+    ``spread`` is how far apart, in metres, the copies place the pushed glass,
+    and ``doubt`` how far apart their chances of a topple are. Two copies are
+    enough: put one each side of the middle and the spread across them is the
+    number asked for. It stands in for a trained ensemble wherever the question
+    is which push a disagreement picks.
+    """
+
+    def __init__(self, spread, doubt) -> None:
+        self.spread = np.asarray(spread, dtype=np.float64)
+        self.doubt = np.asarray(doubt, dtype=np.float64)
+        # The candidates are asked about one at a time, because each one is at
+        # its own glass and the encoding is written for a stack of pushes at
+        # one glass. So the answers are handed out in order, and this counts
+        # how many have gone.
+        self.asked = 0
+
+    def predict(self, x: np.ndarray) -> np.ndarray:
+        taken = slice(self.asked, self.asked + len(x))
+        spread, doubt = self.spread[taken], self.doubt[taken]
+        self.asked += len(x)
+        out = np.zeros((2, len(x), encoding.OUTPUTS), dtype=np.float32)
+        out[0, :, 0] = spread / encoding.MOVE_SCALE
+        out[1, :, 0] = -spread / encoding.MOVE_SCALE
+        for copy, chance in enumerate((0.5 + doubt, 0.5 - doubt)):
+            out[copy, :, encoding.TOPPLED] = np.log(chance / (1.0 - chance))
+        return out
+
+
+def candidates_of(seen: list[Seen], how_many: int) -> list[tuple]:
+    """``how_many`` candidate pushes at one glass, each a legal set of numbers."""
+    low, high = search.bounds(seen[0])
+    middle = [(a + b) / 2 for a, b in zip(low, high, strict=True)]
+    return [(seen[0], *middle) for _ in range(how_many)]
+
+
+def test_copies_that_agree_doubt_nothing() -> None:
+    """A push every copy answers the same way is a push the round has no use for."""
+    seen = as_seen(0)
+    drawn = candidates_of(seen, 3)
+    said = collect.disagreement(Divided(spread=[0, 0, 0], doubt=[0, 0, 0]), seen, drawn)
+    assert said == pytest.approx(np.zeros(3), abs=1e-6)
+
+
+def test_the_push_they_place_furthest_apart_is_the_one_chosen() -> None:
+    """Disagreement about where the glass ends up is disagreement worth measuring."""
+    seen = as_seen(0)
+    drawn = candidates_of(seen, 3)
+    model = Divided(spread=[0.001, 0.030, 0.004], doubt=[0, 0, 0])
+    assert collect.most_doubted(model, seen, drawn) is drawn[1]
+
+
+def test_the_push_they_cannot_agree_is_safe_is_the_one_chosen() -> None:
+    """Disagreement about toppling counts too, and it is the one pessimism acts on."""
+    seen = as_seen(0)
+    drawn = candidates_of(seen, 3)
+    model = Divided(spread=[0, 0, 0], doubt=[0.05, 0.02, 0.40])
+    assert collect.most_doubted(model, seen, drawn) is drawn[2]
+
+
+def test_the_two_disagreements_are_weighed_against_each_other() -> None:
+    """Each is divided by the thing it decides, so a glass's room is worth a whole doubt.
+
+    One candidate the copies place a quarter of a glass's room apart and agree
+    about, and one they place exactly together and cannot agree about at all.
+    The first counts a quarter and the second counts its own chance, so which is
+    chosen is decided by that arithmetic and not by which kind it is.
+    """
+    seen = as_seen(0)
+    drawn = candidates_of(seen, 2)
+    room = GRIP_ROOM / 4
+    assert collect.most_doubted(Divided([room, 0], [0, 0.10]), seen, drawn) is drawn[0]
+    assert collect.most_doubted(Divided([room, 0], [0, 0.40]), seen, drawn) is drawn[1]

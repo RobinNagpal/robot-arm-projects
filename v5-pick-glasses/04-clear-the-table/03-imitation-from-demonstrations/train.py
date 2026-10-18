@@ -86,14 +86,27 @@ def main() -> None:
     parser.add_argument("--batch", type=int, default=fitting.BATCH)
     parser.add_argument("--lr", type=float, default=fitting.LEARNING_RATE)
     parser.add_argument("--most", type=int, default=None, help="read only this many demonstrations")
+    parser.add_argument(
+        "--looks",
+        type=int,
+        default=None,
+        help="read at most this many looking frames, for the policy's fit (see loading.load)",
+    )
     parser.add_argument("--gate-steps", type=int, default=gate.STEPS, help="steps for the gate's own fit")
     parser.add_argument("--gate-only", action="store_true", help="fit the gate and leave the policy alone")
     parser.add_argument(
         "--policy-only", action="store_true", help="fit the chunked policy and leave the gate alone"
     )
     arguments = parser.parse_args()
+    if arguments.looks is not None and not arguments.policy_only:
+        # The gate has to learn how often each kind of answer really happens, so
+        # a thinned mixture would teach it the wrong prior. The policy is drawn
+        # evenly from the kinds and cannot tell, which is why the cap exists.
+        raise SystemExit("--looks thins the looks, so it is for --policy-only; fit the gate without it")
 
-    held = loading.load(loading.FITTING, pictures.shrink, arguments.most)
+    held = loading.load(loading.FITTING, pictures.shrink, arguments.most, arguments.looks)
+    # The set held back from fitting is small and is never capped, so that the
+    # distance to the teacher means the same thing from one round to the next.
     checking = loading.load(loading.HELD_BACK, pictures.shrink, arguments.most)
     device = policy.where_to_run()
     facts = loading.collected(loading.FITTING)
@@ -125,6 +138,8 @@ def main() -> None:
         "rung": RUNG,
         "device": device,
         "demonstrations": int(len(actions)),
+        "frames_read": int(len(held["actions"])),
+        "looks_capped_at": arguments.looks,
         "band": facts["band"],
         "chunk": chunks.CHUNK,
     }
