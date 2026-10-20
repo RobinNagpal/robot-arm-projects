@@ -1,0 +1,379 @@
+{
+ "summary": {
+  "runs": 1
+ },
+ "tables": [
+  [
+   {
+    "seed": 10034,
+    "glasses": 4,
+    "outcome": "unfinished",
+    "pickable_at_start": 1,
+    "pickable_at_end": 3,
+    "broken": 0,
+    "ended_by": "said done",
+    "interlocks": 0,
+    "arm_seconds": 22.28,
+    "thinking_seconds": 154.656,
+    "answers": 4
+   },
+   {
+    "seed": 10035,
+    "glasses": 4,
+    "outcome": "unfinished",
+    "pickable_at_start": 1,
+    "pickable_at_end": 1,
+    "broken": 0,
+    "ended_by": "said done",
+    "interlocks": 0,
+    "arm_seconds": 8.51,
+    "thinking_seconds": 134.703,
+    "answers": 2
+   },
+   {
+    "seed": 10036,
+    "glasses": 4,
+    "outcome": "unfinished",
+    "pickable_at_start": 1,
+    "pickable_at_end": 2,
+    "broken": 0,
+    "ended_by": "said done",
+    "interlocks": 0,
+    "arm_seconds": 13.33,
+    "thinking_seconds": 404.51,
+    "answers": 3
+   },
+   {
+    "seed": 10037,
+    "glasses": 5,
+    "outcome": "unfinished",
+    "pickable_at_start": 2,
+    "pickable_at_end": 2,
+    "broken": 0,
+    "ended_by": "said done",
+    "interlocks": 0,
+    "arm_seconds": 0.0,
+    "thinking_seconds": 86.711,
+    "answers": 1
+   },
+   {
+    "seed": 10038,
+    "glasses": 4,
+    "outcome": "unfinished",
+    "pickable_at_start": 2,
+    "pickable_at_end": 2,
+    "broken": 0,
+    "ended_by": "said done",
+    "interlocks": 0,
+    "arm_seconds": 0.0,
+    "thinking_seconds": 105.289,
+    "answers": 1
+   },
+   {
+    "seed": 10039,
+    "glasses": 5,
+    "outcome": "unfinished",
+    "pickable_at_start": 2,
+    "pickable_at_end": 2,
+    "broken": 0,
+    "ended_by": "said done",
+    "interlocks": 0,
+    "arm_seconds": 11.47,
+    "thinking_seconds": 37.258,
+    "answers": 2
+   },
+   {
+    "seed": 10040,
+    "glasses": 4,
+    "outcome": "unfinished",
+    "pickable_at_start": 1,
+    "pickable_at_end": 1,
+    "broken": 0,
+    "ended_by": "said done",
+    "interlocks": 0,
+    "arm_seconds": 0.0,
+    "thinking_seconds": 58.268,
+    "answers": 1
+   },
+   {
+    "seed": 10041,
+    "glasses": 3,
+    "outcome": "unfinished",
+    "pickable_at_start": 1,
+    "pickable_at_end": 1,
+    "broken": 0,
+    "ended_by": "said done",
+    "interlocks": 0,
+    "arm_seconds": 0.0,
+    "thinking_seconds": 105.252,
+    "answers": 1
+   },
+   {
+    "seed": 10042,
+    "glasses": 4,
+    "outcome": "unfinished",
+    "pickable_at_start": 1,
+    "pickable_at_end": 1,
+    "broken": 0,
+    "ended_by": "said done",
+    "interlocks": 0,
+    "arm_seconds": 17.37,
+    "thinking_seconds": 122.241,
+    "answers": 2
+   },
+   {
+    "seed": 10043,
+    "glasses": 4,
+    "outcome": "unfinished",
+    "pickable_at_start": 1,
+    "pickable_at_end": 1,
+    "broken": 0,
+    "ended_by": "said done",
+    "interlocks": 0,
+    "arm_seconds": 0.0,
+    "thinking_seconds": 38.383,
+    "answers": 1
+   },
+   {
+    "seed": 10044,
+    "glasses": 4,
+    "outcome": "separated",
+    "pickable_at_start": 2,
+    "pickable_at_end": 4,
+    "broken": 0,
+    "ended_by": "said done",
+    "interlocks": 0,
+    "arm_seconds": 39.66,
+    "thinking_seconds": 26.848,
+    "answers": 2
+   },
+   {
+    "seed": 10045,
+    "glasses": 3,
+    "outcome": "unfinished",
+    "pickable_at_start": 1,
+    "pickable_at_end": 1,
+    "broken": 0,
+    "ended_by": "said done",
+    "interlocks": 0,
+    "arm_seconds": 0.0,
+    "thinking_seconds": 118.964,
+    "answers": 1
+   },
+   {
+    "seed": 10046,
+    "glasses": 4,
+    "outcome": "unfinished",
+    "pickable_at_start": 2,
+    "pickable_at_end": 2,
+    "broken": 0,
+    "ended_by": "said done",
+    "interlocks": 0,
+    "arm_seconds": 0.0,
+    "thinking_seconds": 51.307,
+    "answers": 1
+   },
+   {
+    "seed": 10047,
+    "glasses": 4,
+    "outcome": "unfinished",
+    "pickable_at_start": 1,
+    "pickable_at_end": 1,
+    "broken": 0,
+    "ended_by": "said done",
+    "interlocks": 0,
+    "arm_seconds": 0.0,
+    "thinking_seconds": 10.126,
+    "answers": 1
+   },
+   {
+    "seed": 10048,
+    "glasses": 4,
+    "outcome": "unfinished",
+    "pickable_at_start": 1,
+    "pickable_at_end": 1,
+    "broken": 0,
+    "ended_by": "said done",
+    "interlocks": 0,
+    "arm_seconds": 0.0,
+    "thinking_seconds": 114.226,
+    "answers": 1
+   },
+   {
+    "seed": 10049,
+    "glasses": 4,
+    "outcome": "unfinished",
+    "pickable_at_start": 2,
+    "pickable_at_end": 2,
+    "broken": 0,
+    "ended_by": "said done",
+    "interlocks": 0,
+    "arm_seconds": 0.0,
+    "thinking_seconds": 65.765,
+    "answers": 1
+   }
+  ]
+ ],
+ "chosen": [
+  {
+   "seed": 10034,
+   "glass": 0,
+   "kind": "stemmed_glass",
+   "heading": 0.5107279167168688,
+   "travel": 0.03843034253451795,
+   "settings": {
+    "push_height": 0.10254590144085285,
+    "stroke_speed": 0.1273310652184934,
+    "approach_speed": 0.6330206091495634,
+    "padding": 0.015782765770563926,
+    "standoff": 0.0222390385671731,
+    "overreach": 0.0011990926396980269
+   },
+   "worth": 0.09622535574174235
+  },
+  {
+   "seed": 10034,
+   "glass": 1,
+   "kind": "stemmed_glass",
+   "heading": -1.2309694565120282,
+   "travel": 0.021091836814136594,
+   "settings": {
+    "push_height": 0.11980517543970753,
+    "stroke_speed": 0.043536187231689574,
+    "approach_speed": 0.3944573459213341,
+    "padding": 0.011095288503652625,
+    "standoff": 0.042935130902808705,
+    "overreach": 0.011336094152361344
+   },
+   "worth": 1.3704262518517483
+  },
+  {
+   "seed": 10034,
+   "glass": 0,
+   "kind": "stemmed_glass",
+   "heading": 0.2495633495160403,
+   "travel": 0.10096794668942993,
+   "settings": {
+    "push_height": 0.08016435878553105,
+    "stroke_speed": 0.04640677257033564,
+    "approach_speed": 0.5986404450423457,
+    "padding": 0.007869140678080908,
+    "standoff": 0.025230261967735437,
+    "overreach": 0.007071787474257904
+   },
+   "worth": 3.981217733979564
+  },
+  {
+   "seed": 10035,
+   "glass": 1,
+   "kind": "tapered_glass",
+   "heading": 1.3340634056782026,
+   "travel": 0.05194308873538493,
+   "settings": {
+    "push_height": 0.08204237128799254,
+    "stroke_speed": 0.06454734888698063,
+    "approach_speed": 0.3671131148688586,
+    "padding": 0.007557325064737419,
+    "standoff": 0.042030317702050436,
+    "overreach": 0.01483064822151676
+   },
+   "worth": 0.3669720699401602
+  },
+  {
+   "seed": 10036,
+   "glass": 0,
+   "kind": "tapered_glass",
+   "heading": -0.30525026419603485,
+   "travel": 0.09474513935204013,
+   "settings": {
+    "push_height": 0.0973680066136562,
+    "stroke_speed": 0.04817299658268545,
+    "approach_speed": 0.49218595894886896,
+    "padding": 0.01170962689672364,
+    "standoff": 0.035585347928378974,
+    "overreach": 0.0024185208767307843
+   },
+   "worth": 0.9130068156906014
+  },
+  {
+   "seed": 10036,
+   "glass": 0,
+   "kind": "tapered_glass",
+   "heading": 0.027379661170144676,
+   "travel": 0.06494425719868387,
+   "settings": {
+    "push_height": 0.07944102140242953,
+    "stroke_speed": 0.10467219027583494,
+    "approach_speed": 0.6122342752100736,
+    "padding": 0.015988112336737317,
+    "standoff": 0.04928019154404248,
+    "overreach": 0.013614291682006603
+   },
+   "worth": 1.0469245547996309
+  },
+  {
+   "seed": 10039,
+   "glass": 4,
+   "kind": "tapered_glass",
+   "heading": 0.3252769422369708,
+   "travel": 0.06344736889100058,
+   "settings": {
+    "push_height": 0.08892301482019686,
+    "stroke_speed": 0.024417768575047717,
+    "approach_speed": 0.6924862217344482,
+    "padding": 0.014583971274361677,
+    "standoff": 0.0395077662119802,
+    "overreach": 0.008007089110490778
+   },
+   "worth": 0.2011362535856377
+  },
+  {
+   "seed": 10042,
+   "glass": 2,
+   "kind": "tapered_glass",
+   "heading": -1.1661616703900786,
+   "travel": 0.05647821566065982,
+   "settings": {
+    "push_height": 0.07585967629601045,
+    "stroke_speed": 0.009290536142800804,
+    "approach_speed": 0.30844787932972945,
+    "padding": 0.01051560036108102,
+    "standoff": 0.04182732169040848,
+    "overreach": 0.01653597015097857
+   },
+   "worth": 0.5035609434521964
+  },
+  {
+   "seed": 10044,
+   "glass": 2,
+   "kind": "tapered_glass",
+   "heading": -2.1833387399812603,
+   "travel": 0.06338277261533201,
+   "settings": {
+    "push_height": 0.07903261275840094,
+    "stroke_speed": 0.009157899464082506,
+    "approach_speed": 0.32785518254868423,
+    "padding": 0.007621323784370045,
+    "standoff": 0.04698632211653821,
+    "overreach": 0.0019002376360811202
+   },
+   "worth": 1.8886527870086744
+  },
+  {
+   "seed": 10044,
+   "glass": 2,
+   "kind": "tapered_glass",
+   "heading": -1.6192340524830324,
+   "travel": 0.11108109629038605,
+   "settings": {
+    "push_height": 0.07717314619028501,
+    "stroke_speed": 0.012247856967821663,
+    "approach_speed": 0.46251223735032454,
+    "padding": 0.012200169216442257,
+    "standoff": 0.034770277349933015,
+    "overreach": 0.007645723378152333
+   },
+   "worth": 0.9007244139829463
+  }
+ ]
+}

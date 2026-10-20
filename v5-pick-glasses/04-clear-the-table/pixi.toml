@@ -44,6 +44,6 @@ peft = ">=0.17,<0.22"
 # problem's own bench, and problem 3's bench, which this problem borrows from
 # rather than copies: the physics, the tables and the pictures are the same
 # cell, and a copy would drift away from it the first time either changed.
-PYTHONPATH = "$PIXI_PROJECT_ROOT/../src/work_cell:$PIXI_PROJECT_ROOT/bench:$PIXI_PROJECT_ROOT/../03-push-glasses-apart/bench"
+PYTHONPATH = "$PIXI_PROJECT_ROOT/../src/work_cell:$PIXI_PROJECT_ROOT/full-arm:$PIXI_PROJECT_ROOT/bench:$PIXI_PROJECT_ROOT/../03-push-glasses-apart/bench"
 
 [tasks]

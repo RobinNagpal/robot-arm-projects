@@ -117,7 +117,7 @@ same push. Then the arm looks again and the search runs afresh.
 
 **The three prices and the pessimism were added after the first walk of the
 held-out queue**, which this solution lost seven tables and eight glasses on.
-[`what-changed.md`](../../docs/04-clear-the-table/what-changed.md) measures what
+[`what-changed.md`](../../docs/04-clear-the-table/README.md) measures what
 each of them bought.
 
 ## What I expected before measuring
@@ -170,7 +170,7 @@ reason worth remembering: a model fitted on more pushes is less easily alarmed
 about toppling, and the search's caution is a fixed threshold, so a less alarmed
 model lets more marginal pushes through. The fit therefore now charges ten times
 as much for a topple it fails to predict, which is `TOPPLE_SCALE` in
-`train.py`, and [what changed](../../docs/04-clear-the-table/what-changed.md)
+`train.py`, and [what changed](../../docs/04-clear-the-table/README.md)
 has all four corners of that square.
 
 A third round was collected and is **not** fitted on. It drew forty candidate
@@ -394,7 +394,7 @@ glasses broken from four to one — and it cut the tables separated from sevente
 to **eight**, because a glass that does not keep up with a probe is then left
 alone for the rest of the table. Once the search was pessimistic it bought
 nothing that pessimism had not already bought, so it is not here.
-[`what-changed.md`](../../docs/04-clear-the-table/what-changed.md) holds the
+[`what-changed.md`](../../docs/04-clear-the-table/README.md) holds the
 numbers.
 
 ## What it scores — the held-out queue, fifty tables offered from 10,000
@@ -442,7 +442,7 @@ held-out line, walked under the same arm budget, where this fit loses 1.7
 glasses a walk against the other's 3.0 — so one band of forty tables disagrees
 with three bands of fifty, in the opposite direction, and it disagrees over nine
 different tables rather than one bad layout.
-[What changed](../../docs/04-clear-the-table/what-changed.md) says what was
+[What changed](../../docs/04-clear-the-table/README.md) says what was
 checked before accepting that, and why the change is kept: the band below ten
 thousand is where choosing happens, and reverting because the held-out tables
 disagree is what the band exists to prevent.
@@ -467,7 +467,7 @@ Both spend essentially the whole 900 seconds, so how far each got down the list
 is set by what a table costs it. The rest of the fifty were offered and handed
 straight back because what was left of the clock could not pay for the first
 path; the bench does not count those, and the rule is in
-[the examiner](../../docs/04-clear-the-table/the-examiner.md).
+[the examiner](../../docs/04-clear-the-table/README.md).
 
 **The saving this port was made for is real.** A table it separates costs 25.4
 arm seconds against the reference's 43.6, and that average is over tables that
@@ -516,7 +516,7 @@ the budget still held minutes at each of them.
 **And it is not what the band below ten thousand shows.** On a hundred and fifty
 tables walked under the same budget, this fit loses 1.7 glasses a walk and the
 one before it loses 3.0. That disagreement is the subject of
-[what changed](../../docs/04-clear-the-table/what-changed.md), which also
+[what changed](../../docs/04-clear-the-table/README.md), which also
 records the three things checked before it was accepted.
 
 ### What the per-push record now says

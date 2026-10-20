@@ -1,7 +1,8 @@
 # Problem 4 — the borrowed model, fine-tuned on this problem's own demonstrations
 
-`lerobot/smolvla_base`, the same weights [solution
-5](../05-smolvla-as-it-downloads/) runs untouched, with a small correction
+`lerobot/smolvla_base`, the same weights the retired solution 5 ran untouched
+(its page is kept in `docs/04-clear-the-table/solutions/`, and its loop is now
+`as_downloaded.py` in this folder), with a small correction
 fitted here on the answers the ranked geometry gave on problem 4's tables. The
 question it answers is what training on this cell buys a general model that has
 already been asked the question cold.
@@ -35,7 +36,7 @@ frees no glass. The pair this folder exists to measure — the same weights with
 and without this cell's demonstrations — says the same thing from the other
 side: fitting makes the model act a third again as often and leaves the outcome
 exactly where it was.
-[`what-changed.md`](../../docs/04-clear-the-table/what-changed.md) records both
+[`what-changed.md`](../../docs/04-clear-the-table/README.md) records both
 changes beside the measurements that justified them.
 
 ## What is borrowed and what is new

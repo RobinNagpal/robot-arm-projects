@@ -136,20 +136,6 @@ def a_world_model() -> Solution:
     return learned.WorldModel(seed=0)
 
 
-def as_it_downloads() -> Solution:
-    """The borrowed foundation model, asked with nothing fitted."""
-    _on_path("05-smolvla-as-it-downloads")
-    import torch
-    from as_downloaded import AsItDownloads
-    from borrowed import policy
-
-    # The noise the model denoises from is the only thing that varies between
-    # runs of it, so seeding it is what makes a film repeatable. The
-    # measurement runs seed it the same way.
-    torch.manual_seed(0)
-    return AsItDownloads(policy.Downloaded.load(policy.device_for()))
-
-
 def fine_tuned() -> Solution:
     """The same borrowed model with one correction fitted on this problem's demonstrations."""
     _on_path("06-smolvla-fine-tuned")
@@ -166,18 +152,44 @@ BUILD: dict[str, Callable[[], Solution]] = {
     "02-geometry-ranked": geometry_ranked,
     "03-imitation-from-demonstrations": imitation,
     "04-a-world-model": a_world_model,
-    "05-smolvla-as-it-downloads": as_it_downloads,
     "06-smolvla-fine-tuned": fine_tuned,
 }
 
 
-def film(folder: str, seed: int, room: float) -> None:
+def film(folder: str, seed: int, room: float, path: Path | None = None) -> Path:
     """Film one solution clearing one table, and write the video beside the others."""
     solution = BUILD[folder]()
     note = NOTES.get(folder, "")
     cell = filmed_cell(seed, f"{solution.name}{',  ' + note if note else ''}")
     result = clear_table(solution, seed, room, cell=cell)
-    save(cell, FILMS / f"{folder}.mp4", result)
+    path = path or FILMS / f"{folder}.mp4"
+    save(cell, path, result)
+    return path
+
+
+def film_run(folder: str, first: int, count: int, room: float) -> None:
+    """Film ``count`` tables in a row and join them into one video.
+
+    Each table is filmed on its own, as one film is, because a table's picture
+    ends with what it cost and that line must belong to that table. The clips
+    are joined without re-encoding, which is only safe because every clip is
+    written by the same encoder with the same settings.
+    """
+    import subprocess
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as scratch:
+        seeds = range(first, first + count)
+        clips = [film(folder, seed, room, Path(scratch) / f"{seed}.mp4") for seed in seeds]
+        listing = Path(scratch) / "clips.txt"
+        listing.write_text("".join(f"file '{clip}'\n" for clip in clips))
+        target = FILMS / f"{folder}-{count}-tables.mp4"
+        subprocess.run(
+            ["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", str(listing),
+             "-c", "copy", str(target)],
+            check=True,
+        )
+    print(f"{count} tables from {first} -> {target}")
 
 
 def main() -> None:
@@ -185,6 +197,9 @@ def main() -> None:
     parser.add_argument("solution", nargs="?", choices=sorted(BUILD), help="which one to film")
     parser.add_argument("--all", action="store_true", help="every solution, one after another")
     parser.add_argument("--table", type=int, default=FILM_TABLE, help="which table to film")
+    parser.add_argument(
+        "--tables", type=int, default=1, help="how many tables in a row to film, from --table, as one video"
+    )
     parser.add_argument(
         "--room", type=float, default=ARM_BUDGET, help="arm seconds the one table may spend"
     )
@@ -199,10 +214,10 @@ def main() -> None:
             print(f"\n--- {folder}", flush=True)
             subprocess.run(
                 [sys.executable, __file__, folder, "--table", str(arguments.table),
-                 "--room", str(arguments.room)],
+                 "--tables", str(arguments.tables), "--room", str(arguments.room)],
                 check=True,
             )
-        print(f"\nsix films in {FILMS}")
+        print(f"\nsix videos in {FILMS}")
         return
 
     if not arguments.solution:
@@ -212,6 +227,9 @@ def main() -> None:
             f"table {arguments.table} is below the held-out band, so this film is of a "
             "table the solutions were built on"
         )
+    if arguments.tables > 1:
+        film_run(arguments.solution, arguments.table, arguments.tables, arguments.room)
+        return
     film(arguments.solution, arguments.table, arguments.room)
 
 

@@ -15,7 +15,7 @@ to know, and what counts as done. Everything here follows from it.
 | **1** | [One glass, start to finish](problem-1) | the glass is on the rack | **built** |
 | **2** | [Segment the glasses](02-segment-glasses) | a set of pixels per glass | designed, not built |
 | **3** | [Glasses standing too close](03-push-glasses-apart) | the glasses are far enough apart to grip | designed, six solutions built |
-| **4** | [Clear the table](04-clear-the-table) | every glass has room, and the arm has said so | designed, six solutions built |
+| **4** | [Clear the table](04-clear-the-table) | every glass has room, and the arm has said so | built on a UR5e with MoveIt 2, six solutions |
 | **5** | [Several kinds at once](problem-5) | the table is clear | learned version built |
 | **6** | [Kinds whose proportions are unknown](problem-6) | the table is clear | stated |
 
@@ -84,11 +84,9 @@ means. After that they differ, because the problems do:
   — a foundation model, a fine-tune, a reinforcement-learning policy — beside
   the condition each one fails.
 - **Problem 4** does not pick anything up either, so it has no six steps. Its
-  folder is built like problem 3's: `problem.md` for the problem,
-  `the-examiner.md` for how a run is marked, and `solutions/` for the answers.
-  What is marked is different, because the arm declares its own finish — the
-  arrangement of the glasses when it stopped, the arm time it spent getting
-  there, and whether it knew it had finished.
+  `README.md` holds the whole picture and every result, `problem.md` says how a
+  run is scored, three pages explain the arm, the box model and the data, and
+  `solutions/` has one short page per solution.
 - **Problem 5** has both: the six steps in `problem.md`, and a `solutions/`
   folder with a `solution-overview.md` and nine solutions, split into
   `programmed/` and `learned/` as problem 2's are. Most of them are

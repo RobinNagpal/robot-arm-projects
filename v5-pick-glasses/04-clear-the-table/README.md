@@ -22,7 +22,7 @@ nobody standing by to count the pushes.
 The full statement is GitHub issue #23 of `RobinNagpal/robot-arm-projects`, and
 it is written up in [`docs/04-clear-the-table/`](../docs/04-clear-the-table/README.md):
 [`problem.md`](../docs/04-clear-the-table/problem.md) for what goes in and what
-must come out, and [`the-examiner.md`](../docs/04-clear-the-table/the-examiner.md)
+must come out, and [`the-examiner.md`](../docs/04-clear-the-table/README.md)
 for how a run is marked. Read those two before any solution document.
 
 ## How a run is marked
@@ -81,7 +81,8 @@ demonstrations/                          the teacher's answers, for the two fitt
 02-geometry-ranked/                      the same loop, with fitted trees ordering the pushes
 03-imitation-from-demonstrations/        a gate that decides and a chunked policy that draws
 04-a-world-model/                        a fitted model of what a push does, and a search
-05-smolvla-as-it-downloads/              a borrowed foundation model, nothing fitted
+full-arm/                                the same problem with the whole arm: MoveIt moves it, a learned model
+                                         says what to ask for (replaces the borrowed model with nothing fitted)
 06-smolvla-fine-tuned/                   the same weights, corrected on this cell
 results/                                 the six side by side, and the films
 ```
@@ -117,7 +118,7 @@ document of its own under
 
 **Every solution was also measured twice over, before and after a round of
 changes made to the fitted ones.**
-[`../docs/04-clear-the-table/what-changed.md`](../docs/04-clear-the-table/what-changed.md)
+[`../docs/04-clear-the-table/README.md`](../docs/04-clear-the-table/README.md)
 is the record of what was changed, what each change bought, and which proposed
 changes were measured and then dropped. Read it with the comparison page: the
 page says where each solution stands, and the record says how it got there.

@@ -1,18 +1,20 @@
 """Everything this solution runs with and did not write, loaded in one place.
 
-This solution is [solution 5](../05-smolvla-as-it-downloads) with a correction
-fitted on problem 4's own demonstrations. Almost nothing about it is new, so
-almost nothing here is new either, and the whole debt is on this one page.
+This solution is problem 3's SmolVLA, put in problem 4's conversation, with a
+correction fitted on problem 4's own demonstrations. Almost nothing about it is
+new, so almost nothing here is new either, and the whole debt is on this one
+page.
 
 Three folders are involved.
 
-**Problem 4's solution 5**, which is this solution's matched partner. Its
-``as_downloaded.py`` is the model sat in problem 4's conversation: the picture
-from the camera on the arm goes in, a path for the jaw comes out, and
-``bench/stopping.py`` reads the declaration that a table is finished out of the
-shape of the answers. ``fine_tuned.py`` subclasses that rather than writing a
-second copy of it, because the pair is only clean while everything but the
-weights is the same code.
+**``as_downloaded.py``**, in this folder, is the downloaded model sat in problem 4's
+conversation: the picture from the camera on the arm goes in, a path for the jaw
+comes out, and ``bench/stopping.py`` reads the declaration that a table is
+finished out of the shape of the answers. ``fine_tuned.py`` subclasses it rather
+than writing the loop twice. It used to be the whole of a solution of its own, the
+model with nothing fitted, and was removed as a solution because a model that was
+never trained for this cell is a baseline and not an approach; the loop it carried
+stayed, because the fitted model needs it.
 
 **Problem 3's solution 5**, which solution 5 here already borrows: ``joining.py``
 is how six numbers of somebody else's arm become jaw waypoints, and ``policy.py``
@@ -61,8 +63,8 @@ HERE = Path(__file__).resolve().parent
 PROBLEM = HERE.parent
 # The demonstrations, and the solution that collected them.
 IMITATION = PROBLEM / "03-imitation-from-demonstrations"
-# The same model with nothing fitted, in this problem and in problem 3.
-DOWNLOADS = PROBLEM / "05-smolvla-as-it-downloads"
+# The model's side of the conversation: the loop the fitted model runs in.
+DOWNLOADS = HERE
 PUSHING_DOWNLOADS = partners.PUSHING / "05-smolvla-as-it-downloads"
 # The same fit, in the problem next door.
 PUSHING_FITTED = partners.PUSHING / "06-smolvla-fine-tuned"

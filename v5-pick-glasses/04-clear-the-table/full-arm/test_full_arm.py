@@ -1,0 +1,450 @@
+"""Tests for the parts of the full-arm cell that do not need MoveIt or the physics engine.
+
+What is covered is what would be wrong *silently*: a hand turned the wrong way up,
+a push whose end point is measured from the wrong place, a setting scaled the wrong
+way round, a table that ends in the wrong way, and boxes merged into duplicates. The
+motion itself is MoveIt's and the contact is MuJoCo's, and both are checked by
+running, not by asserting.
+"""
+
+from __future__ import annotations
+
+import math
+from types import SimpleNamespace
+
+import features as F
+import numpy as np
+import pytest
+from arm_model import FINGERTIP_OFFSET, tool_pose
+from cell import Memory
+from moveit_link import flange_goal, quaternion
+from pusher import BACK_OFF, TRAVEL, Box, Pusher, Request, Settings, scene_boxes, table_box
+
+from contract import GLASS_OVER, RAN_OUT, SAID_DONE, Done
+
+TABLE_TOP = 0.75
+
+
+# ----------------------------------------------------------------- the hand
+
+
+@pytest.mark.parametrize("heading", [0.0, 0.7, math.pi / 2, -2.0, math.pi])
+def test_the_hand_points_along_the_push_and_its_fingers_stack_upright(heading):
+    position, rotation = tool_pose(0.5, -0.2, 0.85, heading)
+    push = np.array([math.cos(heading), math.sin(heading), 0.0])
+    assert np.allclose(rotation @ rotation.T, np.eye(3), atol=1e-9), "a rotation must be orthonormal"
+    assert np.isclose(np.linalg.det(rotation), 1.0), "a rotation must not mirror"
+    assert np.allclose(rotation[:, 2], push), "the tool's z axis is the way the hand points"
+    assert np.allclose(rotation[:, 0], [0, 0, 1]), (
+        "the fingers open along the tool's x axis, which is upright when rolled"
+    )
+    # The flange is behind the fingertips by the length of the tool.
+    tip = position + FINGERTIP_OFFSET * push
+    assert np.allclose(tip, [0.5, -0.2, 0.85])
+
+
+def test_quaternion_round_trips_every_branch():
+    for heading in np.linspace(-math.pi, math.pi, 25):
+        _, rotation = tool_pose(0, 0, 1, heading)
+        x, y, z, w = quaternion(rotation)
+        assert math.isclose(x * x + y * y + z * z + w * w, 1.0, abs_tol=1e-9)
+        built = np.array(
+            [
+                [1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)],
+                [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
+                [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)],
+            ]
+        )
+        assert np.allclose(built, rotation, atol=1e-9)
+
+
+def test_a_goal_can_name_a_box_the_line_may_pass_through():
+    assert "without" not in flange_goal(0.5, 0, 1.0, 0.0)
+    assert flange_goal(0.5, 0, 1.0, 0.0, without="glass_2")["without"] == "glass_2"
+
+
+# ------------------------------------------------------------------ the push
+
+
+def _pusher():
+    return Pusher(SimpleNamespace(), SimpleNamespace())
+
+
+def test_a_stroke_ends_where_the_glass_is_to_land_less_its_radius_plus_overreach():
+    box = Box(0.5, -0.25, 0.04, 0.15, 0.03)
+    settings = Settings(0.085, 0.05, 0.4, 0.01, 0.03, overreach=0.012)
+    goals = _pusher().goals([box], Request(0, 0.0, 0.05, settings))
+    tip_start = np.array(goals["down"]["position"]) + FINGERTIP_OFFSET * np.array([1, 0, 0])
+    tip_end = np.array(goals["stroke"]["position"]) + FINGERTIP_OFFSET * np.array([1, 0, 0])
+    # It starts the radius, the padding and the standoff behind the middle.
+    assert math.isclose(tip_start[0], 0.5 - (0.04 + 0.01 + 0.03), abs_tol=1e-9)
+    # It ends ``travel + overreach - radius`` past the middle.
+    assert math.isclose(tip_end[0], 0.5 + (0.05 + 0.012 - 0.04), abs_tol=1e-9)
+    assert math.isclose(tip_end[2], TABLE_TOP + 0.085, abs_tol=1e-9)
+
+
+def test_only_the_stroke_and_the_way_out_may_pass_through_the_pushed_glass():
+    box = Box(0.5, -0.25, 0.04, 0.15, 0.03)
+    goals = _pusher().goals(
+        [box, Box(0.6, -0.1, 0.03, 0.15, 0.03)], Request(1, 1.0, 0.04, Settings.default())
+    )
+    assert goals["stroke"]["without"] == "glass_1"
+    assert goals["back"]["without"] == "glass_1"
+    assert goals["up"]["without"] == "glass_1"
+    assert "without" not in goals["above"] and "without" not in goals["down"]
+
+
+def test_the_hand_travels_above_the_tallest_glass_drawn():
+    assert TRAVEL - 0.0695 > 0.22, "the underside of the hand at travel height must clear a 0.216 m glass"
+    assert BACK_OFF > 0
+
+
+def test_every_glass_gets_a_box_grown_by_its_padding_and_the_table_is_slightly_low():
+    world = scene_boxes([Box(0.5, -0.2, 0.03, 0.15, 0.03)], 0.02)
+    names = [b["id"] for b in world]
+    assert names == ["table", "glass_0"]
+    glass = world[1]
+    assert glass["size"][0] == pytest.approx(2 * (0.03 + 0.02))
+    assert glass["size"][2] == pytest.approx(0.15 + 0.02)
+    assert world[0]["centre"][2] + world[0]["size"][2] / 2 < TABLE_TOP, (
+        "MoveIt's table sits a few millimetres low"
+    )
+    assert table_box()["id"] == "table"
+
+
+# -------------------------------------------------------------- the encoding
+
+
+def test_a_push_survives_being_written_as_numbers_and_read_back():
+    request = Request(2, 1.3, 0.06, Settings(0.1, 0.03, 0.5, 0.012, 0.04, 0.01))
+    back = F.request_from(2, F.action_vector(request))
+    assert back.glass == 2
+    assert back.heading == pytest.approx(1.3, abs=1e-6)
+    assert back.travel == pytest.approx(0.06, abs=1e-6)
+    for name in F.SETTING_NAMES:
+        assert getattr(back.settings, name) == pytest.approx(getattr(request.settings, name), rel=1e-5)
+
+
+def test_a_network_cannot_ask_for_a_setting_outside_its_range():
+    wild = np.array([1.0, 0.0, 5.0, -3.0, 9.0, 0.5, 0.5, 0.5, 0.5])
+    request = F.request_from(0, wild)
+    lo, hi = F.TRAVEL
+    assert lo <= request.travel <= hi
+    for name in F.SETTING_NAMES:
+        low, high = F.RANGES[name]
+        assert low - 1e-9 <= getattr(request.settings, name) <= high + 1e-9
+
+
+def test_the_table_encoding_ignores_the_order_it_is_given_in_apart_from_the_order():
+    boxes = [
+        Box(0.4, -0.2, 0.03, 0.15, 0.03),
+        Box(0.45, -0.2, 0.03, 0.15, 0.03),
+        Box(0.6, -0.4, 0.04, 0.2, 0.03),
+    ]
+    rows, mask = F.table_tensor(boxes)
+    flipped, _ = F.table_tensor(boxes[::-1])
+    assert mask.sum() == 3 and not mask[3:].any()
+    assert np.allclose(rows[:3][::-1], flipped[:3]), (
+        "a glass's row must not depend on where it is in the list"
+    )
+
+
+def test_two_glasses_touching_are_both_short_of_room_and_one_far_away_is_not():
+    boxes = [
+        Box(0.4, -0.2, 0.03, 0.15, 0.03),
+        Box(0.45, -0.2, 0.03, 0.15, 0.03),
+        Box(0.62, -0.42, 0.03, 0.15, 0.03),
+    ]
+    assert F.room_short(boxes, 0) > 0 and F.room_short(boxes, 1) > 0
+    assert F.room_short(boxes, 2) == 0
+    assert F.pickable_count(boxes) == 1
+
+
+def test_a_push_into_a_neighbour_or_with_one_standing_behind_it_is_not_clear():
+    boxes = [Box(0.4, -0.2, 0.03, 0.15, 0.03), Box(0.46, -0.2, 0.03, 0.15, 0.03)]
+    assert not F.hand_clear(boxes, 0, 0.0, 0.05), "straight into the neighbour"
+    assert not F.hand_clear(boxes, 0, math.pi, 0.05), "the hand would come down where the neighbour stands"
+
+
+def test_a_push_sideways_past_a_neighbour_that_is_far_enough_away_is_clear():
+    boxes = [Box(0.4, -0.2, 0.03, 0.15, 0.03), Box(0.5, -0.2, 0.03, 0.15, 0.03)]
+    assert F.hand_clear(boxes, 0, math.pi / 2, 0.05)
+
+
+# -------------------------------------------------------------------- memory
+
+
+def test_a_glass_seen_from_two_places_is_one_box_and_two_glasses_are_two():
+    memory = Memory()
+    memory.update([Box(0.5, -0.2, 0.03, 0.15, 0.03), Box(0.6, -0.3, 0.03, 0.15, 0.03)])
+    memory.update([Box(0.502, -0.199, 0.031, 0.15, 0.03), Box(0.45, -0.1, 0.03, 0.15, 0.03)])
+    assert len(memory.boxes) == 3
+    assert any(abs(b.x - 0.502) < 1e-9 for b in memory.boxes), "the newer reading replaces the older"
+
+
+# ---------------------------------------------------------------------- loop
+
+
+class FakeCell:
+    """Just enough cell for the loop: it answers the questions the loop asks and moves nothing."""
+
+    def __init__(self, topple_on: int | None = None, seconds: float = 12.0) -> None:
+        self.arm_seconds = 0.0
+        self.pushes = 0
+        self.topple_on, self.seconds = topple_on, seconds
+        self.known = []
+        self.pickable_at_start = 1
+        self.bench = SimpleNamespace(
+            seconds=0.0, tcp=lambda: SimpleNamespace(x=0.48, y=-0.26, z=0.36, heading=0.0)
+        )
+
+    def glasses(self):
+        return 3
+
+    def toppled(self):
+        return 1 if self.topple_on is not None and self.pushes >= self.topple_on else 0
+
+    def pickable(self):
+        return 1
+
+    def go_to_view(self, left=math.inf, view=None, blind=False):
+        return True, ""
+
+    def look(self):
+        return SimpleNamespace(
+            picture=np.zeros((4, 4, 3), np.uint8),
+            measured=(),
+            jaw=SimpleNamespace(heading=0.0, x=0.48, y=-0.26, z=0.36),
+        )
+
+    def push(self, boxes, request, seconds_left=math.inf):
+        if self.seconds > seconds_left:
+            return SimpleNamespace(
+                ok=False, why=f"the push needs {self.seconds} s and {seconds_left} s are left"
+            )
+        self.arm_seconds += self.seconds
+        self.pushes += 1
+        return SimpleNamespace(ok=True, why="")
+
+    def close(self):
+        pass
+
+
+class Pushing:
+    name = "always pushes glass 0"
+
+    def begin(self, seed):
+        pass
+
+    def decide(self, look):
+        return Request(0, 0.0, 0.05, Settings.default())
+
+
+class Finished:
+    name = "says done at once"
+
+    def begin(self, seed):
+        pass
+
+    def decide(self, look):
+        return Done("finished")
+
+
+def _run(solution, cell, left=900.0):
+    import episode
+
+    def perceive(seen):
+        return [Box(0.5, -0.2, 0.03, 0.15, 0.03)]
+
+    return episode.clear_table(solution, 1, left, SimpleNamespace(planning_seconds=0.0), perceive, cell=cell)
+
+
+def test_a_solution_that_says_done_is_marked_done_having_cost_no_arm_time():
+    result = _run(Finished(), FakeCell())
+    assert result.ended_by == SAID_DONE and result.arm_seconds == 0.0
+
+
+def test_a_solution_that_never_stops_is_stopped_by_the_clock_and_not_allowed_to_overrun_it():
+    result = _run(Pushing(), FakeCell(seconds=12.0), left=40.0)
+    assert result.ended_by == RAN_OUT
+    assert result.arm_seconds <= 40.0, "a push that does not fit in the time left is never started"
+
+
+def test_a_glass_going_over_ends_the_table_at_once():
+    result = _run(Pushing(), FakeCell(topple_on=2), left=900.0)
+    assert result.ended_by == GLASS_OVER and result.toppled == 1
+    assert result.answers == 2
+
+
+# ------------------------------------------------------- the data and the planner
+
+
+def test_a_push_measured_from_straight_away_points_where_it_says():
+    boxes = [Box(0.4, -0.2, 0.03, 0.15, 0.03), Box(0.46, -0.2, 0.03, 0.15, 0.03)]
+    # Glass 0 has its neighbour to the east, so away from it is west: an angle of pi.
+    assert abs(abs(F.away_angle(boxes, 0)) - math.pi) < 1e-9
+    assert F.away_angle(boxes, 1) == pytest.approx(0.0)
+    # A quarter turn on from "away" is sideways.
+    sideways = F.relative_request(1, np.array([0.0, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]), boxes)
+    assert sideways.heading == pytest.approx(math.pi / 2, abs=1e-9)
+
+
+def test_an_informed_push_would_free_its_glass_if_it_went_as_asked():
+    import random
+
+    import collect_pushes as CP
+
+    from partners import has_room
+
+    boxes = [
+        Box(0.45, -0.25, 0.03, 0.15, 0.03),
+        Box(0.54, -0.25, 0.03, 0.15, 0.03),
+        Box(0.60, -0.40, 0.03, 0.15, 0.03),
+    ]
+    rng = random.Random(3)
+    found = 0
+    for _ in range(20):
+        request = CP.informed_request(rng, boxes)
+        if request is None:
+            continue
+        found += 1
+        g = boxes[request.glass]
+        end = (
+            g.x + request.travel * math.cos(request.heading),
+            g.y + request.travel * math.sin(request.heading),
+        )
+        others = [(o.x, o.y, 2 * o.radius) for j, o in enumerate(boxes) if j != request.glass]
+        assert has_room(*end, others, 0.005), "it must end with room"
+        assert F.hand_clear(boxes, request.glass, request.heading, request.travel), (
+            "and the hand must fit on the way"
+        )
+    assert found > 0, "this table has pushes that would free a glass"
+
+
+def test_a_table_with_nothing_short_of_room_offers_no_informed_push():
+    import random
+
+    import collect_pushes as CP
+
+    boxes = [Box(0.35, -0.1, 0.03, 0.15, 0.03), Box(0.6, -0.4, 0.03, 0.15, 0.03)]
+    assert CP.informed_request(random.Random(0), boxes) is None
+
+
+def test_every_setting_a_planner_nudges_stays_inside_its_range():
+    import random
+
+    from world_model import PlanningSolution
+
+    planner = PlanningSolution.__new__(PlanningSolution)
+    planner.rng = random.Random(1)
+    boxes = [Box(0.4, -0.2, 0.03, 0.15, 0.03)]
+    request = Request(
+        0, 0.3, 0.05, Settings(0.075, 0.006, 0.3, 0.005, 0.02, 0.0)
+    )  # every setting at the edge
+    for _ in range(50):
+        nudged = planner.shaken(request, boxes)
+        lo, hi = F.TRAVEL
+        assert lo <= nudged.travel <= hi
+        for name in F.SETTING_NAMES:
+            low, high = F.RANGES[name]
+            assert low - 1e-9 <= getattr(nudged.settings, name) <= high + 1e-9
+
+
+def test_a_spread_is_wider_than_nothing_and_the_same_every_time():
+    import report
+
+    rows = [
+        {
+            "glasses": 4,
+            "pickable_at_start": 1,
+            "pickable_at_end": 1 + (i % 2),
+            "broken": 0,
+            "outcome": "unfinished",
+            "ended_by": "said done",
+            "arm_seconds": 10.0,
+        }
+        for i in range(20)
+    ]
+    low, high = report.interval(rows, "gain")
+    assert low < high
+    assert report.interval(rows, "gain") == (low, high)
+    assert report.stats(rows)["gain"] == 10
+
+
+def test_a_table_with_a_glass_over_pays_nothing_in_the_pickable_count():
+    import report
+
+    rows = [
+        {
+            "glasses": 4,
+            "pickable_at_start": 1,
+            "pickable_at_end": 3,
+            "broken": 0,
+            "outcome": "unfinished",
+            "ended_by": "said done",
+            "arm_seconds": 5.0,
+        },
+        {
+            "glasses": 4,
+            "pickable_at_start": 1,
+            "pickable_at_end": 4,
+            "broken": 1,
+            "outcome": "failed",
+            "ended_by": "a glass went over",
+            "arm_seconds": 5.0,
+        },
+    ]
+    stats = report.stats(rows)
+    assert stats["gain"] == 2 and stats["broken"] == 1 and stats["failed"] == 1
+
+
+class _Asks:
+    """A solution that always offers the same push, and gives up on a glass once it is set aside."""
+
+    name = "asks"
+
+    def __init__(self, request):
+        self.request, self.refused = request, set()
+
+    def begin(self, seed):
+        self.refused = set()
+
+    def decide(self, look):
+        return Done("nothing left") if self.request.glass in self.refused else self.request
+
+
+class _Fears:
+    """A world model that thinks a fast stroke tips a glass and a slow one does not."""
+
+    def score(self, boxes, glass, vectors):
+        topple = vectors[:, 4].astype(float)  # the stroke speed, scaled 0..1
+        return -topple, np.ones(len(vectors)), topple
+
+
+def _checked(speed, repair):
+    import checked
+
+    request = F.request_from(0, [1.0, 0.0, 0.5, 0.5, speed, 0.5, 0.5, 0.5, 0.5])
+    wrapped = checked.Checked.__new__(checked.Checked)
+    wrapped.inner, wrapped.model, wrapped.rng = _Asks(request), _Fears(), np.random.default_rng(0)
+    wrapped.vetoed = wrapped.mended = 0
+    wrapped.LIMIT, wrapped.REPAIR = 0.3, repair
+    look = SimpleNamespace(boxes=[Box(0.5, 0.0, 0.03, 0.12, 0.02), Box(0.56, 0.0, 0.03, 0.12, 0.02)])
+    return request, wrapped.decide(look)
+
+
+def test_the_check_lets_a_safe_push_through_unchanged():
+    request, answer = _checked(0.1, repair=1)
+    assert answer is request
+
+
+def test_the_check_mends_a_risky_push_keeping_its_glass_way_and_distance():
+    request, answer = _checked(0.9, repair=1)
+    assert not isinstance(answer, Done)
+    assert (answer.glass, answer.heading, answer.travel) == (request.glass, request.heading, request.travel)
+    assert F.action_vector(answer)[4] <= 0.3
+
+
+def test_without_mending_a_risky_push_sets_the_glass_aside():
+    _, answer = _checked(0.9, repair=0)
+    assert isinstance(answer, Done)

@@ -164,7 +164,7 @@ solved at any moment.
 | **1** | One glass on the table | everything, from an empty start | [`docs/problem-1/`](docs/problem-1/) — **built** |
 | **2** | Segment the glasses | telling them apart, from few viewpoints | [`docs/02-segment-glasses/`](docs/02-segment-glasses/) — designed |
 | **3** | Glasses standing too close | moving one without lifting it | [`docs/03-push-glasses-apart/`](docs/03-push-glasses-apart/) — designed, six solutions built |
-| **4** | Clear the table | seeing with the arm's own camera, and knowing when to stop | [`docs/04-clear-the-table/`](docs/04-clear-the-table/) — **being built** |
+| **4** | Clear the table | seeing with the arm's own camera, and knowing when to stop | [`docs/04-clear-the-table/`](docs/04-clear-the-table/README.md) — **built** |
 | **5** | Several kinds at once | a different rule per glass, in one run | [`docs/problem-5/`](docs/problem-5/) — learned version built |
 | **6** | Kinds whose proportions are unknown | a rule that has never seen this glass | [`docs/problem-6/`](docs/problem-6/) — stated |
 

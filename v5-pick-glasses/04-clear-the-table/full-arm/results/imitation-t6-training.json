@@ -1,0 +1,10 @@
+{
+ "pushes": 12609,
+ "demonstrations": 2032,
+ "finished": 288,
+ "lessons": 1097,
+ "lessons_finished": 714,
+ "repeat": 3,
+ "stop_repeat": 0,
+ "epochs": 300
+}

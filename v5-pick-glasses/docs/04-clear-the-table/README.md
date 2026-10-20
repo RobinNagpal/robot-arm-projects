@@ -1,158 +1,105 @@
 # Problem 4 — clear the table
 
-A table holds three to five drinking glasses, and some of them stand too close
-together for the gripper to get round one without fouling its neighbour. The arm
-has to drag them apart across the table until every glass has room, and then
-say that it has finished. Nothing is lifted and nothing is racked: **what is
-cleared is the crowding, not the table.**
+A table holds three to five glasses, and some of them stand too close together for the
+gripper to close round one. A UR5e arm, with a camera on its wrist, has to push the glasses
+apart until every glass has room to be picked up, without tipping any. Then it has to say
+for itself that it has finished. This page gives the whole picture and every result in one
+place. The other pages each explain one part.
 
-The dragging, the crowding and the room the hand needs are
-[problem 3](../03-push-glasses-apart/README.md)'s, unchanged. **Problem 4 is
-problem 3 with two assumptions taken away.**
+## The main idea: a learned model decides, MoveIt moves
 
-**The camera above the table is gone.** The arm carries its own camera, so it
-sees only what is in front of the jaw, and the only way to see the far corner of
-the table is to go there. Looking therefore costs motion and time, as it does on
-a real robot.
+A solution never writes a joint angle. The work is split into four jobs, and only the
+middle two are what the solutions compete on.
 
-**The push-by-push hand-over is gone.** A solution runs continuously — look,
-act, look again — and **says when it is done**. Nothing marks individual pushes,
-nothing filters a solution's answers before carrying them out, and the table is
-judged by the arrangement on it when the solution stops.
+| | Job | Who does it | Page |
+|---|---|---|---|
+| 0 | Draw a box round every glass, so MoveIt can plan round it | a network that reads the wrist picture | [the box model](the-box-model.md) |
+| 1 | Choose which glass to push, and where it should go | the solution | [the solutions](#the-solutions) |
+| 2 | Choose the settings handed to MoveIt, so the glass does not tip | the solution | [the solutions](#the-solutions) |
+| 3 | Move the arm | MoveIt 2 | [the arm and MoveIt](the-arm-and-moveit.md) |
 
-Both removals follow this project's one rule for ordering its problems: each
-problem is the one before it with an assumption removed. Problem 3's
-arrangement is not being thrown away — it stays the right instrument for
-questions of the form "what did this one change do?", and its
-[committed results](../../03-push-glasses-apart/results/README.md) are readable
-precisely because it holds everything else still. Problem 4 asks the other
-question: what would this arm do with nobody helping it?
+Jobs 1 and 2 are one answer. A solution is asked once a turn, and it replies with one
+**push**: this glass, this direction, this distance, and six settings such as how high
+and how fast the hand moves. It may also reply that the table is **finished**.
 
-The request this problem comes from is
-[issue 23](https://github.com/RobinNagpal/robot-arm-projects/issues/23) of the
-repository, which also records what each of problem 3's solutions is expected
-to do here, written down before anything was measured.
+## One turn
 
-This page says what the problem is, which two assumptions it removes, what has
-been measured so far, and which document to read next.
+The arm looks at the table from two places, because a glass hidden behind another glass
+is missing from one picture. The box model turns each picture into boxes. The solution
+answers with a push or with "finished". MoveIt plans the push as four motions, and the
+arm carries them out in the MuJoCo physics engine. Then the next turn starts.
+
+![The same table from the two viewing places, with the boxes the box model drew](../../images/04-clear-the-table/full-arm-two-views-and-boxes.png)
+
+## The solutions
+
+Every learned solution learns from the same thing: pushes that the arm really made, and
+what happened to each one. [What the pushes show](what-the-pushes-show.md) describes
+those pushes.
+
+| # | Solution | How it chooses a push | Page |
+|---|---|---|---|
+| 1–2 | Geometry reference | Fixed rules and fixed settings; nothing is learned | [page](solutions/01-02-geometry-reference.md) |
+| 3 | Imitation | Copies pushes that worked | [page](solutions/03-imitation.md) |
+| 4 | World model | Learns what a push will do, then searches for the best push | [page](solutions/04-world-model.md) |
+| 5 | Reinforcement learning | Learns by trying pushes and being scored | [page](solutions/05-reinforcement-learning.md) |
+| 6 | SmolVLA | A large vision-language-action model with a small fitted correction | [page](solutions/06-smolvla-fine-tuned.md) |
+
+Two more things appear in the results. The [safety check](solutions/safety-check.md) lets
+the world model reject another solution's push when it expects that push to tip a glass.
+**The ceiling** is a search that tries 30 pushes in the physics before every move and makes
+the best one. A real arm cannot try a push before making it, so the ceiling is not a
+solution. It shows how much could be gained on these tables.
+
+## Results
+
+Each row walked the same 50 held-out tables, with the same 15 arm minutes for the whole
+list. [The problem](problem.md#how-a-run-is-scored) explains each column. The range in
+brackets shows how much the figure depends on which tables were drawn.
+
+| Solution | Tables reached | Gain in pickable glasses (90 % range) | Glasses broken | Arm minutes |
+|---|---|---|---|---|
+| 1–2 Geometry reference | 22 | +2 (−2 to +7) | 4 | 15.0 |
+| 3 Imitation | 47 | +3 (0 to +7) | 19 | 15.0 |
+| 3 Imitation, with the safety check | 50 | +3 (+1 to +6) | 1 | 4.7 |
+| 3 Imitation, also copying the ceiling | 50 | +0 (−2 to +2) | 8 | 7.1 |
+| 3 Imitation, also copying the ceiling, with the safety check | 50 | +2 (0 to +4) | 0 | 3.0 |
+| **4 World model** | **50** | **+9 (+3 to +15)** | **2** | **4.9** |
+| 5 Reinforcement learning | 50 | +3 (0 to +7) | 3 | 12.7 |
+| 5 Reinforcement learning, with the safety check | 50 | +0 (−4 to +4) | 1 | 5.0 |
+| 6 SmolVLA | 50 | −3 (−7 to 0) | 22 | 14.0 |
+| 6 SmolVLA, with the safety check | 50 | −1 (−6 to +4) | 0 | 7.7 |
+| The ceiling (tries 30 pushes first) | 50 | +24 (+15 to +34) | 0 | 4.8 |
+
+## What the results say
+
+- **Learning from failures matters most.** The world model learns from every push,
+  including the ones that tipped a glass or could not be planned. So it knows which pushes
+  to avoid, and it is the only solution whose gain is clearly above zero.
+- **Copying only successes breaks glasses.** Imitation and SmolVLA never saw a push that
+  tipped a glass, so they push glasses that tip. The safety check removes almost all of that
+  breakage. However, it does not add any gain, because a check can only reject pushes and
+  cannot propose better ones.
+- **The arm cannot make most pushes.** About three pushes in four cannot be planned at all,
+  and the push a person would try first is never possible. [What the pushes
+  show](what-the-pushes-show.md) explains why.
+- **There is much more to find.** The ceiling gains 24 glasses, so the best solution finds
+  about a third of what is there.
+
+## Films
+
+Each film shows one solution clearing the same five held-out tables:
+[geometry reference](../../videos/04-clear-the-table/full-arm/1-2-geometry-reference.mp4),
+[imitation](../../videos/04-clear-the-table/full-arm/3-imitation.mp4),
+[world model](../../videos/04-clear-the-table/full-arm/4-world-model.mp4) and
+[reinforcement learning](../../videos/04-clear-the-table/full-arm/5-reinforcement-learning.mp4).
 
 ## Read in this order
 
-1. [**The problem**](problem.md) — which two assumptions are removed, what is on
-   the table, what the arm is given and must hand back, why the budget is the
-   arm's own seconds, and what is counted when it stops.
-2. [**The examiner**](the-examiner.md) — the tables, the arm's clock, the
-   camera on the wrist, the open run, and how a set of tables is marked.
-3. [**The six solutions side by side**](../../04-clear-the-table/results/README.md)
-   — every column of the result, the ceiling on the same tables, and which
-   columns mislead when read on their own.
-4. [**Everything we tried to make it work better**](improving-the-results.md) —
-   why the fitted solutions failed, which repairs worked and why, which repairs
-   failed and why, and what is worth trying next.
-5. **One page for each solution**, which gives its spread and what it found out
-   while being built: [one fixed nudge](solutions/01-one-fixed-nudge.md),
-   [geometry ranked](solutions/02-geometry-ranked.md),
-   [imitation from demonstrations](solutions/03-imitation-from-demonstrations.md),
-   [a world model](solutions/04-a-world-model.md),
-   [SmolVLA as it downloads](solutions/05-smolvla-as-it-downloads.md) and
-   [SmolVLA fine-tuned](solutions/06-smolvla-fine-tuned.md).
+1. [The problem](problem.md): the tables, what "finished" and "broken" mean, and the scoring.
+2. [The arm and MoveIt](the-arm-and-moveit.md): job 3, and how the arm looks.
+3. [The box model](the-box-model.md): job 0.
+4. [What the pushes show](what-the-pushes-show.md): the data, and what it says about pushing.
+5. The solution pages, in the order of the table above.
 
-The cell underneath is the same cell, described once in
-[the cell](../the-cell.md). Two documents of problem 3's are still worth
-reading, because problem 4 does not restate them: its
-[problem](../03-push-glasses-apart/problem.md) derives how much room the hand
-needs and the height limit that decides whether a glass slides or tips, and its
-[examiner](../03-push-glasses-apart/the-examiner.md) describes the per-push
-arrangement that this problem takes two things away from.
-
-## What has been measured
-
-**All six solutions, on the held-out queue.** That queue is fifty tables
-offered in order from table ten thousand, with fifteen minutes of arm time for
-the whole queue, walked three times. No solution saw those tables while it was
-being built or fitted, and the budget belongs to the queue rather than to a
-table, so how quickly a solution works decides how far down the list it gets.
-
-| | attempted | separated | glasses freed | pickable share | broken |
-|---|---|---|---|---|---|
-| [1 one fixed nudge](../../04-clear-the-table/01-one-fixed-nudge/) | 26 | 10 | +25 | **0.627** | **0** |
-| [2 geometry ranked](../../04-clear-the-table/02-geometry-ranked/) | 25 | 7 | +19 | 0.582 | **0** |
-| [3 imitation, ACT](../../04-clear-the-table/03-imitation-from-demonstrations/) | 14 | 0 | **−1** | **0.359** | 1 |
-| [4 a world model](../../04-clear-the-table/04-a-world-model/) | **39** | **14** | **+33** | 0.550 | **5** |
-| [5 SmolVLA as it downloads](../../04-clear-the-table/05-smolvla-as-it-downloads/) | 11 | 1 | +2 | 0.439 | **0** |
-| [6 SmolVLA fine-tuned](../../04-clear-the-table/06-smolvla-fine-tuned/) | 11 | 0 | 0 | 0.405 | **0** |
-
-Every row is the solution as it stands after a round of repairs. The six were
-measured once, then the three that were learning something and failing were
-changed, and then they were measured again.
-[What changed](what-changed.md) records each change beside the measurement that
-justified it, and it also records the three changes that were measured and
-thrown away.
-
-**Each of the six was also filmed clearing the same table**, so that what a row
-of the table above means can be watched rather than inferred. The six films are
-linked from
-[the comparison page](../../04-clear-the-table/results/README.md#a-film-of-each-solution),
-and each solution's own page below links its own.
-
-**[The comparison page](../../04-clear-the-table/results/README.md) is where to
-read this properly.** It gives every column, says what perfect play achieves on
-exactly the tables each solution reached, and explains the three columns that
-mislead when read on their own — above all "tables attempted", which a solution
-that gives up instantly would win.
-
-The short version has three parts.
-
-**The world model leads, and it is the only learned solution that beats
-arithmetic.** It separates fourteen of the thirty-nine tables it reaches and
-frees the most glasses of any solution. Cut to the twenty-six tables the fixed
-nudge also reached, it separates ten against ten and frees twenty-four glasses
-against twenty-five, which is a tie, so what it really wins on is the clock: a
-separated table costs it about twenty-five arm seconds against the reference's
-forty-four, and that is why it gets through half again as many tables in the
-same quarter of an hour. It is also the only solution that breaks glasses now,
-five over a walk against the reference's none, and
-[what changed](what-changed.md) explains why that trade was accepted.
-
-**Arithmetic is still the best answer per table attempted.** One fixed nudge,
-chosen by geometry with nothing learned anywhere, separates ten of twenty-six
-and breaks no glass, which is the best pickable share on the card.
-
-**The three solutions that answer from a picture are now nearly harmless, and
-between them they free one glass.** That is a poor result, and it is a far
-better one than the first walk, where the three of them freed nothing at all and
-broke twenty-eight glasses between them. The cause of the poor result is the same
-in each case: with the camera on the arm, four of the teacher's five answers only
-move it to see, so fitting on those answers teaches the looking rather than the
-pushing. Only one of the three is doing the task on purpose — the imitation
-policy chooses a glass, tests it and pushes it — while the borrowed model's two
-freed glasses come from shoves that happened to go a helpful way.
-
-The six solutions asked this question are problem 3's own, so each of them also
-has a standing under problem 3's per-push scorecard, and the two can be set
-side by side: the [fixed nudge](../03-push-glasses-apart/solutions/01-one-fixed-nudge.md),
-the [ranked geometry](../03-push-glasses-apart/solutions/02-geometry-ranked.md),
-the [imitation policy](../03-push-glasses-apart/solutions/03-imitation-from-demonstrations.md),
-the [world model](../03-push-glasses-apart/solutions/04-a-world-model.md), a
-[borrowed foundation model as it downloads](../03-push-glasses-apart/solutions/05-smolvla-as-it-downloads.md),
-[the same model fine-tuned here](../03-push-glasses-apart/solutions/06-smolvla-fine-tuned.md),
-and a [newer and larger borrowed model](../03-push-glasses-apart/solutions/07-evo1-fine-tuned.md).
-Each was run again under this scorecard, and each result carries a spread
-wherever anything about it was uncertain, because a result quoted without one
-is not a result. Solution 7, the newer and larger borrowed model, is not part
-of problem 4: problem 3 fitted it three times and it did not learn the task
-there, so there is nothing to port.
-
-## Why the cell is borrowed rather than copied
-
-Problem 4 imports problem 3's bench: the physics, the glasses, the hand and the
-measurement noise are the same. It does not copy them, and nothing under
-`03-push-glasses-apart/` is changed.
-
-The reason is that a copy drifts. The first time either side changed, the two
-cells would differ in some small way nobody wrote down, and the comparison
-between problem 3's numbers and problem 4's — which is the whole reason problem
-4 exists — would quietly stop meaning anything. Where problem 4 needs something
-problem 3 does not offer, such as a camera that can be moved or a clock in arm
-seconds, it is added in problem 4's own bench and the reason it could not be
-borrowed is written beside it.
+The code is in [`04-clear-the-table/full-arm/`](../../04-clear-the-table/full-arm/README.md).

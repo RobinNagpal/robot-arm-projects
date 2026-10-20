@@ -1,0 +1,170 @@
+{
+ "summary": {
+  "runs": 1,
+  "spread": {
+   "tables_attempted": {
+    "median": 20.0,
+    "sd": 0.0,
+    "least": 20.0,
+    "most": 20.0
+   },
+   "glasses": {
+    "median": 77.0,
+    "sd": 0.0,
+    "least": 77.0,
+    "most": 77.0
+   },
+   "outcome.separated": {
+    "median": 1.0,
+    "sd": 0.0,
+    "least": 1.0,
+    "most": 1.0
+   },
+   "outcome.failed": {
+    "median": 4.0,
+    "sd": 0.0,
+    "least": 4.0,
+    "most": 4.0
+   },
+   "outcome.unfinished": {
+    "median": 15.0,
+    "sd": 0.0,
+    "least": 15.0,
+    "most": 15.0
+   },
+   "glasses_end.pickable": {
+    "median": 26.0,
+    "sd": 0.0,
+    "least": 26.0,
+    "most": 26.0
+   },
+   "glasses_end.pickable_at_start": {
+    "median": 24.0,
+    "sd": 0.0,
+    "least": 24.0,
+    "most": 24.0
+   },
+   "glasses_end.gain": {
+    "median": 2.0,
+    "sd": 0.0,
+    "least": 2.0,
+    "most": 2.0
+   },
+   "glasses_end.pickable_share": {
+    "median": 0.338,
+    "sd": 0.0,
+    "least": 0.338,
+    "most": 0.338
+   },
+   "glasses_end.broken": {
+    "median": 4.0,
+    "sd": 0.0,
+    "least": 4.0,
+    "most": 4.0
+   },
+   "ended_by.said_done": {
+    "median": 13.0,
+    "sd": 0.0,
+    "least": 13.0,
+    "most": 13.0
+   },
+   "ended_by.ran_out": {
+    "median": 3.0,
+    "sd": 0.0,
+    "least": 3.0,
+    "most": 3.0
+   },
+   "ended_by.glass_over": {
+    "median": 4.0,
+    "sd": 0.0,
+    "least": 4.0,
+    "most": 4.0
+   },
+   "said_done_while_crowded": {
+    "median": 13.0,
+    "sd": 0.0,
+    "least": 13.0,
+    "most": 13.0
+   },
+   "interlocks": {
+    "median": 0.0,
+    "sd": 0.0,
+    "least": 0.0,
+    "most": 0.0
+   },
+   "answers": {
+    "median": 109.0,
+    "sd": 0.0,
+    "least": 109.0,
+    "most": 109.0
+   },
+   "arm_seconds.total": {
+    "median": 866.36,
+    "sd": 0.0,
+    "least": 866.36,
+    "most": 866.36
+   },
+   "arm_seconds.separated_mean": {
+    "median": 150.94,
+    "sd": 0.0,
+    "least": 150.94,
+    "most": 150.94
+   },
+   "thinking_seconds": {
+    "median": 19.66,
+    "sd": 0.0,
+    "least": 19.66,
+    "most": 19.66
+   },
+   "thinking_seconds_per_answer": {
+    "median": 0.18,
+    "sd": 0.0,
+    "least": 0.18,
+    "most": 0.18
+   }
+  },
+  "each": [
+   {
+    "tables_attempted": 20,
+    "glasses": 77,
+    "outcome": {
+     "separated": 1,
+     "failed": 4,
+     "unfinished": 15
+    },
+    "glasses_end": {
+     "pickable": 26,
+     "pickable_at_start": 24,
+     "gain": 2,
+     "pickable_share": 0.338,
+     "broken": 4
+    },
+    "ended_by": {
+     "said_done": 13,
+     "ran_out": 3,
+     "glass_over": 4
+    },
+    "said_done_while_crowded": 13,
+    "interlocks": 0,
+    "answers": 109,
+    "arm_seconds": {
+     "total": 866.36,
+     "separated_mean": 150.94
+    },
+    "thinking_seconds": 19.66,
+    "thinking_seconds_per_answer": 0.1804
+   }
+  ]
+ },
+ "tally": {
+  "tables": 20,
+  "pushes": 57,
+  "refusals": 39,
+  "refused_because": {
+   "no way to the start of the push": 30,
+   "no way down to pushing height": 9
+  },
+  "planning_seconds": 73.46052331710234
+ },
+ "wall_seconds": 110
+}

@@ -9,11 +9,17 @@ this page you will know what each of the six achieved, how far short of the
 best possible result each one fell, and which three columns mislead if you read
 them on their own.
 
+> **A note on row 5.** Solution 5, the borrowed model with nothing fitted, has been retired
+> and replaced in the line-up by reinforcement learning in the
+> [whole-arm cell](../full-arm/README.md), which is a different cell and is not on this page.
+> Its row is kept below, marked, because the fitted model in row 6 is compared against it and
+> every number was true when it was measured.
+
 Problem 4 is problem 3 with two assumptions taken away. The camera above the
 table is gone, so the arm carries its own camera and looking costs motion and
 time. The push-by-push hand-over is gone too, so a solution runs continuously
 and declares itself done, and the table is judged by the arrangement it was
-left in. [The examiner](../../docs/04-clear-the-table/the-examiner.md) describes
+left in. [The examiner](../../docs/04-clear-the-table/README.md) describes
 both changes and how a walk of tables is marked.
 
 ## What every row was measured on
@@ -49,7 +55,7 @@ value in a column.
 Every row is the solution as it stands now. The six were measured once, then a
 set of changes was made to the three that were learning something and failing,
 and then they were measured again;
-[what changed](../../docs/04-clear-the-table/what-changed.md) records each
+[what changed](../../docs/04-clear-the-table/README.md) records each
 change beside the measurement that justified it, including the three that were
 tried and thrown away.
 
@@ -59,7 +65,7 @@ tried and thrown away.
 | [2 geometry ranked](../02-geometry-ranked/) | 25 | 7 | **0** | 98 | +19 | 0.582 | **0** | 17 | 15 ms |
 | [3 imitation, ACT](../03-imitation-from-demonstrations/) | 14 | **0** | 1 | 52 | **−1** | **0.359** | 1 | 9 | 21 ms |
 | [4 a world model](../04-a-world-model/) | **39** | **14** | **5** | 155 | **+33** | 0.550 | **5** | 22 | **11 ms** |
-| [5 SmolVLA as it downloads](../05-smolvla-as-it-downloads/) | **11** | 1 | **0** | 40 | +2 | 0.439 | **0** | 9 | 280 ms |
+| 5 SmolVLA as it downloads (retired) | **11** | 1 | **0** | 40 | +2 | 0.439 | **0** | 9 | 280 ms |
 | [6 SmolVLA fine-tuned](../06-smolvla-fine-tuned/) | **11** | **0** | **0** | 41 | 0 | 0.405 | **0** | 9 | **282 ms** |
 
 **Tables separated** is the clean pass: every glass on the table has room for
@@ -95,7 +101,7 @@ nudge reached, which is the prefix the two leading rows share.
 | 2 geometry ranked | 5 | +10 | 0.676 | 0 |
 | 3 imitation, ACT | 0 (0 to 2) | 0 (−2 to +4) | 0.351 | 1 |
 | 4 a world model | 6 (5 to 6) | +12 (+11 to +13) | 0.730 | 0 (0 to 1) |
-| 5 SmolVLA as it downloads | 1 (0 to 1) | +2 (0 to +2) | 0.459 | 0 |
+| 5 SmolVLA as it downloads (retired) | 1 (0 to 1) | +2 (0 to +2) | 0.459 | 0 |
 | 6 SmolVLA fine-tuned | 0 | 0 | 0.405 | 0 (0 to 1) |
 | perfect play | 8 | +16 | 0.838 | 0 |
 
@@ -122,7 +128,7 @@ forty-four, which is why it reaches thirty-nine tables and separates fourteen in
 the time the reference spends on twenty-six.
 
 **Those two broken glasses are a price that was paid on purpose**, and
-[what changed](../../docs/04-clear-the-table/what-changed.md) records the choice.
+[what changed](../../docs/04-clear-the-table/README.md) records the choice.
 The world model is now fitted on twice the random pushes and charged ten times as
 much for a topple it fails to predict, and that pair was chosen on a hundred and
 fifty tables below the held-out line under the real clock, where it separated
@@ -158,7 +164,7 @@ ceiling on exactly the prefix it reached.
 | 2 geometry ranked | 7 of 25 | 15 | 0.582 | 0.765 |
 | 3 imitation, ACT | 0 of 14 | 10 | 0.359 | 0.788 |
 | 4 a world model | 14 of 39 | 26 | 0.550 | 0.813 |
-| 5 SmolVLA as it downloads | 1 of 11 | 9 | 0.439 | 0.850 |
+| 5 SmolVLA as it downloads (retired) | 1 of 11 | 9 | 0.439 | 0.850 |
 | 6 SmolVLA fine-tuned | 0 of 11 | 9 | 0.405 | 0.850 |
 
 **The two leading rows reach between a half and five eighths of the ceiling on
@@ -325,7 +331,7 @@ policy with no word for "finished" has stopped proposing pushes.
 | 2 geometry ranked | [23 s](../../videos/04-clear-the-table/02-geometry-ranked.mp4) | 32 | 5 | 35 | separated |
 | 3 imitation, ACT | [5 s](../../videos/04-clear-the-table/03-imitation-from-demonstrations.mp4) | 9 | 0 | 9 | said done, nothing freed |
 | 4 a world model | [11 s](../../videos/04-clear-the-table/04-a-world-model.mp4) | 20 | 1 | 22 | separated |
-| 5 SmolVLA as it downloads | [53 s](../../videos/04-clear-the-table/05-smolvla-as-it-downloads.mp4) | 16 | 0 | 71 | said done, nothing freed |
+| 5 SmolVLA as it downloads (retired) | [53 s](../../videos/04-clear-the-table/05-smolvla-as-it-downloads.mp4) | 16 | 0 | 71 | said done, nothing freed |
 | 6 SmolVLA fine-tuned | [40 s](../../videos/04-clear-the-table/06-smolvla-fine-tuned.mp4) | 17 | 1 | 56 | said done, nothing freed |
 
 Read down the "of them pushes" column and the problem is in front of you.
@@ -366,12 +372,12 @@ Each solution has a page of its own, which gives its spread, its own selection
 measurements on tables below the held-out band, and what it found out about
 problem 4 while being built.
 
-1. [One fixed nudge](../../docs/04-clear-the-table/solutions/01-one-fixed-nudge.md)
-2. [Geometry ranked](../../docs/04-clear-the-table/solutions/02-geometry-ranked.md)
+1. [One fixed nudge](../../docs/04-clear-the-table/README.md)
+2. [Geometry ranked](../../docs/04-clear-the-table/README.md)
 3. [Imitation from demonstrations](../03-imitation-from-demonstrations/README.md)
-4. [A world model](../../docs/04-clear-the-table/solutions/04-a-world-model.md)
-5. [SmolVLA as it downloads](../../docs/04-clear-the-table/solutions/05-smolvla-as-it-downloads.md)
-6. [SmolVLA fine-tuned](../../docs/04-clear-the-table/solutions/06-smolvla-fine-tuned.md)
+4. [A world model](../../docs/04-clear-the-table/README.md)
+5. [SmolVLA as it downloads](../../docs/04-clear-the-table/README.md)
+6. [SmolVLA fine-tuned](../../docs/04-clear-the-table/README.md)
 
 `ceiling.json` beside this page holds the perfect-play measurement, table by
 table and as a running total, which is where the ceiling columns come from. It

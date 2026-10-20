@@ -1,0 +1,9 @@
+# Made again by the Makefile, and large or machine-specific.
+data/*.pkl
+data/rl/
+generated/*.log
+generated/views.json
+logs/
+weights/vla-*/
+weights/*-smoke/
+__pycache__/

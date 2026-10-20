@@ -1,14 +1,12 @@
 """The borrowed model with this problem's correction, answering problem 4's contract.
 
-[Solution 5](../05-smolvla-as-it-downloads) is the same model with nothing
-fitted, and it is the one that wrote down how a trained policy joins problem 4's
-conversation: a picture from the camera on the arm goes in, a path for the jaw
-comes out, ``bench/stopping.py`` reads the declaration that a table is finished
-out of the shape of the answers, and the solution keeps its own split of the arm
-time it asked for. **All of that is inherited rather than written again**, which
-is the whole of why this file is short. The pair is only clean while everything
-but the weights is the same code, and a second copy of the loop here would be a
-second thing that could vary.
+``as_downloaded.py``, beside this file, is the model with nothing fitted, and it is
+the one that wrote down how a trained policy joins problem 4's conversation: a
+picture from the camera on the arm goes in, a path for the jaw comes out,
+``bench/stopping.py`` reads the declaration that a table is finished out of the
+shape of the answers, and the solution keeps its own split of the arm time it
+asked for. **All of that is inherited rather than written again**, which is the
+whole of why this file is short.
 
 **Keeping the hand clear is inherited too.** Solution 5 now runs
 ``keeping_clear`` over its own answer before handing it over, so this solution
@@ -56,7 +54,7 @@ INTERLOCK = "the cell would not drive the jaw"
 
 
 class FineTuned(as_downloaded.AsItDownloads):
-    """Solution 5's solution, with the fitted weights in it.
+    """The downloaded model's loop, with the fitted weights in it.
 
     One of these holds one loaded model and is used for a whole walk of the
     queue, because loading the weights is slow and nothing in the model changes
