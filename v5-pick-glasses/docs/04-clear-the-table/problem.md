@@ -32,18 +32,26 @@ during the run.
 
 ## What a solution sees and answers
 
-At the start of each turn the arm takes two pictures with its wrist camera, and the [box
-model](the-box-model.md) turns them into boxes. A solution sees the boxes, and SmolVLA
-also sees the pictures. Nothing else from the simulator reaches a solution.
+A solution is not shown the table. It is handed three things: an **arm**, which can move
+to a pose and make a push; a **camera** on the arm's wrist, which takes a picture from wherever
+the hand is; and a **clock**, which says how much arm time is left. Together these are called
+a **run**, one attempt at one table. The solution decides when and where to take pictures,
+and the [box model](the-box-model.md) turns each picture into boxes. Most solutions read the
+boxes, and SmolVLA reads the pictures. Nothing else from the simulator reaches a solution.
+It is not even told the table's number, because that number is the random seed that drew
+the glasses.
 
-A solution answers with one push, or with "finished". Nothing outside the solution decides
-when a table is done. A solution that never says "finished" uses up its arm time, and one
-that says it too early is scored on the crowded table it left.
+The **examiner** is the other side of the run. It builds the table, keeps the clock, and
+marks the table when the run ends. A run ends in one of three ways: the solution says
+"finished", a glass goes over, or the arm time runs out. Nothing outside the solution
+decides when a table is done. A solution that never says "finished" uses up its arm time,
+and one that says it too early is scored on the crowded table it left.
 
 ## The budget is arm time
 
 The whole list of tables shares 15 minutes of arm motion. Looking costs arm time, because
-the camera is on the arm. A push that MoveIt cannot plan costs nothing, because the arm
+the camera is on the arm: the trip to a place to look from, and a quarter of a second for
+each picture, while the arm stands still. A push that MoveIt cannot plan costs nothing, because the arm
 does not move. Thinking time is recorded but not charged. A solution that wastes time
 reaches fewer tables, which is why some rows of the results reach fewer than 50.
 

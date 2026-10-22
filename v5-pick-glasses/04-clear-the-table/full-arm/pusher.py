@@ -113,6 +113,7 @@ class Pushed:
     touched: bool = False
     touch_at: object = None  # the fingertips' place at the first touch, for calibration
     stages: list = field(default_factory=list)
+    stopped: bool = False  # ``stop_when`` ended it before the last motion
 
 
 def table_box() -> dict:
@@ -169,7 +170,9 @@ class Pusher:
             "up": flange_goal(*back, z_travel, request.heading, without=name),
         }
 
-    def push(self, boxes: list[Box], request: Request, seconds_left: float = math.inf) -> Pushed:
+    def push(
+        self, boxes: list[Box], request: Request, seconds_left: float = math.inf, stop_when=None
+    ) -> Pushed:
         """Plan the four motions, and only if all of them can be made, carry them out.
 
         Planning everything first is deliberate. A push that was half carried
@@ -177,6 +180,9 @@ class Pusher:
         the arm in a place the next plan may not be able to leave. Asking for
         all four before moving costs nothing in arm time, because planning is
         not arm time, and it means a refusal leaves the arm where it was.
+
+        ``stop_when``, when given, is asked after each motion, and a true answer
+        stops the push there: the arm holds where that motion ended.
         """
         s, bench, link = request.settings, self.bench, self.link
         goals = self.goals(boxes, request)
@@ -236,6 +242,9 @@ class Pusher:
                 for i in range(len(positions))
             ]
             pushed.stages.append((name, round(ran.seconds, 2), self.toppled(), moved))
+            if stop_when is not None and name != "lift" and stop_when():
+                pushed.stopped = True
+                break
         return pushed
 
     def toppled(self) -> int:

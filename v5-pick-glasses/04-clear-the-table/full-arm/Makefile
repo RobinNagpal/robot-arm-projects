@@ -9,7 +9,7 @@ FIRST ?= 10000
 TABLES ?= 20
 RUNS ?= 1
 
-.PHONY: help test lint box-data box-net collect imitation world-model reinforcement vla-data vla evaluate-geometry evaluate-imitation evaluate-world-model evaluate-reinforcement evaluate-vla
+.PHONY: help test lint runs box-data box-net collect imitation world-model reinforcement vla-data vla evaluate-geometry evaluate-imitation evaluate-world-model evaluate-reinforcement evaluate-vla
 
 help: ## This list
 	@awk 'BEGIN {FS = ":.*##"} /^[a-z-]+:.*##/ { printf "  \033[36m%-24s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
@@ -50,6 +50,15 @@ vla: ## Solution 6: fit a small correction to SmolVLA
 	cd .. && pixi run python full-arm/vla.py --data full-arm/data/vla-round1.pkl --steps 300 --tag vla-round1
 
 # ----------------------------------------------------------------------- scoring
+
+RECORDED := solution_1-2_geometry solution_3_imitation solution_3_imitation_with_check \
+	solution_4_world_model solution_5_reinforcement solution_5_reinforcement_with_check \
+	solution_6_smolvla solution_6_smolvla_with_check ceiling
+
+runs: ## Every solution on 25 held-out tables, kept table by table in runs/
+	cd .. && pixi run python full-arm/record_runs.py arrangements
+	cd .. && for s in $(RECORDED); do pixi run python full-arm/record_runs.py solve $$s > full-arm/logs/runs-$$s.log 2>&1 & done; wait
+	cd .. && pixi run python full-arm/record_runs.py summary
 
 evaluate-geometry: ## The reference, on the held-out tables
 	cd .. && pixi run python full-arm/evaluate.py geometry --first $(FIRST) --tables $(TABLES) --runs $(RUNS)

@@ -15,7 +15,8 @@ first shown to the world model:
 
 So the solution still decides which glass and where it goes (job 1). The check only
 takes part in job 2, how it is pushed, and only when the solution's own answer
-looks dangerous. A solution with a check is a hybrid and is reported as one.
+looks dangerous. A solution with a check is a hybrid and is reported as one. It looks the way the solution
+it wraps looks.
 """
 
 from __future__ import annotations
@@ -24,14 +25,13 @@ from pathlib import Path
 
 import features as F
 import numpy as np
+from solving import Done, TurnByTurn
 from world_model import WEIGHTS, PlanningSolution
-
-from contract import Done
 
 CHECKER = WEIGHTS / "world-models-v3.pt"
 
 
-class Checked:
+class Checked(TurnByTurn):
     # The highest chance of a glass going over, if MoveIt plans the push, that is let through,
     # and whether a risky push is mended before it is set aside. Set on tables 2,000 to 2,023,
     # where mending did no better than setting the glass aside and so is left off.
@@ -43,12 +43,13 @@ class Checked:
         self.inner = inner
         self.model = PlanningSolution(checker or CHECKER, seed)
         self.name = f"{inner.name}, checked by the world model"
+        self.looking = inner.looking
         self.rng = np.random.default_rng(seed)
         self.vetoed = self.mended = 0
 
-    def begin(self, seed: int) -> None:
-        self.inner.begin(seed)
-        self.rng = np.random.default_rng(seed)
+    def begin(self) -> None:
+        self.inner.begin()
+        self.rng = np.random.default_rng(0)
 
     def risk(self, boxes, glass: int, vectors: np.ndarray):
         """The world model's score for each push, and its chance of a glass going over if MoveIt plans it."""

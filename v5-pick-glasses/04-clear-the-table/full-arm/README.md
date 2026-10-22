@@ -15,9 +15,18 @@ its README. This page is for the code.
 | 2 | Choose the settings handed to MoveIt so that the glass does not tip | the same learned model | the same files |
 | 3 | Move the arm | **MoveIt 2**, nothing else | [`pusher.py`](pusher.py), [`moveit_server.py`](moveit_server.py) |
 
-Jobs 1 and 2 are one answer, because a solution is asked once per turn and replies with a single push:
-*this glass, this way, this far, with these six settings*. The six are the ones MoveIt itself is given
-(`pusher.Settings`). The solution never writes a joint angle.
+Jobs 1 and 2 are one answer, because on each turn a solution chooses a single push: *this glass, this
+way, this far, with these six settings*. The six are the ones MoveIt itself is given (`pusher.Settings`).
+The solution never writes a joint angle.
+
+## What a solution is given
+
+A solution is handed a **run** and nothing else: an arm with a wrist camera, and a clock. It decides
+when and where to look, which push to ask for, and when the table is finished
+([`arm_contract.py`](arm_contract.py)). The **examiner** ([`examiner.py`](examiner.py)) is the other
+side: it builds the table, keeps its number to itself, charges the arm time, ends the run when a glass
+goes over or the time runs out, and marks the table. The turn-by-turn loop the solutions share, and
+their two ways of looking, are in [`solving.py`](solving.py).
 
 ## What runs where
 
@@ -36,7 +45,10 @@ that is needed; nothing has to be activated by hand.
 | [`arm_camera.py`](arm_camera.py) | the wrist camera, moved off the hand's axis |
 | [`moveit_server.py`](moveit_server.py), [`moveit_link.py`](moveit_link.py) | MoveIt 2, and the pipe to it |
 | [`pusher.py`](pusher.py) | one push as four MoveIt motions |
-| [`cell.py`](cell.py), [`episode.py`](episode.py) | one table, the loop over it, and the queue |
+| [`arm_contract.py`](arm_contract.py) | what passes between a solution and the examiner: the arm, the camera, the run |
+| [`examiner.py`](examiner.py) | the examiner: the simulated arm behind the contract, the clock, the marks, and the list of tables |
+| [`solving.py`](solving.py) | the turn-by-turn loop the solutions share, and how each one chooses to look |
+| [`cell.py`](cell.py) | one table: the arm, MoveIt and the camera put together, and the two viewing poses |
 | [`seeing.py`](seeing.py), [`build_box_data.py`](build_box_data.py), [`train_box_net.py`](train_box_net.py) | job 0 |
 | [`features.py`](features.py), [`nets.py`](nets.py) | how a table and a push are written for the learned models |
 | [`collect_pushes.py`](collect_pushes.py) | pushes made at random, informed, or chosen by a model, and what happened |
@@ -47,7 +59,9 @@ that is needed; nothing has to be activated by hand.
 | [`teach.py`](teach.py) | the ceiling run on training tables, writing lessons for imitation to copy |
 | [`evaluate.py`](evaluate.py), [`report.py`](report.py) | scoring a solution on the held-out tables, and setting results side by side with a spread |
 | [`film_arm.py`](film_arm.py) | films of a solution clearing tables |
+| [`record_runs.py`](record_runs.py) | every solution on the same 25 held-out tables, kept table by table |
 | `results/` | what every run wrote, as JSON |
+| [`runs/`](runs/results.md) | one folder per table: where the glasses started, and each solution's result and every push it asked for, as JSON and a picture |
 | `weights/` | the box model and the small policies; the large correction to SmolVLA is made again by `make vla` |
 | `data/` | the pushes (`*.jsonl`) and, left out of git, the pictures |
 
@@ -66,6 +80,7 @@ make imitation world-model                    # solutions 3 and 4
 make reinforcement                            # solution 5
 make vla-data vla                             # solution 6
 make evaluate-world-model TABLES=50           # score one
+make runs                                     # every solution, table by table, in runs/
 ```
 
 `make test` runs the checks that need neither MoveIt nor the physics engine.

@@ -21,14 +21,11 @@ from pathlib import Path
 import arm_camera  # noqa: F401
 import av
 import cv2
-import episode
 import mujoco
 import numpy as np
-from cell import ArmCell
-from evaluate import SOLUTIONS, perceiver
+from evaluate import SOLUTIONS
+from examiner import ARM_BUDGET, SimExaminer
 from moveit_link import MoveItLink
-
-from open_run import ARM_BUDGET
 
 SIZE = (720, 1080)  # rows, columns
 FPS = 30
@@ -82,30 +79,39 @@ class Film:
         self.container.close()
 
 
-def film_table(solution, seed: int, link, perceive, film: Film, left: float) -> None:
-    cell = ArmCell(seed, link)
-    camera = Camera(cell.bench)
+def film_table(solution, seed: int, link, film: Film, left: float) -> None:
     stride = max(1, round(SPEED / (FPS * 0.002)))
     count = {"steps": 0}
-    start = (cell.pickable_at_start, cell.glasses())
+    watched = {}
 
-    def hook(bench) -> None:
-        count["steps"] += 1
-        if count["steps"] % stride == 0:
-            film.write(
-                camera.frame(bench),
-                f"   arm time {bench.arm_seconds:5.0f} s   glasses the gripper could pick: "
-                f"{cell.pickable()} of {cell.glasses()}",
-            )
+    def watch(run) -> None:
+        cell = SimExaminer.cell_of(run)
+        camera = Camera(cell.bench)
+        watched.update(cell=cell, camera=camera)
 
-    cell.bench.hooks.append(hook)
+        def hook(bench) -> None:
+            count["steps"] += 1
+            if count["steps"] % stride == 0:
+                film.write(
+                    camera.frame(bench),
+                    f"   arm time {bench.arm_seconds:5.0f} s   glasses the gripper could pick: "
+                    f"{cell.pickable()} of {cell.glasses()}",
+                )
+
+        cell.bench.hooks.append(hook)
+
     film.line = f"table {seed}"
-    result = episode.clear_table(solution, seed, left, link, perceive, cell=cell)
+    result = SimExaminer(link, left).run(solution, seed, prepare=watch)
     # The last picture is held for two seconds, with what happened.
-    end = f"   {start[0]} -> {result.pickable_at_end} of {start[1]} pickable, {result.ended_by}"
-    if result.toppled:
-        end += f", {result.toppled} glass went over"
-    last = camera.frame(cell.bench)
+    end = (
+        f"   {result.separated_at_start} -> {result.separated_at_end} of {result.glasses} pickable, "
+        f"{result.ended_by}"
+    )
+    # A table can end because a glass went over, and then ``ended_by`` already says so.
+    if result.fell_over and "went over" not in result.ended_by:
+        end += f", {result.fell_over} glass went over"
+    print(f"table {seed}:{end}", flush=True)
+    last = watched["camera"].frame(watched["cell"].bench)
     for _ in range(2 * FPS):
         film.write(last.copy(), end)
 
@@ -113,7 +119,7 @@ def film_table(solution, seed: int, link, perceive, film: Film, left: float) -> 
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("solution", choices=sorted(SOLUTIONS))
-    parser.add_argument("--first", type=int, default=10004)
+    parser.add_argument("--first", type=int, default=10311)
     parser.add_argument("--tables", type=int, default=1)
     parser.add_argument(
         "--seeds", default=None, help="table numbers, comma-separated, instead of --first/--tables"
@@ -128,11 +134,9 @@ def main() -> None:
     name = a.name or f"{a.solution}-{len(seeds)}-tables"
     path = FILMS / f"{name}.mp4"
     film = Film(path, f"{solution.name}")
-    perceive = perceiver("box-net")
     with MoveItLink() as link:
-        left = ARM_BUDGET
         for seed in seeds:
-            film_table(solution, seed, link, perceive, film, left)
+            film_table(solution, seed, link, film, ARM_BUDGET)
     film.close()
     print("wrote", path, f"{film.frames / FPS:.0f} s")
 

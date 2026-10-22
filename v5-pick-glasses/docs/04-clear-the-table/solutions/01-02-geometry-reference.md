@@ -22,7 +22,7 @@ exactly like a straight one. If MoveIt refuses a push, it is not asked for again
 
 ## How it does
 
-It gains 2 glasses and breaks 4, and it uses all 15 arm minutes on only 22 tables (see the
+It gains 5 glasses and breaks 3, and it uses all 15 arm minutes on only 22 tables (see the
 [results](../README.md#results)). It spends about 40 arm seconds on each table, where the
 world model spends about 6, because it makes every push the geometry finds instead of
 judging which ones are worth making. It also cannot tell which glasses tip. Both are what

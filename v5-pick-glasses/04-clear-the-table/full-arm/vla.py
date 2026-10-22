@@ -39,8 +39,7 @@ from pathlib import Path
 import features as F
 import numpy as np
 import torch
-
-from contract import Done
+from solving import EVERY_VIEW, Done, TurnByTurn
 
 HERE = Path(__file__).resolve().parent
 WEIGHTS_DIR = HERE / "weights"
@@ -263,8 +262,10 @@ def train(
 # ---------------------------------------------------------------- the solution
 
 
-class FineTuned:
+class FineTuned(TurnByTurn):
     name = "smolvla, a little fine-tuned"
+    # It reads the two pictures themselves, so it is shown both, both new, on every turn.
+    looking = EVERY_VIEW
 
     def __init__(self, weights: Path | None = None) -> None:
         from peft import PeftModel
@@ -283,10 +284,13 @@ class FineTuned:
         self.last = None
         self.picture_pairs: list = []
 
-    def begin(self, seed: int) -> None:
+    def begin(self) -> None:
         self.refused = set()
         self.last = None
         self.policy.reset()
+        # The model draws noise for every answer. Given the same draw at the start of every
+        # table, a table gets the same answers every time it is run.
+        torch.manual_seed(0)
 
     @torch.no_grad()
     def ask(self, pictures) -> np.ndarray:

@@ -2,7 +2,8 @@
 
 ``python oracle.py --first 10000 --tables 20 --candidates 30``
 
-No learned solution can do this. At every turn it draws ``candidates`` pushes, makes each
+No learned solution can do this, and it is not a solution: it works on the simulator itself, not
+through the arm a solution is given. At every turn it draws ``candidates`` pushes, makes each
 one in the physics from the table as it stands, scores what each one left, puts the table
 back, and then makes the best of them for real. It is told the glasses' true boxes, so it
 does not read a picture. It is marked by the same scorecard, on the same tables, with the
@@ -27,11 +28,11 @@ import cell as C
 import collect_pushes as CP
 import features as F
 import mujoco
+from arm_contract import FINISHED, GLASS_OVER, OUT_OF_TIME, TableResult
+from examiner import ARM_BUDGET, scored
 from moveit_link import MoveItLink
 from pusher import Box
 
-from contract import GLASS_OVER, RAN_OUT, SAID_DONE, TableResult
-from open_run import ARM_BUDGET
 from scoring import Repeats
 
 
@@ -74,12 +75,14 @@ def clear_table(
     rng: random.Random,
     chosen: list | None = None,
     lessons: list | None = None,
+    *,
+    cell: C.ArmCell | None = None,
 ) -> TableResult:
     """Clear one table by trying pushes first. ``lessons``, when given, gets one row per turn:
     the table as it stood and the push made, or ``None`` where the search chose to stop."""
-    cell = C.ArmCell(seed, link, camera=False)
+    cell = C.ArmCell(seed, link, camera=False) if cell is None else cell
     started = time.perf_counter()
-    ended, answers = RAN_OUT, 0
+    ended, answers = OUT_OF_TIME, 0
     try:
         while True:
             left = seconds_left - cell.arm_seconds
@@ -88,7 +91,7 @@ def clear_table(
             boxes = truth(cell)
             before = CP.layout(cell.bench)
             if F.pickable_count(boxes) == len(boxes):
-                ended = SAID_DONE
+                ended = FINISHED
                 if lessons is not None:
                     lessons.append({"seed": seed, "step": answers, "before": before, "request": None})
                 break
@@ -109,7 +112,7 @@ def clear_table(
                 cell.bench.arm_seconds, cell.bench.seconds = was_seconds, was_total
             answers += 1
             if best is None or best[0] <= 0.0:
-                ended = SAID_DONE
+                ended = FINISHED
                 if lessons is not None:
                     lessons.append({"seed": seed, "step": answers - 1, "before": before, "request": None})
                 break
@@ -148,15 +151,15 @@ def clear_table(
                 ended = GLASS_OVER
                 break
         return TableResult(
-            seed=seed,
+            table=seed,
             glasses=cell.glasses(),
-            pickable_at_start=cell.pickable_at_start,
-            pickable_at_end=cell.pickable(),
-            toppled=cell.toppled(),
+            separated_at_start=cell.pickable_at_start,
+            separated_at_end=cell.pickable(),
+            fell_over=cell.toppled(),
             ended_by=ended,
             arm_seconds=cell.arm_seconds,
+            pushes_asked=answers,
             thinking_seconds=time.perf_counter() - started,
-            answers=answers,
         )
     finally:
         cell.close()
@@ -180,10 +183,10 @@ def main() -> None:
                 break
             result = clear_table(seed, link, a.budget - spent, a.candidates, rng, chosen)
             spent += result.arm_seconds
-            card.table(result)
+            card.table(scored(result))
             print(
-                f"table {seed}: {result.pickable_at_start}->{result.pickable_at_end}/{result.glasses}, "
-                f"{result.arm_seconds:.0f} arm s, {result.ended_by}, broken {result.toppled}",
+                f"table {seed}: {result.separated_at_start}->{result.separated_at_end}/{result.glasses}, "
+                f"{result.arm_seconds:.0f} arm s, {result.ended_by}, broken {result.fell_over}",
                 flush=True,
             )
     out = Path(__file__).resolve().parent / "results" / f"{a.name}.json"

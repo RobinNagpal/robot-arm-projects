@@ -1,0 +1,52 @@
+{
+ "table": 10016,
+ "glasses": 4,
+ "separated": 2,
+ "not_separated": 2,
+ "glass_list": [
+  {
+   "glass": 0,
+   "kind": "tapered_glass",
+   "x_mm": 324,
+   "y_mm": -306,
+   "standing": true,
+   "in_zone": true,
+   "crowded_by": [],
+   "separated": true
+  },
+  {
+   "glass": 1,
+   "kind": "tapered_glass",
+   "x_mm": 456,
+   "y_mm": -170,
+   "standing": true,
+   "in_zone": true,
+   "crowded_by": [
+    3
+   ],
+   "separated": false
+  },
+  {
+   "glass": 2,
+   "kind": "tapered_glass",
+   "x_mm": 447,
+   "y_mm": -357,
+   "standing": true,
+   "in_zone": true,
+   "crowded_by": [],
+   "separated": true
+  },
+  {
+   "glass": 3,
+   "kind": "tapered_glass",
+   "x_mm": 347,
+   "y_mm": -130,
+   "standing": true,
+   "in_zone": true,
+   "crowded_by": [
+    1
+   ],
+   "separated": false
+  }
+ ]
+}

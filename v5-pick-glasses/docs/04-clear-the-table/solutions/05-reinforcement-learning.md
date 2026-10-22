@@ -61,8 +61,12 @@ held-out tables from 25 to 3.
 
 ## How it does
 
-It gains 3 glasses and breaks 3 (see the [results](../README.md#results)). It is careful,
-but it says "finished" on most tables without having changed them. The [safety
+It gains 5 glasses and breaks 2 (see the [results](../README.md#results)). It is careful,
+and it says "finished" on most tables without having changed them. On a few tables, however,
+it keeps pushing until it has asked for the most pushes a table allows, so it uses all 15 arm
+minutes and reaches only 43 of the 50 tables. Measured before the solutions chose how much
+to look, it gained 3 and broke 3 on all 50 tables, so these few long tables are a matter of
+borderline decisions going the other way, not of a new habit. The [safety
 check](safety-check.md) changes little, because it was already careful. To make it useful,
 it would need a better start, for example from imitation, or far more experience, which it
 could gain cheaply by practising inside the world model instead of the physics.

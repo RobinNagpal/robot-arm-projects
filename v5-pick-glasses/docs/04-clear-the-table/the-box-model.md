@@ -54,8 +54,9 @@ at random, because later in a run the glasses are no longer where they started.
 
 Height is the least accurate, and it matters least, because the hand travels well above
 the tallest glass. A glass that is more than half hidden is not found from that place, which
-is why the arm looks from two places and joins the two lists of boxes.
+is why every solution looks from both places at the start of a table and joins the two
+lists of boxes.
 
-The box model is not what limits the results. The world model scored about the same with
-the simulator's exact boxes (+7, no glass broken) as with this network's boxes (+9, two
-broken).
+The box model is not what limits the results. Measured before the solutions chose how much
+to look, the world model scored about the same with the simulator's exact boxes (+7, no glass
+broken) as with this network's boxes (+9, two broken).

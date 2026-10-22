@@ -52,9 +52,8 @@ import numpy as np
 import torch
 from nets import PushPolicy
 from pusher import Box
+from solving import AS_NEEDED, Done, TurnByTurn
 from torch import nn
-
-from contract import Done
 
 HERE = Path(__file__).resolve().parent
 WEIGHTS = HERE / "weights"
@@ -372,15 +371,16 @@ def train(
 # ------------------------------------------------------------------ the solution
 
 
-class Learner:
+class Learner(TurnByTurn):
     name = "reinforcement learning (limited training)"
+    looking = AS_NEEDED  # it reads the boxes, so one picture that shows every glass is enough
 
     def __init__(self, weights: Path | None = None) -> None:
         self.net = new_policy()
         self.net.load_state_dict(torch.load(weights or WEIGHTS / "reinforcement.pt", weights_only=True))
         self.net.eval()
 
-    def begin(self, seed: int) -> None:
+    def begin(self) -> None:
         self.refused: set[int] = set()
         self.last = None
 

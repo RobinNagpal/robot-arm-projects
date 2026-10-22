@@ -4,11 +4,8 @@
 
 Every solution is shown the same ordered list of tables from 10,000 up, given the
 same fifteen arm minutes for the whole list, and gets as far down it as it gets.
-What it sees is what the cell hands it: the wrist camera's picture and the boxes
-the box model found in it. Nothing from the simulator reaches a solution.
-
-``--perceive readings`` replaces the box model with problem 2's readings, for the
-runs that ask what the solution would score if the boxes were perfect.
+A solution is handed an arm with a wrist camera and a clock (``examiner.py``), and
+what it sees is the pictures it chooses to take. Nothing from the simulator reaches it.
 """
 
 from __future__ import annotations
@@ -20,11 +17,9 @@ import time
 from pathlib import Path
 
 import arm_camera  # noqa: F401
-import episode
-import seeing
+import examiner
+from examiner import ARM_BUDGET
 from moveit_link import MoveItLink
-
-from open_run import ARM_BUDGET
 
 RESULTS = Path(__file__).resolve().parent / "results"
 
@@ -40,13 +35,6 @@ SOLUTIONS = {
 }
 
 
-def perceiver(kind: str):
-    if kind == "readings":
-        return episode.from_readings
-    model = seeing.BoxModel.load()
-    return lambda look: model.detect(look.picture, look.jaw)
-
-
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("solution", choices=sorted(SOLUTIONS))
@@ -54,7 +42,6 @@ def main() -> None:
     parser.add_argument("--tables", type=int, default=20)
     parser.add_argument("--runs", type=int, default=1)
     parser.add_argument("--budget", type=float, default=ARM_BUDGET)
-    parser.add_argument("--perceive", choices=("box-net", "readings"), default="box-net")
     parser.add_argument("--weights", type=Path, default=None)
     parser.add_argument("--name", default=None)
     parser.add_argument(
@@ -77,22 +64,13 @@ def main() -> None:
 
     started = time.perf_counter()
     with MoveItLink() as link:
-        summary, tally, rows = episode.judge(
-            build,
-            link,
-            perceiver(arguments.perceive),
-            arguments.first,
-            arguments.tables,
-            arguments.runs,
-            arguments.budget,
+        summary, tally, rows = examiner.judge(
+            build, link, arguments.first, arguments.tables, arguments.runs, arguments.budget
         )
-    print(arguments.solution, "|", episode.headline(summary))
+    print(arguments.solution, "|", examiner.headline(summary))
     print(tally)
     RESULTS.mkdir(exist_ok=True)
-    name = (
-        arguments.name
-        or f"{arguments.solution}-{arguments.first}-{arguments.tables}x{arguments.runs}-{arguments.perceive}"
-    )
+    name = arguments.name or f"{arguments.solution}-{arguments.first}-{arguments.tables}x{arguments.runs}"
     (RESULTS / f"{name}.json").write_text(
         json.dumps(
             {

@@ -19,12 +19,12 @@ is a hybrid, because two models now take part in the decision.
 
 | With the check | Glasses broken | Gain |
 |---|---|---|
-| 3 Imitation | 19 → 1 | +3 → +3 |
-| 5 Reinforcement learning | 3 → 1 | +3 → +0 |
-| 6 SmolVLA | 22 → 0 | −3 → −1 |
+| 3 Imitation | 19 → 0 | +1 → +2 |
+| 5 Reinforcement learning | 2 → 1 | +5 → +1 |
+| 6 SmolVLA | 17 → 5 | +1 → +0 |
 
 The check works like a filter on a function's outputs: it can remove bad values, but it
-cannot produce values the function never gave. So it removes almost all breakage, but it
+cannot produce values the function never gave. So it removes most of the breakage, but it
 adds no gain, because these solutions rarely propose a push that frees a glass. The change
 in reinforcement learning's gain is within its range, so it is not a real difference.
 

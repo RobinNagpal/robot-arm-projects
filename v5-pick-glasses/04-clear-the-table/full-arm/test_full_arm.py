@@ -16,11 +16,9 @@ import features as F
 import numpy as np
 import pytest
 from arm_model import FINGERTIP_OFFSET, tool_pose
-from cell import Memory
 from moveit_link import flange_goal, quaternion
 from pusher import BACK_OFF, TRAVEL, Box, Pusher, Request, Settings, scene_boxes, table_box
-
-from contract import GLASS_OVER, RAN_OUT, SAID_DONE, Done
+from solving import AS_NEEDED, EVERY_VIEW, Done, Memory, TurnByTurn, over_the_zone
 
 TABLE_TOP = 0.75
 
@@ -186,16 +184,42 @@ def test_a_glass_seen_from_two_places_is_one_box_and_two_glasses_are_two():
 
 
 class FakeCell:
-    """Just enough cell for the loop: it answers the questions the loop asks and moves nothing."""
+    """Just enough cell for the examiner: it answers what the arm asks and moves nothing."""
 
-    def __init__(self, topple_on: int | None = None, seconds: float = 12.0) -> None:
-        self.arm_seconds = 0.0
+    def __init__(self, topple_on: int | None = None, seconds: float = 12.0, refuse: bool = False) -> None:
         self.pushes = 0
-        self.topple_on, self.seconds = topple_on, seconds
-        self.known = []
+        self.topple_on, self.seconds, self.refuse = topple_on, seconds, refuse
         self.pickable_at_start = 1
-        self.bench = SimpleNamespace(
-            seconds=0.0, tcp=lambda: SimpleNamespace(x=0.48, y=-0.26, z=0.36, heading=0.0)
+        hand = SimpleNamespace(x=0.48, y=-0.26, z=0.36, heading=0.0)
+        self.bench = SimpleNamespace(seconds=0.0, arm_seconds=0.0, tcp=lambda: hand, joints=lambda: [0.0] * 6)
+        self.bench.run = self._run
+        self.link = SimpleNamespace(planning_seconds=0.0, scene=lambda boxes: None, plan=self._plan)
+        self.camera = SimpleNamespace(view=lambda hand: np.zeros((4, 4, 3), np.uint8))
+        self.pusher = SimpleNamespace(push=self._push)
+        self.closed = False
+
+    @property
+    def arm_seconds(self):
+        return self.bench.arm_seconds
+
+    def _plan(self, q, goal, **how):
+        return SimpleNamespace(ok=True, why="", seconds=3.0, times=[0.0, 3.0], joints=[q, q])
+
+    def _run(self, times, joints):
+        self.bench.arm_seconds += times[-1]
+        return SimpleNamespace(seconds=times[-1])
+
+    def _push(self, boxes, request, seconds_left=math.inf, stop_when=None):
+        if self.refuse:
+            return SimpleNamespace(ok=False, why="no way to the start of the push: no plan")
+        if self.seconds > seconds_left:
+            why = f"the push needs {self.seconds} s and {seconds_left} s are left"
+            return SimpleNamespace(ok=False, why=why)
+        self.bench.arm_seconds += self.seconds
+        self.pushes += 1
+        stopped = stop_when is not None and stop_when()
+        return SimpleNamespace(
+            ok=True, why="", arm_seconds=self.seconds, stopped=stopped, stages=[("approach",)], touched=True
         )
 
     def glasses(self):
@@ -207,73 +231,109 @@ class FakeCell:
     def pickable(self):
         return 1
 
-    def go_to_view(self, left=math.inf, view=None, blind=False):
-        return True, ""
-
-    def look(self):
-        return SimpleNamespace(
-            picture=np.zeros((4, 4, 3), np.uint8),
-            measured=(),
-            jaw=SimpleNamespace(heading=0.0, x=0.48, y=-0.26, z=0.36),
-        )
-
-    def push(self, boxes, request, seconds_left=math.inf):
-        if self.seconds > seconds_left:
-            return SimpleNamespace(
-                ok=False, why=f"the push needs {self.seconds} s and {seconds_left} s are left"
-            )
-        self.arm_seconds += self.seconds
-        self.pushes += 1
-        return SimpleNamespace(ok=True, why="")
-
     def close(self):
-        pass
+        self.closed = True
 
 
-class Pushing:
+class Pushing(TurnByTurn):
     name = "always pushes glass 0"
 
-    def begin(self, seed):
-        pass
+    def __init__(self, looking=AS_NEEDED, glasses=1):
+        self.looking, self.glasses = looking, glasses
+        self.see = lambda frame: [Box(0.4 + 0.1 * k, -0.2, 0.03, 0.15, 0.03) for k in range(self.glasses)]
 
-    def decide(self, look):
+    def decide(self, turn):
         return Request(0, 0.0, 0.05, Settings.default())
 
 
-class Finished:
+class Finished(Pushing):
     name = "says done at once"
 
-    def begin(self, seed):
-        pass
-
-    def decide(self, look):
+    def decide(self, turn):
         return Done("finished")
 
 
-def _run(solution, cell, left=900.0):
-    import episode
+def _run(solution, cell, left=900.0, monkeypatch=None):
+    import examiner
 
-    def perceive(seen):
-        return [Box(0.5, -0.2, 0.03, 0.15, 0.03)]
-
-    return episode.clear_table(solution, 1, left, SimpleNamespace(planning_seconds=0.0), perceive, cell=cell)
-
-
-def test_a_solution_that_says_done_is_marked_done_having_cost_no_arm_time():
-    result = _run(Finished(), FakeCell())
-    assert result.ended_by == SAID_DONE and result.arm_seconds == 0.0
+    monkeypatch.setattr(examiner, "view_joint_sets", lambda: [[0.0] * 6, [0.0] * 6])
+    judge = examiner.SimExaminer(SimpleNamespace(), left, make_cell=lambda table, link: cell)
+    return judge.run(solution, 1), judge.tally
 
 
-def test_a_solution_that_never_stops_is_stopped_by_the_clock_and_not_allowed_to_overrun_it():
-    result = _run(Pushing(), FakeCell(seconds=12.0), left=40.0)
-    assert result.ended_by == RAN_OUT
+def test_a_solution_that_says_done_is_marked_finished_having_pushed_nothing(monkeypatch):
+    from arm_contract import FINISHED
+
+    result, _ = _run(Finished(), FakeCell(), monkeypatch=monkeypatch)
+    assert result.ended_by == FINISHED and result.pushes_asked == 0 and result.why == "finished"
+
+
+def test_a_solution_that_never_stops_is_stopped_by_the_clock_and_not_allowed_to_overrun_it(monkeypatch):
+    from arm_contract import OUT_OF_TIME
+
+    result, _ = _run(Pushing(), FakeCell(seconds=12.0), left=40.0, monkeypatch=monkeypatch)
+    assert result.ended_by == OUT_OF_TIME
     assert result.arm_seconds <= 40.0, "a push that does not fit in the time left is never started"
 
 
-def test_a_glass_going_over_ends_the_table_at_once():
-    result = _run(Pushing(), FakeCell(topple_on=2), left=900.0)
-    assert result.ended_by == GLASS_OVER and result.toppled == 1
-    assert result.answers == 2
+def test_a_glass_going_over_ends_the_table_at_once(monkeypatch):
+    from arm_contract import GLASS_OVER
+
+    result, _ = _run(Pushing(), FakeCell(topple_on=2), monkeypatch=monkeypatch)
+    assert result.ended_by == GLASS_OVER and result.fell_over == 1
+    assert result.pushes_asked == 2
+
+
+def test_a_solution_that_keeps_asking_for_refused_pushes_is_stopped(monkeypatch):
+    from arm_contract import OUT_OF_TIME
+    from examiner import MOST_PUSHES
+
+    cell = FakeCell(refuse=True)
+    result, tally = _run(Pushing(), cell, monkeypatch=monkeypatch)
+    assert result.ended_by == OUT_OF_TIME and result.pushes_asked == MOST_PUSHES
+    assert tally.pictures == 2, "a refused push moves nothing, so the solution does not look again"
+
+
+def test_one_picture_after_a_push_is_enough_when_it_shows_every_glass(monkeypatch):
+    result, tally = _run(Pushing(AS_NEEDED, glasses=2), FakeCell(topple_on=3), monkeypatch=monkeypatch)
+    assert result.pushes_asked == 3
+    assert tally.pictures == 2 + 1 + 1, "both views at the start, then one after each push"
+
+
+def test_a_solution_that_reads_the_pictures_takes_both_every_turn(monkeypatch):
+    result, tally = _run(Pushing(EVERY_VIEW, glasses=2), FakeCell(topple_on=3), monkeypatch=monkeypatch)
+    assert tally.pictures == 2 * 3
+
+
+def test_the_arm_refuses_every_call_once_the_run_is_over(monkeypatch):
+    import examiner
+    from arm_contract import FINISHED, RunOver
+
+    monkeypatch.setattr(examiner, "view_joint_sets", lambda: [[0.0] * 6, [0.0] * 6])
+    cell = FakeCell()
+    run = examiner.SimExaminer(SimpleNamespace(), 900.0, make_cell=lambda table, link: cell).start(1)
+    run.arm.camera.capture()
+    run.finish("enough")
+    assert run.state == FINISHED
+    with pytest.raises(RunOver):
+        run.arm.camera.capture()
+    with pytest.raises(RunOver):
+        run.arm.push(Request(0, 0.0, 0.05, Settings.default()), [Box(0.5, -0.2, 0.03, 0.15, 0.03)])
+
+
+def test_the_block_over_the_zone_covers_it_exactly_once_grown():
+    from cell import zone_box
+
+    padding = 0.01
+    tiles = over_the_zone(padding)
+    zone = zone_box()
+    xs = [t.x - t.radius - padding for t in tiles] + [t.x + t.radius + padding for t in tiles]
+    ys = [t.y - t.radius - padding for t in tiles] + [t.y + t.radius + padding for t in tiles]
+    assert min(xs) == pytest.approx(zone["centre"][0] - zone["size"][0] / 2)
+    assert max(xs) == pytest.approx(zone["centre"][0] + zone["size"][0] / 2)
+    assert min(ys) == pytest.approx(zone["centre"][1] - zone["size"][1] / 2)
+    assert max(ys) == pytest.approx(zone["centre"][1] + zone["size"][1] / 2)
+    assert all(t.height + padding == pytest.approx(zone["size"][2]) for t in tiles)
 
 
 # ------------------------------------------------------- the data and the planner
@@ -406,7 +466,7 @@ class _Asks:
     def __init__(self, request):
         self.request, self.refused = request, set()
 
-    def begin(self, seed):
+    def begin(self):
         self.refused = set()
 
     def decide(self, look):

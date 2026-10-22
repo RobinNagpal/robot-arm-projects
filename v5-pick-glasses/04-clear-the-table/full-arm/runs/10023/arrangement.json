@@ -1,0 +1,67 @@
+{
+ "table": 10023,
+ "glasses": 5,
+ "separated": 2,
+ "not_separated": 3,
+ "glass_list": [
+  {
+   "glass": 0,
+   "kind": "short_stemmed_glass",
+   "x_mm": 605,
+   "y_mm": -226,
+   "standing": true,
+   "in_zone": true,
+   "crowded_by": [],
+   "separated": true
+  },
+  {
+   "glass": 1,
+   "kind": "short_stemmed_glass",
+   "x_mm": 516,
+   "y_mm": -105,
+   "standing": true,
+   "in_zone": true,
+   "crowded_by": [
+    2,
+    3
+   ],
+   "separated": false
+  },
+  {
+   "glass": 2,
+   "kind": "short_stemmed_glass",
+   "x_mm": 437,
+   "y_mm": -172,
+   "standing": true,
+   "in_zone": true,
+   "crowded_by": [
+    1,
+    3
+   ],
+   "separated": false
+  },
+  {
+   "glass": 3,
+   "kind": "short_stemmed_glass",
+   "x_mm": 424,
+   "y_mm": -86,
+   "standing": true,
+   "in_zone": true,
+   "crowded_by": [
+    1,
+    2
+   ],
+   "separated": false
+  },
+  {
+   "glass": 4,
+   "kind": "short_stemmed_glass",
+   "x_mm": 392,
+   "y_mm": -337,
+   "standing": true,
+   "in_zone": true,
+   "crowded_by": [],
+   "separated": true
+  }
+ ]
+}

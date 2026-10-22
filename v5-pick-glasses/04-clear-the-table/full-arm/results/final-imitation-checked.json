@@ -21,16 +21,16 @@
     "most": 0.0
    },
    "outcome.failed": {
-    "median": 1.0,
+    "median": 0.0,
     "sd": 0.0,
-    "least": 1.0,
-    "most": 1.0
+    "least": 0.0,
+    "most": 0.0
    },
    "outcome.unfinished": {
-    "median": 49.0,
+    "median": 50.0,
     "sd": 0.0,
-    "least": 49.0,
-    "most": 49.0
+    "least": 50.0,
+    "most": 50.0
    },
    "glasses_end.pickable": {
     "median": 76.0,
@@ -39,16 +39,16 @@
     "most": 76.0
    },
    "glasses_end.pickable_at_start": {
-    "median": 73.0,
+    "median": 74.0,
     "sd": 0.0,
-    "least": 73.0,
-    "most": 73.0
+    "least": 74.0,
+    "most": 74.0
    },
    "glasses_end.gain": {
-    "median": 3.0,
+    "median": 2.0,
     "sd": 0.0,
-    "least": 3.0,
-    "most": 3.0
+    "least": 2.0,
+    "most": 2.0
    },
    "glasses_end.pickable_share": {
     "median": 0.384,
@@ -57,16 +57,16 @@
     "most": 0.384
    },
    "glasses_end.broken": {
-    "median": 1.0,
+    "median": 0.0,
     "sd": 0.0,
-    "least": 1.0,
-    "most": 1.0
+    "least": 0.0,
+    "most": 0.0
    },
    "ended_by.said_done": {
-    "median": 49.0,
+    "median": 50.0,
     "sd": 0.0,
-    "least": 49.0,
-    "most": 49.0
+    "least": 50.0,
+    "most": 50.0
    },
    "ended_by.ran_out": {
     "median": 0.0,
@@ -75,16 +75,16 @@
     "most": 0.0
    },
    "ended_by.glass_over": {
-    "median": 1.0,
+    "median": 0.0,
     "sd": 0.0,
-    "least": 1.0,
-    "most": 1.0
+    "least": 0.0,
+    "most": 0.0
    },
    "said_done_while_crowded": {
-    "median": 49.0,
+    "median": 50.0,
     "sd": 0.0,
-    "least": 49.0,
-    "most": 49.0
+    "least": 50.0,
+    "most": 50.0
    },
    "interlocks": {
     "median": 0.0,
@@ -93,28 +93,28 @@
     "most": 0.0
    },
    "answers": {
-    "median": 68.0,
+    "median": 18.0,
     "sd": 0.0,
-    "least": 68.0,
-    "most": 68.0
+    "least": 18.0,
+    "most": 18.0
    },
    "arm_seconds.total": {
-    "median": 283.04,
+    "median": 260.09,
     "sd": 0.0,
-    "least": 283.04,
-    "most": 283.04
+    "least": 260.09,
+    "most": 260.09
    },
    "thinking_seconds": {
-    "median": 3.985,
+    "median": 8.665,
     "sd": 0.0,
-    "least": 3.985,
-    "most": 3.985
+    "least": 8.665,
+    "most": 8.665
    },
    "thinking_seconds_per_answer": {
-    "median": 0.059,
+    "median": 0.481,
     "sd": 0.0,
-    "least": 0.059,
-    "most": 0.059
+    "least": 0.481,
+    "most": 0.481
    }
   },
   "each": [
@@ -123,29 +123,29 @@
     "glasses": 198,
     "outcome": {
      "separated": 0,
-     "failed": 1,
-     "unfinished": 49
+     "failed": 0,
+     "unfinished": 50
     },
     "glasses_end": {
      "pickable": 76,
-     "pickable_at_start": 73,
-     "gain": 3,
+     "pickable_at_start": 74,
+     "gain": 2,
      "pickable_share": 0.384,
-     "broken": 1
+     "broken": 0
     },
     "ended_by": {
-     "said_done": 49,
+     "said_done": 50,
      "ran_out": 0,
-     "glass_over": 1
+     "glass_over": 0
     },
-    "said_done_while_crowded": 49,
+    "said_done_while_crowded": 50,
     "interlocks": 0,
-    "answers": 68,
+    "answers": 18,
     "arm_seconds": {
-     "total": 283.04
+     "total": 260.09
     },
-    "thinking_seconds": 3.985,
-    "thinking_seconds_per_answer": 0.0586
+    "thinking_seconds": 8.665,
+    "thinking_seconds_per_answer": 0.4814
    }
   ]
  },
@@ -160,9 +160,9 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 2.42,
-    "thinking_seconds": 0.806,
-    "answers": 1
+    "arm_seconds": 2.92,
+    "thinking_seconds": 0.42,
+    "answers": 0
    },
    {
     "seed": 10001,
@@ -173,9 +173,9 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 2.42,
-    "thinking_seconds": 0.05,
-    "answers": 1
+    "arm_seconds": 2.92,
+    "thinking_seconds": 0.098,
+    "answers": 0
    },
    {
     "seed": 10002,
@@ -186,9 +186,9 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 2.42,
-    "thinking_seconds": 0.043,
-    "answers": 1
+    "arm_seconds": 2.92,
+    "thinking_seconds": 0.242,
+    "answers": 0
    },
    {
     "seed": 10003,
@@ -199,9 +199,9 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 2.42,
-    "thinking_seconds": 0.04,
-    "answers": 1
+    "arm_seconds": 2.92,
+    "thinking_seconds": 0.104,
+    "answers": 0
    },
    {
     "seed": 10004,
@@ -212,9 +212,9 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 42.91,
-    "thinking_seconds": 0.096,
-    "answers": 2
+    "arm_seconds": 42.55,
+    "thinking_seconds": 0.257,
+    "answers": 1
    },
    {
     "seed": 10005,
@@ -225,9 +225,9 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 2.42,
-    "thinking_seconds": 0.046,
-    "answers": 1
+    "arm_seconds": 2.92,
+    "thinking_seconds": 0.082,
+    "answers": 0
    },
    {
     "seed": 10006,
@@ -238,9 +238,9 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 2.42,
-    "thinking_seconds": 0.04,
-    "answers": 1
+    "arm_seconds": 2.92,
+    "thinking_seconds": 0.106,
+    "answers": 0
    },
    {
     "seed": 10007,
@@ -251,9 +251,9 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 2.42,
-    "thinking_seconds": 0.046,
-    "answers": 1
+    "arm_seconds": 2.92,
+    "thinking_seconds": 0.144,
+    "answers": 0
    },
    {
     "seed": 10008,
@@ -264,9 +264,9 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 2.42,
-    "thinking_seconds": 0.049,
-    "answers": 1
+    "arm_seconds": 2.92,
+    "thinking_seconds": 0.162,
+    "answers": 0
    },
    {
     "seed": 10009,
@@ -277,21 +277,21 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 2.42,
-    "thinking_seconds": 0.056,
-    "answers": 1
+    "arm_seconds": 2.92,
+    "thinking_seconds": 0.113,
+    "answers": 0
    },
    {
     "seed": 10010,
     "glasses": 3,
     "outcome": "unfinished",
     "pickable_at_start": 1,
-    "pickable_at_end": 2,
+    "pickable_at_end": 1,
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 16.08,
-    "thinking_seconds": 0.13,
+    "arm_seconds": 29.65,
+    "thinking_seconds": 0.297,
     "answers": 3
    },
    {
@@ -303,9 +303,9 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 2.42,
-    "thinking_seconds": 0.057,
-    "answers": 1
+    "arm_seconds": 2.92,
+    "thinking_seconds": 0.115,
+    "answers": 0
    },
    {
     "seed": 10012,
@@ -316,9 +316,9 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 4.84,
-    "thinking_seconds": 0.097,
-    "answers": 2
+    "arm_seconds": 2.92,
+    "thinking_seconds": 0.118,
+    "answers": 1
    },
    {
     "seed": 10013,
@@ -329,9 +329,9 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 2.42,
-    "thinking_seconds": 0.045,
-    "answers": 1
+    "arm_seconds": 2.92,
+    "thinking_seconds": 0.1,
+    "answers": 0
    },
    {
     "seed": 10014,
@@ -342,9 +342,9 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 2.42,
-    "thinking_seconds": 0.047,
-    "answers": 1
+    "arm_seconds": 2.92,
+    "thinking_seconds": 0.081,
+    "answers": 0
    },
    {
     "seed": 10015,
@@ -355,9 +355,9 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 2.42,
-    "thinking_seconds": 0.048,
-    "answers": 1
+    "arm_seconds": 2.92,
+    "thinking_seconds": 0.118,
+    "answers": 0
    },
    {
     "seed": 10016,
@@ -368,9 +368,9 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 2.42,
-    "thinking_seconds": 0.042,
-    "answers": 1
+    "arm_seconds": 2.92,
+    "thinking_seconds": 0.088,
+    "answers": 0
    },
    {
     "seed": 10017,
@@ -381,9 +381,9 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 2.42,
-    "thinking_seconds": 0.045,
-    "answers": 1
+    "arm_seconds": 2.92,
+    "thinking_seconds": 0.201,
+    "answers": 0
    },
    {
     "seed": 10018,
@@ -394,9 +394,9 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 2.42,
-    "thinking_seconds": 0.045,
-    "answers": 1
+    "arm_seconds": 2.92,
+    "thinking_seconds": 0.121,
+    "answers": 0
    },
    {
     "seed": 10019,
@@ -407,9 +407,9 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 2.42,
-    "thinking_seconds": 0.047,
-    "answers": 1
+    "arm_seconds": 2.92,
+    "thinking_seconds": 0.242,
+    "answers": 0
    },
    {
     "seed": 10020,
@@ -420,9 +420,9 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 2.42,
-    "thinking_seconds": 0.051,
-    "answers": 1
+    "arm_seconds": 2.92,
+    "thinking_seconds": 0.124,
+    "answers": 0
    },
    {
     "seed": 10021,
@@ -433,9 +433,9 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 2.42,
-    "thinking_seconds": 0.044,
-    "answers": 1
+    "arm_seconds": 2.92,
+    "thinking_seconds": 0.093,
+    "answers": 0
    },
    {
     "seed": 10022,
@@ -446,9 +446,9 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 2.42,
-    "thinking_seconds": 0.045,
-    "answers": 1
+    "arm_seconds": 2.92,
+    "thinking_seconds": 0.268,
+    "answers": 0
    },
    {
     "seed": 10023,
@@ -459,9 +459,9 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 2.42,
-    "thinking_seconds": 0.049,
-    "answers": 1
+    "arm_seconds": 2.92,
+    "thinking_seconds": 0.17,
+    "answers": 0
    },
    {
     "seed": 10024,
@@ -472,9 +472,9 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 19.27,
-    "thinking_seconds": 0.137,
-    "answers": 3
+    "arm_seconds": 2.92,
+    "thinking_seconds": 0.158,
+    "answers": 1
    },
    {
     "seed": 10025,
@@ -485,9 +485,9 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 4.84,
-    "thinking_seconds": 0.091,
-    "answers": 2
+    "arm_seconds": 2.92,
+    "thinking_seconds": 0.175,
+    "answers": 1
    },
    {
     "seed": 10026,
@@ -498,9 +498,9 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 17.29,
-    "thinking_seconds": 0.151,
-    "answers": 3
+    "arm_seconds": 28.4,
+    "thinking_seconds": 0.35,
+    "answers": 2
    },
    {
     "seed": 10027,
@@ -511,9 +511,9 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 2.42,
-    "thinking_seconds": 0.045,
-    "answers": 1
+    "arm_seconds": 2.92,
+    "thinking_seconds": 0.155,
+    "answers": 0
    },
    {
     "seed": 10028,
@@ -524,9 +524,9 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 2.42,
-    "thinking_seconds": 0.042,
-    "answers": 1
+    "arm_seconds": 2.92,
+    "thinking_seconds": 0.075,
+    "answers": 0
    },
    {
     "seed": 10029,
@@ -537,9 +537,9 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 2.42,
-    "thinking_seconds": 0.044,
-    "answers": 1
+    "arm_seconds": 2.92,
+    "thinking_seconds": 0.134,
+    "answers": 0
    },
    {
     "seed": 10030,
@@ -550,22 +550,22 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 2.42,
-    "thinking_seconds": 0.045,
-    "answers": 1
+    "arm_seconds": 2.92,
+    "thinking_seconds": 0.134,
+    "answers": 0
    },
    {
     "seed": 10031,
     "glasses": 4,
-    "outcome": "failed",
+    "outcome": "unfinished",
     "pickable_at_start": 1,
     "pickable_at_end": 1,
-    "broken": 1,
-    "ended_by": "a glass went over",
+    "broken": 0,
+    "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 13.55,
-    "thinking_seconds": 0.092,
-    "answers": 2
+    "arm_seconds": 2.92,
+    "thinking_seconds": 0.128,
+    "answers": 1
    },
    {
     "seed": 10032,
@@ -576,9 +576,9 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 31.53,
-    "thinking_seconds": 0.241,
-    "answers": 5
+    "arm_seconds": 25.28,
+    "thinking_seconds": 0.265,
+    "answers": 4
    },
    {
     "seed": 10033,
@@ -589,9 +589,9 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 2.42,
-    "thinking_seconds": 0.043,
-    "answers": 1
+    "arm_seconds": 2.92,
+    "thinking_seconds": 0.137,
+    "answers": 0
    },
    {
     "seed": 10034,
@@ -602,9 +602,9 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 2.42,
-    "thinking_seconds": 0.041,
-    "answers": 1
+    "arm_seconds": 2.92,
+    "thinking_seconds": 0.148,
+    "answers": 0
    },
    {
     "seed": 10035,
@@ -615,9 +615,9 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 2.42,
-    "thinking_seconds": 0.041,
-    "answers": 1
+    "arm_seconds": 2.92,
+    "thinking_seconds": 0.164,
+    "answers": 0
    },
    {
     "seed": 10036,
@@ -628,9 +628,9 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 2.42,
-    "thinking_seconds": 0.038,
-    "answers": 1
+    "arm_seconds": 2.92,
+    "thinking_seconds": 0.141,
+    "answers": 0
    },
    {
     "seed": 10037,
@@ -641,9 +641,9 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 2.42,
-    "thinking_seconds": 0.047,
-    "answers": 1
+    "arm_seconds": 2.92,
+    "thinking_seconds": 0.207,
+    "answers": 0
    },
    {
     "seed": 10038,
@@ -654,9 +654,9 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 2.42,
-    "thinking_seconds": 0.043,
-    "answers": 1
+    "arm_seconds": 2.92,
+    "thinking_seconds": 0.128,
+    "answers": 0
    },
    {
     "seed": 10039,
@@ -667,9 +667,9 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 28.77,
-    "thinking_seconds": 0.153,
-    "answers": 3
+    "arm_seconds": 2.92,
+    "thinking_seconds": 0.239,
+    "answers": 2
    },
    {
     "seed": 10040,
@@ -680,9 +680,9 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 2.42,
-    "thinking_seconds": 0.05,
-    "answers": 1
+    "arm_seconds": 2.92,
+    "thinking_seconds": 0.149,
+    "answers": 0
    },
    {
     "seed": 10041,
@@ -693,9 +693,9 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 2.42,
-    "thinking_seconds": 0.041,
-    "answers": 1
+    "arm_seconds": 2.92,
+    "thinking_seconds": 0.387,
+    "answers": 0
    },
    {
     "seed": 10042,
@@ -706,9 +706,9 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 4.84,
-    "thinking_seconds": 0.093,
-    "answers": 2
+    "arm_seconds": 2.92,
+    "thinking_seconds": 0.462,
+    "answers": 1
    },
    {
     "seed": 10043,
@@ -719,9 +719,9 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 2.42,
-    "thinking_seconds": 0.05,
-    "answers": 1
+    "arm_seconds": 2.92,
+    "thinking_seconds": 0.088,
+    "answers": 0
    },
    {
     "seed": 10044,
@@ -732,9 +732,9 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 4.84,
-    "thinking_seconds": 0.104,
-    "answers": 2
+    "arm_seconds": 2.92,
+    "thinking_seconds": 0.226,
+    "answers": 1
    },
    {
     "seed": 10045,
@@ -745,9 +745,9 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 2.42,
-    "thinking_seconds": 0.047,
-    "answers": 1
+    "arm_seconds": 2.92,
+    "thinking_seconds": 0.093,
+    "answers": 0
    },
    {
     "seed": 10046,
@@ -758,9 +758,9 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 2.42,
-    "thinking_seconds": 0.053,
-    "answers": 1
+    "arm_seconds": 2.92,
+    "thinking_seconds": 0.177,
+    "answers": 0
    },
    {
     "seed": 10047,
@@ -771,9 +771,9 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 2.42,
-    "thinking_seconds": 0.069,
-    "answers": 1
+    "arm_seconds": 2.92,
+    "thinking_seconds": 0.163,
+    "answers": 0
    },
    {
     "seed": 10048,
@@ -784,9 +784,9 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 2.42,
-    "thinking_seconds": 0.058,
-    "answers": 1
+    "arm_seconds": 2.92,
+    "thinking_seconds": 0.169,
+    "answers": 0
    },
    {
     "seed": 10049,
@@ -797,21 +797,23 @@
     "broken": 0,
     "ended_by": "said done",
     "interlocks": 0,
-    "arm_seconds": 2.42,
-    "thinking_seconds": 0.063,
-    "answers": 1
+    "arm_seconds": 2.92,
+    "thinking_seconds": 0.148,
+    "answers": 0
    }
   ]
  ],
  "tally": {
   "tables": 50,
-  "pushes": 7,
+  "pushes": 6,
   "refusals": 12,
   "refused_because": {
    "no way down to pushing height": 1,
    "no way to the start of the push": 11
   },
-  "planning_seconds": 11.579635877162218
+  "planning_seconds": 13.63413870986551,
+  "pictures": 112,
+  "trips": 62
  },
- "wall_seconds": 22
+ "wall_seconds": 32
 }

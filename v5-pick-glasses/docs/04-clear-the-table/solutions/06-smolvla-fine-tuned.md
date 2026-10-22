@@ -7,7 +7,8 @@ and writes, what is fitted, and why so little fitting does not get it far.
 
 ## What it reads and writes
 
-It reads the two wrist pictures from the start of each turn and one fixed sentence: *push
+It reads two wrist pictures, one from each viewing place and both taken new on every turn,
+and one fixed sentence: *push
 the crowded glasses apart so each has room, without tipping any*. It does not read the
 boxes. So it must work out from the pictures alone where the glasses are and which ones to
 push.
@@ -33,9 +34,12 @@ trained, and nothing would warn about it.
 
 ## How it does
 
-It loses 3 pickable glasses and breaks 22 (see the [results](../README.md#results)). With
-the [safety check](safety-check.md) it breaks none, but it still gains nothing. Fitted on
-fewer examples, it scored −1, which is within the same range. It has the same weakness as
+It gains 1 pickable glass and breaks 17 (see the [results](../README.md#results)). With
+the [safety check](safety-check.md) it breaks 5, and it still gains nothing. Measured before
+the solutions chose how much to look, it lost 3 and broke 25. SmolVLA reads both pictures on
+every turn, as it did then, so the difference comes from the random noise it draws for each
+answer, which now starts from the same draw on every table. Fitted on fewer examples, it
+scored −1, which is within the same range. It has the same weakness as
 imitation, since it copies only successes, and two more of its own. It must find the
 glasses in the pictures, and as [the speed
 table](../what-the-pushes-show.md#how-each-solution-sets-its-speed) shows, it gives every

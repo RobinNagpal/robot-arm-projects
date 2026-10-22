@@ -32,9 +32,8 @@ import numpy as np
 import torch
 from nets import WorldModel
 from pusher import Box
+from solving import AS_NEEDED, Done, TurnByTurn
 from torch import nn
-
-from contract import Done
 
 WEIGHTS = Path(__file__).resolve().parent / "weights"
 MODELS = 5
@@ -136,8 +135,9 @@ def train(
     return nets
 
 
-class PlanningSolution:
+class PlanningSolution(TurnByTurn):
     name = "world model (imagines pushes, makes the best)"
+    looking = AS_NEEDED  # it reads the boxes, so one picture that shows every glass is enough
 
     # What a topple costs, how far the five models' disagreement is distrusted, and what a
     # second of arm time costs, all in units of "probability that the push works". Below
@@ -158,10 +158,13 @@ class PlanningSolution:
             net = WorldModel()
             net.load_state_dict(s)
             self.nets.append(net.eval())
+        self.seed = seed
         self.rng = random.Random(seed)
 
-    def begin(self, seed: int) -> None:
-        self.rng = random.Random(seed)
+    def begin(self) -> None:
+        # The search draws its pushes at random. It is given the same draw at the start of
+        # every table, so that a table gets the same answers every time it is run.
+        self.rng = random.Random(self.seed)
         self.refused: set[int] = set()
         self.last = None
 

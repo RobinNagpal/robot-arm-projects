@@ -32,9 +32,8 @@ import numpy as np
 import torch
 from geometry import SAFE  # noqa: F401
 from nets import PushPolicy
+from solving import AS_NEEDED, Done, TurnByTurn
 from torch import nn
-
-from contract import Done
 
 WEIGHTS = Path(__file__).resolve().parent / "weights"
 
@@ -119,8 +118,9 @@ def train(demos: list, epochs: int = 300, seed: int = 0, log=lambda *a: print(*a
     return net.eval()
 
 
-class Imitation:
+class Imitation(TurnByTurn):
     name = "imitation (copies the pushes that worked)"
+    looking = AS_NEEDED  # it reads the boxes, so one picture that shows every glass is enough
 
     def __init__(self, weights: Path | None = None) -> None:
         self.net = PushPolicy()
@@ -128,7 +128,7 @@ class Imitation:
         self.net.eval()
         self.refused: set[int] = set()
 
-    def begin(self, seed: int) -> None:
+    def begin(self) -> None:
         self.refused = set()
         self.last = None
 

@@ -8,6 +8,9 @@ The choice of glass, direction and distance is problem 3's ``plan.choose``,
 imported as it is. It reads the same fields a ``Seen`` carries, so each box is
 turned back into one. The settings are one fixed set, picked once for safety and
 never adjusted: a slow stroke at the lowest height the hand rides at.
+
+It looks only as much as it needs (``solving.AS_NEEDED``), because it reads the boxes and
+not the pictures.
 """
 
 from __future__ import annotations
@@ -16,8 +19,8 @@ import math
 
 import numpy as np
 from pusher import Request, Settings
+from solving import AS_NEEDED, Done, TurnByTurn
 
-from contract import Done
 from partners import Push, Seen
 
 import plan  # problem 3's solution 1, put on the path by partners
@@ -49,15 +52,16 @@ def as_seen(boxes) -> list[Seen]:
     ]
 
 
-class Geometry:
+class Geometry(TurnByTurn):
     name = "geometry, fixed settings"
+    looking = AS_NEEDED
 
     def __init__(self, settings: Settings = SAFE) -> None:
         self.settings = settings
         self.skip: set[int] = set()
         self.last: int | None = None
 
-    def begin(self, seed: int) -> None:
+    def begin(self) -> None:
         self.skip = set()
         self.last = None
 

@@ -1,38 +1,26 @@
-"""One table in the full-arm cell: the arm, MoveIt, the camera on the wrist, and the scoring.
+"""One table in the full-arm cell: the arm, MoveIt, the camera on the wrist, and the marks.
 
 ``ArmBench`` is the physics. ``MoveItLink`` is the planner. ``Pusher`` turns a
-request into four MoveIt motions. This file is what a solution sees: a place to
-look from, a way to ask for a push, and the same marks problem 4 gives.
+request into MoveIt motions. This file puts them together for one table, and is
+what the examiner (``examiner.py``) and the data tools work with. A solution never
+sees it: it is handed an arm and a clock instead.
 
-**Looking costs arm time, as it does in problem 4.** The camera is on the wrist,
-so a look is a trip to the pose the picture is taken from, planned by MoveIt and
-carried out by the arm. The trip is charged like any other motion. After a push
-the hand is standing behind the glass it pushed, looking along the push, so the
-next look needs its own trip; the cell makes it before every decision and the
-cost is part of the cost of a decision.
-
-**What a solution is told.** The picture, and the boxes the box model found in
-it. Nothing else about the glasses: no sizes, no positions from the simulator.
-``measured`` (problem 2's readings, with problem 2's error) is kept for the
-baselines that are meant to be the geometry reference and for the box model's
-own training labels, and is not part of what a learned solution reads.
+**Where the arm looks from.** The box model was trained on pictures from two
+viewing poses, ``VIEW`` and ``VIEW_B``, and both are kept here with the joint
+angles the arm reaches them in.
 """
 
 from __future__ import annotations
 
 import math
-import time
-from dataclasses import dataclass
 
 import arm_camera
-import numpy as np
 from arm_bench import READY, ArmBench
 from moveit_link import MESHES, MoveItLink, flange_goal, generate_urdf
 from pusher import Box, Pushed, Pusher, Request, Settings, scene_boxes, table_box  # noqa: F401
 from work_cell.rack.layout import GLASS_ZONE
 
-import wrist
-from partners import STANDING_TILT_DEG, Seen, Waypoint
+from partners import STANDING_TILT_DEG, Waypoint
 from scoring import pickable_on_table
 
 # Where the arm stands to take a picture: over the middle of the glass zone,
@@ -119,15 +107,6 @@ def view_joints(link: MoveItLink) -> list:
     return view_joint_sets(link)[0]
 
 
-@dataclass(frozen=True)
-class Seen3:
-    """What one look hands over."""
-
-    picture: np.ndarray
-    measured: tuple[Seen, ...]  # problem 2's readings of the glasses the camera could see
-    jaw: Waypoint  # where the fingertips were when the picture was taken
-
-
 class ArmCell:
     """The cell for one table."""
 
@@ -151,7 +130,6 @@ class ArmCell:
         )
         self.pusher = Pusher(self.bench, link)
         self.camera = arm_camera.ArmCamera(self.bench) if camera else None
-        self.known: list[Box] = []  # the boxes of the last look, for planning the trip to the next one
         self.pickable_at_start = pickable_on_table(self.bench)
 
     # ------------------------------------------------------------- the marks
@@ -169,84 +147,11 @@ class ArmCell:
     def arm_seconds(self) -> float:
         return self.bench.arm_seconds
 
-    # ---------------------------------------------------------------- looking
-
-    def go_to_view(
-        self, seconds_left: float = math.inf, view: Waypoint = VIEW, blind: bool = False
-    ) -> tuple[bool, str]:
-        """Take the arm to the pose a picture is taken from, by MoveIt. Returns whether it got there."""
-        # ``blind`` is the trip made before all the glasses are known. The whole
-        # glass zone is then treated as solid up to just above the tallest
-        # glass, so the arm flies over it to look and cannot strike a glass it
-        # has not been told about. A trip made after a full look uses the boxes.
-        extra = [zone_box()] if blind else []
-        self.link.scene(scene_boxes(self.known, 0.01) + extra)
-        motion = self.link.plan(
-            self.bench.joints(),
-            None,
-            vel=0.6,
-            acc=0.6,
-            planning_time=5.0,
-            attempts=3,
-            goal_joints=view_joint_sets()[VIEWS.index(view)],
-        )
-        if not motion.ok:
-            return False, f"no way to the viewing pose: {motion.why}"
-        if motion.seconds > seconds_left:
-            return False, "the trip to look does not fit in the time left"
-        self.bench.run(motion.times, motion.joints)
-        return True, ""
-
-    def look(self) -> Seen3:
-        """The picture from where the hand stands, and the readings of the glasses in it."""
-        jaw = self.bench.tcp()
-        picture = self.camera.view(jaw)
-        seen = tuple(wrist.in_picture(jaw, self.bench.look()))
-        return Seen3(picture, seen, jaw)
-
     # ---------------------------------------------------------------- pushing
 
     def push(self, boxes: list[Box], request: Request, seconds_left: float = math.inf) -> Pushed:
-        self.known = list(boxes)
         return self.pusher.push(boxes, request, seconds_left)
 
     def close(self) -> None:
         if self.camera is not None:
             self.camera.close()
-
-
-class Memory:
-    """The boxes found so far, merged across looks.
-
-    One picture does not show the table: a glass behind another is simply not
-    in it. The arm therefore looks from two places at the start of a table and
-    keeps what it found. Only the glass it pushes moves, so after a push that
-    one box is forgotten and the next look puts it back, and every other box
-    stays where it was.
-    """
-
-    MATCH = 0.03  # two boxes this close are the same glass
-
-    def __init__(self) -> None:
-        self.boxes: list[Box] = []
-
-    def update(self, found: list[Box]) -> None:
-        for box in found:
-            for k, old in enumerate(self.boxes):
-                if math.dist((box.x, box.y), (old.x, old.y)) < self.MATCH:
-                    self.boxes[k] = box
-                    break
-            else:
-                self.boxes.append(box)
-
-    def forget(self, box: Box) -> None:
-        self.boxes = [b for b in self.boxes if math.dist((b.x, b.y), (box.x, box.y)) > 1e-9]
-
-
-def boxes_from_readings(seen) -> list[Box]:
-    """Boxes straight from problem 2's readings. For the baselines and as the box model's answer key."""
-    return [Box(g.x, g.y, g.widest / 2.0, g.height, g.foot / 2.0) for g in seen]
-
-
-def thinking(started: float, cell: ArmCell) -> float:
-    return max(0.0, (time.perf_counter() - started) - cell.bench.seconds)

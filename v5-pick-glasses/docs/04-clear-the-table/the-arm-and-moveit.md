@@ -69,11 +69,21 @@ allow. The ranges say what is possible, not what is good.
 The camera is on the wrist, so looking costs arm time. The camera sits to one side of the
 hand, a little above it, because a camera on the hand's own axis would mostly see the arm.
 
-The arm looks from two places, one on each side of the glass zone, at the start of every
-turn. One place is not enough, because a glass behind another glass does not appear in the
-picture. MoveIt would not know about that glass, and the arm could hit it. While the arm
-travels to look, the whole glass zone is treated as one solid block, so the arm flies over
-it and cannot hit a glass it has not seen yet.
+There are two places to look from, one on each side of the glass zone, and the box model
+was trained on pictures from exactly these two. One place is not always enough, because a
+glass behind another glass does not appear in the picture. MoveIt would not know about that
+glass, and the arm could hit it.
+
+Each solution decides when to look. At the start of a table, every solution takes a picture
+from both places and joins the two lists of boxes. After a push, a solution that reads only
+the boxes goes to the nearer place first. It goes on to the other place only when the first
+picture shows fewer glasses than the table has, because a glass is never taken away, so a
+picture that shows every glass has missed none. SmolVLA reads the two pictures themselves, so
+it takes both on every turn.
+
+A picture costs a quarter of a second of arm time, because the arm must stand still while it
+is taken. While the arm travels to the second place, the whole glass zone is treated as one
+solid block, so the arm flies over it and cannot hit a glass the first picture missed.
 
 ## What the arm cannot do
 
