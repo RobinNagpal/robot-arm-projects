@@ -1,157 +1,181 @@
 # Robot arm projects
 
-A learning repo. It holds robot arm projects, each written to showcase a
-different set of the concepts you run into when a 6-axis arm has to look at
-something and then do something about it: where to put a camera, how pixels
-become millimetres, what a plan is worth once a part lands somewhere other
-than where it was aimed.
+This repo holds robot arm projects that run entirely in simulation, so none of
+them needs hardware to try. The first six folders are one task, taken apart
+into six problems: a UR5e arm has to measure the drinking glasses on a table,
+pick each one up, turn it over and stand it on a drying rack. The seventh is a
+separate project, in which the arm learns to pick up a block and place it.
+This page says what each folder is, why the six problems come in the order
+they do, and where to start reading.
 
 | Folder | What the arm does | State |
 | --- | --- | --- |
-| [`v1-touch-biggest-face`](v1-touch-biggest-face) | Measures cuboids and touches the biggest face of each | Working |
-| [`v2-assemble-table`](v2-assemble-table) | Stands four legs up and lays a table top on them | Working |
-| [`v3-turn-top-flat`](v3-turn-top-flat) | Lifts a table top straight up out of two holders and turns it flat before building the table | Plans only |
-| [`v4-classification-shapes`](v4-classification-shapes) | Names the shape of each block on a table — triangle, square, rhombus, octagon… — with a YOLO model trained on Gazebo pictures | Dataset generator working; model not trained yet |
-| [`v5-learn-pick-place`](v5-learn-pick-place) | Picks up an irregular block and places it on a target, with the movement learned by an ACT policy from scripted demonstrations in MuJoCo, then run unchanged in Gazebo | Working: 74% on unseen blocks in MuJoCo; Gazebo runs ready |
-| [`v5-pick-glasses`](v5-pick-glasses) | Measures each drinking glass on a table, picks it up, turns it over and stands it on a drying rack | Working |
-| [`v6-two-arms-jenga`](v6-two-arms-jenga) | Two arms, programmed two different ways, play Jenga against each other | Plans only |
+| [`01-rack-one-glass`](01-rack-one-glass/README.md) | Measures one glass, picks it up, turns it over and stands it on the rack | **built**, in Gazebo |
+| [`02-segment-glasses`](02-segment-glasses/docs/README.md) | Tells several glasses of one kind apart, as a set of pixels per glass | six solutions built |
+| [`03-push-glasses-apart`](03-push-glasses-apart/docs/README.md) | Drags glasses that stand too close apart, until each can be gripped | seven solutions built |
+| [`04-clear-the-table`](04-clear-the-table/docs/README.md) | Does the same with only the arm's own camera, and says itself when it has finished | built on a UR5e with MoveIt 2, six solutions |
+| [`05-rack-several-kinds`](05-rack-several-kinds/docs/README.md) | Racks every glass on a table that holds several kinds at once | learned version built |
+| [`06-unknown-proportions`](06-unknown-proportions/docs/README.md) | The same, for glasses whose proportions are written down nowhere | stated |
+| [`07-learn-pick-place`](07-learn-pick-place/README.md) | Picks up an irregular block and places it on a target, with the movement learned from demonstrations | working: 74 % on unseen blocks in MuJoCo |
 
-Each folder's name is its version, then what it does. The projects run
-entirely in simulation — Gazebo, ROS 2, MoveIt — so none of them needs
-hardware to try.
+**Each folder stands on its own.** It has its own environment, its own code,
+its own documents, pictures and films, and its own `Makefile`. No folder
+imports code from another. Where a problem builds on an earlier one, it keeps
+its own copy of the files it uses, so that each folder can be read, run and
+changed without the others.
 
-## v1 — touch the centre of the biggest face
+## The six glass problems
 
-Cuboids of random sizes sit on a table. For each one the arm measures it with a
-wrist camera, works out which of its faces has the largest area, and presses a
-fingertip into the middle of that face.
+The glass task is not one problem. It is six, and they get harder in a
+particular way: **each one takes away something the one before it was allowed
+to assume.**
 
-It is the smallest complete example of an arm that looks before it moves:
-carrying a camera to a viewpoint, separating coloured pixels from a grey world,
-turning those pixels into points in the room, fitting a box to the points, and
-finishing with a contact sensor so the last line of the log is a fact rather
-than a calculation. The pick-and-place in the middle is there to serve
-perception, not the other way round — moving a box to the far half of the table
-is how the arm remembers which boxes it has already done, without keeping a
-list.
+![The six problems, and what each one adds](01-rack-one-glass/images/the-six-problems.png)
 
-→ [`v1-touch-biggest-face/README.md`](v1-touch-biggest-face/README.md)
+Read [`problem-statement.md`](01-rack-one-glass/problem-statement.md) first if
+you have not. It says what the task is, why glasses were chosen, what the arm
+is allowed to know, and what counts as done. Everything in the six folders
+follows from it.
 
-## v2 — build a table
+| | Problem | Where it stops | State |
+| --- | --- | --- | --- |
+| **1** | [One glass, start to finish](01-rack-one-glass/docs/README.md) | the glass is on the rack | **built** |
+| **2** | [Segment the glasses](02-segment-glasses/docs/README.md) | a set of pixels per glass | six solutions built |
+| **3** | [Glasses standing too close](03-push-glasses-apart/docs/README.md) | the glasses are far enough apart to grip | seven solutions built |
+| **4** | [Clear the table](04-clear-the-table/docs/README.md) | every glass has room, and the arm has said so | built on a UR5e with MoveIt 2, six solutions |
+| **5** | [Several kinds at once](05-rack-several-kinds/docs/README.md) | the table is clear | learned version built |
+| **6** | [Kinds whose proportions are unknown](06-unknown-proportions/docs/README.md) | the table is clear | stated |
 
-A table top lies flat on two stands and four legs stand on the floor. The arm
-measures the top, works out where the legs have to stand to hold up a top that
-size, moves the four of them there, and lays the top on them.
+## Why they are in this order
 
-→ [`v2-assemble-table/README.md`](v2-assemble-table/README.md)
+Each problem is the one before it with one assumption removed, so each answer
+is something the next problem can stand on.
 
-## v3 — turn the table top flat
+**Problem 1** has one glass on a bare table. Nothing hides anything, the camera
+can go wherever it likes, and the glass is reachable where it stands. That
+leaves the difficulties that are about the *object* rather than about the
+scene. Its size has to be measured. Its weight cannot be seen at all. There is
+usually only one place it may be held. And the set-down has to be felt rather
+than driven.
 
-The same job as v2, with one thing made harder: the table top starts standing
-upright, held between two heavy holders that cannot move, instead of lying
-flat. The arm lifts it straight up out of the holders, turns it 90° to flat
-without dropping it, and lays it on the legs without knocking one over.
+**Problem 2** puts several glasses of the same kind on the table. The kinds are
+known, so naming is not the difficulty. Telling one glass from another is — and
+worse, the arm can no longer photograph each one from whichever side it likes,
+because the other glasses are in the way of the camera or of the arm.
 
-There is no code yet. The work is in two parts:
+**Problem 3** starts from problem 2's answer. Some of those glasses are close
+enough together that the gripper cannot get round one without fouling its
+neighbour. They have to be moved apart by **dragging them across the table**,
+because lifting one is the thing that is not possible yet.
 
-1. **Now:** turning the top 90° in the air — with one joint, or with several
-   joints together — and what that asks of each joint.
-2. **Next:** resting the top on two legs, then tilting it down, with the arm
-   moving as it turns, until it sits on all four.
+**Problem 4** keeps problem 3's task and takes away the help that came from
+outside the arm. In problem 3 a camera fixed above the table sees every glass
+at once, and the arm is handed one push at a time: something outside it decides
+whether that push may be carried out, marks it, and says when the table is
+finished. Neither of those is part of the arm. Here the only camera is the one
+the arm carries, so looking at a corner of the table costs a movement, and
+nothing is handed over push by push. The arm looks, pushes, looks again, and
+says for itself when it has finished. The table is then marked once, on how
+the glasses are arranged when the arm stopped. It ends where problem 3 ends,
+with every glass given room, so problem 5 can stand on either answer.
 
-→ [`v3-turn-top-flat/README.md`](v3-turn-top-flat/README.md)
+**Problem 5** joins the first three up and adds the part none of them has:
+several kinds at once, so the rule changes per glass and naming the kind
+becomes load-bearing.
 
-## v4 — name the shape of each block
+**Problem 6** takes away the proportions. The kinds are still the four shapes,
+but no two glasses of a kind are alike and nothing is written down. This is the
+problem the whole project exists for, and the reason every earlier problem
+refuses to record a measurement.
 
-Blocks cut in seven shapes — triangle, square, rectangle, rhombus, pentagon,
-hexagon, octagon — lie on a table, and a camera has to find each one and name
-its shape. It is the first project where the seeing is learned rather than
-written: a YOLO model trained on pictures rendered in Gazebo, compared against
-a corner-counting baseline that needs no training.
+## What is in each folder
 
-So far the folder holds the dataset: a generator that renders labelled
-pictures with domain randomization — every colour, table, light and camera
-angle drawn at random — and a second test set drawn from conditions the model
-never trains on, to measure how far it generalises. Training, the baseline and
-the arm come next.
+Each problem folder keeps its documents in `docs/`, and `docs/problem.md`
+states the problem in full — what
+is on the table, what the arm is not told, what makes it hard, and what "done"
+means. After that they differ, because the problems do:
 
-→ [`v4-classification-shapes/README.md`](v4-classification-shapes/README.md)
+- **Problems 1, 5 and 6** are the whole pipeline, so they are written as the
+  same six *steps*: find it, measure it, name it, choose the grip, squeeze,
+  turn it over. Problem 1 gives each step a document of its own, because it is
+  built. Problems 5 and 6 take the six as a section of `problem.md`, saying
+  what changes at each and nothing else.
+- **Problems 2 and 3** are not the whole pipeline and do not have all the
+  steps. Problem 2 stops at a set of pixels per glass; problem 3 stops at
+  glasses far enough apart to be gripped. Each has a `solution-overview.md`
+  instead — nine and eleven solutions respectively, grouped as programmed,
+  hybrid and learned, with which one is chosen and why. Both open with the three
+  ideas the comparisons turn on. Where a learned part can sit in a pipeline.
+  What it takes for a machine to choose its own next measurement. And the rule
+  that every solution in them can be built inside the simulator. Each
+  folder also has a `learned-with-hardware.md` holding the answers that cannot
+  — a foundation model, a fine-tune, a reinforcement-learning policy — beside
+  the condition each one fails.
+- **Problem 4** does not pick anything up either, so it has no six steps. Its
+  `README.md` holds the whole picture and every result, `problem.md` says how a
+  run is scored, three pages explain the arm, the box model and the data, and
+  `solutions/` has one short page per solution.
+- **Problem 5** has both: the six steps in `problem.md`, and a `solutions/`
+  folder with a `solution-overview.md` and nine solutions, split into
+  `programmed/` and `learned/` as problem 2's are. Most of them are
+  combinations of problem 1, 2 and 3 pieces, and the overview says which piece
+  sits at which stage of a run. The learned one is built, in
+  [`08-learned-pipelines`](05-rack-several-kinds/08-learned-pipelines/README.md).
 
-## v5 — learn to pick and place
+## What does not work yet
+
+[`known-gaps.md`](01-rack-one-glass/docs/known-gaps.md) lists the failures that are known but not yet
+fixed, such as the glass sizes the grip rules cannot handle. It is about the
+code as it stands, which is to say about problem 1.
+
+## The cell
+
+[**The cell**](01-rack-one-glass/docs/the-cell.md) describes the room every problem works in: the
+layout with its dimensions, the two poses the camera is ever put in, all four
+sensors, the four kinds of glass, and the vocabulary — survey, station,
+standoff, nadir, splay, footprint. Every number on it is read from the
+project's own constants rather than typed in. The solution documents point at
+it rather than restating it.
+
+## The pictures
+
+Every diagram in these documents is drawn by a script, and each problem keeps
+its scripts in its own `images/generators/` folder, next to the pictures they
+write. Nothing here is a hand-drawn picture kept in step by hand.
+
+Problem 1's [`make_images.py`](01-rack-one-glass/images/generators/make_images.py)
+draws the problem-1 walkthrough by importing problem 1's own modules and
+plotting what they return, so if a rule changes, the picture changes with it
+the next time the script is run.
+[`make_problem_images.py`](01-rack-one-glass/images/generators/make_problem_images.py)
+draws the diagrams that describe the problems themselves. Problems 2, 3 and 4
+have generators of their own, which compute their own geometry or read their
+own results, so the arithmetic in a picture and the arithmetic in the prose
+beside it come from the same numbers.
+
+## Where the techniques come from
+
+None of the perception or the gripping here is invented for this project. Each
+step is one named technique, and the places they are set out side by side are
+the **object perception** and **gripping** areas of robotics-basics:
+[finding and measuring](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/06_object-perception/01_overview.md)
+and [gripping](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/07_gripping/01_overview.md).
+[The problem-1 walkthrough](01-rack-one-glass/docs/README.md#where-the-techniques-come-from)
+has the full map, and every document links to the sections it uses.
+
+There is also a design document for this exact task, written before any of the
+code: [standing an empty glass upside down on a drying
+rack](https://github.com/RobinNagpal/robotics-basics/blob/main/docs/10_one-arm-training/07_case-study/01_place-glass.md).
+
+## 07 — learn to pick and place
 
 An irregular block lies somewhere on the table and a red target somewhere
-else; the arm picks the block up and sets it down on the target. It is the
-first project where the movement is learned rather than written: a scripted
-expert does the job a few hundred times, every joint angle it commands is
-recorded, and an ACT policy (Action Chunking with Transformers, from
-LeRobot) learns to do the same from the arm's joint angles and where the
-block is. The block is found with plain geometry from a depth camera. It
-runs in MuJoCo instead of Gazebo, because learning from demonstrations needs
-hundreds of fast, repeatable episodes.
+else, and the arm picks the block up and sets it down on the target. Here the
+movement is learned rather than written: a scripted expert does the job a few
+hundred times, every joint angle it commands is recorded, and an ACT policy
+(Action Chunking with Transformers, from LeRobot) learns to do the same from
+the arm's joint angles and where the block is. The block is found with plain
+geometry from a depth camera. It runs in MuJoCo instead of Gazebo, because
+learning from demonstrations needs hundreds of fast, repeatable episodes.
 
-→ [`v5-learn-pick-place/README.md`](v5-learn-pick-place/README.md)
-
-## v5 — pick up a glass and stand it upside down
-
-Drinking glasses of several shapes stand on a table. The arm measures each one,
-works out where on it there is anything safe to hold, picks it up, turns it
-through 180 degrees and stands it mouth-down on a drying rack.
-
-The constraint that shapes the whole project is that **the shapes are known and
-the sizes are not**. The arm knows what a wine glass is — a bowl on a stem on a
-foot — but not how tall this one is or where its stem begins, and it cannot be
-told, because two wine glasses from different sets do not share proportions.
-So there is no table of measurements anywhere in it. There are rules about
-shapes, applied to a profile the camera measured a second earlier, and adding a
-new kind of glass means writing a rule rather than measuring a glass.
-
-It is also where this repo stops being able to rely on the things that make a
-cuboid easy. A depth camera returns nothing where a glass is, so the hole in
-the depth image is the signal. A glass's walls are not parallel, so there is
-usually exactly one place on it a flat pad can sit. Its weight does not follow
-from its size, because wall thickness is invisible, so the arm lifts it ten
-millimetres and weighs it before committing. And dropping one costs more than a
-retry, so every doubtful glass is left standing with a reason written next
-to it.
-
-→ [`v5-pick-glasses/README.md`](v5-pick-glasses/README.md)
-
-## v6 — two arms play Jenga
-
-Two identical arms face each other across a Jenga tower and take turns, each
-programmed with a different approach; whichever makes the tower fall loses. It
-adds the two things none of the other projects have: information that can only
-be found by touch — which blocks are loose — and an opponent.
-
-There is no code yet. The folder sets out the game precisely enough for a
-referee program to judge it, and compares five ways to program a player —
-rules, feel, an internal physics model, reinforcement learning and imitation
-learning — before choosing which two play first.
-
-→ [`v6-two-arms-jenga/README.md`](v6-two-arms-jenga/README.md)
-
-## Why there are two
-
-`v2` is not `v1` cleaned up. It exists to push on the two things `v1` deliberately
-made easy.
-
-**How much the robot is told.** In `v1` the table is a known quantity: its
-height, its edges and the two halves it is divided into are numbers in the code,
-and only the cuboids have to be measured. In `v2` the robot knows where it is
-bolted down and how its own gripper and camera are built, and nothing else — the
-floor height, where the top is and how big, and where every leg is and how long
-are all drawn at random per run and have to be measured. That is the harder and
-more realistic arrangement, and it is easy to break by accident, so a test
-fails if any robot code so much as imports the simulator's side.
-
-**One object, or several that have to agree.** `v1` measures a box and acts on
-that one box; a millimetre of error costs a millimetre. `v2` has to make four
-legs and a top into a single thing that stands up, where being right depends on
-every part at once. Parts land a few millimetres off where they were aimed and
-sometimes tip over, so the arm has to look again after each placement and put
-the top down over where the legs actually are. Measure, act, look again, correct
-— that loop is the whole point of the second project.
-
-Each working folder is a project of its own. They share no code and no
-configuration, only the same tools, and each has its own environment and its
-own `make run`. Start with the README inside whichever one you are reading.
+→ [`07-learn-pick-place/README.md`](07-learn-pick-place/README.md)

@@ -1,0 +1,109 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://wiki.ros.org/xacro">
+
+  <!--
+    An Intel RealSense D405 depth camera bolted beside the gripper, looking the
+    same way the fingers point.
+
+    The shape, the mass and the frames are Intel's own: `realsense2_description`
+    ships the model, so this file includes it and adds only the mount and the
+    Gazebo sensor that renders through it.
+
+    The D405 is the short-range camera of the RealSense family, and that is why
+    it is the one here. Its working range is about 70 mm to 500 mm, which is
+    uncomfortably close for a mobile robot and exactly right for a camera that
+    rides on a wrist and is stood 300 mm off a glass to measure it. The other
+    common choice, the D435, starts at about 300 mm, so the closest look this
+    task takes would be at the very edge of what it can do.
+
+    Because it rides on the wrist, pointing the tool at something is the same
+    as pointing the camera at it, and the arm can walk the camera around a
+    glass to see whether it has a handle, which one side-on view cannot show.
+
+    Two things about the real camera matter to the code that reads it.
+
+    **Its depth and colour pictures come from the same place.** Intel's own
+    description puts the colour sensor at no offset from the depth sensor on
+    this model, unlike the D435, so one optical frame serves for both and
+    glasses/perception.py can project a colour pixel and a depth pixel with the
+    same arithmetic.
+
+    **It sees much more than the camera this project used to assume.** The D405
+    covers about 87 degrees across, where the invented camera covered 60. That
+    changes how much table one picture holds and therefore how many places the
+    arm has to stand to survey it. Nothing in the code needed changing for it,
+    because the measurements read the focal length out of the camera's own
+    `camera_info` message rather than assuming one.
+  -->
+
+  <xacro:include filename="$(find realsense2_description)/urdf/_d405.urdf.xacro"/>
+
+  <xacro:macro name="wrist_camera" params="prefix parent">
+
+    <!-- Across the fingers rather than along them, and at the back of the
+         gripper's body rather than level with its middle. Across, because the
+         fingers swing in the tool's x direction and reach about 74 mm out
+         either way when the gripper is open, so a camera mounted that way
+         would sit inside their swing; across them the widest thing is the
+         gripper's own 75 mm body. At the back, because this camera cannot
+         focus closer than about 70 mm and the closest look it takes is down
+         the fingers at a glass they are already round. The reasoning, and the
+         distances it comes out at, are in arm/dimensions.py beside
+         CAMERA_MOUNT. Turned a quarter turn so the camera looks along the
+         tool's z axis, which is the direction the fingers point. -->
+    <!-- The optical frames are optional in Intel's description and are off by
+         default, because on real hardware the camera driver publishes better
+         ones from the calibration stored in the device. In simulation there is
+         no device to read, so the nominal frames are what there is, and the
+         measurements need one: glasses/perception.py projects pixels in it. -->
+    <xacro:sensor_d405
+      parent="${parent}"
+      name="${prefix}wrist_camera"
+      use_nominal_extrinsics="true">
+      <origin xyz="0 0.050 0.010" rpy="0 ${-pi/2} ${-pi/2}"/>
+    </xacro:sensor_d405>
+
+    <gazebo reference="${prefix}wrist_camera_link">
+      <sensor name="wrist_camera" type="rgbd_camera">
+        <always_on>true</always_on>
+        <update_rate>15</update_rate>
+        <topic>wrist_camera</topic>
+        <camera>
+          <!-- 87 degrees across, which is what Intel publish for the D405. -->
+          <horizontal_fov>1.518</horizontal_fov>
+          <!-- One of the camera's own stream sizes, in its real 16:9 shape.
+               The shape has to be right, because Gazebo works the vertical
+               field of view out from it: at 4:3 this camera would appear to
+               see 71 degrees up and down instead of the 56 it really sees.
+
+               The size is the smallest real mode that still resolves the
+               table finely enough. A wide lens spreads its pixels over more
+               ground, so this camera needs more of them than the 60 degree
+               one it replaced: at 424 x 240 a pixel covers 2.0 mm of table
+               from the survey height, which is coarser than the millimetre
+               the measurements are reported to. At 640 x 360 it covers
+               1.33 mm, which is fine, and the frames are still small enough
+               to cross the ROS bridge comfortably. -->
+          <image>
+            <width>640</width>
+            <height>360</height>
+            <format>R8G8B8</format>
+          </image>
+          <!-- The camera's real working range. Modelling it as a hard limit is
+               stricter than the hardware, which returns noisy depth outside it
+               rather than nothing, and that is deliberate: a limit the
+               simulator enforces is one that cannot be forgotten. It is also
+               what caps SURVEY_HEIGHT in arm/dimensions.py, because a survey
+               flown higher than this would be reading depth the camera cannot
+               stand behind. -->
+          <clip>
+            <near>0.07</near>
+            <far>0.50</far>
+          </clip>
+          <optical_frame_id>${prefix}wrist_camera_depth_optical_frame</optical_frame_id>
+        </camera>
+      </sensor>
+    </gazebo>
+
+  </xacro:macro>
+</robot>

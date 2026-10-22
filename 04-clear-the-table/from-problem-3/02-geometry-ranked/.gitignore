@@ -1,0 +1,5 @@
+# Problem 3's labelled rows and fitted trees. Neither is kept in git: problem 3
+# makes them with `make train` in its 02-geometry-ranked folder, and they are
+# copied here from there.
+data/
+model/

@@ -1,0 +1,22 @@
+# Line length matches the width the code and comments are written to.
+line-length = 110
+target-version = "py312"
+# Copies of other folders' files are linted where they came from, and kept
+# exactly as they are there. The picture generators were never part of the lint.
+extend-exclude = ["images", "work-cell", "from-problem-3"]
+
+[lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM"]
+
+[lint.isort]
+# The bench's modules import each other by bare name, and so do the solutions.
+known-first-party = ["clock", "contract", "film", "judging", "keeping_clear", "open_run",
+                     "partners", "scoring", "stopping", "tables", "wrist"]
+# `plan` is problem 3's planner, from the copy in from-problem-3/, reached only
+# because partners.py puts its folder on the path. It is named here so that
+# isort keeps it below partners, which is the order it has to be imported in.
+known-local-folder = ["plan"]
+# `film` is this problem's own and is named above. Problem 3 has a module of
+# that name too, which this one borrows from, but it is loaded from its path
+# under another name rather than imported, so it never appears as an import.
+known-third-party = ["bench", "mujoco", "top_view", "work_cell"]

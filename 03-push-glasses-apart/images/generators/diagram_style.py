@@ -1,0 +1,396 @@
+"""Shared look and shared arithmetic for the 03-push-glasses-apart diagrams.
+
+One module so that eleven separately written scripts produce pictures that sit
+beside each other without looking like eleven different documents. Import it,
+call ``new``/``save``, and use the colour names rather than literals.
+
+    from diagram_style import GLASS, GOOD, INK, MUTED, WARN, bare, new, save
+
+Every script in this folder writes into ``images/`` and is run from
+this problem's folder:
+
+    pixi run python images/generators/make_01_images.py
+
+The second half of this module is the arithmetic problem 3 turns on: whether a
+pushed glass slides or tips, how much clear room a gripper needs round a glass,
+and which pairs on a table are too close to grip. It lives here rather than in
+each script because eleven documents disagreeing about when a glass topples
+would be worse than eleven documents that look different.
+
+Nothing here is a glass measurement. The sizes below are the *kind's* declared
+range, taken from ``glasses/shapes.py``, which is a rule about what may be
+drawn and not a fact about any one glass.
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+import matplotlib
+import numpy as np
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt  # noqa: E402
+
+IMAGES = Path(__file__).resolve().parents[1]
+
+# The palette the rest of the project's diagrams use.
+INK = "#22272e"      # text, and anything structural
+MUTED = "#8b949e"    # captions, and things in the background
+GLASS = "#4c8fd6"    # the object being reasoned about
+WARN = "#d9694b"     # the failure, the thing going wrong
+GOOD = "#5aa469"     # the fix, the thing going right
+PAPER = "#ffffff"
+
+TITLE_SIZE = 12
+LABEL_SIZE = 9
+NOTE_SIZE = 8.4
+
+
+# --------------------------------------------------------------------------- #
+# The cell, in millimetres. Every one of these is read from the project's own
+# source rather than written down again here; the file it came from is named so
+# that a reader can check it.
+# --------------------------------------------------------------------------- #
+
+GRIPPER_MAX_OPENING = 85.0   # arm/dimensions.py: the Robotiq 2F-85's stroke
+GRIPPER_MAX_GRIP = 80.4      # arm/dimensions.py: the widest glass it can hold
+LOWEST_GRIP = 50.0           # arm/dimensions.py: below this the force sensor is through the table
+PAD_HEIGHT = 22.0            # arm/dimensions.py: the 2F-85's pad
+
+# The height a glass is really pushed at, which is NOT where the jaw's middle
+# rides.
+#
+# A glass that is wider higher up — which every tapered glass is, by
+# definition — meets the jaw's top edge first, and that is where the push
+# lands. 03-push-glasses-apart/bench/bench.py says so in as many words: "A
+# glass that is wider higher up meets the jaw here first, so this, not
+# PUSH_HEIGHT, is how high it is pushed."
+#
+# Both numbers grew when the invented blade became a real Robotiq 2F-85. The
+# hand has to be turned on its side to fit between the glasses at all, and on
+# its side it reaches 69 mm below its own middle, so it rides at 75 mm rather
+# than 50. Its leading stretch is also 63 mm tall where the blade was 30, so
+# the top edge stands 32 mm above the middle rather than 15.
+#
+# The consequence is not a detail. Pushing at the top edge rather than the
+# middle takes the share of tapered glasses that can be pushed at all from a
+# tenth to nothing, and it now moves every other kind as much: straight from
+# 57% to 7%, stemmed from 86% to 22%, short-stemmed from 55% to nothing, all at
+# the simulator's own friction.
+FINGER_HEIGHT = 63.4         # 03-push-glasses-apart/bench/bench.py, rolled
+PUSH_HEIGHT = 75.0           # the middle of the jaw, as low as the rolled hand goes
+JAW_TOP = PUSH_HEIGHT + FINGER_HEIGHT / 2.0   # 106.7 mm
+MIN_SEPARATION = 150.0       # glasses/spawn.py: guaranteed between centres when problem 2 ended
+
+# How much clear room the open hand needs round a glass's middle before it can
+# close on it. It is how far the widest part of the open hand reaches from its
+# own middle, which on a 2F-85 is the fingers and not the pads. Kept as one
+# number here so that eleven documents quote the same one.
+GRIP_ROOM = 76.2
+TOUCHING_APART = 75.0                    # rims in contact, for the widest pair
+
+# The symmetric worst case: two of the widest glasses of the kind. Useful as a
+# single conservative number, but it is NOT the test the code uses. The real
+# test is ``has_room`` below, and it is asymmetric.
+GRIPPABLE_APART = 2.0 * GRIP_ROOM        # 140 mm between middles
+
+# What the simulator actually uses for friction between glass and table.
+# 03-push-glasses-apart/bench/bench.py TABLE_FRICTION. The arm is not told this number: it is
+# the ground truth a run is scored against, not an input to any decision. That
+# distinction is the whole of solution 9, and every document that quotes a
+# friction figure has to say which of the two it means.
+TABLE_FRICTION = 0.35
+
+# Where the glasses may stand, and where the arm is bolted down.
+# rack/layout.py GLASS_ZONE and table/layout.py ROBOT_BASE.
+GLASS_ZONE = (320.0, 640.0, -440.0, -80.0)   # x from, x to, y from, y to
+ROBOT_BASE = (0.0, 0.0)
+COMFORTABLE_REACH = (300.0, 780.0)           # arm/dimensions.py
+RACK_AREA = (320.0, 380.0, 340.0, 380.0)     # rack/layout.py, on the arm's other side
+
+# The straight-down view, which is the only thing solutions 5 and 6 are shown.
+# All of it from 03-push-glasses-apart/bench/bench.py.
+TOP_VIEW_HEIGHT = 750.0        # the camera, directly above the middle of the zone
+TOP_VIEW_SIZE = (384, 384)     # rows, columns. Square, because the frame is
+TRAVEL_HEIGHT = 300.0          # where the jaw travels between pushes
+
+# The middle of the picture, and half its frame measured on the table top.
+# bench.py derives the half frame this same way, and the reason is worth
+# keeping with it: seen from above, a glass leans outwards from the point under
+# the camera, so the frame has to hold the zone and a little more if every
+# glass on it is to be whole.
+VIEW_CENTRE = ((GLASS_ZONE[0] + GLASS_ZONE[1]) / 2.0, (GLASS_ZONE[2] + GLASS_ZONE[3]) / 2.0)
+TOP_VIEW_HALF_FRAME = (
+    (max(GLASS_ZONE[1] - GLASS_ZONE[0], GLASS_ZONE[3] - GLASS_ZONE[2]) / 2.0 + GRIP_ROOM / 2.0)
+    * TOP_VIEW_HEIGHT / (TOP_VIEW_HEIGHT - TRAVEL_HEIGHT)
+)
+
+# Where the examiner leaves the jaw between actions: bench.py _lift parks it at
+# (0, 500) in the cell, 1300 mm up, and table/layout.py puts the table top at
+# 750 mm. So it stands 550 mm above the table and outside the picture's frame,
+# which is what makes the pose a solution reads back a constant.
+PARK = (0.0, 500.0, 1300.0 - 750.0)
+
+# How often the examiner consumes one waypoint, seconds, and the speeds its own
+# push macro moves at, mm/s. bench.py WAYPOINT_PERIOD, FEEL_SPEED, PUSH_SPEED
+# and TOP_SPEED. The period is why how far apart a chunk's waypoints are *is*
+# how fast the jaw is being asked to go, and TOP_SPEED is where follow() holds
+# it: the fastest the cell ever moves the jaw, which is the speed it descends
+# at, so it never binds on a path the examiner itself produces.
+WAYPOINT_PERIOD = 0.05
+FEEL_SPEED = 10.0
+PUSH_SPEED = 20.0
+TOP_SPEED = 200.0
+
+# The tapered kind's declared range, from glasses/shapes.py KIND_RANGES.
+# base_fraction is the base diameter as a fraction of the rim, which is what
+# decides whether a glass slides or tips.
+KIND_TALLEST = 230.0
+KIND_SHORTEST = 90.0
+KIND_WIDEST = 105.0
+KIND_NARROWEST = 65.0
+BASE_FRACTION = (0.38, 0.58)
+
+# The cast these diagrams draw, as (height, rim, base_fraction) in millimetres.
+# A wide-footed glass that pushes easily, a narrow-footed tall one that does
+# not, and two in between. All four are inside the range above, so none of them
+# is a special case invented to make a picture work.
+STURDY = (150.0, 100.0, 0.58)     # base 58 mm: slides even on a grippy table
+TIPPY = (225.0, 70.0, 0.38)       # base 27 mm: tips before the gripper can reach low enough
+MIDDLING = (180.0, 90.0, 0.48)    # base 43 mm
+SHORT_ONE = (95.0, 68.0, 0.50)    # base 34 mm
+CAST = (STURDY, TIPPY, MIDDLING, SHORT_ONE)
+
+# Friction between glass and table. Nothing in this cell measures it, which is
+# the point: the arithmetic below is only as good as a guessed number, and
+# every document that uses it has to say so. This pair is the range bench.py
+# itself names for glass on a dry wooden top, and the documents quote it, so a
+# picture drawing anything narrower claims more than the project knows.
+MU_LOW = 0.2
+MU_HIGH = 0.5
+
+
+def agrees(shown: float, actual: float, places: int = 1) -> bool:
+    """Whether a figure quoted in this file matches the bench's own.
+
+    The constants above are written to a tenth of a millimetre, because that
+    is the precision a label on a diagram can carry. The bench works several
+    of them out from the gripper's linkage instead of writing them down, so
+    they come with a long decimal tail, and comparing exactly would fail on
+    the tail rather than on a real disagreement. Comparing at the precision
+    this file quotes catches the drift the guards are there for and nothing
+    else.
+    """
+    return round(shown, places) == round(actual, places)
+
+
+def base_width(rim: float, base_fraction: float) -> float:
+    """The diameter of the foot a glass actually stands on."""
+    return rim * base_fraction
+
+
+def topple_height(base: float, mu: float) -> float:
+    """The height above the table at which a push stops sliding and starts tipping.
+
+    Pushing at height h on an object whose base is ``base`` across, standing on
+    a table it rubs against with friction ``mu``, the object slides while
+    h < a / mu, where a is half the base. At and above that height the moment
+    about the leading edge of the foot wins and it goes over.
+
+    This is the one piece of arithmetic every solution in problem 3 shares, and
+    it takes a guessed ``mu``, so the answer is a limit rather than a promise.
+    """
+    if base <= 0.0:
+        raise ValueError("a glass has to stand on something")
+    return (base / 2.0) / mu
+
+
+def tips(base: float, push_height: float, mu: float) -> bool:
+    """Whether a push at this height on this glass tips it over instead of sliding it."""
+    return push_height >= topple_height(base, mu)
+
+
+def pushable(base: float, mu: float, lowest: float = LOWEST_GRIP) -> bool:
+    """Whether this glass can be pushed at all by this gripper.
+
+    The gripper cannot get below ``lowest`` without its own body going through
+    the table, so a glass whose topple height is below that has no safe place
+    to be pushed. The right answer for it is to refuse, not to try gently.
+    """
+    return topple_height(base, mu) > lowest
+
+
+def push_margin(base: float, mu: float, lowest: float = LOWEST_GRIP) -> float:
+    """How many millimetres of room there are between the lowest push and the topple.
+
+    Negative means the glass cannot be pushed safely at all. Small and positive
+    means it can, but only if the arm's height control is better than the
+    margin, which is worth saying out loud in a document.
+    """
+    return topple_height(base, mu) - lowest
+
+
+def has_room(point, others) -> bool:
+    """Whether a glass at ``point`` can be gripped: no other glass's edge inside GRIP_ROOM.
+
+    ``others`` is (x, y, widest width) for every other glass on the table, in
+    millimetres. This is the project's own test, copied from
+    ``03-push-glasses-apart/bench/bench.py``, and it is the one to use.
+
+    It is **not symmetric**. The room a glass needs depends on how wide its
+    neighbour is, not on how wide it is, so a narrow glass beside a wide one is
+    crowded while the wide one beside it is not. A symmetric centre-to-centre
+    threshold gets that backwards, and gets the count wrong.
+    """
+    return all(
+        float(np.hypot(point[0] - ox, point[1] - oy)) >= GRIP_ROOM + width / 2.0
+        for ox, oy, width in others
+    )
+
+
+def grippable(a, b, width_b: float = KIND_WIDEST) -> bool:
+    """Whether a glass at ``a`` has room, given one neighbour at ``b`` of width ``width_b``.
+
+    A two-glass shorthand for ``has_room``. The default neighbour is the widest
+    the kind allows, which makes the answer the conservative one; pass the real
+    width when it is known.
+    """
+    return has_room(a, [(b[0], b[1], width_b)])
+
+
+def crowded_pairs(positions) -> list[tuple[int, int]]:
+    """Every pair on the table that is too close for the gripper, as index pairs."""
+    out = []
+    for i in range(len(positions)):
+        for j in range(i + 1, len(positions)):
+            if not grippable(positions[i], positions[j]):
+                out.append((i, j))
+    return out
+
+
+def room_around(positions, index) -> float:
+    """How much clear room a glass has: the distance to its nearest neighbour.
+
+    Returned in millimetres between centres, so compare it against
+    ``GRIPPABLE_APART`` rather than against ``GRIP_ROOM``.
+    """
+    here = positions[index]
+    others = [p for k, p in enumerate(positions) if k != index]
+    if not others:
+        return float("inf")
+    return min(float(np.hypot(here[0] - p[0], here[1] - p[1])) for p in others)
+
+
+def in_zone(point, margin: float = 0.0) -> bool:
+    """Whether a destination is inside the table the glasses are allowed to be on."""
+    x_from, x_to, y_from, y_to = GLASS_ZONE
+    return (x_from + margin <= point[0] <= x_to - margin
+            and y_from + margin <= point[1] <= y_to - margin)
+
+
+def in_reach(point) -> bool:
+    """Whether the arm can comfortably stand over a point on the table."""
+    low, high = COMFORTABLE_REACH
+    return low <= float(np.hypot(point[0] - ROBOT_BASE[0], point[1] - ROBOT_BASE[1])) <= high
+
+
+def destination_ok(point, others, margin: float = 0.0) -> bool:
+    """Whether a glass could be pushed to ``point`` and be better off there.
+
+    Clear of every other glass by the gripper's own requirement, inside the
+    zone, and inside the arm's reach. Moving one glass out of a crowd and into
+    a different crowd is the mistake this is here to prevent.
+    """
+    if not in_zone(point, margin) or not in_reach(point):
+        return False
+    return all(grippable(point, other) for other in others)
+
+
+# --------------------------------------------------------------------------- #
+# Drawing
+# --------------------------------------------------------------------------- #
+
+def new(width: float, height: float, columns: int = 1):
+    """A figure with a white background, and one or more bare panels."""
+    figure, axes = plt.subplots(1, columns, figsize=(width, height))
+    figure.patch.set_facecolor(PAPER)
+    for axis in (axes if columns > 1 else [axes]):
+        axis.set_facecolor(PAPER)
+    return figure, axes
+
+
+def bare(axis) -> None:
+    """No ticks, no frame. Most of these pictures are drawings, not plots."""
+    axis.set_xticks([])
+    axis.set_yticks([])
+    for side in axis.spines.values():
+        side.set_visible(False)
+
+
+def save(figure, name: str) -> Path:
+    """Write into images/ and say where it went."""
+    IMAGES.mkdir(parents=True, exist_ok=True)
+    path = IMAGES / name
+    figure.savefig(path, dpi=150, bbox_inches="tight", facecolor=PAPER)
+    plt.close(figure)
+    print(f"wrote images/{name}")
+    return path
+
+
+def glass_from_above(axis, centre, rim, base_fraction=0.48, colour=None, alpha=0.30,
+                     edge=None, lw=1.0, zorder=3, foot=True):
+    """One standing glass seen from straight above: its rim, and the foot it stands on.
+
+    Drawing both matters here. Problem 3 reasons about the foot, because that
+    is what decides tipping, and about the rim, because that is what the
+    gripper has to get round. They are not the same circle and a picture that
+    shows only one of them hides the whole difficulty.
+    """
+    from matplotlib.patches import Circle as _Circle
+    colour = colour or GLASS
+    axis.add_patch(_Circle(tuple(centre), rim / 2.0, facecolor=colour, alpha=alpha,
+                           edgecolor=edge or colour, lw=lw, zorder=zorder))
+    if foot:
+        axis.add_patch(_Circle(tuple(centre), base_width(rim, base_fraction) / 2.0,
+                               facecolor="none", edgecolor=edge or colour,
+                               lw=lw, ls=(0, (3, 2)), alpha=0.9, zorder=zorder + 1))
+
+
+def glass_from_the_side(axis, x, height, rim, base_fraction=0.48, colour=None,
+                        alpha=0.30, edge=None, lw=1.0, zorder=3):
+    """One standing glass seen level, as the tapered outline it really is.
+
+    A tapered glass is a trapezium from the side, narrower at the foot, and
+    that narrowness is the reason it tips. Drawing it as a rectangle would draw
+    away the problem.
+    """
+    from matplotlib.patches import Polygon as _Polygon
+    colour = colour or GLASS
+    half_rim, half_base = rim / 2.0, base_width(rim, base_fraction) / 2.0
+    points = [(x - half_base, 0.0), (x + half_base, 0.0),
+              (x + half_rim, height), (x - half_rim, height)]
+    axis.add_patch(_Polygon(points, closed=True, facecolor=colour, alpha=alpha,
+                            edgecolor=edge or colour, lw=lw, zorder=zorder))
+    return points
+
+
+def grip_ring(axis, centre, colour=None, lw=1.2, zorder=2, alpha=0.75):
+    """The room the open jaw needs round a glass before it can close on it.
+
+    Two of these overlapping is what "too close to grip" means, and it is worth
+    drawing rather than asserting, because it is a great deal bigger than the
+    glass.
+    """
+    from matplotlib.patches import Circle as _Circle
+    axis.add_patch(_Circle(tuple(centre), GRIP_ROOM, facecolor="none",
+                           edgecolor=colour or MUTED, lw=lw, ls=(0, (4, 3)),
+                           alpha=alpha, zorder=zorder))
+
+
+def push_arrow(axis, start, end, colour=None, lw=1.6, zorder=6, shrink=0.0):
+    """The push itself: where the finger meets the glass and which way it goes."""
+    colour = colour or INK
+    axis.annotate("", xy=tuple(end), xytext=tuple(start), zorder=zorder,
+                  arrowprops=dict(arrowstyle="-|>", color=colour, lw=lw,
+                                  shrinkA=shrink, shrinkB=shrink))

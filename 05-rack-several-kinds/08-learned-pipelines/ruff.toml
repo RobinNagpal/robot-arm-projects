@@ -1,0 +1,18 @@
+# Line length matches the width the code and comments are written to.
+line-length = 110
+target-version = "py312"
+# Copies of other folders' files are linted where they came from, and kept
+# exactly as they are there.
+extend-exclude = ["work-cell", "from-problem-2", "from-problem-3"]
+
+[lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM"]
+
+[lint.isort]
+# The modules in this folder, and its copies of problem 2's and problem 3's, are
+# imported by bare name.
+known-first-party = [
+    "bench", "drawing", "nets", "pipeline", "push_features", "push_model", "push_plan", "rack_plan",
+    "render", "scoring", "tables", "train", "viewpoints",
+]
+known-third-party = ["work_cell"]

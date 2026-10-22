@@ -1,0 +1,59 @@
+[workspace]
+name = "clear-the-table-moveit"
+version = "0.1.0"
+description = "The ROS environment MoveIt 2 runs in for problem 4's full arm"
+authors = ["Robin Nagpal <robinnagpal.tiet@gmail.com>"]
+# conda-forge first, RoboStack second: RoboStack only supplies the ros-* packages
+# and expects the rest of the stack to resolve from conda-forge.
+channels = ["conda-forge", "robostack-jazzy"]
+platforms = ["linux-64", "osx-arm64"]
+
+# The same packages, pinned by the same lock, as problem 1's environment. The
+# full arm's results were measured with those exact versions of MoveIt and the
+# arm's description, so this list is kept as it was rather than trimmed, and
+# the lock stays the one the results came from.
+
+[dependencies]
+# ROS 2 Jazzy Jalisco (LTS, supported to May 2029) is built against CPython 3.12
+# on RoboStack — that pin is what rclpy's compiled extensions link against, so it
+# is not a free choice.
+python = "3.12.*"
+ros-jazzy-desktop = "*"
+
+# Simulation: Gazebo Harmonic plus the ROS <-> Gazebo bridge and the
+# ros2_control system plugin that drives the arm inside the simulator.
+ros-jazzy-ros-gz = "*"
+ros-jazzy-gz-ros2-control = "*"
+ros-jazzy-ros2-control = "*"
+ros-jazzy-ros2-controllers = "*"
+
+# The arm: Universal Robots' own URDF/xacro description and controller configs.
+ros-jazzy-ur-description = "*"
+
+# Motion planning. The turn is planned together with the grasp that precedes
+# it, which is what MoveIt Task Constructor is for.
+ros-jazzy-moveit = "*"
+ros-jazzy-moveit-py = "*"
+
+# Perception: OpenCV for the silhouette, and the bridge that turns
+# sensor_msgs/Image into ndarrays.
+ros-jazzy-cv-bridge = "*"
+py-opencv = ">=4.9"
+numpy = ">=1.26,<3"
+
+# Glass models are made by spinning an outline, which is what trimesh does.
+# MIT licensed, and it writes the meshes Gazebo loads.
+trimesh = ">=4.0"
+
+# Build tooling for the colcon workspace under src/.
+colcon-common-extensions = "*"
+# setuptools 80 removed the `develop` command that ament_python packages rely on
+# for `colcon build --symlink-install`; newer than that breaks editable builds.
+setuptools = ">=68,<80"
+# ROS 2 Jazzy ships a `launch_testing` pytest plugin whose hooks use the `path`
+# argument pytest 8 removed, so anything >=8 fails at plugin-load time.
+pytest = ">=7,<8"
+pip = "*"
+ruff = "*"
+ros-jazzy-robotiq-description = ">=0.0.1,<0.0.2"
+ros-jazzy-realsense2-description = ">=4.58.3,<5"

@@ -1,0 +1,50 @@
+<!--
+  One glass. world/build.py fills in the blanks and splices as many copies of
+  this as the run asks for into the world file.
+
+  The collision shape is built from simple pieces rather than the visual mesh,
+  and that is deliberate. A detailed mesh makes contact slow and unstable, and
+  a thin rigid shell against rigid fingers is already close to the worst case
+  for a physics engine. Below the floor it is a stack of cylinders. Above it,
+  each slice is a ring of flat boxes, so the glass is hollow and can be stood
+  mouth down over a peg. All of it is generated from the same outline as the
+  mesh, so the two agree to within a millimetre.
+
+  The friction number is what lets the pads hold a glass rather than have it
+  slide down between them. It is high because the pads are silicone; see
+  glasses/force.py, where the same figure sets the grip force.
+-->
+    <model name="{name}">
+      <pose>{x:.4f} {y:.4f} {z:.4f} 0 0 {yaw:.4f}</pose>
+      <link name="body">
+        <inertial>
+          <!-- Where the weight really is. Without this the simulator puts it
+               at the model's origin, the bottom of the glass; see
+               mass_properties() in spawn.py for what that does to a glass
+               held upside down. -->
+          <pose>0 0 {centre:.4f} 0 0 0</pose>
+          <mass>{mass:.4f}</mass>
+          <inertia>
+            <ixx>{ixx:.6f}</ixx><iyy>{iyy:.6f}</iyy><izz>{izz:.6f}</izz>
+            <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+          </inertia>
+        </inertial>
+{collisions}
+        <visual name="visual">
+          <geometry><mesh><uri>{mesh_uri}</uri></mesh></geometry>
+          <!-- Tinted a different colour per glass, and only lightly
+               transparent, so a person watching can tell one glass from
+               another and see what the arm is reaching for. This is a
+               change to how it looks and to nothing else: what the arm can
+               and cannot see is decided by the label above, not by this
+               material, so a fully opaque glass would be no easier for the
+               perception to find than a clear one. -->
+          <material>
+            <ambient>{red:.2f} {green:.2f} {blue:.2f} {opacity:.2f}</ambient>
+            <diffuse>{red:.2f} {green:.2f} {blue:.2f} {opacity:.2f}</diffuse>
+            <specular>0.25 0.25 0.25 1</specular>
+          </material>
+          <transparency>{transparency:.2f}</transparency>
+        </visual>
+      </link>
+    </model>

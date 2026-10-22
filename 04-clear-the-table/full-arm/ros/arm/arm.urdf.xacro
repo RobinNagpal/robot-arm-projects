@@ -1,0 +1,148 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://wiki.ros.org/xacro" name="work_cell">
+
+  <!--
+    The whole robot: a UR5e standing on the table, a Robotiq FT 300-S force
+    sensor and a Robotiq 2F-85 gripper on its flange, and an Intel RealSense
+    D405 depth camera beside the gripper.
+
+    Every part of it is a real product whose maker publishes its own robot
+    description, and this file's job is only to stack them and wire them to
+    ros2_control. `ur_description` supplies the UR5e's links, joint limits and
+    calibrated link lengths; `robotiq_description` supplies the gripper and
+    the coupling that bolts it to a UR flange; `realsense2_description`
+    supplies the camera. Nothing about their shapes is written here.
+
+    See arm/gripper.urdf.xacro for why this particular gripper and this
+    particular sensor, and arm/robotiq_2f85.py for the one thing that follows
+    from using a real gripper: it is driven by a single knuckle angle rather
+    than by a finger width.
+  -->
+
+  <xacro:arg name="ur_type" default="ur5e"/>
+  <xacro:arg name="controllers_file" default=""/>
+  <!-- Height of the table top the arm is bolted to. Must match TABLE_TOP_Z
+       in work_cell/table/layout.py and the table in work_cell/table/table.sdf. -->
+  <xacro:arg name="base_height" default="0.75"/>
+
+  <xacro:property name="ur_type" value="$(arg ur_type)"/>
+  <xacro:property name="ur_config" value="$(find ur_description)/config/${ur_type}"/>
+
+  <xacro:include filename="$(find ur_description)/urdf/ur_macro.xacro"/>
+  <xacro:include filename="gripper.urdf.xacro"/>
+  <xacro:include filename="camera/wrist_camera.urdf.xacro"/>
+
+  <!-- A link called "world" is how the simulator is told the base is bolted
+       down rather than free to fall over. -->
+  <link name="world"/>
+
+  <xacro:ur_robot
+    name="${ur_type}"
+    tf_prefix=""
+    parent="world"
+    joint_limits_parameters_file="${ur_config}/joint_limits.yaml"
+    kinematics_parameters_file="${ur_config}/default_kinematics.yaml"
+    physical_parameters_file="${ur_config}/physical_parameters.yaml"
+    visual_parameters_file="${ur_config}/visual_parameters.yaml">
+    <origin xyz="0 0 $(arg base_height)" rpy="0 0 0"/>
+  </xacro:ur_robot>
+
+  <xacro:parallel_gripper prefix="" parent="tool0"/>
+  <!-- On the gripper's own body, which is the link Robotiq's description calls
+       robotiq_85_base_link, so the camera rides with the gripper rather than
+       with the sensor under it. -->
+  <xacro:wrist_camera prefix="" parent="robotiq_85_base_link"/>
+
+  <!--
+    ros2_control describes the joints a controller is allowed to touch and who
+    actually moves them. Here that is Gazebo. On real hardware only the
+    <plugin> line would change.
+  -->
+  <xacro:macro name="position_joint" params="name initial:=0.0">
+    <joint name="${name}">
+      <command_interface name="position"/>
+      <state_interface name="position">
+        <param name="initial_value">${initial}</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+  </xacro:macro>
+
+  <!--
+    The gripper offers two ways of being commanded, and the task uses both.
+
+    Position is for opening the gripper and for closing it to a width the
+    measurement has worked out. Effort is for holding: once the pads are on the
+    glass, what matters is how hard they press, and a position controller
+    cannot express that. It would keep driving towards a number the glass is in
+    the way of.
+
+    Only one controller may hold a joint at a time, so the two are swapped
+    between during the run. arm/motion.py does the swapping.
+
+    There is only **one** joint to command, which is the difference the real
+    gripper makes here. The 2F-85 has a single motor on a single knuckle, and
+    both fingers follow it through a linkage, which Robotiq's description
+    expresses as mimic joints. So this is a one-joint gripper that happens to
+    have two fingers, and the width the task thinks in is a number
+    arm/robotiq_2f85.py works out from the angle.
+
+    The effort limits are the ones Robotiq's description declares for that
+    joint, in newton metres at the knuckle rather than newtons at the
+    fingertip. arm/robotiq_2f85.py converts between them.
+  -->
+  <xacro:macro name="finger_joint" params="name initial:=0.0">
+    <joint name="${name}">
+      <command_interface name="position"/>
+      <command_interface name="effort">
+        <param name="min">-50.0</param>
+        <param name="max">50.0</param>
+      </command_interface>
+      <state_interface name="position">
+        <param name="initial_value">${initial}</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+  </xacro:macro>
+
+  <ros2_control name="work_cell_system" type="system">
+    <hardware>
+      <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+    </hardware>
+
+    <!-- Elbow up, tool pointing down at the table in front of the arm. -->
+    <xacro:position_joint name="shoulder_pan_joint" initial="0.0"/>
+    <xacro:position_joint name="shoulder_lift_joint" initial="-1.5708"/>
+    <xacro:position_joint name="elbow_joint" initial="1.5708"/>
+    <xacro:position_joint name="wrist_1_joint" initial="-1.5708"/>
+    <xacro:position_joint name="wrist_2_joint" initial="-1.5708"/>
+    <xacro:position_joint name="wrist_3_joint" initial="0.0"/>
+
+    <!-- Wide open, which is zero on this joint and grows as it shuts. -->
+    <xacro:finger_joint name="robotiq_85_left_knuckle_joint" initial="0.0"/>
+
+    <!-- The FT 300-S, as ros2_control sees it. The broadcaster reads these and
+         publishes a WrenchStamped. The frame is the sensor's own link, because
+         that is where the real sensor reads: it sits on the flange and senses
+         everything bolted beyond it, which is the coupling, the gripper, the
+         camera, and whatever the fingers are holding. -->
+    <sensor name="wrist_force">
+      <state_interface name="force.x"/>
+      <state_interface name="force.y"/>
+      <state_interface name="force.z"/>
+      <state_interface name="torque.x"/>
+      <state_interface name="torque.y"/>
+      <state_interface name="torque.z"/>
+      <param name="frame_id">force_sensor_link</param>
+    </sensor>
+  </ros2_control>
+
+  <gazebo>
+    <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+      <parameters>$(arg controllers_file)</parameters>
+    </plugin>
+  </gazebo>
+
+</robot>

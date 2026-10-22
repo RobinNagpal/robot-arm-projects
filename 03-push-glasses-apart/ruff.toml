@@ -1,0 +1,14 @@
+# Line length matches the width the code and comments are written to.
+line-length = 110
+target-version = "py312"
+# Copies of other folders' files are linted where they came from, and kept
+# exactly as they are there. The picture generators were never part of the lint.
+extend-exclude = ["images", "work-cell"]
+
+[lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM"]
+
+[lint.isort]
+# The bench's modules import each other by bare name, and so do the solutions.
+known-first-party = ["bench", "film", "scoring", "top_view"]
+known-third-party = ["work_cell", "mujoco"]

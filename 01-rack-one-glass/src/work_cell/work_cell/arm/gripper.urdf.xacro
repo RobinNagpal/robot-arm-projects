@@ -1,0 +1,148 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://wiki.ros.org/xacro">
+
+  <!--
+    The tool on the end of the arm: a Robotiq FT 300-S force/torque sensor on
+    the flange, Robotiq's own UR coupling on the sensor, and a Robotiq 2F-85
+    two-finger gripper on the coupling.
+
+    Almost nothing about the gripper is described here, because Robotiq publish
+    it. `robotiq_description` ships the links, the joint limits, the masses and
+    the meshes for the 2F-85, and the coupling that bolts it to a UR flange, so
+    this file includes that package and adds only what it does not cover: the
+    force sensor, the friction of a silicone pad on glass, and a note about how
+    the fingers are set up.
+
+    Three things about this tool exist because it handles glass.
+
+    **The fingers are pinned parallel.** The 2F-85 is an *adaptive* gripper:
+    each finger has two joints driven by one motor, so left alone the fingers
+    curl inwards and wrap around whatever they hold. That is useful for odd
+    shapes and wrong for a glass, because this project's grip rules all assume
+    two flat pads pressing on an upright piece of wall. Robotiq sell a parallel
+    locking kit that pins the linkage so the pads stay parallel through the
+    whole stroke, and the description below is of a gripper with that kit
+    fitted — the fingertip joints mimic the knuckle at -1, which is exactly
+    what keeps the pad faces level.
+
+    **A force sensor sits between the flange and the gripper.** It is how the
+    arm finds out what a glass really weighs, which no camera can tell it, and
+    how it knows the rack has taken the weight before the fingers open. The
+    UR5e has a force sensor built into its own flange, which would have been
+    free, but Universal Robots publish +/-4.0 N of accuracy for it and a wine
+    glass weighs about 2 N, so it cannot do this job. The FT 300-S resolves
+    about 0.1 N.
+
+    **The pads are silicone, so the friction is set here.** A rigid pad touches
+    a curved glass wall at one point and all of the grip force goes through
+    that point. A soft pad spreads over a small patch instead, which both holds
+    better and is what makes a slightly sloping wall safe to grip: the pad
+    conforms to the slope rather than sliding off it. The 6 degree figure in
+    glasses/profile.py comes from how much slope a pad can take up. Robotiq's
+    description says nothing about friction, because friction is not a property
+    of a shape, so the surface below is this project's own.
+
+    One thing worth knowing before reading the numbers elsewhere. The 2F-85 has
+    **one driven joint**, a knuckle, and both fingers hang off it through a
+    four-bar linkage. So the gripper cannot be told a width at all; it is told
+    an angle, and the width follows. arm/robotiq_2f85.py does that translation
+    and explains what else follows from it.
+
+    Along the tool's z axis:
+      0.0000  tool0, the flange
+      0.0375  the force sensor ends, the coupling begins
+      0.0485  the gripper's own base, where its description starts measuring
+      0.1788  the middle of the pads with the gripper open (GRASP_DEPTH)
+      0.1979  the fingertips (FINGERTIP_OFFSET)
+  -->
+
+  <xacro:include filename="$(find robotiq_description)/urdf/robotiq_2f_85_macro.urdf.xacro"/>
+  <xacro:include filename="$(find robotiq_description)/urdf/ur_to_robotiq_adapter.urdf.xacro"/>
+
+  <xacro:macro name="parallel_gripper" params="prefix parent">
+
+    <!-- Robotiq publish 89 mm across on the robot side and 75 mm on the tool
+         side, 37.5 mm thick and 442 g. It is drawn as the larger of the two
+         diameters, because what this shape is really used for is working out
+         how low the tool can reach before it touches the table, and there the
+         widest part is the part that matters. -->
+    <xacro:property name="sensor_height" value="0.0375"/>
+    <xacro:property name="sensor_diameter" value="0.089"/>
+
+    <!-- The sensor's own joint. It has to be a real joint rather than a weld,
+         because that is where Gazebo reads the wrench, and it is why the
+         gripper is not simply bolted to the flange. -->
+    <joint name="${prefix}force_sensor_joint" type="fixed">
+      <parent link="${parent}"/>
+      <child link="${prefix}force_sensor_link"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </joint>
+
+    <link name="${prefix}force_sensor_link">
+      <visual>
+        <origin xyz="0 0 ${sensor_height / 2}"/>
+        <geometry><cylinder radius="${sensor_diameter / 2}" length="${sensor_height}"/></geometry>
+        <material name="sensor_grey"><color rgba="0.35 0.35 0.38 1"/></material>
+      </visual>
+      <collision>
+        <origin xyz="0 0 ${sensor_height / 2}"/>
+        <geometry><cylinder radius="${sensor_diameter / 2}" length="${sensor_height}"/></geometry>
+      </collision>
+      <inertial>
+        <origin xyz="0 0 ${sensor_height / 2}"/>
+        <mass value="0.442"/>
+        <!-- A solid disc of this size and mass. -->
+        <inertia ixx="0.00027" ixy="0" ixz="0" iyy="0.00027" iyz="0" izz="0.00044"/>
+      </inertial>
+    </link>
+
+    <!-- Robotiq's own coupling, and then the gripper on top of it. The
+         coupling's mount face is 11 mm above its own plate, which the adapter
+         macro accounts for, so the gripper is attached to the mount link it
+         provides rather than at an offset worked out here. -->
+    <joint name="${prefix}sensor_to_coupling_joint" type="fixed">
+      <parent link="${prefix}force_sensor_link"/>
+      <child link="${prefix}coupling_base_link"/>
+      <origin xyz="0 0 ${sensor_height}" rpy="0 0 0"/>
+    </joint>
+    <link name="${prefix}coupling_base_link"/>
+
+    <xacro:ur_to_robotiq prefix="${prefix}" connected_to="${prefix}coupling_base_link"/>
+
+    <!-- ros2_control is declared in arm.urdf.xacro along with the arm's own
+         joints and the Gazebo plugin that drives them, so the gripper must not
+         declare a second one of its own. Switching it off here is also why no
+         simulator is named: which simulator to generate a hardware interface
+         for only matters inside the block that is not being generated. -->
+    <xacro:robotiq_gripper
+      name="RobotiqGripper"
+      prefix="${prefix}"
+      parent="${prefix}gripper_mount_link"
+      include_ros2_control="false">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </xacro:robotiq_gripper>
+
+    <!--
+      A silicone pad on dry glass. This is the single number most worth
+      checking against a real pad, because every grip force in
+      glasses/force.py scales with it.
+
+      It is set on the fingertips rather than on the whole finger because the
+      fingertip is the only part that is meant to touch a glass. A glass
+      touched by the knuckle has already been hit.
+    -->
+    <xacro:macro name="pad_surface" params="link">
+      <gazebo reference="${link}">
+        <mu1>0.6</mu1>
+        <mu2>0.6</mu2>
+        <kp>60000.0</kp>
+        <kd>30.0</kd>
+      </gazebo>
+    </xacro:macro>
+
+    <xacro:pad_surface link="${prefix}robotiq_85_left_finger_tip_link"/>
+    <xacro:pad_surface link="${prefix}robotiq_85_right_finger_tip_link"/>
+
+  </xacro:macro>
+
+</robot>

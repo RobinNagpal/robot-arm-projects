@@ -16,12 +16,29 @@ Two exceptions, because tools look for them by their exact names:
 - `README.md` — GitHub shows it on each folder's page.
 - `CLAUDE.md` — Claude Code reads it.
 
-**Project folders** are the version, then two or three words for what the
-project does, in the same style: `v2-assemble-table`, `v3-turn-top-flat`.
+**Project folders** are a two-digit number, then two or three words for what
+the project does, in the same style: `01-rack-one-glass`, `04-clear-the-table`.
+A folder inside a project that holds one solution follows the same pattern, as
+in `02-geometry-ranked`.
 
 **Code files follow their own language's rule, not this one.** Python files
 use underscores, as in `joint_torques.py`, because a hyphen is not allowed in
 a Python module name and the file could not be imported.
+
+## Each folder stands alone
+
+**No folder imports code from another folder.** Nor does it read another
+folder's environment, configuration or data while it runs. When a problem
+builds on an earlier one, copy the files it needs into its own folder, as
+`work-cell/` and `from-problem-3/` do, and keep the copy exactly as the
+original. A document may still link to a document in another folder.
+
+## The glass problems, 01 to 06
+
+The first six folders are one task taken apart into six problems. Read
+[`01-rack-one-glass/CLAUDE.md`](01-rack-one-glass/CLAUDE.md) before changing
+any of them: its rules about glasses — no glass's size written down anywhere,
+a refused glass is a result, the last millimetres are felt — apply to all six.
 
 ## Diagrams
 
