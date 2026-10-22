@@ -9,6 +9,10 @@ this page you will know what each of the six achieved, how far short of the
 best possible result each one fell, and which three columns mislead if you read
 them on their own.
 
+> **A note on links.** This page belongs to the first cell, and some of the documents it
+> cites, such as *what changed* and *the examiner*, were removed when `docs/` was rewritten for
+> the whole-arm cell. Those links open the documents as they stood before that, on GitHub.
+
 > **A note on row 5.** Solution 5, the borrowed model with nothing fitted, has been retired
 > and replaced in the line-up by reinforcement learning in the
 > [whole-arm cell](../full-arm/README.md), which is a different cell and is not on this page.
@@ -19,7 +23,7 @@ Problem 4 is problem 3 with two assumptions taken away. The camera above the
 table is gone, so the arm carries its own camera and looking costs motion and
 time. The push-by-push hand-over is gone too, so a solution runs continuously
 and declares itself done, and the table is judged by the arrangement it was
-left in. [The examiner](../docs/README.md) describes
+left in. [The examiner](https://github.com/RobinNagpal/robot-arm-projects/blob/851a30b61e6c06465c9f94ec8cb03efda004f2b1/v5-pick-glasses/docs/04-clear-the-table/the-examiner.md) describes
 both changes and how a walk of tables is marked.
 
 ## What every row was measured on
@@ -55,7 +59,7 @@ value in a column.
 Every row is the solution as it stands now. The six were measured once, then a
 set of changes was made to the three that were learning something and failing,
 and then they were measured again;
-[what changed](../docs/README.md) records each
+[what changed](https://github.com/RobinNagpal/robot-arm-projects/blob/851a30b61e6c06465c9f94ec8cb03efda004f2b1/v5-pick-glasses/docs/04-clear-the-table/what-changed.md) records each
 change beside the measurement that justified it, including the three that were
 tried and thrown away.
 
@@ -128,7 +132,7 @@ forty-four, which is why it reaches thirty-nine tables and separates fourteen in
 the time the reference spends on twenty-six.
 
 **Those two broken glasses are a price that was paid on purpose**, and
-[what changed](../docs/README.md) records the choice.
+[what changed](https://github.com/RobinNagpal/robot-arm-projects/blob/851a30b61e6c06465c9f94ec8cb03efda004f2b1/v5-pick-glasses/docs/04-clear-the-table/what-changed.md) records the choice.
 The world model is now fitted on twice the random pushes and charged ten times as
 much for a topple it fails to predict, and that pair was chosen on a hundred and
 fifty tables below the held-out line under the real clock, where it separated
@@ -368,16 +372,17 @@ and `make films` makes all six.
 
 ## Where to read more
 
-Each solution has a page of its own, which gives its spread, its own selection
-measurements on tables below the held-out band, and what it found out about
-problem 4 while being built.
+Each solution's folder has a `README.md` of its own, which gives its spread,
+its own selection measurements on tables below the held-out band, and what it
+found out about problem 4 while being built. Solution 5 was retired with its
+folder, so its page is linked as it stood before it was removed.
 
-1. [One fixed nudge](../docs/README.md)
-2. [Geometry ranked](../docs/README.md)
+1. [One fixed nudge](../01-one-fixed-nudge/README.md)
+2. [Geometry ranked](../02-geometry-ranked/README.md)
 3. [Imitation from demonstrations](../03-imitation-from-demonstrations/README.md)
-4. [A world model](../docs/README.md)
-5. [SmolVLA as it downloads](../docs/README.md)
-6. [SmolVLA fine-tuned](../docs/README.md)
+4. [A world model](../04-a-world-model/README.md)
+5. [SmolVLA as it downloads](https://github.com/RobinNagpal/robot-arm-projects/blob/851a30b61e6c06465c9f94ec8cb03efda004f2b1/v5-pick-glasses/docs/04-clear-the-table/solutions/05-smolvla-as-it-downloads.md)
+6. [SmolVLA fine-tuned](../06-smolvla-fine-tuned/README.md)
 
 `ceiling.json` beside this page holds the perfect-play measurement, table by
 table and as a running total, which is where the ceiling columns come from. It

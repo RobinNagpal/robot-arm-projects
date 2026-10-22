@@ -1,9 +1,17 @@
 # Problem 4 — the shared test bench
 
-Every solution in `../` runs on this bench. They are all given the same drawn
-tables, the same camera carried on the arm, the same physics and the same
-scorecard, so that when two solutions differ, the difference is the solution
-and nothing else.
+This bench is the first cell of problem 4, the one in which the jaw moves on
+its own with no arm behind it. Every solution in the numbered folders of `../`
+runs on it. They are all given the same drawn tables, the same camera carried
+on the wrist, the same physics and the same scorecard, so that when two
+solutions differ, the difference is the solution and nothing else.
+
+The whole-arm cell in [`../full-arm/`](../full-arm/README.md) is built on this
+bench too. It does not use the loop here, because there a solution is handed
+the arm and runs the table itself, but it draws its tables with `tables.py`,
+builds its camera on the one in `wrist.py` with only the mounting changed, takes its physics settings
+through `partners.py`, and marks every table with `scoring.py`. So a number
+from either cell is read on the same scale.
 
 The bench is small, and that is because most of it is problem 3's bench, kept
 here as a copy rather than rewritten. That copy is the decision this folder
@@ -152,18 +160,17 @@ above it is for marking only.
 
 ## Numbers
 
-**This bench has measured nothing yet.** Problem 4 is being built; the examiner
-has not been run on any solution, so there are no scores here, no counts of
-toppled glasses and no arm times. When those arrive they will be in the
-solution documents under
-[`docs/solutions/`](../docs/solutions/),
-each with the spread over repeated runs, because a result quoted without a
-spread is not a result.
+The results of the solutions that run on this bench are on the comparison page,
+[`../results/README.md`](../results/README.md), and in each solution folder's
+own `README.md`. Each is given with its spread over repeated walks, because a
+result quoted without a spread is not a result. The results of the whole-arm
+cell are in [`../docs/README.md`](../docs/README.md#results).
 
-What is already measured is the cell, and it is measured in problem 3. The
-friction, the measurement error on each reading, the jaw's real dimensions, the
-height it rides at and how often a careless push topples a glass are all stated
-in [problem 3's bench README](../../03-push-glasses-apart/bench/README.md).
-Those numbers hold here unchanged, which is the point of borrowing the cell,
-and they are not restated in this file so that there is only one place to
-correct them.
+What this bench does not measure is the cell itself, because that was measured
+in problem 3. The friction, the measurement error on each reading, the jaw's
+real dimensions, the height it rides at and how often a careless push topples a
+glass are all stated in
+[problem 3's bench README](../../03-push-glasses-apart/bench/README.md). Those
+numbers hold here unchanged, because the copy in `from-problem-3/` is kept
+exactly as problem 3 has it. They are not restated in this file, so that there
+is only one place to correct them.

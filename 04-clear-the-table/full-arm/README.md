@@ -1,7 +1,7 @@
 # Problem 4 with the whole arm
 
-The same problem as the other folders in `04-clear-the-table`, with one change: the hand is on the end
-of a UR5e. A UR5e stands at the table in MuJoCo, **MoveIt 2 plans every motion it makes**, and the
+The same problem as the first cell's solutions in the numbered folders of `04-clear-the-table`, with
+one change: the hand is on the end of a UR5e. A UR5e stands at the table in MuJoCo, **MoveIt 2 plans every motion it makes**, and the
 learned part of each solution decides what to *ask* MoveIt for. The documents are in
 [`docs/`](../docs/README.md); start with
 its README. This page is for the code.
@@ -70,8 +70,8 @@ needed; nothing has to be activated by hand.
 ## The held-out tables
 
 Tables numbered from 10,000 up are the measurement and nothing is built, chosen or tuned on them. The
-fifty used here are 10,000 to 10,049, the same as problem 4's. Every number from `evaluate.py` is for those
-tables unless it says `--first` something else. Tuning was done on tables 2,000 to 2,023 and nowhere else.
+fifty used here are 10,000 to 10,049, the same fifty the first cell's solutions are measured on. Every
+number from `evaluate.py` is for those tables unless it says `--first` something else. Tuning was done on tables 2,000 to 2,023 and nowhere else.
 
 ## Running it
 

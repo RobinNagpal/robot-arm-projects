@@ -352,7 +352,7 @@ repair it, and it is deliberately not done here: it would make this solution the
 geometry reference with a learned chooser in front, which answers a different
 question. Asking the gate for its *next* choice of glass instead was built and
 measured, and it made things worse;
-[`what-changed.md`](../docs/README.md) has the
+[`what-changed.md`](https://github.com/RobinNagpal/robot-arm-projects/blob/851a30b61e6c06465c9f94ec8cb03efda004f2b1/v5-pick-glasses/docs/04-clear-the-table/what-changed.md) has the
 numbers.
 
 ### What the fitting cost
@@ -385,7 +385,7 @@ eleven — the pushes came about two millimetres closer, and **the direction of 
 push came six degrees closer**, which is the largest single gain and the one that
 bears on the commonest refusal. On the tables it halves the glasses this solution
 breaks and leaves everything else inside the spread.
-[What changed](../docs/README.md) has those numbers
+[What changed](https://github.com/RobinNagpal/robot-arm-projects/blob/851a30b61e6c06465c9f94ec8cb03efda004f2b1/v5-pick-glasses/docs/04-clear-the-table/what-changed.md) has those numbers
 in full, including the gate's, which did not improve at all: fitted on three
 times the material every one of its readings got wider rather than better, so it
 was not short of data either.

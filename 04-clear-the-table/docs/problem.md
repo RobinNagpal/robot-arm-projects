@@ -44,7 +44,12 @@ the glasses.
 The **examiner** is the other side of the run. It builds the table, keeps the clock, and
 marks the table when the run ends. A run ends in one of three ways: the solution says
 "finished", a glass goes over, or the arm time runs out. Nothing outside the solution
-decides when a table is done. A solution that never says "finished" uses up its arm time,
+decides when a table is done.
+
+The arm time also counts as run out once a solution has asked for a fixed number of pushes
+on one table, refused pushes included. This limit exists because a push that MoveIt refuses
+costs no arm time, so without it a solution that kept asking for impossible pushes would
+never be stopped by the clock. A solution that never says "finished" uses up its arm time,
 and one that says it too early is scored on the crowded table it left.
 
 ## The budget is arm time

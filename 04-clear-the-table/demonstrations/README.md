@@ -116,7 +116,7 @@ apart mean a model that is memorising rather than one that is short of ideas —
 for which the cure is more demonstrations. The mixture is identical at the new
 size, 79% looking and 37.5 answers a table, so this is the same material three
 times over; what changes is the scarce kind, where pushes at the task go from
-315 to 857. [What changed](../docs/README.md)
+315 to 857. [What changed](https://github.com/RobinNagpal/robot-arm-projects/blob/851a30b61e6c06465c9f94ec8cb03efda004f2b1/v5-pick-glasses/docs/04-clear-the-table/what-changed.md)
 records what that bought.
 
 **A fit does not read every look.** Looks are four answers in five and the

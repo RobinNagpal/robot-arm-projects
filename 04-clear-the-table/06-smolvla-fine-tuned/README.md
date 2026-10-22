@@ -37,7 +37,7 @@ frees no glass. The pair this folder exists to measure — the same weights with
 and without this cell's demonstrations — says the same thing from the other
 side: fitting makes the model act a third again as often and leaves the outcome
 exactly where it was.
-[`what-changed.md`](../docs/README.md) records both
+[`what-changed.md`](https://github.com/RobinNagpal/robot-arm-projects/blob/851a30b61e6c06465c9f94ec8cb03efda004f2b1/v5-pick-glasses/docs/04-clear-the-table/what-changed.md) records both
 changes beside the measurements that justified them.
 
 ## What is borrowed and what is new
