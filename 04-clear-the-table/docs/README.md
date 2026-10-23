@@ -134,32 +134,31 @@ see whether the hand came down in the gap between two glasses or at the side.
 ## Films
 
 Each film shows one solution on the same five held-out tables, so the films can be compared
-table by table. The tables were chosen so that every solution pushes on every one of them,
-and so that on three of them some solutions tip a glass. The words at the top of a film say
+table by table. The tables were chosen, with the solutions as they were when the films were
+first made, so that every solution pushed on every one of them and some tipped a glass. In
+the films as they are now, a glass goes over on two of the five tables. The words at the top of a film say
 how many glasses could be picked at the start and at the end of each table. The table below
 gives the same thing for every film: pickable glasses at the start → at the end, and ✗ where
 a glass went over.
 
 | Solution | 11158 | 11416 | 11716 | 11952 | 10490 |
 |---|---|---|---|---|---|
-| 1 Geometry reference | 1 → 3 | 1 → 1 | 2 → 1 | 2 → 2 | 1 → 1 |
-| 2 Geometry ranked | 1 → 2 | 1 → 3 | 2 → 1 | 2 → 3 ✗ | 1 → 3 |
-| 3 Imitation | 1 → 3 | 1 → 0 | 2 → 2 | 2 → 2 ✗ | 1 → 1 ✗ |
+| 1 Geometry reference | 1 → 3 | 1 → 1 | 2 → 4 | 2 → 2 | 1 → 3 |
+| 2 Geometry ranked | 1 → 3 | 1 → 3 | 2 → 2 | 2 → 3 ✗ | 1 → 3 |
+| 3 Imitation | 1 → 3 | 1 → 0 | 2 → 1 | 2 → 2 ✗ | 1 → 1 |
 | 3 Imitation, with the check | 1 → 3 | 1 → 0 | 2 → 4 | 2 → 2 ✗ | 1 → 1 |
-| 4 World model | 1 → 3 | 1 → 3 | 2 → 4 | 2 → 3 | 1 → 3 |
-| 5 Reinforcement learning | 1 → 3 | 1 → 3 | 2 → 1 ✗ | 2 → 2 | 1 → 1 |
-| 5 Reinforcement learning, with the check | 1 → 3 | 1 → 3 | 2 → 2 | 2 → 2 | 1 → 1 |
-| 6 SmolVLA | 1 → 2 | 1 → 3 | 2 → 2 | 2 → 2 | 1 → 0 ✗ |
-| 6 SmolVLA, with the check | 1 → 2 | 1 → 3 | 2 → 2 | 2 → 2 | 1 → 1 |
+| 4 World model | 1 → 3 | 1 → 3 | 2 → 4 | 2 → 2 | 1 → 2 |
+| 5 Reinforcement learning | 1 → 3 | 1 → 3 | 2 → 3 | 2 → 2 | 1 → 1 |
+| 5 Reinforcement learning, with the check | 1 → 3 | 1 → 3 | 2 → 3 | 2 → 2 | 1 → 1 |
+| 6 SmolVLA | 1 → 2 ✗ | 1 → 1 | 2 → 2 | 2 → 2 ✗ | 1 → 1 |
+| 6 SmolVLA, with the check | 1 → 1 ✗ | 1 → 1 | 2 → 2 | 2 → 2 ✗ | 1 → 1 |
 
-The films and this table are older than the results above: they were made before every
-solution remembered a refused glass by where it stands, and before the geometry solutions
-left glasses with room alone, and they are being made again. The films were also made before the solutions chose how much to look, when every solution
-looked from both places on every turn, so a film can differ from what the same solution
-does now. The one exception is solution 2, which was filmed when it was added, with the
-looking it does now. Five tables are too few to rank the solutions; the results table above does that. The films
-show what the ranking means: on table 10490, for example, imitation and SmolVLA tip a glass,
-the check stops SmolVLA in time, and the world model frees both glasses.
+Every film was made with the solutions as they are now, so each one shows what its solution
+does in the results above. Five tables are too few to rank the solutions; the results table
+above does that. The films show what the ranking means. On table 11716, for example, imitation
+leaves one glass fewer pickable than it started with, and with the safety check it frees both
+crowded glasses instead. On table 11952 the geometry ranked solution, imitation and SmolVLA
+each tip a glass, while the world model leaves the table as it found it.
 
 Links to the films:
 
