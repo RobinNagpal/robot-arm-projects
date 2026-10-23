@@ -40,7 +40,7 @@ import numpy as np
 import torch
 
 from shared.learning import table_and_push_encoding as F
-from shared.turn_by_turn_loop import EVERY_VIEW, Done, TurnByTurn
+from shared.turn_by_turn_loop import EVERY_VIEW, Done, Refused, TurnByTurn
 
 HERE = Path(__file__).resolve().parent
 WEIGHTS_DIR = HERE / "weights"
@@ -280,12 +280,12 @@ class FineTuned(TurnByTurn):
             raise FileNotFoundError(f"no fitted correction at {correction}; fit one with `make vla`")
         self.policy.model = PeftModel.from_pretrained(self.policy.model, correction).merge_and_unload()
         self.policy.eval()
-        self.refused: set[int] = set()
+        self.refused = Refused()
         self.last = None
         self.picture_pairs: list = []
 
     def begin(self) -> None:
-        self.refused = set()
+        self.refused = Refused()
         self.last = None
         self.policy.reset()
         # The model draws noise for every answer. Given the same draw at the start of every
@@ -311,11 +311,12 @@ class FineTuned(TurnByTurn):
         if not boxes:
             return Done("no glass in view")
         if look.refused and self.last is not None:
-            self.refused.add(self.last)
+            self.refused.add(boxes, self.last)
         vector = self.ask(look.pictures)
-        usable = [b for k, b in enumerate(boxes) if k not in self.refused]
+        refused = self.refused.among(boxes)
+        usable = [b for k, b in enumerate(boxes) if k not in refused]
         glass, request = request_from(vector, boxes)
-        if glass is None or glass in self.refused or not usable:
+        if glass is None or glass in refused or not usable:
             return Done("the model says the table is finished" if glass is None else "nothing left to try")
         self.last = glass
         return request

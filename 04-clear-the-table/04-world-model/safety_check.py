@@ -83,7 +83,7 @@ class Checked(TurnByTurn):
                     self.mended += 1
                     return mended
             self.vetoed += 1
-            self.inner.refused.add(answer.glass)
+            self.inner.refused.add(boxes, answer.glass)
         return Done("every push it offered would tip a glass")
 
 

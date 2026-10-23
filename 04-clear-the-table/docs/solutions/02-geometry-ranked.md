@@ -14,7 +14,10 @@ each push a score, which is their estimate of how much room the push will gain, 
 eight measurements such as how far the push goes and how much room there is where the glass
 will end. The push with the best score is made. Like solution 1, it lengthens a push that frees
 a glass by two centimetres when the geometry allows it, it uses the same fixed settings for
-every push, and it does not ask again for a push MoveIt refused.
+every push, and it does not ask again for a glass MoveIt refused. It also leaves out the same
+glasses as solution 1, the ones that already have room, and it asks problem 3's tipping rule
+at the arm's top edge, as solution 1 does. One of the trees' eight measurements is how close a
+push comes to tipping the glass, and that measurement is taken at the arm's top edge too.
 
 So the two solutions differ in one decision only. Comparing them measures what the ordering is
 worth when the arm makes the pushes.

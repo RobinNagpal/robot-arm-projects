@@ -4,15 +4,16 @@ Solution 1 takes the one push problem 3's printed rule names: the shortest safe 
 gives a glass room. This solution lists every safe push on the table instead, scores each
 one with problem 3's fitted trees, and makes the push with the best score. Everything else
 is solution 1's: the same safe pushes, the same lengthening of a push that frees a glass,
-the same fixed settings handed to MoveIt, and the same rule for saying the table is done.
+the same fixed settings handed to MoveIt, the same glasses left out (those MoveIt refused,
+and those that already have room), and the same rule for saying the table is done.
 So the only difference between the two is which push is chosen, and comparing them
 measures what the ordering is worth on the arm.
 
 **The trees are problem 3's own fitted file, loaded and not fitted again.** If they were
 fitted again here, a difference between problem 3's solution 2 and this one could be the
-fit rather than the problem. The file is not kept in git: problem 3 makes it with
-``make train`` in its ``02-geometry-ranked`` folder, and it is copied into
-``from-problem-3/`` from there.
+fit rather than the problem. Problem 3 makes the file with ``make train`` in its
+``02-geometry-ranked`` folder, and an exact copy of it is kept in git in
+``from-problem-3/``.
 
 **Problem 3's files are loaded only for as long as they import each other.** They find
 each other by short, general names such as ``table_and_push_encoding`` and ``ranker``, so they are put
@@ -27,7 +28,7 @@ import importlib.util
 import sys
 from types import ModuleType
 
-from geometry_reference import SAFE, Geometry
+from geometry_reference import SAFE, Geometry, arm_bench
 
 from examiner.motion.push_motions import Settings
 from examiner.simulation.taken_from_problem_3 import PUSHING
@@ -39,16 +40,21 @@ FILES = ("candidates", "features", "ranker")
 
 
 def _problem_three() -> dict[str, ModuleType]:
-    """Problem 3's candidate list, inputs and ranker, loaded without displacing this problem's modules."""
+    """Problem 3's candidate list, inputs and ranker, loaded without displacing this problem's modules.
+
+    They are loaded with the arm's top edge, as solution 1's planner is, so the list of safe
+    pushes is solution 1's and the trees' input for tipping is measured at the arm's height.
+    """
     displaced = {name: sys.modules.pop(name) for name in FILES if name in sys.modules}
     loaded: dict[str, ModuleType] = {}
     try:
-        for name in FILES:
-            spec = importlib.util.spec_from_file_location(name, RANKED / f"{name}.py")
-            module = importlib.util.module_from_spec(spec)
-            sys.modules[name] = module
-            spec.loader.exec_module(module)
-            loaded[name] = module
+        with arm_bench():
+            for name in FILES:
+                spec = importlib.util.spec_from_file_location(name, RANKED / f"{name}.py")
+                module = importlib.util.module_from_spec(spec)
+                sys.modules[name] = module
+                spec.loader.exec_module(module)
+                loaded[name] = module
     finally:
         for name in FILES:
             sys.modules.pop(name, None)
@@ -65,8 +71,8 @@ def load_ranker(path=RANKER):
     if not path.exists():
         raise SystemExit(
             f"problem 3's fitted trees are not at {path}.\n"
-            "They are not kept in git. Make them in problem 3 -- `make train` in "
-            "03-push-glasses-apart/02-geometry-ranked -- copy its model/ folder to "
+            "The copy is kept in git, so restore it from there, or make them again in problem 3 -- "
+            "`make train` in 03-push-glasses-apart/02-geometry-ranked -- copy its model/ folder to "
             "from-problem-3/02-geometry-ranked/, and run this again."
         )
     return ranker.Ranker.load(path)
@@ -82,9 +88,9 @@ class GeometryRanked(Geometry):
         # How a list of candidate pushes is scored: problem 3's trees, unless a test says otherwise.
         self.score = load_ranker() if score is None else score
 
-    def choose(self, seen):
+    def choose(self, seen, skip):
         """The safe push with the best score, lengthened as solution 1 lengthens a push that frees a glass."""
-        best, _, _ = ranker.ranked(seen, self.skip, self.score)
+        best, _, _ = ranker.ranked(seen, skip, self.score)
         if not best:
             return None
         pick = best[0]

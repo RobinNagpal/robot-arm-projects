@@ -34,7 +34,7 @@ from torch import nn
 from examiner.motion.push_motions import Box
 from shared.learning import table_and_push_encoding as F
 from shared.learning.learned_networks import WorldModel
-from shared.turn_by_turn_loop import AS_NEEDED, Done, TurnByTurn
+from shared.turn_by_turn_loop import AS_NEEDED, Done, Refused, TurnByTurn
 
 WEIGHTS = Path(__file__).resolve().parent / "weights"
 MODELS = 5
@@ -166,7 +166,7 @@ class PlanningSolution(TurnByTurn):
         # The search draws its pushes at random. It is given the same draw at the start of
         # every table, so that a table gets the same answers every time it is run.
         self.rng = random.Random(self.seed)
-        self.refused: set[int] = set()
+        self.refused = Refused()
         self.last = None
 
     @torch.no_grad()
@@ -258,10 +258,11 @@ class PlanningSolution(TurnByTurn):
         if not boxes:
             return Done("no glass in view")
         if look.refused and self.last is not None:
-            self.refused.add(self.last)
+            self.refused.add(boxes, self.last)
         if F.pickable_count(boxes) == len(boxes):
             return Done("every glass has room")
-        usable = [k for k in range(len(boxes)) if k not in self.refused and k < F.SLOTS]
+        refused = self.refused.among(boxes)
+        usable = [k for k in range(len(boxes)) if k not in refused and k < F.SLOTS]
         if not usable:
             return Done("nothing left that can be pushed")
         best = self.search(boxes, usable)

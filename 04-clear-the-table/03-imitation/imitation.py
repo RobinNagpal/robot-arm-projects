@@ -34,7 +34,7 @@ from torch import nn
 
 from shared.learning import table_and_push_encoding as F
 from shared.learning.learned_networks import PushPolicy
-from shared.turn_by_turn_loop import AS_NEEDED, Done, TurnByTurn
+from shared.turn_by_turn_loop import AS_NEEDED, Done, Refused, TurnByTurn
 
 WEIGHTS = Path(__file__).resolve().parent / "weights"
 
@@ -127,10 +127,10 @@ class Imitation(TurnByTurn):
         self.net = PushPolicy()
         self.net.load_state_dict(torch.load(weights or WEIGHTS / "imitation-r4.pt", weights_only=True))
         self.net.eval()
-        self.refused: set[int] = set()
+        self.refused = Refused()
 
     def begin(self) -> None:
-        self.refused = set()
+        self.refused = Refused()
         self.last = None
 
     @torch.no_grad()
@@ -139,11 +139,11 @@ class Imitation(TurnByTurn):
         if not boxes:
             return Done("no glass in view")
         if look.refused and getattr(self, "last", None) is not None:
-            self.refused.add(self.last)
+            self.refused.add(boxes, self.last)
         rows, mask = F.table_tensor(boxes)
         logits, push, _ = self.net(torch.tensor(rows)[None], torch.tensor(mask)[None])
         scores = logits[0].clone()
-        for k in self.refused:
+        for k in self.refused.among(boxes):
             if k < F.SLOTS:
                 scores[k] = -1e9
         choice = int(scores.argmax())

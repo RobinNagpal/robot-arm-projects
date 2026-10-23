@@ -30,11 +30,11 @@ lint: ## Ruff over everything
 # ---------------------------------------------------------------- job 0: the boxes
 
 box-data: ## Photograph 400 tables, twice each, from both viewing places, and write the answer keys
-	pixi run python shared/seeing/build_box_data.py 0 400 shared/seeing/data/box-train.pkl
-	pixi run python shared/seeing/build_box_data.py 600 100 shared/seeing/data/box-test.pkl
+	pixi run python shared/seeing/make_box_training_data.py 0 400 shared/seeing/data/box-train.pkl
+	pixi run python shared/seeing/make_box_training_data.py 600 100 shared/seeing/data/box-test.pkl
 
 box-net: ## Train the box model and measure it on pictures it has not seen
-	pixi run python shared/seeing/train_box_net.py shared/seeing/data/box-train.pkl shared/seeing/data/box-test.pkl 30
+	pixi run python shared/seeing/train_box_model.py shared/seeing/data/box-train.pkl shared/seeing/data/box-test.pkl 30
 
 # ------------------------------------------------------- jobs 1 and 2: what to ask
 
@@ -45,7 +45,7 @@ box-net: ## Train the box model and measure it on pictures it has not seen
 PUSHES := shared/learning/data/pushes-round1.jsonl shared/learning/data/pushes-round2.jsonl shared/learning/data/pushes-round3.jsonl shared/learning/data/pushes-round4.jsonl
 
 collect: ## Push at random with the arm: 640 tables, nine workers (round 1)
-	pixi run python shared/learning/collect_pushes.py --first 1000 --tables 640 --out shared/learning/data/pushes-round1.jsonl --workers 9
+	pixi run python shared/learning/collect_training_pushes.py --first 1000 --tables 640 --out shared/learning/data/pushes-round1.jsonl --workers 9
 
 imitation: ## Solution 3: copy the pushes that worked
 	pixi run python 03-imitation/imitation.py $(PUSHES)
@@ -54,13 +54,13 @@ world-model: ## Solution 4: learn what a push does, five models
 	pixi run python 04-world-model/world_model.py $(PUSHES) --epochs 16
 
 reinforcement: ## Solution 5: learn by trying, a few thousand pushes
-	pixi run python 05-reinforcement-learning/reinforcement.py train --iterations 25 --workers 8 --steps 20
+	pixi run python 05-reinforcement-learning/reinforcement_learning.py train --iterations 25 --workers 8 --steps 20
 
 vla-data: ## The pictures and answers SmolVLA is fitted on
-	pixi run python 06-smolvla-fine-tuned/build_vla_data.py $(PUSHES) 06-smolvla-fine-tuned/data/vla-r4.pkl
+	pixi run python 06-smolvla-fine-tuned/make_smolvla_training_data.py $(PUSHES) 06-smolvla-fine-tuned/data/vla-r4.pkl
 
 vla: ## Solution 6: fit a small correction to SmolVLA
-	pixi run python 06-smolvla-fine-tuned/vla.py --data 06-smolvla-fine-tuned/data/vla-r4.pkl --steps 600
+	pixi run python 06-smolvla-fine-tuned/smolvla_fine_tuned.py --data 06-smolvla-fine-tuned/data/vla-r4.pkl --steps 600
 
 # ----------------------------------------------------------------------- scoring
 
@@ -69,24 +69,24 @@ RECORDED := solution_1_geometry solution_2_geometry_ranked solution_3_imitation 
 	solution_6_smolvla solution_6_smolvla_with_check ceiling
 
 runs: ## Every solution on 25 held-out tables, kept table by table in runs/
-	pixi run python examiner/tools/record_runs.py arrangements
-	for s in $(RECORDED); do pixi run python examiner/tools/record_runs.py solve $$s > examiner/logs/runs-$$s.log 2>&1 & done; wait
-	pixi run python examiner/tools/record_runs.py summary
+	pixi run python examiner/tools/record_runs_per_table.py arrangements
+	for s in $(RECORDED); do pixi run python examiner/tools/record_runs_per_table.py solve $$s > examiner/logs/runs-$$s.log 2>&1 & done; wait
+	pixi run python examiner/tools/record_runs_per_table.py summary
 
 evaluate-geometry: ## Solution 1, the reference, on the held-out tables
-	pixi run python examiner/tools/evaluate.py geometry --first $(FIRST) --tables $(TABLES) --runs $(RUNS)
+	pixi run python examiner/tools/evaluate_solution.py geometry --first $(FIRST) --tables $(TABLES) --runs $(RUNS)
 
 evaluate-geometry-ranked: ## Solution 2
-	pixi run python examiner/tools/evaluate.py geometry-ranked --first $(FIRST) --tables $(TABLES) --runs $(RUNS)
+	pixi run python examiner/tools/evaluate_solution.py geometry-ranked --first $(FIRST) --tables $(TABLES) --runs $(RUNS)
 
 evaluate-imitation: ## Solution 3
-	pixi run python examiner/tools/evaluate.py imitation --first $(FIRST) --tables $(TABLES) --runs $(RUNS)
+	pixi run python examiner/tools/evaluate_solution.py imitation --first $(FIRST) --tables $(TABLES) --runs $(RUNS)
 
 evaluate-world-model: ## Solution 4
-	pixi run python examiner/tools/evaluate.py world-model --first $(FIRST) --tables $(TABLES) --runs $(RUNS)
+	pixi run python examiner/tools/evaluate_solution.py world-model --first $(FIRST) --tables $(TABLES) --runs $(RUNS)
 
 evaluate-reinforcement: ## Solution 5
-	pixi run python examiner/tools/evaluate.py reinforcement --first $(FIRST) --tables $(TABLES) --runs $(RUNS)
+	pixi run python examiner/tools/evaluate_solution.py reinforcement --first $(FIRST) --tables $(TABLES) --runs $(RUNS)
 
 evaluate-vla: ## Solution 6
-	pixi run python examiner/tools/evaluate.py vla --first $(FIRST) --tables $(TABLES) --runs $(RUNS)
+	pixi run python examiner/tools/evaluate_solution.py vla --first $(FIRST) --tables $(TABLES) --runs $(RUNS)

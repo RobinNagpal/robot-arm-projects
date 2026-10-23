@@ -11,8 +11,8 @@ where its parts come from and how to score it.
 The list of safe pushes and the trees both come from problem 3's ranked solution, kept as exact
 copies in [`../from-problem-3/`](../from-problem-3/README.md). The trees are problem 3's own
 fitted file, loaded and not fitted again, so a difference between the two problems comes from
-the arm and not from a new fit. The fitted file is not kept in git: problem 3 makes it with
-`make train` in its `02-geometry-ranked` folder, and it is copied here from there.
+the arm and not from a new fit. The fitted file is kept in git there, as an exact copy of the
+one problem 3 makes with `make train` in its `02-geometry-ranked` folder.
 
 On the arm, the pushes the trees prefer tip glasses far more often than the ones solution 1
 chooses. The full explanation, and what it scores, is on its page in the documents:

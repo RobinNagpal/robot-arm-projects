@@ -54,7 +54,7 @@ from torch import nn
 from examiner.motion.push_motions import Box
 from shared.learning import table_and_push_encoding as F
 from shared.learning.learned_networks import PushPolicy
-from shared.turn_by_turn_loop import AS_NEEDED, Done, TurnByTurn
+from shared.turn_by_turn_loop import AS_NEEDED, Done, Refused, TurnByTurn
 
 HERE = Path(__file__).resolve().parent
 WEIGHTS = HERE / "weights"
@@ -382,7 +382,7 @@ class Learner(TurnByTurn):
         self.net.eval()
 
     def begin(self) -> None:
-        self.refused: set[int] = set()
+        self.refused = Refused()
         self.last = None
 
     def decide(self, look):
@@ -390,9 +390,9 @@ class Learner(TurnByTurn):
         if not boxes:
             return Done("no glass in view")
         if look.refused and self.last is not None:
-            self.refused.add(self.last)
+            self.refused.add(boxes, self.last)
         rows, mask = F.table_tensor(boxes)
-        for k in self.refused:
+        for k in self.refused.among(boxes):
             if k < F.SLOTS:
                 mask[k] = False
         with torch.no_grad():

@@ -29,7 +29,7 @@ from examiner.motion.push_motions import (
 )
 from examiner.simulation.ur5e_model import FINGERTIP_OFFSET, tool_pose
 from shared.learning import table_and_push_encoding as F
-from shared.turn_by_turn_loop import AS_NEEDED, EVERY_VIEW, Done, Memory, TurnByTurn, over_the_zone
+from shared.turn_by_turn_loop import AS_NEEDED, EVERY_VIEW, Done, Memory, Refused, TurnByTurn, over_the_zone
 
 TABLE_TOP = 0.75
 
@@ -476,13 +476,13 @@ class _Asks:
     name = "asks"
 
     def __init__(self, request):
-        self.request, self.refused = request, set()
+        self.request, self.refused = request, Refused()
 
     def begin(self):
-        self.refused = set()
+        self.refused = Refused()
 
     def decide(self, look):
-        return Done("nothing left") if self.request.glass in self.refused else self.request
+        return Done("nothing left") if self.request.glass in self.refused.among(look.boxes) else self.request
 
 
 class _Fears:
@@ -558,13 +558,14 @@ def test_problem_threes_ranked_files_leave_the_examiners_own_modules_in_place():
 def test_the_ranked_solution_makes_the_push_its_scores_put_first():
     import geometry_ranked
 
-    seen = _seen_on(2000)
+    # Table 2001, because at the arm's top edge every glass on table 2000 tips before it slides.
+    seen = _seen_on(2001)
     kept, _ = geometry_ranked.candidates.survivors(seen, set())
     assert len(kept) > 1, "a table with one candidate cannot tell an ordering from no ordering"
     # A score that puts the last candidate first, so the pick cannot be the rule's by luck.
     last = kept[-1]
     solution = geometry_ranked.GeometryRanked(score=lambda rows: np.arange(len(rows), dtype=float))
-    push = solution.choose(seen)
+    push = solution.choose(seen, set())
     assert push.glass == last.push.glass
     assert push.heading == pytest.approx(last.push.heading)
     assert push.travel >= last.push.travel
@@ -575,5 +576,49 @@ def test_the_ranked_solution_says_done_when_no_glass_is_left_to_push():
 
     seen = _seen_on(2000)
     solution = geometry_ranked.GeometryRanked(score=lambda rows: np.zeros(len(rows)))
-    solution.skip = {glass.id for glass in seen}
-    assert solution.choose(seen) is None
+    assert solution.choose(seen, {glass.id for glass in seen}) is None
+
+
+# ------------------------------------------- what the geometry solutions leave out
+
+
+def test_a_refused_glass_is_found_again_when_the_next_look_lists_the_glasses_in_another_order():
+    first = [Box(0.30, -0.30, 0.04, 0.12), Box(0.45, -0.30, 0.04, 0.12), Box(0.60, -0.30, 0.04, 0.12)]
+    refused = Refused()
+    refused.add(first, 1)
+    # The next look lists the same glasses back to front, a few millimetres from where they were.
+    later = [Box(b.x + 0.002, b.y - 0.001, b.radius, b.height) for b in reversed(first)]
+    assert refused.among(later) == {1}
+    later = [later[1], later[0], later[2]]
+    assert refused.among(later) == {0}
+    # A number past the end of the look is not a glass, and is not remembered.
+    refused.add(first, 7)
+    assert len(refused.places) == 1
+
+
+def test_the_geometry_never_pushes_a_glass_that_already_has_room():
+    import geometry_reference
+
+    seen = _seen_on(2000)
+    free = geometry_reference.already_free(seen)
+    assert free, "table 2000 starts with glasses that have room; the test needs one"
+    assert len(free) < len(seen)
+    push = geometry_reference.Geometry().choose(seen, free)
+    assert push is None or push.glass not in free
+
+
+def test_only_the_geometry_solutions_copies_of_problem_three_see_the_arms_top_edge():
+    import geometry_ranked
+    import geometry_reference
+
+    from examiner.simulation import table_draw
+    from examiner.simulation.taken_from_problem_3 import JAW_TOP
+
+    arm = geometry_reference.TOP_EDGE
+    assert arm == pytest.approx(JAW_TOP + 0.010)
+    assert arm == geometry_reference.plan.JAW_TOP
+    assert arm == geometry_ranked.candidates.nudge.JAW_TOP
+    assert arm == geometry_ranked.ranker.features.JAW_TOP
+    # The table draw keeps problem 3's top edge, so the tables stay the tables.
+    assert table_draw.solution_one().JAW_TOP == JAW_TOP
+    assert sys.modules["bench"].JAW_TOP == JAW_TOP

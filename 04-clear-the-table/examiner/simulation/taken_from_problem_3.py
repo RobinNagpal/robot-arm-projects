@@ -34,6 +34,7 @@ if str(GEOMETRY) not in sys.path:
 # calls a table in the physics engine a bench; here it is a simulator, run by
 # the examiner.
 from common_bench import (  # noqa: E402
+    FINGER_HEIGHT,
     GRIP_ROOM,
     JAW_FRICTION,
     JAW_PARTS,
@@ -72,11 +73,14 @@ from top_view import TOP_VIEW_FOVY_DEG, TOP_VIEW_SIZE  # noqa: E402
 from work_cell.rack.layout import GLASS_ZONE  # noqa: E402
 
 __all__ = [
+    "FINGER_HEIGHT",
     "GEOMETRY",
     "GLASS_ZONE",
     "GRIP_ROOM",
     "PUSHING",
     # The gripper's own shape, which problem 3's planner checks a push against.
+    # JAW_TOP is where problem 3's hand has its top edge; problem 4's geometry
+    # solutions hand problem 3's files the arm's own (geometry_reference.arm_bench).
     "JAW_FRICTION",
     "JAW_PARTS",
     "JAW_SEGMENTS",

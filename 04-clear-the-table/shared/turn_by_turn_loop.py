@@ -123,6 +123,34 @@ class Memory:
                 self.boxes.append(box)
 
 
+class Refused:
+    """The glasses not to ask for again on this table, remembered by where they stand.
+
+    A glass's number is only its place in one look's list of boxes, and the next look can list
+    the same glasses in another order. So a number kept from one look can name a different
+    glass in the next one, and the glass that was refused would be asked for again. A refused
+    glass is therefore kept as the place it stands, and it is found in every later look as the
+    box within ``Memory.MATCH`` of that place, the same test that tells two pictures of one
+    glass apart from two glasses.
+    """
+
+    def __init__(self) -> None:
+        self.places: list[tuple[float, float]] = []
+
+    def add(self, boxes: tuple[Box, ...] | list[Box], glass: int) -> None:
+        """Remember glass ``glass`` of ``boxes``, the look the refused push was asked from."""
+        if 0 <= glass < len(boxes):
+            self.places.append((boxes[glass].x, boxes[glass].y))
+
+    def among(self, boxes: tuple[Box, ...] | list[Box]) -> set[int]:
+        """The numbers that the remembered glasses have in this look."""
+        return {
+            k
+            for k, box in enumerate(boxes)
+            if any(math.dist((box.x, box.y), place) < Memory.MATCH for place in self.places)
+        }
+
+
 def after(boxes: list[Box], request: Request) -> list[Box]:
     """The boxes as they should be after a push: the pushed glass where it was aimed, with room to spare."""
     pushed = boxes[request.glass]

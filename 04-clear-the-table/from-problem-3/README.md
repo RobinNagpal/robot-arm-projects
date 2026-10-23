@@ -26,6 +26,7 @@ again.
 | `01-one-fixed-nudge/plan.py` | problem 3's geometry planner, which solutions 1 and 2 and the table draw use |
 | `02-geometry-ranked/candidates.py`, `features.py`, `ranker.py` | problem 3's list of safe pushes and its fitted trees, which solution 2 orders its pushes with |
 
-Solution 2 also reads problem 3's fitted trees, `02-geometry-ranked/model/`. They are not kept
-in git. Problem 3 makes them with `make train` in its `02-geometry-ranked` folder, and they are
-copied here from there.
+Solution 2 also reads problem 3's fitted trees, `02-geometry-ranked/model/ranker.joblib`. Problem 3
+makes them with `make train` in its `02-geometry-ranked` folder, where they are not kept in git.
+The copy here is kept in git, byte for byte the same as problem 3's file, so that solution 2 runs
+from a fresh copy of the repository without training anything in problem 3 first.

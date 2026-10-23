@@ -12,9 +12,11 @@ score it.
 The solution reads the boxes the box model found, turns each box back into the measurements
 problem 3's planner reads, and asks that planner for a push. Problem 3's planner is used as it
 is, from this problem's copy in [`../from-problem-3/`](../from-problem-3/README.md), so a
-difference between the two problems is the arm and not the geometry. The loop that looks,
-pushes and says when the table is finished is the one every solution shares, in
-[`../shared/turn_by_turn_loop.py`](../shared/turn_by_turn_loop.py).
+difference between the two problems is the arm and not the geometry. The solution only tells
+the planner two things about the arm's cell: where the arm's hand has its top edge, which is
+10 mm higher than problem 3's, and which glasses already have room and so are left alone. The
+loop that looks, pushes and says when the table is finished is the one every solution shares,
+in [`../shared/turn_by_turn_loop.py`](../shared/turn_by_turn_loop.py).
 
 The full explanation, and what it scores, is on its page in the documents:
 [the geometry reference](../docs/solutions/01-geometry-reference.md).
