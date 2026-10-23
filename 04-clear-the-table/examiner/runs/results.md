@@ -17,15 +17,15 @@ Every solution is seeded by the table number, but MoveIt's planner draws its arm
 
 | Solution | Separated at start → end | Gain | Fell over | Tables better | Tables worse | Tables not touched | Pushes | Arm minutes |
 |---|---|---|---|---|---|---|---|---|
-| solution_1_geometry | 38 → 38 | +0 | 6 | 5 | 8 | 8 | 78 | 16.8 |
-| solution_2_geometry_ranked | 38 → 42 | +4 | 10 | 5 | 11 | 8 | 33 | 6.9 |
-| solution_3_imitation | 38 → 39 | +1 | 5 | 1 | 5 | 12 | 30 | 7.6 |
+| solution_1_geometry | 38 → 51 | +13 | 6 | 7 | 6 | 13 | 17 | 3.9 |
+| solution_2_geometry_ranked | 38 → 45 | +7 | 6 | 4 | 6 | 15 | 11 | 2.7 |
+| solution_3_imitation | 38 → 38 | +0 | 10 | 1 | 11 | 9 | 23 | 5.9 |
 | solution_3_imitation_with_check | 38 → 38 | +0 | 0 | 0 | 0 | 23 | 3 | 2.3 |
 | solution_4_world_model | 38 → 43 | +5 | 0 | 4 | 0 | 20 | 5 | 2.0 |
-| solution_5_reinforcement | 38 → 40 | +2 | 2 | 1 | 1 | 20 | 28 | 7.6 |
+| solution_5_reinforcement | 38 → 40 | +2 | 2 | 1 | 2 | 19 | 29 | 9.8 |
 | solution_5_reinforcement_with_check | 38 → 38 | +0 | 0 | 1 | 1 | 22 | 8 | 3.1 |
-| solution_6_smolvla | 38 → 33 | -5 | 8 | 1 | 10 | 9 | 19 | 5.6 |
-| solution_6_smolvla_with_check | 38 → 40 | +2 | 0 | 2 | 1 | 19 | 13 | 5.6 |
+| solution_6_smolvla | 38 → 34 | -4 | 10 | 1 | 12 | 8 | 24 | 6.8 |
+| solution_6_smolvla_with_check | 38 → 39 | +1 | 1 | 2 | 2 | 19 | 10 | 4.1 |
 | ceiling | 38 → 47 | +9 | 0 | 5 | 0 | 20 | 5 | 0.7 |
 
 A table is *worse* when it ends with fewer glasses separated or with a glass fallen over, and *not touched* when the solution stopped without a single push.
@@ -36,15 +36,15 @@ A push's direction is measured against the direction straight away from the glas
 
 | Solution | In the gap | At the side | On the far side | Refused by MoveIt | Rejected by the check |
 |---|---|---|---|---|---|
-| solution_1_geometry | 17 of 30 | 44 of 72 | 17 of 17 | 41 | 0 |
-| solution_2_geometry_ranked | 1 of 6 | 31 of 62 | 1 of 3 | 38 | 0 |
-| solution_3_imitation | 0 of 6 | 24 of 34 | 6 of 14 | 24 | 0 |
+| solution_1_geometry | 0 of 0 | 17 of 30 | 0 of 0 | 13 | 0 |
+| solution_2_geometry_ranked | 1 of 1 | 10 of 25 | 0 of 0 | 15 | 0 |
+| solution_3_imitation | 0 of 4 | 10 of 21 | 13 of 15 | 17 | 0 |
 | solution_3_imitation_with_check | 0 of 6 | 3 of 21 | 0 of 15 | 3 | 36 |
 | solution_4_world_model | 0 of 1 | 5 of 6 | 0 of 0 | 2 | 0 |
-| solution_5_reinforcement | 0 of 1 | 28 of 48 | 0 of 0 | 21 | 0 |
-| solution_5_reinforcement_with_check | 0 of 0 | 8 of 33 | 0 of 0 | 4 | 21 |
-| solution_6_smolvla | 1 of 11 | 11 of 18 | 7 of 10 | 20 | 0 |
-| solution_6_smolvla_with_check | 1 of 12 | 10 of 21 | 2 of 10 | 7 | 23 |
+| solution_5_reinforcement | 0 of 1 | 29 of 48 | 0 of 0 | 20 | 0 |
+| solution_5_reinforcement_with_check | 0 of 1 | 8 of 33 | 0 of 0 | 4 | 22 |
+| solution_6_smolvla | 3 of 11 | 14 of 20 | 7 of 10 | 17 | 0 |
+| solution_6_smolvla_with_check | 1 of 11 | 7 of 18 | 2 of 10 | 6 | 23 |
 | ceiling | 0 of 0 | 5 of 5 | 0 of 0 | 0 | 0 |
 
 ## Each table
@@ -53,31 +53,31 @@ Each cell is the number of separated glasses at the end, and ✗ marks a glass t
 
 | Table | Start | 1_geometry | 2_geometry_ranked | 3_imitation | 3_imitation_with_check | 4_world_model | 5_reinforcement | 5_reinforcement_with_check | 6_smolvla | 6_smolvla_with_check | ceiling |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| [10000](10000/arrangement.png) | 1 of 4 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 |
-| [10001](10001/arrangement.png) | 2 of 4 | 1 | 3 | 2 | 2 | 2 | 2 | 0 | 1 | 1 | 4 |
+| [10000](10000/arrangement.png) | 1 of 4 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 ✗ | 1 | 1 |
+| [10001](10001/arrangement.png) | 2 of 4 | 4 | 4 | 2 | 2 | 2 | 2 | 0 | 1 | 1 | 4 |
 | [10002](10002/arrangement.png) | 2 of 5 | 2 | 2 ✗ | 2 | 2 | 2 | 2 ✗ | 2 | 1 | 2 | 2 |
-| [10003](10003/arrangement.png) | 1 of 3 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 |
-| [10004](10004/arrangement.png) | 1 of 3 | 2 | 3 | 1 | 1 | 3 | 3 | 3 | 1 | 3 | 3 |
-| [10005](10005/arrangement.png) | 1 of 3 | 0 ✗ | 1 | 1 | 1 | 1 | 1 | 1 | 0 ✗ | 1 | 1 |
-| [10006](10006/arrangement.png) | 1 of 3 | 1 ✗ | 2 ✗ | 1 ✗ | 1 | 1 | 1 | 1 | 1 ✗ | 1 | 1 |
-| [10007](10007/arrangement.png) | 2 of 4 | 4 | 1 | 2 | 2 | 3 | 2 | 2 | 2 | 2 | 4 |
-| [10008](10008/arrangement.png) | 2 of 4 | 1 ✗ | 2 ✗ | 2 | 2 | 2 | 2 | 2 | 1 ✗ | 3 | 2 |
+| [10003](10003/arrangement.png) | 1 of 3 | 3 | 1 | 1 ✗ | 1 | 1 | 1 | 1 | 1 | 1 | 1 |
+| [10004](10004/arrangement.png) | 1 of 3 | 3 | 3 | 1 | 1 | 3 | 3 | 3 | 3 | 1 | 3 |
+| [10005](10005/arrangement.png) | 1 of 3 | 1 | 1 | 1 ✗ | 1 | 1 | 1 | 1 | 0 ✗ | 1 | 1 |
+| [10006](10006/arrangement.png) | 1 of 3 | 1 ✗ | 1 | 1 ✗ | 1 | 1 | 1 | 1 | 1 ✗ | 1 | 1 |
+| [10007](10007/arrangement.png) | 2 of 4 | 4 | 2 | 2 | 2 | 3 | 2 | 2 | 2 | 2 | 4 |
+| [10008](10008/arrangement.png) | 2 of 4 | 2 ✗ | 2 ✗ | 2 | 2 | 2 | 2 | 2 | 1 ✗ | 3 | 2 |
 | [10009](10009/arrangement.png) | 2 of 4 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 1 ✗ | 2 | 2 |
-| [10010](10010/arrangement.png) | 1 of 3 | 1 | 3 | 1 | 1 | 2 | 1 | 1 | 1 | 1 | 3 |
+| [10010](10010/arrangement.png) | 1 of 3 | 3 | 3 | 1 | 1 | 2 | 1 | 1 | 1 | 1 | 3 |
 | [10011](10011/arrangement.png) | 2 of 5 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 1 ✗ | 2 | 2 |
-| [10012](10012/arrangement.png) | 1 of 4 | 0 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 |
-| [10013](10013/arrangement.png) | 1 of 3 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 |
-| [10014](10014/arrangement.png) | 2 of 5 | 3 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 2 |
-| [10015](10015/arrangement.png) | 1 of 4 | 2 | 1 ✗ | 1 | 1 | 2 | 1 | 1 | 1 | 1 | 2 |
-| [10016](10016/arrangement.png) | 2 of 4 | 4 | 2 ✗ | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 2 |
-| [10017](10017/arrangement.png) | 1 of 3 | 0 ✗ | 2 ✗ | 1 | 1 | 1 | 1 | 1 | 1 ✗ | 1 | 1 |
+| [10012](10012/arrangement.png) | 1 of 4 | 1 | 1 | 0 | 1 | 1 | 1 | 1 | 1 | 1 | 1 |
+| [10013](10013/arrangement.png) | 1 of 3 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 ✗ | 2 ✗ | 1 |
+| [10014](10014/arrangement.png) | 2 of 5 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 2 |
+| [10015](10015/arrangement.png) | 1 of 4 | 2 ✗ | 1 ✗ | 1 | 1 | 2 | 1 | 1 | 1 | 1 | 2 |
+| [10016](10016/arrangement.png) | 2 of 4 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 2 |
+| [10017](10017/arrangement.png) | 1 of 3 | 1 ✗ | 1 | 1 ✗ | 1 | 1 | 1 ✗ | 1 | 1 ✗ | 1 | 1 |
 | [10018](10018/arrangement.png) | 2 of 5 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 2 ✗ | 2 | 2 |
-| [10019](10019/arrangement.png) | 1 of 4 | 1 | 1 ✗ | 2 ✗ | 1 | 1 | 1 | 1 | 2 ✗ | 1 | 1 |
+| [10019](10019/arrangement.png) | 1 of 4 | 3 | 1 ✗ | 2 ✗ | 1 | 1 | 1 | 1 | 1 ✗ | 1 | 1 |
 | [10020](10020/arrangement.png) | 2 of 5 | 2 | 2 | 2 ✗ | 2 | 2 | 2 | 2 | 2 | 2 | 2 |
-| [10021](10021/arrangement.png) | 2 of 4 | 2 | 1 ✗ | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 2 |
-| [10022](10022/arrangement.png) | 1 of 3 | 0 ✗ | 1 ✗ | 1 ✗ | 1 | 1 | 1 | 1 | 1 | 1 | 1 |
-| [10023](10023/arrangement.png) | 2 of 5 | 1 ✗ | 2 | 2 ✗ | 2 | 2 | 2 | 2 | 2 | 2 | 2 |
-| [10024](10024/arrangement.png) | 2 of 4 | 2 | 1 ✗ | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 2 |
+| [10021](10021/arrangement.png) | 2 of 4 | 2 | 2 | 2 ✗ | 2 | 2 | 2 | 2 | 2 | 2 | 2 |
+| [10022](10022/arrangement.png) | 1 of 3 | 1 ✗ | 1 ✗ | 1 ✗ | 1 | 1 | 1 | 1 | 1 | 1 | 1 |
+| [10023](10023/arrangement.png) | 2 of 5 | 2 | 2 | 2 ✗ | 2 | 2 | 2 | 2 | 2 | 2 | 2 |
+| [10024](10024/arrangement.png) | 2 of 4 | 2 ✗ | 3 ✗ | 2 ✗ | 2 | 2 | 2 | 2 | 2 | 2 | 2 |
 
 ## Making it again
 
