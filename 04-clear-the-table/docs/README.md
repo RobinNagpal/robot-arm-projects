@@ -35,7 +35,10 @@ from both viewing places, because a glass hidden behind another glass is missing
 picture. After a push, a solution that reads only the boxes goes to the nearer place first,
 and goes on to the other only when the first picture shows fewer glasses than before. SmolVLA
 reads the pictures themselves, so it takes both on every turn. A push that MoveIt refuses
-moves nothing, so after one, no solution looks again.
+moves nothing, so after one, no solution looks again. Every solution also remembers the glass
+whose push was refused and does not ask for it again on that table. It remembers the glass by
+where it stands rather than by its number, because the next look can list the same glasses in
+a different order, and then a number would name a different glass.
 
 ![The same table from the two viewing places, with the boxes the box model drew](../images/two-views-and-boxes.png)
 
@@ -68,17 +71,17 @@ brackets shows how much the figure depends on which tables were drawn.
 
 | Solution | Tables reached | Gain in pickable glasses (90 % range) | Glasses broken | Arm minutes |
 |---|---|---|---|---|
-| 1 Geometry reference | 22 | +5 (0 to +11) | 3 | 14.9 |
-| 2 Geometry ranked | 34 | +4 (−2 to +10) | 14 | 15.0 |
-| 3 Imitation | 50 | +1 (−2 to +4) | 19 | 10.0 |
-| 3 Imitation, with the safety check | 50 | +2 (0 to +4) | 0 | 4.3 |
-| 3 Imitation, also copying the ceiling | 50 | +1 (0 to +3) | 8 | 5.3 |
-| 3 Imitation, also copying the ceiling, with the safety check | 50 | +1 (0 to +3) | 0 | 2.8 |
-| **4 World model** | **50** | **+6 (+2 to +11)** | **2** | **4.6** |
-| 5 Reinforcement learning | 43 | +5 (+1 to +10) | 2 | 14.9 |
-| 5 Reinforcement learning, with the safety check | 50 | +1 (−4 to +6) | 1 | 5.3 |
-| 6 SmolVLA | 50 | +1 (−3 to +6) | 17 | 12.5 |
-| 6 SmolVLA, with the safety check | 50 | +0 (−2 to +2) | 5 | 6.1 |
+| 1 Geometry reference | 50 | +11 (+4 to +19) | 18 | 6.8 |
+| 2 Geometry ranked | 50 | +9 (+3 to +15) | 16 | 7.8 |
+| 3 Imitation | 50 | +1 (−2 to +4) | 31 | 14.6 |
+| 3 Imitation, with the safety check | 50 | +2 (0 to +4) | 1 | 4.8 |
+| 3 Imitation, also copying the ceiling | 50 | +1 (0 to +3) | 10 | 6.4 |
+| 3 Imitation, also copying the ceiling, with the safety check | 50 | +1 (0 to +3) | 2 | 3.2 |
+| **4 World model** | **50** | **+6 (+2 to +11)** | **2** | **4.5** |
+| 5 Reinforcement learning | 41 | +4 (0 to +8) | 4 | 14.9 |
+| 5 Reinforcement learning, with the safety check | 50 | +1 (−4 to +6) | 1 | 4.7 |
+| 6 SmolVLA | 50 | +1 (−3 to +6) | 24 | 14.4 |
+| 6 SmolVLA, with the safety check | 50 | +1 (−2 to +4) | 3 | 6.3 |
 | The ceiling (tries 30 pushes first) | 50 | +24 (+15 to +34) | 0 | 4.8 |
 
 To see what each solution did on one table, open the [runs](../examiner/runs/results.md)
@@ -89,23 +92,30 @@ see whether the hand came down in the gap between two glasses or at the side.
 
 ## What the results say
 
-- **Learning from failures matters most.** The world model learns from every push,
-  including the ones that tipped a glass or could not be planned, and reinforcement learning
-  is scored on its failures as it practises. So both know which pushes to avoid, and they are
-  the only two solutions whose gain is clearly above zero. Reinforcement learning, however,
-  spends its arm time on a few tables where it keeps pushing, so it reaches only 43 tables.
+- **Knowing which glasses tip matters most.** The two geometry solutions gain the most, +11
+  and +9, because they push only crowded glasses and make every safe push the geometry finds.
+  However, they break a glass on about one table in three. Problem 3's tipping rule calls
+  most crowded glasses on these tables uncertain, because friction decides whether they slide
+  or tip. Problem 3 settles that with a short test push, but on the arm a test push cannot
+  tell a slide from a lean (see [the geometry reference](solutions/01-geometry-reference.md)),
+  so the geometry pushes them anyway. The world model learns from every push, including the
+  ones that tipped a glass, so it gains +6 and breaks only 2. That is why it is marked as the
+  answer: of the solutions that break almost nothing, it gains the most. Reinforcement
+  learning is also scored on its failures and breaks few, but it spends its arm time on a few
+  tables where it keeps pushing, so it reaches only 41 tables.
 - **Copying only successes breaks glasses.** Imitation and SmolVLA never saw a push that
   tipped a glass, so they push glasses that tip. The safety check removes most of that
   breakage. However, it does not add any gain, because a check can only reject pushes and
   cannot propose better ones.
-- **An ordering learned in problem 3 does not carry over.** Solution 2 chooses from the same
-  pushes as solution 1, with the same settings, and breaks 14 glasses where solution 1 breaks
-  3, so the pushes problem 3's trees prefer are the ones that tip when the arm makes them.
+- **An ordering learned in problem 3 adds nothing on the arm.** Solution 2 chooses from the
+  same pushes as solution 1, with the same settings. It gains +9 and breaks 16, where
+  solution 1 gains +11 and breaks 18, and that difference is within the noise of one run.
 - **The arm cannot make most pushes.** About three pushes in four cannot be planned at all,
   and the push a person would try first is never possible. [What the pushes
   show](what-the-pushes-show.md) explains why.
-- **There is much more to find.** The ceiling gains 24 glasses, so the best solution finds
-  about a quarter of what is there.
+- **There is much more to find.** The ceiling gains 24 glasses and breaks none. The world
+  model finds about a quarter of that, and the geometry finds nearly half but pays for it in
+  broken glasses.
 - **One run is noisy, so small differences mean nothing.** These results were measured again
   after the solutions were given the choice of how much to look, with no model trained again.
   Several of them moved by two to four glasses. The cause is not the looking alone: a slightly
@@ -113,6 +123,13 @@ see whether the hand came down in the gap between two glasses or at the side.
   changed push changes the rest of that table. The range in brackets covers only which
   tables were drawn, not this noise. So a difference of two or three glasses between two
   solutions should not be read as real.
+- **Remembering refused glasses correctly made two solutions break more.** Every solution
+  used to remember a glass MoveIt refused by its number in the list of boxes. After the next
+  look that number could belong to another glass, which was then never pushed again on that
+  table. Now the glass is remembered by where it stands, so imitation and SmolVLA have more
+  glasses left to choose from. They push for longer and break more: imitation 31 glasses
+  instead of 19, and SmolVLA 24 instead of 17. A second run of imitation gave exactly the
+  same result, so the change comes from the fix and not from noise.
 
 ## Films
 
@@ -135,7 +152,9 @@ a glass went over.
 | 6 SmolVLA | 1 → 2 | 1 → 3 | 2 → 2 | 2 → 2 | 1 → 0 ✗ |
 | 6 SmolVLA, with the check | 1 → 2 | 1 → 3 | 2 → 2 | 2 → 2 | 1 → 1 |
 
-The films were made before the solutions chose how much to look, when every solution
+The films and this table are older than the results above: they were made before every
+solution remembered a refused glass by where it stands, and before the geometry solutions
+left glasses with room alone, and they are being made again. The films were also made before the solutions chose how much to look, when every solution
 looked from both places on every turn, so a film can differ from what the same solution
 does now. The one exception is solution 2, which was filmed when it was added, with the
 looking it does now. Five tables are too few to rank the solutions; the results table above does that. The films

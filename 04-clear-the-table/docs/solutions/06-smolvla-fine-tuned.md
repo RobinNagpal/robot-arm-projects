@@ -34,8 +34,10 @@ trained, and nothing would warn about it.
 
 ## How it does
 
-It gains 1 pickable glass and breaks 17 (see the [results](../README.md#results)). With
-the [safety check](safety-check.md) it breaks 5, and it still gains nothing. Measured before
+It gains 1 pickable glass and breaks 24 (see the [results](../README.md#results)). With
+the [safety check](safety-check.md) it breaks 3, and it still gains only 1. It broke 17 before
+every solution remembered a refused glass by where it stands; with more glasses left to
+choose from, it now pushes for longer. Measured before
 the solutions chose how much to look, it lost 3 and broke 25. SmolVLA reads both pictures on
 every turn, as it did then, so the difference comes from the random noise it draws for each
 answer, which now starts from the same draw on every table. Fitted on fewer examples, it

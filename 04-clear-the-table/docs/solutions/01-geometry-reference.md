@@ -42,11 +42,24 @@ model can list the glasses in a different order on the next look.
 
 ## How it does
 
-It gains 5 glasses and breaks 3, and it uses all 15 arm minutes on only 22 tables (see the
-[results](../README.md#results)). It spends about 40 arm seconds on each table, where the
-world model spends about 6, because it makes every push the geometry finds instead of
-judging which ones are worth making. It also cannot tell which glasses tip. Both are what
-the learned solutions are meant to improve.
+It reaches all 50 tables in under 7 arm minutes, gains 11 glasses and breaks 18 (see the
+[results](../README.md#results)). Its gain is the largest of any solution, because it pushes
+only crowded glasses and makes every safe push the geometry finds. Its breakage is also among
+the largest, with a glass going over on about one table in three.
+
+The breakage comes from the tipping rule. At the arm's top edge, the rule calls about four
+crowded glasses in five on these tables uncertain: whether such a glass slides or tips
+depends on the friction between it and the table, and nothing in the cell measures that.
+Problem 3 settles the question with a test push of 5 mm, and it counts the glass as sliding
+when the glass moved 1.5 mm. On the arm that test cannot work, because the box model places a
+glass with a typical error of 1.2 mm, and 90 % of its errors are within 5 mm. So a slide
+and a lean look the same. The geometry therefore pushes every uncertain glass, and knowing
+which of them tip is what the learned solutions are meant to add.
+
+Before it left out the glasses that already have room, and before the tipping rule was asked
+at the arm's top edge, it gained 5 and broke 3, and it used all 15 arm minutes on only 22
+tables. Most of its pushes then went to glasses that already had room, which are safe
+to push and gain nothing.
 
 ## Where the code is
 

@@ -33,10 +33,10 @@ answer "finished". This gives 883 examples, of which 288 say "finished".
 
 Every example is a push that worked, and almost all of them are pushes on straight glasses.
 So the network learns *where* to push, but it never sees a glass that should be left alone.
-It pushes stemmed and tapered glasses as readily as straight ones, and it breaks 19 glasses
+It pushes stemmed and tapered glasses as readily as straight ones, and it breaks 31 glasses
 on the held-out tables.
 
-The [safety check](safety-check.md) fixes the breakage: with it, imitation breaks no glass
+The [safety check](safety-check.md) fixes the breakage: with it, imitation breaks 1 glass
 and gains 2, where it gains 1 without it. That small rise is within the noise of one run.
 The check cannot raise the gain much, because it can only reject imitation's pushes, and
 imitation rarely proposes a push that frees a glass.
@@ -54,18 +54,18 @@ alone. Training a fast network to copy a slow, strong method like this is called
 On 240 training tables the search gave 367 lessons: 127 pushes, and 181 crowded tables
 marked "finished", most of them with stemmed glasses. Imitation was trained on its old 883
 examples plus these lessons, with each lesson shown three times. On the held-out tables it
-then broke 8 glasses instead of 19, because it had learned when to stop. Its gain, however,
-stayed at 1, and with the safety check it scored +1 with nothing broken, which is no better
-than the safety check alone. A few hundred lessons teach it when to stop, but too few good
+then broke 10 glasses instead of 31, because it had learned when to stop. Its gain, however,
+stayed at 1, and with the safety check it scored +1 with 2 broken, which is no better than
+the safety check alone. A few hundred lessons teach it when to stop, but too few good
 pushes to copy.
 
 A second run on 480 more training tables tripled the lessons to 1,103, and this did not
 help. Two thirds of the lessons say "finished", so imitation learned to stop on almost every
 table and gained nothing. Showing the pushes three times as often as the "finished" lessons
-gave +3 with 7 broken, or +0 with nothing broken once the check was on. Leaving the
+gave +1 with 10 broken, or +0 with 2 broken once the check was on. Leaving the
 "finished" lessons out entirely did well on the tuning tables, but on the held-out tables it
-broke 29 glasses, and with the check it lost 3. So no version that breaks nothing does
-better than the plain imitation with the safety check. A few hundred example pushes are not enough for
+broke 33 glasses, and with the check it lost 3. So no version that breaks almost nothing
+does better than the plain imitation with the safety check. A few hundred example pushes are not enough for
 imitation to learn which push frees a glass. That needs either many more lessons, or a model
 that also learns from the pushes that failed, which is what the world model does.
 

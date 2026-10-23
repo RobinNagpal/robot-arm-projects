@@ -31,16 +31,17 @@ cell, where the hand feels for the glass before it pushes, and on the room a pus
 
 ## How it does
 
-It gains 4 glasses and breaks 14, and it reaches 34 tables in the 15 arm minutes (see the
+It reaches all 50 tables in under 8 arm minutes, gains 9 glasses and breaks 16 (see the
 [results](../README.md#results)). Solution 1, choosing from the same pushes with the same
-settings, gains 5 and breaks 3. Since the choice is the only difference, the pushes the trees
-prefer tip glasses far more often when the arm makes them. It reaches more tables than
-solution 1 partly for the same reason: a table on which a glass goes over ends at once, so the
-arm time it would have spent there goes to the next table.
+settings, gains 11 and breaks 18. The difference is within the noise of one run, so the
+ordering learned in problem 3 neither helps nor harms on the arm.
 
-So an ordering learned in problem 3 does not carry over to the arm. To help here, the trees
-would have to learn from pushes the arm made, including the ones that tipped a glass, which is
-what the [world model](04-world-model.md) does.
+That is not surprising, because the trees cannot fix what makes solution 1 break glasses. Both
+solutions push glasses whose tipping is uncertain, and the trees were fitted in problem 3's
+cell, where an uncertain glass was always tested with a short push before it was pushed for
+real. So the trees never had to learn which uncertain glasses tip. To help here, they would
+have to learn from pushes the arm made, including the ones that tipped a glass, which is what
+the [world model](04-world-model.md) does.
 
 ## Where the code is
 

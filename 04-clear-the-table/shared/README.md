@@ -21,7 +21,9 @@ solution different.
 **`turn_by_turn_loop.py`** is the loop that every solution is built on. A solution only says what
 to do with one look, and the loop does the looking, carries out the push and asks again.
 It also holds the two ways of looking that a solution can choose between: looking only as much
-as it needs, or looking from both viewing places on every turn.
+as it needs, or looking from both viewing places on every turn. And it holds the memory of the
+glasses MoveIt refused to push, which every solution keeps by where each glass stands, because
+a glass's number is only its place in one look's list.
 
 **`seeing`** is job 0, the box model: a small network that reads a wrist picture and draws a box
 round every glass in it, so that MoveIt can plan round the glasses and a solution can choose

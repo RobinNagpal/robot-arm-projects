@@ -9,7 +9,8 @@ what it can and cannot fix.
 Every push the solution chooses is first shown to the world model, which predicts the
 chance that the push tips a glass if MoveIt plans it. If that chance is above 15 %, the push
 is rejected. The glass is then set aside for this table, and the solution is asked again,
-exactly as if MoveIt had refused the push. The 15 % limit was set on the training tables.
+exactly as if MoveIt had refused the push. Like a refused glass, it is remembered by where it
+stands, so it stays set aside however the next look lists the glasses. The 15 % limit was set on the training tables.
 
 So the solution still chooses the glass, the direction and the settings. The check only
 rejects pushes that look dangerous, and it never changes a push. A solution with the check
@@ -19,9 +20,9 @@ is a hybrid, because two models now take part in the decision.
 
 | With the check | Glasses broken | Gain |
 |---|---|---|
-| 3 Imitation | 19 → 0 | +1 → +2 |
-| 5 Reinforcement learning | 2 → 1 | +5 → +1 |
-| 6 SmolVLA | 17 → 5 | +1 → +0 |
+| 3 Imitation | 31 → 1 | +1 → +2 |
+| 5 Reinforcement learning | 4 → 1 | +4 → +1 |
+| 6 SmolVLA | 24 → 3 | +1 → +1 |
 
 The check works like a filter on a function's outputs: it can remove bad values, but it
 cannot produce values the function never gave. So it removes most of the breakage, but it

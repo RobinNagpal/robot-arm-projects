@@ -67,9 +67,10 @@ of that size is within the noise of one run.
 ## How it does
 
 It gains 6 glasses, breaks 2, and says "finished" on 48 of the 50 tables, using under 5 arm
-minutes (see the [results](../README.md#results)). It gains the most of any solution, and
-with reinforcement learning it is one of only two whose gain is clearly above zero. However,
-it finds only about a quarter of what the ceiling finds. A wider
+minutes (see the [results](../README.md#results)). The two geometry solutions gain more,
++11 and +9, but they break 18 and 16 glasses, because nothing in them knows which glasses tip.
+Of the solutions that break almost nothing, the world model gains the most. However, it finds
+only about a quarter of what the ceiling finds. A wider
 search did not help: three times as many candidates gave +5 against +6 on the training
 tables. More gain would need data chosen where the five models disagree, or a search that
 plans two pushes ahead.
