@@ -45,3 +45,7 @@ glasses in the pictures, and as [the speed
 table](../what-the-pushes-show.md#how-each-solution-sets-its-speed) shows, it gives every
 kind of glass nearly the same settings. It also has very little to learn from: about 880
 examples and 600 steps, for a model that was originally trained on millions of frames.
+
+## Where the code is
+
+Its code is in [`06-smolvla-fine-tuned/`](../../06-smolvla-fine-tuned/README.md). The fitted correction is too large to keep in git, so `make vla-data vla` makes it again.

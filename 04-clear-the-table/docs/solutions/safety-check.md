@@ -31,3 +31,7 @@ in reinforcement learning's gain is within its range, so it is not a real differ
 Two other ideas were tried on the training tables and did not help. Letting the world model
 choose safer settings for a risky push did no better than rejecting it. Also rejecting
 pushes the world model expected to leave fewer glasses with room changed nothing.
+
+## Where the code is
+
+Its code is in [`04-world-model/`](../../04-world-model/README.md), beside the world model it asks.

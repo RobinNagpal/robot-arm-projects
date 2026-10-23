@@ -1,0 +1,3 @@
+# The box model's pictures, made again by `make box-data`, and large.
+seeing/data/*.pkl
+__pycache__/

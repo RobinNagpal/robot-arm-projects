@@ -30,7 +30,7 @@ When two glasses touch, the natural way to separate them is to push one straight
 the other. To do that, the hand must come down in the gap between them, and the hand and
 wrist do not fit there.
 
-![Share of pushes MoveIt could plan, by direction](../images/full-arm-feasible-by-direction.png)
+![Share of pushes MoveIt could plan, by direction](../images/feasible-by-direction.png)
 
 The picture shows the 1,927 random pushes of round 1, which were spread evenly over every
 direction. None of the 127 pushes within 23 degrees of straight away from the nearest
@@ -44,7 +44,7 @@ The turned hand is narrow but tall, so it meets a glass along a band of the glas
 A glass with a wide foot and straight sides slides. A glass with a narrow foot or a stem
 tips over.
 
-![Share of pushes that tipped the glass, by kind of glass](../images/full-arm-topple-by-kind.png)
+![Share of pushes that tipped the glass, by kind of glass](../images/topple-by-kind.png)
 
 The picture uses the first 4,794 pushes. Of the pushes MoveIt could plan, about one in ten
 tipped a straight glass, and more than seven in ten tipped every other kind. Since each
@@ -53,7 +53,7 @@ tables the right answer is usually to leave the table alone.
 
 ## Height matters, and speed does not
 
-![Share of pushes that tipped the glass, by how high the hand rode](../images/full-arm-topple-by-height.png)
+![Share of pushes that tipped the glass, by how high the hand rode](../images/topple-by-height.png)
 
 The lower the hand rides, the less often the glass tips. A straight glass pushed below
 92 mm never tipped: none of 155 pushes. The hand cannot ride lower than 75 mm, because its
@@ -74,7 +74,7 @@ that kind of glass.
 
 | Solution | Straight | Tapered | Stemmed | Short stemmed |
 |---|---|---|---|---|
-| 1–2 Geometry reference (fixed) | 50 | 50 | 50 | 50 |
+| 1 Geometry reference and 2 geometry ranked (fixed) | 50 | 50 | 50 | 50 |
 | 3 Imitation | 51 | 20 | 36 | 44 |
 | 4 World model | 119 | 89 | 54 | — |
 | 5 Reinforcement learning | 14 | 11 | 12 | 7 |

@@ -39,7 +39,7 @@ earlier problem's folder first: a `common_` file with the shared part, and the
 earlier problem's own file, whose classes extend the common ones and which
 passes on the common names. Then the later problem copies only the `common_`
 file and extends it with its own. Problem 3's `bench/` is split this way, and
-problem 4's `examiner/simulator.py` extends the copy of `common_bench.py`.
+problem 4's `examiner/simulation/table_simulator.py` extends the copy of `common_bench.py`.
 
 ## The glass problems, 01 to 06
 

@@ -68,3 +68,7 @@ broke 29 glasses, and with the check it lost 3. So no version that breaks nothin
 better than the plain imitation with the safety check. A few hundred example pushes are not enough for
 imitation to learn which push frees a glass. That needs either many more lessons, or a model
 that also learns from the pushes that failed, which is what the world model does.
+
+## Where the code is
+
+Its code and weights are in [`03-imitation/`](../../03-imitation/README.md), together with the program that runs the ceiling on training tables to write the extra lessons.

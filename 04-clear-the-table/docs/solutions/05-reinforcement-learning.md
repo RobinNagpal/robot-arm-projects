@@ -47,7 +47,7 @@ held-out tables it uses the real box model.
 
 ## What it learned
 
-![Share of pushes MoveIt could not plan, and share that tipped a glass, round by round](../../images/full-arm-reinforcement-curve.png)
+![Share of pushes MoveIt could not plan, and share that tipped a glass, round by round](../../images/reinforcement-curve.png)
 
 Over the 25 rounds, the share of pushes that tipped a glass fell from about one in eight to
 about one in seventeen. The share it said "finished" rose from 6 % to 30 %. However, the
@@ -70,3 +70,7 @@ borderline decisions going the other way, not of a new habit. The [safety
 check](safety-check.md) changes little, because it was already careful. To make it useful,
 it would need a better start, for example from imitation, or far more experience, which it
 could gain cheaply by practising inside the world model instead of the physics.
+
+## Where the code is
+
+Its code, its weights and the record of its training are in [`05-reinforcement-learning/`](../../05-reinforcement-learning/README.md).

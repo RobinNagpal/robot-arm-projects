@@ -1,5 +1,5 @@
-# The fitted corrections. Each is a few megabytes of the two thin tables beside
-# every attention projection, and train.py makes them again from the
-# demonstrations. What the fitting did is in weights/training.json, which is
-# small and is the record a reader needs, so that stays in.
-weights/correction-*/
+# Made again by `make vla-data vla`, and large.
+data/*.pkl
+weights/vla-*/
+weights/*-smoke/
+__pycache__/

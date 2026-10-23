@@ -1,0 +1,1610 @@
+{
+ "tables": 25,
+ "glasses": 98,
+ "separated_at_start": 38,
+ "tables_already_separated": 0,
+ "solutions": {
+  "solution_1_geometry": {
+   "name": "geometry, fixed settings",
+   "tables": 25,
+   "separated_at_start": 38,
+   "separated_at_end": 38,
+   "gain": 0,
+   "fell_over": 6,
+   "tables_better": 5,
+   "tables_worse": 8,
+   "tables_not_touched": 8,
+   "pushes": 78,
+   "arm_minutes": 16.8,
+   "asked_by_side": {
+    "in the gap": {
+     "made": 17,
+     "refused by MoveIt": 13,
+     "rejected by the safety check": 0
+    },
+    "at the side": {
+     "made": 44,
+     "refused by MoveIt": 28,
+     "rejected by the safety check": 0
+    },
+    "on the far side": {
+     "made": 17,
+     "refused by MoveIt": 0,
+     "rejected by the safety check": 0
+    }
+   }
+  },
+  "solution_2_geometry_ranked": {
+   "name": "geometry ranked, fixed settings",
+   "tables": 25,
+   "separated_at_start": 38,
+   "separated_at_end": 42,
+   "gain": 4,
+   "fell_over": 10,
+   "tables_better": 5,
+   "tables_worse": 11,
+   "tables_not_touched": 8,
+   "pushes": 33,
+   "arm_minutes": 6.9,
+   "asked_by_side": {
+    "in the gap": {
+     "made": 1,
+     "refused by MoveIt": 5,
+     "rejected by the safety check": 0
+    },
+    "at the side": {
+     "made": 31,
+     "refused by MoveIt": 31,
+     "rejected by the safety check": 0
+    },
+    "on the far side": {
+     "made": 1,
+     "refused by MoveIt": 2,
+     "rejected by the safety check": 0
+    }
+   }
+  },
+  "solution_3_imitation": {
+   "name": "imitation (copies the pushes that worked)",
+   "tables": 25,
+   "separated_at_start": 38,
+   "separated_at_end": 39,
+   "gain": 1,
+   "fell_over": 5,
+   "tables_better": 1,
+   "tables_worse": 5,
+   "tables_not_touched": 12,
+   "pushes": 30,
+   "arm_minutes": 7.6,
+   "asked_by_side": {
+    "in the gap": {
+     "made": 0,
+     "refused by MoveIt": 6,
+     "rejected by the safety check": 0
+    },
+    "at the side": {
+     "made": 24,
+     "refused by MoveIt": 10,
+     "rejected by the safety check": 0
+    },
+    "on the far side": {
+     "made": 6,
+     "refused by MoveIt": 8,
+     "rejected by the safety check": 0
+    }
+   }
+  },
+  "solution_3_imitation_with_check": {
+   "name": "imitation (copies the pushes that worked), checked by the world model",
+   "tables": 25,
+   "separated_at_start": 38,
+   "separated_at_end": 38,
+   "gain": 0,
+   "fell_over": 0,
+   "tables_better": 0,
+   "tables_worse": 0,
+   "tables_not_touched": 23,
+   "pushes": 3,
+   "arm_minutes": 2.3,
+   "asked_by_side": {
+    "in the gap": {
+     "made": 0,
+     "refused by MoveIt": 0,
+     "rejected by the safety check": 6
+    },
+    "at the side": {
+     "made": 3,
+     "refused by MoveIt": 1,
+     "rejected by the safety check": 17
+    },
+    "on the far side": {
+     "made": 0,
+     "refused by MoveIt": 2,
+     "rejected by the safety check": 13
+    }
+   }
+  },
+  "solution_4_world_model": {
+   "name": "world model (imagines pushes, makes the best)",
+   "tables": 25,
+   "separated_at_start": 38,
+   "separated_at_end": 43,
+   "gain": 5,
+   "fell_over": 0,
+   "tables_better": 4,
+   "tables_worse": 0,
+   "tables_not_touched": 20,
+   "pushes": 5,
+   "arm_minutes": 2.0,
+   "asked_by_side": {
+    "in the gap": {
+     "made": 0,
+     "refused by MoveIt": 1,
+     "rejected by the safety check": 0
+    },
+    "at the side": {
+     "made": 5,
+     "refused by MoveIt": 1,
+     "rejected by the safety check": 0
+    },
+    "on the far side": {
+     "made": 0,
+     "refused by MoveIt": 0,
+     "rejected by the safety check": 0
+    }
+   }
+  },
+  "solution_5_reinforcement": {
+   "name": "reinforcement learning (limited training)",
+   "tables": 25,
+   "separated_at_start": 38,
+   "separated_at_end": 40,
+   "gain": 2,
+   "fell_over": 2,
+   "tables_better": 1,
+   "tables_worse": 1,
+   "tables_not_touched": 20,
+   "pushes": 28,
+   "arm_minutes": 7.6,
+   "asked_by_side": {
+    "in the gap": {
+     "made": 0,
+     "refused by MoveIt": 1,
+     "rejected by the safety check": 0
+    },
+    "at the side": {
+     "made": 28,
+     "refused by MoveIt": 20,
+     "rejected by the safety check": 0
+    },
+    "on the far side": {
+     "made": 0,
+     "refused by MoveIt": 0,
+     "rejected by the safety check": 0
+    }
+   }
+  },
+  "solution_5_reinforcement_with_check": {
+   "name": "reinforcement learning (limited training), checked by the world model",
+   "tables": 25,
+   "separated_at_start": 38,
+   "separated_at_end": 38,
+   "gain": 0,
+   "fell_over": 0,
+   "tables_better": 1,
+   "tables_worse": 1,
+   "tables_not_touched": 22,
+   "pushes": 8,
+   "arm_minutes": 3.1,
+   "asked_by_side": {
+    "in the gap": {
+     "made": 0,
+     "refused by MoveIt": 0,
+     "rejected by the safety check": 0
+    },
+    "at the side": {
+     "made": 8,
+     "refused by MoveIt": 4,
+     "rejected by the safety check": 21
+    },
+    "on the far side": {
+     "made": 0,
+     "refused by MoveIt": 0,
+     "rejected by the safety check": 0
+    }
+   }
+  },
+  "solution_6_smolvla": {
+   "name": "smolvla, a little fine-tuned",
+   "tables": 25,
+   "separated_at_start": 38,
+   "separated_at_end": 33,
+   "gain": -5,
+   "fell_over": 8,
+   "tables_better": 1,
+   "tables_worse": 10,
+   "tables_not_touched": 9,
+   "pushes": 19,
+   "arm_minutes": 5.6,
+   "asked_by_side": {
+    "in the gap": {
+     "made": 1,
+     "refused by MoveIt": 10,
+     "rejected by the safety check": 0
+    },
+    "at the side": {
+     "made": 11,
+     "refused by MoveIt": 7,
+     "rejected by the safety check": 0
+    },
+    "on the far side": {
+     "made": 7,
+     "refused by MoveIt": 3,
+     "rejected by the safety check": 0
+    }
+   }
+  },
+  "solution_6_smolvla_with_check": {
+   "name": "smolvla, a little fine-tuned, checked by the world model",
+   "tables": 25,
+   "separated_at_start": 38,
+   "separated_at_end": 40,
+   "gain": 2,
+   "fell_over": 0,
+   "tables_better": 2,
+   "tables_worse": 1,
+   "tables_not_touched": 19,
+   "pushes": 13,
+   "arm_minutes": 5.6,
+   "asked_by_side": {
+    "in the gap": {
+     "made": 1,
+     "refused by MoveIt": 6,
+     "rejected by the safety check": 5
+    },
+    "at the side": {
+     "made": 10,
+     "refused by MoveIt": 0,
+     "rejected by the safety check": 11
+    },
+    "on the far side": {
+     "made": 2,
+     "refused by MoveIt": 1,
+     "rejected by the safety check": 7
+    }
+   }
+  },
+  "ceiling": {
+   "name": "the ceiling (tries 30 pushes first)",
+   "tables": 25,
+   "separated_at_start": 38,
+   "separated_at_end": 47,
+   "gain": 9,
+   "fell_over": 0,
+   "tables_better": 5,
+   "tables_worse": 0,
+   "tables_not_touched": 20,
+   "pushes": 5,
+   "arm_minutes": 0.7,
+   "asked_by_side": {
+    "in the gap": {
+     "made": 0,
+     "refused by MoveIt": 0,
+     "rejected by the safety check": 0
+    },
+    "at the side": {
+     "made": 5,
+     "refused by MoveIt": 0,
+     "rejected by the safety check": 0
+    },
+    "on the far side": {
+     "made": 0,
+     "refused by MoveIt": 0,
+     "rejected by the safety check": 0
+    }
+   }
+  }
+ },
+ "per_table": {
+  "10000": {
+   "solution_1_geometry": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_2_geometry_ranked": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_3_imitation": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 1
+   },
+   "solution_3_imitation_with_check": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_4_world_model": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_5_reinforcement": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_5_reinforcement_with_check": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_6_smolvla": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_6_smolvla_with_check": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "ceiling": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   }
+  },
+  "10001": {
+   "solution_1_geometry": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 2
+   },
+   "solution_2_geometry_ranked": {
+    "separated_at_end": 3,
+    "fell_over": 0,
+    "pushes": 4
+   },
+   "solution_3_imitation": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 1
+   },
+   "solution_3_imitation_with_check": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_4_world_model": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 1
+   },
+   "solution_5_reinforcement": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 9
+   },
+   "solution_5_reinforcement_with_check": {
+    "separated_at_end": 0,
+    "fell_over": 0,
+    "pushes": 6
+   },
+   "solution_6_smolvla": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 2
+   },
+   "solution_6_smolvla_with_check": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 2
+   },
+   "ceiling": {
+    "separated_at_end": 4,
+    "fell_over": 0,
+    "pushes": 1
+   }
+  },
+  "10002": {
+   "solution_1_geometry": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_2_geometry_ranked": {
+    "separated_at_end": 2,
+    "fell_over": 1,
+    "pushes": 1
+   },
+   "solution_3_imitation": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_3_imitation_with_check": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_4_world_model": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_5_reinforcement": {
+    "separated_at_end": 2,
+    "fell_over": 2,
+    "pushes": 1
+   },
+   "solution_5_reinforcement_with_check": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_6_smolvla": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 1
+   },
+   "solution_6_smolvla_with_check": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "ceiling": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   }
+  },
+  "10003": {
+   "solution_1_geometry": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 14
+   },
+   "solution_2_geometry_ranked": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 2
+   },
+   "solution_3_imitation": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 2
+   },
+   "solution_3_imitation_with_check": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_4_world_model": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_5_reinforcement": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_5_reinforcement_with_check": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_6_smolvla": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 1
+   },
+   "solution_6_smolvla_with_check": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 1
+   },
+   "ceiling": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   }
+  },
+  "10004": {
+   "solution_1_geometry": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 4
+   },
+   "solution_2_geometry_ranked": {
+    "separated_at_end": 3,
+    "fell_over": 0,
+    "pushes": 4
+   },
+   "solution_3_imitation": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 1
+   },
+   "solution_3_imitation_with_check": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 1
+   },
+   "solution_4_world_model": {
+    "separated_at_end": 3,
+    "fell_over": 0,
+    "pushes": 1
+   },
+   "solution_5_reinforcement": {
+    "separated_at_end": 3,
+    "fell_over": 0,
+    "pushes": 1
+   },
+   "solution_5_reinforcement_with_check": {
+    "separated_at_end": 3,
+    "fell_over": 0,
+    "pushes": 1
+   },
+   "solution_6_smolvla": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 2
+   },
+   "solution_6_smolvla_with_check": {
+    "separated_at_end": 3,
+    "fell_over": 0,
+    "pushes": 6
+   },
+   "ceiling": {
+    "separated_at_end": 3,
+    "fell_over": 0,
+    "pushes": 1
+   }
+  },
+  "10005": {
+   "solution_1_geometry": {
+    "separated_at_end": 0,
+    "fell_over": 1,
+    "pushes": 2
+   },
+   "solution_2_geometry_ranked": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_3_imitation": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_3_imitation_with_check": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_4_world_model": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_5_reinforcement": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_5_reinforcement_with_check": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_6_smolvla": {
+    "separated_at_end": 0,
+    "fell_over": 1,
+    "pushes": 1
+   },
+   "solution_6_smolvla_with_check": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "ceiling": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   }
+  },
+  "10006": {
+   "solution_1_geometry": {
+    "separated_at_end": 1,
+    "fell_over": 1,
+    "pushes": 2
+   },
+   "solution_2_geometry_ranked": {
+    "separated_at_end": 2,
+    "fell_over": 1,
+    "pushes": 1
+   },
+   "solution_3_imitation": {
+    "separated_at_end": 1,
+    "fell_over": 1,
+    "pushes": 1
+   },
+   "solution_3_imitation_with_check": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_4_world_model": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_5_reinforcement": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_5_reinforcement_with_check": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_6_smolvla": {
+    "separated_at_end": 1,
+    "fell_over": 1,
+    "pushes": 1
+   },
+   "solution_6_smolvla_with_check": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "ceiling": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   }
+  },
+  "10007": {
+   "solution_1_geometry": {
+    "separated_at_end": 4,
+    "fell_over": 0,
+    "pushes": 1
+   },
+   "solution_2_geometry_ranked": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 4
+   },
+   "solution_3_imitation": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_3_imitation_with_check": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_4_world_model": {
+    "separated_at_end": 3,
+    "fell_over": 0,
+    "pushes": 1
+   },
+   "solution_5_reinforcement": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_5_reinforcement_with_check": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_6_smolvla": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_6_smolvla_with_check": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "ceiling": {
+    "separated_at_end": 4,
+    "fell_over": 0,
+    "pushes": 1
+   }
+  },
+  "10008": {
+   "solution_1_geometry": {
+    "separated_at_end": 1,
+    "fell_over": 1,
+    "pushes": 1
+   },
+   "solution_2_geometry_ranked": {
+    "separated_at_end": 2,
+    "fell_over": 1,
+    "pushes": 1
+   },
+   "solution_3_imitation": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_3_imitation_with_check": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_4_world_model": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_5_reinforcement": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_5_reinforcement_with_check": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_6_smolvla": {
+    "separated_at_end": 1,
+    "fell_over": 1,
+    "pushes": 1
+   },
+   "solution_6_smolvla_with_check": {
+    "separated_at_end": 3,
+    "fell_over": 0,
+    "pushes": 1
+   },
+   "ceiling": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   }
+  },
+  "10009": {
+   "solution_1_geometry": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_2_geometry_ranked": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 1
+   },
+   "solution_3_imitation": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 1
+   },
+   "solution_3_imitation_with_check": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_4_world_model": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_5_reinforcement": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_5_reinforcement_with_check": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_6_smolvla": {
+    "separated_at_end": 1,
+    "fell_over": 1,
+    "pushes": 1
+   },
+   "solution_6_smolvla_with_check": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "ceiling": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   }
+  },
+  "10010": {
+   "solution_1_geometry": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 5
+   },
+   "solution_2_geometry_ranked": {
+    "separated_at_end": 3,
+    "fell_over": 0,
+    "pushes": 2
+   },
+   "solution_3_imitation": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 2
+   },
+   "solution_3_imitation_with_check": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 2
+   },
+   "solution_4_world_model": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 1
+   },
+   "solution_5_reinforcement": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 5
+   },
+   "solution_5_reinforcement_with_check": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_6_smolvla": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_6_smolvla_with_check": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "ceiling": {
+    "separated_at_end": 3,
+    "fell_over": 0,
+    "pushes": 1
+   }
+  },
+  "10011": {
+   "solution_1_geometry": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_2_geometry_ranked": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_3_imitation": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_3_imitation_with_check": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_4_world_model": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_5_reinforcement": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_5_reinforcement_with_check": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_6_smolvla": {
+    "separated_at_end": 1,
+    "fell_over": 1,
+    "pushes": 1
+   },
+   "solution_6_smolvla_with_check": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "ceiling": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   }
+  },
+  "10012": {
+   "solution_1_geometry": {
+    "separated_at_end": 0,
+    "fell_over": 0,
+    "pushes": 2
+   },
+   "solution_2_geometry_ranked": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_3_imitation": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 3
+   },
+   "solution_3_imitation_with_check": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_4_world_model": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_5_reinforcement": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 12
+   },
+   "solution_5_reinforcement_with_check": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 1
+   },
+   "solution_6_smolvla": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 2
+   },
+   "solution_6_smolvla_with_check": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 2
+   },
+   "ceiling": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   }
+  },
+  "10013": {
+   "solution_1_geometry": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_2_geometry_ranked": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_3_imitation": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_3_imitation_with_check": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_4_world_model": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_5_reinforcement": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_5_reinforcement_with_check": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_6_smolvla": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 1
+   },
+   "solution_6_smolvla_with_check": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 1
+   },
+   "ceiling": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   }
+  },
+  "10014": {
+   "solution_1_geometry": {
+    "separated_at_end": 3,
+    "fell_over": 0,
+    "pushes": 1
+   },
+   "solution_2_geometry_ranked": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 4
+   },
+   "solution_3_imitation": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_3_imitation_with_check": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_4_world_model": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_5_reinforcement": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_5_reinforcement_with_check": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_6_smolvla": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 1
+   },
+   "solution_6_smolvla_with_check": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "ceiling": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   }
+  },
+  "10015": {
+   "solution_1_geometry": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 13
+   },
+   "solution_2_geometry_ranked": {
+    "separated_at_end": 1,
+    "fell_over": 1,
+    "pushes": 1
+   },
+   "solution_3_imitation": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_3_imitation_with_check": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_4_world_model": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 1
+   },
+   "solution_5_reinforcement": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_5_reinforcement_with_check": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_6_smolvla": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_6_smolvla_with_check": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "ceiling": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 1
+   }
+  },
+  "10016": {
+   "solution_1_geometry": {
+    "separated_at_end": 4,
+    "fell_over": 0,
+    "pushes": 12
+   },
+   "solution_2_geometry_ranked": {
+    "separated_at_end": 2,
+    "fell_over": 1,
+    "pushes": 1
+   },
+   "solution_3_imitation": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_3_imitation_with_check": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_4_world_model": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_5_reinforcement": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_5_reinforcement_with_check": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_6_smolvla": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 1
+   },
+   "solution_6_smolvla_with_check": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "ceiling": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   }
+  },
+  "10017": {
+   "solution_1_geometry": {
+    "separated_at_end": 0,
+    "fell_over": 1,
+    "pushes": 1
+   },
+   "solution_2_geometry_ranked": {
+    "separated_at_end": 2,
+    "fell_over": 1,
+    "pushes": 1
+   },
+   "solution_3_imitation": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_3_imitation_with_check": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_4_world_model": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_5_reinforcement": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_5_reinforcement_with_check": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_6_smolvla": {
+    "separated_at_end": 1,
+    "fell_over": 1,
+    "pushes": 1
+   },
+   "solution_6_smolvla_with_check": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "ceiling": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   }
+  },
+  "10018": {
+   "solution_1_geometry": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_2_geometry_ranked": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_3_imitation": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_3_imitation_with_check": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_4_world_model": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_5_reinforcement": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_5_reinforcement_with_check": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_6_smolvla": {
+    "separated_at_end": 2,
+    "fell_over": 1,
+    "pushes": 1
+   },
+   "solution_6_smolvla_with_check": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "ceiling": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   }
+  },
+  "10019": {
+   "solution_1_geometry": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_2_geometry_ranked": {
+    "separated_at_end": 1,
+    "fell_over": 1,
+    "pushes": 1
+   },
+   "solution_3_imitation": {
+    "separated_at_end": 2,
+    "fell_over": 1,
+    "pushes": 2
+   },
+   "solution_3_imitation_with_check": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_4_world_model": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_5_reinforcement": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_5_reinforcement_with_check": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_6_smolvla": {
+    "separated_at_end": 2,
+    "fell_over": 1,
+    "pushes": 1
+   },
+   "solution_6_smolvla_with_check": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "ceiling": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   }
+  },
+  "10020": {
+   "solution_1_geometry": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_2_geometry_ranked": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_3_imitation": {
+    "separated_at_end": 2,
+    "fell_over": 1,
+    "pushes": 1
+   },
+   "solution_3_imitation_with_check": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_4_world_model": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_5_reinforcement": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_5_reinforcement_with_check": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_6_smolvla": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_6_smolvla_with_check": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "ceiling": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   }
+  },
+  "10021": {
+   "solution_1_geometry": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 14
+   },
+   "solution_2_geometry_ranked": {
+    "separated_at_end": 1,
+    "fell_over": 1,
+    "pushes": 1
+   },
+   "solution_3_imitation": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_3_imitation_with_check": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_4_world_model": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_5_reinforcement": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_5_reinforcement_with_check": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_6_smolvla": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_6_smolvla_with_check": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "ceiling": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   }
+  },
+  "10022": {
+   "solution_1_geometry": {
+    "separated_at_end": 0,
+    "fell_over": 1,
+    "pushes": 1
+   },
+   "solution_2_geometry_ranked": {
+    "separated_at_end": 1,
+    "fell_over": 1,
+    "pushes": 1
+   },
+   "solution_3_imitation": {
+    "separated_at_end": 1,
+    "fell_over": 1,
+    "pushes": 1
+   },
+   "solution_3_imitation_with_check": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_4_world_model": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_5_reinforcement": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_5_reinforcement_with_check": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_6_smolvla": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_6_smolvla_with_check": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "ceiling": {
+    "separated_at_end": 1,
+    "fell_over": 0,
+    "pushes": 0
+   }
+  },
+  "10023": {
+   "solution_1_geometry": {
+    "separated_at_end": 1,
+    "fell_over": 1,
+    "pushes": 2
+   },
+   "solution_2_geometry_ranked": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_3_imitation": {
+    "separated_at_end": 2,
+    "fell_over": 1,
+    "pushes": 1
+   },
+   "solution_3_imitation_with_check": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_4_world_model": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_5_reinforcement": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_5_reinforcement_with_check": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_6_smolvla": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_6_smolvla_with_check": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "ceiling": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   }
+  },
+  "10024": {
+   "solution_1_geometry": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 1
+   },
+   "solution_2_geometry_ranked": {
+    "separated_at_end": 1,
+    "fell_over": 1,
+    "pushes": 3
+   },
+   "solution_3_imitation": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 13
+   },
+   "solution_3_imitation_with_check": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_4_world_model": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_5_reinforcement": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_5_reinforcement_with_check": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_6_smolvla": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "solution_6_smolvla_with_check": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   },
+   "ceiling": {
+    "separated_at_end": 2,
+    "fell_over": 0,
+    "pushes": 0
+   }
+  }
+ }
+}

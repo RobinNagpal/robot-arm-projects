@@ -1,9 +1,0 @@
-# The collected pushes: made again with `make collect`, about twelve minutes.
-data/
-# The fitted copies of the model: made again with `make train`, about two
-# minutes. Problem 3 keeps its weights out of git for the same reason.
-weights/
-# Runs that are not the held-out queue. judging.py writes a partial run under
-# this name on purpose, so that a short run cannot overwrite a committed one.
-partial.json
-partial-tables.json

@@ -37,7 +37,7 @@ and goes on to the other only when the first picture shows fewer glasses than be
 reads the pictures themselves, so it takes both on every turn. A push that MoveIt refuses
 moves nothing, so after one, no solution looks again.
 
-![The same table from the two viewing places, with the boxes the box model drew](../images/full-arm-two-views-and-boxes.png)
+![The same table from the two viewing places, with the boxes the box model drew](../images/two-views-and-boxes.png)
 
 ## The solutions
 
@@ -47,16 +47,12 @@ those pushes.
 
 | # | Solution | How it chooses a push | Page |
 |---|---|---|---|
-| 1–2 | Geometry reference | Fixed rules and fixed settings; nothing is learned | [page](solutions/01-02-geometry-reference.md) |
+| 1 | Geometry reference | The shortest safe push, with fixed settings; nothing is learned | [page](solutions/01-geometry-reference.md) |
+| 2 | Geometry ranked | The same safe pushes, ordered by problem 3's fitted trees | [page](solutions/02-geometry-ranked.md) |
 | 3 | Imitation | Copies pushes that worked | [page](solutions/03-imitation.md) |
 | 4 | World model | Learns what a push will do, then searches for the best push | [page](solutions/04-world-model.md) |
 | 5 | Reinforcement learning | Learns by trying pushes and being scored | [page](solutions/05-reinforcement-learning.md) |
 | 6 | SmolVLA | A large vision-language-action model with a small fitted correction | [page](solutions/06-smolvla-fine-tuned.md) |
-
-The five solutions of the first cell, in which the jaw moves with no arm behind it, also run
-on this arm, with their own trained weights; [the arm and MoveIt](the-arm-and-moveit.md#a-path-of-straight-lines)
-says how a path of theirs becomes arm motion. They have not been measured on the arm yet, so
-they are not in the results below.
 
 Two more things appear in the results. The [safety check](solutions/safety-check.md) lets
 the world model reject another solution's push when it expects that push to tip a glass.
@@ -72,7 +68,8 @@ brackets shows how much the figure depends on which tables were drawn.
 
 | Solution | Tables reached | Gain in pickable glasses (90 % range) | Glasses broken | Arm minutes |
 |---|---|---|---|---|
-| 1–2 Geometry reference | 22 | +5 (0 to +11) | 3 | 14.9 |
+| 1 Geometry reference | 22 | +5 (0 to +11) | 3 | 14.9 |
+| 2 Geometry ranked | 34 | +4 (−2 to +10) | 14 | 15.0 |
 | 3 Imitation | 50 | +1 (−2 to +4) | 19 | 10.0 |
 | 3 Imitation, with the safety check | 50 | +2 (0 to +4) | 0 | 4.3 |
 | 3 Imitation, also copying the ceiling | 50 | +1 (0 to +3) | 8 | 5.3 |
@@ -84,7 +81,7 @@ brackets shows how much the figure depends on which tables were drawn.
 | 6 SmolVLA, with the safety check | 50 | +0 (−2 to +2) | 5 | 6.1 |
 | The ceiling (tries 30 pushes first) | 50 | +24 (+15 to +34) | 0 | 4.8 |
 
-To see what each solution did on one table, open the [runs](../full-arm/runs/results.md)
+To see what each solution did on one table, open the [runs](../examiner/runs/results.md)
 folder. It keeps the first 25 of these tables one by one: where every glass started, and where
 it stood after each solution, as JSON and as a picture. It also lists every push each solution
 asked for, with the direction, the settings handed to MoveIt and how the push ended, so you can
@@ -101,6 +98,9 @@ see whether the hand came down in the gap between two glasses or at the side.
   tipped a glass, so they push glasses that tip. The safety check removes most of that
   breakage. However, it does not add any gain, because a check can only reject pushes and
   cannot propose better ones.
+- **An ordering learned in problem 3 does not carry over.** Solution 2 chooses from the same
+  pushes as solution 1, with the same settings, and breaks 14 glasses where solution 1 breaks
+  3, so the pushes problem 3's trees prefer are the ones that tip when the arm makes them.
 - **The arm cannot make most pushes.** About three pushes in four cannot be planned at all,
   and the push a person would try first is never possible. [What the pushes
   show](what-the-pushes-show.md) explains why.
@@ -125,7 +125,8 @@ a glass went over.
 
 | Solution | 11158 | 11416 | 11716 | 11952 | 10490 |
 |---|---|---|---|---|---|
-| 1–2 Geometry reference | 1 → 3 | 1 → 1 | 2 → 1 | 2 → 2 | 1 → 1 |
+| 1 Geometry reference | 1 → 3 | 1 → 1 | 2 → 1 | 2 → 2 | 1 → 1 |
+| 2 Geometry ranked | 1 → 2 | 1 → 3 | 2 → 1 | 2 → 3 ✗ | 1 → 3 |
 | 3 Imitation | 1 → 3 | 1 → 0 | 2 → 2 | 2 → 2 ✗ | 1 → 1 ✗ |
 | 3 Imitation, with the check | 1 → 3 | 1 → 0 | 2 → 4 | 2 → 2 ✗ | 1 → 1 |
 | 4 World model | 1 → 3 | 1 → 3 | 2 → 4 | 2 → 3 | 1 → 3 |
@@ -136,7 +137,8 @@ a glass went over.
 
 The films were made before the solutions chose how much to look, when every solution
 looked from both places on every turn, so a film can differ from what the same solution
-does now. Five tables are too few to rank the solutions; the results table above does that. The films
+does now. The one exception is solution 2, which was filmed when it was added, with the
+looking it does now. Five tables are too few to rank the solutions; the results table above does that. The films
 show what the ranking means: on table 10490, for example, imitation and SmolVLA tip a glass,
 the check stops SmolVLA in time, and the world model frees both glasses.
 
@@ -144,11 +146,12 @@ Links to the films:
 
 | Solution | Without the safety check | With the safety check |
 |---|---|---|
-| 1–2 Geometry reference | [film](../videos/full-arm/1-2-geometry-reference.mp4) | |
-| 3 Imitation | [film](../videos/full-arm/3-imitation.mp4) | [film](../videos/full-arm/3-imitation-with-check.mp4) |
-| 4 World model | [film](../videos/full-arm/4-world-model.mp4) | |
-| 5 Reinforcement learning | [film](../videos/full-arm/5-reinforcement-learning.mp4) | [film](../videos/full-arm/5-reinforcement-learning-with-check.mp4) |
-| 6 SmolVLA | [film](../videos/full-arm/6-smolvla.mp4) | [film](../videos/full-arm/6-smolvla-with-check.mp4) |
+| 1 Geometry reference | [film](../videos/1-geometry-reference.mp4) | |
+| 2 Geometry ranked | [film](../videos/2-geometry-ranked.mp4) | |
+| 3 Imitation | [film](../videos/3-imitation.mp4) | [film](../videos/3-imitation-with-check.mp4) |
+| 4 World model | [film](../videos/4-world-model.mp4) | |
+| 5 Reinforcement learning | [film](../videos/5-reinforcement-learning.mp4) | [film](../videos/5-reinforcement-learning-with-check.mp4) |
+| 6 SmolVLA | [film](../videos/6-smolvla.mp4) | [film](../videos/6-smolvla-with-check.mp4) |
 
 ## Read in this order
 
@@ -158,4 +161,9 @@ Links to the films:
 4. [What the pushes show](what-the-pushes-show.md): the data, and what it says about pushing.
 5. The solution pages, in the order of the table above.
 
-The code is in [`04-clear-the-table/full-arm/`](../full-arm/README.md).
+The code is in three kinds of folder. [`examiner/`](../examiner/README.md) holds the cell that
+every solution runs in and is marked by: the arm in the physics engine, MoveIt, the camera, and
+the scorecard. [`shared/`](../shared/README.md) holds what the solutions have in common: the
+turn-by-turn loop, the box model, and how the learned solutions write a table down. Each
+solution then has a numbered folder of its own, such as
+[`04-world-model/`](../04-world-model/README.md), with its code and its trained weights.

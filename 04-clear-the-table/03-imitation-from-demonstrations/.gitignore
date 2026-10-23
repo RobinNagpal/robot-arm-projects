@@ -1,4 +1,0 @@
-# The fitted weights, which are tens of megabytes a seed and are made again from
-# the demonstrations by train.py. What the fitting did is in weights/training.json,
-# which is small and is the record a reader needs, so that stays in.
-weights/*/

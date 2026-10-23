@@ -5,23 +5,21 @@ description = "Problem 4: the arm's own camera, and a table marked when the cloc
 channels = ["conda-forge"]
 platforms = ["osx-arm64", "linux-64"]
 
-# This started lighter than problem 3's environment, because the first two
-# solutions are geometry and nothing in them learns. The learned solutions
-# have now arrived, so the libraries they need are here too, pinned exactly as
-# problem 3 pins them: the two problems are meant to be compared, and a
-# comparison between two versions of the same borrowed model would measure the
-# versions.
+# The libraries the learned solutions need are pinned exactly as problem 3
+# pins them: the two problems are meant to be compared, and a comparison
+# between two versions of the same borrowed model would measure the versions.
 [dependencies]
 python = "3.12.*"
 numpy = ">=2.0,<2.3"
 # rack/layout.py imports OpenCV, and the glass zone is read from there.
 py-opencv = ">=4.9,<4.14"
-# The diagrams, which run the examiner so that a picture is a measurement.
+# The pictures in docs/, which read the examiner's data, and the runs' pictures.
 matplotlib = ">=3.8"
 pytest = ">=7"
 ruff = ">=0.4"
-# Solution 2 borrows problem 3's ranker, which is gradient-boosted trees, so
-# the library that defines them has to be here to load the fitted file.
+# Solution 2 orders its pushes with problem 3's fitted trees, which are
+# gradient-boosted trees, so the library that defines them has to be here to
+# load the fitted file.
 scikit-learn = ">=1.4"
 # The learned solutions. Every pin below is problem 3's own, for the reason in
 # the comment above the dependency list.
@@ -30,21 +28,24 @@ setuptools = "<81"
 packaging = "<26"
 fsspec = "<=2026.2.0"
 av = ">=15,<16"
+# SmolVLA's picture processor, in transformers, imports scipy without listing it.
+scipy = ">=1.14"
 
 [pypi-dependencies]
 # The physics engine the pushes happen in, the same one problem 3 uses.
 mujoco = ">=3.3"
-# Where the borrowed model and the chunked policy come from, as in problem 3.
+# Where SmolVLA comes from, as in problem 3, and the library that fits a small
+# correction to it.
 lerobot = { version = ">=0.6,<0.7", extras = ["smolvla", "dataset"] }
-diffusers = ">=0.38,<0.40"
 peft = ">=0.17,<0.22"
 
 [activation.env]
-# Four places: this problem's own copy of the cell's modules, the full arm,
-# this problem's examiner, and the copy of problem 3's common files that it
-# is built on.
-# Problem 3's files are copied into from-problem-3/ rather than imported from
-# problem 3's folder, so that each problem stands on its own.
-PYTHONPATH = "$PIXI_PROJECT_ROOT/work-cell:$PIXI_PROJECT_ROOT/full-arm:$PIXI_PROJECT_ROOT/examiner:$PIXI_PROJECT_ROOT/from-problem-3/bench"
+# The problem folder, so that ``examiner`` and ``shared`` are packages; this
+# problem's copy of the cell's modules; the six solution folders, whose names
+# start with a digit and so are put on the path one by one; and the copy of
+# problem 3's common files that the examiner is built on. Problem 3's files are
+# copied into from-problem-3/ rather than imported from problem 3's folder, so
+# that each problem stands on its own.
+PYTHONPATH = "$PIXI_PROJECT_ROOT:$PIXI_PROJECT_ROOT/work-cell:$PIXI_PROJECT_ROOT/01-geometry-reference:$PIXI_PROJECT_ROOT/02-geometry-ranked:$PIXI_PROJECT_ROOT/03-imitation:$PIXI_PROJECT_ROOT/04-world-model:$PIXI_PROJECT_ROOT/05-reinforcement-learning:$PIXI_PROJECT_ROOT/06-smolvla-fine-tuned:$PIXI_PROJECT_ROOT/from-problem-3/bench"
 
 [tasks]

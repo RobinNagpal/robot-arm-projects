@@ -73,3 +73,7 @@ it finds only about a quarter of what the ceiling finds. A wider
 search did not help: three times as many candidates gave +5 against +6 on the training
 tables. More gain would need data chosen where the five models disagree, or a search that
 plans two pushes ahead.
+
+## Where the code is
+
+Its code and weights are in [`04-world-model/`](../../04-world-model/README.md), together with the [safety check](safety-check.md), because the check is this same model judging another solution's push.

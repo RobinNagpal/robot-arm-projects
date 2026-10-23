@@ -9,13 +9,14 @@ extend-exclude = ["images", "work-cell", "from-problem-3"]
 select = ["E", "F", "W", "I", "UP", "B", "SIM"]
 
 [lint.isort]
-# The examiner's modules import each other by bare name, and so do the solutions.
-known-first-party = ["simulator", "clock", "contract", "film", "judging", "keeping_clear", "open_run",
-                     "partners", "scoring", "stopping", "tables", "wrist"]
+# This problem's own packages. The solution folders' modules are imported by
+# their plain names, because a folder whose name starts with a digit cannot be
+# a package.
+known-first-party = ["examiner", "shared"]
 # `plan` is problem 3's planner, from the copy in from-problem-3/, reached only
 # because partners.py puts its folder on the path. It is named here so that
 # isort keeps it below partners, which is the order it has to be imported in.
 known-local-folder = ["plan"]
 # The copies of problem 3's common files, and its overhead camera, which
 # partners.py brings in. They are kept apart from this problem's own modules.
-known-third-party = ["common_bench", "common_film", "common_scoring", "mujoco", "top_view", "work_cell"]
+known-third-party = ["common_bench", "common_scoring", "mujoco", "top_view", "work_cell"]
