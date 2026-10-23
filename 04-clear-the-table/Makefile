@@ -1,7 +1,7 @@
 # Problem 4: the arm carries its own camera, and the table is marked when the
 # solution says it is done.
 #
-# Tests run one folder at a time on purpose. The bench and the solutions have
+# Tests run one folder at a time on purpose. The examiner and the solutions have
 # modules of the same name — run.py, plan.py, scoring.py — and collecting them
 # together would let one shadow another.
 SOLUTIONS := 01-one-fixed-nudge 02-geometry-ranked 03-imitation-from-demonstrations \
@@ -19,7 +19,7 @@ install: ## Resolve the environment
 	pixi install
 
 test: install ## Every folder's tests, one folder at a time
-	@for d in bench $(SOLUTIONS); do \
+	@for d in examiner $(SOLUTIONS); do \
 	  [ -d $$d ] || continue; \
 	  echo "--- $$d"; pixi run pytest -q $$d || exit 1; \
 	done

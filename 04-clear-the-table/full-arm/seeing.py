@@ -91,15 +91,15 @@ class Example:
     glasses: np.ndarray  # n x 5: row, col (in 384-pixel units), radius, height, foot radius
 
 
-def label(bench, jaw) -> np.ndarray:
+def label(simulator, jaw) -> np.ndarray:
     """The simulator's answers for the glasses at least half visible from ``jaw``."""
-    readings = list(bench.look())
+    readings = list(simulator.look())
     visible = {s.id for s in wrist.in_picture(jaw, readings)}
     rows = []
-    for i, glass in enumerate(bench.glasses):
-        if i not in visible or i in bench.taken:
+    for i, glass in enumerate(simulator.glasses):
+        if i not in visible:
             continue
-        x, y = bench.position(i)
+        x, y = simulator.position(i)
         r, c = wrist.to_pixel(jaw, float(x), float(y), 0.0)
         if not (0 <= r < FULL and 0 <= c < FULL):
             continue
@@ -108,8 +108,8 @@ def label(bench, jaw) -> np.ndarray:
     return np.array(rows, dtype=np.float32).reshape(-1, 5)
 
 
-def example(picture: np.ndarray, jaw, bench) -> Example:
-    return Example((shrink(picture) * 255).byte().numpy(), jaw.heading, label(bench, jaw))
+def example(picture: np.ndarray, jaw, simulator) -> Example:
+    return Example((shrink(picture) * 255).byte().numpy(), jaw.heading, label(simulator, jaw))
 
 
 # -------------------------------------------------------------------- network

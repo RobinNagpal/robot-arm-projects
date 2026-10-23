@@ -23,8 +23,8 @@ import av
 import cv2
 import mujoco
 import numpy as np
+from arm_examiner import ARM_BUDGET, SimExaminer
 from evaluate import SOLUTIONS
-from examiner import ARM_BUDGET, SimExaminer
 from moveit_link import MoveItLink
 
 SIZE = (720, 1080)  # rows, columns
@@ -34,10 +34,10 @@ FILMS = Path(__file__).resolve().parents[1] / "videos" / "full-arm"
 
 
 class Camera:
-    def __init__(self, bench) -> None:
+    def __init__(self, simulator) -> None:
         # The world's offscreen buffer is 640 by 480 unless it is told otherwise.
-        bench.model.vis.global_.offheight, bench.model.vis.global_.offwidth = SIZE
-        self.renderer = mujoco.Renderer(bench.model, *SIZE)
+        simulator.model.vis.global_.offheight, simulator.model.vis.global_.offwidth = SIZE
+        self.renderer = mujoco.Renderer(simulator.model, *SIZE)
         self.view = mujoco.MjvCamera()
         self.view.type = mujoco.mjtCamera.mjCAMERA_FREE
         self.view.lookat[:] = (0.42, -0.24, 0.90)
@@ -45,8 +45,8 @@ class Camera:
         self.view.azimuth = 128.0
         self.view.elevation = -24.0
 
-    def frame(self, bench) -> np.ndarray:
-        self.renderer.update_scene(bench.data, self.view)
+    def frame(self, simulator) -> np.ndarray:
+        self.renderer.update_scene(simulator.data, self.view)
         return self.renderer.render().copy()
 
 
@@ -86,19 +86,19 @@ def film_table(solution, seed: int, link, film: Film, left: float) -> None:
 
     def watch(run) -> None:
         cell = SimExaminer.cell_of(run)
-        camera = Camera(cell.bench)
+        camera = Camera(cell.simulator)
         watched.update(cell=cell, camera=camera)
 
-        def hook(bench) -> None:
+        def hook(simulator) -> None:
             count["steps"] += 1
             if count["steps"] % stride == 0:
                 film.write(
-                    camera.frame(bench),
-                    f"   arm time {bench.arm_seconds:5.0f} s   glasses the gripper could pick: "
+                    camera.frame(simulator),
+                    f"   arm time {simulator.arm_seconds:5.0f} s   glasses the gripper could pick: "
                     f"{cell.pickable()} of {cell.glasses()}",
                 )
 
-        cell.bench.hooks.append(hook)
+        cell.simulator.hooks.append(hook)
 
     film.line = f"table {seed}"
     result = SimExaminer(link, left).run(solution, seed, prepare=watch)
@@ -111,7 +111,7 @@ def film_table(solution, seed: int, link, film: Film, left: float) -> None:
     if result.fell_over and "went over" not in result.ended_by:
         end += f", {result.fell_over} glass went over"
     print(f"table {seed}:{end}", flush=True)
-    last = watched["camera"].frame(watched["cell"].bench)
+    last = watched["camera"].frame(watched["cell"].simulator)
     for _ in range(2 * FPS):
         film.write(last.copy(), end)
 

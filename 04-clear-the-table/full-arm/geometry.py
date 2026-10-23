@@ -108,7 +108,7 @@ class Geometry(TurnByTurn):
     def choose(self, seen):
         """Problem 3's choice of the shortest push that frees a glass, lengthened to a push that moves it.
 
-        Problem 3's bench feels for the glass and then pushes a set distance, so
+        Problem 3's simulator feels for the glass and then pushes a set distance, so
         it asks for the least that clears. Here the stroke is planned before the
         arm moves and nothing feels for contact, and a stroke that ends a
         millimetre past touching moves a glass by nothing at all: measured,

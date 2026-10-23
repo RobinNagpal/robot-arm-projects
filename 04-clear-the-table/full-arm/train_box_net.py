@@ -17,8 +17,8 @@ import cell as C
 import numpy as np
 import seeing
 import torch
-from arm_bench import ArmBench
-from build_box_data import view_joint_sets
+from arm_simulator import ArmSimulator
+from cell import view_joint_sets
 from moveit_link import MESHES, generate_urdf
 
 import tables
@@ -33,10 +33,10 @@ def measure(model: seeing.BoxModel, examples: list[seeing.Example]) -> dict:
     joints = view_joint_sets()
     jaws = {}
     # Rebuild the camera pose of each view once; the pictures were taken from it.
-    bench = ArmBench(0, tables.table(0), urdf=generate_urdf(), meshes=MESHES, start=joints[0])
+    simulator = ArmSimulator(0, tables.table(0), urdf=generate_urdf(), meshes=MESHES, start=joints[0])
     for view, q in zip(C.VIEWS, joints, strict=True):
-        bench.set_joints(q)
-        jaws[round(view.heading, 3)] = bench.tcp()
+        simulator.set_joints(q)
+        jaws[round(view.heading, 3)] = simulator.tcp()
     for ex in examples:
         jaw = jaws[min(jaws, key=lambda h: abs(h - ex.heading))]
         picture = torch.from_numpy(ex.image).float() / 255.0

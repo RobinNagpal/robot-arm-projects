@@ -29,7 +29,7 @@ is what makes them work.
 Its ``features`` and ``model`` were read closely and this folder's ``encoding``
 and ``push_model`` are written from them, but they could not be borrowed. Two
 things in them are about problem 3's hand-over rather than about forward
-models: the push it encodes is one problem 3's bench feels its way into, so the
+models: the push it encodes is one problem 3's simulator feels its way into, so the
 distance to the glass is not part of it, and the table's one glass kind is an
 input, which problem 4's contract does not hand over. Loading it and then
 overriding both would leave a module whose every field meant something slightly

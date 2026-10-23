@@ -24,18 +24,43 @@ table, which [the cell](../../01-rack-one-glass/docs/the-cell.md) already has.
 
 from __future__ import annotations
 
+import math
 import time
+from typing import TYPE_CHECKING
 
 import mujoco
 import numpy as np
 from work_cell.rack.layout import GLASS_ZONE
 
-from bench import TOP_VIEW_HALF_FRAME, TOP_VIEW_HEIGHT, TOP_VIEW_SIZE, Bench
+from common_bench import GRIP_ROOM, TRAVEL_HEIGHT
 
-# The whole of this module's surface. The two constants come from bench.py,
-# where the camera they describe is written into the world.
+if TYPE_CHECKING:
+    from bench import Bench
+
+# The straight-down camera this file renders from: directly above the middle
+# of the glass zone, this far above the table top.
+TOP_VIEW_HEIGHT = 0.75
+# How many pixels that view is, (rows, columns). Square, because the frame is.
+TOP_VIEW_SIZE = (384, 384)
+
+# Half the straight-down view's frame, measured on the table top. It has to
+# hold the whole glass zone, and a little more: in a view from above a glass
+# leans outwards from the point under the camera, so something standing at the
+# zone's edge appears further out than it stands. TRAVEL_HEIGHT is the height
+# nothing on the table reaches, and half GRIP_ROOM is wider than any glass the
+# jaw can grip, so this frames the zone with every glass on it whole.
+_ZONE_REACH = max(
+    (GLASS_ZONE[1] - GLASS_ZONE[0]) / 2,
+    (GLASS_ZONE[3] - GLASS_ZONE[2]) / 2,
+)
+TOP_VIEW_HALF_FRAME = (_ZONE_REACH + GRIP_ROOM / 2) * TOP_VIEW_HEIGHT / (TOP_VIEW_HEIGHT - TRAVEL_HEIGHT)
+TOP_VIEW_FOVY_DEG = math.degrees(2 * math.atan(TOP_VIEW_HALF_FRAME / TOP_VIEW_HEIGHT))
+
+# The whole of this module's surface. The camera these numbers describe is
+# written into problem 3's world by bench.py, which reads them from here.
 __all__ = [
     "METRES_PER_PIXEL",
+    "TOP_VIEW_FOVY_DEG",
     "TOP_VIEW_HALF_FRAME",
     "TOP_VIEW_HEIGHT",
     "TOP_VIEW_SIZE",

@@ -23,10 +23,26 @@ The solution never writes a joint angle.
 
 A solution is handed a **run** and nothing else: an arm with a wrist camera, and a clock. It decides
 when and where to look, which push to ask for, and when the table is finished
-([`arm_contract.py`](arm_contract.py)). The **examiner** ([`examiner.py`](examiner.py)) is the other
+([`arm_contract.py`](arm_contract.py)). The **examiner** ([`arm_examiner.py`](arm_examiner.py)) is the other
 side: it builds the table, keeps its number to itself, charges the arm time, ends the run when a glass
 goes over or the time runs out, and marks the table. The turn-by-turn loop the solutions share, and
 their two ways of looking, are in [`solving.py`](solving.py).
+
+## The jaw-only solutions, on the arm
+
+The five solutions of the first cell, in the numbered folders of `04-clear-the-table`, were written
+for a jaw that moves with no arm behind it. They answer with a path of waypoints for the jaw rather
+than with a push. [`jaw_solutions.py`](jaw_solutions.py) runs them on this arm unchanged, with their
+own trained weights. It gives each one the look it was written for, with every glass keeping its
+number from one look to the next, and it hands each path to the arm, which MoveIt carries out as a
+line of straight motions, all planned before the arm moves. The glasses in a look come from the
+box model at the two viewing poses, because those are the only poses it can read. The file's own
+docstring says what is the same as in the first cell and what is not.
+
+The two of them that read pictures, imitation and SmolVLA, see the arm camera's pictures, which are
+not the pictures they were trained on, so they are expected to do badly until they are trained
+again. Solution 3's fitted policy is not kept in git, and it has to be fitted again in its own
+folder before it can run here.
 
 ## What runs where
 
@@ -42,13 +58,13 @@ needed; nothing has to be activated by hand.
 | File | What it is |
 |---|---|
 | [`arm_model.py`](arm_model.py) | the UR5e as a MuJoCo model, read out of the same URDF MoveIt plans on |
-| [`arm_bench.py`](arm_bench.py) | the table and the arm, joint servos, following a joint trajectory |
+| [`arm_simulator.py`](arm_simulator.py) | the table and the arm, joint servos, following a joint trajectory |
 | [`arm_camera.py`](arm_camera.py) | the wrist camera, moved off the hand's axis |
 | [`moveit_server.py`](moveit_server.py), [`moveit_link.py`](moveit_link.py) | MoveIt 2, and the pipe to it |
 | [`ros/`](ros/README.md) | the ROS environment MoveIt runs in, the arm's description and MoveIt's settings |
 | [`pusher.py`](pusher.py) | one push as four MoveIt motions |
 | [`arm_contract.py`](arm_contract.py) | what passes between a solution and the examiner: the arm, the camera, the run |
-| [`examiner.py`](examiner.py) | the examiner: the simulated arm behind the contract, the clock, the marks, and the list of tables |
+| [`arm_examiner.py`](arm_examiner.py) | the examiner: the simulated arm behind the contract, the clock, the marks, and the list of tables |
 | [`solving.py`](solving.py) | the turn-by-turn loop the solutions share, and how each one chooses to look |
 | [`cell.py`](cell.py) | one table: the arm, MoveIt and the camera put together, and the two viewing poses |
 | [`seeing.py`](seeing.py), [`build_box_data.py`](build_box_data.py), [`train_box_net.py`](train_box_net.py) | job 0 |
@@ -56,6 +72,7 @@ needed; nothing has to be activated by hand.
 | [`collect_pushes.py`](collect_pushes.py) | pushes made at random, informed, or chosen by a model, and what happened |
 | [`geometry.py`](geometry.py) | the reference: problem 3's rules choose, fixed settings go to MoveIt |
 | [`imitation.py`](imitation.py), [`world_model.py`](world_model.py), [`reinforcement.py`](reinforcement.py), [`vla.py`](vla.py) | solutions 3, 4, 5 and 6 |
+| [`jaw_solutions.py`](jaw_solutions.py) | the first cell's five solutions, run on this arm |
 | [`checked.py`](checked.py) | the safety check: the world model rejects another solution's risky push |
 | [`oracle.py`](oracle.py) | the ceiling: a search that may try every push in the physics first |
 | [`teach.py`](teach.py) | the ceiling run on training tables, writing lessons for imitation to copy |
@@ -83,6 +100,7 @@ make imitation world-model                    # solutions 3 and 4
 make reinforcement                            # solution 5
 make vla-data vla                             # solution 6
 make evaluate-world-model TABLES=50           # score one
+make evaluate-jaw JAW=geometry-ranked         # score one of the first cell's solutions, on the arm
 make runs                                     # every solution, table by table, in runs/
 ```
 

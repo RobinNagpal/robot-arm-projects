@@ -1,8 +1,8 @@
 """One table in the full-arm cell: the arm, MoveIt, the camera on the wrist, and the marks.
 
-``ArmBench`` is the physics. ``MoveItLink`` is the planner. ``Pusher`` turns a
+``ArmSimulator`` is the physics. ``MoveItLink`` is the planner. ``Pusher`` turns a
 request into MoveIt motions. This file puts them together for one table, and is
-what the examiner (``examiner.py``) and the data tools work with. A solution never
+what the examiner (``arm_examiner.py``) and the data tools work with. A solution never
 sees it: it is handed an arm and a clock instead.
 
 **Where the arm looks from.** The box model was trained on pictures from two
@@ -15,7 +15,7 @@ from __future__ import annotations
 import math
 
 import arm_camera
-from arm_bench import READY, ArmBench
+from arm_simulator import READY, ArmSimulator
 from moveit_link import MESHES, MoveItLink, flange_goal, generate_urdf
 from pusher import Box, Pushed, Pusher, Request, Settings, scene_boxes, table_box  # noqa: F401
 from work_cell.rack.layout import GLASS_ZONE
@@ -121,31 +121,31 @@ class ArmCell:
         # starts with the jaw at HOME. Parked anywhere else, the arm would
         # have to sweep through the glass zone to get to its first look, and
         # it does that blind.
-        self.bench = ArmBench(
+        self.simulator = ArmSimulator(
             seed,
             glasses if glasses is not None else tables.table(seed),
             urdf=generate_urdf(),
             meshes=MESHES,
             start=view_joints(link),
         )
-        self.pusher = Pusher(self.bench, link)
-        self.camera = arm_camera.ArmCamera(self.bench) if camera else None
-        self.pickable_at_start = pickable_on_table(self.bench)
+        self.pusher = Pusher(self.simulator, link)
+        self.camera = arm_camera.ArmCamera(self.simulator) if camera else None
+        self.pickable_at_start = pickable_on_table(self.simulator)
 
     # ------------------------------------------------------------- the marks
 
     def glasses(self) -> int:
-        return len(self.bench.glasses)
+        return len(self.simulator.glasses)
 
     def toppled(self) -> int:
-        return sum(1 for i in self.bench.on_table() if self.bench.tilt(i) >= STANDING_TILT_DEG)
+        return sum(1 for i in self.simulator.on_table() if self.simulator.tilt(i) >= STANDING_TILT_DEG)
 
     def pickable(self) -> int:
-        return pickable_on_table(self.bench)
+        return pickable_on_table(self.simulator)
 
     @property
     def arm_seconds(self) -> float:
-        return self.bench.arm_seconds
+        return self.simulator.arm_seconds
 
     # ---------------------------------------------------------------- pushing
 

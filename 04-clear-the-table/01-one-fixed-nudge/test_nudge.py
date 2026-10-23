@@ -30,10 +30,12 @@ from clock import LEG_AT_TOP_SPEED, crossing_seconds, path_seconds
 from contract import GLASS_OVER, SAID_DONE, Done, Look
 from open_run import HOME, clear_table
 from partners import (
+    FEEL_SPEED,
     PUSH_HEIGHT,
     TEST_SEEDS,
     TRAVEL_HEIGHT,
-    Bench,
+    WAYPOINT_PERIOD,
+    Chunk,
     Felt,
     Push,
     Record,
@@ -41,6 +43,7 @@ from partners import (
     Waypoint,
     has_room,
 )
+from simulator import Simulator
 
 import plan
 
@@ -194,12 +197,22 @@ def test_a_push_path_takes_the_fingertips_to_where_the_glass_should_end_up(kind)
             assert math.dist(landed, push.aim) == pytest.approx(0.0, abs=1e-9)
 
 
+def _feeling_forward(push: Push) -> Chunk:
+    """A path that comes down at ``push.start`` and creeps ``push.reach`` forward at the feeling speed."""
+    step = FEEL_SPEED * WAYPOINT_PERIOD
+    count = math.ceil(push.reach / step)
+    dx, dy = step * math.cos(push.heading), step * math.sin(push.heading)
+    x, y = push.start
+    points = tuple(Waypoint(x + k * dx, y + k * dy, PUSH_HEIGHT, push.heading) for k in range(count + 1))
+    return Chunk(push.glass, points, push.aim)
+
+
 @pytest.mark.parametrize("kind", KINDS)
 def test_the_fingertips_are_driven_to_the_glass_and_not_to_its_widest_part(kind):
     """The fault this solution was first written with, pinned so it cannot come back.
 
     ``plan.along`` puts the touchdown point ``APPROACH_GAP`` outside the glass's
-    *widest* part, and problem 3's bench then creeps forward until its force
+    *widest* part, and problem 3's examiner then creeps forward until its force
     sensor finds the glass -- which on a stemmed glass is 20 mm further in,
     because at the jaw's height the glass is a stem. A chunk cannot creep. The
     first version shoved ``APPROACH_GAP + travel`` regardless, so a five
@@ -208,19 +221,19 @@ def test_the_fingertips_are_driven_to_the_glass_and_not_to_its_widest_part(kind)
 
     So the measurement is made here, against the real cell: how far the
     fingertips really travel from the touchdown point before they meet the
-    glass, read off the bench's own force sensor. The solution has to be told
+    glass, read off the examiner's own force sensor. The solution has to be told
     that distance, and ``to_push``'s ``reach`` is where it goes.
     """
     for outline, _ in family(kind, 3, seed=11):
         glass = SpawnedGlass("glass_0", kind, outline, (0.48, -0.26, TABLE_TOP_Z), 0.0)
-        table = Bench(0, [glass])
+        table = Simulator(0, [glass])
         seen = table.look()[0]
         radius = seen.widest / 2
         # Feel all the way in, as problem 3 does, and see where contact really is.
         asking = Push(0, (seen.x - radius - plan.APPROACH_GAP, seen.y), 0.0,
                       radius + plan.APPROACH_GAP + plan.FEEL_BEYOND, 0.0, (0.0, 0.0))
-        met = table.push(asking).touched
-        assert met is not None, "the bench could not find the glass either"
+        met = table.follow(_feeling_forward(asking)).touched
+        assert met is not None, "the examiner could not find the glass either"
         # A path told that distance puts the fingertips on the glass, and then
         # the distance asked for beyond it. A path told APPROACH_GAP falls short
         # by the whole difference, which for some families is the whole push.
@@ -293,21 +306,21 @@ def test_every_push_path_is_one_the_jaw_could_follow(kind):
                 for one, next_one in zip(points, points[1:], strict=False):
                     gap = math.dist((one.x, one.y, one.z), (next_one.x, next_one.y, next_one.z))
                     assert gap <= LEG_AT_TOP_SPEED + 1e-9
-    # Well inside what the bench takes, which is 500. The longest path here is
+    # Well inside what the examiner takes, which is 500. The longest path here is
     # the longest push the chooser will make, sampled a millimetre at a time.
     assert longest < 300
 
 
-def test_the_bench_itself_takes_the_paths_this_builds():
+def test_the_examiner_itself_takes_the_paths_this_builds():
     """The one test that asks the simulator rather than arithmetic.
 
-    Everything above checks a path against the rules written down in the bench.
+    Everything above checks a path against the rules written down in the examiner.
     This hands two real paths to the real cell, because a rule read out of the
     source and a rule enforced by the code are two different things.
     """
     stand = tour.survey()[0]
     for seed in range(TRAINING, TRAINING + 4):
-        table = Bench(seed, glasses=tables.table(seed))
+        table = Simulator(seed, glasses=tables.table(seed))
         table.follow(jaw_paths.to_look(stand, glass=0))
         seen = table.look()
         settled = {glass.id for glass in seen if plan.room(glass, seen, ROOM_MARGIN)}
@@ -315,7 +328,7 @@ def test_the_bench_itself_takes_the_paths_this_builds():
         if push is not None:
             table.follow(jaw_paths.to_push(stand.jaw(), push))
             return
-    raise AssertionError("none of four training tables offered a push to try the bench with")
+    raise AssertionError("none of four training tables offered a push to try the examiner with")
 
 
 # ----------------------------------------------------------------- the memory
@@ -376,7 +389,7 @@ def test_the_memory_holds_a_glass_that_has_dropped_out_of_the_picture():
 
 
 def test_it_never_pushes_a_glass_that_already_has_room():
-    """The mistake problem 3's bench used to make impossible.
+    """The mistake problem 3's examiner used to make impossible.
 
     Problem 3 racks a glass the moment it has room, so its chooser is only ever
     shown crowded glasses. Nothing is racked here, so a glass with room stays on

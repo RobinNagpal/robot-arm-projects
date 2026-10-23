@@ -9,7 +9,7 @@
 reference's own calibration run used, so the two sets of numbers are about the
 same tables. They are below ``TEST_SEEDS`` and they are not the measurement:
 the held-out tables are walked once, by the owner of the problem, with
-``--judge``, which hands the whole arrangement to ``bench/judging.py`` rather
+``--judge``, which hands the whole arrangement to ``examiner/judging.py`` rather
 than deciding any of it here.
 
 **The clock is turned up out of the way for the twenty.** ``ARM_BUDGET``
@@ -99,7 +99,7 @@ def which_glass(first: int, count: int) -> None:
     ``measurement.json`` says what the model believed about the push that broke
     a glass, but it cannot say *which* glass broke, because the examiner ends
     the table the moment one goes over, so the look that would show it is never
-    taken. The bench knows, and asking the bench is allowed in a diagnosis
+    taken. The examiner knows, and asking the examiner is allowed in a diagnosis
     because nothing here decides a push. The answer separates two very
     different faults: a neighbour going over means the clearance arithmetic let
     the hand pass too close, and the pushed glass going over means that glass
@@ -118,7 +118,7 @@ def which_glass(first: int, count: int) -> None:
         cell = collect.blind_cell(seed)
         if clear_table(solution, seed, ROOM_TO_WORK, cell=cell).ended_by != GLASS_OVER:
             continue
-        over = [i for i in cell.bench.on_table() if cell.bench.tilt(i) >= STANDING_TILT_DEG]
+        over = [i for i in cell.simulator.on_table() if cell.simulator.tilt(i) >= STANDING_TILT_DEG]
         last = solution.risked[-1] if solution.risked else None
         target = last["glass"] if last else None
         pushed += target in over
@@ -141,7 +141,9 @@ def main() -> None:
     parser.add_argument("--tables", type=int, default=TABLES)
     parser.add_argument("--first", type=int, default=0)
     parser.add_argument("--predicting", action="store_true", help="no look between pushes; believe the model")
-    parser.add_argument("--judge", action="store_true", help="the held-out queue, through bench/judging.py")
+    parser.add_argument(
+        "--judge", action="store_true", help="the held-out queue, through examiner/judging.py"
+    )
     parser.add_argument(
         "--select",
         type=int,

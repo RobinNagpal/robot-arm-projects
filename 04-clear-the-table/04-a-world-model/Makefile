@@ -50,7 +50,7 @@ reference: ## The geometry reference's own numbers on the same twenty, to sit be
 select: ## A clocked queue of fifty tables below the held-out line, for choosing on
 	$(PIXI) python $(HERE)/measure.py --select 500
 
-judge: ## The held-out queue, once, through the bench's own judging
+judge: ## The held-out queue, once, through the examiner's own judging
 	$(PIXI) python $(HERE)/measure.py --judge
 
 test: ## The checks, none of which needs a trained model

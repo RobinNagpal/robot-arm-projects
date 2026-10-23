@@ -49,18 +49,18 @@ def views_and_boxes():
     import seeing
     import tables
     import wrist
-    from arm_bench import ArmBench
+    from arm_simulator import ArmSimulator
     from moveit_link import MESHES, generate_urdf
 
     joints = B.view_joint_sets()
     model = seeing.BoxModel.load()
     seed = 10001
-    bench = ArmBench(seed, tables.table(seed), urdf=generate_urdf(), meshes=MESHES, start=joints[0])
-    camera = arm_camera.ArmCamera(bench)
+    simulator = ArmSimulator(seed, tables.table(seed), urdf=generate_urdf(), meshes=MESHES, start=joints[0])
+    camera = arm_camera.ArmCamera(simulator)
     fig, axes = plt.subplots(1, 2, figsize=(9.5, 4.8))
     for ax, view, q, title in zip(axes, C.VIEWS, joints, ("from the first place", "from the second place"), strict=True):
-        bench.set_joints(q)
-        jaw = bench.tcp()
+        simulator.set_joints(q)
+        jaw = simulator.tcp()
         picture = camera.view(jaw)
         ax.imshow(picture)
         for box in model.detect(picture, jaw):

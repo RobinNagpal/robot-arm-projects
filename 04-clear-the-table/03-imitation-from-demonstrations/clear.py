@@ -30,9 +30,9 @@ arm time and touches nothing, so the model still chooses every answer and only
 the ones nobody can account for are carried out differently from how they were
 drawn.
 
-**Saying "done" is the gate's to say, with the bench's rule left as a backstop.**
+**Saying "done" is the gate's to say, with the examiner's rule left as a backstop.**
 The teacher's own declarations are in the demonstrations, so the gate is fitted
-on them, and a table ends when the gate says it is finished. ``bench/stopping.py``
+on them, and a table ends when the gate says it is finished. ``examiner/stopping.py``
 is still consulted, because a gate that never says "done" would otherwise spend
 the whole queue's budget on one table; it now ends a table far less often than
 the gate does, and the two reasons are counted apart.
@@ -96,7 +96,7 @@ class Imitation:
 
     @property
     def quiet_for(self) -> int:
-        """How many quiet answers the bench takes as "done". Read, never chosen."""
+        """How many quiet answers the examiner takes as "done". Read, never chosen."""
         return self.quiet.enough
 
     def begin(self, seed: int) -> None:
@@ -249,7 +249,7 @@ class Imitation:
 
         if self.quiet.finished:
             # The gate has not said the table is finished and the answers have
-            # stopped touching anything for long enough that the bench's rule
+            # stopped touching anything for long enough that the examiner's rule
             # takes the solution at its word. This last path is not carried out:
             # following it would spend arm time on an answer already read as
             # "there is nothing here to move".
@@ -331,7 +331,7 @@ class Imitation:
 
 
 def _glass(waypoints: tuple, look: Look) -> int:
-    """A glass index for the bench's bookkeeping. Nothing in problem 4 scores it.
+    """A glass index for the examiner's bookkeeping. Nothing in problem 4 scores it.
 
     The nearest glass by its measured edge to where the path ends, which is
     problem 3's own convention for reading a glass back off a chunk. Zero when
@@ -345,5 +345,5 @@ def _glass(waypoints: tuple, look: Look) -> int:
 
 
 def _aim(waypoints: tuple) -> tuple[float, float]:
-    """Where the path ends, flat. The bench wants an aim and problem 4 never reads one."""
+    """Where the path ends, flat. The examiner wants an aim and problem 4 never reads one."""
     return (waypoints[-1].x, waypoints[-1].y)

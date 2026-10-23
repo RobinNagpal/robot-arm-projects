@@ -8,7 +8,7 @@
     pixi run python -u 06-smolvla-fine-tuned/run.py --first 0 --tables 20 --room 120 \
         --as-it-downloads --save pair-untrained.json
 
-**The measurement is the held-out queue**, and ``bench/judging.py`` is what
+**The measurement is the held-out queue**, and ``examiner/judging.py`` is what
 holds it: the same fifty tables from table ten thousand, in the same order, with
 the same fifteen arm minutes for the whole list, walked three times. Every
 solution in problem 4 is marked that way, and nothing about the arrangement is
@@ -28,7 +28,7 @@ corrections were fitted; walk ``n`` is walked by correction ``n`` with the noise
 seeded at ``n``, so the spread the scorecard reports covers both.
 
 **Below ten thousand is where anything was compared.** How long a quiet spell
-is taken as the policy saying it is finished is the bench's own number, and
+is taken as the policy saying it is finished is the examiner's own number, and
 ``--quiet-for`` is how it was compared against two shorter ones on the tables
 below the held-out line. The held-out tables were walked once, afterwards.
 

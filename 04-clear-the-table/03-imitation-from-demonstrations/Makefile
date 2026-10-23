@@ -33,7 +33,7 @@ train-policy: ## Fit SEEDS policies alone, reading at most LOOKS looking frames
 	cd .. && pixi run python -u 03-imitation-from-demonstrations/train.py \
 		--seeds $(SEEDS) --steps $(STEPS) --policy-only --looks $(LOOKS)
 
-judge: ## The held-out queue, walked once a fit through bench/judging.py
+judge: ## The held-out queue, walked once a fit through examiner/judging.py
 	cd .. && pixi run python -u 03-imitation-from-demonstrations/run.py --judge
 
 teacher: ## How long the teacher goes without touching a glass

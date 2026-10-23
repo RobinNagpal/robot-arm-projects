@@ -16,7 +16,7 @@ python = "3.12.*"
 numpy = ">=2.0,<2.3"
 # rack/layout.py imports OpenCV, and the glass zone is read from there.
 py-opencv = ">=4.9,<4.14"
-# The diagrams, which run the bench so that a picture is a measurement.
+# The diagrams, which run the examiner so that a picture is a measurement.
 matplotlib = ">=3.8"
 pytest = ">=7"
 ruff = ">=0.4"
@@ -41,9 +41,10 @@ peft = ">=0.17,<0.22"
 
 [activation.env]
 # Four places: this problem's own copy of the cell's modules, the full arm,
-# this problem's bench, and the copy of problem 3's bench that it is built on.
+# this problem's examiner, and the copy of problem 3's common files that it
+# is built on.
 # Problem 3's files are copied into from-problem-3/ rather than imported from
 # problem 3's folder, so that each problem stands on its own.
-PYTHONPATH = "$PIXI_PROJECT_ROOT/work-cell:$PIXI_PROJECT_ROOT/full-arm:$PIXI_PROJECT_ROOT/bench:$PIXI_PROJECT_ROOT/from-problem-3/bench"
+PYTHONPATH = "$PIXI_PROJECT_ROOT/work-cell:$PIXI_PROJECT_ROOT/full-arm:$PIXI_PROJECT_ROOT/examiner:$PIXI_PROJECT_ROOT/from-problem-3/bench"
 
 [tasks]

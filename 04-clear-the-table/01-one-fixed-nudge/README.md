@@ -54,7 +54,7 @@ looks are nearly free. A glass that has just been pushed is forgotten first, so
 that a reading taken after the shove is not averaged with readings of where it
 used to be.
 
-Merging goes by the glass numbers the bench hands back. Deciding that the glass
+Merging goes by the glass numbers the examiner hands back. Deciding that the glass
 in this picture is the one from the last picture is the **association problem**,
 and it belongs to problem 2. Nothing here solves it.
 
@@ -112,10 +112,10 @@ and a solution that called it "done" would be claiming it knew when to stop.
 |---|---|---|
 | Seeing | one call, the whole table, free | eight poses, 8 arm seconds a sweep |
 | Across looks | nothing to carry; each look is the table | a merged belief, averaged, and forgotten per glass when it moves |
-| An action | a `Push`, expanded by the bench | a `Chunk` of waypoints, written here |
+| An action | a `Push`, expanded by the examiner | a `Chunk` of waypoints, written here |
 | Feeling for the glass | creep forward until the force sensor finds it, then push | no force sensor and no creeping: the distance to the glass is measured with the camera, by a ranging push, and remembered |
 | Glasses with room | racked, and gone from the table | left standing, and held back from the chooser |
-| Budget | 4 pushes a glass, 16 a table, counted by the bench | arm seconds, and a guard of 4 pushes a glass so one glass cannot absorb a table |
+| Budget | 4 pushes a glass, 16 a table, counted by the examiner | arm seconds, and a guard of 4 pushes a glass so one glass cannot absorb a table |
 | Ending | the table is empty or every glass is refused | the solution says so, after a sweep |
 
 ## What it costs — twenty tables, seeds 0 to 19
@@ -306,7 +306,7 @@ pixi run ruff check ../04-clear-the-table/01-one-fixed-nudge
 seed from `TEST_SEEDS` up.
 
 `conftest.py` is what makes the second form work: pytest adds the folder a test
-sits in and not the bench beside it, and `pixi run` replaces `PYTHONPATH` rather
+sits in and not the `examiner/` folder beside it, and `pixi run` replaces `PYTHONPATH` rather
 than adding to it, so a path set on the command line never reaches Python.
 
 ## Three things about problem 4 this solution found

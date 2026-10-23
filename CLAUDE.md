@@ -33,6 +33,14 @@ builds on an earlier one, copy the files it needs into its own folder, as
 `work-cell/` and `from-problem-3/` do, and keep the copy exactly as the
 original. A document may still link to a document in another folder.
 
+Copy only what the later problem needs. When a file holds both what two
+problems share and what belongs to the earlier one alone, split it in the
+earlier problem's folder first: a `common_` file with the shared part, and the
+earlier problem's own file, whose classes extend the common ones and which
+passes on the common names. Then the later problem copies only the `common_`
+file and extends it with its own. Problem 3's `bench/` is split this way, and
+problem 4's `examiner/simulator.py` extends the copy of `common_bench.py`.
+
 ## The glass problems, 01 to 06
 
 The first six folders are one task taken apart into six problems. Read

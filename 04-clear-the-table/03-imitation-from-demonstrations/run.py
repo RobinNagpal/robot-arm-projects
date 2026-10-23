@@ -15,7 +15,7 @@ being written.
 **Without ``--judge`` this is not a queue walk.** The real measurement gives a
 solution one ordered list of held-out tables and one budget of arm minutes for
 the whole list, and how far down it gets is half the score. ``--judge`` hands
-that whole arrangement to ``bench/judging.py`` and takes none of it as an
+that whole arrangement to ``examiner/judging.py`` and takes none of it as an
 argument, so this folder cannot mark itself on a kinder list; the three walks it
 asks for are this solution's three fits, one each, which is where the spread
 comes from. Without it, every table is handed the same allowance of its own, so
@@ -29,7 +29,7 @@ what is reported is what the solution asks for rather than what the budget
 allowed it, and this does the same thing with one difference. A fitted policy
 can answer with a path the cell's tipping interlock refuses, and a refused path
 moves the arm nowhere, so the clock does not advance and the same picture comes
-back: a deterministic model then answers the same way for ever. The bench has a
+back: a deterministic model then answers the same way for ever. The examiner has a
 guard for exactly that -- ``most_answers``, read off the arm time left -- and
 turning the clock off turns the guard off with it. So the allowance is finite
 and generous: four arm minutes a table, against the forty-four arm seconds the
@@ -79,7 +79,7 @@ HERE = Path(__file__).resolve().parent
 WEIGHTS = HERE / "weights"
 
 # Arm seconds one table is given while measuring. See the note above: generous
-# enough that the clock never decides the result, finite so that the bench's own
+# enough that the clock never decides the result, finite so that the examiner's own
 # guard against an answer that moves the arm nowhere still binds.
 ROOM_TO_WORK = 240.0
 
@@ -271,7 +271,7 @@ def headline(rows: list[dict]) -> dict:
 
 
 def _judge(folders: list[Path]) -> None:
-    """Walk the held-out queue once a fit, through the bench's own arrangement.
+    """Walk the held-out queue once a fit, through the examiner's own arrangement.
 
     ``judging.judge`` asks for a fresh solution per walk so that nothing one
     walk learned can reach the next. Here each walk is a different fit of the
@@ -299,7 +299,9 @@ def main() -> None:
         "--save", type=str, default=str(HERE / "measurement.json"), help="where the numbers go"
     )
     parser.add_argument("--quiet", action="store_true", help="do not print every table")
-    parser.add_argument("--judge", action="store_true", help="the held-out queue, through bench/judging.py")
+    parser.add_argument(
+        "--judge", action="store_true", help="the held-out queue, through examiner/judging.py"
+    )
     arguments = parser.parse_args()
 
     if arguments.judge:
@@ -331,7 +333,7 @@ def main() -> None:
             f"said done {headlines['said_done']}/{headlines['tables']}"
         )
 
-    # The spread across the fits, printed and saved by the bench's own card, so
+    # The spread across the fits, printed and saved by the examiner's own card, so
     # that a band reads the same here as in every other folder. One fit is not a
     # measurement, and this is the line that says so.
     save = Path(arguments.save)

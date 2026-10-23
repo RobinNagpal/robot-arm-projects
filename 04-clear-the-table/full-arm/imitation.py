@@ -124,7 +124,7 @@ class Imitation(TurnByTurn):
 
     def __init__(self, weights: Path | None = None) -> None:
         self.net = PushPolicy()
-        self.net.load_state_dict(torch.load(weights or WEIGHTS / "imitation.pt", weights_only=True))
+        self.net.load_state_dict(torch.load(weights or WEIGHTS / "imitation-r4.pt", weights_only=True))
         self.net.eval()
         self.refused: set[int] = set()
 
@@ -168,7 +168,7 @@ if __name__ == "__main__":
         "--stop-repeat", type=int, help="the same for lessons that say 'finished' (default: --repeat)"
     )
     parser.add_argument("--epochs", type=int, default=300)
-    parser.add_argument("--tag", default="imitation")
+    parser.add_argument("--tag", default="imitation-r4")
     a = parser.parse_args()
     records = F.load_records(*a.records)
     demos, finished = demonstrations(records) if records else ([], 0)

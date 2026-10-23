@@ -29,20 +29,20 @@ import collect_pushes as CP
 import features as F
 import mujoco
 from arm_contract import FINISHED, GLASS_OVER, OUT_OF_TIME, TableResult
-from examiner import ARM_BUDGET, scored
+from arm_examiner import ARM_BUDGET, scored
 from moveit_link import MoveItLink
 from pusher import Box
 
 from scoring import Repeats
 
 
-def snapshot(bench):
-    return copy.deepcopy(bench.data)
+def snapshot(simulator):
+    return copy.deepcopy(simulator.data)
 
 
-def restore(bench, data) -> None:
-    mujoco.mj_copyData(bench.data, bench.model, data)
-    mujoco.mj_forward(bench.model, bench.data)
+def restore(simulator, data) -> None:
+    mujoco.mj_copyData(simulator.data, simulator.model, data)
+    mujoco.mj_forward(simulator.model, simulator.data)
 
 
 def worth(before: list[Box], after: list[Box], topple: bool, seconds: float) -> float:
@@ -56,10 +56,10 @@ def worth(before: list[Box], after: list[Box], topple: bool, seconds: float) -> 
 
 
 def truth(cell) -> list[Box]:
-    bench = cell.bench
+    simulator = cell.simulator
     out = []
-    for i, glass in enumerate(bench.glasses):
-        x, y = bench.position(i)
+    for i, glass in enumerate(simulator.glasses):
+        x, y = simulator.position(i)
         o = glass.outline
         out.append(
             Box(float(x), float(y), float(o.max_diameter / 2), float(o.total_height), float(o.radius[0]))
@@ -89,27 +89,27 @@ def clear_table(
             if left < 8.0 or answers >= 10:
                 break
             boxes = truth(cell)
-            before = CP.layout(cell.bench)
+            before = CP.layout(cell.simulator)
             if F.pickable_count(boxes) == len(boxes):
                 ended = FINISHED
                 if lessons is not None:
                     lessons.append({"seed": seed, "step": answers, "before": before, "request": None})
                 break
-            state = snapshot(cell.bench)
-            was_seconds, was_total = cell.bench.arm_seconds, cell.bench.seconds
+            state = snapshot(cell.simulator)
+            was_seconds, was_total = cell.simulator.arm_seconds, cell.simulator.seconds
             best = None
             for _ in range(candidates):
                 request = CP.informed_request(rng, boxes) if rng.random() < 0.8 else None
                 if request is None:
-                    request, _boxes = CP.draw_request(rng, cell.bench)
+                    request, _boxes = CP.draw_request(rng, cell.simulator)
                 result = cell.pusher.push(boxes, request, left)
                 if result.ok:
                     after = truth(cell)
-                    value = worth(boxes, after, cell.toppled() > 0, cell.bench.arm_seconds - was_seconds)
+                    value = worth(boxes, after, cell.toppled() > 0, cell.simulator.arm_seconds - was_seconds)
                     if best is None or value > best[0]:
                         best = (value, request)
-                restore(cell.bench, state)
-                cell.bench.arm_seconds, cell.bench.seconds = was_seconds, was_total
+                restore(cell.simulator, state)
+                cell.simulator.arm_seconds, cell.simulator.seconds = was_seconds, was_total
             answers += 1
             if best is None or best[0] <= 0.0:
                 ended = FINISHED
@@ -140,7 +140,7 @@ def clear_table(
                     {
                         "seed": seed,
                         "glass": request.glass,
-                        "kind": cell.bench.glasses[request.glass].kind,
+                        "kind": cell.simulator.glasses[request.glass].kind,
                         "heading": request.heading,
                         "travel": request.travel,
                         "settings": request.settings.__dict__,

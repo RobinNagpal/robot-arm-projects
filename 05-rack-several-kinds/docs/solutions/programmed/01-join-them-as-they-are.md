@@ -126,7 +126,7 @@ half the foot width over the friction, and tips above. The height to check is
 pushed at all.
 
 In problem 3 this was easy. The kind was known for the whole table, and
-`look()` in `03-push-glasses-apart/bench/bench.py` hands over the foot width with every glass.
+`look()` in `03-push-glasses-apart/bench/common_bench.py` hands over the foot width with every glass.
 Problem 3's [results](../../../../03-push-glasses-apart/results/README.md#what-these-results-do-not-cover)
 already say that this is generous: a camera looking down sees the widest part,
 not the foot.

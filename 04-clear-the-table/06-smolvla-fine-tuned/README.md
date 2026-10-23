@@ -51,8 +51,8 @@ changes beside the measurements that justified them.
 | `train.py` in problem 3's solution 6 | **borrowed in part.** The step count, the batch, the rate and its warm-up, the pre-processing of a batch, and the distance from the teacher in millimetres. Its loop is not used, because this one fits three seeds and reads problem 4's demonstrations. |
 | `chunks.py` in problem 3's solution 6 | **borrowed in part.** Cutting a recorded push down to its flat part, resampling, and the round-trip check that a target is one the model can express. |
 | `loading.py`, `chunks.py`, `readings.py` in problem 4's solution 3 | **borrowed, unchanged.** Where the demonstrations are and what one holds. The two fitted solutions read one set through one reader. |
-| `bench/stopping.py` | **borrowed.** How a trained policy says it has finished. Its count is taken as it comes; this folder sets no number of its own. |
-| `bench/keeping_clear.py` | **borrowed, through solution 5.** The clearance check a solution runs over its own answer. It is inherited rather than called here, which keeps the pair one piece of code. |
+| `examiner/stopping.py` | **borrowed.** How a trained policy says it has finished. Its count is taken as it comes; this folder sets no number of its own. |
+| `examiner/keeping_clear.py` | **borrowed, through solution 5.** The clearance check a solution runs over its own answer. It is inherited rather than called here, which keeps the pair one piece of code. |
 | `borrowed.py` | **new.** Loads all nine of those under the plain names they import each other by. Nothing is put on `sys.path`. |
 | `targets.py` | **new.** One stored demonstration, read as something the borrowed model can be fitted towards. The only new thinking about the data. |
 | `train.py`, `run.py` | **new.** Three fits, and the two measurements. |
@@ -88,12 +88,12 @@ drop twice.
 
 **The path is padded, and squeezed only when it will not fit.** A chunk is fifty
 rows and most paths are shorter, so the path keeps the teacher's own spacing and
-its last pose is repeated to the end. That matters because the bench eats
+its last pose is repeated to the end. That matters because the examiner eats
 waypoints at a fixed rate, so how far apart they are *is* how fast the jaw goes.
 Measured over the fitting set, **1,824 of the 2,051 pushes fit in fifty rows**,
 and the 227 that do not are resampled into them, which asks for the teacher's
 own path at a median of 1.64 times its speed and 3.34 at the worst. A look is
-the same shape held still: its pose, repeated, which the bench follows as one
+the same shape held still: its pose, repeated, which the examiner follows as one
 waypoint and charges as the crossing alone.
 
 **The reading is exact, and that was measured rather than assumed.** Every one
@@ -204,7 +204,7 @@ motion**, because the copy got better by half and the table did not change.
 ## How it says it is done
 
 Problem 4 asks every solution to declare a table finished, and that is a
-sentence a policy cannot utter. `bench/stopping.py` is the shared answer — a run
+sentence a policy cannot utter. `examiner/stopping.py` is the shared answer — a run
 of answers that could not touch a glass is taken as the policy saying it sees
 nothing to do — and this solution uses its count as it comes, which is sixteen.
 
@@ -223,7 +223,7 @@ line, with one correction and every table given 120 arm seconds of its own:
 | Paths carried out | 251 | 251 | 307 |
 
 Sixteen is the best column of the three on every count that is scored, so the
-bench's own number is the one used and nothing here overrides it.
+examiner's own number is the one used and nothing here overrides it.
 
 **That comparison was made before the even mixture and the clearance check**, so
 its numbers describe a solution that no longer exists: with the clearance check

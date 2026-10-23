@@ -8,8 +8,10 @@
 FIRST ?= 10000
 TABLES ?= 20
 RUNS ?= 1
+# Which jaw-only solution `make evaluate-jaw` runs on the arm.
+JAW ?= one-fixed-nudge
 
-.PHONY: help ros test lint runs box-data box-net collect imitation world-model reinforcement vla-data vla evaluate-geometry evaluate-imitation evaluate-world-model evaluate-reinforcement evaluate-vla
+.PHONY: help ros test lint runs box-data box-net collect imitation world-model reinforcement vla-data vla evaluate-geometry evaluate-imitation evaluate-world-model evaluate-reinforcement evaluate-vla evaluate-jaw
 
 help: ## This list
 	@awk 'BEGIN {FS = ":.*##"} /^[a-z-]+:.*##/ { printf "  \033[36m%-24s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
@@ -34,23 +36,29 @@ box-net: ## Train the box model and measure it on pictures it has not seen
 
 # ------------------------------------------------------- jobs 1 and 2: what to ask
 
-collect: ## Push at random with the arm: 640 tables, nine workers
+# The solutions learn from four rounds of pushes, all kept in data/. Round 1 is
+# made again by `make collect`; rounds 2 to 4 were drawn partly from a trained
+# world model, as ../docs/what-the-pushes-show.md says. Each target below writes
+# the weights the results are measured with, under the same name.
+PUSHES := full-arm/data/pushes-round1.jsonl full-arm/data/pushes-round2.jsonl full-arm/data/pushes-round3.jsonl full-arm/data/pushes-round4.jsonl
+
+collect: ## Push at random with the arm: 640 tables, nine workers (round 1)
 	cd .. && pixi run python full-arm/collect_pushes.py --first 1000 --tables 640 --out full-arm/data/pushes-round1.jsonl --workers 9
 
 imitation: ## Solution 3: copy the pushes that worked
-	cd .. && pixi run python full-arm/imitation.py full-arm/data/pushes-round1.jsonl
+	cd .. && pixi run python full-arm/imitation.py $(PUSHES)
 
 world-model: ## Solution 4: learn what a push does, five models
-	cd .. && pixi run python full-arm/world_model.py full-arm/data/pushes-round1.jsonl --epochs 16
+	cd .. && pixi run python full-arm/world_model.py $(PUSHES) --epochs 16
 
 reinforcement: ## Solution 5: learn by trying, a few thousand pushes
 	cd .. && pixi run python full-arm/reinforcement.py train --iterations 25 --workers 8 --steps 20
 
 vla-data: ## The pictures and answers SmolVLA is fitted on
-	cd .. && pixi run python full-arm/build_vla_data.py full-arm/data/pushes-round1.jsonl full-arm/data/vla-round1.pkl
+	cd .. && pixi run python full-arm/build_vla_data.py $(PUSHES) full-arm/data/vla-r4.pkl
 
 vla: ## Solution 6: fit a small correction to SmolVLA
-	cd .. && pixi run python full-arm/vla.py --data full-arm/data/vla-round1.pkl --steps 300 --tag vla-round1
+	cd .. && pixi run python full-arm/vla.py --data full-arm/data/vla-r4.pkl --steps 600
 
 # ----------------------------------------------------------------------- scoring
 
@@ -76,4 +84,7 @@ evaluate-reinforcement: ## Solution 5
 	cd .. && pixi run python full-arm/evaluate.py reinforcement --first $(FIRST) --tables $(TABLES) --runs $(RUNS)
 
 evaluate-vla: ## Solution 6
-	cd .. && pixi run python full-arm/evaluate.py vla --weights full-arm/weights/vla-round1 --first $(FIRST) --tables $(TABLES) --runs $(RUNS)
+	cd .. && pixi run python full-arm/evaluate.py vla --first $(FIRST) --tables $(TABLES) --runs $(RUNS)
+
+evaluate-jaw: ## A jaw-only solution on the arm: JAW=one-fixed-nudge, geometry-ranked, imitation, world-model or smolvla
+	cd .. && pixi run python full-arm/evaluate.py jaw-$(JAW) --first $(FIRST) --tables $(TABLES) --runs $(RUNS)

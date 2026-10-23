@@ -41,9 +41,9 @@ import arm_camera  # noqa: F401
 import cell as C
 import matplotlib
 import oracle
+from arm_examiner import ARM_BUDGET, SimExaminer, Tally
 from checked import Checked
 from evaluate import SOLUTIONS
-from examiner import ARM_BUDGET, SimExaminer, Tally
 from moveit_link import MoveItLink
 from solving import Done
 from work_cell.rack.layout import GLASS_ZONE
@@ -77,18 +77,20 @@ RECORDED = {
 # ------------------------------------------------------------------ the glasses
 
 
-def glasses(bench, start: list[dict] | None = None) -> list[dict]:
+def glasses(simulator, start: list[dict] | None = None) -> list[dict]:
     """Every glass as it stands now. With ``start``, also how far each has moved since."""
     rows = []
-    for i, glass in enumerate(bench.glasses):
-        x, y = (float(v) for v in bench.position(i))
+    for i, glass in enumerate(simulator.glasses):
+        x, y = (float(v) for v in simulator.position(i))
         # Which neighbours are too close, one at a time, so a crowded glass says who crowds it.
         crowded_by = [
             j
-            for j in bench.on_table()
+            for j in simulator.on_table()
             if j != i
             and not has_room(
-                x, y, [(*(float(v) for v in bench.position(j)), bench.glasses[j].outline.max_diameter)]
+                x,
+                y,
+                [(*(float(v) for v in simulator.position(j)), simulator.glasses[j].outline.max_diameter)],
             )
         ]
         row = {
@@ -96,10 +98,10 @@ def glasses(bench, start: list[dict] | None = None) -> list[dict]:
             "kind": glass.kind,
             "x_mm": round(x * 1000),
             "y_mm": round(y * 1000),
-            "standing": bool(bench.tilt(i) < STANDING_TILT_DEG),
+            "standing": bool(simulator.tilt(i) < STANDING_TILT_DEG),
             "in_zone": bool(in_zone(x, y)),
             "crowded_by": crowded_by,
-            "separated": bool(pickable(bench, i)),
+            "separated": bool(pickable(simulator, i)),
         }
         if start is not None:
             row["moved_mm"] = round(
@@ -151,15 +153,15 @@ class PushLog:
     """
 
     def __init__(self, cell, keep_every_push: bool = True) -> None:
-        self.bench, self.entries, self.pending = cell.bench, [], None
+        self.simulator, self.entries, self.pending = cell.simulator, [], None
         pusher_push = cell.pusher.push
 
         def push(boxes, request, seconds_left=math.inf, **how):
             entry = self.describe(boxes, request)
-            before = glasses(self.bench)
+            before = glasses(self.simulator)
             result = pusher_push(boxes, request, seconds_left, **how)
             if result.ok:
-                after = glasses(self.bench, before)
+                after = glasses(self.simulator, before)
                 entry |= {
                     "outcome": MADE,
                     "moved_mm": {str(r["glass"]): r["moved_mm"] for r in after if r["moved_mm"] >= 3},
@@ -193,7 +195,8 @@ class PushLog:
 
     def describe(self, boxes, request) -> dict:
         """The push as asked for, with the glass found by where the solution's box stood."""
-        here = [tuple(float(v) for v in self.bench.position(i)) for i in range(len(self.bench.glasses))]
+        simulator = self.simulator
+        here = [tuple(float(v) for v in simulator.position(i)) for i in range(len(simulator.glasses))]
         box = boxes[request.glass]
         glass = min(range(len(here)), key=lambda i: math.dist(here[i], (box.x, box.y)))
         heading = math.degrees(request.heading)
@@ -202,7 +205,7 @@ class PushLog:
             here[glass][0] + request.travel * math.cos(request.heading),
             here[glass][1] + request.travel * math.sin(request.heading),
         )
-        others = [i for i in self.bench.on_table() if i != glass]
+        others = [i for i in self.simulator.on_table() if i != glass]
         entry = {
             "glass": glass,
             "glass_x_mm": round(here[glass][0] * 1000),
@@ -210,9 +213,9 @@ class PushLog:
             "heading_deg": round(heading),
             "aimed_at_mm": [round(aim[0] * 1000), round(aim[1] * 1000)],
             "aimed_spot_has_room": bool(
-                has_room(*aim, [(*here[i], self.bench.glasses[i].outline.max_diameter) for i in others])
+                has_room(*aim, [(*here[i], self.simulator.glasses[i].outline.max_diameter) for i in others])
             ),
-            "nearest_centre_mm_before": nearest_centre(glasses(self.bench), glass),
+            "nearest_centre_mm_before": nearest_centre(glasses(self.simulator), glass),
         }
         if others:
             n = min(others, key=lambda i: math.dist(here[i], here[glass]))
@@ -387,8 +390,8 @@ def draw(
     plt.close(figure)
 
 
-def widths_of(bench) -> list[float]:
-    return [float(g.outline.max_diameter) for g in bench.glasses]
+def widths_of(simulator) -> list[float]:
+    return [float(g.outline.max_diameter) for g in simulator.glasses]
 
 
 # ------------------------------------------------------------------ the three steps
@@ -401,7 +404,7 @@ def arrangements(count: int = TABLES, first: int = FIRST) -> None:
     with MoveItLink() as link:
         while len(chosen) < count:
             cell = C.ArmCell(seed, link, camera=False)
-            rows = glasses(cell.bench)
+            rows = glasses(cell.simulator)
             total = counts(rows)
             if total["not_separated"] == 0:
                 if already >= allowed:
@@ -421,7 +424,7 @@ def arrangements(count: int = TABLES, first: int = FIRST) -> None:
                 folder / "arrangement.png",
                 f"Table {seed} at the start: {total['separated']} of {total['glasses']} separated",
                 rows,
-                widths_of(cell.bench),
+                widths_of(cell.simulator),
             )
             chosen.append(seed)
             seed += 1
@@ -469,7 +472,7 @@ def solve(stem: str) -> None:
                         kept["undo"]()
                 cell, log = kept["cell"], kept["log"]
                 made, refused = tally.pushes, tally.refusals
-            rows = glasses(cell.bench, start)
+            rows = glasses(cell.simulator, start)
             before, after = counts(start), counts(rows)
             record = {
                 "table": seed,
@@ -492,7 +495,7 @@ def solve(stem: str) -> None:
                 f"Table {seed}, {record['name']}:\n"
                 f"{before['separated']} -> {after['separated']} of {after['glasses']} separated{fell}",
                 rows,
-                widths_of(cell.bench),
+                widths_of(cell.simulator),
                 start,
                 log.entries,
             )

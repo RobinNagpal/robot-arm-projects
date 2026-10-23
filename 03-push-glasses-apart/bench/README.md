@@ -7,7 +7,8 @@ judged by the same scorecard.
 it is built this way.
 
 - `bench.py`: the numbered tables, and a MuJoCo world to push glasses around
-  in. It stands in for Gazebo. Tables from 10000 up are for testing only.
+  in, built on `common_bench.py` as the section below explains. It stands in
+  for Gazebo. Tables from 10000 up are for testing only.
 - `top_view.py`: the table from directly above, for the solutions that read
   pictures rather than numbers.
 - `scoring.py`: judges a run against what the physics really did. No solution
@@ -17,6 +18,35 @@ it is built this way.
   physics is unchanged. There is still no arm: the hand moves on its own.
   `make comparison-films` uses it to film one table with each of the six
   solutions. The documents link to those films.
+
+## The common part, and problem 3's own part
+
+Problem 4 pushes the same glasses with the same jaw through the same physics,
+so it needs part of this bench too. However, it must not share code with this
+folder, and it has no use for the parts that belong to problem 3 alone: the
+overhead camera, the push that feels for a glass, and racking a glass. So three
+of the files above are each split in two, and problem 4 keeps a copy of only
+the common half.
+
+| Common half, copied by problem 4 | Problem 3's own half, which extends it |
+| --- | --- |
+| `common_bench.py`: the physics, the jaw, the glasses, `look()`, `follow()`, and the `CommonBench` class | `bench.py`: problem 3's draw of tables, the overhead camera in the world, `push()`, `take()`, and `Bench`, which extends `CommonBench` |
+| `common_scoring.py`: the spread over repeated runs, and the rows kept per table | `scoring.py`: the push-by-push scorecard |
+| `common_film.py`: the second world with the real hand drawn in it, and the writing of frames to a video | `film.py`: the label for each push, and the pick drawn when a glass is racked |
+
+Every name in a common file can still be imported from its problem 3 file, so
+a solution here imports only from `bench`, `scoring` and `film`.
+
+Problem 4 also keeps a copy of `top_view.py`, which now holds the overhead
+camera's own numbers. Problem 4 has no overhead camera, but one of its
+solutions uses problem 3's SmolVLA file, and that file reads positions in the
+overhead picture's frame. Problem 5 keeps copies of `common_bench.py`,
+`bench.py` and `top_view.py`, because it pushes and racks glasses as problem 3
+does.
+
+So a change to any of these files has to be copied to every folder that keeps
+it. Their results are compared with this folder's, and the comparison holds
+only while all of them push with the same physics.
 
 ## What a film shows, and what it does not
 

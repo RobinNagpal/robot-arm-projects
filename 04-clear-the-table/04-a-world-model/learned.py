@@ -81,7 +81,7 @@ class WorldModel(nudge.OneFixedNudge):
         #
         # Left unseeded by default, and that is the right way round. This
         # solution draws its answer rather than computing it, so one run is not
-        # a measurement of it, and ``bench/judging.py`` walks the queue three
+        # a measurement of it, and ``examiner/judging.py`` walks the queue three
         # times and reports the spread -- which a solution seeded the same way
         # every time would report as zero while still varying. A caller that
         # wants one run repeated exactly passes a seed, and ``measure.py``

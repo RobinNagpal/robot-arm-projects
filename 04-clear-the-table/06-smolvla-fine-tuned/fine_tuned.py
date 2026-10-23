@@ -3,7 +3,7 @@
 ``as_downloaded.py``, beside this file, is the model with nothing fitted, and it is
 the one that wrote down how a trained policy joins problem 4's conversation: a
 picture from the camera on the arm goes in, a path for the jaw comes out,
-``bench/stopping.py`` reads the declaration that a table is finished out of the
+``examiner/stopping.py`` reads the declaration that a table is finished out of the
 shape of the answers, and the solution keeps its own split of the arm time it
 asked for. **All of that is inherited rather than written again**, which is the
 whole of why this file is short.
@@ -23,7 +23,7 @@ downloaded weights with a low-rank correction multiplied into them, so what runs
 afterwards is a model of exactly the original size at exactly the original speed.
 The correction is the one ``train.py`` fitted on problem 4's demonstrations.
 
-**How long a quiet spell has to be is the bench's number and not this
+**How long a quiet spell has to be is the examiner's number and not this
 folder's.** The stopping rule counts answers that could not touch a glass and
 takes enough of them in a row as the policy saying the table needs nothing more.
 ``stopping.QUIET_ANSWERS`` is that count, and this solution takes it as it comes
@@ -78,7 +78,7 @@ class FineTuned(as_downloaded.AsItDownloads):
 
     def answer(self, look: Look) -> Answer:
         if look.refused:
-            kind = "the tipping interlock" if look.refused.startswith(INTERLOCK) else "the bench"
+            kind = "the tipping interlock" if look.refused.startswith(INTERLOCK) else "the examiner"
             self.refusals[kind] += 1
         return super().answer(look)
 

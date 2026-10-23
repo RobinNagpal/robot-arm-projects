@@ -41,7 +41,7 @@ and the size a picture is read at. None of it is written again here. The two
 problems exist to be compared, so if the model or the fitting loop were rewritten
 a difference between them could be the wiring rather than the problem.
 
-**`bench/stopping.py`** is how a policy with no words for it says it has
+**`examiner/stopping.py`** is how a policy with no words for it says it has
 finished, and it is now the *backstop* rather than the rule. The teacher's own
 declarations are in the demonstrations — `collect.py` records the answer it never
 had to carry out — so the gate is fitted on them and a table ends when the gate
@@ -49,7 +49,7 @@ says it is finished. The quiet rule is still consulted, because a gate that neve
 said "done" would otherwise spend a whole queue's budget on one table, and the
 two reasons are counted apart in a run's record.
 
-**`bench/keeping_clear.py`** is the arithmetic this solution runs over its own
+**`examiner/keeping_clear.py`** is the arithmetic this solution runs over its own
 answer before handing it over. A look has to ride at travel height and a push has
 to reach only the glass the gate named, at the height a push works at; anything
 else is raised to travel height, where it goes to the same place and touches
@@ -88,7 +88,7 @@ and nothing in the demonstrations says when a table is done. It says how long
 Padding rather than resampling also fixes something problem 3 had to live with.
 Problem 3 squeezed each push into a chunk's worth of waypoints, which made the
 student push faster than its teacher, because in this cell how far apart the
-waypoints are *is* how fast the jaw goes. Here a kept path reaches the bench
+waypoints are *is* how fast the jaw goes. Here a kept path reaches the examiner
 with the spacing the teacher wrote, so the student pushes at the teacher's speed.
 It also keeps the corner at the bottom of the descent sharp: resampling a path
 that drops straight down and then drives straight forward rounds that corner
@@ -122,7 +122,7 @@ touching anything, and this policy's answers had never touched anything.
 **The quiet rule is still there, as the backstop.** A gate that never said "done"
 would spend a whole queue's budget on one table, so a run of answers that could
 not touch a glass is still taken as the policy saying it sees nothing worth
-doing. The rule is used exactly as written and its number is the bench's own, so
+doing. The rule is used exactly as written and its number is the examiner's own, so
 every solution in this problem reads the same one. A run's record counts the two
 endings apart, which is the measurement of whether the gate learned to stop.
 
@@ -137,7 +137,7 @@ demonstrations come from:
 | --- | --- |
 | quiet spells that ended in a push | 326; longest **8**, middling 2 |
 | the spell each table ended with | 40; longest **11**, middling 10 |
-| the bench takes | **16** quiet answers as done |
+| the examiner takes | **16** quiet answers as done |
 
 It is measured on the demonstration band and not on the twenty tables this
 solution is marked on, so that no part of the solution was set by watching its
@@ -168,7 +168,7 @@ taught it what to do if it could. So a refused path leaves this solution
 answering the same way again: the arm has not moved, the clock has not advanced,
 the picture is the same, and the model is deterministic.
 
-Two things break that loop now. The bench's cap on answers is one, and it is read
+Two things break that loop now. The examiner's cap on answers is one, and it is read
 off the arm time left, **so a measurement run must leave the clock switched on**:
 solution 2's own measurement turns it off altogether, with a hundred thousand arm
 seconds, which for a geometry solution is right and for this one would spin for
@@ -185,7 +185,7 @@ table, which is why it is allowed to keep them.
 ## The held-out queue
 
 The real measurement: one ordered list of fifty tables from 10,000 up, fifteen
-arm minutes for the whole list, and however far down it gets. `bench/judging.py`
+arm minutes for the whole list, and however far down it gets. `examiner/judging.py`
 owns the arrangement and this folder takes none of it as an argument. Each of its
 three walks is one of the three fits, which is where the spread comes from. A
 table the clock ended before the arm moved on it at all is dropped rather than
@@ -415,7 +415,7 @@ without it, because how often each kind of answer really happens is part of what
 it has to learn.
 
 Without `--judge`, `run.py` refuses to touch a table numbered `TEST_SEEDS` or
-above: those are walked once, through `bench/judging.py`, which is what
+above: those are walked once, through `examiner/judging.py`, which is what
 `--judge` hands them to.
 
 What is in git and what is not: the weights are tens of megabytes a seed and

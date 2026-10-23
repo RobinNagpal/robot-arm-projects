@@ -1,7 +1,7 @@
 """The action: a path the jaw followed in, a chunk a learned policy can emit out.
 
 Problem 4's contract already asks for waypoints. The teacher answers with a
-``Chunk`` and the bench carries it out, so a demonstration's action does not
+``Chunk`` and the examiner carries it out, so a demonstration's action does not
 have to be invented from push parameters the way problem 3's did -- it is the
 path itself. What this module does is give that path a fixed shape, because a
 network's output has one.
@@ -16,14 +16,14 @@ zero once it has ended.
 
 That sixth column is the only thing here that is not geometry, and it is worth
 saying what it is not. It is **not** a channel for "this table is finished":
-``bench/stopping.py`` explains why that would be a different experiment, and
+``examiner/stopping.py`` explains why that would be a different experiment, and
 nothing in these demonstrations says when a table is done. It says how long
 *this path* is, which every demonstration labels, so it is learned from the
 data like every other column.
 
 **Nothing is resampled.** Problem 3 squeezed every push into a chunk's worth
 of waypoints, which made the student push faster than its teacher. Padding
-avoids that: a kept path reaches the bench with the spacing the teacher wrote,
+avoids that: a kept path reaches the examiner with the spacing the teacher wrote,
 so the student pushes at the teacher's speed and comes down at its descent
 speed. It also keeps the corner at the bottom of the descent sharp. Resampling
 a path that drops straight down and then drives straight forward rounds that
@@ -122,7 +122,7 @@ def to_action(
 def length_of(action: np.ndarray) -> int:
     """How many waypoints this chunk's own sixth column claims, at least one.
 
-    At least one because the bench will not follow an empty path, and a chunk
+    At least one because the examiner will not follow an empty path, and a chunk
     whose first row already says the path has ended is still the jaw being
     asked to stand somewhere.
     """
@@ -134,7 +134,7 @@ def length_of(action: np.ndarray) -> int:
 def to_waypoints(
     action: np.ndarray, origin: tuple[float, float] = (0.0, 0.0)
 ) -> tuple[tuple[Waypoint, ...], int]:
-    """A policy's chunk as waypoints the bench will take, and how many had to be pulled in.
+    """A policy's chunk as waypoints the examiner will take, and how many had to be pulled in.
 
     Nothing stops a network answering with a number the jaw cannot reach, so
     each waypoint is pulled back inside the table and the heights the jaw rides

@@ -4,12 +4,12 @@ Nothing here is fitted and nothing here is physics. What is covered is the four
 things that would be wrong *silently* -- each of them produces a run that a
 scorecard would happily add up.
 
-1. A path the bench would refuse. A network can answer with any number, so the
+1. A path the examiner would refuse. A network can answer with any number, so the
    pulling-in is the one thing between the model and a ``ValueError``.
 2. Saying "done" too soon or never. The rule is borrowed from
-   ``bench/stopping.py``, so what is tested here is that this folder feeds it
+   ``examiner/stopping.py``, so what is tested here is that this folder feeds it
    the right thing and acts on its answer.
-3. A glass index the bench raises on, which every path has to carry whether or
+3. A glass index the examiner raises on, which every path has to carry whether or
    not it is aimed at a glass.
 4. The borrowed ACT wiring reading problem 4's chunk rather than problem 3's,
    which is the one way ``wiring.py`` can go wrong without saying so.
@@ -77,7 +77,7 @@ def a_push_path(across: float, behind: float = 0.06) -> np.ndarray:
     Written in the glass's own frame, which is how a push is written now: the
     waypoints are measured from the glass being pushed, so ``(0, 0)`` is that
     glass and the path comes down ``behind`` millimetres short of it. ``clear.py``
-    adds the glass's place back on before the answer goes to the bench.
+    adds the glass's place back on before the answer goes to the examiner.
     """
     heading = 0.0
     start = (-behind, 0.0)
@@ -188,7 +188,7 @@ def test_two_stands_over_one_table_are_two_different_observations():
 # ------------------------------------------------------------- the path that goes
 
 
-def test_every_answer_is_a_path_the_bench_would_take():
+def test_every_answer_is_a_path_the_examiner_would_take():
     """Off the table, under the jaw's reach, too long: the three things follow() refuses."""
     for across in (0.002, 0.02, 0.05, 0.15):
         solution = solution_with([a_push_path(across)], readings.PUSH, 0)
@@ -210,7 +210,7 @@ def test_a_wild_answer_is_pulled_in_and_counted():
 
 
 def test_a_path_names_a_glass_that_is_really_there():
-    """``Chunk.glass`` is bookkeeping, and the bench still raises on an index that is not."""
+    """``Chunk.glass`` is bookkeeping, and the examiner still raises on an index that is not."""
     glasses = [a_glass((0.0, 0.5), number=3), a_glass((0.08, 0.62), number=7)]
     near_the_second = (Waypoint(0.08, 0.62, PUSH_HEIGHT, 0.0),)
     assert _glass(near_the_second, look_at(glasses)) == 7
@@ -218,7 +218,7 @@ def test_a_path_names_a_glass_that_is_really_there():
 
 
 def test_the_aim_is_where_the_path_ends():
-    """Problem 4 never reads an aim, and the bench still wants one."""
+    """Problem 4 never reads an aim, and the examiner still wants one."""
     points = (Waypoint(0.0, 0.5, PUSH_HEIGHT, 0.0), Waypoint(0.03, 0.5, PUSH_HEIGHT, 0.0))
     assert _aim(points) == (0.03, 0.5)
 
@@ -264,8 +264,8 @@ def test_begin_forgets_the_last_table_s_quiet_spell():
     assert isinstance(solution.answer(look), Chunk)
 
 
-def test_the_quiet_rule_is_the_bench_s_own_and_is_not_overridden():
-    """The number belongs to the bench, so that every solution reads the same one."""
+def test_the_quiet_rule_is_the_examiner_s_own_and_is_not_overridden():
+    """The number belongs to the examiner, so that every solution reads the same one."""
     solution = solution_with([a_look_path()])
     assert solution.quiet_for == QUIET_ANSWERS
 
@@ -304,7 +304,7 @@ def test_a_sweep_the_gate_called_a_look_is_lifted_rather_than_carried_out():
 class Stubbed:
     """A cell with no physics, so the whole conversation can be run in a test.
 
-    The same shape ``bench/test_open_run.py`` uses, and for the same reason: the
+    The same shape ``examiner/test_open_run.py`` uses, and for the same reason: the
     behaviour being checked belongs to the solution, and the real cell needs a
     renderer and so a graphics context, which a test should not need.
     """
@@ -325,7 +325,7 @@ class Stubbed:
     def follow(self, chunk: Chunk) -> Record:
         self.followed.append(chunk)
         felt = Felt(blocked=False, touched=None, jammed=False, peak=0.0, pushed=0.0)
-        # One entry a waypoint, which is how the bench writes a record down, plus
+        # One entry a waypoint, which is how the examiner writes a record down, plus
         # the lift home it makes for itself.
         return Record(chunk.as_push(), felt, chunk.aim, (*chunk.waypoints, chunk.waypoints[-1]))
 

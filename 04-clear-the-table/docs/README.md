@@ -53,6 +53,11 @@ those pushes.
 | 5 | Reinforcement learning | Learns by trying pushes and being scored | [page](solutions/05-reinforcement-learning.md) |
 | 6 | SmolVLA | A large vision-language-action model with a small fitted correction | [page](solutions/06-smolvla-fine-tuned.md) |
 
+The five solutions of the first cell, in which the jaw moves with no arm behind it, also run
+on this arm, with their own trained weights; [the arm and MoveIt](the-arm-and-moveit.md#a-path-of-straight-lines)
+says how a path of theirs becomes arm motion. They have not been measured on the arm yet, so
+they are not in the results below.
+
 Two more things appear in the results. The [safety check](solutions/safety-check.md) lets
 the world model reject another solution's push when it expects that push to tip a glass.
 **The ceiling** is a search that tries 30 pushes in the physics before every move and makes

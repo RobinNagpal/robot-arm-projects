@@ -203,10 +203,10 @@ def rollout(weights: Path, first: int, steps: int, out: Path, worker: int, greed
 
 
 def _truth(cell) -> list[Box]:
-    bench = cell.bench
+    simulator = cell.simulator
     boxes = []
-    for i, glass in enumerate(bench.glasses):
-        x, y = bench.position(i)
+    for i, glass in enumerate(simulator.glasses):
+        x, y = simulator.position(i)
         o = glass.outline
         boxes.append(
             Box(float(x), float(y), float(o.max_diameter / 2), float(o.total_height), float(o.radius[0]))
@@ -273,7 +273,7 @@ def train(
     workers: int,
     steps: int,
     seed_start: int = 3000,
-    tag: str = "reinforcement",
+    tag: str = "reinforcement-v4",
     resume: bool = False,
     epochs: int = 6,
     minibatch: int = 64,
@@ -377,7 +377,7 @@ class Learner(TurnByTurn):
 
     def __init__(self, weights: Path | None = None) -> None:
         self.net = new_policy()
-        self.net.load_state_dict(torch.load(weights or WEIGHTS / "reinforcement.pt", weights_only=True))
+        self.net.load_state_dict(torch.load(weights or WEIGHTS / "reinforcement-v4.pt", weights_only=True))
         self.net.eval()
 
     def begin(self) -> None:
@@ -413,7 +413,7 @@ def main() -> None:
     parser.add_argument("--first", type=int, default=3000)
     parser.add_argument("--out", type=Path)
     parser.add_argument("--worker", type=int, default=0)
-    parser.add_argument("--tag", default="reinforcement")
+    parser.add_argument("--tag", default="reinforcement-v4")
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--epochs", type=int, default=6, help="passes over each round of experience")
     parser.add_argument("--minibatch", type=int, default=64)

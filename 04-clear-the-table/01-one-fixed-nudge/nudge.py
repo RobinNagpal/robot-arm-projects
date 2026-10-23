@@ -38,7 +38,7 @@ problem 3's solution 1 broke one glass in 251, and problem 4 punishes a broken
 glass harder than anything else, so it is kept exactly as it was.
 
 **The test push has a second job here, and problem 4 is what gives it one.**
-Problem 3's bench feels its way in: it creeps forward from the touchdown point
+Problem 3's simulator feels its way in: it creeps forward from the touchdown point
 until the force sensor says it has met the glass, and only then pushes the
 distance it was asked for. Thirty millimetres of ``FEEL_BEYOND`` is the
 allowance for that, and it is needed, because the jaw meets a glass at the
@@ -166,7 +166,7 @@ def _costs(jaw, path) -> float:
 # The three things a path at push height can be, which is one more than problem
 # 3 needed. ``RANGING`` is the one problem 4 adds: it is not an experiment about
 # the glass at all, only the search for where the fingertips meet it, which
-# problem 3's bench does with its force sensor on the way in.
+# problem 3's examiner does with its force sensor on the way in.
 RANGING, TESTING, PUSHING = "ranging", "testing", "pushing"
 
 
@@ -239,7 +239,7 @@ class OneFixedNudge:
 
         if self.table.down():
             # Nothing in this project stands a glass back up, and the arm does
-            # not reach past one lying down. The bench ends the table anyway;
+            # not reach past one lying down. The examiner ends the table anyway;
             # saying so is for the record.
             return Done("a glass went over")
 
@@ -267,7 +267,7 @@ class OneFixedNudge:
             if in_zone(glass.x, glass.y) and plan.room(glass, glasses, ROOM_MARGIN)
         }
         # A glass that already has room must be put out of reach of the chooser.
-        # It was problem 3's bench that kept them out of the way, by racking
+        # It was problem 3's examiner that kept them out of the way, by racking
         # each one as soon as it had room; nothing is racked here, so without
         # this the chooser would answer with a two-millimetre nudge of a glass
         # that needed nothing, over and over, until the clock stopped it.
@@ -433,7 +433,7 @@ class OneFixedNudge:
         """What the search for the glass found, which is a distance and never a verdict.
 
         A ranging push says nothing about whether the glass slides. Problem 3's
-        bench finds the glass with its force sensor on the way in and then makes
+        examiner finds the glass with its force sensor on the way in and then makes
         the five-millimetre experiment from there; a chunk cannot feel, so the
         finding and the experiment have to be two separate pushes, and this is
         the first of them. Reading a verdict out of it was the bug this solution

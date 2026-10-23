@@ -11,8 +11,8 @@ push slides a glass, topples it or misses it altogether is for the model to
 learn from the pushes it has seen.
 
 **The push has four numbers here and three in problem 3, and the fourth is the
-whole difference between the two problems' actions.** Problem 3 hands the bench
-a ``Push`` and the bench feels its way in: it creeps forward from the touchdown
+whole difference between the two problems' actions.** Problem 3 hands the examiner
+a ``Push`` and the simulator feels its way in: it creeps forward from the touchdown
 point until its force sensor finds the glass, and only then pushes the distance
 it was asked for. Problem 4 hands over a ``Chunk`` of waypoints, and a chunk
 cannot feel. So how far the fingertips travel before they meet the glass --

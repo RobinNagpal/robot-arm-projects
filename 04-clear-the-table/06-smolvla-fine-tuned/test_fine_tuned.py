@@ -125,9 +125,9 @@ class Stub:
 class Cell:
     """The work cell with nothing in it, answering ``open_run.Cell`` and no more.
 
-    Written again here rather than imported from the bench's own test file: a
+    Written again here rather than imported from the examiner's own test file: a
     test file is not a module other folders import, and importing one would make
-    this folder's tests fail the day the bench's tests were rearranged.
+    this folder's tests fail the day the examiner's tests were rearranged.
     """
 
     def __init__(self, seen=(), toppled: int = 0, pickable: int = 0) -> None:
@@ -387,7 +387,7 @@ def test_a_table_is_forgotten_between_tables():
     assert solution.model.resets == 2
 
 
-def test_the_first_answer_is_made_from_the_benchs_own_home_pose():
+def test_the_first_answer_is_made_from_the_examiners_own_home_pose():
     solution = FineTuned(Stub([flat_chunk(TRAVEL_HEIGHT)]), quiet_for=3)
     answers(solution, Cell(seen=(glass(),)))
     assert solution.model.asked[0] == HOME
@@ -402,7 +402,7 @@ def test_why_the_cell_refused_is_counted_by_kind():
         "a waypoint is off the table",
     ):
         solution.answer(Look(picture=PICTURE, seen=(glass(),), jaw=HOME, seconds_left=100.0, refused=because))
-    assert solution.summary()["refused_because"] == {"the tipping interlock": 2, "the bench": 1}
+    assert solution.summary()["refused_because"] == {"the tipping interlock": 2, "the examiner": 1}
 
 
 def test_the_answers_it_gave_are_summarised_for_the_record():
@@ -416,7 +416,7 @@ def test_the_answers_it_gave_are_summarised_for_the_record():
     assert summary["looking_share"] == 0.0, "every answer here comes down to the pushing height"
 
 
-def test_the_quiet_count_is_the_benchs_own_and_not_this_folders():
+def test_the_quiet_count_is_the_examiners_own_and_not_this_folders():
     """Every solution in problem 4 is stopped by one rule, so the count is taken as it comes."""
     from stopping import QUIET_ANSWERS
 

@@ -344,7 +344,7 @@ over-claimed.
   crowded tables, the measurement error, `look()`, `push()`, `take()` and the
   scorecard;
 - the room test, as `has_room()` in
-  [`03-push-glasses-apart/bench/bench.py`](../../bench/bench.py), which holds the
+  [`03-push-glasses-apart/bench/common_bench.py`](../../bench/common_bench.py), which holds the
   76 mm as the gripper's constant and applies it to the neighbour's edge;
 - the shortfall, as `shortfall()` in
   [`03-push-glasses-apart/01-one-fixed-nudge/plan.py`](../../01-one-fixed-nudge/plan.py);

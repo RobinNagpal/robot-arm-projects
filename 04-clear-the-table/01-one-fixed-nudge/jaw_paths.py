@@ -1,7 +1,7 @@
 """The paths this solution answers with: one to go and look, one to make a push.
 
 Problem 3 asked for a ``Push`` -- a glass, a place to come down, a heading and
-a distance -- and the bench turned that into motion itself. Problem 4's
+a distance -- and the examiner turned that into motion itself. Problem 4's
 contract takes a ``Chunk``: the jaw's own waypoints. So the shape of a push has
 to be written out here, and that is most of this file.
 
@@ -32,7 +32,7 @@ to report either.
 
 That is why ``reach`` is an argument here and not a constant. Problem 3's
 planner puts the fingertips down ``APPROACH_GAP`` outside the glass's *widest*
-part, and problem 3's bench then creeps forward until it feels the glass and
+part, and problem 3's examiner then creeps forward until it feels the glass and
 pushes from wherever that turned out to be -- which is what ``FEEL_BEYOND``, a
 whole 30 mm of it, is for. The jaw meets a glass at the jaw's own height, and a
 glass can be far narrower there than at its widest: measured across the four
@@ -47,7 +47,7 @@ cell watches the force gently while the jaw is still only descending, and backs
 it straight off if it meets anything. A path that moved sideways first would
 have given that up.
 
-**A path that is only a look still names a glass.** The bench records every
+**A path that is only a look still names a glass.** The examiner records every
 action against a glass index and would fail on an invalid one. In problem 4
 nothing scores that index, so a look names any glass on the table; the caller
 passes one.
@@ -63,7 +63,6 @@ from partners import (
     DESCEND_SPEED,
     PUSH_HEIGHT,
     PUSH_SPEED,
-    TOP_SPEED,
     TRAVEL_HEIGHT,
     WAYPOINT_PERIOD,
     Chunk,
@@ -76,7 +75,6 @@ from plan import APPROACH_GAP
 # How far apart to put the waypoints to be carried out at each of the cell's
 # speeds. A leg shorter than ``TOP_SPEED * WAYPOINT_PERIOD`` still takes a
 # whole period, so a smaller step is a slower jaw.
-TRAVEL_STEP = TOP_SPEED * WAYPOINT_PERIOD
 DESCEND_STEP = DESCEND_SPEED * WAYPOINT_PERIOD
 PUSH_STEP = PUSH_SPEED * WAYPOINT_PERIOD
 
@@ -117,7 +115,7 @@ def stay(jaw: Waypoint, glass: int) -> Chunk:
     A waypoint at the pose the jaw is already in moves the arm nowhere, so it
     costs no arm time. That is not a trick played on the clock: a second camera
     frame from a standing arm really is free, and it is a fresh measurement
-    because the bench draws new error on every look.
+    because the examiner draws new error on every look.
     """
     return Chunk(glass=glass, waypoints=(_at_travel_height(jaw),), aim=(jaw.x, jaw.y))
 

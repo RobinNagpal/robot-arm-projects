@@ -96,7 +96,7 @@ TOUCHING_APART = 75.0                    # rims in contact, for the widest pair
 GRIPPABLE_APART = 2.0 * GRIP_ROOM        # 140 mm between middles
 
 # What the simulator actually uses for friction between glass and table.
-# 03-push-glasses-apart/bench/bench.py TABLE_FRICTION. The arm is not told this number: it is
+# 03-push-glasses-apart/bench/common_bench.py TABLE_FRICTION. The arm is not told this number: it is
 # the ground truth a run is scored against, not an input to any decision. That
 # distinction is the whole of solution 9, and every document that quotes a
 # friction figure has to say which of the two it means.
@@ -133,7 +133,7 @@ TOP_VIEW_HALF_FRAME = (
 PARK = (0.0, 500.0, 1300.0 - 750.0)
 
 # How often the examiner consumes one waypoint, seconds, and the speeds its own
-# push macro moves at, mm/s. bench.py WAYPOINT_PERIOD, FEEL_SPEED, PUSH_SPEED
+# push macro moves at, mm/s. common_bench.py WAYPOINT_PERIOD, FEEL_SPEED, PUSH_SPEED
 # and TOP_SPEED. The period is why how far apart a chunk's waypoints are *is*
 # how fast the jaw is being asked to go, and TOP_SPEED is where follow() holds
 # it: the fastest the cell ever moves the jaw, which is the speed it descends

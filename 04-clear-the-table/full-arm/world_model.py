@@ -152,7 +152,7 @@ class PlanningSolution(TurnByTurn):
     POOL, ELITES, SHAKES, ROUNDS = 320, 24, 10, 2
 
     def __init__(self, weights: Path | None = None, seed: int = 0) -> None:
-        state = torch.load(weights or WEIGHTS / "world-models.pt", weights_only=True)
+        state = torch.load(weights or WEIGHTS / "world-models-v3.pt", weights_only=True)
         self.nets = []
         for s in state:
             net = WorldModel()
@@ -276,7 +276,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("records", nargs="+")
     parser.add_argument("--epochs", type=int, default=150)
-    parser.add_argument("--tag", default="world-models")
+    parser.add_argument("--tag", default="world-models-v3")
     a = parser.parse_args()
     records = F.load_records(*a.records)
     print(f"{len(records)} pushes")

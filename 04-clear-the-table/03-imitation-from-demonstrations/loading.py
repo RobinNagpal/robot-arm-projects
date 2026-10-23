@@ -189,7 +189,7 @@ def aimed_at(state: np.ndarray) -> tuple[float, float]:
 
 
 def _picture(frame: dict, shrink: Shrink | None) -> np.ndarray:
-    """One frame's picture as the bench's own uint8 RGB, at the size the caller asked for.
+    """One frame's picture as the examiner's own uint8 RGB, at the size the caller asked for.
 
     LeRobot hands a picture over as (colour, row, column) floats on 0 to 1, and
     everything either side of this module works in what the camera rendered.

@@ -1,6 +1,6 @@
-"""How long the teacher goes without touching a glass, which is where the bench's number came from.
+"""How long the teacher goes without touching a glass, which is where the examiner's number came from.
 
-``bench/stopping.py`` reads a trained policy's "done" out of its behaviour: so
+``examiner/stopping.py`` reads a trained policy's "done" out of its behaviour: so
 many answers in a row that would not touch a glass, and the policy is taken at
 its word. ``QUIET_ANSWERS`` is how many, and it is not a free choice. However
 many answers in a row the geometry reference gives without touching a glass, a
@@ -122,7 +122,7 @@ def measure(first: int, tables: int) -> dict:
             "middling": _middle(watched.before_done),
             "each": {str(k): v for k, v in sorted(watched.before_done.items())},
         },
-        "quiet_answers_in_the_bench": QUIET_ANSWERS,
+        "quiet_answers_in_the_examiner": QUIET_ANSWERS,
         "seconds": round(time.time() - started, 1),
     }
 
@@ -152,7 +152,7 @@ def main() -> None:
         f"longest {push['longest']}, middling {push['middling']}\n"
         f"  the spell each table ended with:   {done['count']}, "
         f"longest {done['longest']}, middling {done['middling']}\n"
-        f"  the bench takes {QUIET_ANSWERS} quiet answers as done, which is "
+        f"  the examiner takes {QUIET_ANSWERS} quiet answers as done, which is "
         f"{'above' if push['longest'] < QUIET_ANSWERS else 'NOT above'} the longest working spell"
     )
     Path(arguments.save).write_text(json.dumps(found, indent=2) + "\n")

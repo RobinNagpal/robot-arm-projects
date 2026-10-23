@@ -1,8 +1,8 @@
 """Run the teacher over training tables and write down what it saw and what it did.
 
 The teacher is [solution 2](../02-geometry-ranked), run unchanged through the
-bench's own loop. Nothing here invents a path: the teacher answers with the
-jaw's waypoints, the bench carries them out, and this records the pair.
+examiner's own loop. Nothing here invents a path: the teacher answers with the
+jaw's waypoints, the examiner carries them out, and this records the pair.
 
 **One answer is one demonstration.** That is the difference from problem 3,
 where only a push counted. Problem 4 took the overhead camera away, so the
@@ -25,9 +25,9 @@ a chunk, so the only way to find out how far away a glass is, is to push a littl
 and look. That is a real action at the task in problem 4, so it stays, and
 ``collected.json`` counts the three kinds apart.
 
-**A refused answer is not a demonstration.** The cell's interlock and the bench's
+**A refused answer is not a demonstration.** The cell's interlock and the examiner's
 own checks turn some answers away, and the arm never moves, so there is no path
-the jaw really followed. Only an answer the bench carried out becomes a frame.
+the jaw really followed. Only an answer the examiner carried out becomes a frame.
 
 **The teacher was trained somewhere else.** Its ranker is problem 3's fitted file,
 loaded and not refitted, and the tables it was fitted on were problem 3's. See
@@ -263,8 +263,8 @@ class Watched:
     # -------------------------------------------------------------------- judging
 
     def _outside(self) -> int:
-        bench = self.inner.bench
-        return sum(1 for i in bench.on_table() if not in_zone(*bench.position(i)))
+        simulator = self.inner.simulator
+        return sum(1 for i in simulator.on_table() if not in_zone(*simulator.position(i)))
 
     def _kind(self, chunk, jaw) -> str:
         """Which of the five kinds of answer this was, for the record.
@@ -293,7 +293,7 @@ class Watched:
     def _why_not(self, record, was_over: int, was_out: int) -> str | None:
         """Why this answer is not worth copying, or None if it is.
 
-        Read after the table has settled, from the bench's own record of the
+        Read after the table has settled, from the examiner's own record of the
         action and from where the glasses are now. Only what this answer changed
         counts: a glass that was already down or already outside the zone was
         some earlier answer's doing and is already on the record as that one's.

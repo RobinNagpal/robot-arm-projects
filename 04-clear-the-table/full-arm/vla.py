@@ -126,7 +126,7 @@ def render_pictures(records: list[dict]) -> list[tuple[np.ndarray, np.ndarray]]:
     import arm_camera
     import build_box_data as B
     import mujoco
-    from arm_bench import ArmBench
+    from arm_simulator import ArmSimulator
     from moveit_link import MESHES, generate_urdf
 
     import tables
@@ -134,19 +134,19 @@ def render_pictures(records: list[dict]) -> list[tuple[np.ndarray, np.ndarray]]:
     joints = B.view_joint_sets()
     out = []
     for r in records:
-        bench = ArmBench(
+        simulator = ArmSimulator(
             r["seed"], tables.table(r["seed"]), urdf=generate_urdf(), meshes=MESHES, start=joints[0]
         )
         for i, g in enumerate(r["before"]):
-            address = bench.model.jnt_qposadr[bench.model.body_jntadr[bench.bodies[i]]]
-            bench.data.qpos[address : address + 2] = [g["x"], g["y"]]
-        bench.data.qvel[:] = 0.0
-        mujoco.mj_forward(bench.model, bench.data)
-        camera = arm_camera.ArmCamera(bench)
+            address = simulator.model.jnt_qposadr[simulator.model.body_jntadr[simulator.bodies[i]]]
+            simulator.data.qpos[address : address + 2] = [g["x"], g["y"]]
+        simulator.data.qvel[:] = 0.0
+        mujoco.mj_forward(simulator.model, simulator.data)
+        camera = arm_camera.ArmCamera(simulator)
         pair = []
         for q in joints:
-            bench.set_joints(q)
-            pair.append(camera.view(bench.tcp()))
+            simulator.set_joints(q)
+            pair.append(camera.view(simulator.tcp()))
         camera.close()
         out.append(tuple(pair))
     return out
@@ -225,7 +225,7 @@ def train(
     optimiser = torch.optim.AdamW([p for p in policy.parameters() if p.requires_grad], lr=lr)
     policy.train()
     losses, started = [], time.time()
-    into = into or WEIGHTS_DIR / "vla-correction"
+    into = into or WEIGHTS_DIR / "vla-r4"
     for step in range(steps):
         idx = rng.choice(len(data), batch)
         batch_ = ready([item(data[i]) for i in idx], pre)
@@ -272,7 +272,7 @@ class FineTuned(TurnByTurn):
 
         self.where = device()
         self.policy, self.pre, self.post = borrowed(self.where)
-        correction = weights or WEIGHTS_DIR / "vla-correction"
+        correction = weights or WEIGHTS_DIR / "vla-r4"
         # A missing correction is an error and not a fallback. Run without one, this
         # solution is the downloaded model with nothing fitted, and its scores would look
         # exactly like a fitted model's.
@@ -331,7 +331,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("--steps", type=int, default=300)
     parser.add_argument("--batch", type=int, default=4)
-    parser.add_argument("--tag", default="vla-correction")
+    parser.add_argument("--tag", default="vla-r4")
     a = parser.parse_args()
     with open(a.data, "rb") as handle:
         data = pickle.load(handle)

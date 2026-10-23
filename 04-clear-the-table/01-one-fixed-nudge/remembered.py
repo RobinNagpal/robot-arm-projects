@@ -4,7 +4,7 @@ One look reaches only as far as the camera does, so no single look is the
 table. Something has to hold what the last look said about the far corner while
 the jaw is busy in the near one, and that is this.
 
-**Merging goes by the glass numbers the bench hands back, and that is a
+**Merging goes by the glass numbers the examiner hands back, and that is a
 shortcut rather than an answer.** Deciding that the glass in this picture is
 the one that was in the last picture is the association problem, and it is
 problem 2's: on a real cell it is solved by measuring and matching, and it gets

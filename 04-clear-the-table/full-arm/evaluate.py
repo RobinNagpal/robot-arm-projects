@@ -4,7 +4,7 @@
 
 Every solution is shown the same ordered list of tables from 10,000 up, given the
 same fifteen arm minutes for the whole list, and gets as far down it as it gets.
-A solution is handed an arm with a wrist camera and a clock (``examiner.py``), and
+A solution is handed an arm with a wrist camera and a clock (``arm_examiner.py``), and
 what it sees is the pictures it chooses to take. Nothing from the simulator reaches it.
 """
 
@@ -17,8 +17,8 @@ import time
 from pathlib import Path
 
 import arm_camera  # noqa: F401
-import examiner
-from examiner import ARM_BUDGET
+import arm_examiner
+from arm_examiner import ARM_BUDGET
 from moveit_link import MoveItLink
 
 RESULTS = Path(__file__).resolve().parent / "results"
@@ -32,6 +32,12 @@ SOLUTIONS = {
     "imitation-checked": ("checked", "imitation"),
     "reinforcement-checked": ("checked", "reinforcement"),
     "vla-checked": ("checked", "vla"),
+    # The jaw-only cell's solutions, run on the arm through jaw_solutions.py.
+    "jaw-one-fixed-nudge": ("jaw_solutions", "one_fixed_nudge"),
+    "jaw-geometry-ranked": ("jaw_solutions", "geometry_ranked"),
+    "jaw-imitation": ("jaw_solutions", "imitation"),
+    "jaw-world-model": ("jaw_solutions", "world_model"),
+    "jaw-smolvla": ("jaw_solutions", "smolvla"),
 }
 
 
@@ -64,10 +70,10 @@ def main() -> None:
 
     started = time.perf_counter()
     with MoveItLink() as link:
-        summary, tally, rows = examiner.judge(
+        summary, tally, rows = arm_examiner.judge(
             build, link, arguments.first, arguments.tables, arguments.runs, arguments.budget
         )
-    print(arguments.solution, "|", examiner.headline(summary))
+    print(arguments.solution, "|", arm_examiner.headline(summary))
     print(tally)
     RESULTS.mkdir(exist_ok=True)
     name = arguments.name or f"{arguments.solution}-{arguments.first}-{arguments.tables}x{arguments.runs}"

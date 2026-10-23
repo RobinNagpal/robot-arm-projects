@@ -13,7 +13,7 @@ graphics context, no physics.
 
 **The families, rather than the examples.** The two rules with any arithmetic
 in them are proportions -- how low a chunk comes against the height a push
-happens at, and how the model's six z-scores map into the box the bench will
+happens at, and how the model's six z-scores map into the box the examiner will
 accept -- and a proportion can hold for one trajectory and fail for a
 differently shaped one. Both are checked over a drawn family that covers the
 range the model's output really spans, including the ends where the clipping
@@ -98,9 +98,9 @@ class Cell:
     """The work cell with nothing in it, answering ``open_run.Cell`` and no more.
 
     The same idea as the loop's own ``FakeCell``. It is written again here, in
-    four lines, rather than imported from the bench's test file: a test file is
+    four lines, rather than imported from the examiner's test file: a test file is
     not a module other folders import, and importing one would make this
-    folder's tests fail the day the bench's tests were rearranged.
+    folder's tests fail the day the examiner's tests were rearranged.
     """
 
     def __init__(self, seen=(), toppled: int = 0, pickable: int = 0) -> None:
@@ -151,10 +151,10 @@ def drawn_actions(seed: int, points: int = 50) -> np.ndarray:
 
 @pytest.mark.parametrize("seed", range(40))
 def test_every_drawn_chunk_is_one_the_cell_could_follow(seed: int) -> None:
-    """Whatever the model answers, the path handed to the bench is inside the box.
+    """Whatever the model answers, the path handed to the examiner is inside the box.
 
     This is the join's one hard requirement and it is problem 3's, unchanged.
-    If it failed, the loop would count the answer as refused by the bench and
+    If it failed, the loop would count the answer as refused by the examiner and
     the model would be marked for a fault in the reading of its output.
     """
     path = joining.to_jaw(drawn_actions(seed))
@@ -277,7 +277,7 @@ def test_one_push_among_the_quiet_answers_starts_the_count_again() -> None:
 
     So the count is taken all the way to the threshold, broken by one push one
     answer short of it, and then taken to the threshold again. The lengths come
-    from the bench's own threshold rather than from written-down numbers,
+    from the examiner's own threshold rather than from written-down numbers,
     because that threshold is set from a measurement of the teacher and moves
     when the measurement is redone.
     """

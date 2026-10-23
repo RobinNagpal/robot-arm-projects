@@ -58,11 +58,11 @@ def draw_settings(rng: random.Random) -> Settings:
     )
 
 
-def layout(bench) -> list[dict]:
+def layout(simulator) -> list[dict]:
     """Every glass on the table as the simulator knows it. Never shown to a solution; it is the record."""
     rows = []
-    for i, glass in enumerate(bench.glasses):
-        x, y = bench.position(i)
+    for i, glass in enumerate(simulator.glasses):
+        x, y = simulator.position(i)
         outline = glass.outline
         rows.append(
             {
@@ -71,16 +71,16 @@ def layout(bench) -> list[dict]:
                 "radius": float(outline.max_diameter / 2),
                 "height": float(outline.total_height),
                 "foot": float(outline.radius[0]),
-                "tilt": float(bench.tilt(i)),
-                "pickable": bool(pickable(bench, i)),
+                "tilt": float(simulator.tilt(i)),
+                "pickable": bool(pickable(simulator, i)),
                 "kind": glass.kind,
             }
         )
     return rows
 
 
-def draw_request(rng: random.Random, bench) -> tuple[Request, list[Box]]:
-    state = layout(bench)
+def draw_request(rng: random.Random, simulator) -> tuple[Request, list[Box]]:
+    state = layout(simulator)
     boxes = [Box(g["x"], g["y"], g["radius"], g["height"], g["foot"]) for g in state]
     crowded = [i for i, g in enumerate(state) if not g["pickable"]]
     k = rng.choice(crowded) if crowded and rng.random() < 0.7 else rng.randrange(len(state))
@@ -174,7 +174,7 @@ def run_table(
     records = []
     try:
         for step in range(PUSHES_PER_TABLE):
-            request, boxes = draw_request(rng, cell.bench)
+            request, boxes = draw_request(rng, cell.simulator)
             how = "random"
             if informed_share and rng.random() < informed_share:
                 chosen = informed_request(rng, boxes)
@@ -184,10 +184,10 @@ def run_table(
                 chosen = guided_request(rng, boxes, guide)
                 if chosen is not None:
                     request, how = chosen, "guided"
-            before = layout(cell.bench)
+            before = layout(cell.simulator)
             seconds_before = cell.arm_seconds
             result = cell.push(boxes, request)
-            after = layout(cell.bench)
+            after = layout(cell.simulator)
             records.append(
                 {
                     "seed": seed,

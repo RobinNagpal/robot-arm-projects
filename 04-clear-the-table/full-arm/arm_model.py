@@ -1,11 +1,11 @@
 """The whole UR5e, standing at the table, as a MuJoCo model.
 
-Problem 3's bench and problem 4's bench both push with a hand that floats: a
+Problem 3's examiner and problem 4's examiner both push with a hand that floats: a
 box-shaped jaw that a script moves wherever it likes. That is the right model
 of a hand and the wrong model of a cell, because a real hand is on the end of
 an arm, and an arm has joints that run out, links that sweep through the
 space beside the hand, and a wrist that has to be somewhere. This module builds
-the arm those benches leave out, so that a path is not only a path for a hand
+the arm those examiners leave out, so that a path is not only a path for a hand
 but a motion for six joints, planned by MoveIt and followed by a servo.
 
 **One description of the arm, shared with MoveIt.** The kinematics are read
@@ -16,7 +16,7 @@ disagree by exactly as much as the copies had drifted, and the disagreement
 would show up as a hand that arrives somewhere other than where it was sent.
 
 **The hand is problem 3's hand.** The fingers are the same stack of boxes the
-other benches push with, so a result here and a result there differ in the arm
+other examiners push with, so a result here and a result there differ in the arm
 and not in the fingertip. Only the arm's own links are meshes, and they are
 the collision meshes Universal Robots publish.
 

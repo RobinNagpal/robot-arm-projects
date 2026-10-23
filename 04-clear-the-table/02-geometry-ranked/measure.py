@@ -68,7 +68,7 @@ def true_table(seed: int) -> list[Seen]:
 
     Read off the draw rather than out of the simulator, because nothing this is
     used for is a question about physics. These are the same four numbers
-    ``open_run.OpenCell.truth`` reads from the bench.
+    ``open_run.OpenCell.truth`` reads from the examiner.
     """
     return [
         Seen(
@@ -276,7 +276,9 @@ def main() -> None:
         help="whether the inputs handed to the trees are the kind they were fitted on",
     )
     parser.add_argument("--show", action="store_true", help="print why each table ended")
-    parser.add_argument("--judge", action="store_true", help="the held-out queue, through bench/judging.py")
+    parser.add_argument(
+        "--judge", action="store_true", help="the held-out queue, through examiner/judging.py"
+    )
     parser.add_argument("--save", type=str, default="", help="write the numbers to this file")
     arguments = parser.parse_args()
 

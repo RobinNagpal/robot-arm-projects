@@ -83,7 +83,7 @@ def _on_path(folder: str) -> Path:
 
     The folder cannot be imported by name, because its name starts with a digit
     and so it is not a package. Appending rather than inserting keeps this
-    problem's own bench ahead of it, so a solution can never shadow the
+    problem's own examiner ahead of it, so a solution can never shadow the
     contract it is being run against.
     """
     where = PROBLEM / folder

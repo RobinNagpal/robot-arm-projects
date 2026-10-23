@@ -15,7 +15,7 @@ of tables rather than thousands. ``--save`` writes down what it cost.
 is a ``Solution`` and ``open_run.clear_table`` runs it, so a collected push is
 one the cell would really have carried out: it went through the tipping
 interlock, it was charged for, and the look after it reached only as far as the
-camera does. A collector that drove the bench directly would fill the model
+camera does. A collector that drove the examiner directly would fill the model
 with pushes the runner would never let it make.
 
 The one thing that is not read from the camera is whether a glass went over. A
@@ -50,7 +50,8 @@ from borrowed import DATA, nudge
 import tables
 from contract import GLASS_OVER, Answer, Done, Look
 from open_run import OpenCell, clear_table
-from partners import Bench, Seen
+from partners import Seen
+from simulator import Simulator
 from wrist import WRIST_VIEW_SIZE, in_picture
 
 import plan
@@ -139,7 +140,7 @@ class Blind:
 
 def blind_cell(seed: int) -> OpenCell:
     """The cell for one collecting table: the draw, the physics, and no renderer."""
-    return OpenCell(Bench(seed, glasses=tables.table(seed)), Blind(), in_picture)
+    return OpenCell(Simulator(seed, glasses=tables.table(seed)), Blind(), in_picture)
 
 
 class Collector(nudge.OneFixedNudge):
@@ -214,7 +215,7 @@ class Collector(nudge.OneFixedNudge):
         """Whether the arm could hold the jaw at both ends of this push.
 
         The map is checked and only the map, because a push off the table or
-        out of the arm's reach is one the bench refuses outright, and a refusal
+        out of the arm's reach is one the examiner refuses outright, and a refusal
         teaches the model nothing: the arm never moved.
         """
         draws = np.array([[heading, offset, travel, reach]])

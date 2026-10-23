@@ -44,7 +44,7 @@ change a line in the middle of it.
 **One line changed in solution 1's folder.** `nudge.py` called
 `plan.choose(...)` in the middle of `_decide`; it now calls `self._choose(...)`,
 which is a new method whose whole body is that same call. Nothing else moved,
-and solution 1's 42 tests pass unchanged, as do the bench's.
+and solution 1's 42 tests pass unchanged, as do the examiner's.
 
 **Loaded by file path, not by putting folders on the path.** Both folders this
 is built from have names starting with a digit, so neither is a package.
@@ -554,7 +554,7 @@ fitted under problem 3's version and load under problem 4's without complaint.
 
 **The candidate set reproduces the printed rule exactly, and that is the test
 worth having.** The ablation matches solution 1's own calibration run on every
-arm second, every answer and all 724 paths the bench followed. Two enumerators
+arm second, every answer and all 724 paths the examiner followed. Two enumerators
 that agree on a push are easy to write and hard to be sure of; two runs that
 agree on 724 paths are the same enumerator.
 

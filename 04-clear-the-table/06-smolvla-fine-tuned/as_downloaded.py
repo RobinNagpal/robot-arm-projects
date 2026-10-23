@@ -71,8 +71,8 @@ from stopping import A_WHISKER, Quiet, is_a_push
 # waypoint carries, and ``stopping.is_a_push`` is what answers that.
 REACHES_PUSH_HEIGHT = PUSH_HEIGHT + A_WHISKER
 
-# Where problem 3's bench leaves the jaw between actions, in a waypoint's own
-# numbers. The bench sets it in world metres at the end of every lift, and it
+# Where problem 3's examiner leaves the jaw between actions, in a waypoint's own
+# numbers. The examiner sets it in world metres at the end of every lift, and it
 # is above travel height, which is why problem 3's state clipped to the top of
 # its range at every ask. It is written down here for one purpose: the
 # sensitivity check that holds the state there, so that problem 4's lower,
@@ -93,7 +93,7 @@ class Shape:
     never come down to the height a push happens at cannot move a glass
     however well aimed it is, so **how low a chunk comes** is the first
     number, and **how far across the table one chunk travels** is the second.
-    The step between waypoints is the third, because the bench eats waypoints
+    The step between waypoints is the third, because the examiner eats waypoints
     at a fixed rate, so how far apart they are is the speed being asked for.
     """
 

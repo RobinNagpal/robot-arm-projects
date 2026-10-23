@@ -42,7 +42,7 @@ two things about the answer itself:
   was aimed at.
 
 The **action** is the path the jaw followed, as the teacher wrote it and the
-bench carried it out, in the cell's own numbers.
+examiner carried it out, in the cell's own numbers.
 
 **The last two of those were added after the first fits, and both are there for
 the same measured reason.** A model fitted to copy this set has to produce two
@@ -80,14 +80,14 @@ the table, so the looks are demonstrations too.
 
 **The action is the commanded path, and that is the followed path.** The label
 has to be the path the jaw really followed, and for a kept demonstration the two
-are the same path: over 128 of the teacher's pushes, the bench's own record of
+are the same path: over 128 of the teacher's pushes, the examiner's own record of
 the motion agrees with the path it was handed to within 0.4 mm at every
 waypoint, and none of those records was short.
 
 The record itself is not used as the label, for two reasons. A path that was
 only a look leaves no record at all, because nothing moved — the jaw was already
 at travel height and `follow()` had nothing to drive. And a record of a push
-carries the bench's own ending, the back-off and the lift home, which is a
+carries the examiner's own ending, the back-off and the lift home, which is a
 steady 22 entries on the end of every one of them. `follow()` makes that ending
 for itself, so a chunk that asked for it would be asking for the lift twice.
 
@@ -222,8 +222,8 @@ apart — ranging for the glass, testing whether it slides, and pushing it
 somewhere — so a reader can see the mixture a student is being fitted on.
 
 **An answer the cell refused is not a demonstration.** The tipping interlock and
-the bench's own checks turn some answers away, and the arm never moves, so there
-is no path the jaw followed. Only an answer the bench carried out becomes a
+the examiner's own checks turn some answers away, and the arm never moves, so there
+is no path the jaw followed. Only an answer the examiner carried out becomes a
 frame.
 
 ## What a student made of them

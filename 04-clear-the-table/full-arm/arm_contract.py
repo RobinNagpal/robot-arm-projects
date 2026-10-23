@@ -4,7 +4,8 @@ This file holds shapes and no behaviour, so that every other file can agree on t
 There are three parties, and each owns different things.
 
 **The arm** is a physical thing. It has a camera on its wrist, it knows where its hand
-is, and it moves in two ways: a free move to a pose, and a push. MoveIt plans every
+is, and it moves in three ways: a free move to a pose, a push, and a path of straight
+lines, which is how the jaw-only solutions write their answers. MoveIt plans every
 motion before the arm starts, so a move MoveIt cannot plan is refused and the arm stays
 where it was. A move that has started can still stop before its goal, and the result
 says where the hand really is.
@@ -28,7 +29,7 @@ from dataclasses import dataclass
 from typing import Literal, Protocol
 
 import numpy as np
-from pusher import Box, Request, Settings
+from pusher import Box, Leg, Request, Settings
 
 __all__ = [
     "Arm",
@@ -37,6 +38,7 @@ __all__ = [
     "Clock",
     "Examiner",
     "Frame",
+    "Leg",
     "MoveEnd",
     "Moved",
     "Pose",
@@ -125,6 +127,14 @@ class Arm(Protocol):
 
     def push(self, request: Request, scene: list[Box]) -> Pushed:
         """One push of ``scene[request.glass]``, every motion of it planned before the arm moves."""
+        ...
+
+    def follow(self, path: list[Leg], scene: list[Box], glass: int | None, settings: Settings) -> Pushed:
+        """A path of straight lines through ``path``, every motion of it planned before the arm moves.
+
+        ``glass`` is the box in ``scene`` the path means to push, or ``None`` for a path
+        that only moves the arm, such as a trip to look from somewhere.
+        """
         ...
 
 

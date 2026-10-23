@@ -115,7 +115,7 @@ class ByModel:
     have been happy with, which costs nothing -- the candidates are already
     enumerated and the rule is three comparisons. That count is the cheapest
     reading there is of whether the ordering is doing anything, and it needs no
-    second run of the bench to get it.
+    second run of the examiner to get it.
 
     **What was tried here and left out.** The trees are fitted on the room a
     push gains and know nothing about what the push costs to make, so the

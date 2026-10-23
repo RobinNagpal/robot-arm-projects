@@ -95,8 +95,4 @@ class WorldModel(nn.Module):
         return self.head(torch.cat([chosen, summary, self.action(action)], dim=1))
 
 
-def pad_slots(array, fill: float = 0.0):
-    return array
-
-
 __all__ = ["PushPolicy", "TableEncoder", "WorldModel", "SLOTS"]

@@ -28,11 +28,11 @@ stroke when it picks where to arrive.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 import numpy as np
-from arm_bench import ArmBench
-from moveit_link import MoveItLink, flange_goal
+from arm_simulator import ArmSimulator
+from moveit_link import Motion, MoveItLink, flange_goal
 from work_cell.table.layout import TABLE_CENTRE_XY, TABLE_SIZE, TABLE_TOP_Z
 
 from partners import STANDING_TILT_DEG
@@ -102,6 +102,22 @@ class Request:
     settings: Settings
 
 
+@dataclass(frozen=True)
+class Leg:
+    """One straight stretch of a path, as a jaw-only solution writes one.
+
+    The fingertips go in a straight line to ``x``, ``y`` and ``z`` (metres above the
+    table top), pointing along ``heading``, no faster than ``speed`` metres a second.
+    A speed of zero means as fast as the settings allow.
+    """
+
+    x: float
+    y: float
+    z: float
+    heading: float
+    speed: float = 0.0
+
+
 @dataclass
 class Pushed:
     """What happened. ``ok`` is false when MoveIt had no motion to give, and then the arm did not move."""
@@ -139,8 +155,8 @@ def scene_boxes(boxes: list[Box], padding: float) -> list[dict]:
 class Pusher:
     """Pushes glasses with the arm, asking MoveIt for every motion."""
 
-    def __init__(self, bench: ArmBench, link: MoveItLink) -> None:
-        self.bench = bench
+    def __init__(self, simulator: ArmSimulator, link: MoveItLink) -> None:
+        self.simulator = simulator
         self.link = link
 
     def goals(self, boxes: list[Box], request: Request) -> dict:
@@ -184,10 +200,10 @@ class Pusher:
         ``stop_when``, when given, is asked after each motion, and a true answer
         stops the push there: the arm holds where that motion ended.
         """
-        s, bench, link = request.settings, self.bench, self.link
+        s, simulator, link = request.settings, self.simulator, self.link
         goals = self.goals(boxes, request)
         link.scene(scene_boxes(boxes, s.padding))
-        q0 = bench.joints()
+        q0 = simulator.joints()
 
         approach = link.plan(
             q0,
@@ -222,30 +238,107 @@ class Pusher:
                 False, f"the push needs {needed:.1f} s and {seconds_left:.1f} s are left", arm_seconds=0.0
             )
 
+        motions = [("approach", approach), ("drop", drop), ("stroke", stroke), ("retreat", retreat)]
+        return self._carry_out([*motions, ("lift", lift)], stop_when)
+
+    def follow(
+        self,
+        boxes: list[Box],
+        legs: list[Leg],
+        glass: int | None,
+        settings: Settings,
+        seconds_left: float = math.inf,
+        stop_when=None,
+    ) -> Pushed:
+        """A path of straight lines, the way a jaw-only solution writes one, carried out by MoveIt.
+
+        The hand goes by a free move to travel height above the first point, down
+        to it in a straight line, along every leg in a straight line, and straight
+        back up to travel height at the end. As with a push, every motion is
+        planned before the arm moves, so a path MoveIt cannot make leaves the arm
+        where it was. ``glass`` is the glass the path means to push: its box is
+        left out of the collision check once the hand is down, because the hand is
+        meant to touch it. Every other box stays in.
+
+        A leg is never run faster than MoveIt planned it. When it asks to be
+        slower, its timing is stretched evenly, which keeps the path and lowers
+        every speed and acceleration along it.
+        """
+        simulator, link = self.simulator, self.link
+        name = None if glass is None else f"glass_{glass}"
+        link.scene(scene_boxes(boxes, settings.padding))
+        first, last = legs[0], legs[-1]
+        z_travel = TABLE_TOP_Z + TRAVEL
+        goals = [
+            flange_goal(leg.x, leg.y, TABLE_TOP_Z + leg.z, leg.heading, without=name if k else None)
+            for k, leg in enumerate(legs)
+        ]
+        approach = link.plan(
+            simulator.joints(),
+            flange_goal(first.x, first.y, z_travel, first.heading),
+            then=goals[:2],
+            vel=settings.approach_speed,
+            acc=settings.approach_speed,
+        )
+        if not approach.ok:
+            return Pushed(False, f"no way to the start of the path: {approach.why}")
+        motions = [("approach", approach)]
+        q = approach.joints[-1]
+        here = np.array([first.x, first.y, TRAVEL])
+        ends = list(zip(legs, goals, strict=True))
+        if last.z < TRAVEL - 1e-6:
+            up = flange_goal(last.x, last.y, z_travel, last.heading, without=name)
+            ends.append((Leg(last.x, last.y, TRAVEL, last.heading), up))
+        for k, (leg, goal) in enumerate(ends):
+            there = np.array([leg.x, leg.y, leg.z])
+            length = float(np.linalg.norm(there - here))
+            if length < 1e-4 and (k == 0 or abs(leg.heading - ends[k - 1][0].heading) < 1e-6):
+                continue
+            line = link.line(q, goal, vel=settings.approach_speed, acc=settings.approach_speed)
+            if not line.ok:
+                return Pushed(False, f"no straight way to point {k} of the path: {line.why}")
+            motions.append(("drop" if k == 0 else "leg", _no_faster_than(line, length, leg.speed)))
+            q, here = line.joints[-1], there
+
+        needed = sum(m.seconds for _, m in motions)
+        if needed > seconds_left:
+            # A path is never cut short to fit, for the reason a push is not.
+            return Pushed(
+                False, f"the path needs {needed:.1f} s and {seconds_left:.1f} s are left", arm_seconds=0.0
+            )
+        return self._carry_out(motions, stop_when)
+
+    def _carry_out(self, motions: list, stop_when=None) -> Pushed:
+        """Run planned motions one after another, and say what each one did."""
+        simulator = self.simulator
         pushed = Pushed(True)
-        positions = [bench.position(i).copy() for i in range(len(bench.glasses))]
-        for name, motion in (
-            ("approach", approach),
-            ("drop", drop),
-            ("stroke", stroke),
-            ("retreat", retreat),
-            ("lift", lift),
-        ):
-            ran = bench.run(motion.times, motion.joints)
+        positions = [simulator.position(i).copy() for i in range(len(simulator.glasses))]
+        for k, (name, motion) in enumerate(motions):
+            ran = simulator.run(motion.times, motion.joints)
             pushed.arm_seconds += ran.seconds
             pushed.peak_force = max(pushed.peak_force, ran.peak_force)
-            if ran.touched_at is not None and name == "stroke":
+            if ran.touched_at is not None and name in ("stroke", "leg") and not pushed.touched:
                 pushed.touched = True
                 pushed.touch_at = ran.touch_at
             moved = [
-                round(1000 * float(np.linalg.norm(bench.position(i) - positions[i])), 1)
+                round(1000 * float(np.linalg.norm(simulator.position(i) - positions[i])), 1)
                 for i in range(len(positions))
             ]
             pushed.stages.append((name, round(ran.seconds, 2), self.toppled(), moved))
-            if stop_when is not None and name != "lift" and stop_when():
+            if stop_when is not None and k < len(motions) - 1 and stop_when():
                 pushed.stopped = True
                 break
         return pushed
 
     def toppled(self) -> int:
-        return sum(1 for i in self.bench.on_table() if self.bench.tilt(i) >= STANDING_TILT_DEG)
+        return sum(1 for i in self.simulator.on_table() if self.simulator.tilt(i) >= STANDING_TILT_DEG)
+
+
+def _no_faster_than(motion: Motion, length: float, speed: float) -> Motion:
+    """The same motion, its timing stretched evenly so that it covers ``length`` no faster than ``speed``."""
+    if speed <= 0.0 or motion.seconds <= 0.0:
+        return motion
+    wanted = length / speed
+    if wanted <= motion.seconds:
+        return motion
+    return replace(motion, times=np.asarray(motion.times) * (wanted / motion.seconds))

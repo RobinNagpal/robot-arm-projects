@@ -9,7 +9,7 @@ Three folders are involved.
 
 **``as_downloaded.py``**, in this folder, is the downloaded model sat in problem 4's
 conversation: the picture from the camera on the arm goes in, a path for the jaw
-comes out, and ``bench/stopping.py`` reads the declaration that a table is
+comes out, and ``examiner/stopping.py`` reads the declaration that a table is
 finished out of the shape of the answers. ``fine_tuned.py`` subclasses it rather
 than writing the loop twice. It used to be the whole of a solution of its own, the
 model with nothing fitted, and was removed as a solution because a model that was
@@ -100,7 +100,7 @@ def _standing_in(**modules: dict):
     module of each of those names already, holding different things. So a
     stand-in is put up for the moment the borrowed file is read and removed
     straight afterwards. Leaving it up would mean that everything importing
-    ``partners`` after this point got five names instead of the bench's forty,
+    ``partners`` after this point got five names instead of the examiner's forty,
     silently.
 
     ``03-imitation-from-demonstrations/wiring.py`` does the same thing for the

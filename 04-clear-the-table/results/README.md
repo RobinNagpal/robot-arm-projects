@@ -326,7 +326,7 @@ and the corner is the half worth watching, because it is everything the
 solution knew when it chose what to do next. A line across the top names the
 answer being carried out and says whether the hand comes down low enough to
 touch a glass -- a push -- or stays above the glasses -- a look. That is the
-same test [`bench/stopping.py`](../bench/stopping.py) uses to decide when a
+same test [`examiner/stopping.py`](../examiner/stopping.py) uses to decide when a
 policy with no word for "finished" has stopped proposing pushes.
 
 | | the film | answers | of them pushes | arm seconds | how it ends |

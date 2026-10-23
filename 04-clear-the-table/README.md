@@ -46,12 +46,19 @@ result.
 **The first cell moves the jaw on its own.** Before the whole arm was built,
 problem 4 was solved in a simpler cell in which the gripper's jaw follows a
 list of waypoints with no arm behind it. A solution there writes the jaw's path
-itself, and no planner checks it first. Its shared parts are in [`bench/`](bench/README.md), its solutions
+itself, and no planner checks it first. Its shared parts are in [`examiner/`](examiner/README.md), its solutions
 are in the numbered folders, and [`results/`](results/README.md) sets them side
 by side. Each of those folders has its own `README.md`, which is that
 solution's full description. The whole-arm cell is built on this one: it reuses
 the first cell's table draw, its wrist camera, its physics settings and its
 scorecard.
+
+**The first cell's solutions also run on the arm.** Each of them answers with a
+path for the jaw, and [`full-arm/jaw_solutions.py`](full-arm/jaw_solutions.py)
+hands that path to the UR5e, where MoveIt carries it out as straight motions
+planned before the arm moves. They keep their own trained weights, so `make
+evaluate-jaw` in `full-arm/` measures the same solutions on the arm. They have
+not been measured there yet.
 
 The first cell once had longer documents of its own in `docs/`, such as the
 description of how its tables are marked and the record of every change made
@@ -67,7 +74,7 @@ docs/                               the documents for the whole-arm cell
 full-arm/                           the whole-arm cell: the UR5e, MoveIt 2, the box model and the solutions
   ros/                              the separate ROS environment MoveIt runs in
 images/  videos/                    the pictures and films the documents show
-bench/                              the first cell's shared parts: the draw, the camera, the loop, the scorecard
+examiner/                              the first cell's shared parts: the draw, the camera, the loop, the scorecard
 01-one-fixed-nudge/                 first cell: the geometry reference
 02-geometry-ranked/                 first cell: the same loop, with fitted trees ordering the pushes
 03-imitation-from-demonstrations/   first cell: a gate that decides and a chunked policy that draws the path
@@ -90,6 +97,13 @@ Problem 4 builds on problems 1 and 3, but it does not import anything from
 their folders. Instead it keeps its own copy of exactly the files it uses, in
 `work-cell/` and `from-problem-3/`, and its own ROS environment in
 `full-arm/ros/`. This means the folder can be read, run and changed on its own.
+
+Problem 4 copies only what it needs. Problem 3 keeps the part of its examiner that
+both problems share in its own `common_bench.py`, `common_scoring.py` and
+`common_film.py`, and the parts that belong to problem 3 alone, such as its
+overhead camera, in the files that extend them. Problem 4 copies the three
+common files, and its own `examiner/simulator.py`, `scoring.py` and `film.py` extend
+them in the same way.
 
 A copy has one cost: it does not change when the original changes. Problem 4's
 results are compared with problem 3's, and that comparison holds only while the

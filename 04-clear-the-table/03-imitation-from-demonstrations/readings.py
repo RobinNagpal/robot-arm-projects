@@ -209,7 +209,7 @@ def about_itself(answers: int, since_touch: int, travelled: float) -> np.ndarray
 
 
 class Shoves(Kept):
-    """The bench's own shove bookkeeping, with the row the gate is shown added.
+    """The examiner's own shove bookkeeping, with the row the gate is shown added.
 
     Everything about *what* has been tried on each glass lives in
     ``keeping_clear`` because three solutions need it and the clearance rule has

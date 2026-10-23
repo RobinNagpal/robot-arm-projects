@@ -42,7 +42,7 @@ and its ``pushing_part`` is what does it here.
 
 **The path is padded, and squeezed only when it will not fit.** A chunk is fifty
 rows and most paths are shorter, so the path keeps the teacher's own spacing and
-the last pose is repeated to the end. That matters because the bench eats
+the last pose is repeated to the end. That matters because the examiner eats
 waypoints at a fixed rate, so how far apart they are *is* how fast the jaw goes:
 a padded path pushes at the teacher's speed, and a resampled one does not.
 Problem 4's own chunk convention pads for exactly this reason. Measured over the
@@ -57,7 +57,7 @@ driving the arm somewhere it can see from, which is one waypoint at travel
 height. There is no "still going" column among the model's six slots -- adding
 one would change ``joining.py``, and holding that still is what keeps this
 solution comparable with solution 5 -- so a look is written as its pose repeated
-for the whole chunk. The bench skips a leg of no length, so such a chunk costs
+for the whole chunk. The examiner skips a leg of no length, so such a chunk costs
 the crossing and nothing else, which is what the teacher's look costs.
 """
 
@@ -140,7 +140,7 @@ def path_of(action: np.ndarray) -> tuple[tuple[Waypoint, ...], int]:
 
     Problem 4's own ``chunks.to_waypoints`` is what reads it: it takes the rows
     the sixth column claims and pulls each waypoint inside the jaw's limits.
-    Nothing in a demonstration should need pulling in, because the bench carried
+    Nothing in a demonstration should need pulling in, because the examiner carried
     it out, and the count comes back so that an assumption is a measurement.
     """
     return chunks.to_waypoints(action)

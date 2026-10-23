@@ -213,7 +213,7 @@ def test_a_push_written_from_its_glass_comes_back_where_it_started(at: tuple[flo
     """The round trip, with the glass's place taken off on the way in and put back on.
 
     A push is stored measured from the glass it pushes, so that one shove is one
-    answer wherever the glass stands. What has to hold is that the path the bench
+    answer wherever the glass stands. What has to hold is that the path the examiner
     is handed is the path the teacher followed, whichever glass it was at.
     """
     path = a_push(0.04)

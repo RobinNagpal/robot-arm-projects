@@ -10,5 +10,5 @@ select = ["E", "F", "W", "I", "UP", "B", "SIM"]
 
 [lint.isort]
 # The bench's modules import each other by bare name, and so do the solutions.
-known-first-party = ["bench", "film", "scoring", "top_view"]
+known-first-party = ["bench", "common_bench", "common_film", "common_scoring", "film", "scoring", "top_view"]
 known-third-party = ["work_cell", "mujoco"]

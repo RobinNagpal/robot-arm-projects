@@ -47,6 +47,17 @@ some of them can then drop and push without the forearm meeting the table. So wh
 chooses where the free move ends, it also checks that the drop and the stroke can follow
 from that posture.
 
+## A path of straight lines
+
+The first cell's solutions, which were written for a jaw with no arm behind it,
+answer with a path of waypoints instead of a push. On the arm, the waypoints are
+joined into straight stretches, and MoveIt plans a free move to travel height
+above the first point, a straight drop to it, a straight motion along every
+stretch, and a straight lift at the end. As with a push, every motion is planned
+before the arm moves, and a path with any motion MoveIt cannot plan is refused.
+Each stretch keeps the speed the first cell gave it: MoveIt plans the motion,
+and its timing is then stretched evenly until it is no faster than that speed.
+
 ## The six settings
 
 The six settings in a push are all things MoveIt itself is given. A solution chooses them,

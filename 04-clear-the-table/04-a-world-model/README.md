@@ -27,14 +27,14 @@ what follows comes from.
 | `encoding.py` | **new.** What the model is shown about a push, and what it is asked to predict. |
 | `push_model.py` | **new.** Three copies of a small network. |
 | `collect.py` | **new.** Pushes really made on training tables, and what the camera saw happen. |
-| `bench/keeping_clear.py` | **borrowed.** The clearance check every solution in this problem runs over its own answer. The search asks it of the pushes it is about to prefer. |
+| `examiner/keeping_clear.py` | **borrowed.** The clearance check every solution in this problem runs over its own answer. The search asks it of the pushes it is about to prefer. |
 | `search.py` | **new.** The cross-entropy search over candidate pushes. |
 | `learned.py` | **new.** The reference's loop with the model deciding. |
 
-`borrowed.py` holds the whole debt on one page, as `bench/partners.py` does for
+`borrowed.py` holds the whole debt on one page, as `examiner/partners.py` does for
 problem 3. Nothing here is called `plan.py`, `run.py`, `features.py` or
 `model.py`, and that is not a preference: those names are already taken by
-problem 3's solution 1, by the bench, and by what problem 4's solution 2
+problem 3's solution 1, by the examiner, and by what problem 4's solution 2
 registers, and a file here with one of them would shadow the file it is meant
 to be borrowing from.
 
@@ -67,7 +67,7 @@ their topple chances rather than the average.
 
 **The push has a fourth number here that it does not have in problem 3, and it
 is the whole difference between the two problems' actions.** Problem 3 hands
-the bench a `Push` and the bench feels its way in: it creeps forward from the
+the examiner a `Push` and the simulator feels its way in: it creeps forward from the
 touchdown point until its force sensor finds the glass, and pushes from
 wherever that turned out to be. Problem 4 hands over a chunk of waypoints, and
 a chunk cannot feel. The jaw meets a glass at the jaw's own height, where a
@@ -402,7 +402,7 @@ numbers.
 Everything above was measured on tables below `TEST_SEEDS`, which is where the
 two settings were chosen and where nothing is a score. **This is the score.**
 Fifty tables are offered in order from table 10,000, with fifteen arm minutes
-for the **whole queue**, walked three times through the bench's own judging. The
+for the **whole queue**, walked three times through the examiner's own judging. The
 geometry reference walked the same queue and is beside it. Medians of the three
 walks, with the three values in brackets.
 
@@ -466,7 +466,7 @@ is taken over every glass on every table attempted.
 Both spend essentially the whole 900 seconds, so how far each got down the list
 is set by what a table costs it. The rest of the fifty were offered and handed
 straight back because what was left of the clock could not pay for the first
-path; the bench does not count those, and the rule is in
+path; the examiner does not count those, and the rule is in
 [the examiner](https://github.com/RobinNagpal/robot-arm-projects/blob/851a30b61e6c06465c9f94ec8cb03efda004f2b1/v5-pick-glasses/docs/04-clear-the-table/the-examiner.md).
 
 **The saving this port was made for is real.** A table it separates costs 25.4
@@ -602,7 +602,7 @@ arithmetic. If the glass *under the fingers* goes over, it tipped where it
 should have slid, and the repair belongs in the model's account of toppling.
 `measurement.json` cannot tell them apart, because the examiner ends the table
 the moment a glass goes over and the look that would show which one is never
-taken — so `make toppled` asks the bench instead, which is allowed in a
+taken — so `make toppled` asks the examiner instead, which is allowed in a
 diagnosis because nothing in it decides a push.
 
 | 300 tables from 5300 | glasses over |
@@ -655,7 +655,7 @@ out: they are made again by the two commands above.
 
 The twenty tables are below `TEST_SEEDS` and are not the measurement.
 `measure.py` refuses any seed from `TEST_SEEDS` up, and the held-out queue is
-walked once, by the owner of the problem, through the bench's own judging:
+walked once, by the owner of the problem, through the examiner's own judging:
 
 ```
 pixi run python measure.py --judge      # writes results.json

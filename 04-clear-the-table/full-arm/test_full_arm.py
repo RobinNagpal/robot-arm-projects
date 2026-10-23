@@ -191,22 +191,25 @@ class FakeCell:
         self.topple_on, self.seconds, self.refuse = topple_on, seconds, refuse
         self.pickable_at_start = 1
         hand = SimpleNamespace(x=0.48, y=-0.26, z=0.36, heading=0.0)
-        self.bench = SimpleNamespace(seconds=0.0, arm_seconds=0.0, tcp=lambda: hand, joints=lambda: [0.0] * 6)
-        self.bench.run = self._run
+        self.simulator = SimpleNamespace(
+            seconds=0.0, arm_seconds=0.0, tcp=lambda: hand, joints=lambda: [0.0] * 6
+        )
+        self.simulator.run = self._run
         self.link = SimpleNamespace(planning_seconds=0.0, scene=lambda boxes: None, plan=self._plan)
         self.camera = SimpleNamespace(view=lambda hand: np.zeros((4, 4, 3), np.uint8))
-        self.pusher = SimpleNamespace(push=self._push)
+        self.pusher = SimpleNamespace(push=self._push, follow=self._follow)
+        self.paths: list = []
         self.closed = False
 
     @property
     def arm_seconds(self):
-        return self.bench.arm_seconds
+        return self.simulator.arm_seconds
 
     def _plan(self, q, goal, **how):
         return SimpleNamespace(ok=True, why="", seconds=3.0, times=[0.0, 3.0], joints=[q, q])
 
     def _run(self, times, joints):
-        self.bench.arm_seconds += times[-1]
+        self.simulator.arm_seconds += times[-1]
         return SimpleNamespace(seconds=times[-1])
 
     def _push(self, boxes, request, seconds_left=math.inf, stop_when=None):
@@ -215,8 +218,20 @@ class FakeCell:
         if self.seconds > seconds_left:
             why = f"the push needs {self.seconds} s and {seconds_left} s are left"
             return SimpleNamespace(ok=False, why=why)
-        self.bench.arm_seconds += self.seconds
+        self.simulator.arm_seconds += self.seconds
         self.pushes += 1
+        stopped = stop_when is not None and stop_when()
+        return SimpleNamespace(
+            ok=True, why="", arm_seconds=self.seconds, stopped=stopped, stages=[("approach",)], touched=True
+        )
+
+    def _follow(self, boxes, legs, glass, settings, seconds_left=math.inf, stop_when=None):
+        if self.refuse:
+            return SimpleNamespace(ok=False, why="no way to the start of the path: no plan")
+        self.paths.append((list(legs), glass))
+        self.simulator.arm_seconds += self.seconds
+        if any(leg.z < 0.29 for leg in legs):
+            self.pushes += 1
         stopped = stop_when is not None and stop_when()
         return SimpleNamespace(
             ok=True, why="", arm_seconds=self.seconds, stopped=stopped, stages=[("approach",)], touched=True
@@ -254,10 +269,10 @@ class Finished(Pushing):
 
 
 def _run(solution, cell, left=900.0, monkeypatch=None):
-    import examiner
+    import arm_examiner
 
-    monkeypatch.setattr(examiner, "view_joint_sets", lambda: [[0.0] * 6, [0.0] * 6])
-    judge = examiner.SimExaminer(SimpleNamespace(), left, make_cell=lambda table, link: cell)
+    monkeypatch.setattr(arm_examiner, "view_joint_sets", lambda: [[0.0] * 6, [0.0] * 6])
+    judge = arm_examiner.SimExaminer(SimpleNamespace(), left, make_cell=lambda table, link: cell)
     return judge.run(solution, 1), judge.tally
 
 
@@ -286,7 +301,7 @@ def test_a_glass_going_over_ends_the_table_at_once(monkeypatch):
 
 def test_a_solution_that_keeps_asking_for_refused_pushes_is_stopped(monkeypatch):
     from arm_contract import OUT_OF_TIME
-    from examiner import MOST_PUSHES
+    from arm_examiner import MOST_PUSHES
 
     cell = FakeCell(refuse=True)
     result, tally = _run(Pushing(), cell, monkeypatch=monkeypatch)
@@ -306,12 +321,12 @@ def test_a_solution_that_reads_the_pictures_takes_both_every_turn(monkeypatch):
 
 
 def test_the_arm_refuses_every_call_once_the_run_is_over(monkeypatch):
-    import examiner
+    import arm_examiner
     from arm_contract import FINISHED, RunOver
 
-    monkeypatch.setattr(examiner, "view_joint_sets", lambda: [[0.0] * 6, [0.0] * 6])
+    monkeypatch.setattr(arm_examiner, "view_joint_sets", lambda: [[0.0] * 6, [0.0] * 6])
     cell = FakeCell()
-    run = examiner.SimExaminer(SimpleNamespace(), 900.0, make_cell=lambda table, link: cell).start(1)
+    run = arm_examiner.SimExaminer(SimpleNamespace(), 900.0, make_cell=lambda table, link: cell).start(1)
     run.arm.camera.capture()
     run.finish("enough")
     assert run.state == FINISHED
@@ -508,3 +523,131 @@ def test_the_check_mends_a_risky_push_keeping_its_glass_way_and_distance():
 def test_without_mending_a_risky_push_sets_the_glass_aside():
     _, answer = _checked(0.9, repair=0)
     assert isinstance(answer, Done)
+
+
+# --------------------------------------------------------- the jaw-only solutions
+
+
+def _straight(start, step, count, z=None):
+    from partners import PUSH_HEIGHT, Waypoint
+
+    z = PUSH_HEIGHT if z is None else z
+    return tuple(Waypoint(start[0] + k * step[0], start[1] + k * step[1], z, 0.0) for k in range(count))
+
+
+def test_a_straight_chunk_becomes_a_drop_and_one_leg_at_its_own_speed():
+    from jaw_solutions import legs_of
+
+    from partners import DESCEND_SPEED, WAYPOINT_PERIOD, Chunk
+
+    legs = legs_of(Chunk(0, _straight((0.40, -0.20), (0.001, 0.0), 31), (0.45, -0.20)))
+    assert len(legs) == 2, "the drop to the first waypoint, then one straight leg"
+    assert legs[0].speed == DESCEND_SPEED and legs[0].x == pytest.approx(0.40)
+    assert legs[1].x == pytest.approx(0.43)
+    assert legs[1].speed == pytest.approx(0.001 / WAYPOINT_PERIOD), "as fast as the waypoints are apart"
+
+
+def test_a_chunk_that_turns_or_changes_speed_starts_a_new_leg():
+    from jaw_solutions import legs_of
+
+    from partners import Chunk
+
+    along = _straight((0.40, -0.20), (0.001, 0.0), 11)
+    across = _straight((0.41, -0.20), (0.0, 0.001), 11)[1:]
+    faster = _straight((0.41, -0.19), (0.0, 0.004), 6)[1:]
+    legs = legs_of(Chunk(0, along + across + faster, (0.45, -0.20)))
+    assert len(legs) == 4
+    assert legs[2].speed < legs[3].speed
+
+
+def test_a_leg_is_never_asked_to_go_faster_than_the_jaw_only_cell_allowed():
+    from jaw_solutions import legs_of
+
+    from partners import TOP_SPEED, TRAVEL_HEIGHT, Chunk
+
+    legs = legs_of(Chunk(0, _straight((0.30, -0.20), (0.05, 0.0), 4, z=TRAVEL_HEIGHT), (0.0, 0.0)))
+    assert all(leg.speed <= TOP_SPEED for leg in legs)
+
+
+def test_a_glass_keeps_its_number_when_it_moves_a_little_or_turns_up_where_it_was_aimed():
+    from jaw_solutions import Numbers
+
+    numbers = Numbers()
+    first, _ = numbers.seen([Box(0.40, -0.20, 0.03, 0.15, 0.03), Box(0.55, -0.30, 0.03, 0.15, 0.03)])
+    number = {round(glass.x, 2): glass.id for glass in first}
+    numbers.aimed(number[0.40], (0.40, -0.10))
+    second, box_of = numbers.seen(
+        [
+            Box(0.551, -0.301, 0.03, 0.15, 0.03),
+            Box(0.402, -0.105, 0.03, 0.15, 0.03),
+            Box(0.3, -0.4, 0.03, 0.15, 0.0),
+        ]
+    )
+    by_y = {round(glass.y, 1): glass.id for glass in second}
+    assert by_y[-0.3] == number[0.55], "a glass that barely moved keeps its number"
+    assert by_y[-0.1] == number[0.40], "a pushed glass found where it was aimed keeps its number"
+    assert by_y[-0.4] not in number.values(), "a glass seen for the first time gets a new number"
+    assert box_of[number[0.40]] == 1
+    assert next(glass for glass in second if glass.y < -0.35).foot == pytest.approx(0.06)
+
+
+class _Scripted:
+    """A jaw-only solution that pushes the first glass it is shown, once, and then says done."""
+
+    name = "scripted"
+
+    def __init__(self, answers=1):
+        self.answers, self.looks = answers, []
+
+    def begin(self, seed):
+        self.asked = 0
+
+    def answer(self, look):
+        from contract import Done
+        from partners import Chunk
+
+        self.looks.append(look)
+        if self.asked >= self.answers:
+            return Done("pushed it")
+        self.asked += 1
+        glass = look.seen[0]
+        path = _straight((glass.x - 0.08, glass.y), (0.002, 0.0), 30)
+        return Chunk(glass.id, path, (glass.x + 0.03, glass.y))
+
+
+def _on_the_arm(inner):
+    from jaw_solutions import OnTheArm
+
+    boxes = [Box(0.45, -0.25, 0.03, 0.15, 0.03), Box(0.6, -0.2, 0.03, 0.15, 0.03)]
+    return OnTheArm(inner, see=lambda frame: boxes)
+
+
+def test_a_jaw_only_solution_clears_a_table_through_the_arm_examiner(monkeypatch):
+    from arm_contract import FINISHED
+
+    from partners import Waypoint
+
+    inner, cell = _Scripted(), FakeCell()
+    result, tally = _run(_on_the_arm(inner), cell, monkeypatch=monkeypatch)
+    assert result.ended_by == FINISHED and result.why == "pushed it"
+    assert result.pushes_asked == 1 and len(cell.paths) == 1
+    legs, glass = cell.paths[0]
+    assert glass == 0, "the path is planned with the glass it means to push left out of the check"
+    assert all(isinstance(look.jaw, Waypoint) for look in inner.looks)
+    assert [glass.id for glass in inner.looks[1].seen] == [glass.id for glass in inner.looks[0].seen]
+    assert tally.pictures == 2 + 1, "both views at the start, then the one view that shows both glasses"
+
+
+def test_a_jaw_only_solution_whose_paths_are_all_refused_is_stopped(monkeypatch):
+    from arm_contract import OUT_OF_TIME
+    from arm_examiner import MOST_PUSHES
+
+    result, _ = _run(_on_the_arm(_Scripted(answers=10_000)), FakeCell(refuse=True), monkeypatch=monkeypatch)
+    assert result.ended_by == OUT_OF_TIME and result.pushes_asked == MOST_PUSHES
+
+
+def test_the_geometry_reference_can_be_built_to_run_on_the_arm():
+    from jaw_solutions import one_fixed_nudge
+
+    solution = one_fixed_nudge()
+    assert solution.name.endswith("on the arm")
