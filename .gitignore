@@ -13,9 +13,17 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 
-# editors / IDEs
+# editors / IDEs. IntelliJ's module files are kept, so that the repo opens as
+# one project with a module per problem; the rest of .idea/ is per machine.
 .idea/
+!/.idea/
+/.idea/*
+!/.idea/modules.xml
+!/.idea/misc.xml
+!/.idea/vcs.xml
+!/.idea/modules/
 *.iml
+!/.idea/modules/*.iml
 .vscode/
 
 # macOS

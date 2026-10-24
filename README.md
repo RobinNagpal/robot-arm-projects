@@ -179,3 +179,37 @@ geometry from a depth camera. It runs in MuJoCo instead of Gazebo, because
 learning from demonstrations needs hundreds of fast, repeatable episodes.
 
 → [`07-learn-pick-place/README.md`](07-learn-pick-place/README.md)
+
+## Opening the repo in IntelliJ IDEA
+
+Each problem is its own Python project, with its own pixi environment and its own list of
+folders that its code imports from, so an editor has to treat the problems separately to
+find the right code. The repo therefore comes with an IntelliJ IDEA setup in `.idea/`, in
+which every problem is a separate module. Opening the repo's top folder in IntelliJ IDEA,
+with the Python plugin, gives one project with one module per problem.
+
+A module is IntelliJ's name for one part of a project that has its own interpreter and its
+own source folders. Each problem's module is set up in three ways:
+
+- **Its interpreter is the problem's own pixi environment.** The module asks for an
+  interpreter named `pixi (<folder>)`, for example `pixi (04-clear-the-table)`, whose Python
+  is `<folder>/.pixi/envs/default/bin/python`. An import is then looked up in the packages
+  that problem installs, and never in another problem's.
+- **Its source folders are the folders on the problem's Python path.** These are the same
+  folders that the problem's `pixi.toml` puts on `PYTHONPATH`, such as `work-cell/` and each
+  solution folder in problem 4. So "go to definition" lands where the code really runs from,
+  which is the problem's own copy of a shared file and not another problem's.
+- **Environments, caches and data are excluded,** so the editor does not index gigabytes of
+  installed packages and weights.
+
+The interpreters belong to the IDE rather than to the repo. So on a new machine, run
+`pixi install` in each problem folder first. Then, in **File → Project Structure → SDKs**,
+add each environment's Python as an existing interpreter, and give it the name its module
+asks for. In problem 4, the MoveIt server runs in a second environment, in
+`examiner/ros/`, so the editor cannot find its ROS imports. That is expected, and it
+does not affect running it.
+
+When IntelliJ runs a file or a test, it puts the module's source folders on the Python path,
+so the imports work as they do under pixi. However, it does not set the other variables that
+a problem's `pixi.toml` sets, such as the one that lets PyTorch fall back to the CPU. So the
+`make` targets, which run through `pixi run`, remain the way to run a whole evaluation.
