@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/robot-arm-projects.iml" filepath="$PROJECT_DIR$/.idea/modules/robot-arm-projects.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/01-rack-one-glass.iml" filepath="$PROJECT_DIR$/.idea/modules/01-rack-one-glass.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/02-segment-glasses.iml" filepath="$PROJECT_DIR$/.idea/modules/02-segment-glasses.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/03-push-glasses-apart.iml" filepath="$PROJECT_DIR$/.idea/modules/03-push-glasses-apart.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/04-clear-the-table.iml" filepath="$PROJECT_DIR$/.idea/modules/04-clear-the-table.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/05-rack-several-kinds.iml" filepath="$PROJECT_DIR$/.idea/modules/05-rack-several-kinds.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/06-unknown-proportions.iml" filepath="$PROJECT_DIR$/.idea/modules/06-unknown-proportions.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/07-learn-pick-place.iml" filepath="$PROJECT_DIR$/.idea/modules/07-learn-pick-place.iml" />
+    </modules>
+  </component>
+</project>

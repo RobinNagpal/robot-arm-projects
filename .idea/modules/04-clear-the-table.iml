@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="PYTHON_MODULE" version="4">
+  <component name="NewModuleRootManager">
+    <content url="file://$MODULE_DIR$/../../04-clear-the-table">
+      <sourceFolder url="file://$MODULE_DIR$/../../04-clear-the-table" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/../../04-clear-the-table/work-cell" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/../../04-clear-the-table/01-geometry-reference" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/../../04-clear-the-table/02-geometry-ranked" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/../../04-clear-the-table/03-imitation" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/../../04-clear-the-table/04-world-model" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/../../04-clear-the-table/05-reinforcement-learning" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/../../04-clear-the-table/06-smolvla-fine-tuned" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/../../04-clear-the-table/from-problem-3/bench" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/../../04-clear-the-table/from-problem-3/01-one-fixed-nudge" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/../../04-clear-the-table/tests" isTestSource="true" />
+      <excludeFolder url="file://$MODULE_DIR$/../../04-clear-the-table/examiner/logs" />
+      <excludePattern pattern=".pixi" />
+      <excludePattern pattern="__pycache__" />
+      <excludePattern pattern=".pytest_cache" />
+      <excludePattern pattern=".ruff_cache" />
+      <excludePattern pattern="data" />
+      <excludePattern pattern="weights" />
+      <excludePattern pattern="demonstrations" />
+    </content>
+    <orderEntry type="jdk" jdkName="pixi (04-clear-the-table)" jdkType="Python SDK" />
+    <orderEntry type="sourceFolder" forTests="false" />
+  </component>
+  <component name="TestRunnerService">
+    <option name="PROJECT_TEST_RUNNER" value="py.test" />
+  </component>
+</module>

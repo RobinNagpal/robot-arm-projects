@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="PYTHON_MODULE" version="4">
+  <component name="NewModuleRootManager">
+    <content url="file://$MODULE_DIR$/../../05-rack-several-kinds">
+      <sourceFolder url="file://$MODULE_DIR$/../../05-rack-several-kinds/08-learned-pipelines/work-cell" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/../../05-rack-several-kinds/08-learned-pipelines/from-problem-2/bench" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/../../05-rack-several-kinds/08-learned-pipelines/from-problem-3/bench" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/../../05-rack-several-kinds/08-learned-pipelines/from-problem-2/02-train-from-scratch" isTestSource="false" />
+      <excludePattern pattern=".pixi" />
+      <excludePattern pattern="__pycache__" />
+      <excludePattern pattern=".pytest_cache" />
+      <excludePattern pattern=".ruff_cache" />
+      <excludePattern pattern="data" />
+      <excludePattern pattern="weights" />
+      <excludePattern pattern="demonstrations" />
+    </content>
+    <orderEntry type="jdk" jdkName="pixi (05-rack-several-kinds/08-learned-pipelines)" jdkType="Python SDK" />
+    <orderEntry type="sourceFolder" forTests="false" />
+  </component>
+  <component name="TestRunnerService">
+    <option name="PROJECT_TEST_RUNNER" value="py.test" />
+  </component>
+</module>
