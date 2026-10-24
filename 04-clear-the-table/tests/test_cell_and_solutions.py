@@ -246,7 +246,7 @@ class FakeCell:
         self.simulator.arm_seconds += times[-1]
         return SimpleNamespace(arm_seconds=times[-1])
 
-    def _push(self, boxes, request, seconds_left=math.inf, stop_when=None):
+    def _push(self, boxes, request, seconds_left=math.inf, stop_once_a_glass_topples=False):
         if self.refuse:
             return SimpleNamespace(made=False, refusal_reason="no way to the start of the push: no plan")
         if self.seconds > seconds_left:
@@ -254,7 +254,7 @@ class FakeCell:
             return SimpleNamespace(made=False, refusal_reason=reason)
         self.simulator.arm_seconds += self.seconds
         self.pushes += 1
-        stopped_early = stop_when is not None and stop_when()
+        stopped_early = stop_once_a_glass_topples and self.count_toppled_glasses() > 0
         return SimpleNamespace(
             made=True,
             refusal_reason="",
@@ -277,14 +277,24 @@ class FakeCell:
         self.closed = True
 
 
+class FakeBoxFinder:
+    """Finds the same glasses in every picture."""
+
+    def __init__(self, glasses: int) -> None:
+        self.glasses = glasses
+
+    def boxes_in_picture(self, picture, hand):
+        return [GlassBox(0.4 + 0.1 * k, -0.2, 0.03, 0.15, 0.03) for k in range(self.glasses)]
+
+
 class Pushing(TurnByTurnSolution):
     name = "always pushes glass 0"
 
     def __init__(self, looking_mode=LOOK_ONLY_AS_NEEDED, glasses=1):
         self.looking_mode, self.glasses = looking_mode, glasses
-        self.picture_to_boxes = lambda picture: [
-            GlassBox(0.4 + 0.1 * k, -0.2, 0.03, 0.15, 0.03) for k in range(self.glasses)
-        ]
+
+    def box_finder(self):
+        return FakeBoxFinder(self.glasses)
 
     def decide_turn(self, observation):
         return PushRequest(0, 0.0, 0.05, MoveItSettings.default())
@@ -297,13 +307,22 @@ class Finished(Pushing):
         return TableFinished("finished")
 
 
+def _examiner_with_fake_cell(cell, arm_seconds_given):
+    """An examiner whose every table is ``cell``."""
+    from examiner.examining import table_examiner
+
+    class ExaminerWithFakeCell(table_examiner.SimulatedExaminer):
+        def make_cell_for_table(self, table_number):
+            return cell
+
+    return ExaminerWithFakeCell(SimpleNamespace(), arm_seconds_given)
+
+
 def _run(solution, cell, left=900.0, monkeypatch=None):
     from examiner.examining import table_examiner
 
     monkeypatch.setattr(table_examiner, "viewing_joint_angles", lambda: [[0.0] * 6, [0.0] * 6])
-    examiner = table_examiner.SimulatedExaminer(
-        SimpleNamespace(), left, make_cell_for_table=lambda table_number, moveit: cell
-    )
+    examiner = _examiner_with_fake_cell(cell, left)
     return examiner.run_solution_on_table(solution, 1), examiner.arm_activity
 
 
@@ -363,9 +382,7 @@ def test_the_arm_refuses_every_call_once_the_attempt_is_over(monkeypatch):
 
     monkeypatch.setattr(table_examiner, "viewing_joint_angles", lambda: [[0.0] * 6, [0.0] * 6])
     cell = FakeCell()
-    examiner = table_examiner.SimulatedExaminer(
-        SimpleNamespace(), 900.0, make_cell_for_table=lambda table_number, moveit: cell
-    )
+    examiner = _examiner_with_fake_cell(cell, 900.0)
     attempt = examiner.start_attempt(1)
     attempt.arm.wrist_camera.take_picture()
     attempt.declare_finished("enough")
@@ -551,28 +568,32 @@ def _checked(speed, repair):
         np.random.default_rng(0),
     )
     wrapped.pushes_vetoed = wrapped.pushes_mended = 0
+    wrapped.pushes_turned_down_this_table = []
     wrapped.HIGHEST_TOPPLE_CHANCE, wrapped.MEND_RISKY_PUSHES = 0.3, repair
     observation = SimpleNamespace(
         boxes=[GlassBox(0.5, 0.0, 0.03, 0.12, 0.02), GlassBox(0.56, 0.0, 0.03, 0.12, 0.02)]
     )
-    return request, wrapped.decide_turn(observation)
+    return request, wrapped.decide_turn(observation), wrapped
 
 
 def test_the_check_lets_a_safe_push_through_unchanged():
-    request, answer = _checked(0.1, repair=1)
+    request, answer, _ = _checked(0.1, repair=1)
     assert answer is request
 
 
 def test_the_check_mends_a_risky_push_keeping_its_glass_way_and_distance():
-    request, answer = _checked(0.9, repair=1)
+    request, answer, _ = _checked(0.9, repair=1)
     assert not isinstance(answer, TableFinished)
     assert (answer.glass, answer.heading, answer.travel) == (request.glass, request.heading, request.travel)
     assert table_and_push_encoding.encode_push(answer)[4] <= 0.3
 
 
 def test_without_mending_a_risky_push_sets_the_glass_aside():
-    _, answer = _checked(0.9, repair=0)
+    request, answer, check = _checked(0.9, repair=0)
     assert isinstance(answer, TableFinished)
+    # The per-table records read the pushes the check turned down from this list.
+    assert check.pushes_turned_down_this_table
+    assert all(turned_down is request for _, turned_down in check.pushes_turned_down_this_table)
 
 
 # ------------------------------------------------------------ solution 2's ordering

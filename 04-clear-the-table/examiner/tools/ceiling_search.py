@@ -30,7 +30,7 @@ from examiner.examining.solution_contract import FINISHED, GLASS_OVER, OUT_OF_TI
 from examiner.examining.table_examiner import ARM_SECONDS_FOR_TABLE_LIST, as_scored_table
 from examiner.examining.table_scoring import ScorecardsOverRuns
 from examiner.motion.moveit_connection import MoveItConnection
-from examiner.motion.push_motions import GlassBox
+from examiner.motion.push_motions import GlassBox, PushWatcher
 from shared.learning import collect_training_pushes, table_and_push_encoding
 
 
@@ -92,10 +92,13 @@ def clear_table_by_trying_pushes(
     lessons: list | None = None,
     *,
     cell: one_table_cell.OneTableCell | None = None,
+    watcher_of_pushes_made: PushWatcher | None = None,
 ) -> TableResult:
     """Clear one table by trying pushes first.
 
     ``pushes_made``, when given, gets one row for every push the search really makes.
+    ``watcher_of_pushes_made``, when given, is shown each push the search really makes, and
+    none of its tries.
     ``lessons``, when given, gets one row per turn: the table as it stood and the push made,
     or ``None`` where the search chose to stop.
     """
@@ -151,7 +154,11 @@ def clear_table_by_trying_pushes(
                     )
                 break
             best_value, best_push = best
-            cell.pusher.plan_and_make_push(boxes, best_push, arm_seconds_left)
+            if watcher_of_pushes_made is None:
+                cell.pusher.plan_and_make_push(boxes, best_push, arm_seconds_left)
+            else:
+                with cell.pusher.watched_by(watcher_of_pushes_made):
+                    cell.pusher.plan_and_make_push(boxes, best_push, arm_seconds_left)
             if lessons is not None:
                 lessons.append(
                     {

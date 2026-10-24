@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
+from typing import Protocol
 
 import numpy as np
 from work_cell.rack.layout import GLASS_ZONE
@@ -59,6 +60,12 @@ TRIP_TO_LOOK_SETTINGS = MoveItSettings(
 
 # How far outside the glass zone the solid block over it reaches.
 ZONE_BLOCK_MARGIN = 0.03
+
+
+class BoxFinder(Protocol):
+    """Anything that finds the glasses in one wrist picture, as boxes. The box model is one."""
+
+    def boxes_in_picture(self, picture: np.ndarray, hand: HandPose) -> list[GlassBox]: ...
 
 
 @dataclass(frozen=True)
@@ -193,11 +200,8 @@ def _hand_is_at(here: HandPose, view: HandPose) -> bool:
 class TableLooker:
     """Takes the arm to the viewing places, takes the pictures, and turns them into boxes."""
 
-    def __init__(self, arm: Arm, looking_mode: str, picture_to_boxes=None) -> None:
-        self.arm, self.looking_mode = arm, looking_mode
-        self.picture_to_boxes = picture_to_boxes or (
-            lambda picture: shared_box_model().boxes_in_picture(picture.image, picture.hand_pose)
-        )
+    def __init__(self, arm: Arm, looking_mode: str, box_finder: BoxFinder) -> None:
+        self.arm, self.looking_mode, self.box_finder = arm, looking_mode, box_finder
         self.latest_picture_per_view: dict[int, np.ndarray] = {}
         self.most_glasses_seen = 0  # the most glasses one turn's pictures have shown
         self.expected_boxes_after_push: list[GlassBox] = []  # where the glasses should be after the last push
@@ -231,7 +235,7 @@ class TableLooker:
                     return None
             picture: WristPicture = self.arm.wrist_camera.take_picture()
             self.latest_picture_per_view[view] = picture.image
-            merged.add_boxes(self.picture_to_boxes(picture))
+            merged.add_boxes(self.box_finder.boxes_in_picture(picture.image, picture.hand_pose))
         self.most_glasses_seen = max(self.most_glasses_seen, len(merged.boxes))
         return merged.boxes
 
@@ -251,7 +255,10 @@ class TurnByTurnSolution:
 
     name = "turn by turn"
     looking_mode = LOOK_ONLY_AS_NEEDED
-    picture_to_boxes = None  # how a picture becomes boxes; the box model unless a solution says otherwise
+
+    def box_finder(self) -> BoxFinder:
+        """What turns a wrist picture into boxes: the shared box model, unless a solution says otherwise."""
+        return shared_box_model()
 
     def start_new_table(self) -> None:
         pass
@@ -261,7 +268,7 @@ class TurnByTurnSolution:
 
     def clear_table(self, attempt: TableAttempt) -> None:
         self.start_new_table()
-        looker = TableLooker(attempt.arm, self.looking_mode, self.picture_to_boxes)
+        looker = TableLooker(attempt.arm, self.looking_mode, self.box_finder())
         boxes: list[GlassBox] | None = None
         last_push_refusal_reason = ""
         while True:

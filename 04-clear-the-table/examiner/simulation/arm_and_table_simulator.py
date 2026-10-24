@@ -136,6 +136,17 @@ class TrajectoryRunResult:
     first_touch_fingertips: Waypoint | None = None  # where the fingertips were at the first touch
 
 
+class PhysicsStepWatcher:
+    """Told after every physics step, for the examiner's own tools, such as a film of the arm.
+
+    A tool subclasses it and adds it to ``ArmAndTableSimulator.physics_step_watchers``. It may
+    look at the simulator, and must not change it.
+    """
+
+    def after_physics_step(self, simulator: ArmAndTableSimulator) -> None:
+        """Called with the simulator once each physics step is done."""
+
+
 class ArmAndTableSimulator(TableSimulator):
     """One table, with the whole arm standing at it."""
 
@@ -173,7 +184,7 @@ class ArmAndTableSimulator(TableSimulator):
         self.seconds = 0.0
         self.arm_seconds = 0.0
         self._physics_steps = 0
-        self.after_each_physics_step: list = []  # functions called with the simulator after every step
+        self.physics_step_watchers: list[PhysicsStepWatcher] = []
         self.set_joint_angles(start_joint_angles)
         self._settle()
         self.start = [self.position(i) for i in range(len(self.glasses))]
@@ -227,8 +238,8 @@ class ArmAndTableSimulator(TableSimulator):
             self.data.ctrl[: len(ARM_JOINTS)] = command
             mujoco.mj_step(self.model, self.data)
             self._physics_steps += 1
-            for call in self.after_each_physics_step:
-                call(self)
+            for watcher in self.physics_step_watchers:
+                watcher.after_physics_step(self)
             if step % 5 == 0:
                 worst_tracking_error = max(
                     worst_tracking_error, float(np.abs(self.joint_angles() - command).max())

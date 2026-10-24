@@ -116,7 +116,7 @@ def demonstrations_from_ceiling_lessons(lessons: list[dict]) -> tuple[list, int]
 
 
 def train_push_policy_by_imitation(
-    demonstrations: list, epochs: int = 300, seed: int = 0, log=lambda *parts: print(*parts, flush=True)
+    demonstrations: list, epochs: int = 300, seed: int = 0
 ) -> PushPolicyNetwork:
     torch.manual_seed(seed)
     rng = np.random.default_rng(seed)
@@ -162,10 +162,11 @@ def train_push_policy_by_imitation(
             loss.backward()
             optimiser.step()
             summed_loss += float(loss) * len(batch)
-        if log and (epoch % 50 == 49 or epoch == epochs - 1):
-            log(
+        if epoch % 50 == 49 or epoch == epochs - 1:
+            print(
                 f"  epoch {epoch + 1}/{epochs}: loss {summed_loss / count:.3f}, "
-                f"{time.perf_counter() - started:.0f} s"
+                f"{time.perf_counter() - started:.0f} s",
+                flush=True,
             )
     return net.eval()
 

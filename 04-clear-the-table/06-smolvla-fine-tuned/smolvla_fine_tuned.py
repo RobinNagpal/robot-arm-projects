@@ -248,7 +248,6 @@ def train_lora_correction(
     peak_learning_rate: float = 1e-4,
     seed: int = 0,
     weights_folder: Path | None = None,
-    log=lambda *parts: print(*parts, flush=True),
 ) -> Path:
     torch.manual_seed(seed)
     rng = np.random.default_rng(seed)
@@ -256,7 +255,7 @@ def train_lora_correction(
     policy, preprocess, postprocess = load_base_smolvla(torch_device)
     policy = add_lora_correction(policy)
     trainable_numbers = sum(p.numel() for p in policy.parameters() if p.requires_grad)
-    log(f"{len(data)} samples; {trainable_numbers / 1e6:.2f}M numbers move; on {torch_device}")
+    print(f"{len(data)} samples; {trainable_numbers / 1e6:.2f}M numbers move; on {torch_device}", flush=True)
     optimiser = torch.optim.AdamW([p for p in policy.parameters() if p.requires_grad], lr=peak_learning_rate)
     policy.train()
     losses, started = [], time.time()
@@ -272,9 +271,10 @@ def train_lora_correction(
         optimiser.zero_grad()
         losses.append(float(loss.item()))
         if (step + 1) % 25 == 0 or step + 1 == steps:
-            log(
+            print(
                 f"  step {step + 1}/{steps}: loss {np.mean(losses[-25:]):.4f}, "
-                f"{(time.time() - started) / (step + 1):.2f} s a step"
+                f"{(time.time() - started) / (step + 1):.2f} s a step",
+                flush=True,
             )
     policy.model.save_pretrained(weights_folder)
     (weights_folder / "training.json").write_text(

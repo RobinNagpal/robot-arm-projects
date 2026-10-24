@@ -240,7 +240,6 @@ def train_box_detector(
     epochs: int = 30,
     batch_size: int = 16,
     seed: int = 0,
-    log=print,
 ) -> BoxDetectorNetwork:
     torch.manual_seed(seed)
     rng = np.random.default_rng(seed)
@@ -261,7 +260,7 @@ def train_box_detector(
             optimiser.step()
             learning_rate_schedule.step()
             epoch_losses.append(float(loss))
-        if log and (epoch % 5 == 4 or epoch == epochs - 1):
+        if epoch % 5 == 4 or epoch == epochs - 1:
             network.eval()
             with torch.no_grad():
                 held_out_loss = (
@@ -276,9 +275,10 @@ def train_box_detector(
                     if held_out
                     else float("nan")
                 )
-            log(
+            print(
                 f"  epoch {epoch + 1}/{epochs}: train loss {np.mean(epoch_losses):.3f}, "
-                f"held-out loss {held_out_loss:.3f}, {time.perf_counter() - started:.0f} s"
+                f"held-out loss {held_out_loss:.3f}, {time.perf_counter() - started:.0f} s",
+                flush=True,
             )
     network.eval()
     return network

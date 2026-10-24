@@ -73,6 +73,7 @@ than only a simulator: it decides what a solution may see and do, and how its ta
 |---|---|
 | `one_table_cell.py` | one table: the arm, MoveIt and the camera put together, the two viewing poses, and the count of glasses that can be picked |
 | `solution_contract.py` | what passes between a solution and the examiner: the arm, the camera, the run |
+| `solution_catalogue.py` | every solution by the name the tools know it by, and how a new one is built from that name |
 | `table_examiner.py` | the examiner: the arm behind the contract, the clock, the marks, and the list of tables |
 | `table_scoring.py` | how a table is marked, by the glasses that can be picked when the solution stops |
 
@@ -80,6 +81,12 @@ than only a simulator: it decides what a solution may see and do, and how its ta
 the one package that also uses the shared code, because they run the solutions. The ceiling is
 here too, because it is not a solution: it tries pushes in the physics before it makes one,
 which only the examiner can do.
+
+A tool that needs to see more than the final result, such as a film or a record, watches the
+table through one of two small watcher classes. A physics-step watcher is told after every step
+of the physics, which is how a film takes its frames. A push watcher is told before and after
+every push, which is how a record keeps each push. A watcher can only look, so it cannot change
+what happens on the table, and a solution never sees one.
 
 | File | What it is |
 |---|---|

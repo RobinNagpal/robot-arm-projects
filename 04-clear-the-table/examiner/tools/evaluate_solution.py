@@ -11,33 +11,21 @@ what it sees is the pictures it chooses to take. Nothing from the simulator reac
 from __future__ import annotations
 
 import argparse
-import importlib
 import json
 import time
 from pathlib import Path
 
 from examiner.examining import table_examiner
+from examiner.examining.solution_catalogue import SOLUTION_CATALOGUE, SolutionChoice
 from examiner.examining.table_examiner import ARM_SECONDS_FOR_TABLE_LIST
 from examiner.motion.moveit_connection import MoveItConnection
 
 RESULTS_FOLDER = Path(__file__).resolve().parents[1] / "results"
 
-SOLUTIONS = {
-    "geometry": ("geometry_reference", "GeometryReference"),
-    "geometry-ranked": ("geometry_ranked", "GeometryRanked"),
-    "imitation": ("imitation", "ImitationSolution"),
-    "world-model": ("world_model", "WorldModelSolution"),
-    "reinforcement": ("reinforcement_learning", "ReinforcementLearningSolution"),
-    "vla": ("smolvla_fine_tuned", "SmolVLASolution"),
-    "imitation-checked": ("safety_check", "checked_imitation"),
-    "reinforcement-checked": ("safety_check", "checked_reinforcement_learning"),
-    "vla-checked": ("safety_check", "checked_smolvla"),
-}
-
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("solution", choices=sorted(SOLUTIONS))
+    parser.add_argument("solution", choices=sorted(SOLUTION_CATALOGUE))
     parser.add_argument("--first", type=int, default=10_000)
     parser.add_argument("--tables", type=int, default=20)
     parser.add_argument("--runs", type=int, default=1)
@@ -52,20 +40,16 @@ def main() -> None:
     )
     arguments = parser.parse_args()
 
-    module_name, factory_name = SOLUTIONS[arguments.solution]
-    make_solution = getattr(importlib.import_module(module_name), factory_name)
-
-    def build_solution():
-        solution = make_solution(arguments.weights) if arguments.weights else make_solution()
-        for setting in arguments.param:
-            attribute, value = setting.split("=")
-            setattr(solution, attribute, int(value) if value.lstrip("-").isdigit() else float(value))
-        return solution
+    settings_to_change = []
+    for setting in arguments.param:
+        attribute, value = setting.split("=")
+        settings_to_change.append((attribute, int(value) if value.lstrip("-").isdigit() else float(value)))
+    solution_choice = SolutionChoice(arguments.solution, arguments.weights, tuple(settings_to_change))
 
     started = time.perf_counter()
     with MoveItConnection() as moveit:
         summary, arm_activity, rows_per_run = table_examiner.score_solution_on_tables(
-            build_solution, moveit, arguments.first, arguments.tables, arguments.runs, arguments.budget
+            solution_choice, moveit, arguments.first, arguments.tables, arguments.runs, arguments.budget
         )
     print(arguments.solution, "|", table_examiner.one_line_summary(summary))
     print(arm_activity)

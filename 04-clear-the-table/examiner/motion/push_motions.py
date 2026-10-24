@@ -27,7 +27,9 @@ stroke when it picks where to arrive.
 
 from __future__ import annotations
 
+import contextlib
 import math
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -113,7 +115,22 @@ class PusherResult:
     hand_touched_a_glass: bool = False
     fingertips_at_first_touch: object = None  # the fingertips' place at the first touch, for calibration
     motion_stages: list = field(default_factory=list)
-    stopped_early: bool = False  # ``stop_when`` ended it before the last motion
+    stopped_early: bool = False  # a glass toppled, and ``stop_once_a_glass_topples`` ended the push there
+
+
+class PushWatcher:
+    """Told about every push the pusher is asked for, for the examiner's own tools, such as the records.
+
+    A tool subclasses it, overrides the methods it needs, and adds it to
+    ``MoveItPusher.push_watchers``. A solution never sees a watcher, and a watcher never
+    changes a push.
+    """
+
+    def push_starting(self, boxes: list[GlassBox], request: PushRequest) -> None:
+        """Called before MoveIt is asked for the push, while every glass is still where it was."""
+
+    def push_ended(self, boxes: list[GlassBox], request: PushRequest, result: PusherResult) -> None:
+        """Called once the push was made or refused."""
 
 
 def table_collision_box() -> dict:
@@ -146,6 +163,16 @@ class MoveItPusher:
     def __init__(self, simulator: ArmAndTableSimulator, moveit: MoveItConnection) -> None:
         self.simulator = simulator
         self.moveit = moveit
+        self.push_watchers: list[PushWatcher] = []
+
+    @contextlib.contextmanager
+    def watched_by(self, watcher: PushWatcher) -> Iterator[None]:
+        """Let ``watcher`` see the pushes made inside the ``with`` block only."""
+        self.push_watchers.append(watcher)
+        try:
+            yield
+        finally:
+            self.push_watchers.remove(watcher)
 
     def flange_goals_of_push(self, boxes: list[GlassBox], request: PushRequest) -> dict:
         """The four poses of a push, worked out from the target's box and the settings."""
@@ -181,9 +208,31 @@ class MoveItPusher:
         }
 
     def plan_and_make_push(
-        self, boxes: list[GlassBox], request: PushRequest, arm_seconds_left: float = math.inf, stop_when=None
+        self,
+        boxes: list[GlassBox],
+        request: PushRequest,
+        arm_seconds_left: float = math.inf,
+        stop_once_a_glass_topples: bool = False,
     ) -> PusherResult:
         """Plan the four motions, and only if all of them can be made, carry them out.
+
+        Every watcher in ``push_watchers`` is told before the push starts and after it ends.
+        """
+        for watcher in self.push_watchers:
+            watcher.push_starting(boxes, request)
+        result = self._plan_and_make_push(boxes, request, arm_seconds_left, stop_once_a_glass_topples)
+        for watcher in self.push_watchers:
+            watcher.push_ended(boxes, request, result)
+        return result
+
+    def _plan_and_make_push(
+        self,
+        boxes: list[GlassBox],
+        request: PushRequest,
+        arm_seconds_left: float,
+        stop_once_a_glass_topples: bool,
+    ) -> PusherResult:
+        """The push itself, without the watchers.
 
         Planning everything first is deliberate. A push that was half carried
         out -- the hand down beside a glass and unable to stroke it -- leaves
@@ -191,8 +240,8 @@ class MoveItPusher:
         all four before moving costs nothing in arm time, because planning is
         not arm time, and it means a refusal leaves the arm where it was.
 
-        ``stop_when``, when given, is asked after each motion, and a true answer
-        stops the push there: the arm holds where that motion ended.
+        With ``stop_once_a_glass_topples``, a glass that went over during a motion stops the
+        push there: the arm holds where that motion ended.
         """
         settings, simulator, moveit = request.settings, self.simulator, self.moveit
         goals = self.flange_goals_of_push(boxes, request)
@@ -280,7 +329,7 @@ class MoveItPusher:
             result.motion_stages.append(
                 (stage, round(trajectory.arm_seconds, 2), self.count_toppled_glasses(), moved_mm)
             )
-            if stop_when is not None and stage != "lift" and stop_when():
+            if stop_once_a_glass_topples and stage != "lift" and self.count_toppled_glasses() > 0:
                 result.stopped_early = True
                 break
         return result

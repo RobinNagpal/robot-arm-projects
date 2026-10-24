@@ -31,7 +31,6 @@ read from the simulator when the picture is made.
 from __future__ import annotations
 
 import argparse
-import importlib
 import json
 import math
 import random
@@ -42,13 +41,13 @@ from safety_check import SafetyCheckedSolution
 from work_cell.rack.layout import GLASS_ZONE
 
 from examiner.examining import one_table_cell
+from examiner.examining.solution_catalogue import SolutionChoice
 from examiner.examining.table_examiner import ARM_SECONDS_FOR_TABLE_LIST, ArmActivityCounts, SimulatedExaminer
 from examiner.examining.table_scoring import glass_is_pickable
 from examiner.motion.moveit_connection import MoveItConnection
+from examiner.motion.push_motions import PushWatcher
 from examiner.simulation.taken_from_problem_3 import STANDING_TILT_DEG, has_room, in_zone
 from examiner.tools import ceiling_search
-from examiner.tools.evaluate_solution import SOLUTIONS
-from shared.turn_by_turn_loop import TableFinished
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
@@ -155,55 +154,63 @@ def where_the_hand_comes_down(degrees: float) -> str:
     return next(name for name, limit in HAND_SIDES if abs(degrees) <= limit)
 
 
-class PushRecorder:
+class PushRecorder(PushWatcher):
     """Every push a solution asked for, and what became of it.
 
-    It listens where a push reaches MoveIt, ``MoveItPusher.plan_and_make_push``, and where the safety
-    check turns one down, so no solution is changed. The ceiling's tries also pass through
-    ``MoveItPusher.plan_and_make_push``
-    and are put back afterwards, so for the ceiling a push is kept only when ``made`` is called.
+    It is a ``PushWatcher``, so the pusher tells it about every push that reaches MoveIt. A push
+    the safety check turns down never reaches MoveIt, so when the solution is wrapped in the
+    check, the recorder also reads the check's own list of the pushes it turned down. It reads
+    that list each time a push starts and once more when the table is over, so the entries stay
+    in the order the solution asked for them. No solution is changed by being recorded.
+
+    The ceiling's tries also pass through the pusher, and are put back afterwards, so the
+    ceiling lets the recorder watch only the pushes it really makes.
     """
 
-    def __init__(self, cell, keep_every_push: bool = True) -> None:
-        self.simulator, self.entries, self.pending = cell.simulator, [], None
-        original_push = cell.pusher.plan_and_make_push
+    def __init__(self, cell, safety_check: SafetyCheckedSolution | None = None) -> None:
+        self.simulator, self.entries = cell.simulator, []
+        self.safety_check = safety_check
+        self.turned_down_pushes_kept = 0
+        self.entry_of_push_under_way: dict = {}
+        self.glass_rows_before_push: list[dict] = []
 
-        def recording_push(boxes, request, arm_seconds_left=math.inf, **keywords):
-            entry = self.describe(boxes, request)
-            before = glass_rows(self.simulator)
-            pusher_result = original_push(boxes, request, arm_seconds_left, **keywords)
-            if pusher_result.made:
-                after = glass_rows(self.simulator, before)
-                entry |= {
-                    "outcome": MADE,
-                    "moved_mm": {str(r["glass"]): r["moved_mm"] for r in after if r["moved_mm"] >= 3},
-                    "moved_to_mm": {
-                        str(r["glass"]): [r["x_mm"], r["y_mm"]] for r in after if r["moved_mm"] >= 3
-                    },
-                    "nearest_centre_mm_after": nearest_centre_distance_mm(after, entry["glass"]),
-                    "fell_over": [
-                        offered_answer["glass"]
-                        for offered_answer, before_row in zip(after, before, strict=True)
-                        if before_row["standing"] and not offered_answer["standing"]
-                    ],
-                    "separated_before": separated_counts(before)["separated"],
-                    "separated_after": separated_counts(after)["separated"],
-                }
-            else:
-                entry |= {"outcome": REFUSED, "why": pusher_result.refusal_reason}
-            if keep_every_push:
-                self.keep(entry)
-            else:
-                self.pending = entry
-            return pusher_result
+    def push_starting(self, boxes, request) -> None:
+        self.keep_pushes_turned_down_by_safety_check()
+        self.entry_of_push_under_way = self.describe(boxes, request)
+        self.glass_rows_before_push = glass_rows(self.simulator)
 
-        cell.pusher.plan_and_make_push = recording_push
+    def push_ended(self, boxes, request, pusher_result) -> None:
+        entry, before = self.entry_of_push_under_way, self.glass_rows_before_push
+        if pusher_result.made:
+            after = glass_rows(self.simulator, before)
+            entry |= {
+                "outcome": MADE,
+                "moved_mm": {str(r["glass"]): r["moved_mm"] for r in after if r["moved_mm"] >= 3},
+                "moved_to_mm": {str(r["glass"]): [r["x_mm"], r["y_mm"]] for r in after if r["moved_mm"] >= 3},
+                "nearest_centre_mm_after": nearest_centre_distance_mm(after, entry["glass"]),
+                "fell_over": [
+                    row_after["glass"]
+                    for row_after, row_before in zip(after, before, strict=True)
+                    if row_before["standing"] and not row_after["standing"]
+                ],
+                "separated_before": separated_counts(before)["separated"],
+                "separated_after": separated_counts(after)["separated"],
+            }
+        else:
+            entry |= {"outcome": REFUSED, "why": pusher_result.refusal_reason}
+        self.keep(entry)
+
+    def keep_pushes_turned_down_by_safety_check(self) -> None:
+        """Keep the pushes the safety check turned down since this was last called."""
+        if self.safety_check is None:
+            return
+        turned_down = self.safety_check.pushes_turned_down_this_table
+        for boxes, request in turned_down[self.turned_down_pushes_kept :]:
+            self.keep(self.describe(boxes, request) | {"outcome": REJECTED})
+        self.turned_down_pushes_kept = len(turned_down)
 
     def keep(self, entry: dict) -> None:
         self.entries.append({"push": len(self.entries) + 1, **entry})
-
-    def made(self) -> None:
-        self.keep(self.pending)
 
     def describe(self, boxes, request) -> dict:
         """The push as asked for, with the glass found by where the solution's box stood."""
@@ -260,59 +267,6 @@ class PushRecorder:
             "travel_mm": round(request.travel * 1000),
             "settings": {key: round(value, 3) for key, value in request.settings.__dict__.items()},
         }
-
-    def watch(self, checked_solution: SafetyCheckedSolution):
-        """Keep each push the safety check turns down, which never reaches MoveIt.
-
-        Returns what puts the check back as it was, for when the table is over.
-        """
-        original_wrapped_decide, decide_turn = (
-            checked_solution.wrapped_solution.decide_turn,
-            checked_solution.decide_turn,
-        )
-        offered_pushes: list = []
-
-        def recording_wrapped_decide(observation):
-            answer = original_wrapped_decide(observation)
-            offered_pushes.append((list(observation.boxes), answer))
-            return answer
-
-        def recording_decide(observation):
-            offered_pushes.clear()
-            answer = decide_turn(observation)
-            for boxes, offered_answer in offered_pushes:
-                if (
-                    offered_answer is not answer
-                    and not isinstance(offered_answer, TableFinished)
-                    and offered_answer.glass < len(boxes)
-                ):
-                    self.keep(self.describe(boxes, offered_answer) | {"outcome": REJECTED})
-            return answer
-
-        checked_solution.wrapped_solution.decide_turn, checked_solution.decide_turn = (
-            recording_wrapped_decide,
-            recording_decide,
-        )
-
-        def put_back() -> None:
-            checked_solution.wrapped_solution.decide_turn, checked_solution.decide_turn = (
-                original_wrapped_decide,
-                decide_turn,
-            )
-
-        return put_back
-
-
-class CeilingPushesMade(list):
-    """The ceiling's record of the pushes it made, which tells the log as each one is added."""
-
-    def __init__(self, recorder: PushRecorder) -> None:
-        super().__init__()
-        self.log = recorder
-
-    def append(self, push_record) -> None:
-        super().append(push_record)
-        self.log.made()
 
 
 # ------------------------------------------------------------------ the pictures
@@ -512,23 +466,21 @@ def recorded_tables() -> list[int]:
     return sorted(int(path.parent.name) for path in RUNS.glob("*/arrangement.json"))
 
 
-def build_solution(recorded_name: str):
+def build_solution_to_record(recorded_name: str):
     solution_key, weights = RECORDED[recorded_name]
-    module_name, factory_name = SOLUTIONS[solution_key]
-    make_solution = getattr(importlib.import_module(module_name), factory_name)
-    return make_solution(weights) if weights else make_solution()
+    return SolutionChoice(solution_key, weights).build_new_solution()
 
 
 def record_solution_on_every_table(recorded_name: str) -> None:
-    solution = None if recorded_name == "ceiling" else build_solution(recorded_name)
+    solution = None if recorded_name == "ceiling" else build_solution_to_record(recorded_name)
     with MoveItConnection() as moveit:
         for table_number in recorded_tables():
             table_folder = RUNS / str(table_number)
             rows_at_start = json.loads((table_folder / "arrangement.json").read_text())["glass_list"]
             if solution is None:
                 cell = one_table_cell.OneTableCell(table_number, moveit, with_wrist_camera=False)
-                recorder = PushRecorder(cell, keep_every_push=False)
-                pushes_made = CeilingPushesMade(recorder)
+                recorder = PushRecorder(cell)
+                pushes_made: list[dict] = []
                 result = ceiling_search.clear_table_by_trying_pushes(
                     table_number,
                     moveit,
@@ -537,25 +489,19 @@ def record_solution_on_every_table(recorded_name: str) -> None:
                     random.Random(table_number),
                     pushes_made,
                     cell=cell,
+                    watcher_of_pushes_made=recorder,
                 )
                 made_count, refused_count = len(pushes_made), 0
             else:
-                arm_activity, kept = ArmActivityCounts(), {}
-
-                def watch_attempt(attempt, kept=kept) -> None:
-                    kept["cell"] = SimulatedExaminer.cell_behind_attempt(attempt)
-                    kept["log"] = PushRecorder(kept["cell"])
-                    if isinstance(solution, SafetyCheckedSolution):
-                        kept["undo"] = kept["log"].watch(solution)
-
-                try:
-                    result = SimulatedExaminer(
-                        moveit, ARM_SECONDS_FOR_TABLE_LIST, arm_activity
-                    ).run_solution_on_table(solution, table_number, prepare=watch_attempt)
-                finally:
-                    if "undo" in kept:
-                        kept["undo"]()
-                cell, recorder = kept["cell"], kept["log"]
+                arm_activity = ArmActivityCounts()
+                examiner = SimulatedExaminer(moveit, ARM_SECONDS_FOR_TABLE_LIST, arm_activity)
+                attempt = examiner.start_attempt(table_number)
+                cell = examiner.cell_behind_attempt(attempt)
+                safety_check = solution if isinstance(solution, SafetyCheckedSolution) else None
+                recorder = PushRecorder(cell, safety_check)
+                cell.pusher.push_watchers.append(recorder)
+                result = examiner.run_solution_on_attempt(solution, attempt)
+                recorder.keep_pushes_turned_down_by_safety_check()
                 made_count, refused_count = arm_activity.pushes_made, arm_activity.pushes_refused
             rows_at_end = glass_rows(cell.simulator, rows_at_start)
             counts_at_start, counts_at_end = separated_counts(rows_at_start), separated_counts(rows_at_end)

@@ -27,12 +27,13 @@ from __future__ import annotations
 import contextlib
 import math
 import time
-from collections.abc import Callable, Sequence
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 
 from work_cell.table.layout import TABLE_TOP_Z
 
 from examiner.examining.one_table_cell import VIEW_WAYPOINTS, OneTableCell, viewing_joint_angles
+from examiner.examining.solution_catalogue import SolutionChoice
 from examiner.examining.solution_contract import (
     FINISHED,
     GLASS_OVER,
@@ -193,7 +194,7 @@ class _AttemptArm:
             list(glass_boxes),
             request,
             attempt.clock.arm_seconds_left,
-            stop_when=lambda: cell.count_toppled_glasses() > 0,
+            stop_once_a_glass_topples=True,
         )
         if not pusher_result.made:
             attempt._arm_activity.pushes_refused += 1
@@ -264,6 +265,11 @@ class SimulatedExaminer:
 
     ``arm_seconds_left`` is shared by every table this examiner starts, so a solution that is
     slow on one table has less for the next, as on a real list of tables.
+
+    A tool that wants to watch a table, such as a film or a record, does the three steps
+    itself: ``start_attempt``, then it attaches its watchers to ``cell_behind_attempt``, and
+    then ``run_solution_on_attempt``. ``run_solution_on_table`` does the first and the last
+    step for everyone else.
     """
 
     def __init__(
@@ -271,14 +277,16 @@ class SimulatedExaminer:
         moveit: MoveItConnection,
         arm_seconds_given: float = ARM_SECONDS_FOR_TABLE_LIST,
         arm_activity: ArmActivityCounts | None = None,
-        make_cell_for_table: Callable[[int, MoveItConnection], OneTableCell] = OneTableCell,
     ) -> None:
         self.moveit, self.arm_seconds_left = moveit, arm_seconds_given
         self.arm_activity = ArmActivityCounts() if arm_activity is None else arm_activity
-        self.make_cell_for_table = make_cell_for_table
+
+    def make_cell_for_table(self, table_number: int) -> OneTableCell:
+        """The simulated cell with this table's glasses on it. The tests replace it with a fake cell."""
+        return OneTableCell(table_number, self.moveit)
 
     def start_attempt(self, table_number: int) -> SimulatedTableAttempt:
-        cell = self.make_cell_for_table(table_number, self.moveit)
+        cell = self.make_cell_for_table(table_number)
         return SimulatedTableAttempt(table_number, cell, self.arm_seconds_left, self.arm_activity)
 
     @staticmethod
@@ -312,21 +320,13 @@ class SimulatedExaminer:
             finish_reason=attempt._finish_reason,
         )
 
-    def run_solution_on_table(
-        self,
-        solution: Solution,
-        table_number: int,
-        prepare: Callable[[SimulatedTableAttempt], None] | None = None,
-    ) -> TableResult:
-        """Start the table, let the solution clear it, and mark it.
+    def run_solution_on_table(self, solution: Solution, table_number: int) -> TableResult:
+        """Start the table, let the solution clear it, and mark it."""
+        return self.run_solution_on_attempt(solution, self.start_attempt(table_number))
 
-        ``prepare`` is for the examiner's own tools: it is handed the attempt before the
-        solution is, so that a film can watch the physics or a record can watch the pushes.
-        """
-        attempt = self.start_attempt(table_number)
+    def run_solution_on_attempt(self, solution: Solution, attempt: SimulatedTableAttempt) -> TableResult:
+        """Let the solution clear a table that has already been started, and mark it."""
         try:
-            if prepare is not None:
-                prepare(attempt)
             with contextlib.suppress(
                 TableAttemptOver
             ):  # the attempt ended, which is one of the ways a table ends
@@ -343,12 +343,12 @@ class SimulatedExaminer:
 
 
 def run_solution_down_table_list(
-    build_solution: Callable[[], Solution],
+    solution: Solution,
     table_numbers: Sequence[int],
     moveit: MoveItConnection,
     arm_seconds_given: float = ARM_SECONDS_FOR_TABLE_LIST,
     arm_activity: ArmActivityCounts | None = None,
-    log: Callable[[str], None] | None = None,
+    print_each_table: bool = False,
 ) -> list[TableResult]:
     """Run one solution on each table of the list in turn, until the list or the arm time runs out.
 
@@ -357,7 +357,6 @@ def run_solution_down_table_list(
     because the solution never really got it.
     """
     examiner = SimulatedExaminer(moveit, arm_seconds_given, arm_activity)
-    solution = build_solution()
     results = []
     for table_number in table_numbers:
         if examiner.arm_seconds_left < FEWEST_ARM_SECONDS_TO_ACT:
@@ -366,12 +365,13 @@ def run_solution_down_table_list(
         if result.ended_by == OUT_OF_TIME and result.arm_seconds == 0.0:
             continue  # the clock ended this table before the arm did anything on it
         results.append(result)
-        if log:
-            log(
+        if print_each_table:
+            print(
                 f"table {table_number}: "
                 f"{result.pickable_at_start}->{result.pickable_at_end}/{result.glass_count} "
                 f"pickable, {result.arm_seconds:.0f} arm s, {result.pushes_requested} pushes requested, "
-                f"{result.ended_by}, toppled {result.glasses_toppled}"
+                f"{result.ended_by}, toppled {result.glasses_toppled}",
+                flush=True,
             )
     return results
 
@@ -406,15 +406,18 @@ def as_scored_table(result: TableResult):
 
 
 def score_solution_on_tables(
-    build_solution: Callable[[], Solution],
+    solution_choice: SolutionChoice,
     moveit: MoveItConnection,
     first_table: int,
     table_count: int,
     runs: int = 1,
     arm_seconds_given: float = ARM_SECONDS_FOR_TABLE_LIST,
-    log: Callable[[str], None] | None = print,
+    print_progress: bool = True,
 ) -> tuple[dict, ArmActivityCounts, list[list[dict]]]:
-    """Run the solution down the list ``runs`` times and score every run.
+    """Run the chosen solution down the list ``runs`` times and score every run.
+
+    Every run is given a newly built solution, so that nothing one run learned about its
+    tables is carried into the next.
 
     It returns problem 4's scorecard summary with the spread across the runs, the counts of
     what the arm did, and every table's own row from every run.
@@ -429,16 +432,22 @@ def score_solution_on_tables(
         scorecard = scorecards.new_scorecard()
         started = time.perf_counter()
         results = run_solution_down_table_list(
-            build_solution, table_numbers, moveit, arm_seconds_given, arm_activity, log
+            solution_choice.build_new_solution(),
+            table_numbers,
+            moveit,
+            arm_seconds_given,
+            arm_activity,
+            print_progress,
         )
         for result in results:
             scorecard.add_table(as_scored_table(result))
         rows_per_run.append(scorecard.rows_per_table)
-        if log:
-            log(
+        if print_progress:
+            print(
                 f"run {run_index + 1}/{runs}: {len(results)} tables, "
                 f"{sum(r.arm_seconds for r in results):.0f} arm s, "
-                f"{time.perf_counter() - started:.0f} s of laptop time"
+                f"{time.perf_counter() - started:.0f} s of laptop time",
+                flush=True,
             )
     return scorecards.summary(), arm_activity, rows_per_run
 

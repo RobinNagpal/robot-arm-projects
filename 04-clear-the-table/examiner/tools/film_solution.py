@@ -15,7 +15,6 @@ The run is real, which means a table is filmed at the speed it was carried out a
 from __future__ import annotations
 
 import argparse
-import importlib
 from pathlib import Path
 
 import av
@@ -23,9 +22,10 @@ import cv2
 import mujoco
 import numpy as np
 
+from examiner.examining.solution_catalogue import SOLUTION_CATALOGUE, SolutionChoice
 from examiner.examining.table_examiner import ARM_SECONDS_FOR_TABLE_LIST, SimulatedExaminer
 from examiner.motion.moveit_connection import MoveItConnection
-from examiner.tools.evaluate_solution import SOLUTIONS
+from examiner.simulation.arm_and_table_simulator import PhysicsStepWatcher
 
 FILM_SIZE = (720, 1080)  # rows, columns
 FPS = 30
@@ -95,33 +95,36 @@ class FilmWriter:
         self.container.close()
 
 
+class FilmFrameEveryFewPhysicsSteps(PhysicsStepWatcher):
+    """Writes a side-camera frame after every few physics steps, so the film runs ``SPEED`` times fast."""
+
+    PHYSICS_STEPS_PER_FRAME = max(1, round(SPEED / (FPS * 0.002)))
+
+    def __init__(self, cell, film_writer: FilmWriter) -> None:
+        self.cell, self.film_writer = cell, film_writer
+        self.camera = SideCamera(cell.simulator)
+        self.physics_steps_seen = 0
+
+    def after_physics_step(self, simulator) -> None:
+        self.physics_steps_seen += 1
+        if self.physics_steps_seen % self.PHYSICS_STEPS_PER_FRAME == 0:
+            self.film_writer.write(
+                self.camera.render_frame(simulator),
+                f"   arm time {simulator.arm_seconds:5.0f} s   glasses the gripper could pick: "
+                f"{self.cell.pickable_glass_count()} of {self.cell.glass_count()}",
+            )
+
+
 def film_one_table(
     solution, table_number: int, moveit, film_writer: FilmWriter, arm_seconds_given: float
 ) -> None:
-    physics_steps_per_frame = max(1, round(SPEED / (FPS * 0.002)))
-    counter = {"steps": 0}
-    watched = {}
-
-    def watch_attempt(attempt) -> None:
-        cell = SimulatedExaminer.cell_behind_attempt(attempt)
-        camera = SideCamera(cell.simulator)
-        watched.update(cell=cell, camera=camera)
-
-        def film_frame(simulator) -> None:
-            counter["steps"] += 1
-            if counter["steps"] % physics_steps_per_frame == 0:
-                film_writer.write(
-                    camera.render_frame(simulator),
-                    f"   arm time {simulator.arm_seconds:5.0f} s   glasses the gripper could pick: "
-                    f"{cell.pickable_glass_count()} of {cell.glass_count()}",
-                )
-
-        cell.simulator.after_each_physics_step.append(film_frame)
-
     film_writer.status_line = f"table {table_number}"
-    result = SimulatedExaminer(moveit, arm_seconds_given).run_solution_on_table(
-        solution, table_number, prepare=watch_attempt
-    )
+    examiner = SimulatedExaminer(moveit, arm_seconds_given)
+    attempt = examiner.start_attempt(table_number)
+    cell = examiner.cell_behind_attempt(attempt)
+    film_frames = FilmFrameEveryFewPhysicsSteps(cell, film_writer)
+    cell.simulator.physics_step_watchers.append(film_frames)
+    result = examiner.run_solution_on_attempt(solution, attempt)
     # The last picture is held for two seconds, with what happened.
     ending = (
         f"   {result.pickable_at_start} -> {result.pickable_at_end} of {result.glass_count} pickable, "
@@ -131,14 +134,14 @@ def film_one_table(
     if result.glasses_toppled and "went over" not in result.ended_by:
         ending += f", {result.glasses_toppled} glass went over"
     print(f"table {table_number}:{ending}", flush=True)
-    last_picture = watched["camera"].render_frame(watched["cell"].simulator)
+    last_picture = film_frames.camera.render_frame(cell.simulator)
     for _ in range(2 * FPS):
         film_writer.write(last_picture.copy(), ending)
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("solution", choices=sorted(SOLUTIONS))
+    parser.add_argument("solution", choices=sorted(SOLUTION_CATALOGUE))
     parser.add_argument("--first", type=int, default=10311)
     parser.add_argument("--tables", type=int, default=1)
     parser.add_argument(
@@ -147,9 +150,7 @@ def main() -> None:
     parser.add_argument("--weights", type=Path, default=None)
     parser.add_argument("--name", default=None)
     arguments = parser.parse_args()
-    module_name, factory_name = SOLUTIONS[arguments.solution]
-    make_solution = getattr(importlib.import_module(module_name), factory_name)
-    solution = make_solution(arguments.weights) if arguments.weights else make_solution()
+    solution = SolutionChoice(arguments.solution, arguments.weights).build_new_solution()
     table_numbers = (
         [int(number) for number in arguments.seeds.split(",")]
         if arguments.seeds

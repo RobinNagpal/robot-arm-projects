@@ -120,7 +120,6 @@ def train_world_models(
     records: list[dict],
     epochs: int = 150,
     seed: int = 0,
-    log=lambda *loss_parts: print(*loss_parts, flush=True),
 ) -> list[WorldModelNetwork]:
     tensors = training_tensors(records)
     record_count = len(records)
@@ -149,13 +148,13 @@ def train_world_models(
             held_out_loss, loss_parts = world_model_loss(
                 network, *[tensor[held_out_rows] for tensor in tensors]
             )
-        if log:
-            log(
-                f"  model {model_index + 1}/{ENSEMBLE_SIZE}: held-out loss {float(held_out_loss):.3f} "
-                f"(feasible {loss_parts[0]:.3f}, "
-                f"topple {loss_parts[1]:.3f}, move {loss_parts[2]:.3f}, works {loss_parts[3]:.3f}), "
-                f"{time.perf_counter() - started:.0f} s"
-            )
+        print(
+            f"  model {model_index + 1}/{ENSEMBLE_SIZE}: held-out loss {float(held_out_loss):.3f} "
+            f"(feasible {loss_parts[0]:.3f}, "
+            f"topple {loss_parts[1]:.3f}, move {loss_parts[2]:.3f}, works {loss_parts[3]:.3f}), "
+            f"{time.perf_counter() - started:.0f} s",
+            flush=True,
+        )
         networks.append(network)
     return networks
 

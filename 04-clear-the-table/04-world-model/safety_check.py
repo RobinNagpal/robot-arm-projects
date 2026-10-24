@@ -47,10 +47,14 @@ class SafetyCheckedSolution(TurnByTurnSolution):
         self.looking_mode = wrapped_solution.looking_mode
         self.rng = np.random.default_rng(seed)
         self.pushes_vetoed = self.pushes_mended = 0
+        # (boxes, push) for every push the wrapped solution offered on this table and the check
+        # did not pass on as it was, in order; the per-table records read it
+        self.pushes_turned_down_this_table: list[tuple[list, object]] = []
 
     def start_new_table(self) -> None:
         self.wrapped_solution.start_new_table()
         self.rng = np.random.default_rng(0)
+        self.pushes_turned_down_this_table = []
 
     def topple_risk(self, boxes, glass: int, vectors: np.ndarray):
         """The world model's score for each push, and its chance of a glass going over if MoveIt plans it."""
@@ -79,6 +83,7 @@ class SafetyCheckedSolution(TurnByTurnSolution):
             )
             if topple_chance[0] <= self.HIGHEST_TOPPLE_CHANCE:
                 return answer
+            self.pushes_turned_down_this_table.append((boxes, answer))
             if self.MEND_RISKY_PUSHES:
                 mended = self.mended_settings(boxes, answer)
                 if mended is not None:
@@ -87,21 +92,3 @@ class SafetyCheckedSolution(TurnByTurnSolution):
             self.pushes_vetoed += 1
             self.wrapped_solution.refused_glasses.remember(boxes, answer.glass)
         return TableFinished("every push it offered would tip a glass")
-
-
-def checked_imitation(weights: Path | None = None) -> SafetyCheckedSolution:
-    from imitation import ImitationSolution
-
-    return SafetyCheckedSolution(ImitationSolution(weights))
-
-
-def checked_reinforcement_learning(weights: Path | None = None) -> SafetyCheckedSolution:
-    from reinforcement_learning import ReinforcementLearningSolution
-
-    return SafetyCheckedSolution(ReinforcementLearningSolution(weights))
-
-
-def checked_smolvla(weights: Path | None = None) -> SafetyCheckedSolution:
-    from smolvla_fine_tuned import SmolVLASolution
-
-    return SafetyCheckedSolution(SmolVLASolution(weights))
