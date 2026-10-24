@@ -11,8 +11,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent
-PROBLEM = HERE.parent
+THIS_FOLDER = Path(__file__).resolve().parent
+PROBLEM = THIS_FOLDER.parent
 for folder in (
     PROBLEM,
     PROBLEM / "01-geometry-reference",

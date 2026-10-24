@@ -9,7 +9,7 @@ the arm those examiners leave out, so that a path is not only a path for a hand
 but a motion for six joints, planned by MoveIt and followed by a servo.
 
 **One description of the arm, shared with MoveIt.** The kinematics are read
-from the very URDF that MoveIt plans on (``moveit_connection.generate_urdf`` writes
+from the very URDF that MoveIt plans on (``moveit_connection.write_arm_urdf_if_missing`` writes
 it), not typed in again here. If the link lengths in this file were copies,
 the arm MoveIt thinks it is steering and the arm the physics moves would
 disagree by exactly as much as the copies had drifted, and the disagreement
@@ -23,7 +23,7 @@ the collision meshes Universal Robots publish.
 Axes, because they are the one thing here that is easy to get backwards. The
 Robotiq opens along the tool's x axis and points along its z axis. Rolled for
 a push, the fingers stack one above the other, so the tool's x axis is the
-world's vertical and the tool's z axis is the way the hand pushes. ``tool_pose``
+world's vertical and the tool's z axis is the way the hand pushes. ``flange_pose_for_fingertips``
 builds exactly that and nothing else.
 """
 
@@ -45,7 +45,7 @@ ARM_JOINTS = (
 )
 
 # The chain from the world to the flange, in the order the URDF nests it.
-_CHAIN = (
+_LINK_CHAIN = (
     "base_link_inertia",
     "shoulder_link",
     "upper_arm_link",
@@ -66,7 +66,7 @@ except Exception:  # pragma: no cover - only when the cell package is absent
     FINGERTIP_OFFSET = 0.1979
 
 
-def _rotation(rpy: tuple[float, float, float]) -> np.ndarray:
+def _rotation_from_roll_pitch_yaw(rpy: tuple[float, float, float]) -> np.ndarray:
     """URDF's roll-pitch-yaw: rotate about fixed x, then y, then z."""
     r, p, y = rpy
     rx = np.array([[1, 0, 0], [0, math.cos(r), -math.sin(r)], [0, math.sin(r), math.cos(r)]])
@@ -75,7 +75,7 @@ def _rotation(rpy: tuple[float, float, float]) -> np.ndarray:
     return rz @ ry @ rx
 
 
-def _quaternion(matrix: np.ndarray) -> np.ndarray:
+def _rotation_to_quaternion_wxyz(matrix: np.ndarray) -> np.ndarray:
     """A rotation matrix as MuJoCo's (w, x, y, z)."""
     w = math.sqrt(max(0.0, 1.0 + matrix[0, 0] + matrix[1, 1] + matrix[2, 2])) / 2.0
     if w > 1e-6:
@@ -93,12 +93,12 @@ def _quaternion(matrix: np.ndarray) -> np.ndarray:
     return np.array([w, x, y, z])
 
 
-def _floats(text: str | None, default: str = "0 0 0") -> tuple[float, float, float]:
+def _three_floats(text: str | None, default: str = "0 0 0") -> tuple[float, float, float]:
     a, b, c = (float(v) for v in (text or default).split())
     return a, b, c
 
 
-def tool_pose(x: float, y: float, z: float, heading: float) -> tuple[np.ndarray, np.ndarray]:
+def flange_pose_for_fingertips(x: float, y: float, z: float, heading: float) -> tuple[np.ndarray, np.ndarray]:
     """Where the flange (tool0) must be for the fingertips to be at (x, y, z) pointing along ``heading``.
 
     ``z`` is the world height of the fingertips' middle. The returned matrix
@@ -112,7 +112,7 @@ def tool_pose(x: float, y: float, z: float, heading: float) -> tuple[np.ndarray,
     return np.array([x, y, z]) - FINGERTIP_OFFSET * push, rotation
 
 
-class ArmDescription:
+class ArmDescriptionFromUrdf:
     """The UR5e's links and joints, read out of the URDF MoveIt plans on."""
 
     def __init__(self, urdf: Path, meshes: Path) -> None:
@@ -129,34 +129,37 @@ class ArmDescription:
         up = self.joints["base_joint"].find("origin")
         flip = self.joints["base_link-base_link_inertia"].find("origin")
         return (
-            np.array(_floats(up.get("xyz"))),
-            _rotation(_floats(up.get("rpy"))) @ _rotation(_floats(flip.get("rpy"))),
+            np.array(_three_floats(up.get("xyz"))),
+            _rotation_from_roll_pitch_yaw(_three_floats(up.get("rpy")))
+            @ _rotation_from_roll_pitch_yaw(_three_floats(flip.get("rpy"))),
         )
 
-    def mesh_assets(self) -> str:
+    def mesh_assets_xml(self) -> str:
         names = []
-        for link in _CHAIN:
+        for link in _LINK_CHAIN:
             collision = self.links[link].find("collision")
             path = collision.find("geometry/mesh").get("filename")
             stem = Path(path).stem
             names.append(f'<mesh name="{stem}" file="{self.meshes / Path(path).name}"/>')
         return "\n    ".join(names)
 
-    def chain_xml(self, hand: str, gravcomp: bool = True) -> str:
+    def link_chain_xml(self, hand: str, gravcomp: bool = True) -> str:
         """The arm as nested MuJoCo bodies, with ``hand`` hung on the flange."""
         position, rotation = self.base_pose()
         xml = ""
         closing = ""
-        for depth, link in enumerate(_CHAIN):
+        for depth, link in enumerate(_LINK_CHAIN):
             element = self.links[link]
             if depth == 0:
-                pos, quat = position, _quaternion(rotation)
+                pos, quat = position, _rotation_to_quaternion_wxyz(rotation)
                 joint_xml = ""
             else:
                 joint = self.joints[ARM_JOINTS[depth - 1]]
                 origin = joint.find("origin")
-                pos = np.array(_floats(origin.get("xyz")))
-                quat = _quaternion(_rotation(_floats(origin.get("rpy"))))
+                pos = np.array(_three_floats(origin.get("xyz")))
+                quat = _rotation_to_quaternion_wxyz(
+                    _rotation_from_roll_pitch_yaw(_three_floats(origin.get("rpy")))
+                )
                 limit = joint.find("limit")
                 joint_xml = (
                     f'<joint name="{joint.get("name")}" type="hinge" axis="0 0 1" '
@@ -165,13 +168,15 @@ class ArmDescription:
                 )
             inertial = element.find("inertial")
             mass = float(inertial.find("mass").get("value"))
-            centre = _floats(inertial.find("origin").get("xyz"))
+            centre = _three_floats(inertial.find("origin").get("xyz"))
             inertia = inertial.find("inertia")
             full = " ".join(inertia.get(k) for k in ("ixx", "iyy", "izz", "ixy", "ixz", "iyz"))
             collision = element.find("collision")
             c_origin = collision.find("origin")
-            c_pos = _floats(c_origin.get("xyz"))
-            c_quat = _quaternion(_rotation(_floats(c_origin.get("rpy"))))
+            c_pos = _three_floats(c_origin.get("xyz"))
+            c_quat = _rotation_to_quaternion_wxyz(
+                _rotation_from_roll_pitch_yaw(_three_floats(c_origin.get("rpy")))
+            )
             stem = Path(collision.find("geometry/mesh").get("filename")).stem
             # contype 2: an arm link strikes glasses and the table, which are
             # type 1, and does not strike its own other links, which are also
@@ -194,15 +199,17 @@ class ArmDescription:
         # product is the rotation that turns wrist 3's axes into the tool's.
         flange = self.joints["wrist_3-flange"].find("origin")
         tool = self.joints["flange-tool0"].find("origin")
-        turn = _rotation(_floats(flange.get("rpy"))) @ _rotation(_floats(tool.get("rpy")))
-        q = _quaternion(turn)
+        turn = _rotation_from_roll_pitch_yaw(
+            _three_floats(flange.get("rpy"))
+        ) @ _rotation_from_roll_pitch_yaw(_three_floats(tool.get("rpy")))
+        q = _rotation_to_quaternion_wxyz(turn)
         xml += (
             f'<body name="tool0" pos="0 0 0" quat="{q[0]:.8f} {q[1]:.8f} {q[2]:.8f} {q[3]:.8f}"'
             f"{' gravcomp="1"' if gravcomp else ''}>{hand}</body>"
         )
         return xml + closing
 
-    def actuators(self, kp: float, kv: float) -> str:
+    def joint_servos_xml(self, kp: float, kv: float) -> str:
         rows = []
         for name in ARM_JOINTS:
             limit = self.joints[name].find("limit")

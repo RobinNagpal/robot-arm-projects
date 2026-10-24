@@ -31,245 +31,291 @@ import numpy as np
 import torch
 from torch import nn
 
-from examiner.motion.push_motions import Box
-from shared.learning import table_and_push_encoding as F
-from shared.learning.learned_networks import WorldModel
-from shared.turn_by_turn_loop import AS_NEEDED, Done, Refused, TurnByTurn
+from examiner.motion.push_motions import GlassBox
+from shared.learning import table_and_push_encoding
+from shared.learning.learned_networks import WorldModelNetwork
+from shared.turn_by_turn_loop import LOOK_ONLY_AS_NEEDED, RefusedGlasses, TableFinished, TurnByTurnSolution
 
-WEIGHTS = Path(__file__).resolve().parent / "weights"
-MODELS = 5
-MOVE, TIME = 0.05, 10.0  # scales that keep every target near one
+WEIGHTS_FOLDER = Path(__file__).resolve().parent / "weights"
+ENSEMBLE_SIZE = 5
+MOVE_UNIT_METRES, TIME_UNIT_SECONDS = 0.05, 10.0  # scales that keep every target near one
 
 
-def samples(records: list[dict]):
-    rows, masks, glass, action, target, valid = [], [], [], [], [], []
-    for r in records:
-        r_, m_ = F.table_tensor(F.boxes_of(r["before"]))
-        o = F.outcome(r)
-        k = r["request"]["glass"]
-        rows.append(r_)
-        masks.append(m_)
-        glass.append(k)
-        action.append(F.action_vector(F.request_of(r)))
+def training_tensors(records: list[dict]):
+    table_rows, table_masks, pushed_glasses, pushes, targets, feasible = [], [], [], [], [], []
+    for record in records:
+        rows_of_table, mask_of_table = table_and_push_encoding.encode_table(
+            table_and_push_encoding.boxes_from_layout(record["before"])
+        )
+        outcome = table_and_push_encoding.push_outcome_from_record(record)
+        pushed_glass = record["request"]["glass"]
+        table_rows.append(rows_of_table)
+        table_masks.append(mask_of_table)
+        pushed_glasses.append(pushed_glass)
+        pushes.append(
+            table_and_push_encoding.encode_push(table_and_push_encoding.push_request_from_record(record))
+        )
         # feasible, topple, along, across, disturbance, seconds, gain, room eased, success
-        target.append(
+        targets.append(
             [
-                float(o["feasible"]),
-                float(o["topple"]),
-                o["moved"] / MOVE,
-                _signed_across(r) / MOVE,
-                o["disturbed"] / MOVE,
-                o["seconds"] / TIME,
-                float(np.clip(o["gain"], -2, 2)),
-                float(np.clip(o["eased"], -40, 40)) / 20.0,
-                float(o["feasible"] and not o["topple"] and o["gain"] >= 1),
+                float(outcome["feasible"]),
+                float(outcome["topple"]),
+                outcome["moved"] / MOVE_UNIT_METRES,
+                _sideways_drift(record) / MOVE_UNIT_METRES,
+                outcome["disturbed"] / MOVE_UNIT_METRES,
+                outcome["seconds"] / TIME_UNIT_SECONDS,
+                float(np.clip(outcome["gain"], -2, 2)),
+                float(np.clip(outcome["eased"], -40, 40)) / 20.0,
+                float(outcome["feasible"] and not outcome["topple"] and outcome["gain"] >= 1),
             ]
         )
-        valid.append(o["feasible"])
+        feasible.append(outcome["feasible"])
 
-    def t(a, dt=torch.float32):
-        return torch.tensor(np.stack(a) if isinstance(a[0], np.ndarray) else a, dtype=dt)
+    def as_tensor(values, dtype=torch.float32):
+        return torch.tensor(np.stack(values) if isinstance(values[0], np.ndarray) else values, dtype=dtype)
 
-    return t(rows), t(masks, torch.bool), t(glass, torch.long), t(action), t(target), t(valid, torch.bool)
+    return (
+        as_tensor(table_rows),
+        as_tensor(table_masks, torch.bool),
+        as_tensor(pushed_glasses, torch.long),
+        as_tensor(pushes),
+        as_tensor(targets),
+        as_tensor(feasible, torch.bool),
+    )
 
 
-def _signed_across(r: dict) -> float:
+def _sideways_drift(record: dict) -> float:
     """Sideways drift of the pushed glass: positive to the left of the push."""
-    if not r["feasible"]:
+    if not record["feasible"]:
         return 0.0
-    k, q = r["request"]["glass"], r["request"]
-    u = (math.cos(q["heading"]), math.sin(q["heading"]))
-    d = (r["after"][k]["x"] - r["before"][k]["x"], r["after"][k]["y"] - r["before"][k]["y"])
-    return -d[0] * u[1] + d[1] * u[0]
+    glass, request = record["request"]["glass"], record["request"]
+    along_push = (math.cos(request["heading"]), math.sin(request["heading"]))
+    moved = (
+        record["after"][glass]["x"] - record["before"][glass]["x"],
+        record["after"][glass]["y"] - record["before"][glass]["y"],
+    )
+    return -moved[0] * along_push[1] + moved[1] * along_push[0]
 
 
-def loss_of(net: WorldModel, rows, mask, glass, action, target, valid):
-    out = net(rows, mask, glass, action)
-    feasible = nn.functional.binary_cross_entropy_with_logits(out[:, 0], target[:, 0])
+def world_model_loss(
+    network: WorldModelNetwork, table_rows, table_masks, pushed_glasses, pushes, targets, feasible
+):
+    outputs = network(table_rows, table_masks, pushed_glasses, pushes)
+    feasible_loss = nn.functional.binary_cross_entropy_with_logits(outputs[:, 0], targets[:, 0])
     # Whether a push works is learned from every push, because most are failures
     # and a model shown only the successes could not tell a good push from a bad one.
-    success = nn.functional.binary_cross_entropy_with_logits(out[:, 8], target[:, 8])
-    if valid.any():
-        topple = nn.functional.binary_cross_entropy_with_logits(out[valid, 1], target[valid, 1])
-        regress = nn.functional.smooth_l1_loss(out[valid][:, 2:8], target[valid][:, 2:8])
+    success_loss = nn.functional.binary_cross_entropy_with_logits(outputs[:, 8], targets[:, 8])
+    if feasible.any():
+        topple_loss = nn.functional.binary_cross_entropy_with_logits(
+            outputs[feasible, 1], targets[feasible, 1]
+        )
+        regression_loss = nn.functional.smooth_l1_loss(outputs[feasible][:, 2:8], targets[feasible][:, 2:8])
     else:
-        topple = regress = out.sum() * 0
-    total = feasible + topple + regress + success
-    return total, (float(feasible), float(topple), float(regress), float(success))
+        topple_loss = regression_loss = outputs.sum() * 0
+    total_loss = feasible_loss + topple_loss + regression_loss + success_loss
+    return total_loss, (float(feasible_loss), float(topple_loss), float(regression_loss), float(success_loss))
 
 
-def train(
-    records: list[dict], epochs: int = 150, seed: int = 0, log=lambda *a: print(*a, flush=True)
-) -> list[WorldModel]:
-    data = samples(records)
-    n = len(records)
-    split = int(0.9 * n)
-    order = np.random.default_rng(seed).permutation(n)
-    train_idx, held_idx = order[:split], order[split:]
-    nets = []
-    for m in range(MODELS):
-        torch.manual_seed(seed * 100 + m)
-        net = WorldModel()
-        optimiser = torch.optim.AdamW(net.parameters(), 1e-3, weight_decay=1e-4)
-        rng = np.random.default_rng(seed * 100 + m)
+def train_world_models(
+    records: list[dict],
+    epochs: int = 150,
+    seed: int = 0,
+    log=lambda *loss_parts: print(*loss_parts, flush=True),
+) -> list[WorldModelNetwork]:
+    tensors = training_tensors(records)
+    record_count = len(records)
+    training_count = int(0.9 * record_count)
+    order = np.random.default_rng(seed).permutation(record_count)
+    training_rows, held_out_rows = order[:training_count], order[training_count:]
+    networks = []
+    for model_index in range(ENSEMBLE_SIZE):
+        torch.manual_seed(seed * 100 + model_index)
+        network = WorldModelNetwork()
+        optimiser = torch.optim.AdamW(network.parameters(), 1e-3, weight_decay=1e-4)
+        rng = np.random.default_rng(seed * 100 + model_index)
         started = time.perf_counter()
         for _ in range(epochs):
             # Each model sees a different bootstrap of the data, so they differ where data is thin.
-            sample = rng.choice(train_idx, len(train_idx))
-            for k in range(0, len(sample), 128):
-                idx = sample[k : k + 128]
-                batch = [d[idx] for d in data]
-                loss, _ = loss_of(net, *batch)
+            bootstrap = rng.choice(training_rows, len(training_rows))
+            for batch_start in range(0, len(bootstrap), 128):
+                batch_rows = bootstrap[batch_start : batch_start + 128]
+                batch_tensors = [tensor[batch_rows] for tensor in tensors]
+                loss, _ = world_model_loss(network, *batch_tensors)
                 optimiser.zero_grad()
                 loss.backward()
                 optimiser.step()
-        net.eval()
+        network.eval()
         with torch.no_grad():
-            held, parts = loss_of(net, *[d[held_idx] for d in data])
+            held_out_loss, loss_parts = world_model_loss(
+                network, *[tensor[held_out_rows] for tensor in tensors]
+            )
         if log:
             log(
-                f"  model {m + 1}/{MODELS}: held-out loss {float(held):.3f} (feasible {parts[0]:.3f}, "
-                f"topple {parts[1]:.3f}, move {parts[2]:.3f}, works {parts[3]:.3f}), "
+                f"  model {model_index + 1}/{ENSEMBLE_SIZE}: held-out loss {float(held_out_loss):.3f} "
+                f"(feasible {loss_parts[0]:.3f}, "
+                f"topple {loss_parts[1]:.3f}, move {loss_parts[2]:.3f}, works {loss_parts[3]:.3f}), "
                 f"{time.perf_counter() - started:.0f} s"
             )
-        nets.append(net)
-    return nets
+        networks.append(network)
+    return networks
 
 
-class PlanningSolution(TurnByTurn):
+class WorldModelSolution(TurnByTurnSolution):
     name = "world model (imagines pushes, makes the best)"
-    looking = AS_NEEDED  # it reads the boxes, so one picture that shows every glass is enough
+    looking_mode = LOOK_ONLY_AS_NEEDED  # it reads the boxes, so one picture that shows every glass is enough
 
     # What a topple costs, how far the five models' disagreement is distrusted, and what a
     # second of arm time costs, all in units of "probability that the push works". Below
-    # THRESHOLD the table is left as it is. A push MoveIt refuses costs the arm nothing, so
+    # LEAST_WORTHWHILE_SCORE the table is left as it is. A push MoveIt refuses costs the arm nothing, so
     # a push that is only possible one time in five is still worth asking for if it would
     # be worth making. Set by looking at the pushes the models liked on tables below the
     # held-out line, and nowhere else.
-    TOPPLE, DOUBT, SECOND = 1.0, 0.5, 0.002
-    THRESHOLD = 0.1
+    TOPPLE_COST, DISAGREEMENT_COST, ARM_SECOND_COST = 1.0, 0.5, 0.002
+    LEAST_WORTHWHILE_SCORE = 0.1
     # How many pushes the search imagines: first drawn the way round two drew its informed
     # pushes, then the best few shaken a little, twice.
-    POOL, ELITES, SHAKES, ROUNDS = 320, 24, 10, 2
+    PUSHES_IMAGINED, BEST_PUSHES_KEPT, NUDGES_PER_KEPT_PUSH, REFINEMENT_ROUNDS = 320, 24, 10, 2
 
     def __init__(self, weights: Path | None = None, seed: int = 0) -> None:
-        state = torch.load(weights or WEIGHTS / "world-models-v3.pt", weights_only=True)
-        self.nets = []
-        for s in state:
-            net = WorldModel()
-            net.load_state_dict(s)
-            self.nets.append(net.eval())
+        saved_networks = torch.load(weights or WEIGHTS_FOLDER / "world-models-v3.pt", weights_only=True)
+        self.world_model_networks = []
+        for saved in saved_networks:
+            network = WorldModelNetwork()
+            network.load_state_dict(saved)
+            self.world_model_networks.append(network.eval())
         self.seed = seed
         self.rng = random.Random(seed)
 
-    def begin(self) -> None:
+    def start_new_table(self) -> None:
         # The search draws its pushes at random. It is given the same draw at the start of
         # every table, so that a table gets the same answers every time it is run.
         self.rng = random.Random(self.seed)
-        self.refused = Refused()
-        self.last = None
+        self.refused_glasses = RefusedGlasses()
+        self.last_requested_glass = None
 
     @torch.no_grad()
-    def imagine(self, boxes: list[Box], glass: np.ndarray, action: np.ndarray):
-        rows, mask = F.table_tensor(boxes)
-        n = len(glass)
-        r = torch.tensor(rows)[None].expand(n, -1, -1)
-        m = torch.tensor(mask)[None].expand(n, -1)
-        outs = torch.stack(
-            [net(r, m, torch.tensor(glass), torch.tensor(action, dtype=torch.float32)) for net in self.nets]
+    def predict_outcomes(self, boxes: list[GlassBox], pushed_glasses: np.ndarray, pushes: np.ndarray):
+        rows, mask = table_and_push_encoding.encode_table(boxes)
+        push_count = len(pushed_glasses)
+        rows_repeated = torch.tensor(rows)[None].expand(push_count, -1, -1)
+        mask_repeated = torch.tensor(mask)[None].expand(push_count, -1)
+        outputs = torch.stack(
+            [
+                network(
+                    rows_repeated,
+                    mask_repeated,
+                    torch.tensor(pushed_glasses),
+                    torch.tensor(pushes, dtype=torch.float32),
+                )
+                for network in self.world_model_networks
+            ]
         )
-        return outs
+        return outputs
 
-    def score(self, boxes: list[Box], glass: np.ndarray, action: np.ndarray):
+    def score_pushes(self, boxes: list[GlassBox], pushed_glasses: np.ndarray, pushes: np.ndarray):
         """How good each imagined push is, and the probabilities it was built from.
 
         A push is worth the chance that it works -- MoveIt plans it, no glass goes over and
         a glass is given room -- less the chance that it plans and tips a glass, less a
         charge for how far the five models disagree about it, less a charge for arm time.
         """
-        outs = self.imagine(boxes, glass, action)
-        works = torch.sigmoid(outs[:, :, 8])
-        feasible = torch.sigmoid(outs[:, :, 0]).mean(0).numpy()
-        topple = torch.sigmoid(outs[:, :, 1]).mean(0).numpy()
-        seconds = outs.mean(0)[:, 5].numpy() * TIME
-        total = (
-            works.mean(0).numpy()
-            - self.TOPPLE * feasible * topple
-            - self.DOUBT * works.std(0).numpy()
-            - self.SECOND * feasible * seconds
+        outputs = self.predict_outcomes(boxes, pushed_glasses, pushes)
+        works_chance = torch.sigmoid(outputs[:, :, 8])
+        feasible_chance = torch.sigmoid(outputs[:, :, 0]).mean(0).numpy()
+        topple_chance = torch.sigmoid(outputs[:, :, 1]).mean(0).numpy()
+        arm_seconds = outputs.mean(0)[:, 5].numpy() * TIME_UNIT_SECONDS
+        scores = (
+            works_chance.mean(0).numpy()
+            - self.TOPPLE_COST * feasible_chance * topple_chance
+            - self.DISAGREEMENT_COST * works_chance.std(0).numpy()
+            - self.ARM_SECOND_COST * feasible_chance * arm_seconds
         )
-        return total, feasible, topple
+        return scores, feasible_chance, topple_chance
 
-    def candidates(self, boxes: list[Box], usable: list[int]) -> list:
+    def candidate_pushes(self, boxes: list[GlassBox], glasses_allowed: list[int]) -> list:
         """Pushes worth imagining: each would, if it went as asked, leave its glass with room.
 
-        These are drawn by ``collect_training_pushes.informed_request``, which uses problem 3's own two
-        tests -- the hand fits between the glasses, and the glass ends with room. Nothing
+        These are drawn by ``collect_training_pushes.push_that_would_free_a_glass``, which uses
+        problem 3's own two tests -- the hand fits between the glasses, and the glass ends with room. Nothing
         here says whether the arm can make the push, or whether the glass would tip: the
         models are asked that. If the geometry finds nothing, nothing is imagined.
         """
-        from shared.learning import collect_training_pushes as CP
+        from shared.learning import collect_training_pushes
 
-        pool = []
-        for _ in range(self.POOL * 3):
-            request = CP.informed_request(self.rng, boxes, tries=40)
-            if request is not None and request.glass in usable:
-                pool.append(request)
-            if len(pool) >= self.POOL:
+        imagined = []
+        for _ in range(self.PUSHES_IMAGINED * 3):
+            request = collect_training_pushes.push_that_would_free_a_glass(self.rng, boxes, tries=40)
+            if request is not None and request.glass in glasses_allowed:
+                imagined.append(request)
+            if len(imagined) >= self.PUSHES_IMAGINED:
                 break
-        return pool
+        return imagined
 
-    def shaken(self, request, boxes: list[Box]):
+    def nudged_push(self, request, boxes: list[GlassBox]):
         """The same push, a little different: the direction, the distance and every setting nudged."""
-        vector = F.action_vector(request).copy()
-        angle = math.atan2(vector[1], vector[0]) + self.rng.gauss(0.0, 0.12)
-        vector[0], vector[1] = math.cos(angle), math.sin(angle)
-        vector[2:] = np.clip(vector[2:] + np.array([self.rng.gauss(0.0, 0.1) for _ in vector[2:]]), 0.0, 1.0)
-        return F.request_from(request.glass, vector)
+        numbers = table_and_push_encoding.encode_push(request).copy()
+        angle = math.atan2(numbers[1], numbers[0]) + self.rng.gauss(0.0, 0.12)
+        numbers[0], numbers[1] = math.cos(angle), math.sin(angle)
+        numbers[2:] = np.clip(
+            numbers[2:] + np.array([self.rng.gauss(0.0, 0.1) for _ in numbers[2:]]), 0.0, 1.0
+        )
+        return table_and_push_encoding.decode_push(request.glass, numbers)
 
-    def search(self, boxes: list[Box], usable: list[int]):
+    def search_for_best_push(self, boxes: list[GlassBox], glasses_allowed: list[int]):
         """Imagine a pool of pushes, keep the best few, shake them, and repeat.
 
         Returns (score, glass, push numbers) of the best push imagined, or a score of minus
         infinity when the geometry offers nothing to imagine.
         """
-        pool = self.candidates(boxes, usable)
-        best = (-math.inf, 0, np.zeros(F.ACTION_WIDTH, dtype=np.float32))
-        for _ in range(self.ROUNDS + 1):
-            if not pool:
+        imagined = self.candidate_pushes(boxes, glasses_allowed)
+        best_so_far = (-math.inf, 0, np.zeros(table_and_push_encoding.NUMBERS_PER_PUSH, dtype=np.float32))
+        for _ in range(self.REFINEMENT_ROUNDS + 1):
+            if not imagined:
                 break
-            glass = np.array([r.glass for r in pool])
-            action = np.stack([F.action_vector(r) for r in pool])
-            scores, _, _ = self.score(boxes, glass, action)
-            order = np.argsort(-scores)
-            if scores[order[0]] > best[0]:
-                best = (float(scores[order[0]]), int(glass[order[0]]), action[order[0]].copy())
-            elites = [pool[i] for i in order[: self.ELITES]]
-            pool = []
-            for request in elites:
-                for _ in range(self.SHAKES):
-                    nudged = self.shaken(request, boxes)
-                    if F.hand_clear(boxes, nudged.glass, nudged.heading, nudged.travel):
-                        pool.append(nudged)
-        return best
+            pushed_glasses = np.array([rows_repeated.glass for rows_repeated in imagined])
+            pushes = np.stack(
+                [table_and_push_encoding.encode_push(rows_repeated) for rows_repeated in imagined]
+            )
+            scores, _, _ = self.score_pushes(boxes, pushed_glasses, pushes)
+            best_first = np.argsort(-scores)
+            if scores[best_first[0]] > best_so_far[0]:
+                best_so_far = (
+                    float(scores[best_first[0]]),
+                    int(pushed_glasses[best_first[0]]),
+                    pushes[best_first[0]].copy(),
+                )
+            kept = [imagined[i] for i in best_first[: self.BEST_PUSHES_KEPT]]
+            imagined = []
+            for request in kept:
+                for _ in range(self.NUDGES_PER_KEPT_PUSH):
+                    nudged = self.nudged_push(request, boxes)
+                    if table_and_push_encoding.hand_fits_along_push(
+                        boxes, nudged.glass, nudged.heading, nudged.travel
+                    ):
+                        imagined.append(nudged)
+        return best_so_far
 
-    def decide(self, look):
-        boxes = list(look.boxes)
+    def decide_turn(self, observation):
+        boxes = list(observation.boxes)
         if not boxes:
-            return Done("no glass in view")
-        if look.refused and self.last is not None:
-            self.refused.add(boxes, self.last)
-        if F.pickable_count(boxes) == len(boxes):
-            return Done("every glass has room")
-        refused = self.refused.among(boxes)
-        usable = [k for k in range(len(boxes)) if k not in refused and k < F.SLOTS]
-        if not usable:
-            return Done("nothing left that can be pushed")
-        best = self.search(boxes, usable)
-        if best[0] <= self.THRESHOLD:
-            return Done("no push the model expects to work")
-        self.last = best[1]
-        return F.request_from(best[1], best[2])
+            return TableFinished("no glass in view")
+        if observation.last_push_refusal_reason and self.last_requested_glass is not None:
+            self.refused_glasses.remember(boxes, self.last_requested_glass)
+        if table_and_push_encoding.count_pickable_boxes(boxes) == len(boxes):
+            return TableFinished("every glass has room")
+        refused_indices = self.refused_glasses.indices_in_look(boxes)
+        glasses_allowed = [
+            k
+            for k in range(len(boxes))
+            if k not in refused_indices and k < table_and_push_encoding.GLASS_SLOTS
+        ]
+        if not glasses_allowed:
+            return TableFinished("nothing left that can be pushed")
+        best_so_far = self.search_for_best_push(boxes, glasses_allowed)
+        if best_so_far[0] <= self.LEAST_WORTHWHILE_SCORE:
+            return TableFinished("no push the model expects to work")
+        self.last_requested_glass = best_so_far[1]
+        return table_and_push_encoding.decode_push(best_so_far[1], best_so_far[2])
 
 
 if __name__ == "__main__":
@@ -279,9 +325,9 @@ if __name__ == "__main__":
     parser.add_argument("records", nargs="+")
     parser.add_argument("--epochs", type=int, default=150)
     parser.add_argument("--tag", default="world-models-v3")
-    a = parser.parse_args()
-    records = F.load_records(*a.records)
+    arguments = parser.parse_args()
+    records = table_and_push_encoding.load_push_records(*arguments.records)
     print(f"{len(records)} pushes")
-    nets = train(records, a.epochs)
-    WEIGHTS.mkdir(exist_ok=True)
-    torch.save([n.state_dict() for n in nets], WEIGHTS / f"{a.tag}.pt")
+    networks = train_world_models(records, arguments.epochs)
+    WEIGHTS_FOLDER.mkdir(exist_ok=True)
+    torch.save([network.state_dict() for network in networks], WEIGHTS_FOLDER / f"{arguments.tag}.pt")

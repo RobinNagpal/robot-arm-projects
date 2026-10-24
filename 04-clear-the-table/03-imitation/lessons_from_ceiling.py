@@ -28,31 +28,38 @@ import sys
 import time
 from pathlib import Path
 
-from examiner.motion.moveit_connection import MoveItLink
+from examiner.motion.moveit_connection import MoveItConnection
 from examiner.tools import ceiling_search
 
-PER_TABLE = 120.0  # arm seconds one table may take; the search's answers are capped at ten as well
+ARM_SECONDS_PER_TABLE = (
+    120.0  # arm seconds one table may take; the search's answers are capped at ten as well
+)
 
 
-def work(first: int, tables: int, out: Path, worker: int, candidates: int) -> None:
-    rng = random.Random(first * 1013 + worker)
+def collect_lessons_as_worker(
+    first_table: int, table_count: int, output_file: Path, worker_number: int, tries_per_turn: int
+) -> None:
+    rng = random.Random(first_table * 1013 + worker_number)
     started = time.perf_counter()
-    count = 0
-    with MoveItLink(domain=worker) as link, open(out, "w") as handle:
-        for seed in range(first, first + tables):
+    lessons_written = 0
+    with MoveItConnection(ros_domain=worker_number) as moveit, open(output_file, "w") as output:
+        for seed in range(first_table, first_table + table_count):
             lessons: list = []
             try:
-                ceiling_search.clear_table(seed, link, PER_TABLE, candidates, rng, lessons=lessons)
+                ceiling_search.clear_table_by_trying_pushes(
+                    seed, moveit, ARM_SECONDS_PER_TABLE, tries_per_turn, rng, lessons=lessons
+                )
             except Exception as error:  # one bad table is skipped, not the whole run
-                print(f"[{worker}] table {seed} failed: {error}", flush=True)
+                print(f"[{worker_number}] table {seed} failed: {error}", flush=True)
                 continue
             for lesson in lessons:
-                handle.write(json.dumps(lesson) + "\n")
-            handle.flush()
-            count += len(lessons)
-            if (seed - first + 1) % 5 == 0:
+                output.write(json.dumps(lesson) + "\n")
+            output.flush()
+            lessons_written += len(lessons)
+            if (seed - first_table + 1) % 5 == 0:
                 print(
-                    f"[{worker}] {seed - first + 1}/{tables} tables, {count} lessons, "
+                    f"[{worker_number}] {seed - first_table + 1}/{table_count} tables, "
+                    f"{lessons_written} lessons, "
                     f"{time.perf_counter() - started:.0f} s",
                     flush=True,
                 )
@@ -66,30 +73,39 @@ def main() -> None:
     parser.add_argument("--workers", type=int, default=1)
     parser.add_argument("--candidates", type=int, default=30)
     parser.add_argument("--worker", type=int, default=-1, help="internal: this process is worker N")
-    a = parser.parse_args()
-    if a.first + a.tables > 10_000:
+    arguments = parser.parse_args()
+    if arguments.first + arguments.tables > 10_000:
         raise SystemExit("tables from 10,000 up are held out and are never taught on")
-    if a.worker >= 0:
-        work(a.first, a.tables, a.out, a.worker, a.candidates)
+    if arguments.worker >= 0:
+        collect_lessons_as_worker(
+            arguments.first, arguments.tables, arguments.out, arguments.worker, arguments.candidates
+        )
         return
-    share = math.ceil(a.tables / a.workers)
-    children = []
-    for w in range(a.workers):
-        first = a.first + w * share
-        count = min(share, a.first + a.tables - first)
-        if count <= 0:
+    tables_per_worker = math.ceil(arguments.tables / arguments.workers)
+    workers = []
+    for worker_number in range(arguments.workers):
+        first_table = arguments.first + worker_number * tables_per_worker
+        table_count = min(tables_per_worker, arguments.first + arguments.tables - first_table)
+        if table_count <= 0:
             continue
-        part = a.out.with_suffix(f".part{w}.jsonl")
-        command = [sys.executable, __file__, "--first", str(first), "--tables", str(count)]
-        command += ["--out", str(part), "--worker", str(w), "--candidates", str(a.candidates)]
-        children.append((part, subprocess.Popen(command)))
-    with open(a.out, "w") as handle:
-        for part, child in children:
-            child.wait()
-            if part.exists():
-                handle.write(part.read_text())
-                part.unlink()
-    print("wrote", a.out, len(a.out.read_text().splitlines()), "lessons")
+        part_file = arguments.out.with_suffix(f".part{worker_number}.jsonl")
+        command = [sys.executable, __file__, "--first", str(first_table), "--tables", str(table_count)]
+        command += [
+            "--out",
+            str(part_file),
+            "--worker",
+            str(worker_number),
+            "--candidates",
+            str(arguments.candidates),
+        ]
+        workers.append((part_file, subprocess.Popen(command)))
+    with open(arguments.out, "w") as output:
+        for part_file, process in workers:
+            process.wait()
+            if part_file.exists():
+                output.write(part_file.read_text())
+                part_file.unlink()
+    print("wrote", arguments.out, len(arguments.out.read_text().splitlines()), "lessons")
 
 
 if __name__ == "__main__":

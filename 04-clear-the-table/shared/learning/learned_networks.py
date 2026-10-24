@@ -2,12 +2,12 @@
 
 Two networks, both reading a table as a set of glasses.
 
-``PushPolicy`` answers "which glass, and how": a score for each glass, one more
+``PushPolicyNetwork`` answers "which glass, and how": a score for each glass, one more
 score for "the table is finished", and for each glass the push that would be made
 if it were chosen. Imitation trains it by copying pushes that worked and
 reinforcement learning trains it by trying pushes and being scored.
 
-``WorldModel`` answers "what would happen": given a table and a push, whether
+``WorldModelNetwork`` answers "what would happen": given a table and a push, whether
 MoveIt could plan it, whether a glass would go over, where the pushed glass would
 end up, how much the neighbours would be disturbed, and how long the arm would
 take. The solution that plans by search uses it as its stand-in for the cell.
@@ -22,13 +22,13 @@ from __future__ import annotations
 import torch
 from torch import nn
 
-from shared.learning.table_and_push_encoding import ACTION_WIDTH, GLASS_WIDTH, SLOTS
+from shared.learning.table_and_push_encoding import GLASS_SLOTS, NUMBERS_PER_GLASS, NUMBERS_PER_PUSH
 
 
-class TableEncoder(nn.Module):
+class TableEncoderNetwork(nn.Module):
     def __init__(self, width: int = 64, layers: int = 2, heads: int = 4) -> None:
         super().__init__()
-        self.embed = nn.Sequential(nn.Linear(GLASS_WIDTH, width), nn.ReLU(), nn.Linear(width, width))
+        self.embed = nn.Sequential(nn.Linear(NUMBERS_PER_GLASS, width), nn.ReLU(), nn.Linear(width, width))
         self.summary = nn.Parameter(torch.zeros(1, 1, width))  # one more token that reads the whole table
         block = nn.TransformerEncoderLayer(
             width, heads, 2 * width, dropout=0.0, batch_first=True, norm_first=True
@@ -37,7 +37,7 @@ class TableEncoder(nn.Module):
         self.width = width
 
     def forward(self, rows: torch.Tensor, mask: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        """Per-glass vectors (B, SLOTS, width) and one for the whole table (B, width)."""
+        """Per-glass vectors (B, GLASS_SLOTS, width) and one for the whole table (B, width)."""
         tokens = self.embed(rows)
         tokens = torch.cat([self.summary.expand(len(rows), -1, -1), tokens], dim=1)
         padding = torch.cat([torch.zeros(len(rows), 1, dtype=torch.bool), ~mask], dim=1)
@@ -45,17 +45,17 @@ class TableEncoder(nn.Module):
         return out[:, 1:], out[:, 0]
 
 
-class PushPolicy(nn.Module):
+class PushPolicyNetwork(nn.Module):
     """Which glass, and what push for it."""
 
     def __init__(self, width: int = 64) -> None:
         super().__init__()
-        self.encoder = TableEncoder(width)
+        self.encoder = TableEncoderNetwork(width)
         self.choice = nn.Linear(width, 1)  # a score per glass
         self.finished = nn.Linear(width, 1)  # a score for "the table is finished"
-        self.push = nn.Sequential(nn.Linear(width, width), nn.ReLU(), nn.Linear(width, ACTION_WIDTH))
+        self.push = nn.Sequential(nn.Linear(width, width), nn.ReLU(), nn.Linear(width, NUMBERS_PER_PUSH))
         self.spread = nn.Parameter(
-            torch.full((ACTION_WIDTH,), -1.2)
+            torch.full((NUMBERS_PER_PUSH,), -1.2)
         )  # log standard deviation, for the reinforcement learner
         self.value = nn.Sequential(nn.Linear(width, width), nn.ReLU(), nn.Linear(width, 1))
 
@@ -66,7 +66,7 @@ class PushPolicy(nn.Module):
         return logits, self.push(tokens), self.value(summary).squeeze(-1)
 
 
-class WorldModel(nn.Module):
+class WorldModelNetwork(nn.Module):
     """What a push would do.
 
     Nine heads: whether MoveIt could plan it, whether a glass would go over, how far the
@@ -76,18 +76,18 @@ class WorldModel(nn.Module):
     glass over, and at least one glass given room.
     """
 
-    OUTPUTS = 9
+    OUTPUT_COUNT = 9
 
     def __init__(self, width: int = 64) -> None:
         super().__init__()
-        self.encoder = TableEncoder(width)
-        self.action = nn.Sequential(nn.Linear(ACTION_WIDTH, width), nn.ReLU())
+        self.encoder = TableEncoderNetwork(width)
+        self.action = nn.Sequential(nn.Linear(NUMBERS_PER_PUSH, width), nn.ReLU())
         self.head = nn.Sequential(
             nn.Linear(3 * width, 2 * width),
             nn.ReLU(),
             nn.Linear(2 * width, 2 * width),
             nn.ReLU(),
-            nn.Linear(2 * width, self.OUTPUTS),
+            nn.Linear(2 * width, self.OUTPUT_COUNT),
         )
 
     def forward(self, rows, mask, glass, action):
@@ -96,4 +96,4 @@ class WorldModel(nn.Module):
         return self.head(torch.cat([chosen, summary, self.action(action)], dim=1))
 
 
-__all__ = ["PushPolicy", "TableEncoder", "WorldModel", "SLOTS"]
+__all__ = ["GLASS_SLOTS", "PushPolicyNetwork", "TableEncoderNetwork", "WorldModelNetwork"]

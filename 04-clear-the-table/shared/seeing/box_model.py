@@ -42,42 +42,48 @@ import torch
 from torch import nn
 from work_cell.table.layout import TABLE_TOP_Z
 
-from examiner.motion.push_motions import Box
+from examiner.motion.push_motions import GlassBox
 from examiner.simulation import wrist_camera
 
-HERE = Path(__file__).resolve().parent
-WEIGHTS = HERE / "weights"
-INPUT = 192  # the picture is shrunk to this many pixels on a side
-STRIDE = 4  # one network cell is this many input pixels wide
-GRID = INPUT // STRIDE
-FULL = wrist_camera.WRIST_VIEW_SIZE[0]  # 384
+THIS_FOLDER = Path(__file__).resolve().parent
+WEIGHTS_FOLDER = THIS_FOLDER / "weights"
+NETWORK_INPUT_PIXELS = 192  # the picture is shrunk to this many pixels on a side
+PIXELS_PER_GRID_CELL = 4  # one network cell is this many input pixels wide
+GRID_CELLS_PER_SIDE = NETWORK_INPUT_PIXELS // PIXELS_PER_GRID_CELL
+PICTURE_PIXELS = wrist_camera.WRIST_VIEW_SIZE[0]  # 384
 
 
 # ------------------------------------------------------------------ geometry
 
 
-def pixel_to_table(jaw, row: float, col: float) -> tuple[float, float]:
-    """Where on the table top the camera's ray through a pixel lands; the inverse of ``to_pixel``."""
-    eye, forward, right, up = wrist_camera._axes(jaw)
+def pixel_to_table(hand, row: float, column: float) -> tuple[float, float]:
+    """Where on the table top the camera's ray through a pixel lands.
+
+    It is the inverse of ``wrist_camera.table_point_to_pixel``.
+    """
+    eye, forward, right, up = wrist_camera._lens_axes(hand)
     edge = math.tan(math.radians(wrist_camera.WRIST_VIEW_FOVY_DEG) / 2)
-    across = 2.0 * (col + 0.5) / FULL - 1.0
-    upward = 1.0 - 2.0 * (row + 0.5) / FULL
-    direction = forward + across * edge * right + upward * edge * up
-    reach = (TABLE_TOP_Z - eye[2]) / direction[2]
-    point = eye + reach * direction
+    across_picture = 2.0 * (column + 0.5) / PICTURE_PIXELS - 1.0
+    up_picture = 1.0 - 2.0 * (row + 0.5) / PICTURE_PIXELS
+    direction = forward + across_picture * edge * right + up_picture * edge * up
+    distance_to_table = (TABLE_TOP_Z - eye[2]) / direction[2]
+    point = eye + distance_to_table * direction
     return float(point[0]), float(point[1])
 
 
-def shrink(picture: np.ndarray) -> torch.Tensor:
+def shrink_picture(picture: np.ndarray) -> torch.Tensor:
     """384x384x3 uint8 to a 3x192x192 float tensor, by averaging 2x2 pixels."""
-    x = torch.from_numpy(picture).float().div_(255.0).permute(2, 0, 1)
-    return nn.functional.avg_pool2d(x, 2)
+    pixels = torch.from_numpy(picture).float().div_(255.0).permute(2, 0, 1)
+    return nn.functional.avg_pool2d(pixels, 2)
 
 
-def view_channels(heading: float) -> torch.Tensor:
+def camera_heading_planes(heading: float) -> torch.Tensor:
     """Two constant planes saying which way the camera points, so one network serves both viewing places."""
     return torch.stack(
-        [torch.full((INPUT, INPUT), math.cos(heading)), torch.full((INPUT, INPUT), math.sin(heading))]
+        [
+            torch.full((NETWORK_INPUT_PIXELS, NETWORK_INPUT_PIXELS), math.cos(heading)),
+            torch.full((NETWORK_INPUT_PIXELS, NETWORK_INPUT_PIXELS), math.sin(heading)),
+        ]
     )
 
 
@@ -85,53 +91,62 @@ def view_channels(heading: float) -> torch.Tensor:
 
 
 @dataclass
-class Example:
+class BoxTrainingExample:
     image: np.ndarray  # 3 x 192 x 192, uint8
     heading: float
     glasses: np.ndarray  # n x 5: row, col (in 384-pixel units), radius, height, foot radius
 
 
-def label(simulator, jaw) -> np.ndarray:
+def true_boxes_in_picture(simulator, hand) -> np.ndarray:
     """The simulator's answers for the glasses at least half visible from ``jaw``."""
     readings = list(simulator.look())
-    visible = {s.id for s in wrist_camera.in_picture(jaw, readings)}
-    rows = []
+    visible_ids = {s.id for s in wrist_camera.glasses_the_camera_can_see(hand, readings)}
+    glass_rows = []
     for i, glass in enumerate(simulator.glasses):
-        if i not in visible:
+        if i not in visible_ids:
             continue
         x, y = simulator.position(i)
-        r, c = wrist_camera.to_pixel(jaw, float(x), float(y), 0.0)
-        if not (0 <= r < FULL and 0 <= c < FULL):
+        row, column = wrist_camera.table_point_to_pixel(hand, float(x), float(y), 0.0)
+        if not (0 <= row < PICTURE_PIXELS and 0 <= column < PICTURE_PIXELS):
             continue
         outline = glass.outline
-        rows.append([r, c, outline.max_diameter / 2, outline.total_height, float(outline.radius[0])])
-    return np.array(rows, dtype=np.float32).reshape(-1, 5)
+        glass_rows.append(
+            [row, column, outline.max_diameter / 2, outline.total_height, float(outline.radius[0])]
+        )
+    return np.array(glass_rows, dtype=np.float32).reshape(-1, 5)
 
 
-def example(picture: np.ndarray, jaw, simulator) -> Example:
-    return Example((shrink(picture) * 255).byte().numpy(), jaw.heading, label(simulator, jaw))
+def make_training_example(picture: np.ndarray, hand, simulator) -> BoxTrainingExample:
+    return BoxTrainingExample(
+        (shrink_picture(picture) * 255).byte().numpy(), hand.heading, true_boxes_in_picture(simulator, hand)
+    )
 
 
 # -------------------------------------------------------------------- network
 
 
-def _block(cin: int, cout: int, stride: int) -> nn.Sequential:
+def _convolution_block(channels_in: int, channels_out: int, stride: int) -> nn.Sequential:
     return nn.Sequential(
-        nn.Conv2d(cin, cout, 3, stride, 1, bias=False),
-        nn.BatchNorm2d(cout),
+        nn.Conv2d(channels_in, channels_out, 3, stride, 1, bias=False),
+        nn.BatchNorm2d(channels_out),
         nn.ReLU(inplace=True),
-        nn.Conv2d(cout, cout, 3, 1, 1, bias=False),
-        nn.BatchNorm2d(cout),
+        nn.Conv2d(channels_out, channels_out, 3, 1, 1, bias=False),
+        nn.BatchNorm2d(channels_out),
         nn.ReLU(inplace=True),
     )
 
 
-class BoxNet(nn.Module):
+class BoxDetectorNetwork(nn.Module):
     """Picture to a grid of glass detections. About half a million weights."""
 
     def __init__(self) -> None:
         super().__init__()
-        self.down = nn.Sequential(_block(5, 24, 2), _block(24, 48, 2), _block(48, 64, 1), _block(64, 96, 1))
+        self.down = nn.Sequential(
+            _convolution_block(5, 24, 2),
+            _convolution_block(24, 48, 2),
+            _convolution_block(48, 64, 1),
+            _convolution_block(64, 96, 1),
+        )
         self.context = nn.Sequential(
             nn.Conv2d(96, 96, 3, 1, 2, dilation=2),
             nn.ReLU(inplace=True),
@@ -142,96 +157,119 @@ class BoxNet(nn.Module):
         self.offset = nn.Conv2d(96, 2, 1)
         self.size = nn.Conv2d(96, 3, 1)
 
-    def forward(self, x: torch.Tensor):
-        h = self.down(x)
-        h = h + self.context(h)
-        return self.heat(h), self.offset(h).sigmoid(), self.size(h)
+    def forward(self, pictures: torch.Tensor):
+        features = self.down(pictures)
+        features = features + self.context(features)
+        return self.heat(features), self.offset(features).sigmoid(), self.size(features)
 
 
 # Sizes are regressed in these units so that every output is of order one.
-SIZE_SCALE = torch.tensor([0.05, 0.2, 0.04])
+SIZE_UNITS = torch.tensor([0.05, 0.2, 0.04])
 
 
-def _targets(batch: list[Example]):
-    n = len(batch)
-    heat = torch.zeros(n, 1, GRID, GRID)
-    mask = torch.zeros(n, GRID, GRID, dtype=torch.bool)
-    offset = torch.zeros(n, 2, GRID, GRID)
-    size = torch.zeros(n, 3, GRID, GRID)
-    ys, xs = torch.meshgrid(torch.arange(GRID).float(), torch.arange(GRID).float(), indexing="ij")
-    for b, ex in enumerate(batch):
-        for row, col, radius, height, foot in ex.glasses:
-            fy, fx = row / FULL * GRID, col / FULL * GRID
-            iy, ix = min(GRID - 1, int(fy)), min(GRID - 1, int(fx))
+def _training_targets(examples: list[BoxTrainingExample]):
+    count = len(examples)
+    heat = torch.zeros(count, 1, GRID_CELLS_PER_SIDE, GRID_CELLS_PER_SIDE)
+    mask = torch.zeros(count, GRID_CELLS_PER_SIDE, GRID_CELLS_PER_SIDE, dtype=torch.bool)
+    offset = torch.zeros(count, 2, GRID_CELLS_PER_SIDE, GRID_CELLS_PER_SIDE)
+    size = torch.zeros(count, 3, GRID_CELLS_PER_SIDE, GRID_CELLS_PER_SIDE)
+    ys, xs = torch.meshgrid(
+        torch.arange(GRID_CELLS_PER_SIDE).float(), torch.arange(GRID_CELLS_PER_SIDE).float(), indexing="ij"
+    )
+    for index, example in enumerate(examples):
+        for row, col, radius, height, foot in example.glasses:
+            grid_row, grid_column = (
+                row / PICTURE_PIXELS * GRID_CELLS_PER_SIDE,
+                col / PICTURE_PIXELS * GRID_CELLS_PER_SIDE,
+            )
+            cell_row, cell_column = (
+                min(GRID_CELLS_PER_SIDE - 1, int(grid_row)),
+                min(GRID_CELLS_PER_SIDE - 1, int(grid_column)),
+            )
             sigma = 1.2
-            bump = torch.exp(-((ys - iy) ** 2 + (xs - ix) ** 2) / (2 * sigma**2))
-            heat[b, 0] = torch.maximum(heat[b, 0], bump)
-            mask[b, iy, ix] = True
-            offset[b, :, iy, ix] = torch.tensor([fy - iy, fx - ix])
-            size[b, :, iy, ix] = torch.tensor([radius, height, foot]) / SIZE_SCALE
+            bump = torch.exp(-((ys - cell_row) ** 2 + (xs - cell_column) ** 2) / (2 * sigma**2))
+            heat[index, 0] = torch.maximum(heat[index, 0], bump)
+            mask[index, cell_row, cell_column] = True
+            offset[index, :, cell_row, cell_column] = torch.tensor(
+                [grid_row - cell_row, grid_column - cell_column]
+            )
+            size[index, :, cell_row, cell_column] = torch.tensor([radius, height, foot]) / SIZE_UNITS
     return heat, mask, offset, size
 
 
-def batch_input(batch: list[Example]) -> torch.Tensor:
+def network_input_batch(examples: list[BoxTrainingExample]) -> torch.Tensor:
     return torch.stack(
-        [torch.cat([torch.from_numpy(ex.image).float() / 255.0, view_channels(ex.heading)]) for ex in batch]
+        [
+            torch.cat(
+                [torch.from_numpy(example.image).float() / 255.0, camera_heading_planes(example.heading)]
+            )
+            for example in examples
+        ]
     )
 
 
-def loss_of(net: BoxNet, batch: list[Example]) -> tuple[torch.Tensor, dict]:
-    heat_hat, offset_hat, size_hat = net(batch_input(batch))
-    heat, mask, offset, size = _targets(batch)
-    p = heat_hat.sigmoid().clamp(1e-4, 1 - 1e-4)
+def detector_loss(
+    network: BoxDetectorNetwork, examples: list[BoxTrainingExample]
+) -> tuple[torch.Tensor, dict]:
+    predicted_heat, predicted_offset, predicted_size = network(network_input_batch(examples))
+    heat, mask, offset, size = _training_targets(examples)
+    peak_chance = predicted_heat.sigmoid().clamp(1e-4, 1 - 1e-4)
     # The focal loss CenterNet uses: peaks are rare, so plain cross entropy
     # would be won by predicting nothing anywhere.
-    positive = heat.eq(1.0).float()
-    pos_loss = -(((1 - p) ** 2) * torch.log(p) * positive).sum()
-    neg_loss = -(((1 - heat) ** 4) * (p**2) * torch.log(1 - p) * (1 - positive)).sum()
-    count = positive.sum().clamp(min=1)
-    focal = (pos_loss + neg_loss) / count
-    m = mask.unsqueeze(1)
-    off = (nn.functional.l1_loss(offset_hat, offset, reduction="none") * m).sum() / (m.sum() * 2).clamp(min=1)
-    siz = (nn.functional.l1_loss(size_hat, size, reduction="none") * m).sum() / (m.sum() * 3).clamp(min=1)
-    total = focal + off + 2.0 * siz
-    return total, {"focal": float(focal), "offset": float(off), "size": float(siz)}
+    is_peak = heat.eq(1.0).float()
+    peak_loss = -(((1 - peak_chance) ** 2) * torch.log(peak_chance) * is_peak).sum()
+    background_loss = -(
+        ((1 - heat) ** 4) * (peak_chance**2) * torch.log(1 - peak_chance) * (1 - is_peak)
+    ).sum()
+    peak_count = is_peak.sum().clamp(min=1)
+    focal_loss = (peak_loss + background_loss) / peak_count
+    cell_has_glass = mask.unsqueeze(1)
+    offset_loss = (
+        nn.functional.l1_loss(predicted_offset, offset, reduction="none") * cell_has_glass
+    ).sum() / (cell_has_glass.sum() * 2).clamp(min=1)
+    size_loss = (nn.functional.l1_loss(predicted_size, size, reduction="none") * cell_has_glass).sum() / (
+        cell_has_glass.sum() * 3
+    ).clamp(min=1)
+    total_loss = focal_loss + offset_loss + 2.0 * size_loss
+    return total_loss, {"focal": float(focal_loss), "offset": float(offset_loss), "size": float(size_loss)}
 
 
-def train(
-    examples: list[Example],
-    held_out: list[Example],
+def train_box_detector(
+    examples: list[BoxTrainingExample],
+    held_out: list[BoxTrainingExample],
     epochs: int = 30,
-    batch: int = 16,
+    batch_size: int = 16,
     seed: int = 0,
     log=print,
-) -> BoxNet:
+) -> BoxDetectorNetwork:
     torch.manual_seed(seed)
     rng = np.random.default_rng(seed)
-    net = BoxNet()
-    optimiser = torch.optim.AdamW(net.parameters(), 2e-3, weight_decay=1e-4)
-    steps = epochs * math.ceil(len(examples) / batch)
-    schedule = torch.optim.lr_scheduler.OneCycleLR(optimiser, 2e-3, total_steps=steps)
+    network = BoxDetectorNetwork()
+    optimiser = torch.optim.AdamW(network.parameters(), 2e-3, weight_decay=1e-4)
+    total_steps = epochs * math.ceil(len(examples) / batch_size)
+    learning_rate_schedule = torch.optim.lr_scheduler.OneCycleLR(optimiser, 2e-3, total_steps=total_steps)
     started = time.perf_counter()
     for epoch in range(epochs):
-        net.train()
+        network.train()
         order = rng.permutation(len(examples))
-        running = []
-        for k in range(0, len(order), batch):
-            chunk = [examples[i] for i in order[k : k + batch]]
-            loss, parts = loss_of(net, chunk)
+        epoch_losses = []
+        for batch_start in range(0, len(order), batch_size):
+            batch = [examples[start] for start in order[batch_start : batch_start + batch_size]]
+            loss, loss_parts = detector_loss(network, batch)
             optimiser.zero_grad()
             loss.backward()
             optimiser.step()
-            schedule.step()
-            running.append(float(loss))
+            learning_rate_schedule.step()
+            epoch_losses.append(float(loss))
         if log and (epoch % 5 == 4 or epoch == epochs - 1):
-            net.eval()
+            network.eval()
             with torch.no_grad():
-                held = (
+                held_out_loss = (
                     float(
                         np.mean(
                             [
-                                float(loss_of(net, held_out[i : i + 16])[0])
-                                for i in range(0, len(held_out), 16)
+                                float(detector_loss(network, held_out[start : start + 16])[0])
+                                for start in range(0, len(held_out), 16)
                             ]
                         )
                     )
@@ -239,11 +277,11 @@ def train(
                     else float("nan")
                 )
             log(
-                f"  epoch {epoch + 1}/{epochs}: train loss {np.mean(running):.3f}, "
-                f"held-out loss {held:.3f}, {time.perf_counter() - started:.0f} s"
+                f"  epoch {epoch + 1}/{epochs}: train loss {np.mean(epoch_losses):.3f}, "
+                f"held-out loss {held_out_loss:.3f}, {time.perf_counter() - started:.0f} s"
             )
-    net.eval()
-    return net
+    network.eval()
+    return network
 
 
 # ------------------------------------------------------------------ inference
@@ -252,51 +290,59 @@ def train(
 class BoxModel:
     """The trained network, as the cell uses it: a picture and where it was taken from, boxes out."""
 
-    THRESHOLD = 0.35
+    PEAK_THRESHOLD = 0.35
 
-    def __init__(self, net: BoxNet) -> None:
-        self.net = net.eval()
+    def __init__(self, network: BoxDetectorNetwork) -> None:
+        self.network = network.eval()
 
     @staticmethod
     def load(path: Path | None = None) -> BoxModel:
-        net = BoxNet()
-        net.load_state_dict(torch.load(path or WEIGHTS / "box-net.pt", weights_only=True))
-        return BoxModel(net)
+        network = BoxDetectorNetwork()
+        network.load_state_dict(torch.load(path or WEIGHTS_FOLDER / "box-net.pt", weights_only=True))
+        return BoxModel(network)
 
     def save(self, path: Path | None = None) -> None:
-        WEIGHTS.mkdir(exist_ok=True)
-        torch.save(self.net.state_dict(), path or WEIGHTS / "box-net.pt")
+        WEIGHTS_FOLDER.mkdir(exist_ok=True)
+        torch.save(self.network.state_dict(), path or WEIGHTS_FOLDER / "box-net.pt")
 
     @torch.no_grad()
-    def detect(self, picture: np.ndarray, jaw) -> list[Box]:
-        x = torch.cat([shrink(picture), view_channels(jaw.heading)]).unsqueeze(0)
-        heat, offset, size = self.net(x)
+    def boxes_in_picture(self, picture: np.ndarray, hand) -> list[GlassBox]:
+        network_input = torch.cat([shrink_picture(picture), camera_heading_planes(hand.heading)]).unsqueeze(0)
+        heat, offset, size = self.network(network_input)
         heat = heat.sigmoid()[0, 0]
         # A peak is a cell that is the largest in its 3x3 neighbourhood.
-        top = nn.functional.max_pool2d(heat[None, None], 3, 1, 1)[0, 0]
+        neighbourhood_peak = nn.functional.max_pool2d(heat[None, None], 3, 1, 1)[0, 0]
         boxes = []
-        for iy, ix in torch.nonzero((heat == top) & (heat > self.THRESHOLD)).tolist():
-            row = (iy + float(offset[0, 0, iy, ix])) * STRIDE * 2
-            col = (ix + float(offset[0, 1, iy, ix])) * STRIDE * 2
-            radius, height, foot = (size[0, :, iy, ix] * SIZE_SCALE).tolist()
-            x_t, y_t = pixel_to_table(jaw, row, col)
-            boxes.append(Box(x_t, y_t, max(radius, 0.015), max(height, 0.03), max(foot, 0.01)))
+        for cell_row, cell_column in torch.nonzero(
+            (heat == neighbourhood_peak) & (heat > self.PEAK_THRESHOLD)
+        ).tolist():
+            row = (cell_row + float(offset[0, 0, cell_row, cell_column])) * PIXELS_PER_GRID_CELL * 2
+            column = (cell_column + float(offset[0, 1, cell_row, cell_column])) * PIXELS_PER_GRID_CELL * 2
+            radius, height, foot = (size[0, :, cell_row, cell_column] * SIZE_UNITS).tolist()
+            table_x, table_y = pixel_to_table(hand, row, column)
+            boxes.append(GlassBox(table_x, table_y, max(radius, 0.015), max(height, 0.03), max(foot, 0.01)))
         return boxes
 
 
-def save_examples(examples: list[Example], path: Path) -> None:
+def save_training_examples(examples: list[BoxTrainingExample], path: Path) -> None:
     path.parent.mkdir(exist_ok=True)
     with open(path, "wb") as handle:
         pickle.dump(examples, handle)
 
 
-class _Unpickler(pickle.Unpickler):
-    """Reads examples saved when this file was a plain module called ``seeing``."""
+class _UnpicklerForOldModuleNames(pickle.Unpickler):
+    """Reads examples saved under older names.
+
+    The examples were first saved when this file was a plain module called ``seeing``, and
+    their class was then called ``Example``. Both are mapped to the names used now.
+    """
 
     def find_class(self, module: str, name: str):
-        return super().find_class(__name__ if module == "seeing" else module, name)
+        module = __name__ if module in ("seeing", __name__) else module
+        name = "BoxTrainingExample" if module == __name__ and name == "Example" else name
+        return super().find_class(module, name)
 
 
-def load_examples(path: Path) -> list[Example]:
+def load_training_examples(path: Path) -> list[BoxTrainingExample]:
     with open(path, "rb") as handle:
-        return _Unpickler(handle).load()
+        return _UnpicklerForOldModuleNames(handle).load()

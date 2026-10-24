@@ -51,6 +51,6 @@ imitation, the world model and SmolVLA all learn from the same ones.
 ## How it is used
 
 A solution folder imports what it needs from here by package name, for example
-`from shared.turn_by_turn_loop import TurnByTurn`. This code in turn uses the examiner's contract, because
+`from shared.turn_by_turn_loop import TurnByTurnSolution`. This code in turn uses the examiner's contract, because
 a solution reaches the arm only through that contract. The examiner never imports anything from
 here, apart from the tools that run the solutions.

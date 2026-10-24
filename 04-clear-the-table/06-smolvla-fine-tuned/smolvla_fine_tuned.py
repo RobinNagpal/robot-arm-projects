@@ -39,56 +39,67 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from shared.learning import table_and_push_encoding as F
-from shared.turn_by_turn_loop import EVERY_VIEW, Done, Refused, TurnByTurn
+from shared.learning import table_and_push_encoding
+from shared.turn_by_turn_loop import (
+    LOOK_FROM_BOTH_PLACES_EVERY_TURN,
+    RefusedGlasses,
+    TableFinished,
+    TurnByTurnSolution,
+)
 
-HERE = Path(__file__).resolve().parent
-WEIGHTS_DIR = HERE / "weights"
-MODEL = "lerobot/smolvla_base"
-CAMERAS = ("observation.images.camera1", "observation.images.camera2")
+THIS_FOLDER = Path(__file__).resolve().parent
+WEIGHTS_FOLDER = THIS_FOLDER / "weights"
+BASE_MODEL_NAME = "lerobot/smolvla_base"
+CAMERA_KEYS = ("observation.images.camera1", "observation.images.camera2")
 INSTRUCTION = "Push the crowded glasses apart so each has room, without tipping any."
-CHUNK = 50
+ACTION_CHUNK_ROWS = 50
 # stop, glass x, glass y, cos, sin, travel, six settings
-WIDTH = 12
-RANK, SCALING = 16, 32
-TABLES = ("q_proj", "k_proj", "v_proj", "o_proj")
+ANSWER_WIDTH = 12
+LORA_RANK, LORA_SCALING = 16, 32
+LORA_TARGET_MODULES = ("q_proj", "k_proj", "v_proj", "o_proj")
 
 
-def device() -> str:
+def best_torch_device() -> str:
     if torch.backends.mps.is_available():
         return "mps"
     return "cuda" if torch.cuda.is_available() else "cpu"
 
 
-def borrowed(where: str | None = None):
+def load_base_smolvla(torch_device: str | None = None):
     """The downloaded model with nothing changed, and its own pre- and post-processing."""
     from lerobot.configs.types import FeatureType, PolicyFeature
     from lerobot.policies.factory import make_pre_post_processors
     from lerobot.policies.smolvla.configuration_smolvla import SmolVLAConfig
     from lerobot.policies.smolvla.modeling_smolvla import SmolVLAPolicy
 
-    where = where or device()
-    config = SmolVLAConfig.from_pretrained(MODEL)
-    config.device = where
+    torch_device = torch_device or best_torch_device()
+    config = SmolVLAConfig.from_pretrained(BASE_MODEL_NAME)
+    config.device = torch_device
     # The model was made for an arm with six numbers an action, and it reads that
     # off its configuration twice: it cuts its answer down to six, and it
     # measures its training loss on the first six only. Both would silently drop
     # the last six of the twelve numbers this solution asks for -- the settings
     # given to MoveIt would never be learned. So the configuration is told twelve.
-    config.output_features["action"] = PolicyFeature(type=FeatureType.ACTION, shape=(WIDTH,))
-    policy = SmolVLAPolicy.from_pretrained(MODEL, config=config).to(where)
-    pre, post = make_pre_post_processors(
-        config, MODEL, preprocessor_overrides={"device_processor": {"device": where}}
+    config.output_features["action"] = PolicyFeature(type=FeatureType.ACTION, shape=(ANSWER_WIDTH,))
+    policy = SmolVLAPolicy.from_pretrained(BASE_MODEL_NAME, config=config).to(torch_device)
+    preprocess, postprocess = make_pre_post_processors(
+        config, BASE_MODEL_NAME, preprocessor_overrides={"device_processor": {"device": torch_device}}
     )
-    return policy, pre, post
+    return policy, preprocess, postprocess
 
 
-def with_correction(policy):
+def add_lora_correction(policy):
     from peft import LoraConfig, get_peft_model
 
     policy.model = get_peft_model(
         policy.model,
-        LoraConfig(r=RANK, lora_alpha=SCALING, lora_dropout=0.0, bias="none", target_modules=list(TABLES)),
+        LoraConfig(
+            r=LORA_RANK,
+            lora_alpha=LORA_SCALING,
+            lora_dropout=0.0,
+            bias="none",
+            target_modules=list(LORA_TARGET_MODULES),
+        ),
     )
     return policy
 
@@ -96,142 +107,166 @@ def with_correction(policy):
 # ---------------------------------------------------------------- the encoding
 
 
-def answer_vector(boxes, glass: int | None, request) -> np.ndarray:
+def encode_answer(boxes, glass: int | None, request) -> np.ndarray:
     """What the model is taught to write for a turn: twelve numbers, the same on every row."""
     if glass is None:
-        return np.zeros(WIDTH, dtype=np.float32)
-    b = boxes[glass]
+        return np.zeros(ANSWER_WIDTH, dtype=np.float32)
+    box = boxes[glass]
     return np.concatenate(
-        [[0.0, (b.x - F.CENTRE[0]) / 0.2, (b.y - F.CENTRE[1]) / 0.2], F.action_vector(request)]
+        [
+            [
+                0.0,
+                (box.x - table_and_push_encoding.GLASS_ZONE_CENTRE[0]) / 0.2,
+                (box.y - table_and_push_encoding.GLASS_ZONE_CENTRE[1]) / 0.2,
+            ],
+            table_and_push_encoding.encode_push(request),
+        ]
     ).astype(np.float32)
 
 
-def chunk_of(vector: np.ndarray) -> np.ndarray:
-    return np.tile(vector, (CHUNK, 1))
+def repeat_into_chunk(vector: np.ndarray) -> np.ndarray:
+    return np.tile(vector, (ACTION_CHUNK_ROWS, 1))
 
 
-def request_from(vector: np.ndarray, boxes) -> tuple[int | None, object]:
+def decode_answer(answer: np.ndarray, boxes) -> tuple[int | None, object]:
     """The model's twelve numbers back into a push, or None for "finished"."""
-    if vector[0] > 0.5 or not boxes:
+    if answer[0] > 0.5 or not boxes:
         return None, None
-    x, y = F.CENTRE[0] + 0.2 * vector[1], F.CENTRE[1] + 0.2 * vector[2]
-    glass = min(range(len(boxes)), key=lambda k: math.dist((boxes[k].x, boxes[k].y), (x, y)))
-    return glass, F.request_from(glass, vector[3:])
+    glass_x, glass_y = (
+        table_and_push_encoding.GLASS_ZONE_CENTRE[0] + 0.2 * answer[1],
+        table_and_push_encoding.GLASS_ZONE_CENTRE[1] + 0.2 * answer[2],
+    )
+    glass = min(range(len(boxes)), key=lambda k: math.dist((boxes[k].x, boxes[k].y), (glass_x, glass_y)))
+    return glass, table_and_push_encoding.decode_push(glass, answer[3:])
 
 
 # ------------------------------------------------------------------- the data
 
 
-def render_pictures(records: list[dict]) -> list[tuple[np.ndarray, np.ndarray]]:
+def render_both_wrist_pictures(records: list[dict]) -> list[tuple[np.ndarray, np.ndarray]]:
     """Both wrist pictures for the layout each record started from."""
     import mujoco
 
-    from examiner.motion.moveit_connection import MESHES, generate_urdf
+    from examiner.examining.one_table_cell import viewing_joint_angles
+    from examiner.motion.moveit_connection import ARM_COLLISION_MESHES, write_arm_urdf_if_missing
     from examiner.simulation import table_draw, wrist_camera
-    from examiner.simulation.arm_and_table_simulator import ArmSimulator
-    from shared.seeing import make_box_training_data as B
+    from examiner.simulation.arm_and_table_simulator import ArmAndTableSimulator
 
-    joints = B.view_joint_sets()
-    out = []
-    for r in records:
-        simulator = ArmSimulator(
-            r["seed"], table_draw.table(r["seed"]), urdf=generate_urdf(), meshes=MESHES, start=joints[0]
+    both_views = viewing_joint_angles()
+    pictures_per_record = []
+    for record in records:
+        simulator = ArmAndTableSimulator(
+            record["seed"],
+            table_draw.draw_table(record["seed"]),
+            urdf=write_arm_urdf_if_missing(),
+            meshes=ARM_COLLISION_MESHES,
+            start_joint_angles=both_views[0],
         )
-        for i, g in enumerate(r["before"]):
+        for i, glass in enumerate(record["before"]):
             address = simulator.model.jnt_qposadr[simulator.model.body_jntadr[simulator.bodies[i]]]
-            simulator.data.qpos[address : address + 2] = [g["x"], g["y"]]
+            simulator.data.qpos[address : address + 2] = [glass["x"], glass["y"]]
         simulator.data.qvel[:] = 0.0
         mujoco.mj_forward(simulator.model, simulator.data)
-        camera = wrist_camera.ArmCamera(simulator)
+        camera = wrist_camera.WristCameraRenderer(simulator)
         pair = []
-        for q in joints:
-            simulator.set_joints(q)
-            pair.append(camera.view(simulator.tcp()))
+        for view_joint_angles in both_views:
+            simulator.set_joint_angles(view_joint_angles)
+            pair.append(camera.render_picture(simulator.fingertips_waypoint()))
         camera.close()
-        out.append(tuple(pair))
-    return out
+        pictures_per_record.append(tuple(pair))
+    return pictures_per_record
 
 
-def samples(records: list[dict]) -> list[dict]:
+def training_samples(records: list[dict]) -> list[dict]:
     """The pictures and the answer for every push worth copying, and for every finished table."""
     import imitation
 
-    demos, _ = imitation.demonstrations(records)
+    demos, _ = imitation.demonstrations_from_pushes(records)
     keep = []
-    for r in records:
-        if all(g["pickable"] for g in r["before"]):
-            keep.append((r, None, None))
+    for record in records:
+        if all(glass["pickable"] for glass in record["before"]):
+            keep.append((record, None, None))
             continue
-        o = F.outcome(r)
+        outcome = table_and_push_encoding.push_outcome_from_record(record)
         if (
-            o["feasible"]
-            and not o["topple"]
-            and (o["gain"] >= 1 or (o["eased"] >= 4.0 and o["disturbed"] < 0.01 and o["moved"] > 0.01))
+            outcome["feasible"]
+            and not outcome["topple"]
+            and (
+                outcome["gain"] >= 1
+                or (outcome["eased"] >= 4.0 and outcome["disturbed"] < 0.01 and outcome["moved"] > 0.01)
+            )
         ):
-            keep.append((r, r["request"]["glass"], F.request_of(r)))
-    pictures = render_pictures([k[0] for k in keep])
+            keep.append(
+                (record, record["request"]["glass"], table_and_push_encoding.push_request_from_record(record))
+            )
+    pictures = render_both_wrist_pictures([kept[0] for kept in keep])
     return [
-        {"pictures": pics, "action": chunk_of(answer_vector(F.boxes_of(r["before"]), glass, request))}
-        for (r, glass, request), pics in zip(keep, pictures, strict=True)
+        {
+            "pictures": both,
+            "action": repeat_into_chunk(
+                encode_answer(table_and_push_encoding.boxes_from_layout(record["before"]), glass, request)
+            ),
+        }
+        for (record, glass, request), both in zip(keep, pictures, strict=True)
     ]
 
 
-def item(sample: dict) -> dict:
+def as_smolvla_item(sample: dict) -> dict:
     return {
-        CAMERAS[0]: torch.from_numpy(sample["pictures"][0].copy()).permute(2, 0, 1).float() / 255.0,
-        CAMERAS[1]: torch.from_numpy(sample["pictures"][1].copy()).permute(2, 0, 1).float() / 255.0,
+        CAMERA_KEYS[0]: torch.from_numpy(sample["pictures"][0].copy()).permute(2, 0, 1).float() / 255.0,
+        CAMERA_KEYS[1]: torch.from_numpy(sample["pictures"][1].copy()).permute(2, 0, 1).float() / 255.0,
         "observation.state": torch.zeros(6),
         "action": torch.from_numpy(sample["action"]).float(),
         "task": INSTRUCTION,
     }
 
 
-def ready(items: list[dict], pre) -> dict:
-    each = [pre(one) for one in items]
-    joined = {
-        key: torch.cat([one[key] for one in each], dim=0)
-        for key in (*CAMERAS, "observation.state", "observation.language.tokens")
+def collate_batch(items: list[dict], preprocess) -> dict:
+    preprocessed = [preprocess(item) for item in items]
+    batch = {
+        key: torch.cat([item[key] for item in preprocessed], dim=0)
+        for key in (*CAMERA_KEYS, "observation.state", "observation.language.tokens")
     }
-    joined["observation.language.attention_mask"] = torch.cat(
-        [one["observation.language.attention_mask"] for one in each], dim=0
+    batch["observation.language.attention_mask"] = torch.cat(
+        [item["observation.language.attention_mask"] for item in preprocessed], dim=0
     ).bool()
-    joined["action"] = torch.stack([one["action"] for one in each])
-    return joined
+    batch["action"] = torch.stack([item["action"] for item in preprocessed])
+    return batch
 
 
-def rate(step: int, steps: int, top: float, warmup: int = 50) -> float:
-    if step < warmup:
-        return top * (step + 1) / warmup
-    through = (step - warmup) / max(1, steps - warmup)
-    return top * 0.5 * (1 + math.cos(math.pi * through))
+def learning_rate_at(step: int, steps: int, peak_rate: float, warmup_steps: int = 50) -> float:
+    if step < warmup_steps:
+        return peak_rate * (step + 1) / warmup_steps
+    share_done = (step - warmup_steps) / max(1, steps - warmup_steps)
+    return peak_rate * 0.5 * (1 + math.cos(math.pi * share_done))
 
 
-def train(
+def train_lora_correction(
     data: list[dict],
     steps: int,
     batch: int = 4,
-    lr: float = 1e-4,
+    peak_learning_rate: float = 1e-4,
     seed: int = 0,
-    into: Path | None = None,
-    log=lambda *a: print(*a, flush=True),
+    weights_folder: Path | None = None,
+    log=lambda *parts: print(*parts, flush=True),
 ) -> Path:
     torch.manual_seed(seed)
     rng = np.random.default_rng(seed)
-    where = device()
-    policy, pre, post = borrowed(where)
-    policy = with_correction(policy)
-    moving = sum(p.numel() for p in policy.parameters() if p.requires_grad)
-    log(f"{len(data)} samples; {moving / 1e6:.2f}M numbers move; on {where}")
-    optimiser = torch.optim.AdamW([p for p in policy.parameters() if p.requires_grad], lr=lr)
+    torch_device = best_torch_device()
+    policy, preprocess, postprocess = load_base_smolvla(torch_device)
+    policy = add_lora_correction(policy)
+    trainable_numbers = sum(p.numel() for p in policy.parameters() if p.requires_grad)
+    log(f"{len(data)} samples; {trainable_numbers / 1e6:.2f}M numbers move; on {torch_device}")
+    optimiser = torch.optim.AdamW([p for p in policy.parameters() if p.requires_grad], lr=peak_learning_rate)
     policy.train()
     losses, started = [], time.time()
-    into = into or WEIGHTS_DIR / "vla-r4"
+    weights_folder = weights_folder or WEIGHTS_FOLDER / "vla-r4"
     for step in range(steps):
-        idx = rng.choice(len(data), batch)
-        batch_ = ready([item(data[i]) for i in idx], pre)
+        chosen = rng.choice(len(data), batch)
+        batch_of_items = collate_batch([as_smolvla_item(data[i]) for i in chosen], preprocess)
         for group in optimiser.param_groups:
-            group["lr"] = rate(step, steps, lr)
-        loss, _ = policy.forward(batch_)
+            group["lr"] = learning_rate_at(step, steps, peak_learning_rate)
+        loss, _ = policy.forward(batch_of_items)
         loss.backward()
         optimiser.step()
         optimiser.zero_grad()
@@ -241,13 +276,13 @@ def train(
                 f"  step {step + 1}/{steps}: loss {np.mean(losses[-25:]):.4f}, "
                 f"{(time.time() - started) / (step + 1):.2f} s a step"
             )
-    policy.model.save_pretrained(into)
-    (into / "training.json").write_text(
+    policy.model.save_pretrained(weights_folder)
+    (weights_folder / "training.json").write_text(
         json.dumps(
             {
                 "steps": steps,
                 "batch": batch,
-                "lr": lr,
+                "lr": peak_learning_rate,
                 "samples": len(data),
                 "minutes": round((time.time() - started) / 60, 1),
                 "loss_first": float(np.mean(losses[:25])),
@@ -256,23 +291,23 @@ def train(
             indent=1,
         )
     )
-    return into
+    return weights_folder
 
 
 # ---------------------------------------------------------------- the solution
 
 
-class FineTuned(TurnByTurn):
+class SmolVLASolution(TurnByTurnSolution):
     name = "smolvla, a little fine-tuned"
     # It reads the two pictures themselves, so it is shown both, both new, on every turn.
-    looking = EVERY_VIEW
+    looking_mode = LOOK_FROM_BOTH_PLACES_EVERY_TURN
 
     def __init__(self, weights: Path | None = None) -> None:
         from peft import PeftModel
 
-        self.where = device()
-        self.policy, self.pre, self.post = borrowed(self.where)
-        correction = weights or WEIGHTS_DIR / "vla-r4"
+        self.torch_device = best_torch_device()
+        self.policy, self.preprocess, self.postprocess = load_base_smolvla(self.torch_device)
+        correction = weights or WEIGHTS_FOLDER / "vla-r4"
         # A missing correction is an error and not a fallback. Run without one, this
         # solution is the downloaded model with nothing fitted, and its scores would look
         # exactly like a fitted model's.
@@ -280,45 +315,48 @@ class FineTuned(TurnByTurn):
             raise FileNotFoundError(f"no fitted correction at {correction}; fit one with `make vla`")
         self.policy.model = PeftModel.from_pretrained(self.policy.model, correction).merge_and_unload()
         self.policy.eval()
-        self.refused = Refused()
-        self.last = None
-        self.picture_pairs: list = []
+        self.refused_glasses = RefusedGlasses()
+        self.last_requested_glass = None
 
-    def begin(self) -> None:
-        self.refused = Refused()
-        self.last = None
+    def start_new_table(self) -> None:
+        self.refused_glasses = RefusedGlasses()
+        self.last_requested_glass = None
         self.policy.reset()
         # The model draws noise for every answer. Given the same draw at the start of every
         # table, a table gets the same answers every time it is run.
         torch.manual_seed(0)
 
     @torch.no_grad()
-    def ask(self, pictures) -> np.ndarray:
+    def ask_model(self, pictures) -> np.ndarray:
         batch = {
-            CAMERAS[0]: torch.from_numpy(pictures[0].copy()).permute(2, 0, 1).float() / 255.0,
-            CAMERAS[1]: torch.from_numpy(pictures[1].copy()).permute(2, 0, 1).float() / 255.0,
+            CAMERA_KEYS[0]: torch.from_numpy(pictures[0].copy()).permute(2, 0, 1).float() / 255.0,
+            CAMERA_KEYS[1]: torch.from_numpy(pictures[1].copy()).permute(2, 0, 1).float() / 255.0,
             "observation.state": torch.zeros(6),
             "task": INSTRUCTION,
         }
         self.policy.reset()
         # Read straight from the model rather than through its post-processing,
         # which un-normalises with the six-number statistics of the arm it was made for.
-        chunk = self.policy.predict_action_chunk(self.pre(batch))[0].float().cpu().numpy().astype(float)
-        return chunk[:, :WIDTH].mean(0)
+        chunk = (
+            self.policy.predict_action_chunk(self.preprocess(batch))[0].float().cpu().numpy().astype(float)
+        )
+        return chunk[:, :ANSWER_WIDTH].mean(0)
 
-    def decide(self, look):
-        boxes = list(look.boxes)
+    def decide_turn(self, observation):
+        boxes = list(observation.boxes)
         if not boxes:
-            return Done("no glass in view")
-        if look.refused and self.last is not None:
-            self.refused.add(boxes, self.last)
-        vector = self.ask(look.pictures)
-        refused = self.refused.among(boxes)
-        usable = [b for k, b in enumerate(boxes) if k not in refused]
-        glass, request = request_from(vector, boxes)
-        if glass is None or glass in refused or not usable:
-            return Done("the model says the table is finished" if glass is None else "nothing left to try")
-        self.last = glass
+            return TableFinished("no glass in view")
+        if observation.last_push_refusal_reason and self.last_requested_glass is not None:
+            self.refused_glasses.remember(boxes, self.last_requested_glass)
+        answer = self.ask_model(observation.latest_pictures)
+        refused_indices = self.refused_glasses.indices_in_look(boxes)
+        glasses_left_to_push = [b for k, b in enumerate(boxes) if k not in refused_indices]
+        glass, request = decode_answer(answer, boxes)
+        if glass is None or glass in refused_indices or not glasses_left_to_push:
+            return TableFinished(
+                "the model says the table is finished" if glass is None else "nothing left to try"
+            )
+        self.last_requested_glass = glass
         return request
 
 
@@ -328,12 +366,19 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--data", type=Path, required=True, help="a pickle made by build_vla_data (pictures and answers)"
+        "--data",
+        type=Path,
+        required=True,
+        help="a pickle made by make_smolvla_training_data.py (pictures and answers)",
     )
     parser.add_argument("--steps", type=int, default=300)
     parser.add_argument("--batch", type=int, default=4)
     parser.add_argument("--tag", default="vla-r4")
-    a = parser.parse_args()
-    with open(a.data, "rb") as handle:
+    arguments = parser.parse_args()
+    with open(arguments.data, "rb") as handle:
         data = pickle.load(handle)
-    print(train(data, a.steps, a.batch, into=WEIGHTS_DIR / a.tag))
+    print(
+        train_lora_correction(
+            data, arguments.steps, arguments.batch, weights_folder=WEIGHTS_FOLDER / arguments.tag
+        )
+    )

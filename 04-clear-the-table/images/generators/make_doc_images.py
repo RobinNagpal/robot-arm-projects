@@ -28,13 +28,13 @@ OUT = ROOT / "images"
 OUT.mkdir(parents=True, exist_ok=True)
 
 from examiner.simulation import wrist_camera  # noqa: E402
-from shared.learning import table_and_push_encoding as F  # noqa: E402
+from shared.learning import table_and_push_encoding as table_and_push_encoding  # noqa: E402
 
 INK, BLUE, ORANGE, GREY = "#222222", "#2b6cb0", "#dd6b20", "#9aa5b1"
 
 
 def records(*names):
-    return F.load_records(*[PROBLEM / "shared" / "learning" / "data" / n for n in names])
+    return table_and_push_encoding.load_push_records(*[PROBLEM / "shared" / "learning" / "data" / n for n in names])
 
 
 def style(ax):
@@ -46,28 +46,28 @@ def style(ax):
 
 def views_and_boxes():
     """The same table from the two viewing places, with the boxes the network found."""
-    from examiner.examining import one_table_cell as C
+    from examiner.examining import one_table_cell as one_table_cell
     from shared.seeing import box_model
     from examiner.simulation import table_draw
-    from examiner.simulation.arm_and_table_simulator import ArmSimulator
-    from examiner.motion.moveit_connection import MESHES, generate_urdf
+    from examiner.simulation.arm_and_table_simulator import ArmAndTableSimulator
+    from examiner.motion.moveit_connection import ARM_COLLISION_MESHES, write_arm_urdf_if_missing
 
-    joints = C.view_joint_sets()
+    joints = one_table_cell.viewing_joint_angles()
     model = box_model.BoxModel.load()
     seed = 10001
-    simulator = ArmSimulator(seed, table_draw.table(seed), urdf=generate_urdf(), meshes=MESHES, start=joints[0])
-    camera = wrist_camera.ArmCamera(simulator)
+    simulator = ArmAndTableSimulator(seed, table_draw.draw_table(seed), urdf=write_arm_urdf_if_missing(), meshes=ARM_COLLISION_MESHES, start_joint_angles=joints[0])
+    camera = wrist_camera.WristCameraRenderer(simulator)
     fig, axes = plt.subplots(1, 2, figsize=(9.5, 4.8))
-    for ax, view, q, title in zip(axes, C.VIEWS, joints, ("from the first place", "from the second place"), strict=True):
-        simulator.set_joints(q)
-        jaw = simulator.tcp()
-        picture = camera.view(jaw)
+    for ax, view, q, title in zip(axes, one_table_cell.VIEW_WAYPOINTS, joints, ("from the first place", "from the second place"), strict=True):
+        simulator.set_joint_angles(q)
+        jaw = simulator.fingertips_waypoint()
+        picture = camera.render_picture(jaw)
         ax.imshow(picture)
-        for box in model.detect(picture, jaw):
+        for box in model.boxes_in_picture(picture, jaw):
             # The box's eight corners, each followed through the camera, and the
             # rectangle that holds them: that is how much of the picture the box covers.
             corners = [
-                wrist_camera.to_pixel(jaw, box.x + sx * box.radius, box.y + sy * box.radius, z)
+                wrist_camera.table_point_to_pixel(jaw, box.x + sx * box.radius, box.y + sy * box.radius, z)
                 for sx in (-1, 1)
                 for sy in (-1, 1)
                 for z in (0.0, box.height)
@@ -90,11 +90,11 @@ def heading_feasible():
     for lo, hi in zip(bins, bins[1:]):
         sel = []
         for r in rs:
-            boxes = F.boxes_of(r["before"])
+            boxes = table_and_push_encoding.boxes_from_layout(r["before"])
             if len(boxes) < 2:
                 continue
             k = r["request"]["glass"]
-            off = abs((r["request"]["heading"] - F.away_angle(boxes, k) + math.pi) % (2 * math.pi) - math.pi)
+            off = abs((r["request"]["heading"] - table_and_push_encoding.heading_away_from_nearest_glass(boxes, k) + math.pi) % (2 * math.pi) - math.pi)
             if lo <= off < hi:
                 sel.append(r["feasible"])
         shares.append(100 * np.mean(sel) if sel else 0)
@@ -119,7 +119,7 @@ def topple_by_kind():
     rs = records("pushes-round1.jsonl", "pushes-round2.jsonl")
     fe = [r for r in rs if r["feasible"]]
     kinds = ["straight_glass", "tapered_glass", "stemmed_glass", "short_stemmed_glass"]
-    shares = [100 * np.mean([F.outcome(r)["topple"] for r in fe if r["before"][r["request"]["glass"]]["kind"] == k]) for k in kinds]
+    shares = [100 * np.mean([table_and_push_encoding.push_outcome_from_record(r)["topple"] for r in fe if r["before"][r["request"]["glass"]]["kind"] == k]) for k in kinds]
     counts = [sum(1 for r in fe if r["before"][r["request"]["glass"]]["kind"] == k) for k in kinds]
     fig, ax = plt.subplots(figsize=(7, 4))
     xs = np.arange(len(kinds))
@@ -142,7 +142,7 @@ def topple_by_height():
     edges = [0.075, 0.092, 0.108, 0.125 + 1e-9]
     shares, counts = [], []
     for lo, hi in zip(edges, edges[1:]):
-        sel = [F.outcome(r)["topple"] for r in fe if lo <= r["request"]["settings"]["push_height"] < hi]
+        sel = [table_and_push_encoding.push_outcome_from_record(r)["topple"] for r in fe if lo <= r["request"]["settings"]["push_height"] < hi]
         shares.append(100 * np.mean(sel))
         counts.append(len(sel))
     fig, ax = plt.subplots(figsize=(6, 4))

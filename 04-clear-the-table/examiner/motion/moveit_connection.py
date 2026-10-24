@@ -20,20 +20,20 @@ from pathlib import Path
 
 import numpy as np
 
-from examiner.simulation.ur5e_model import tool_pose
+from examiner.simulation.ur5e_model import flange_pose_for_fingertips
 
-HERE = Path(__file__).resolve().parent
+THIS_FOLDER = Path(__file__).resolve().parent
 # The examiner's folder, which keeps the ROS environment and what is generated for it.
-EXAMINER = HERE.parent
+EXAMINER_FOLDER = THIS_FOLDER.parent
 # The ROS environment, the arm's description and MoveIt's settings: see examiner/ros/README.md.
-ROS_FOLDER = EXAMINER / "ros"
-ROS = ROS_FOLDER / ".pixi" / "envs" / "default"
-GENERATED = EXAMINER / "generated"
-URDF = GENERATED / "work_cell.urdf"
-MESHES = ROS / "share" / "ur_description" / "meshes" / "ur5e" / "collision"
+ROS_FOLDER = EXAMINER_FOLDER / "ros"
+ROS_ENVIRONMENT = ROS_FOLDER / ".pixi" / "envs" / "default"
+GENERATED_FOLDER = EXAMINER_FOLDER / "generated"
+URDF_FILE = GENERATED_FOLDER / "work_cell.urdf"
+ARM_COLLISION_MESHES = ROS_ENVIRONMENT / "share" / "ur_description" / "meshes" / "ur5e" / "collision"
 
 
-PROFILE = """<?xml version="1.0" encoding="UTF-8" ?>
+FAST_DDS_UDP_PROFILE = """<?xml version="1.0" encoding="UTF-8" ?>
 <profiles xmlns="http://www.eprosima.com/XMLSchemas/fastRTPS_Profiles">
   <transport_descriptors>
     <transport_descriptor><transport_id>udp_only</transport_id><type>UDPv4</type></transport_descriptor>
@@ -48,34 +48,34 @@ PROFILE = """<?xml version="1.0" encoding="UTF-8" ?>
 """
 
 
-def generate_urdf() -> Path:
+def write_arm_urdf_if_missing() -> Path:
     """Write the arm's URDF if it is not there yet: the xacro the Gazebo cell is built from.
 
     One description serves MoveIt, which plans on it, and the simulator, which
     reads the link lengths out of it, so the two cannot disagree.
     """
-    if URDF.exists():
-        return URDF
-    GENERATED.mkdir(exist_ok=True)
-    environment = _ros_environment()
+    if URDF_FILE.exists():
+        return URDF_FILE
+    GENERATED_FOLDER.mkdir(exist_ok=True)
+    environment = _ros_environment_variables()
     subprocess.run(
         [
-            str(ROS / "bin" / "xacro"),
+            str(ROS_ENVIRONMENT / "bin" / "xacro"),
             str(ROS_FOLDER / "arm" / "arm.urdf.xacro"),
             "controllers_file:=/dev/null",
             "-o",
-            str(URDF),
+            str(URDF_FILE),
         ],
         check=True,
         env=environment,
         capture_output=True,
     )
-    return URDF
+    return URDF_FILE
 
 
-def _ros_environment(domain: int = 0) -> dict:
+def _ros_environment_variables(domain: int = 0) -> dict:
     environment = dict(os.environ)
-    environment["AMENT_PREFIX_PATH"] = str(ROS)
+    environment["AMENT_PREFIX_PATH"] = str(ROS_ENVIRONMENT)
     # Problem 4's own variables would point the ROS interpreter at the wrong
     # libraries, so they are taken out.
     for name in ("PYTHONPATH", "PYTHONHOME", "CONDA_PREFIX", "PIXI_PROJECT_ROOT"):
@@ -92,15 +92,15 @@ def _ros_environment(domain: int = 0) -> dict:
     environment.pop("ROS_LOCALHOST_ONLY", None)
     # Fast DDS without shared memory: see generated/fastdds-udp.xml. Written on
     # the spot so that a fresh checkout has it.
-    profile = GENERATED / "fastdds-udp.xml"
+    profile = GENERATED_FOLDER / "fastdds-udp.xml"
     if not profile.exists():
-        GENERATED.mkdir(exist_ok=True)
-        profile.write_text(PROFILE)
+        GENERATED_FOLDER.mkdir(exist_ok=True)
+        profile.write_text(FAST_DDS_UDP_PROFILE)
     environment["FASTRTPS_DEFAULT_PROFILES_FILE"] = str(profile)
     return environment
 
 
-def quaternion(rotation: np.ndarray) -> list[float]:
+def rotation_to_quaternion_xyzw(rotation: np.ndarray) -> list[float]:
     """A rotation matrix as (x, y, z, w), the order ROS messages use."""
     m = rotation
     trace = m[0, 0] + m[1, 1] + m[2, 2]
@@ -117,72 +117,74 @@ def quaternion(rotation: np.ndarray) -> list[float]:
     return [(m[0, 2] + m[2, 0]) / s, (m[1, 2] + m[2, 1]) / s, 0.25 * s, (m[1, 0] - m[0, 1]) / s]
 
 
-def flange_goal(x: float, y: float, z: float, heading: float, without: str | None = None) -> dict:
+def flange_goal_for_fingertips(
+    x: float, y: float, z: float, heading: float, box_the_line_may_pass_through: str | None = None
+) -> dict:
     """The flange pose that puts the fingertips at (x, y, z) pointing along ``heading``.
 
     ``z`` is in the world, not above the table. The hand is rolled, so the
-    fingers stack vertically; see ``ur5e_model.tool_pose``.
+    fingers stack vertically; see ``ur5e_model.flange_pose_for_fingertips``.
     """
-    position, rotation = tool_pose(x, y, z, heading)
-    goal = {"position": position.tolist(), "quaternion": quaternion(rotation)}
-    if without is not None:
+    position, rotation = flange_pose_for_fingertips(x, y, z, heading)
+    goal = {"position": position.tolist(), "quaternion": rotation_to_quaternion_xyzw(rotation)}
+    if box_the_line_may_pass_through is not None:
         # Name of a box the line may pass through, because the line ends in
         # touching it. Everything else in the scene still counts.
-        goal["without"] = without
+        goal["without"] = box_the_line_may_pass_through
     return goal
 
 
 @dataclass(frozen=True)
-class Motion:
+class PlannedMotion:
     """A trajectory MoveIt made: joint angles and the time each is reached."""
 
-    ok: bool
-    why: str
+    planned: bool
+    refusal_reason: str
     times: np.ndarray
-    joints: np.ndarray
+    joint_angles: np.ndarray
     planning_seconds: float
 
     @property
-    def seconds(self) -> float:
-        return float(self.times[-1]) if self.ok and len(self.times) else 0.0
+    def duration_seconds(self) -> float:
+        return float(self.times[-1]) if self.planned and len(self.times) else 0.0
 
 
-class MoveItLink:
+class MoveItConnection:
     """A running MoveIt, asked for motions over a pipe."""
 
     # How long MoveIt gets to come up. It takes about a second. Now and then the
     # middleware it sits on waits forever for a lock while creating a node, and
     # nothing ever wakes it; a server that is not ready by now is killed and
     # started again.
-    START_SECONDS = 40.0
-    START_TRIES = 4
+    STARTUP_TIMEOUT_SECONDS = 40.0
+    STARTUP_ATTEMPTS = 4
 
-    def __init__(self, domain: int | None = None) -> None:
+    def __init__(self, ros_domain: int | None = None) -> None:
         import select
 
         # One ROS domain per process. Servers started in one domain hear each
         # other's planning scenes, and a box another process put in the world
         # is a box this one plans round; so by default the domain is the
         # process's own number.
-        if domain is None:
-            domain = os.getpid()
+        if ros_domain is None:
+            ros_domain = os.getpid()
 
-        urdf = generate_urdf()
-        log = open(GENERATED / f"moveit-{os.getpid()}.log", "w")  # noqa: SIM115  (kept open for the server's life)
-        for attempt in range(self.START_TRIES):
+        urdf = write_arm_urdf_if_missing()
+        server_log = open(GENERATED_FOLDER / f"moveit-{os.getpid()}.log", "w")  # noqa: SIM115  (kept open for the server's life)
+        for attempt in range(self.STARTUP_ATTEMPTS):
             self.process = subprocess.Popen(
-                [str(ROS / "bin" / "python"), str(HERE / "moveit_server.py"), str(urdf)],
+                [str(ROS_ENVIRONMENT / "bin" / "python"), str(THIS_FOLDER / "moveit_server.py"), str(urdf)],
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
-                stderr=log,
-                env=_ros_environment(domain + 17 * attempt),
+                stderr=server_log,
+                env=_ros_environment_variables(ros_domain + 17 * attempt),
                 text=True,
                 bufsize=1,
             )
-            ready, _, _ = select.select([self.process.stdout], [], [], self.START_SECONDS)
-            if ready:
-                first = self._read()
-                if first.get("ready"):
+            readable, _, _ = select.select([self.process.stdout], [], [], self.STARTUP_TIMEOUT_SECONDS)
+            if readable:
+                first_reply = self._read_reply()
+                if first_reply.get("ready"):
                     break
             self.process.kill()
             self.process.wait()
@@ -190,59 +192,63 @@ class MoveItLink:
             raise RuntimeError(
                 "MoveIt did not start after several tries; see examiner/generated/moveit-*.log"
             )
-        self.log = log
-        self.requests = 0
+        self.server_log = server_log
+        self.requests_sent = 0
         self.planning_seconds = 0.0
 
-    def _read(self) -> dict:
+    def _read_reply(self) -> dict:
         line = self.process.stdout.readline()
         if not line:
             raise RuntimeError("MoveIt closed its pipe; see examiner/generated/moveit-*.log")
         return json.loads(line)
 
-    def _ask(self, request: dict) -> dict:
+    def _send_request(self, request: dict) -> dict:
         self.process.stdin.write(json.dumps(request) + "\n")
         self.process.stdin.flush()
-        self.requests += 1
-        return self._read()
+        self.requests_sent += 1
+        return self._read_reply()
 
-    def scene(self, boxes: list[dict]) -> None:
-        answer = self._ask({"cmd": "scene", "boxes": boxes})
+    def set_collision_boxes(self, boxes: list[dict]) -> None:
+        answer = self._send_request({"cmd": "scene", "boxes": boxes})
         if not answer["ok"]:
             raise RuntimeError(answer["why"])
 
-    def fk(self, q) -> np.ndarray:
-        return np.array(self._ask({"cmd": "fk", "q": list(map(float, q))})["matrix"])
+    def forward_kinematics(self, joint_angles) -> np.ndarray:
+        return np.array(self._send_request({"cmd": "fk", "q": list(map(float, joint_angles))})["matrix"])
 
-    def plan(
+    def plan_free_move(
         self,
-        q,
+        start_joint_angles,
         goal: dict | None,
         *,
-        then: list | None = None,
-        vel: float = 0.5,
-        acc: float = 0.5,
-        planning_time: float = 3.0,
-        attempts: int = 3,
-        goal_joints=None,
-    ) -> Motion:
-        """A free move to a flange pose, planned by OMPL around the scene."""
-        return self._motion(
+        lines_that_follow: list | None = None,
+        velocity_scaling: float = 0.5,
+        acceleration_scaling: float = 0.5,
+        planning_time_seconds: float = 3.0,
+        planning_attempts: int = 3,
+        goal_joint_angles=None,
+    ) -> PlannedMotion:
+        """A free move to a flange pose, planned by OMPL around the collision boxes.
+
+        ``lines_that_follow`` are the goals of the straight lines the arm will drive next, so
+        that MoveIt picks a posture at the goal from which they can be driven.
+        """
+        return self._request_motion(
             {
                 "cmd": "plan",
-                "q": list(map(float, q)),
+                "q": list(map(float, start_joint_angles)),
                 "goal": goal,
-                "goal_joints": None if goal_joints is None else list(map(float, goal_joints)),
-                "seeds": self.seeds(goal) if goal else [],
-                "then": then or [],
-                "vel": vel,
-                "acc": acc,
-                "planning_time": planning_time,
-                "attempts": attempts,
+                "goal_joints": None if goal_joint_angles is None else list(map(float, goal_joint_angles)),
+                "seeds": self.inverse_kinematics_seeds(goal) if goal else [],
+                "then": lines_that_follow or [],
+                "vel": velocity_scaling,
+                "acc": acceleration_scaling,
+                "planning_time": planning_time_seconds,
+                "attempts": planning_attempts,
             }
         )
 
-    def seeds(self, goal: dict) -> list:
+    def inverse_kinematics_seeds(self, goal: dict) -> list:
         """Postures to start the inverse kinematics from, turned towards the goal.
 
         An arm facing a point reaches it with the shoulder pointed at it, so the
@@ -264,46 +270,55 @@ class MoveItLink:
                     rows.append([pan, lift, elbow, wrist1, wrist2, 0.0])
         return rows
 
-    def ik(self, q, goal: dict, then: list | None = None) -> list | None:
-        answer = self._ask(
+    def inverse_kinematics(
+        self, start_joint_angles, goal: dict, lines_that_follow: list | None = None
+    ) -> list | None:
+        answer = self._send_request(
             {
                 "cmd": "ik",
-                "q": list(map(float, q)),
+                "q": list(map(float, start_joint_angles)),
                 "goal": goal,
-                "seeds": self.seeds(goal),
-                "then": then or [],
+                "seeds": self.inverse_kinematics_seeds(goal),
+                "then": lines_that_follow or [],
             }
         )
         return answer["q"] if answer["ok"] else None
 
-    def line(
-        self, q, goal: dict, *, vel: float = 0.1, acc: float = 0.1, step: float = 0.005, check: bool = True
-    ) -> Motion:
+    def plan_straight_line(
+        self,
+        start_joint_angles,
+        goal: dict,
+        *,
+        velocity_scaling: float = 0.1,
+        acceleration_scaling: float = 0.1,
+        step_metres: float = 0.005,
+        check_collisions: bool = True,
+    ) -> PlannedMotion:
         """A straight line of the flange to a pose, solved and timed by MoveIt."""
-        return self._motion(
+        return self._request_motion(
             {
                 "cmd": "line",
-                "q": list(map(float, q)),
+                "q": list(map(float, start_joint_angles)),
                 "goal": goal,
-                "vel": vel,
-                "acc": acc,
-                "step": step,
-                "check": check,
+                "vel": velocity_scaling,
+                "acc": acceleration_scaling,
+                "step": step_metres,
+                "check": check_collisions,
             }
         )
 
-    def _motion(self, request: dict) -> Motion:
-        answer = self._ask(request)
+    def _request_motion(self, request: dict) -> PlannedMotion:
+        answer = self._send_request(request)
         self.planning_seconds += answer.get("planning_seconds", 0.0)
         if not answer["ok"]:
-            return Motion(
+            return PlannedMotion(
                 False,
                 answer.get("why", ""),
                 np.zeros(0),
                 np.zeros((0, 6)),
                 answer.get("planning_seconds", 0.0),
             )
-        return Motion(
+        return PlannedMotion(
             True, "", np.array(answer["t"]), np.array(answer["q"]), answer.get("planning_seconds", 0.0)
         )
 
@@ -317,9 +332,9 @@ class MoveItLink:
             self.process.wait(timeout=5)
         except Exception:
             self.process.kill()
-        self.log.close()
+        self.server_log.close()
 
-    def __enter__(self) -> MoveItLink:
+    def __enter__(self) -> MoveItConnection:
         return self
 
     def __exit__(self, *exc) -> None:
@@ -327,6 +342,6 @@ class MoveItLink:
 
 
 if __name__ == "__main__":  # a smoke test: start MoveIt and ask for one thing
-    with MoveItLink() as link:
-        q = [-0.9, -1.45, 1.75, -1.85, -1.5708, -0.9]
-        print(np.round(link.fk(q), 3), file=sys.stderr)
+    with MoveItConnection() as moveit:
+        parked = [-0.9, -1.45, 1.75, -1.85, -1.5708, -0.9]
+        print(np.round(moveit.forward_kinematics(parked), 3), file=sys.stderr)

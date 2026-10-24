@@ -16,7 +16,7 @@ import math
 import pytest
 
 from examiner.simulation import table_draw
-from examiner.simulation.table_simulator import Simulator
+from examiner.simulation.table_simulator import TableSimulator
 from examiner.simulation.taken_from_problem_3 import GRIP_ROOM, TEST_SEEDS, SpawnedGlass, has_room, in_zone
 
 # A dozen tables from each band. Enough to parametrize without the output
@@ -41,8 +41,8 @@ def _crowded(spots: list[tuple[float, float, float]]) -> list[int]:
 
 @pytest.mark.parametrize("seed", SEEDS)
 def test_every_table_is_four_to_seven_glasses_of_one_kind(seed):
-    glasses = table_draw.table(seed)
-    assert table_draw.FEWEST <= len(glasses) <= table_draw.MOST
+    glasses = table_draw.draw_table(seed)
+    assert table_draw.FEWEST_GLASSES <= len(glasses) <= table_draw.MOST_GLASSES
     assert len({g.kind for g in glasses}) == 1
     assert [g.name for g in glasses] == [f"glass_{i}" for i in range(len(glasses))]
 
@@ -57,11 +57,11 @@ def test_every_table_has_a_touching_group(seed):
     checks is that a group really is a clump of glasses in each other's way,
     rather than glasses that merely ended up near one another.
     """
-    spots = _spots(table_draw.table(seed))
-    clumps = table_draw.groups_of(spots)
-    assert max(len(c) for c in clumps) >= table_draw.LEAST_IN_A_GROUP
+    spots = _spots(table_draw.draw_table(seed))
+    clumps = table_draw.touching_groups(spots)
+    assert max(len(c) for c in clumps) >= table_draw.SMALLEST_TOUCHING_GROUP
     pairs = [(i, j) for i in range(len(spots)) for j in range(i + 1, len(spots))]
-    assert any(table_draw.in_the_way(spots[i], spots[j]) for i, j in pairs)
+    assert any(table_draw.too_close_for_the_open_hand(spots[i], spots[j]) for i, j in pairs)
 
 
 def test_both_sizes_of_group_really_occur():
@@ -71,7 +71,7 @@ def test_both_sizes_of_group_really_occur():
     every table held three the easy case would never be seen. Both have to be
     drawn often enough that a run of fifty tables holds many of each.
     """
-    biggest = [table_draw.facts(seed)["biggest_group"] for seed in range(200)]
+    biggest = [table_draw.measured_table_facts(seed)["biggest_group"] for seed in range(200)]
     assert biggest.count(2) > 60, "too few tables whose hardest group is a pair"
     assert biggest.count(3) > 60, "too few tables with a group of three"
 
@@ -80,36 +80,36 @@ def test_both_sizes_of_group_really_occur():
 def test_every_table_leaves_one_or_two_glasses_with_room_to_spare(seed):
     """A solution has to decide to leave a glass alone, so there is always one.
 
-    The room is checked with GROUP_GAP to spare, because a glass that only
+    The room is checked with EXTRA_GAP_BETWEEN_GROUPS to spare, because a glass that only
     just has room is a glass the noise in a look can put on either side of the
     line, and then the table's own description would depend on the weather.
     """
-    spots = _spots(table_draw.table(seed))
+    spots = _spots(table_draw.draw_table(seed))
     free = [i for i in range(len(spots)) if i not in _crowded(spots)]
-    assert table_draw.FREE_BAND[0] <= len(free) <= table_draw.FREE_BAND[1]
+    assert table_draw.FREE_GLASS_RANGE[0] <= len(free) <= table_draw.FREE_GLASS_RANGE[1]
     for i in free:
         x, y, _ = spots[i]
-        assert has_room(x, y, [s for j, s in enumerate(spots) if j != i], table_draw.GROUP_GAP)
+        assert has_room(x, y, [s for j, s in enumerate(spots) if j != i], table_draw.EXTRA_GAP_BETWEEN_GROUPS)
 
 
 @pytest.mark.parametrize("seed", SEEDS)
 def test_the_number_of_crowded_glasses_stays_inside_its_narrow_band(seed):
-    spots = _spots(table_draw.table(seed))
-    assert table_draw.CROWDED_BAND[0] <= len(_crowded(spots)) <= table_draw.CROWDED_BAND[1]
+    spots = _spots(table_draw.draw_table(seed))
+    assert table_draw.CROWDED_GLASS_RANGE[0] <= len(_crowded(spots)) <= table_draw.CROWDED_GLASS_RANGE[1]
 
 
 @pytest.mark.parametrize("seed", SEEDS)
 def test_glasses_are_a_small_gap_apart_and_in_the_zone_never_overlapping(seed):
     """Crowded means in the hand's way, not stacked. Nothing here overlaps."""
-    spots = _spots(table_draw.table(seed))
+    spots = _spots(table_draw.draw_table(seed))
     assert all(in_zone(x, y) for x, y, _ in spots)
     # The gap is far smaller than the room the hand needs, which is why two
     # glasses can be well clear of each other and still both be stuck.
-    assert table_draw.START_GAP < GRIP_ROOM
+    assert table_draw.LEAST_GAP_BETWEEN_GLASSES < GRIP_ROOM
     for i, (x, y, width) in enumerate(spots):
         for ox, oy, owidth in spots[i + 1 :]:
             daylight = math.dist((x, y), (ox, oy)) - (width + owidth) / 2
-            assert daylight >= table_draw.START_GAP - 1e-9
+            assert daylight >= table_draw.LEAST_GAP_BETWEEN_GLASSES - 1e-9
 
 
 @pytest.mark.parametrize("seed", SEEDS)
@@ -123,11 +123,11 @@ def test_every_crowded_glass_is_one_the_physics_can_slide_rather_than_tip(seed):
     """
     # Solution 1's own module, asked directly rather than through ``table_draw``,
     # so that this is a check and not the draw agreeing with itself.
-    slides = table_draw.solution_one().slides
+    slides = table_draw.problem_3_plan().slides
 
-    glasses = table_draw.table(seed)
+    glasses = table_draw.draw_table(seed)
     for i in _crowded(_spots(glasses)):
-        assert slides(table_draw.as_seen(glasses[i].outline)) != "no"
+        assert slides(table_draw.true_reading_of_outline(glasses[i].outline)) != "no"
 
 
 @pytest.mark.parametrize("seed", SEEDS)
@@ -137,14 +137,17 @@ def test_one_touching_group_never_reaches_into_another(seed):
     Two groups a hair apart would read as one group of five, and the band on
     crowded glasses would be measuring something other than what it says.
     """
-    spots = _spots(table_draw.table(seed))
-    clumps = table_draw.groups_of(spots)
+    spots = _spots(table_draw.draw_table(seed))
+    clumps = table_draw.touching_groups(spots)
     for a, clump in enumerate(clumps):
         for other in clumps[a + 1 :]:
             for i in clump:
                 for j in other:
                     apart = math.dist(spots[i][:2], spots[j][:2])
-                    assert apart >= GRIP_ROOM + max(spots[i][2], spots[j][2]) / 2 + table_draw.GROUP_GAP
+                    assert (
+                        apart
+                        >= GRIP_ROOM + max(spots[i][2], spots[j][2]) / 2 + table_draw.EXTRA_GAP_BETWEEN_GROUPS
+                    )
 
 
 def test_the_composition_varies_so_there_is_no_constant_to_memorise():
@@ -156,14 +159,14 @@ def test_the_composition_varies_so_there_is_no_constant_to_memorise():
     """
     seen_shapes, seen_kinds, counts = set(), set(), set()
     for seed in MANY:
-        card = table_draw.facts(seed)
+        card = table_draw.measured_table_facts(seed)
         seen_shapes.add((card["groups"], card["with_room"]))
         seen_kinds.add(card["kind"])
         counts.add(card["glasses"])
-    assert seen_kinds == set(table_draw.KINDS)
-    allowed = {(tuple(sorted(groups, reverse=True)), free) for groups, free in table_draw.COMPOSITIONS}
+    assert seen_kinds == set(table_draw.GLASS_KINDS)
+    allowed = {(tuple(sorted(groups, reverse=True)), free) for groups, free in table_draw.TABLE_COMPOSITIONS}
     assert seen_shapes == allowed
-    assert counts == set(range(table_draw.FEWEST, table_draw.MOST + 1))
+    assert counts == set(range(table_draw.FEWEST_GLASSES, table_draw.MOST_GLASSES + 1))
 
 
 def test_a_glass_number_says_nothing_about_whether_it_is_crowded():
@@ -174,7 +177,7 @@ def test_a_glass_number_says_nothing_about_whether_it_is_crowded():
     from the identifiers, and it would not survive contact with a real cell,
     where the numbering is whatever the detector happened to emit.
     """
-    crowded_first = sum(1 for seed in MANY if 0 in _crowded(_spots(table_draw.table(seed))))
+    crowded_first = sum(1 for seed in MANY if 0 in _crowded(_spots(table_draw.draw_table(seed))))
     # Roughly the share of glasses that are crowded on an average table, which
     # is what a number carrying no information looks like. Loose on purpose.
     assert 0.4 * len(MANY) < crowded_first < 0.9 * len(MANY)
@@ -182,27 +185,27 @@ def test_a_glass_number_says_nothing_about_whether_it_is_crowded():
 
 @pytest.mark.parametrize("seed", SEEDS)
 def test_the_same_seed_always_draws_the_same_table(seed):
-    first, again = table_draw.table(seed), table_draw.table(seed)
+    first, again = table_draw.draw_table(seed), table_draw.draw_table(seed)
     assert [(g.name, g.kind, g.position) for g in first] == [(g.name, g.kind, g.position) for g in again]
     assert [g.outline.max_diameter for g in first] == [g.outline.max_diameter for g in again]
-    assert table_draw.facts(seed) == table_draw.facts(seed)
+    assert table_draw.measured_table_facts(seed) == table_draw.measured_table_facts(seed)
 
 
 @pytest.mark.parametrize("seed", SEEDS)
 def test_the_facts_describe_the_table_that_was_really_drawn(seed):
-    """``facts`` is what the documents quote, so it is checked against the glasses."""
-    card = table_draw.facts(seed)
-    spots = _spots(table_draw.table(seed))
+    """``measured_table_facts`` is what the documents quote, so it is checked against the glasses."""
+    card = table_draw.measured_table_facts(seed)
+    spots = _spots(table_draw.draw_table(seed))
     crowded = _crowded(spots)
     assert card["seed"] == seed
-    assert card["kind"] in table_draw.KINDS
+    assert card["kind"] in table_draw.GLASS_KINDS
     assert card["glasses"] == len(spots)
     assert card["touching_pairs"] >= 1
     assert card["crowded"] == len(crowded)
     assert card["with_room"] == len(spots) - len(crowded)
-    assert card["biggest_group"] == max(len(c) for c in table_draw.groups_of(spots))
+    assert card["biggest_group"] == max(len(c) for c in table_draw.touching_groups(spots))
     assert card["crowded_can_slide"] is True
-    assert card["closest"] >= table_draw.START_GAP - 1e-9
+    assert card["closest"] >= table_draw.LEAST_GAP_BETWEEN_GLASSES - 1e-9
     # There is always something to do, which is what a shortfall above zero means.
     assert card["shortfall"] > 0.0
     assert sum(card["groups"]) == len(crowded)
@@ -215,30 +218,30 @@ def test_a_table_that_cannot_be_drawn_raises_instead_of_looping_for_ever(monkeyp
     a zone 320 mm across, so this is the impossible case, reached quickly by
     cutting the retries down first.
     """
-    monkeypatch.setattr(table_draw, "GROUP_GAP", 1.0)
-    monkeypatch.setattr(table_draw, "LAYOUT_TRIES", 1)
-    monkeypatch.setattr(table_draw, "GROUP_TRIES", 1)
-    monkeypatch.setattr(table_draw, "SPOT_TRIES", 2)
+    monkeypatch.setattr(table_draw, "EXTRA_GAP_BETWEEN_GROUPS", 1.0)
+    monkeypatch.setattr(table_draw, "TABLE_LAYOUT_TRIES", 1)
+    monkeypatch.setattr(table_draw, "GROUP_LAYOUT_TRIES", 1)
+    monkeypatch.setattr(table_draw, "SPOT_DRAW_TRIES", 2)
     with pytest.raises(RuntimeError, match="no table for seed 3"):
-        table_draw.table(3)
+        table_draw.draw_table(3)
 
 
 def test_a_glass_that_cannot_be_drawn_slidable_raises_and_says_so(monkeypatch):
-    monkeypatch.setattr(table_draw, "GLASS_TRIES", 0)
+    monkeypatch.setattr(table_draw, "GLASS_DRAW_TRIES", 0)
     with pytest.raises(RuntimeError, match="slide rather than tip"):
-        table_draw.table(0)
+        table_draw.draw_table(0)
 
 
 @pytest.mark.parametrize("seed", [*SEEDS[:3], *SEEDS[-3:]])
 def test_the_draw_can_be_stood_up_on_the_examiner(seed):
-    """The whole point of the list: it is what ``Simulator(seed, glasses=...)`` takes.
+    """The whole point of the list: it is what ``TableSimulator(seed, glasses=...)`` takes.
 
     Building the world is as far as this goes. The physics is not stepped,
     because what is being checked is that the draw is a table the cell will
     accept and that every glass starts where the draw put it.
     """
-    glasses = table_draw.table(seed)
-    table = Simulator(seed, glasses)
+    glasses = table_draw.draw_table(seed)
+    table = TableSimulator(seed, glasses)
     for i, glass in enumerate(glasses):
         # The world writes a position to five decimal places, so a glass
         # stands within a hundredth of a millimetre of where it was drawn.

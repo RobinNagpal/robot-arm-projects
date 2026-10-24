@@ -45,14 +45,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from examiner.simulation.table_simulator import Simulator
+from examiner.simulation.table_simulator import TableSimulator
 from examiner.simulation.taken_from_problem_3 import STANDING_TILT_DEG, has_room, in_zone, spread
 
 # The three ways a table can end. Named rather than written out at each use,
 # because two of them are failures of different kinds and the scorecard has to
 # keep them apart.
 SAID_DONE = "said done"
-RAN_OUT = "the clock"
+RAN_OUT_OF_TIME = "the clock"
 GLASS_OVER = "a glass went over"
 
 
@@ -68,7 +68,7 @@ class ScoredTable:
     ended_by: str  # "said done", "the clock" or "a glass went over"
     arm_seconds: float
     thinking_seconds: float
-    answers: int  # the pushes the solution asked for, refused ones included
+    pushes_requested: int  # the pushes the solution asked for, refused ones included
 
     @property
     def said_done(self) -> bool:
@@ -107,10 +107,10 @@ class ScoredTable:
         both overstate how far down the queue the solution reached and add
         every glass standing on it to the glasses it left crowded.
         """
-        return self.ended_by == RAN_OUT and self.arm_seconds == 0.0
+        return self.ended_by == RAN_OUT_OF_TIME and self.arm_seconds == 0.0
 
 
-def pickable(simulator: Simulator, glass: int, margin: float = 0.0) -> bool:
+def glass_is_pickable(simulator: TableSimulator, glass: int, margin: float = 0.0) -> bool:
     """Whether the gripper could now pick glass ``glass`` off the table.
 
     Three things have to hold. The glass is standing, because the hand cannot
@@ -126,47 +126,50 @@ def pickable(simulator: Simulator, glass: int, margin: float = 0.0) -> bool:
     """
     if simulator.tilt(glass) >= STANDING_TILT_DEG:
         return False
-    x, y = (float(v) for v in simulator.position(glass))
+    x, y = (float(value) for value in simulator.position(glass))
     if not in_zone(x, y):
         return False
     others = [
-        (*(float(v) for v in simulator.position(j)), simulator.glasses[j].outline.max_diameter)
-        for j in simulator.on_table()
-        if j != glass
+        (
+            *(float(value) for value in simulator.position(other)),
+            simulator.glasses[other].outline.max_diameter,
+        )
+        for other in simulator.on_table()
+        if other != glass
     ]
     return has_room(x, y, others, margin)
 
 
-def pickable_on_table(simulator: Simulator, margin: float = 0.0) -> int:
+def count_pickable_glasses(simulator: TableSimulator, margin: float = 0.0) -> int:
     """How many glasses on this table could be picked, each judged against all the rest.
 
     Room is not a property of a pair. A narrow glass standing beside a wide one
     is crowded before the wide one is, so one touching pair can still leave one
     pickable glass, and that half step has to be visible in the count.
     """
-    return sum(pickable(simulator, i, margin) for i in simulator.on_table())
+    return sum(glass_is_pickable(simulator, i, margin) for i in simulator.on_table())
 
 
-def outcome(result: ScoredTable) -> str:
+def table_outcome(table: ScoredTable) -> str:
     """One of ``separated``, ``failed`` or ``unfinished``. The three are exclusive."""
-    if result.failed:
+    if table.failed:
         return "failed"
-    return "separated" if result.separated else "unfinished"
+    return "separated" if table.separated else "unfinished"
 
 
-class Scorecard:
+class RunScorecard:
     """The tables of one run, marked by the arrangement each was left in."""
 
     def __init__(self) -> None:
-        self.results: list[ScoredTable] = []
+        self.scored_tables: list[ScoredTable] = []
 
-    def table(self, result: ScoredTable) -> str:
+    def add_table(self, table: ScoredTable) -> str:
         """Add one finished table. Returns its outcome, for a runner to print as it goes."""
-        self.results.append(result)
-        return outcome(result)
+        self.scored_tables.append(table)
+        return table_outcome(table)
 
     @property
-    def tables(self) -> list[dict]:
+    def rows_per_table(self) -> list[dict]:
         """One row per table, in the order they were attempted, kept beside a result.
 
         A run's totals do not say which table a film should be made of, and a
@@ -175,22 +178,22 @@ class Scorecard:
         """
         return [
             {
-                "seed": r.seed,
-                "glasses": r.glasses,
-                "outcome": outcome(r),
-                "pickable_at_start": r.pickable_at_start,
-                "pickable_at_end": r.pickable_at_end,
-                "broken": r.toppled,
-                "ended_by": r.ended_by,
-                "arm_seconds": round(r.arm_seconds, 2),
+                "seed": table.seed,
+                "glasses": table.glasses,
+                "outcome": table_outcome(table),
+                "pickable_at_start": table.pickable_at_start,
+                "pickable_at_end": table.pickable_at_end,
+                "broken": table.toppled,
+                "ended_by": table.ended_by,
+                "arm_seconds": round(table.arm_seconds, 2),
                 # Kept per table, and not only as a run total, because a walk
                 # can be truncated afterwards -- a table the clock ended before
                 # the arm moved is dropped from the queue -- and a total cannot
                 # be truncated with it.
-                "thinking_seconds": round(r.thinking_seconds, 3),
-                "answers": r.answers,
+                "thinking_seconds": round(table.thinking_seconds, 3),
+                "answers": table.pushes_requested,
             }
-            for r in self.results
+            for table in self.scored_tables
         ]
 
     def summary(self) -> dict:
@@ -206,58 +209,58 @@ class Scorecard:
         the same count as ``outcome.failed`` reached from the other side: one
         says how the table ended, the other says what was left on it.
         """
-        rows = self.results
+        tables = self.scored_tables
         # A table that lost a glass is left out of both ends of the pickable
         # count, so breaking a glass pays nothing at all. Every glass on it is
         # still counted in ``glasses``, which is what the share is out of.
-        clean = [r for r in rows if not r.failed]
-        glasses = sum(r.glasses for r in rows)
-        started = sum(r.pickable_at_start for r in clean)
-        ended = sum(r.pickable_at_end for r in clean)
-        separated = [r for r in rows if r.separated]
-        answers = sum(r.answers for r in rows)
-        result = {
-            "tables_attempted": len(rows),
-            "glasses": glasses,
+        tables_without_breakage = [table for table in tables if not table.failed]
+        glass_count = sum(table.glasses for table in tables)
+        pickable_at_start = sum(table.pickable_at_start for table in tables_without_breakage)
+        pickable_at_end = sum(table.pickable_at_end for table in tables_without_breakage)
+        separated_tables = [table for table in tables if table.separated]
+        pushes_requested = sum(table.pushes_requested for table in tables)
+        summary = {
+            "tables_attempted": len(tables),
+            "glasses": glass_count,
             "outcome": {
-                "separated": len(separated),
-                "failed": sum(1 for r in rows if r.failed),
-                "unfinished": sum(1 for r in rows if r.unfinished),
+                "separated": len(separated_tables),
+                "failed": sum(1 for table in tables if table.failed),
+                "unfinished": sum(1 for table in tables if table.unfinished),
             },
             "glasses_end": {
-                "pickable": ended,
-                "pickable_at_start": started,
+                "pickable": pickable_at_end,
+                "pickable_at_start": pickable_at_start,
                 # The honest reading, because some glasses are drawn with room
                 # already. It can be negative: a solution is free to push a
                 # glass into its neighbour, and clamping this would hide that.
-                "gain": ended - started,
-                "pickable_share": _share(ended, glasses),
+                "gain": pickable_at_end - pickable_at_start,
+                "pickable_share": _rounded_fraction(pickable_at_end, glass_count),
                 # The toppled glasses, under the name they have on a real
                 # floor. The same number is not counted anywhere else.
-                "broken": sum(r.toppled for r in rows),
+                "broken": sum(table.toppled for table in tables),
             },
             "ended_by": {
-                "said_done": sum(1 for r in rows if r.ended_by == SAID_DONE),
-                "ran_out": sum(1 for r in rows if r.ended_by == RAN_OUT),
-                "glass_over": sum(1 for r in rows if r.ended_by == GLASS_OVER),
+                "said_done": sum(1 for table in tables if table.ended_by == SAID_DONE),
+                "ran_out": sum(1 for table in tables if table.ended_by == RAN_OUT_OF_TIME),
+                "glass_over": sum(1 for table in tables if table.ended_by == GLASS_OVER),
             },
             # Knowing when to stop is part of the job, and stopping early is a
             # different mistake from running out of time. Neither of the two
             # groups above says this on its own.
-            "said_done_while_crowded": sum(1 for r in rows if r.said_done and r.unfinished),
-            "answers": answers,
-            "arm_seconds": {"total": round(sum(r.arm_seconds for r in rows), 2)},
-            "thinking_seconds": round(sum(r.thinking_seconds for r in rows), 3),
+            "said_done_while_crowded": sum(1 for table in tables if table.said_done and table.unfinished),
+            "answers": pushes_requested,
+            "arm_seconds": {"total": round(sum(table.arm_seconds for table in tables), 2)},
+            "thinking_seconds": round(sum(table.thinking_seconds for table in tables), 3),
         }
-        if separated:
-            mean = sum(r.arm_seconds for r in separated) / len(separated)
-            result["arm_seconds"]["separated_mean"] = round(mean, 2)
-        if answers:
-            result["thinking_seconds_per_answer"] = round(result["thinking_seconds"] / answers, 4)
-        return result
+        if separated_tables:
+            mean = sum(table.arm_seconds for table in separated_tables) / len(separated_tables)
+            summary["arm_seconds"]["separated_mean"] = round(mean, 2)
+        if pushes_requested:
+            summary["thinking_seconds_per_answer"] = round(summary["thinking_seconds"] / pushes_requested, 4)
+        return summary
 
 
-class Repeats:
+class ScorecardsOverRuns:
     """Several evaluation runs of one solution, and the spread across them.
 
     Every number in this project is quoted with a spread, because one run is
@@ -265,27 +268,27 @@ class Repeats:
     computing it, and the variation between runs is sometimes wider than the
     gap between two methods::
 
-        runs = Repeats()
-        for attempt in range(3):
-            card = runs.run()
-            for result in walk_the_queue(solution):
-                card.table(result)
-        summary = runs.summary()
+        scorecards = ScorecardsOverRuns()
+        for run_index in range(3):
+            scorecard = scorecards.new_scorecard()
+            for result in run_solution_down_table_list(solution):
+                scorecard.add_table(result)
+        summary = scorecards.summary()
     """
 
     def __init__(self) -> None:
-        self.cards: list[Scorecard] = []
+        self.scorecards: list[RunScorecard] = []
 
-    def run(self) -> Scorecard:
+    def new_scorecard(self) -> RunScorecard:
         """A fresh scorecard for the next evaluation run."""
-        self.cards.append(Scorecard())
-        return self.cards[-1]
+        self.scorecards.append(RunScorecard())
+        return self.scorecards[-1]
 
     def summary(self) -> dict:
         """Every run in full, and the spread of every number across them."""
-        each = [card.summary() for card in self.cards]
-        return {"runs": len(each), "spread": spread(each) if each else {}, "each": each}
+        summaries = [scorecard.summary() for scorecard in self.scorecards]
+        return {"runs": len(summaries), "spread": spread(summaries) if summaries else {}, "each": summaries}
 
 
-def _share(part: int, whole: int) -> float:
+def _rounded_fraction(part: int, whole: int) -> float:
     return round(part / whole, 3) if whole else 0.0

@@ -12,12 +12,12 @@ from pathlib import Path
 
 import smolvla_fine_tuned
 
-from shared.learning import table_and_push_encoding as F
+from shared.learning import table_and_push_encoding
 
 if __name__ == "__main__":
-    records = F.load_records(*sys.argv[1:-1])
+    records = table_and_push_encoding.load_push_records(*sys.argv[1:-1])
     started = time.perf_counter()
-    data = smolvla_fine_tuned.samples(records)
+    data = smolvla_fine_tuned.training_samples(records)
     with open(Path(sys.argv[-1]), "wb") as handle:
         pickle.dump(data, handle)
     print(f"{len(data)} samples from {len(records)} pushes in {time.perf_counter() - started:.0f} s")

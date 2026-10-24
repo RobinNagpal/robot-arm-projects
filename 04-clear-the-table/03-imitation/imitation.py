@@ -29,37 +29,55 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from geometry_reference import SAFE  # noqa: F401
+from geometry_reference import SAFE_SETTINGS  # noqa: F401
 from torch import nn
 
-from shared.learning import table_and_push_encoding as F
-from shared.learning.learned_networks import PushPolicy
-from shared.turn_by_turn_loop import AS_NEEDED, Done, Refused, TurnByTurn
+from shared.learning import table_and_push_encoding
+from shared.learning.learned_networks import PushPolicyNetwork
+from shared.turn_by_turn_loop import LOOK_ONLY_AS_NEEDED, RefusedGlasses, TableFinished, TurnByTurnSolution
 
-WEIGHTS = Path(__file__).resolve().parent / "weights"
+WEIGHTS_FOLDER = Path(__file__).resolve().parent / "weights"
 
 
-def demonstrations(records: list[dict], least_gain_mm: float = 4.0) -> tuple[list, int]:
+def demonstrations_from_pushes(records: list[dict], least_gain_mm: float = 4.0) -> tuple[list, int]:
     """(rows, mask, glass, action) for every push worth copying, and how many finished-tables there were."""
-    demos, done = [], 0
-    for r in records:
-        before = F.boxes_of(r["before"])
-        rows, mask = F.table_tensor(before)
-        if all(g["pickable"] for g in r["before"]):
-            demos.append((rows, mask, F.SLOTS, np.zeros(F.ACTION_WIDTH, np.float32)))  # the table is finished
-            done += 1
+    demonstrations, finished_tables = [], 0
+    for record in records:
+        before = table_and_push_encoding.boxes_from_layout(record["before"])
+        rows, mask = table_and_push_encoding.encode_table(before)
+        if all(glass["pickable"] for glass in record["before"]):
+            demonstrations.append(
+                (
+                    rows,
+                    mask,
+                    table_and_push_encoding.GLASS_SLOTS,
+                    np.zeros(table_and_push_encoding.NUMBERS_PER_PUSH, np.float32),
+                )
+            )  # the table is finished
+            finished_tables += 1
             continue
-        o = F.outcome(r)
-        if not o["feasible"] or o["topple"]:
+        outcome = table_and_push_encoding.push_outcome_from_record(record)
+        if not outcome["feasible"] or outcome["topple"]:
             continue
         # Worth copying: it freed a glass, or took real room off the table
         # without disturbing anything else much.
-        if o["gain"] >= 1 or (o["eased"] >= least_gain_mm and o["disturbed"] < 0.01 and o["moved"] > 0.01):
-            demos.append((rows, mask, r["request"]["glass"], F.action_vector(F.request_of(r))))
-    return demos, done
+        if outcome["gain"] >= 1 or (
+            outcome["eased"] >= least_gain_mm and outcome["disturbed"] < 0.01 and outcome["moved"] > 0.01
+        ):
+            demonstrations.append(
+                (
+                    rows,
+                    mask,
+                    record["request"]["glass"],
+                    table_and_push_encoding.encode_push(
+                        table_and_push_encoding.push_request_from_record(record)
+                    ),
+                )
+            )
+    return demonstrations, finished_tables
 
 
-def lessons(rows: list[dict]) -> tuple[list, int]:
+def demonstrations_from_ceiling_lessons(lessons: list[dict]) -> tuple[list, int]:
     """(rows, mask, glass, action) for every turn of the ceiling's lessons, and how many said "finished".
 
     A push the search made is copied unless it tipped a glass after all, which the
@@ -68,93 +86,133 @@ def lessons(rows: list[dict]) -> tuple[list, int]:
     includes tables that still had glasses short of room: the search tried thirty
     pushes there and none was worth making.
     """
-    demos, done = [], 0
-    for row in rows:
-        table, mask = F.table_tensor(F.boxes_of(row["before"]))
-        if row["request"] is None:
-            demos.append((table, mask, F.SLOTS, np.zeros(F.ACTION_WIDTH, np.float32)))
-            done += 1
-        elif not row.get("toppled") and row["request"]["glass"] < F.SLOTS:
-            demos.append((table, mask, row["request"]["glass"], F.action_vector(F.request_of(row))))
-    return demos, done
+    demonstrations, finished_lessons = [], 0
+    for lesson in lessons:
+        table_rows, mask = table_and_push_encoding.encode_table(
+            table_and_push_encoding.boxes_from_layout(lesson["before"])
+        )
+        if lesson["request"] is None:
+            demonstrations.append(
+                (
+                    table_rows,
+                    mask,
+                    table_and_push_encoding.GLASS_SLOTS,
+                    np.zeros(table_and_push_encoding.NUMBERS_PER_PUSH, np.float32),
+                )
+            )
+            finished_lessons += 1
+        elif not lesson.get("toppled") and lesson["request"]["glass"] < table_and_push_encoding.GLASS_SLOTS:
+            demonstrations.append(
+                (
+                    table_rows,
+                    mask,
+                    lesson["request"]["glass"],
+                    table_and_push_encoding.encode_push(
+                        table_and_push_encoding.push_request_from_record(lesson)
+                    ),
+                )
+            )
+    return demonstrations, finished_lessons
 
 
-def train(demos: list, epochs: int = 300, seed: int = 0, log=lambda *a: print(*a, flush=True)) -> PushPolicy:
+def train_push_policy_by_imitation(
+    demonstrations: list, epochs: int = 300, seed: int = 0, log=lambda *parts: print(*parts, flush=True)
+) -> PushPolicyNetwork:
     torch.manual_seed(seed)
     rng = np.random.default_rng(seed)
-    net = PushPolicy()
+    net = PushPolicyNetwork()
     optimiser = torch.optim.AdamW(net.parameters(), 1e-3, weight_decay=1e-4)
-    rows = torch.tensor(np.stack([d[0] for d in demos]))
-    mask = torch.tensor(np.stack([d[1] for d in demos]))
-    glass = torch.tensor([d[2] for d in demos])
-    action = torch.tensor(np.stack([d[3] for d in demos]))
-    n = len(demos)
+    rows = torch.tensor(np.stack([demonstration[0] for demonstration in demonstrations]))
+    mask = torch.tensor(np.stack([demonstration[1] for demonstration in demonstrations]))
+    glass = torch.tensor([demonstration[2] for demonstration in demonstrations])
+    action = torch.tensor(np.stack([demonstration[3] for demonstration in demonstrations]))
+    count = len(demonstrations)
     started = time.perf_counter()
     for epoch in range(epochs):
-        order = rng.permutation(n)
-        total = 0.0
-        for k in range(0, n, 64):
-            idx = order[k : k + 64]
-            r, m, g, a = rows[idx].clone(), mask[idx].clone(), glass[idx].clone(), action[idx]
+        order = rng.permutation(count)
+        summed_loss = 0.0
+        for batch_start in range(0, count, 64):
+            batch = order[batch_start : batch_start + 64]
+            batch_rows, batch_mask, batch_glass, batch_action = (
+                rows[batch].clone(),
+                mask[batch].clone(),
+                glass[batch].clone(),
+                action[batch],
+            )
             # Shuffle the glasses, and the answer with them.
-            for b in range(len(idx)):
-                perm = torch.randperm(F.SLOTS)
-                inverse = torch.argsort(perm)
-                r[b], m[b] = r[b][perm], m[b][perm]
-                if g[b] < F.SLOTS:
-                    g[b] = inverse[g[b]]
-            logits, push, _ = net(r, m)
-            choice = nn.functional.cross_entropy(logits, g)
-            real = g < F.SLOTS
-            chosen = push[torch.arange(len(idx)), g.clamp(max=F.SLOTS - 1)]
-            fit = ((chosen - a) ** 2).mean(1)
+            for row_in_batch in range(len(batch)):
+                shuffle = torch.randperm(table_and_push_encoding.GLASS_SLOTS)
+                unshuffle = torch.argsort(shuffle)
+                batch_rows[row_in_batch], batch_mask[row_in_batch] = (
+                    batch_rows[row_in_batch][shuffle],
+                    batch_mask[row_in_batch][shuffle],
+                )
+                if batch_glass[row_in_batch] < table_and_push_encoding.GLASS_SLOTS:
+                    batch_glass[row_in_batch] = unshuffle[batch_glass[row_in_batch]]
+            logits, pushes, _ = net(batch_rows, batch_mask)
+            choice = nn.functional.cross_entropy(logits, batch_glass)
+            real = batch_glass < table_and_push_encoding.GLASS_SLOTS
+            chosen = pushes[
+                torch.arange(len(batch)), batch_glass.clamp(max=table_and_push_encoding.GLASS_SLOTS - 1)
+            ]
+            fit = ((chosen - batch_action) ** 2).mean(1)
             fit = (fit * real).sum() / real.sum().clamp(min=1)
             loss = choice + 2.0 * fit
             optimiser.zero_grad()
             loss.backward()
             optimiser.step()
-            total += float(loss) * len(idx)
+            summed_loss += float(loss) * len(batch)
         if log and (epoch % 50 == 49 or epoch == epochs - 1):
-            log(f"  epoch {epoch + 1}/{epochs}: loss {total / n:.3f}, {time.perf_counter() - started:.0f} s")
+            log(
+                f"  epoch {epoch + 1}/{epochs}: loss {summed_loss / count:.3f}, "
+                f"{time.perf_counter() - started:.0f} s"
+            )
     return net.eval()
 
 
-class Imitation(TurnByTurn):
+class ImitationSolution(TurnByTurnSolution):
     name = "imitation (copies the pushes that worked)"
-    looking = AS_NEEDED  # it reads the boxes, so one picture that shows every glass is enough
+    looking_mode = LOOK_ONLY_AS_NEEDED  # it reads the boxes, so one picture that shows every glass is enough
 
     def __init__(self, weights: Path | None = None) -> None:
-        self.net = PushPolicy()
-        self.net.load_state_dict(torch.load(weights or WEIGHTS / "imitation-r4.pt", weights_only=True))
-        self.net.eval()
-        self.refused = Refused()
+        self.policy_network = PushPolicyNetwork()
+        self.policy_network.load_state_dict(
+            torch.load(weights or WEIGHTS_FOLDER / "imitation-r4.pt", weights_only=True)
+        )
+        self.policy_network.eval()
+        self.refused_glasses = RefusedGlasses()
+        self.last_requested_glass: int | None = None
 
-    def begin(self) -> None:
-        self.refused = Refused()
-        self.last = None
+    def start_new_table(self) -> None:
+        self.refused_glasses = RefusedGlasses()
+        self.last_requested_glass = None
 
     @torch.no_grad()
-    def decide(self, look):
-        boxes = list(look.boxes)
+    def decide_turn(self, observation):
+        boxes = list(observation.boxes)
         if not boxes:
-            return Done("no glass in view")
-        if look.refused and getattr(self, "last", None) is not None:
-            self.refused.add(boxes, self.last)
-        rows, mask = F.table_tensor(boxes)
-        logits, push, _ = self.net(torch.tensor(rows)[None], torch.tensor(mask)[None])
-        scores = logits[0].clone()
-        for k in self.refused.among(boxes):
-            if k < F.SLOTS:
-                scores[k] = -1e9
-        choice = int(scores.argmax())
-        if choice == F.SLOTS or F.pickable_count(boxes) == len(boxes):
-            return Done(
+            return TableFinished("no glass in view")
+        if observation.last_push_refusal_reason and self.last_requested_glass is not None:
+            self.refused_glasses.remember(boxes, self.last_requested_glass)
+        rows, mask = table_and_push_encoding.encode_table(boxes)
+        scores_for_each_choice, push_for_each_glass, _ = self.policy_network(
+            torch.tensor(rows)[None], torch.tensor(mask)[None]
+        )
+        allowed_scores = scores_for_each_choice[0].clone()
+        for refused_index in self.refused_glasses.indices_in_look(boxes):
+            if refused_index < table_and_push_encoding.GLASS_SLOTS:
+                allowed_scores[refused_index] = -1e9
+        chosen = int(allowed_scores.argmax())
+        if chosen == table_and_push_encoding.GLASS_SLOTS or table_and_push_encoding.count_pickable_boxes(
+            boxes
+        ) == len(boxes):
+            return TableFinished(
                 "every glass has room"
-                if F.pickable_count(boxes) == len(boxes)
+                if table_and_push_encoding.count_pickable_boxes(boxes) == len(boxes)
                 else "the model says the table is finished"
             )
-        self.last = choice
-        return F.request_from(choice, push[0, choice].numpy())
+        self.last_requested_glass = chosen
+        return table_and_push_encoding.decode_push(chosen, push_for_each_glass[0, chosen].numpy())
 
 
 if __name__ == "__main__":
@@ -170,32 +228,41 @@ if __name__ == "__main__":
     )
     parser.add_argument("--epochs", type=int, default=300)
     parser.add_argument("--tag", default="imitation-r4")
-    a = parser.parse_args()
-    records = F.load_records(*a.records)
-    demos, finished = demonstrations(records) if records else ([], 0)
-    print(f"{len(records)} pushes -> {len(demos)} demonstrations ({finished} of them 'finished')")
-    taught, stops = lessons(F.load_records(*a.lessons)) if a.lessons else ([], 0)
-    print(f"{len(taught)} lessons from the search ({stops} of them 'finished'), each shown {a.repeat} times")
+    arguments = parser.parse_args()
+    records = table_and_push_encoding.load_push_records(*arguments.records)
+    demonstrations, finished = demonstrations_from_pushes(records) if records else ([], 0)
+    print(f"{len(records)} pushes -> {len(demonstrations)} demonstrations ({finished} of them 'finished')")
+    lessons, finished_lessons = (
+        demonstrations_from_ceiling_lessons(table_and_push_encoding.load_push_records(*arguments.lessons))
+        if arguments.lessons
+        else ([], 0)
+    )
+    print(
+        f"{len(lessons)} lessons from the search ({finished_lessons} of them 'finished'), "
+        f"each shown {arguments.repeat} times"
+    )
     # Most lessons say "finished", so shown as often as the pushes they teach the policy to stop everywhere.
-    stop_repeat = a.repeat if a.stop_repeat is None else a.stop_repeat
-    demos += [d for d in taught if d[2] != F.SLOTS] * a.repeat + [
-        d for d in taught if d[2] == F.SLOTS
+    stop_repeat = arguments.repeat if arguments.stop_repeat is None else arguments.stop_repeat
+    demonstrations += [
+        demonstration for demonstration in lessons if demonstration[2] != table_and_push_encoding.GLASS_SLOTS
+    ] * arguments.repeat + [
+        demonstration for demonstration in lessons if demonstration[2] == table_and_push_encoding.GLASS_SLOTS
     ] * stop_repeat
-    net = train(demos, a.epochs)
-    WEIGHTS.mkdir(exist_ok=True)
-    torch.save(net.state_dict(), WEIGHTS / f"{a.tag}.pt")
+    network = train_push_policy_by_imitation(demonstrations, arguments.epochs)
+    WEIGHTS_FOLDER.mkdir(exist_ok=True)
+    torch.save(network.state_dict(), WEIGHTS_FOLDER / f"{arguments.tag}.pt")
     (Path(__file__).resolve().parent / "results").mkdir(exist_ok=True)
-    (Path(__file__).resolve().parent / "results" / f"{a.tag}-training.json").write_text(
+    (Path(__file__).resolve().parent / "results" / f"{arguments.tag}-training.json").write_text(
         json.dumps(
             {
                 "pushes": len(records),
-                "demonstrations": len(demos),
+                "demonstrations": len(demonstrations),
                 "finished": finished,
-                "lessons": len(taught),
-                "lessons_finished": stops,
-                "repeat": a.repeat,
+                "lessons": len(lessons),
+                "lessons_finished": finished_lessons,
+                "repeat": arguments.repeat,
                 "stop_repeat": stop_repeat,
-                "epochs": a.epochs,
+                "epochs": arguments.epochs,
             },
             indent=1,
         )

@@ -47,13 +47,13 @@ from pathlib import Path
 import numpy as np
 import yaml
 
-HERE = Path(__file__).resolve().parent
-CONFIG = HERE.parent / "ros" / "moveit"
-GROUP = "ur_manipulator"
-TIP = "tool0"
+THIS_FOLDER = Path(__file__).resolve().parent
+MOVEIT_CONFIG_FOLDER = THIS_FOLDER.parent / "ros" / "moveit"
+ARM_PLANNING_GROUP = "ur_manipulator"
+TIP_LINK = "tool0"
 # The 2F-85 knuckle angle with the fingers closed: the figure in the SRDF.
 SHUT_KNUCKLE = 0.7929
-JOINTS = (
+ARM_JOINTS = (
     "shoulder_pan_joint",
     "shoulder_lift_joint",
     "elbow_joint",
@@ -63,21 +63,21 @@ JOINTS = (
 )
 
 
-def _yaml(name: str) -> dict:
+def _read_yaml(name: str) -> dict:
     # A round trip through JSON because the YAML files use anchors, and ROS's
     # parameter reader refuses aliases outright.
-    return json.loads(json.dumps(yaml.safe_load((CONFIG / name).read_text())))
+    return json.loads(json.dumps(yaml.safe_load((MOVEIT_CONFIG_FOLDER / name).read_text())))
 
 
-class Server:
+class MoveItServer:
     def __init__(self, urdf: Path) -> None:
         from moveit.planning import MoveItPy
 
         config = {
             "robot_description": urdf.read_text(),
-            "robot_description_semantic": (CONFIG / "work_cell.srdf").read_text(),
-            "robot_description_kinematics": _yaml("kinematics.yaml"),
-            "robot_description_planning": _yaml("joint_limits.yaml"),
+            "robot_description_semantic": (MOVEIT_CONFIG_FOLDER / "work_cell.srdf").read_text(),
+            "robot_description_kinematics": _read_yaml("kinematics.yaml"),
+            "robot_description_planning": _read_yaml("joint_limits.yaml"),
             "planning_pipelines": {"pipeline_names": ["ompl"]},
             # MoveIt reads this block under its own name twice over: once as the
             # node's parameter prefix and once as the namespace we ask for.
@@ -91,7 +91,7 @@ class Server:
                     "max_acceleration_scaling_factor": 0.5,
                 }
             },
-            "ompl": _yaml("ompl_planning.yaml"),
+            "ompl": _read_yaml("ompl_planning.yaml"),
             "planning_scene_monitor_options": {
                 "name": "planning_scene_monitor",
                 "robot_description": "robot_description",
@@ -106,19 +106,19 @@ class Server:
             },
         }
         self.moveit = MoveItPy(node_name="push_planner", config_dict=config)
-        self.arm = self.moveit.get_planning_component(GROUP)
-        self.model = self.moveit.get_robot_model()
-        self.monitor = self.moveit.get_planning_scene_monitor()
-        self.boxes = 0
-        self.world: list[dict] = []
+        self.arm_planning_component = self.moveit.get_planning_component(ARM_PLANNING_GROUP)
+        self.robot_model = self.moveit.get_robot_model()
+        self.planning_scene_monitor = self.moveit.get_planning_scene_monitor()
+        self.collision_box_count = 0
+        self.collision_boxes: list[dict] = []
 
     # ------------------------------------------------------------------ state
 
-    def _state(self, q):
+    def _robot_state_at(self, q):
         from moveit.core.robot_state import RobotState
 
-        state = RobotState(self.model)
-        state.set_joint_group_positions(GROUP, np.asarray(q, dtype=float))
+        state = RobotState(self.robot_model)
+        state.set_joint_group_positions(ARM_PLANNING_GROUP, np.asarray(q, dtype=float))
         # The hand pushes shut, and the physics hand is drawn shut, so MoveIt
         # must plan around the shut hand. Left at its default the fingers
         # stand open, 17 mm further out each side, and the planner would keep
@@ -127,18 +127,18 @@ class Server:
         state.update()
         return state
 
-    def scene(self, boxes: list[dict]) -> dict:
+    def set_collision_boxes(self, boxes: list[dict]) -> dict:
         """Replace the collision world with these boxes. The table is the caller's to include."""
-        self.world = [dict(box, id=box.get("id", f"box_{k}")) for k, box in enumerate(boxes)]
-        self._apply(self.world)
+        self.collision_boxes = [dict(box, id=box.get("id", f"box_{k}")) for k, box in enumerate(boxes)]
+        self._apply_collision_boxes(self.collision_boxes)
         return {"ok": True, "boxes": len(boxes)}
 
-    def _apply(self, boxes: list[dict]) -> None:
+    def _apply_collision_boxes(self, boxes: list[dict]) -> None:
         from geometry_msgs.msg import Pose
         from moveit_msgs.msg import CollisionObject
         from shape_msgs.msg import SolidPrimitive
 
-        with self.monitor.read_write() as scene:
+        with self.planning_scene_monitor.read_write() as scene:
             scene.remove_all_collision_objects()
             for box in boxes:
                 shape = SolidPrimitive()
@@ -155,18 +155,18 @@ class Server:
                 obj.operation = CollisionObject.ADD
                 scene.apply_collision_object(obj)
             scene.current_state.update()
-        self.boxes = len(boxes)
+        self.collision_box_count = len(boxes)
 
-    def _without(self, name: str | None):
+    def _take_out_box(self, name: str | None):
         """The scene with one box taken out, for a stroke that has to touch it."""
         if name is not None:
-            self._apply([box for box in self.world if box["id"] != name])
+            self._apply_collision_boxes([box for box in self.collision_boxes if box["id"] != name])
 
-    def _restore(self, name: str | None) -> None:
+    def _put_back_boxes(self, name: str | None) -> None:
         if name is not None:
-            self._apply(self.world)
+            self._apply_collision_boxes(self.collision_boxes)
 
-    def _pose(self, goal: dict):
+    def _pose_message(self, goal: dict):
         from geometry_msgs.msg import Pose
 
         pose = Pose()
@@ -174,7 +174,7 @@ class Server:
         pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w = goal["quaternion"]
         return pose
 
-    def _joints_for(self, goal: dict, seeds: list, then: list | None = None):
+    def _collision_free_joint_angles_for(self, goal: dict, seeds: list, then: list | None = None):
         """Joint angles that put the flange at ``goal`` without touching the scene.
 
         KDL starts from whatever the state holds, so the answer depends on the
@@ -188,19 +188,22 @@ class Server:
         # available and, measured over the glass zone, is the difference
         # between reaching about half the pushes and nearly all of them.
         for flipped in (False, True):
-            aim = _flipped(goal) if flipped else goal
-            later = [_flipped(g) if flipped else g for g in (then or [])]
-            pose = self._pose(aim)
+            aim = _turned_half_a_turn_about_the_pointing_axis(goal) if flipped else goal
+            later = [_turned_half_a_turn_about_the_pointing_axis(g) if flipped else g for g in (then or [])]
+            pose = self._pose_message(aim)
             for seed in seeds:
-                state = self._state(seed)
-                if not state.set_from_ik(GROUP, pose, TIP, 0.05):
+                state = self._robot_state_at(seed)
+                if not state.set_from_ik(ARM_PLANNING_GROUP, pose, TIP_LINK, 0.05):
                     continue
                 state.update()
-                q = _nearest(np.array(state.get_joint_group_positions(GROUP)), np.asarray(seed, dtype=float))
+                q = _moved_by_whole_turns_towards(
+                    np.array(state.get_joint_group_positions(ARM_PLANNING_GROUP)),
+                    np.asarray(seed, dtype=float),
+                )
                 # The lock is taken for the check alone: the lines below
                 # rebuild the scene, which needs the lock to itself.
-                with self.monitor.read_only() as scene:
-                    if not scene.is_state_valid(self._state(q), GROUP):
+                with self.planning_scene_monitor.read_only() as scene:
+                    if not scene.is_state_valid(self._robot_state_at(q), ARM_PLANNING_GROUP):
                         continue
                 # The posture is only any good if the straight lines that
                 # follow it can be driven from it: a posture that reaches the
@@ -208,7 +211,7 @@ class Server:
                 # is the wrong one of the eight.
                 here, good = q, True
                 for goal_after in later:
-                    path, _ = self._walk(here, goal_after, 0.01)
+                    path, _ = self._straight_line_joint_path(here, goal_after, 0.01)
                     if path is None:
                         good = False
                         break
@@ -217,8 +220,8 @@ class Server:
                     return q.tolist(), flipped
         return None, False
 
-    def ik(self, request: dict) -> dict:
-        found, flipped = self._joints_for(
+    def inverse_kinematics(self, request: dict) -> dict:
+        found, flipped = self._collision_free_joint_angles_for(
             request["goal"], [request["q"], *request.get("seeds", [])], request.get("then")
         )
         return {
@@ -228,33 +231,35 @@ class Server:
             "why": "" if found else "no collision-free solution",
         }
 
-    def fk(self, q) -> dict:
-        state = self._state(q)
-        matrix = np.array(state.get_global_link_transform(TIP))
+    def forward_kinematics(self, q) -> dict:
+        state = self._robot_state_at(q)
+        matrix = np.array(state.get_global_link_transform(TIP_LINK))
         return {"ok": True, "matrix": matrix.tolist()}
 
     # ----------------------------------------------------------------- motion
 
-    def plan(self, request: dict) -> dict:
+    def plan_free_move(self, request: dict) -> dict:
         """A free move, planned by OMPL around the scene."""
         from moveit.planning import PlanRequestParameters
 
         started = time.perf_counter()
-        self.arm.set_start_state(robot_state=self._state(request["q"]))
+        self.arm_planning_component.set_start_state(robot_state=self._robot_state_at(request["q"]))
         if request.get("goal_joints") is not None:
             # A place the caller already knows the arm can stand: no inverse
             # kinematics, so no chance of being handed a different posture.
             target = list(request["goal_joints"])
         else:
             seeds = [request["q"], *request.get("seeds", [])]
-            target, flipped = self._joints_for(request["goal"], seeds, request.get("then"))
+            target, flipped = self._collision_free_joint_angles_for(
+                request["goal"], seeds, request.get("then")
+            )
         if target is None:
             return {
                 "ok": False,
                 "why": "no collision-free joint angles reach the goal",
                 "planning_seconds": time.perf_counter() - started,
             }
-        self.arm.set_goal_state(robot_state=self._state(target))
+        self.arm_planning_component.set_goal_state(robot_state=self._robot_state_at(target))
         parameters = PlanRequestParameters(self.moveit, "plan_request_params")
         parameters.planner_id = request.get("planner", "RRTConnectkConfigDefault")
         parameters.planning_time = float(request.get("planning_time", 3.0))
@@ -266,56 +271,56 @@ class Server:
         # path the planner thought was clear when it skims a box. A second draw
         # nearly always goes round, so a refusal is only reported after a few.
         for _ in range(int(request.get("redraws", 4))):
-            result = self.arm.plan(single_plan_parameters=parameters)
+            result = self.arm_planning_component.plan(single_plan_parameters=parameters)
             if result:
                 break
         took = time.perf_counter() - started
         if not result:
             return {"ok": False, "why": "no plan found", "planning_seconds": took}
-        return {**_unpack(result.trajectory), "planning_seconds": took}
+        return {**_trajectory_as_reply(result.trajectory), "planning_seconds": took}
 
-    def _walk(self, q, goal: dict, step: float, check: bool = True, debug: bool = False):
+    def _straight_line_joint_path(self, q, goal: dict, step: float, check: bool = True, debug: bool = False):
         """Joint angles along a straight line of the flange, or the reason there are none.
 
         Each point is solved from the one before it, so the arm stays in one
         posture. A jump between neighbours means the solver changed posture,
         and a straight stroke must never do that.
         """
-        self._without(goal.get("without"))
+        self._take_out_box(goal.get("without"))
         try:
-            return self._walk_in_scene(q, goal, step, check, debug)
+            return self._straight_line_joint_path_in_scene(q, goal, step, check, debug)
         finally:
-            self._restore(goal.get("without"))
+            self._put_back_boxes(goal.get("without"))
 
-    def _walk_in_scene(self, q, goal: dict, step: float, check: bool, debug: bool):
-        state = self._state(q)
-        start = np.array(state.get_global_link_transform(TIP))
+    def _straight_line_joint_path_in_scene(self, q, goal: dict, step: float, check: bool, debug: bool):
+        state = self._robot_state_at(q)
+        start = np.array(state.get_global_link_transform(TIP_LINK))
         end_position = np.array(goal["position"], dtype=float)
         length = float(np.linalg.norm(end_position - start[:3, 3]))
         pieces = max(1, int(np.ceil(length / step)))
         path = [np.asarray(q, dtype=float)]
-        with self.monitor.read_only() as scene:
+        with self.planning_scene_monitor.read_only() as scene:
             for k in range(1, pieces + 1):
                 at = start[:3, 3] + (end_position - start[:3, 3]) * (k / pieces)
-                pose = self._pose({"position": at, "quaternion": goal["quaternion"]})
-                if not state.set_from_ik(GROUP, pose, TIP, 0.02):
+                pose = self._pose_message({"position": at, "quaternion": goal["quaternion"]})
+                if not state.set_from_ik(ARM_PLANNING_GROUP, pose, TIP_LINK, 0.02):
                     return None, f"no joint angles reach point {k} of {pieces}"
                 state.update()
-                if check and not scene.is_state_valid(state, GROUP, debug):
+                if check and not scene.is_state_valid(state, ARM_PLANNING_GROUP, debug):
                     return None, f"the arm would touch the scene at point {k} of {pieces}"
-                path.append(np.array(state.get_joint_group_positions(GROUP)))
+                path.append(np.array(state.get_joint_group_positions(ARM_PLANNING_GROUP)))
                 if np.abs(path[-1] - path[-2]).max() > 0.35:
                     return None, "the arm would change posture mid-line"
         return path, ""
 
-    def line(self, request: dict) -> dict:
+    def plan_straight_line(self, request: dict) -> dict:
         """A straight line of the fingertips, solved by inverse kinematics and timed by MoveIt."""
         from moveit.core.robot_trajectory import RobotTrajectory
         from moveit_msgs.msg import RobotTrajectory as RobotTrajectoryMsg
         from trajectory_msgs.msg import JointTrajectoryPoint
 
         started = time.perf_counter()
-        path, why = self._walk(
+        path, why = self._straight_line_joint_path(
             request["q"],
             request["goal"],
             float(request.get("step", 0.005)),
@@ -325,22 +330,22 @@ class Server:
         if path is None:
             return {"ok": False, "why": why}
         message = RobotTrajectoryMsg()
-        message.joint_trajectory.joint_names = list(JOINTS)
+        message.joint_trajectory.joint_names = list(ARM_JOINTS)
         for q in path:
             point = JointTrajectoryPoint()
             point.positions = [float(v) for v in q]
             message.joint_trajectory.points.append(point)
-        trajectory = RobotTrajectory(self.model)
-        trajectory.set_robot_trajectory_msg(self._state(request["q"]), message)
-        trajectory.joint_model_group_name = GROUP
+        trajectory = RobotTrajectory(self.robot_model)
+        trajectory.set_robot_trajectory_msg(self._robot_state_at(request["q"]), message)
+        trajectory.joint_model_group_name = ARM_PLANNING_GROUP
         if not trajectory.apply_totg_time_parameterization(
             float(request.get("vel", 0.1)), float(request.get("acc", 0.1))
         ):
             return {"ok": False, "why": "the line could not be timed"}
-        return {**_unpack(trajectory), "planning_seconds": time.perf_counter() - started}
+        return {**_trajectory_as_reply(trajectory), "planning_seconds": time.perf_counter() - started}
 
 
-def _flipped(goal: dict) -> dict:
+def _turned_half_a_turn_about_the_pointing_axis(goal: dict) -> dict:
     """The same goal with the hand turned half a turn about its own pointing axis."""
     x1, y1, z1, w1 = goal["quaternion"]
     x2, y2, z2, w2 = 0.0, 0.0, 1.0, 0.0
@@ -353,7 +358,7 @@ def _flipped(goal: dict) -> dict:
     return {**goal, "quaternion": quaternion}
 
 
-def _nearest(q: np.ndarray, seed: np.ndarray) -> np.ndarray:
+def _moved_by_whole_turns_towards(q: np.ndarray, seed: np.ndarray) -> np.ndarray:
     """Each angle moved by whole turns to sit as close to the seed as the joint limits allow."""
     limits = np.array([2 * np.pi, 2 * np.pi, np.pi, 2 * np.pi, 2 * np.pi, 2 * np.pi])
     out = q.copy()
@@ -364,11 +369,11 @@ def _nearest(q: np.ndarray, seed: np.ndarray) -> np.ndarray:
     return out
 
 
-def _unpack(trajectory) -> dict:
+def _trajectory_as_reply(trajectory) -> dict:
     message = trajectory.get_robot_trajectory_msg()
     points = message.joint_trajectory.points
     names = list(message.joint_trajectory.joint_names)
-    order = [names.index(j) for j in JOINTS]
+    order = [names.index(j) for j in ARM_JOINTS]
     times = [p.time_from_start.sec + p.time_from_start.nanosec * 1e-9 for p in points]
     q = [[p.positions[i] for i in order] for p in points]
     return {"ok": True, "t": times, "q": q}
@@ -380,7 +385,16 @@ def main() -> None:
     # stray line there would corrupt the protocol.
     reply = os.fdopen(os.dup(1), "w")
     os.dup2(2, 1)
-    server = Server(Path(sys.argv[1]))
+    server = MoveItServer(Path(sys.argv[1]))
+    # Each command of the protocol, and the method that answers it. The first three are handed
+    # the whole request; "scene" is handed its boxes and "fk" its joint angles.
+    handlers = {
+        "plan": server.plan_free_move,
+        "line": server.plan_straight_line,
+        "ik": server.inverse_kinematics,
+        "scene": server.set_collision_boxes,
+        "fk": server.forward_kinematics,
+    }
     reply.write(json.dumps({"ok": True, "ready": True}) + "\n")
     reply.flush()
     for line in sys.stdin:
@@ -389,7 +403,7 @@ def main() -> None:
         if command == "quit":
             break
         try:
-            answer = getattr(server, command)(
+            answer = handlers[command](
                 request if command in ("plan", "line", "ik") else request.get("boxes", request.get("q"))
             )
         except Exception as error:  # a bad request must not take the server down

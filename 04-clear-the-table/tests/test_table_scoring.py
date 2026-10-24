@@ -23,8 +23,8 @@ from work_cell.rack.layout import GLASS_ZONE
 from work_cell.table.layout import TABLE_TOP_Z
 
 from examiner.examining import table_scoring
-from examiner.examining.table_scoring import GLASS_OVER, RAN_OUT, SAID_DONE, ScoredTable
-from examiner.simulation.table_simulator import Simulator
+from examiner.examining.table_scoring import GLASS_OVER, RAN_OUT_OF_TIME, SAID_DONE, ScoredTable
+from examiner.simulation.table_simulator import TableSimulator
 from examiner.simulation.taken_from_problem_3 import (
     GRIP_ROOM,
     STANDING_TILT_DEG,
@@ -33,7 +33,7 @@ from examiner.simulation.taken_from_problem_3 import (
     in_zone,
 )
 
-KINDS = sorted(LIBRARY)
+GLASS_KINDS = sorted(LIBRARY)
 # Eight tables is every kind twice and every glass count, and still fast.
 SEEDS = range(TEST_SEEDS, TEST_SEEDS + 8)
 # The table top, the one the common examiner stands every glass on.
@@ -63,7 +63,7 @@ def result(
     ended_by: str = SAID_DONE,
     arm_seconds: float = 30.0,
     thinking_seconds: float = 0.5,
-    answers: int = 6,
+    pushes_requested: int = 6,
 ) -> ScoredTable:
     return ScoredTable(
         seed=seed,
@@ -74,7 +74,7 @@ def result(
         ended_by=ended_by,
         arm_seconds=arm_seconds,
         thinking_seconds=thinking_seconds,
-        answers=answers,
+        pushes_requested=pushes_requested,
     )
 
 
@@ -92,19 +92,19 @@ def a_family_of_tables() -> list[ScoredTable]:
                 pickable_at_start=rng.randint(1, glasses - 1),
                 pickable_at_end=rng.randint(1, glasses),
                 toppled=1 if broken else 0,
-                ended_by=GLASS_OVER if broken else SAID_DONE if seed % 3 else RAN_OUT,
+                ended_by=GLASS_OVER if broken else SAID_DONE if seed % 3 else RAN_OUT_OF_TIME,
                 arm_seconds=10.0 + seed % 11,
                 thinking_seconds=0.1 * (seed % 7),
-                answers=2 + seed % 9,
+                pushes_requested=2 + seed % 9,
             )
         )
     return rows
 
 
-def a_card(rows: list[ScoredTable]) -> table_scoring.Scorecard:
-    card = table_scoring.Scorecard()
+def a_card(rows: list[ScoredTable]) -> table_scoring.RunScorecard:
+    card = table_scoring.RunScorecard()
     for row in rows:
-        card.table(row)
+        card.add_table(row)
     return card
 
 
@@ -113,7 +113,7 @@ def a_card(rows: list[ScoredTable]) -> table_scoring.Scorecard:
 def test_every_table_gets_exactly_one_of_the_three_outcomes(glasses: int, toppled: int) -> None:
     for pickable_at_end in range(glasses + 1):
         row = result(glasses=glasses, pickable_at_end=pickable_at_end, toppled=toppled)
-        named = table_scoring.outcome(row)
+        named = table_scoring.table_outcome(row)
         assert [row.separated, row.failed, row.unfinished].count(True) == 1
         assert named == ("failed" if toppled else "separated" if pickable_at_end == glasses else "unfinished")
 
@@ -151,7 +151,7 @@ def test_the_totals_are_the_sums_of_the_tables() -> None:
     assert summary["glasses"] == sum(r.glasses for r in rows)
     assert summary["glasses_end"]["pickable"] == sum(r.pickable_at_end for r in clean)
     assert summary["glasses_end"]["pickable_at_start"] == sum(r.pickable_at_start for r in clean)
-    assert summary["answers"] == sum(r.answers for r in rows)
+    assert summary["answers"] == sum(r.pushes_requested for r in rows)
     assert summary["arm_seconds"]["total"] == pytest.approx(sum(r.arm_seconds for r in rows))
     assert sum(summary["outcome"].values()) == len(rows)
     assert sum(summary["ended_by"].values()) == len(rows)
@@ -204,7 +204,7 @@ def test_with_no_table_separated_the_mean_arm_time_is_absent_rather_than_zero() 
 
 
 def test_an_empty_run_reports_zeros_and_no_means() -> None:
-    summary = table_scoring.Scorecard().summary()
+    summary = table_scoring.RunScorecard().summary()
     assert summary["tables_attempted"] == 0
     assert summary["glasses_end"]["pickable_share"] == 0.0
     assert "separated_mean" not in summary["arm_seconds"]
@@ -215,7 +215,7 @@ def test_how_a_table_ended_is_kept_apart_from_what_was_left_on_it() -> None:
     rows = [
         result(seed=1, glasses=4, pickable_at_end=4, ended_by=SAID_DONE),
         result(seed=2, glasses=4, pickable_at_end=2, ended_by=SAID_DONE),
-        result(seed=3, glasses=4, pickable_at_end=2, ended_by=RAN_OUT),
+        result(seed=3, glasses=4, pickable_at_end=2, ended_by=RAN_OUT_OF_TIME),
         result(seed=4, glasses=4, pickable_at_end=3, toppled=1, ended_by=GLASS_OVER),
     ]
     summary = a_card(rows).summary()
@@ -233,7 +233,7 @@ def test_a_glass_going_over_is_not_counted_as_not_knowing_when_to_stop() -> None
 
 
 def test_thinking_is_reported_per_answer() -> None:
-    rows = [result(seed=s, thinking_seconds=1.0, answers=4) for s in SEEDS]
+    rows = [result(seed=s, thinking_seconds=1.0, pushes_requested=4) for s in SEEDS]
     summary = a_card(rows).summary()
     assert summary["thinking_seconds"] == pytest.approx(len(SEEDS))
     assert summary["thinking_seconds_per_answer"] == pytest.approx(0.25)
@@ -241,9 +241,9 @@ def test_thinking_is_reported_per_answer() -> None:
 
 def test_one_row_per_table_is_kept_in_the_order_they_were_attempted() -> None:
     rows = a_family_of_tables()
-    kept = a_card(rows).tables
+    kept = a_card(rows).rows_per_table
     assert [row["seed"] for row in kept] == [r.seed for r in rows]
-    assert [row["outcome"] for row in kept] == [table_scoring.outcome(r) for r in rows]
+    assert [row["outcome"] for row in kept] == [table_scoring.table_outcome(r) for r in rows]
     assert [row["ended_by"] for row in kept] == [r.ended_by for r in rows]
 
 
@@ -251,11 +251,11 @@ def test_one_row_per_table_is_kept_in_the_order_they_were_attempted() -> None:
 
 
 def test_the_spread_across_runs_is_problem_threes_own() -> None:
-    runs = table_scoring.Repeats()
+    runs = table_scoring.ScorecardsOverRuns()
     for pickable_at_end in (2, 3, 4):
-        card = runs.run()
+        card = runs.new_scorecard()
         for seed in SEEDS:
-            card.table(result(seed=seed, glasses=4, pickable_at_end=pickable_at_end))
+            card.add_table(result(seed=seed, glasses=4, pickable_at_end=pickable_at_end))
     summary = runs.summary()
     assert summary["runs"] == 3
     assert summary["spread"]["glasses_end.pickable"] == {
@@ -316,7 +316,7 @@ def standing(widths: list[float], spots: list[tuple[float, float]]) -> Table:
     return Table(widths, spots, [0.0] * len(widths))
 
 
-def groups_of(kind: str, size: int) -> list[list[float]]:
+def touching_groups(kind: str, size: int) -> list[list[float]]:
     """The widest widths of a family of forty glasses, in groups of ``size``."""
     widths = [outline.max_diameter for outline, _ in family(kind, 40, seed=3)]
     return [widths[i : i + size] for i in range(0, len(widths) - size + 1, size)]
@@ -325,37 +325,39 @@ def groups_of(kind: str, size: int) -> list[list[float]]:
 def test_a_real_table_is_read_the_same_way_through_the_stand_in() -> None:
     """Ties the stand-in above to the examiner, so the tests that use it mean something."""
     for seed in SEEDS:
-        simulator = Simulator(seed)
+        simulator = TableSimulator(seed)
         on = simulator.on_table()
         stand_in = standing(
             [simulator.glasses[i].outline.max_diameter for i in on],
             [tuple(float(v) for v in simulator.position(i)) for i in on],
         )
-        assert table_scoring.pickable_on_table(stand_in) == table_scoring.pickable_on_table(simulator)
+        assert table_scoring.count_pickable_glasses(stand_in) == table_scoring.count_pickable_glasses(
+            simulator
+        )
 
 
 def test_a_table_drawn_crowded_has_a_glass_that_cannot_be_picked() -> None:
     """Every table problem 4 draws has at least one glass without room."""
     for seed in SEEDS:
-        simulator = Simulator(seed)
-        assert 0 <= table_scoring.pickable_on_table(simulator) < len(simulator.on_table())
+        simulator = TableSimulator(seed)
+        assert 0 <= table_scoring.count_pickable_glasses(simulator) < len(simulator.on_table())
 
 
-@pytest.mark.parametrize("kind", KINDS)
+@pytest.mark.parametrize("kind", GLASS_KINDS)
 def test_glasses_set_far_apart_can_all_be_picked_and_touching_ones_cannot(kind: str) -> None:
     """A family of forty glasses of one kind, at two spacings inside the zone."""
-    for four in groups_of(kind, 4):
+    for four in touching_groups(kind, 4):
         roomy = standing(four, CORNERS)
-        assert table_scoring.pickable_on_table(roomy) == len(four)
+        assert table_scoring.count_pickable_glasses(roomy) == len(four)
 
-    for three in groups_of(kind, 3):
+    for three in touching_groups(kind, 3):
         # Rim to rim, which is the closest the draw ever puts two glasses.
         at, spots = GLASS_ZONE[0] + max(three), []
         for i, width in enumerate(three):
             spots.append((at, (GLASS_ZONE[2] + GLASS_ZONE[3]) / 2))
             at += (width + three[min(i + 1, len(three) - 1)]) / 2
         assert all(in_zone(*spot) for spot in spots), "the row has to fit in the zone to mean anything"
-        assert table_scoring.pickable_on_table(standing(three, spots)) == 0
+        assert table_scoring.count_pickable_glasses(standing(three, spots)) == 0
 
 
 def test_room_is_not_symmetric_between_a_narrow_glass_and_a_wide_one() -> None:
@@ -365,7 +367,7 @@ def test_room_is_not_symmetric_between_a_narrow_glass_and_a_wide_one() -> None:
     not about two remembered glasses.
     """
     checked = 0
-    for kind in KINDS:
+    for kind in GLASS_KINDS:
         widths = sorted(outline.max_diameter for outline, _ in family(kind, 40, seed=5))
         narrow, wide = widths[0], widths[-1]
         if wide - narrow < 0.004:
@@ -374,55 +376,55 @@ def test_room_is_not_symmetric_between_a_narrow_glass_and_a_wide_one() -> None:
         # between the two distances, which differ by half the width difference.
         gap = GRIP_ROOM + (narrow + wide) / 4
         pair = standing([narrow, wide], [(0.48, -0.26 - gap / 2), (0.48, -0.26 + gap / 2)])
-        assert not table_scoring.pickable(pair, 0)
-        assert table_scoring.pickable(pair, 1)
-        assert table_scoring.pickable_on_table(pair) == 1
+        assert not table_scoring.glass_is_pickable(pair, 0)
+        assert table_scoring.glass_is_pickable(pair, 1)
+        assert table_scoring.count_pickable_glasses(pair) == 1
         checked += 1
     assert checked, "no kind drew a wide enough spread of glasses to test with"
 
 
-@pytest.mark.parametrize("kind", KINDS)
+@pytest.mark.parametrize("kind", GLASS_KINDS)
 def test_a_glass_that_went_over_cannot_be_picked_and_still_blocks_its_neighbour(kind: str) -> None:
-    for pair in groups_of(kind, 2):
+    for pair in touching_groups(kind, 2):
         # Far enough apart that both would be pickable standing up.
         spots = [CORNERS[0], CORNERS[1]]
-        assert table_scoring.pickable_on_table(standing(pair, spots)) == 2
+        assert table_scoring.count_pickable_glasses(standing(pair, spots)) == 2
         over = Table(pair, spots, [0.0, STANDING_TILT_DEG + 1.0])
-        assert not table_scoring.pickable(over, 1)
-        assert table_scoring.pickable_on_table(over) == 1
+        assert not table_scoring.glass_is_pickable(over, 1)
+        assert table_scoring.count_pickable_glasses(over) == 1
 
         # Lying where it would crowd its neighbour, it is in the way as much as
         # a standing glass is, so neither glass can be picked.
         close = [CORNERS[0], (CORNERS[0][0] + max(pair) / 2, CORNERS[0][1])]
-        assert table_scoring.pickable_on_table(Table(pair, close, [0.0, 90.0])) == 0
+        assert table_scoring.count_pickable_glasses(Table(pair, close, [0.0, 90.0])) == 0
 
 
-@pytest.mark.parametrize("kind", KINDS)
+@pytest.mark.parametrize("kind", GLASS_KINDS)
 def test_a_glass_shoved_out_of_the_zone_is_not_pickable(kind: str) -> None:
     """It needs no column of its own, and it is not a breakage either."""
-    for pair in groups_of(kind, 2):
+    for pair in touching_groups(kind, 2):
         outside = (GLASS_ZONE[1] + 0.02, (GLASS_ZONE[2] + GLASS_ZONE[3]) / 2)
         assert not in_zone(*outside)
         table = standing(pair, [CORNERS[0], outside])
-        assert table_scoring.pickable(table, 0)
-        assert not table_scoring.pickable(table, 1)
-        assert table_scoring.pickable_on_table(table) == 1
+        assert table_scoring.glass_is_pickable(table, 0)
+        assert not table_scoring.glass_is_pickable(table, 1)
+        assert table_scoring.count_pickable_glasses(table) == 1
 
 
 def test_asking_for_more_room_never_finds_more_glasses_with_room() -> None:
     for seed in SEEDS:
-        simulator = Simulator(seed)
+        simulator = TableSimulator(seed)
         # Half a metre is more than the glass zone is across, so at that margin
         # no glass on any table has room, however far apart the draw stood it.
         margins = (0.0, 0.005, 0.02, 0.1, 0.5)
-        counts = [table_scoring.pickable_on_table(simulator, margin) for margin in margins]
+        counts = [table_scoring.count_pickable_glasses(simulator, margin) for margin in margins]
         assert counts == sorted(counts, reverse=True)
         assert counts[-1] == 0
 
 
 def test_one_glass_on_its_own_in_the_zone_can_always_be_picked() -> None:
     """A family of forty of each kind, each glass alone on a real table."""
-    for kind in KINDS:
+    for kind in GLASS_KINDS:
         for outline, _ in family(kind, 40, seed=11)[:4]:
             glass = SpawnedGlass("glass_0", kind, outline, (0.48, -0.26, TABLE_TOP), 0.0)
-            assert table_scoring.pickable_on_table(Simulator(0, [glass])) == 1
+            assert table_scoring.count_pickable_glasses(TableSimulator(0, [glass])) == 1

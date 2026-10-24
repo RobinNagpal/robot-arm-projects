@@ -10,7 +10,7 @@ where it stood at the end, and which glasses had room.
 
 A glass is **separated** when the gripper could pick it: it is standing, inside the glass
 zone, and every neighbour is far enough away for the open fingers. That is problem 4's
-``pickable``, and nothing else is meant by the word here.
+``glass_is_pickable``, and nothing else is meant by the word here.
 
 **Which tables.** Held-out tables from 10,000 up, in order. A table on which every glass is
 already separated asks nothing of a solution, so at most one in twenty of the chosen tables
@@ -38,26 +38,26 @@ import random
 from pathlib import Path
 
 import matplotlib
-from safety_check import Checked
+from safety_check import SafetyCheckedSolution
 from work_cell.rack.layout import GLASS_ZONE
 
-from examiner.examining import one_table_cell as C
-from examiner.examining.table_examiner import ARM_BUDGET, SimExaminer, Tally
-from examiner.examining.table_scoring import pickable
-from examiner.motion.moveit_connection import MoveItLink
+from examiner.examining import one_table_cell
+from examiner.examining.table_examiner import ARM_SECONDS_FOR_TABLE_LIST, ArmActivityCounts, SimulatedExaminer
+from examiner.examining.table_scoring import glass_is_pickable
+from examiner.motion.moveit_connection import MoveItConnection
 from examiner.simulation.taken_from_problem_3 import STANDING_TILT_DEG, has_room, in_zone
 from examiner.tools import ceiling_search
 from examiner.tools.evaluate_solution import SOLUTIONS
-from shared.turn_by_turn_loop import Done
+from shared.turn_by_turn_loop import TableFinished
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
-HERE = Path(__file__).resolve().parent
+THIS_FOLDER = Path(__file__).resolve().parent
 # The examiner's folder, which keeps the runs, and the problem's, which keeps the solutions.
-EXAMINER = HERE.parent
-RUNS = EXAMINER / "runs"
-PROBLEM = EXAMINER.parent
+EXAMINER_FOLDER = THIS_FOLDER.parent
+RUNS = EXAMINER_FOLDER / "runs"
+PROBLEM = EXAMINER_FOLDER.parent
 TABLES, FIRST, ALREADY_DONE_SHARE = 25, 10_000, 0.05
 
 # What each result file is called, which solution it runs and the weights it reads, which
@@ -83,20 +83,25 @@ RECORDED = {
 # ------------------------------------------------------------------ the glasses
 
 
-def glasses(simulator, start: list[dict] | None = None) -> list[dict]:
-    """Every glass as it stands now. With ``start``, also how far each has moved since."""
+def glass_rows(simulator, rows_at_start: list[dict] | None = None) -> list[dict]:
+    """Every glass as it stands now. With ``rows_at_start``, also how far each has moved since."""
     rows = []
     for i, glass in enumerate(simulator.glasses):
-        x, y = (float(v) for v in simulator.position(i))
+        x, y = (float(value) for value in simulator.position(i))
         # Which neighbours are too close, one at a time, so a crowded glass says who crowds it.
         crowded_by = [
-            j
-            for j in simulator.on_table()
-            if j != i
+            other
+            for other in simulator.on_table()
+            if other != i
             and not has_room(
                 x,
                 y,
-                [(*(float(v) for v in simulator.position(j)), simulator.glasses[j].outline.max_diameter)],
+                [
+                    (
+                        *(float(value) for value in simulator.position(other)),
+                        simulator.glasses[other].outline.max_diameter,
+                    )
+                ],
             )
         ]
         row = {
@@ -107,23 +112,23 @@ def glasses(simulator, start: list[dict] | None = None) -> list[dict]:
             "standing": bool(simulator.tilt(i) < STANDING_TILT_DEG),
             "in_zone": bool(in_zone(x, y)),
             "crowded_by": crowded_by,
-            "separated": bool(pickable(simulator, i)),
+            "separated": bool(glass_is_pickable(simulator, i)),
         }
-        if start is not None:
+        if rows_at_start is not None:
             row["moved_mm"] = round(
-                math.hypot(row["x_mm"] - start[i]["x_mm"], row["y_mm"] - start[i]["y_mm"])
+                math.hypot(row["x_mm"] - rows_at_start[i]["x_mm"], row["y_mm"] - rows_at_start[i]["y_mm"])
             )
         rows.append(row)
     return rows
 
 
-def counts(rows: list[dict]) -> dict:
-    separated = sum(r["separated"] for r in rows)
+def separated_counts(glass_rows: list[dict]) -> dict:
+    separated = sum(r["separated"] for r in glass_rows)
     return {
-        "glasses": len(rows),
+        "glasses": len(glass_rows),
         "separated": separated,
-        "not_separated": len(rows) - separated,
-        "fell_over": sum(not r["standing"] for r in rows),
+        "not_separated": len(glass_rows) - separated,
+        "fell_over": sum(not r["standing"] for r in glass_rows),
     }
 
 
@@ -131,67 +136,68 @@ def counts(rows: list[dict]) -> dict:
 
 # Where the hand comes down, from the push's direction measured against "straight away from the
 # nearest neighbour". At 0 degrees the hand comes down in the gap between the two glasses.
-SIDES = (("in the gap", 45), ("at the side", 135), ("on the far side", 180))
+HAND_SIDES = (("in the gap", 45), ("at the side", 135), ("on the far side", 180))
 MADE, REFUSED, REJECTED = "made", "refused by MoveIt", "rejected by the safety check"
 
 
-def nearest_centre(rows: list[dict], glass: int) -> int | None:
+def nearest_centre_distance_mm(glass_rows: list[dict], glass: int) -> int | None:
     """How far the glass's centre is from the nearest standing glass's centre, in mm."""
-    me = rows[glass]
-    gaps = [
-        math.hypot(r["x_mm"] - me["x_mm"], r["y_mm"] - me["y_mm"])
-        for r in rows
-        if r["glass"] != glass and r["standing"]
+    this_glass = glass_rows[glass]
+    distances = [
+        math.hypot(row["x_mm"] - this_glass["x_mm"], row["y_mm"] - this_glass["y_mm"])
+        for row in glass_rows
+        if row["glass"] != glass and row["standing"]
     ]
-    return round(min(gaps)) if gaps else None
+    return round(min(distances)) if distances else None
 
 
-def side_of(degrees: float) -> str:
-    return next(name for name, limit in SIDES if abs(degrees) <= limit)
+def where_the_hand_comes_down(degrees: float) -> str:
+    return next(name for name, limit in HAND_SIDES if abs(degrees) <= limit)
 
 
-class PushLog:
+class PushRecorder:
     """Every push a solution asked for, and what became of it.
 
-    It listens where a push reaches MoveIt, ``Pusher.push``, and where the safety check turns
-    one down, so no solution is changed. The ceiling's tries also pass through ``Pusher.push``
+    It listens where a push reaches MoveIt, ``MoveItPusher.plan_and_make_push``, and where the safety
+    check turns one down, so no solution is changed. The ceiling's tries also pass through
+    ``MoveItPusher.plan_and_make_push``
     and are put back afterwards, so for the ceiling a push is kept only when ``made`` is called.
     """
 
     def __init__(self, cell, keep_every_push: bool = True) -> None:
         self.simulator, self.entries, self.pending = cell.simulator, [], None
-        pusher_push = cell.pusher.push
+        original_push = cell.pusher.plan_and_make_push
 
-        def push(boxes, request, seconds_left=math.inf, **how):
+        def recording_push(boxes, request, arm_seconds_left=math.inf, **keywords):
             entry = self.describe(boxes, request)
-            before = glasses(self.simulator)
-            result = pusher_push(boxes, request, seconds_left, **how)
-            if result.ok:
-                after = glasses(self.simulator, before)
+            before = glass_rows(self.simulator)
+            pusher_result = original_push(boxes, request, arm_seconds_left, **keywords)
+            if pusher_result.made:
+                after = glass_rows(self.simulator, before)
                 entry |= {
                     "outcome": MADE,
                     "moved_mm": {str(r["glass"]): r["moved_mm"] for r in after if r["moved_mm"] >= 3},
                     "moved_to_mm": {
                         str(r["glass"]): [r["x_mm"], r["y_mm"]] for r in after if r["moved_mm"] >= 3
                     },
-                    "nearest_centre_mm_after": nearest_centre(after, entry["glass"]),
+                    "nearest_centre_mm_after": nearest_centre_distance_mm(after, entry["glass"]),
                     "fell_over": [
-                        a["glass"]
-                        for a, b in zip(after, before, strict=True)
-                        if b["standing"] and not a["standing"]
+                        offered_answer["glass"]
+                        for offered_answer, before_row in zip(after, before, strict=True)
+                        if before_row["standing"] and not offered_answer["standing"]
                     ],
-                    "separated_before": counts(before)["separated"],
-                    "separated_after": counts(after)["separated"],
+                    "separated_before": separated_counts(before)["separated"],
+                    "separated_after": separated_counts(after)["separated"],
                 }
             else:
-                entry |= {"outcome": REFUSED, "why": result.why}
+                entry |= {"outcome": REFUSED, "why": pusher_result.refusal_reason}
             if keep_every_push:
                 self.keep(entry)
             else:
                 self.pending = entry
-            return result
+            return pusher_result
 
-        cell.pusher.push = push
+        cell.pusher.plan_and_make_push = recording_push
 
     def keep(self, entry: dict) -> None:
         self.entries.append({"push": len(self.entries) + 1, **entry})
@@ -202,94 +208,125 @@ class PushLog:
     def describe(self, boxes, request) -> dict:
         """The push as asked for, with the glass found by where the solution's box stood."""
         simulator = self.simulator
-        here = [tuple(float(v) for v in simulator.position(i)) for i in range(len(simulator.glasses))]
+        positions = [
+            tuple(float(value) for value in simulator.position(index))
+            for index in range(len(simulator.glasses))
+        ]
         box = boxes[request.glass]
-        glass = min(range(len(here)), key=lambda i: math.dist(here[i], (box.x, box.y)))
+        glass_index = min(
+            range(len(positions)), key=lambda index: math.dist(positions[index], (box.x, box.y))
+        )
         heading = math.degrees(request.heading)
         # Where the glass would end if it went exactly as asked, and whether it would have room there.
-        aim = (
-            here[glass][0] + request.travel * math.cos(request.heading),
-            here[glass][1] + request.travel * math.sin(request.heading),
+        aimed_at = (
+            positions[glass_index][0] + request.travel * math.cos(request.heading),
+            positions[glass_index][1] + request.travel * math.sin(request.heading),
         )
-        others = [i for i in self.simulator.on_table() if i != glass]
+        other_glasses = [index for index in self.simulator.on_table() if index != glass_index]
         entry = {
-            "glass": glass,
-            "glass_x_mm": round(here[glass][0] * 1000),
-            "glass_y_mm": round(here[glass][1] * 1000),
+            "glass": glass_index,
+            "glass_x_mm": round(positions[glass_index][0] * 1000),
+            "glass_y_mm": round(positions[glass_index][1] * 1000),
             "heading_deg": round(heading),
-            "aimed_at_mm": [round(aim[0] * 1000), round(aim[1] * 1000)],
+            "aimed_at_mm": [round(aimed_at[0] * 1000), round(aimed_at[1] * 1000)],
             "aimed_spot_has_room": bool(
-                has_room(*aim, [(*here[i], self.simulator.glasses[i].outline.max_diameter) for i in others])
+                has_room(
+                    *aimed_at,
+                    [
+                        (*positions[index], self.simulator.glasses[index].outline.max_diameter)
+                        for index in other_glasses
+                    ],
+                )
             ),
-            "nearest_centre_mm_before": nearest_centre(glasses(self.simulator), glass),
+            "nearest_centre_mm_before": nearest_centre_distance_mm(glass_rows(self.simulator), glass_index),
         }
-        if others:
-            n = min(others, key=lambda i: math.dist(here[i], here[glass]))
-            away = math.degrees(math.atan2(here[glass][1] - here[n][1], here[glass][0] - here[n][0]))
-            turned = (heading - away + 180) % 360 - 180
+        if other_glasses:
+            nearest_neighbour = min(
+                other_glasses, key=lambda index: math.dist(positions[index], positions[glass_index])
+            )
+            away_degrees = math.degrees(
+                math.atan2(
+                    positions[glass_index][1] - positions[nearest_neighbour][1],
+                    positions[glass_index][0] - positions[nearest_neighbour][0],
+                )
+            )
+            from_neighbour_degrees = (heading - away_degrees + 180) % 360 - 180
             entry |= {
-                "nearest_neighbour": n,
-                "from_neighbour_deg": round(turned),
-                "hand_comes_down": side_of(turned),
+                "nearest_neighbour": nearest_neighbour,
+                "from_neighbour_deg": round(from_neighbour_degrees),
+                "hand_comes_down": where_the_hand_comes_down(from_neighbour_degrees),
             }
         return entry | {
             "travel_mm": round(request.travel * 1000),
-            "settings": {k: round(v, 3) for k, v in request.settings.__dict__.items()},
+            "settings": {key: round(value, 3) for key, value in request.settings.__dict__.items()},
         }
 
-    def watch(self, checked: Checked):
+    def watch(self, checked_solution: SafetyCheckedSolution):
         """Keep each push the safety check turns down, which never reaches MoveIt.
 
         Returns what puts the check back as it was, for when the table is over.
         """
-        propose, decide = checked.inner.decide, checked.decide
-        offered: list = []
+        original_wrapped_decide, decide_turn = (
+            checked_solution.wrapped_solution.decide_turn,
+            checked_solution.decide_turn,
+        )
+        offered_pushes: list = []
 
-        def proposing(look):
-            answer = propose(look)
-            offered.append((list(look.boxes), answer))
+        def recording_wrapped_decide(observation):
+            answer = original_wrapped_decide(observation)
+            offered_pushes.append((list(observation.boxes), answer))
             return answer
 
-        def deciding(look):
-            offered.clear()
-            answer = decide(look)
-            for boxes, a in offered:
-                if a is not answer and not isinstance(a, Done) and a.glass < len(boxes):
-                    self.keep(self.describe(boxes, a) | {"outcome": REJECTED})
+        def recording_decide(observation):
+            offered_pushes.clear()
+            answer = decide_turn(observation)
+            for boxes, offered_answer in offered_pushes:
+                if (
+                    offered_answer is not answer
+                    and not isinstance(offered_answer, TableFinished)
+                    and offered_answer.glass < len(boxes)
+                ):
+                    self.keep(self.describe(boxes, offered_answer) | {"outcome": REJECTED})
             return answer
 
-        checked.inner.decide, checked.decide = proposing, deciding
+        checked_solution.wrapped_solution.decide_turn, checked_solution.decide_turn = (
+            recording_wrapped_decide,
+            recording_decide,
+        )
 
-        def undo() -> None:
-            checked.inner.decide, checked.decide = propose, decide
+        def put_back() -> None:
+            checked_solution.wrapped_solution.decide_turn, checked_solution.decide_turn = (
+                original_wrapped_decide,
+                decide_turn,
+            )
 
-        return undo
+        return put_back
 
 
-class Made(list):
+class CeilingPushesMade(list):
     """The ceiling's record of the pushes it made, which tells the log as each one is added."""
 
-    def __init__(self, log: PushLog) -> None:
+    def __init__(self, recorder: PushRecorder) -> None:
         super().__init__()
-        self.log = log
+        self.log = recorder
 
-    def append(self, item) -> None:
-        super().append(item)
+    def append(self, push_record) -> None:
+        super().append(push_record)
         self.log.made()
 
 
 # ------------------------------------------------------------------ the pictures
 
 # How each push is drawn: an arrow pointing the way the hand pushed, ending at the glass.
-ARROWS = {
+ARROW_STYLES = {
     MADE: {"color": "#1f5fa8", "lw": 1.8, "ls": "-"},
     REFUSED: {"color": "#9a9a9a", "lw": 1.0, "ls": "--"},
     REJECTED: {"color": "#8e44ad", "lw": 1.0, "ls": ":"},
 }
-ARROW_MM = 45
+ARROW_LENGTH_MM = 45
 
 
-def draw(
+def draw_table_picture(
     path: Path,
     title: str,
     rows: list[dict],
@@ -304,28 +341,50 @@ def draw(
     numbered in order and pointing the way the hand pushed.
     """
     figure, axes = plt.subplots(figsize=(6.4, 6.4), dpi=110)
-    x0, x1, y0, y1 = (v * 1000 for v in GLASS_ZONE)
-    axes.add_patch(plt.Rectangle((x0, y0), x1 - x0, y1 - y0, fill=True, color="#f3ead9", zorder=0))
-    axes.add_patch(plt.Rectangle((x0, y0), x1 - x0, y1 - y0, fill=False, ec="#b9a888", lw=1.2, zorder=1))
+    zone_x0, zone_x1, zone_y0, zone_y1 = (value * 1000 for value in GLASS_ZONE)
+    axes.add_patch(
+        plt.Rectangle(
+            (zone_x0, zone_y0), zone_x1 - zone_x0, zone_y1 - zone_y0, fill=True, color="#f3ead9", zorder=0
+        )
+    )
+    axes.add_patch(
+        plt.Rectangle(
+            (zone_x0, zone_y0),
+            zone_x1 - zone_x0,
+            zone_y1 - zone_y0,
+            fill=False,
+            ec="#b9a888",
+            lw=1.2,
+            zorder=1,
+        )
+    )
     for row, width in zip(rows, widths, strict=True):
-        r = width * 500
+        radius_mm = width * 500
         if start is not None and row["moved_mm"] >= 3:
-            s = start[row["glass"]]
+            start_row = start[row["glass"]]
             axes.add_patch(
-                plt.Circle((s["x_mm"], s["y_mm"]), r, fill=False, ls="--", ec="#888888", lw=1, zorder=2)
+                plt.Circle(
+                    (start_row["x_mm"], start_row["y_mm"]),
+                    radius_mm,
+                    fill=False,
+                    ls="--",
+                    ec="#888888",
+                    lw=1,
+                    zorder=2,
+                )
             )
             # The arrow stops at the glass's edge, so its head is not hidden under the glass. A
             # glass that moved less than its own radius has only the ring.
-            gap = math.hypot(row["x_mm"] - s["x_mm"], row["y_mm"] - s["y_mm"])
-            if gap > r:
-                tip = (
-                    row["x_mm"] - (row["x_mm"] - s["x_mm"]) * r / gap,
-                    row["y_mm"] - (row["y_mm"] - s["y_mm"]) * r / gap,
+            moved_mm = math.hypot(row["x_mm"] - start_row["x_mm"], row["y_mm"] - start_row["y_mm"])
+            if moved_mm > radius_mm:
+                arrow_tip = (
+                    row["x_mm"] - (row["x_mm"] - start_row["x_mm"]) * radius_mm / moved_mm,
+                    row["y_mm"] - (row["y_mm"] - start_row["y_mm"]) * radius_mm / moved_mm,
                 )
                 axes.annotate(
                     "",
-                    tip,
-                    (s["x_mm"], s["y_mm"]),
+                    arrow_tip,
+                    (start_row["x_mm"], start_row["y_mm"]),
                     arrowprops={"arrowstyle": "-|>", "color": "#555555", "lw": 1.2},
                     zorder=6,
                 )
@@ -333,7 +392,7 @@ def draw(
         axes.add_patch(
             plt.Circle(
                 (row["x_mm"], row["y_mm"]),
-                r,
+                radius_mm,
                 color=colour,
                 alpha=0.9,
                 hatch="xx" if not row["standing"] else None,
@@ -345,23 +404,32 @@ def draw(
         axes.text(
             row["x_mm"], row["y_mm"], str(row["glass"]), ha="center", va="center", fontsize=11, zorder=5
         )
-    for p in pushes or []:
-        u = (math.cos(math.radians(p["heading_deg"])), math.sin(math.radians(p["heading_deg"])))
-        r = widths[p["glass"]] * 500
-        tip = (p["glass_x_mm"] - r * u[0], p["glass_y_mm"] - r * u[1])
-        tail = (tip[0] - ARROW_MM * u[0], tip[1] - ARROW_MM * u[1])
-        style = ARROWS[p["outcome"]]
+    for push in pushes or []:
+        along_push = (
+            math.cos(math.radians(push["heading_deg"])),
+            math.sin(math.radians(push["heading_deg"])),
+        )
+        radius_mm = widths[push["glass"]] * 500
+        arrow_tip = (
+            push["glass_x_mm"] - radius_mm * along_push[0],
+            push["glass_y_mm"] - radius_mm * along_push[1],
+        )
+        arrow_tail = (
+            arrow_tip[0] - ARROW_LENGTH_MM * along_push[0],
+            arrow_tip[1] - ARROW_LENGTH_MM * along_push[1],
+        )
+        style = ARROW_STYLES[push["outcome"]]
         axes.annotate(
             "",
-            tip,
-            tail,
+            arrow_tip,
+            arrow_tail,
             arrowprops={"arrowstyle": "-|>", "color": style["color"], "lw": style["lw"], "ls": style["ls"]},
             zorder=7,
         )
         axes.text(
-            tail[0] - 9 * u[0],
-            tail[1] - 9 * u[1],
-            str(p["push"]),
+            arrow_tail[0] - 9 * along_push[0],
+            arrow_tail[1] - 9 * along_push[1],
+            str(push["push"]),
             ha="center",
             va="center",
             fontsize=8,
@@ -379,15 +447,15 @@ def draw(
                 [], [], marker="o", ls="", mfc="none", mec="#888888", markersize=11, label="where it began"
             )
         )
-    for outcome in ARROWS:
-        if any(p["outcome"] == outcome for p in pushes or []):
-            style = ARROWS[outcome]
+    for outcome in ARROW_STYLES:
+        if any(push["outcome"] == outcome for push in pushes or []):
+            style = ARROW_STYLES[outcome]
             legend.append(
                 plt.Line2D([], [], color=style["color"], lw=style["lw"], ls=style["ls"], label=outcome)
             )
     axes.legend(handles=legend, loc="upper center", bbox_to_anchor=(0.5, -0.1), ncol=2, frameon=False)
-    axes.set_xlim(x0 - 70, x1 + 70)
-    axes.set_ylim(y0 - 70, y1 + 70)
+    axes.set_xlim(zone_x0 - 70, zone_x1 + 70)
+    axes.set_ylim(zone_y0 - 70, zone_y1 + 70)
     axes.set_aspect("equal")
     axes.set_xlabel("x, mm from the arm's base (the arm is to the left)")
     axes.set_ylabel("y, mm")
@@ -396,175 +464,199 @@ def draw(
     plt.close(figure)
 
 
-def widths_of(simulator) -> list[float]:
-    return [float(g.outline.max_diameter) for g in simulator.glasses]
+def glass_widths(simulator) -> list[float]:
+    return [float(glass.outline.max_diameter) for glass in simulator.glasses]
 
 
 # ------------------------------------------------------------------ the three steps
 
 
-def arrangements(count: int = TABLES, first: int = FIRST) -> None:
-    allowed = int(count * ALREADY_DONE_SHARE)
-    chosen, already, skipped, seed = [], 0, [], first
+def record_start_arrangements(table_count: int = TABLES, first_table: int = FIRST) -> None:
+    already_separated_allowed = int(table_count * ALREADY_DONE_SHARE)
+    chosen_tables, already_separated, skipped_tables, table_number = [], 0, [], first_table
     RUNS.mkdir(exist_ok=True)
-    with MoveItLink() as link:
-        while len(chosen) < count:
-            cell = C.ArmCell(seed, link, camera=False)
-            rows = glasses(cell.simulator)
-            total = counts(rows)
-            if total["not_separated"] == 0:
-                if already >= allowed:
-                    skipped.append(seed)
-                    seed += 1
+    with MoveItConnection() as moveit:
+        while len(chosen_tables) < table_count:
+            cell = one_table_cell.OneTableCell(table_number, moveit, with_wrist_camera=False)
+            glass_rows_at_start = glass_rows(cell.simulator)
+            counts = separated_counts(glass_rows_at_start)
+            if counts["not_separated"] == 0:
+                if already_separated >= already_separated_allowed:
+                    skipped_tables.append(table_number)
+                    table_number += 1
                     continue
-                already += 1
-            folder = RUNS / str(seed)
-            folder.mkdir(exist_ok=True)
+                already_separated += 1
+            table_folder = RUNS / str(table_number)
+            table_folder.mkdir(exist_ok=True)
             record = {
-                "table": seed,
-                **{k: v for k, v in total.items() if k != "fell_over"},
-                "glass_list": rows,
+                "table": table_number,
+                **{key: value for key, value in counts.items() if key != "fell_over"},
+                "glass_list": glass_rows_at_start,
             }
-            (folder / "arrangement.json").write_text(json.dumps(record, indent=1))
-            draw(
-                folder / "arrangement.png",
-                f"Table {seed} at the start: {total['separated']} of {total['glasses']} separated",
-                rows,
-                widths_of(cell.simulator),
+            (table_folder / "arrangement.json").write_text(json.dumps(record, indent=1))
+            draw_table_picture(
+                table_folder / "arrangement.png",
+                f"Table {table_number} at the start: {counts['separated']} of {counts['glasses']} separated",
+                glass_rows_at_start,
+                glass_widths(cell.simulator),
             )
-            chosen.append(seed)
-            seed += 1
-    print(f"{len(chosen)} tables, {already} already separated, skipped {skipped or 'none'}")
+            chosen_tables.append(table_number)
+            table_number += 1
+    print(
+        f"{len(chosen_tables)} tables, {already_separated} already separated, "
+        f"skipped {skipped_tables or 'none'}"
+    )
 
 
-def tables() -> list[int]:
-    return sorted(int(p.parent.name) for p in RUNS.glob("*/arrangement.json"))
+def recorded_tables() -> list[int]:
+    return sorted(int(path.parent.name) for path in RUNS.glob("*/arrangement.json"))
 
 
-def build(stem: str):
-    key, weights = RECORDED[stem]
-    module, cls = SOLUTIONS[key]
-    factory = getattr(importlib.import_module(module), cls)
-    return factory(weights) if weights else factory()
+def build_solution(recorded_name: str):
+    solution_key, weights = RECORDED[recorded_name]
+    module_name, factory_name = SOLUTIONS[solution_key]
+    make_solution = getattr(importlib.import_module(module_name), factory_name)
+    return make_solution(weights) if weights else make_solution()
 
 
-def solve(stem: str) -> None:
-    solution = None if stem == "ceiling" else build(stem)
-    with MoveItLink() as link:
-        for seed in tables():
-            folder = RUNS / str(seed)
-            start = json.loads((folder / "arrangement.json").read_text())["glass_list"]
+def record_solution_on_every_table(recorded_name: str) -> None:
+    solution = None if recorded_name == "ceiling" else build_solution(recorded_name)
+    with MoveItConnection() as moveit:
+        for table_number in recorded_tables():
+            table_folder = RUNS / str(table_number)
+            rows_at_start = json.loads((table_folder / "arrangement.json").read_text())["glass_list"]
             if solution is None:
-                cell = C.ArmCell(seed, link, camera=False)
-                log = PushLog(cell, keep_every_push=False)
-                pushes = Made(log)
-                result = ceiling_search.clear_table(
-                    seed, link, ARM_BUDGET, 30, random.Random(seed), pushes, cell=cell
+                cell = one_table_cell.OneTableCell(table_number, moveit, with_wrist_camera=False)
+                recorder = PushRecorder(cell, keep_every_push=False)
+                pushes_made = CeilingPushesMade(recorder)
+                result = ceiling_search.clear_table_by_trying_pushes(
+                    table_number,
+                    moveit,
+                    ARM_SECONDS_FOR_TABLE_LIST,
+                    30,
+                    random.Random(table_number),
+                    pushes_made,
+                    cell=cell,
                 )
-                made, refused = len(pushes), 0
+                made_count, refused_count = len(pushes_made), 0
             else:
-                tally, kept = Tally(), {}
+                arm_activity, kept = ArmActivityCounts(), {}
 
-                def watch(run, kept=kept) -> None:
-                    kept["cell"] = SimExaminer.cell_of(run)
-                    kept["log"] = PushLog(kept["cell"])
-                    if isinstance(solution, Checked):
+                def watch_attempt(attempt, kept=kept) -> None:
+                    kept["cell"] = SimulatedExaminer.cell_behind_attempt(attempt)
+                    kept["log"] = PushRecorder(kept["cell"])
+                    if isinstance(solution, SafetyCheckedSolution):
                         kept["undo"] = kept["log"].watch(solution)
 
                 try:
-                    result = SimExaminer(link, ARM_BUDGET, tally).run(solution, seed, prepare=watch)
+                    result = SimulatedExaminer(
+                        moveit, ARM_SECONDS_FOR_TABLE_LIST, arm_activity
+                    ).run_solution_on_table(solution, table_number, prepare=watch_attempt)
                 finally:
                     if "undo" in kept:
                         kept["undo"]()
-                cell, log = kept["cell"], kept["log"]
-                made, refused = tally.pushes, tally.refusals
-            rows = glasses(cell.simulator, start)
-            before, after = counts(start), counts(rows)
+                cell, recorder = kept["cell"], kept["log"]
+                made_count, refused_count = arm_activity.pushes_made, arm_activity.pushes_refused
+            rows_at_end = glass_rows(cell.simulator, rows_at_start)
+            counts_at_start, counts_at_end = separated_counts(rows_at_start), separated_counts(rows_at_end)
             record = {
-                "table": seed,
-                "solution": stem,
+                "table": table_number,
+                "solution": recorded_name,
                 "name": "the ceiling (tries 30 pushes first)" if solution is None else solution.name,
-                "start": {k: before[k] for k in ("glasses", "separated", "not_separated")},
-                "end": after,
-                "gain": after["separated"] - before["separated"],
+                "start": {key: counts_at_start[key] for key in ("glasses", "separated", "not_separated")},
+                "end": counts_at_end,
+                "gain": counts_at_end["separated"] - counts_at_start["separated"],
                 "ended_by": result.ended_by,
-                "pushes": made,
-                "refused": refused,
+                "pushes": made_count,
+                "refused": refused_count,
                 "arm_seconds": round(result.arm_seconds, 1),
-                "glass_list": rows,
-                "push_list": log.entries,
+                "glass_list": rows_at_end,
+                "push_list": recorder.entries,
             }
-            (folder / f"{stem}_result.json").write_text(json.dumps(record, indent=1))
-            fell = f", {after['fell_over']} fell over" if after["fell_over"] else ""
-            draw(
-                folder / f"{stem}_result.png",
-                f"Table {seed}, {record['name']}:\n"
-                f"{before['separated']} -> {after['separated']} of {after['glasses']} separated{fell}",
-                rows,
-                widths_of(cell.simulator),
-                start,
-                log.entries,
+            (table_folder / f"{recorded_name}_result.json").write_text(json.dumps(record, indent=1))
+            fell_text = f", {counts_at_end['fell_over']} fell over" if counts_at_end["fell_over"] else ""
+            draw_table_picture(
+                table_folder / f"{recorded_name}_result.png",
+                f"Table {table_number}, {record['name']}:\n"
+                f"{counts_at_start['separated']} -> {counts_at_end['separated']} "
+                f"of {counts_at_end['glasses']} separated{fell_text}",
+                rows_at_end,
+                glass_widths(cell.simulator),
+                rows_at_start,
+                recorder.entries,
             )
             print(
-                f"{stem} {seed}: {before['separated']}->{after['separated']}/{after['glasses']}, "
-                f"{made} pushes, fell {after['fell_over']}, {result.ended_by}",
+                f"{recorded_name} {table_number}: "
+                f"{counts_at_start['separated']}->{counts_at_end['separated']}/{counts_at_end['glasses']}, "
+                f"{made_count} pushes, fell {counts_at_end['fell_over']}, {result.ended_by}",
                 flush=True,
             )
 
 
-def summary() -> None:
-    seeds = tables()
-    start = {s: json.loads((RUNS / str(s) / "arrangement.json").read_text()) for s in seeds}
-    per_solution, per_table = {}, {s: {} for s in seeds}
-    for stem in RECORDED:
-        found = [json.loads(p.read_text()) for p in sorted(RUNS.glob(f"*/{stem}_result.json"))]
-        if not found:
+def write_runs_summary() -> None:
+    table_numbers = recorded_tables()
+    arrangements_by_table = {
+        table_number: json.loads((RUNS / str(table_number) / "arrangement.json").read_text())
+        for table_number in table_numbers
+    }
+    per_solution, per_table = {}, {table_number: {} for table_number in table_numbers}
+    for recorded_name in RECORDED:
+        results = [
+            json.loads(path.read_text()) for path in sorted(RUNS.glob(f"*/{recorded_name}_result.json"))
+        ]
+        if not results:
             continue
-        for r in found:
-            per_table[r["table"]][stem] = {
-                "separated_at_end": r["end"]["separated"],
-                "fell_over": r["end"]["fell_over"],
-                "pushes": r["pushes"],
+        for result in results:
+            per_table[result["table"]][recorded_name] = {
+                "separated_at_end": result["end"]["separated"],
+                "fell_over": result["end"]["fell_over"],
+                "pushes": result["pushes"],
             }
-        per_solution[stem] = {
-            "name": found[0]["name"],
-            "tables": len(found),
-            "separated_at_start": sum(r["start"]["separated"] for r in found),
-            "separated_at_end": sum(r["end"]["separated"] for r in found),
-            "gain": sum(r["gain"] for r in found),
-            "fell_over": sum(r["end"]["fell_over"] for r in found),
-            "tables_better": sum(r["gain"] > 0 for r in found),
-            "tables_worse": sum(r["gain"] < 0 or r["end"]["fell_over"] > 0 for r in found),
-            "tables_not_touched": sum(r["pushes"] == 0 for r in found),
-            "pushes": sum(r["pushes"] for r in found),
-            "arm_minutes": round(sum(r["arm_seconds"] for r in found) / 60, 1),
-            "asked_by_side": by_side(found),
+        per_solution[recorded_name] = {
+            "name": results[0]["name"],
+            "tables": len(results),
+            "separated_at_start": sum(result["start"]["separated"] for result in results),
+            "separated_at_end": sum(result["end"]["separated"] for result in results),
+            "gain": sum(result["gain"] for result in results),
+            "fell_over": sum(result["end"]["fell_over"] for result in results),
+            "tables_better": sum(result["gain"] > 0 for result in results),
+            "tables_worse": sum(result["gain"] < 0 or result["end"]["fell_over"] > 0 for result in results),
+            "tables_not_touched": sum(result["pushes"] == 0 for result in results),
+            "pushes": sum(result["pushes"] for result in results),
+            "arm_minutes": round(sum(result["arm_seconds"] for result in results) / 60, 1),
+            "asked_by_side": pushes_by_where_the_hand_came_down(results),
         }
     totals = {
-        "tables": len(seeds),
-        "glasses": sum(a["glasses"] for a in start.values()),
-        "separated_at_start": sum(a["separated"] for a in start.values()),
-        "tables_already_separated": sum(a["not_separated"] == 0 for a in start.values()),
+        "tables": len(table_numbers),
+        "glasses": sum(arrangement["glasses"] for arrangement in arrangements_by_table.values()),
+        "separated_at_start": sum(arrangement["separated"] for arrangement in arrangements_by_table.values()),
+        "tables_already_separated": sum(
+            arrangement["not_separated"] == 0 for arrangement in arrangements_by_table.values()
+        ),
     }
     (RUNS / "results.json").write_text(
         json.dumps({**totals, "solutions": per_solution, "per_table": per_table}, indent=1)
     )
-    (RUNS / "results.md").write_text(markdown(totals, per_solution, per_table, start))
+    (RUNS / "results.md").write_text(
+        runs_summary_markdown(totals, per_solution, per_table, arrangements_by_table)
+    )
     print("wrote", RUNS / "results.json", "and results.md")
 
 
-def by_side(found: list[dict]) -> dict:
+def pushes_by_where_the_hand_came_down(results: list[dict]) -> dict:
     """How many pushes were asked for with the hand coming down in each place, and how each ended."""
-    table = {name: {MADE: 0, REFUSED: 0, REJECTED: 0} for name, _ in SIDES}
-    for r in found:
-        for p in r.get("push_list", []):
-            if "hand_comes_down" in p:
-                table[p["hand_comes_down"]][p["outcome"]] += 1
-    return table
+    counts = {name: {MADE: 0, REFUSED: 0, REJECTED: 0} for name, _ in HAND_SIDES}
+    for result in results:
+        for push in result.get("push_list", []):
+            if "hand_comes_down" in push:
+                counts[push["hand_comes_down"]][push["outcome"]] += 1
+    return counts
 
 
-def markdown(totals: dict, per_solution: dict, per_table: dict, start: dict) -> str:
-    stems = list(per_solution)
+def runs_summary_markdown(
+    totals: dict, per_solution: dict, per_table: dict, arrangements_by_table: dict
+) -> str:
+    recorded_names = list(per_solution)
     lines = [
         "# Runs, table by table",
         "",
@@ -604,12 +696,15 @@ def markdown(totals: dict, per_solution: dict, per_table: dict, start: dict) -> 
         "| Tables not touched | Pushes | Arm minutes |",
         "|---|---|---|---|---|---|---|---|---|",
     ]
-    for stem in stems:
-        s = per_solution[stem]
+    for recorded_name in recorded_names:
+        totals_for_solution = per_solution[recorded_name]
         lines.append(
-            f"| {stem} | {s['separated_at_start']} → {s['separated_at_end']} | {s['gain']:+d} | "
-            f"{s['fell_over']} | {s['tables_better']} | {s['tables_worse']} | {s['tables_not_touched']} | "
-            f"{s['pushes']} | {s['arm_minutes']} |"
+            f"| {recorded_name} "
+            f"| {totals_for_solution['separated_at_start']} → {totals_for_solution['separated_at_end']} "
+            f"| {totals_for_solution['gain']:+d} | {totals_for_solution['fell_over']} "
+            f"| {totals_for_solution['tables_better']} | {totals_for_solution['tables_worse']} "
+            f"| {totals_for_solution['tables_not_touched']} | "
+            f"{totals_for_solution['pushes']} | {totals_for_solution['arm_minutes']} |"
         )
     lines += [
         "",
@@ -629,12 +724,14 @@ def markdown(totals: dict, per_solution: dict, per_table: dict, start: dict) -> 
         "| Rejected by the check |",
         "|---|---|---|---|---|---|",
     ]
-    for stem in stems:
-        sides = per_solution[stem]["asked_by_side"]
-        cells = [f"{c[MADE]} of {sum(c.values())}" for c in sides.values()]
+    for recorded_name in recorded_names:
+        sides = per_solution[recorded_name]["asked_by_side"]
+        cells = [f"{cell[MADE]} of {sum(cell.values())}" for cell in sides.values()]
         lines.append(
-            f"| {stem} | " + " | ".join(cells) + f" | {sum(c[REFUSED] for c in sides.values())} | "
-            f"{sum(c[REJECTED] for c in sides.values())} |"
+            f"| {recorded_name} | "
+            + " | ".join(cells)
+            + f" | {sum(cell[REFUSED] for cell in sides.values())} | "
+            f"{sum(cell[REJECTED] for cell in sides.values())} |"
         )
     lines += [
         "",
@@ -643,19 +740,22 @@ def markdown(totals: dict, per_solution: dict, per_table: dict, start: dict) -> 
         "Each cell is the number of separated glasses at the end, and ✗ marks a glass that fell "
         "over. The second column is the number at the start.",
         "",
-        "| Table | Start | " + " | ".join(s.removeprefix("solution_") for s in stems) + " |",
-        "|---|---|" + "---|" * len(stems),
+        "| Table | Start | "
+        + " | ".join(totals_for_solution.removeprefix("solution_") for totals_for_solution in recorded_names)
+        + " |",
+        "|---|---|" + "---|" * len(recorded_names),
     ]
-    for seed, row in per_table.items():
-        a = start[seed]
+    for table_number, row in per_table.items():
+        arrangement = arrangements_by_table[table_number]
         cells = []
-        for stem in stems:
-            r = row.get(stem)
-            cells.append("" if r is None else f"{r['separated_at_end']}{' ✗' if r['fell_over'] else ''}")
+        for recorded_name in recorded_names:
+            result = row.get(recorded_name)
+            cells.append(
+                "" if result is None else f"{result['separated_at_end']}{' ✗' if result['fell_over'] else ''}"
+            )
         lines.append(
-            f"| [{seed}]({seed}/arrangement.png) | {a['separated']} of {a['glasses']} | "
-            + " | ".join(cells)
-            + " |"
+            f"| [{table_number}]({table_number}/arrangement.png) "
+            f"| {arrangement['separated']} of {arrangement['glasses']} | " + " | ".join(cells) + " |"
         )
     lines += [
         "",
@@ -673,15 +773,15 @@ def main() -> None:
     parser.add_argument("step", choices=("arrangements", "solve", "summary"))
     parser.add_argument("solution", nargs="?", choices=sorted(RECORDED))
     parser.add_argument("--tables", type=int, default=TABLES)
-    a = parser.parse_args()
-    if a.step == "arrangements":
-        arrangements(a.tables)
-    elif a.step == "solve":
-        if a.solution is None:
+    arguments = parser.parse_args()
+    if arguments.step == "arrangements":
+        record_start_arrangements(arguments.tables)
+    elif arguments.step == "solve":
+        if arguments.solution is None:
             parser.error("solve needs a solution")
-        solve(a.solution)
+        record_solution_on_every_table(arguments.solution)
     else:
-        summary()
+        write_runs_summary()
 
 
 if __name__ == "__main__":

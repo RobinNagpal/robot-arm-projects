@@ -3,7 +3,7 @@
 ``python ceiling_search.py --first 10000 --tables 20 --candidates 30``
 
 No learned solution can do this, and it is not a solution: it works on the simulator itself, not
-through the arm a solution is given. At every turn it draws ``candidates`` pushes, makes each
+through the arm a solution is given. At every turn it draws ``--candidates`` pushes, makes each
 one in the physics from the table as it stands, scores what each one left, puts the table
 back, and then makes the best of them for real. It is told the glasses' true boxes, so it
 does not read a picture. It is marked by the same scorecard, on the same tables, with the
@@ -25,139 +25,168 @@ from pathlib import Path
 
 import mujoco
 
-from examiner.examining import one_table_cell as C
+from examiner.examining import one_table_cell
 from examiner.examining.solution_contract import FINISHED, GLASS_OVER, OUT_OF_TIME, TableResult
-from examiner.examining.table_examiner import ARM_BUDGET, scored
-from examiner.examining.table_scoring import Repeats
-from examiner.motion.moveit_connection import MoveItLink
-from examiner.motion.push_motions import Box
-from shared.learning import collect_training_pushes as CP
-from shared.learning import table_and_push_encoding as F
+from examiner.examining.table_examiner import ARM_SECONDS_FOR_TABLE_LIST, as_scored_table
+from examiner.examining.table_scoring import ScorecardsOverRuns
+from examiner.motion.moveit_connection import MoveItConnection
+from examiner.motion.push_motions import GlassBox
+from shared.learning import collect_training_pushes, table_and_push_encoding
 
 
-def snapshot(simulator):
+def save_physics_state(simulator):
     return copy.deepcopy(simulator.data)
 
 
-def restore(simulator, data) -> None:
-    mujoco.mj_copyData(simulator.data, simulator.model, data)
+def restore_physics_state(simulator, saved_data) -> None:
+    mujoco.mj_copyData(simulator.data, simulator.model, saved_data)
     mujoco.mj_forward(simulator.model, simulator.data)
 
 
-def worth(before: list[Box], after: list[Box], topple: bool, seconds: float) -> float:
+def value_of_try(before: list[GlassBox], after: list[GlassBox], toppled: bool, arm_seconds: float) -> float:
     """What one try is worth: glasses made pickable, room gained, and a heavy charge for a topple."""
-    value = (
-        F.pickable_count(after)
-        - F.pickable_count(before)
-        + 0.5 * 100 * (F.shortfall(before) - F.shortfall(after))
-    )
-    return value - (5.0 if topple else 0.0) - 0.01 * seconds
+    glasses_freed = table_and_push_encoding.count_pickable_boxes(
+        after
+    ) - table_and_push_encoding.count_pickable_boxes(before)
+    room_gained = table_and_push_encoding.total_room_shortfall(
+        before
+    ) - table_and_push_encoding.total_room_shortfall(after)
+    value = glasses_freed + 0.5 * 100 * room_gained
+    return value - (5.0 if toppled else 0.0) - 0.01 * arm_seconds
 
 
-def truth(cell) -> list[Box]:
+def true_boxes(cell) -> list[GlassBox]:
     simulator = cell.simulator
-    out = []
+    boxes = []
     for i, glass in enumerate(simulator.glasses):
         x, y = simulator.position(i)
-        o = glass.outline
-        out.append(
-            Box(float(x), float(y), float(o.max_diameter / 2), float(o.total_height), float(o.radius[0]))
+        outline = glass.outline
+        boxes.append(
+            GlassBox(
+                float(x),
+                float(y),
+                float(outline.max_diameter / 2),
+                float(outline.total_height),
+                float(outline.radius[0]),
+            )
         )
-    return out
+    return boxes
 
 
-def clear_table(
+def push_as_record(request) -> dict:
+    return {
+        "glass": request.glass,
+        "heading": request.heading,
+        "travel": request.travel,
+        "settings": request.settings.__dict__,
+    }
+
+
+def clear_table_by_trying_pushes(
     seed: int,
-    link: MoveItLink,
-    seconds_left: float,
-    candidates: int,
+    moveit: MoveItConnection,
+    arm_seconds_given: float,
+    tries_per_turn: int,
     rng: random.Random,
-    chosen: list | None = None,
+    pushes_made: list | None = None,
     lessons: list | None = None,
     *,
-    cell: C.ArmCell | None = None,
+    cell: one_table_cell.OneTableCell | None = None,
 ) -> TableResult:
-    """Clear one table by trying pushes first. ``lessons``, when given, gets one row per turn:
-    the table as it stood and the push made, or ``None`` where the search chose to stop."""
-    cell = C.ArmCell(seed, link, camera=False) if cell is None else cell
+    """Clear one table by trying pushes first.
+
+    ``pushes_made``, when given, gets one row for every push the search really makes.
+    ``lessons``, when given, gets one row per turn: the table as it stood and the push made,
+    or ``None`` where the search chose to stop.
+    """
+    cell = one_table_cell.OneTableCell(seed, moveit, with_wrist_camera=False) if cell is None else cell
     started = time.perf_counter()
-    ended, answers = OUT_OF_TIME, 0
+    ended_by, pushes_requested = OUT_OF_TIME, 0
     try:
         while True:
-            left = seconds_left - cell.arm_seconds
-            if left < 8.0 or answers >= 10:
+            arm_seconds_left = arm_seconds_given - cell.arm_seconds
+            if arm_seconds_left < 8.0 or pushes_requested >= 10:
                 break
-            boxes = truth(cell)
-            before = CP.layout(cell.simulator)
-            if F.pickable_count(boxes) == len(boxes):
-                ended = FINISHED
+            boxes = true_boxes(cell)
+            layout_before = collect_training_pushes.true_layout(cell.simulator)
+            if table_and_push_encoding.count_pickable_boxes(boxes) == len(boxes):
+                ended_by = FINISHED
                 if lessons is not None:
-                    lessons.append({"seed": seed, "step": answers, "before": before, "request": None})
+                    lessons.append(
+                        {"seed": seed, "step": pushes_requested, "before": layout_before, "request": None}
+                    )
                 break
-            state = snapshot(cell.simulator)
-            was_seconds, was_total = cell.simulator.arm_seconds, cell.simulator.seconds
-            best = None
-            for _ in range(candidates):
-                request = CP.informed_request(rng, boxes) if rng.random() < 0.8 else None
+            saved_physics = save_physics_state(cell.simulator)
+            arm_seconds_before, simulator_seconds_before = cell.simulator.arm_seconds, cell.simulator.seconds
+            best = None  # (value, push) of the best try so far
+            for _ in range(tries_per_turn):
+                request = (
+                    collect_training_pushes.push_that_would_free_a_glass(rng, boxes)
+                    if rng.random() < 0.8
+                    else None
+                )
                 if request is None:
-                    request, _boxes = CP.draw_request(rng, cell.simulator)
-                result = cell.pusher.push(boxes, request, left)
-                if result.ok:
-                    after = truth(cell)
-                    value = worth(boxes, after, cell.toppled() > 0, cell.simulator.arm_seconds - was_seconds)
+                    request, _boxes = collect_training_pushes.draw_random_push(rng, cell.simulator)
+                pusher_result = cell.pusher.plan_and_make_push(boxes, request, arm_seconds_left)
+                if pusher_result.made:
+                    value = value_of_try(
+                        boxes,
+                        true_boxes(cell),
+                        cell.count_toppled_glasses() > 0,
+                        cell.simulator.arm_seconds - arm_seconds_before,
+                    )
                     if best is None or value > best[0]:
                         best = (value, request)
-                restore(cell.simulator, state)
-                cell.simulator.arm_seconds, cell.simulator.seconds = was_seconds, was_total
-            answers += 1
+                restore_physics_state(cell.simulator, saved_physics)
+                cell.simulator.arm_seconds, cell.simulator.seconds = (
+                    arm_seconds_before,
+                    simulator_seconds_before,
+                )
+            pushes_requested += 1
             if best is None or best[0] <= 0.0:
-                ended = FINISHED
+                ended_by = FINISHED
                 if lessons is not None:
-                    lessons.append({"seed": seed, "step": answers - 1, "before": before, "request": None})
+                    lessons.append(
+                        {"seed": seed, "step": pushes_requested - 1, "before": layout_before, "request": None}
+                    )
                 break
-            cell.pusher.push(boxes, best[1], left)
+            best_value, best_push = best
+            cell.pusher.plan_and_make_push(boxes, best_push, arm_seconds_left)
             if lessons is not None:
-                q = best[1]
                 lessons.append(
                     {
                         "seed": seed,
-                        "step": answers - 1,
-                        "before": before,
-                        "request": {
-                            "glass": q.glass,
-                            "heading": q.heading,
-                            "travel": q.travel,
-                            "settings": q.settings.__dict__,
-                        },
-                        "worth": best[0],
-                        "toppled": int(cell.toppled()),
+                        "step": pushes_requested - 1,
+                        "before": layout_before,
+                        "request": push_as_record(best_push),
+                        "worth": best_value,
+                        "toppled": int(cell.count_toppled_glasses()),
                     }
                 )
-            if chosen is not None:
-                request = best[1]
-                chosen.append(
+            if pushes_made is not None:
+                pushes_made.append(
                     {
                         "seed": seed,
-                        "glass": request.glass,
-                        "kind": cell.simulator.glasses[request.glass].kind,
-                        "heading": request.heading,
-                        "travel": request.travel,
-                        "settings": request.settings.__dict__,
-                        "worth": best[0],
+                        "glass": best_push.glass,
+                        "kind": cell.simulator.glasses[best_push.glass].kind,
+                        "heading": best_push.heading,
+                        "travel": best_push.travel,
+                        "settings": best_push.settings.__dict__,
+                        "worth": best_value,
                     }
                 )
-            if cell.toppled():
-                ended = GLASS_OVER
+            if cell.count_toppled_glasses():
+                ended_by = GLASS_OVER
                 break
         return TableResult(
-            table=seed,
-            glasses=cell.glasses(),
-            separated_at_start=cell.pickable_at_start,
-            separated_at_end=cell.pickable(),
-            fell_over=cell.toppled(),
-            ended_by=ended,
+            table_number=seed,
+            glass_count=cell.glass_count(),
+            pickable_at_start=cell.pickable_at_start,
+            pickable_at_end=cell.pickable_glass_count(),
+            glasses_toppled=cell.count_toppled_glasses(),
+            ended_by=ended_by,
             arm_seconds=cell.arm_seconds,
-            pushes_asked=answers,
+            pushes_requested=pushes_requested,
             thinking_seconds=time.perf_counter() - started,
         )
     finally:
@@ -169,27 +198,33 @@ def main() -> None:
     parser.add_argument("--first", type=int, default=10_000)
     parser.add_argument("--tables", type=int, default=20)
     parser.add_argument("--candidates", type=int, default=30)
-    parser.add_argument("--budget", type=float, default=ARM_BUDGET)
+    parser.add_argument("--budget", type=float, default=ARM_SECONDS_FOR_TABLE_LIST)
     parser.add_argument("--name", default="ceiling")
-    a = parser.parse_args()
-    rng = random.Random(a.first)
-    card = Repeats().run()
-    spent = 0.0
-    chosen: list = []
-    with MoveItLink() as link:
-        for seed in range(a.first, a.first + a.tables):
-            if ARM_BUDGET - spent < 8.0:
+    arguments = parser.parse_args()
+    rng = random.Random(arguments.first)
+    scorecard = ScorecardsOverRuns().new_scorecard()
+    arm_seconds_spent = 0.0
+    pushes_made: list = []
+    with MoveItConnection() as moveit:
+        for seed in range(arguments.first, arguments.first + arguments.tables):
+            if ARM_SECONDS_FOR_TABLE_LIST - arm_seconds_spent < 8.0:
                 break
-            result = clear_table(seed, link, a.budget - spent, a.candidates, rng, chosen)
-            spent += result.arm_seconds
-            card.table(scored(result))
+            result = clear_table_by_trying_pushes(
+                seed, moveit, arguments.budget - arm_seconds_spent, arguments.candidates, rng, pushes_made
+            )
+            arm_seconds_spent += result.arm_seconds
+            scorecard.add_table(as_scored_table(result))
             print(
-                f"table {seed}: {result.separated_at_start}->{result.separated_at_end}/{result.glasses}, "
-                f"{result.arm_seconds:.0f} arm s, {result.ended_by}, broken {result.fell_over}",
+                f"table {seed}: {result.pickable_at_start}->{result.pickable_at_end}/{result.glass_count}, "
+                f"{result.arm_seconds:.0f} arm s, {result.ended_by}, broken {result.glasses_toppled}",
                 flush=True,
             )
-    out = Path(__file__).resolve().parents[1] / "results" / f"{a.name}.json"
-    out.write_text(json.dumps({"summary": {"runs": 1}, "tables": [card.tables], "chosen": chosen}, indent=1))
+    out = Path(__file__).resolve().parents[1] / "results" / f"{arguments.name}.json"
+    out.write_text(
+        json.dumps(
+            {"summary": {"runs": 1}, "tables": [scorecard.rows_per_table], "chosen": pushes_made}, indent=1
+        )
+    )
     print("wrote", out)
 
 

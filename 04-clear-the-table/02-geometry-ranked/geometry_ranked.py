@@ -28,73 +28,77 @@ import importlib.util
 import sys
 from types import ModuleType
 
-from geometry_reference import SAFE, Geometry, arm_bench
+from geometry_reference import SAFE_SETTINGS, GeometryReference, problem_3_files_see_the_arm_top_edge
 
-from examiner.motion.push_motions import Settings
+from examiner.motion.push_motions import MoveItSettings
 from examiner.simulation.taken_from_problem_3 import PUSHING
 
-RANKED = PUSHING / "02-geometry-ranked"
-RANKER = RANKED / "model" / "ranker.joblib"
+PROBLEM_3_RANKED_FOLDER = PUSHING / "02-geometry-ranked"
+RANKER_FILE = PROBLEM_3_RANKED_FOLDER / "model" / "ranker.joblib"
 # Problem 3's files, in the order they import each other.
-FILES = ("candidates", "features", "ranker")
+PROBLEM_3_FILES_IN_IMPORT_ORDER = ("candidates", "features", "ranker")
 
 
-def _problem_three() -> dict[str, ModuleType]:
+def _load_problem_3_ranked_files() -> dict[str, ModuleType]:
     """Problem 3's candidate list, inputs and ranker, loaded without displacing this problem's modules.
 
     They are loaded with the arm's top edge, as solution 1's planner is, so the list of safe
     pushes is solution 1's and the trees' input for tipping is measured at the arm's height.
     """
-    displaced = {name: sys.modules.pop(name) for name in FILES if name in sys.modules}
+    displaced = {
+        name: sys.modules.pop(name) for name in PROBLEM_3_FILES_IN_IMPORT_ORDER if name in sys.modules
+    }
     loaded: dict[str, ModuleType] = {}
     try:
-        with arm_bench():
-            for name in FILES:
-                spec = importlib.util.spec_from_file_location(name, RANKED / f"{name}.py")
+        with problem_3_files_see_the_arm_top_edge():
+            for name in PROBLEM_3_FILES_IN_IMPORT_ORDER:
+                spec = importlib.util.spec_from_file_location(name, PROBLEM_3_RANKED_FOLDER / f"{name}.py")
                 module = importlib.util.module_from_spec(spec)
                 sys.modules[name] = module
                 spec.loader.exec_module(module)
                 loaded[name] = module
     finally:
-        for name in FILES:
+        for name in PROBLEM_3_FILES_IN_IMPORT_ORDER:
             sys.modules.pop(name, None)
         sys.modules.update(displaced)
     return loaded
 
 
-_LOADED = _problem_three()
-candidates, ranker = _LOADED["candidates"], _LOADED["ranker"]
+_PROBLEM_3_MODULES = _load_problem_3_ranked_files()
+candidates, ranker = _PROBLEM_3_MODULES["candidates"], _PROBLEM_3_MODULES["ranker"]
 
 
-def load_ranker(path=RANKER):
+def load_problem_3_trees(ranker_file=RANKER_FILE):
     """Problem 3's fitted trees, or a plain statement of what is missing."""
-    if not path.exists():
+    if not ranker_file.exists():
         raise SystemExit(
-            f"problem 3's fitted trees are not at {path}.\n"
+            f"problem 3's fitted trees are not at {ranker_file}.\n"
             "The copy is kept in git, so restore it from there, or make them again in problem 3 -- "
             "`make train` in 03-push-glasses-apart/02-geometry-ranked -- copy its model/ folder to "
             "from-problem-3/02-geometry-ranked/, and run this again."
         )
-    return ranker.Ranker.load(path)
+    return ranker.Ranker.load(ranker_file)
 
 
-class GeometryRanked(Geometry):
+class GeometryRanked(GeometryReference):
     """Solution 1, with the push chosen by problem 3's fitted trees instead of the printed rule."""
 
     name = "geometry ranked, fixed settings"
 
-    def __init__(self, settings: Settings = SAFE, score=None) -> None:
+    def __init__(self, settings: MoveItSettings = SAFE_SETTINGS, score_candidate_pushes=None) -> None:
         super().__init__(settings)
         # How a list of candidate pushes is scored: problem 3's trees, unless a test says otherwise.
-        self.score = load_ranker() if score is None else score
+        self.score_candidate_pushes = (
+            load_problem_3_trees() if score_candidate_pushes is None else score_candidate_pushes
+        )
 
-    def choose(self, seen, skip):
+    def choose_push(self, readings, glasses_to_skip):
         """The safe push with the best score, lengthened as solution 1 lengthens a push that frees a glass."""
-        best, _, _ = ranker.ranked(seen, skip, self.score)
-        if not best:
+        ranked_pushes, _, _ = ranker.ranked(readings, glasses_to_skip, self.score_candidate_pushes)
+        if not ranked_pushes:
             return None
-        pick = best[0]
-        if not pick.freeing:
-            return pick.push
-        others = [o for o in seen if o.id != pick.glass.id]
-        return self.lengthened(pick.glass, others, pick.push.heading, pick.push)
+        best_push = ranked_pushes[0]
+        if not best_push.freeing:
+            return best_push.push
+        others = [other for other in readings if other.id != best_push.glass.id]
+        return self.lengthened_push(best_push.glass, others, best_push.push.heading, best_push.push)

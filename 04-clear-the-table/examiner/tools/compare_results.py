@@ -18,53 +18,60 @@ from pathlib import Path
 import numpy as np
 
 
-def load(path: Path) -> list[dict]:
-    data = json.loads(path.read_text())
-    return [row for run in data["tables"] for row in run]
+def load_table_rows(path: Path) -> list[dict]:
+    saved = json.loads(path.read_text())
+    return [row for run_rows in saved["tables"] for row in run_rows]
 
 
-def stats(rows: list[dict]) -> dict:
-    clean = [r for r in rows if r["broken"] == 0]
+def totals_over_tables(table_rows: list[dict]) -> dict:
+    tables_without_breakage = [row for row in table_rows if row["broken"] == 0]
     return {
-        "tables": len(rows),
-        "glasses": sum(r["glasses"] for r in rows),
-        "start": sum(r["pickable_at_start"] for r in clean),
-        "end": sum(r["pickable_at_end"] for r in clean),
-        "gain": sum(r["pickable_at_end"] - r["pickable_at_start"] for r in clean),
-        "broken": sum(r["broken"] for r in rows),
-        "failed": sum(1 for r in rows if r["broken"] > 0),
-        "separated": sum(1 for r in rows if r["outcome"] == "separated"),
-        "said_done": sum(1 for r in rows if r["ended_by"] == "said done"),
-        "arm_seconds": sum(r["arm_seconds"] for r in rows),
+        "tables": len(table_rows),
+        "glasses": sum(row["glasses"] for row in table_rows),
+        "start": sum(row["pickable_at_start"] for row in tables_without_breakage),
+        "end": sum(row["pickable_at_end"] for row in tables_without_breakage),
+        "gain": sum(row["pickable_at_end"] - row["pickable_at_start"] for row in tables_without_breakage),
+        "broken": sum(row["broken"] for row in table_rows),
+        "failed": sum(1 for row in table_rows if row["broken"] > 0),
+        "separated": sum(1 for row in table_rows if row["outcome"] == "separated"),
+        "said_done": sum(1 for row in table_rows if row["ended_by"] == "said done"),
+        "arm_seconds": sum(row["arm_seconds"] for row in table_rows),
     }
 
 
-def interval(rows: list[dict], key: str, draws: int = 2000, seed: int = 0) -> tuple[float, float]:
+def bootstrap_interval(
+    table_rows: list[dict], total: str, redraws: int = 2000, seed: int = 0
+) -> tuple[float, float]:
     rng = np.random.default_rng(seed)
     values = []
-    for _ in range(draws):
-        pick = [rows[i] for i in rng.integers(0, len(rows), len(rows))]
-        values.append(stats(pick)[key])
+    for _ in range(redraws):
+        redrawn = [table_rows[index] for index in rng.integers(0, len(table_rows), len(table_rows))]
+        values.append(totals_over_tables(redrawn)[total])
     return float(np.percentile(values, 5)), float(np.percentile(values, 95))
 
 
-def table(paths: list[Path]) -> str:
+def comparison_table(paths: list[Path]) -> str:
     lines = [
         "| solution | tables | glasses | gain in pickable (90 % range) | glasses broken (90 % range) "
         "| tables failed | said done | arm minutes |",
         "|---|---|---|---|---|---|---|---|",
     ]
     for path in paths:
-        rows = load(path)
-        s = stats(rows)
-        g, b = interval(rows, "gain"), interval(rows, "broken")
+        table_rows = load_table_rows(path)
+        totals = totals_over_tables(table_rows)
+        gain_range, broken_range = (
+            bootstrap_interval(table_rows, "gain"),
+            bootstrap_interval(table_rows, "broken"),
+        )
         lines.append(
-            f"| {path.stem} | {s['tables']} | {s['glasses']} | {s['gain']:+d} ({g[0]:+.0f} to {g[1]:+.0f}) "
-            f"| {s['broken']} ({b[0]:.0f} to {b[1]:.0f}) | {s['failed']} | {s['said_done']} "
-            f"| {s['arm_seconds'] / 60:.1f} |"
+            f"| {path.stem} | {totals['tables']} | {totals['glasses']} "
+            f"| {totals['gain']:+d} ({gain_range[0]:+.0f} to {gain_range[1]:+.0f}) "
+            f"| {totals['broken']} ({broken_range[0]:.0f} to {broken_range[1]:.0f}) "
+            f"| {totals['failed']} | {totals['said_done']} "
+            f"| {totals['arm_seconds'] / 60:.1f} |"
         )
     return "\n".join(lines)
 
 
 if __name__ == "__main__":
-    print(table([Path(p) for p in sys.argv[1:]]))
+    print(comparison_table([Path(p) for p in sys.argv[1:]]))

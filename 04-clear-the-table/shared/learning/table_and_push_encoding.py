@@ -5,12 +5,12 @@ Writing it once also means a change to it is a change to all four.
 
 **A table is a set of glasses, and a model must not care what order they are
 in.** Each glass is one row of numbers -- where it stands, its radius, height and
-foot, and how much room it is short of -- and a table is up to ``SLOTS`` rows with
+foot, and how much room it is short of -- and a table is up to ``GLASS_SLOTS`` rows with
 a flag for which are real. The models that read it are built so that shuffling
 the rows shuffles their answers the same way.
 
 **A push is a glass, a direction, a distance and six settings.** The settings
-are the ones MoveIt is given (``push_motions.Settings``) and each is scaled to run from
+are the ones MoveIt is given (``push_motions.MoveItSettings``) and each is scaled to run from
 0 to 1 over the range a model is allowed to choose from, so that a network's
 outputs all have the same size and a model cannot choose a setting outside it.
 """
@@ -22,14 +22,14 @@ import math
 import numpy as np
 from work_cell.rack.layout import GLASS_ZONE
 
-from examiner.motion.push_motions import Box, Request, Settings
+from examiner.motion.push_motions import GlassBox, MoveItSettings, PushRequest
 from examiner.simulation.taken_from_problem_3 import GRIP_ROOM, has_room  # noqa: I001  (puts problem 3's solution 1 on the path)
 
 import plan  # problem 3's solution 1: the room-shortfall arithmetic lives there
 
 # The range each setting a model chooses is allowed to take, and how far it may push.
 # They are the cell's limits on what a model may tell MoveIt, not a statement of what is good.
-RANGES = {
+SETTING_RANGES = {
     "push_height": (0.075, 0.125),
     "stroke_speed": (0.006, 0.20),  # log-uniform
     "approach_speed": (0.3, 0.7),
@@ -37,95 +37,107 @@ RANGES = {
     "standoff": (0.02, 0.05),
     "overreach": (0.0, 0.025),
 }
-TRAVEL = (0.02, 0.10)
-SLOTS = 6
-MOVE_SCALE = 0.05  # metres: the unit a pushed glass's travel is learned in
-CENTRE = np.array([(GLASS_ZONE[0] + GLASS_ZONE[1]) / 2, (GLASS_ZONE[2] + GLASS_ZONE[3]) / 2])
-GLASS_WIDTH = 5 + 1  # x, y, radius, height, foot, short-of-room
+TRAVEL_RANGE = (0.02, 0.10)
+GLASS_SLOTS = 6
+GLASS_ZONE_CENTRE = np.array([(GLASS_ZONE[0] + GLASS_ZONE[1]) / 2, (GLASS_ZONE[2] + GLASS_ZONE[3]) / 2])
+NUMBERS_PER_GLASS = 5 + 1  # x, y, radius, height, foot, short-of-room
 SETTING_NAMES = ("push_height", "stroke_speed", "approach_speed", "padding", "standoff", "overreach")
-ACTION_WIDTH = 2 + 1 + len(SETTING_NAMES)  # cos, sin of the heading; travel; settings
+NUMBERS_PER_PUSH = 2 + 1 + len(SETTING_NAMES)  # cos, sin of the heading; travel; settings
 
 
-def room_short(boxes: list[Box], k: int) -> float:
+def room_shortfall_of_glass(boxes: list[GlassBox], glass: int) -> float:
     """How far glass ``k`` is from having room: zero when it has it, metres otherwise."""
-    here = boxes[k]
-    worst = 0.0
-    for j, other in enumerate(boxes):
-        if j != k:
-            worst = max(worst, GRIP_ROOM + other.radius - math.dist((here.x, here.y), (other.x, other.y)))
-    return max(0.0, worst)
+    this_box = boxes[glass]
+    largest_shortfall = 0.0
+    for other_index, other in enumerate(boxes):
+        if other_index != glass:
+            largest_shortfall = max(
+                largest_shortfall,
+                GRIP_ROOM + other.radius - math.dist((this_box.x, this_box.y), (other.x, other.y)),
+            )
+    return max(0.0, largest_shortfall)
 
 
-def pickable_count(boxes: list[Box]) -> int:
+def count_pickable_boxes(boxes: list[GlassBox]) -> int:
     return sum(
-        has_room(b.x, b.y, [(o.x, o.y, 2 * o.radius) for j, o in enumerate(boxes) if j != k])
-        for k, b in enumerate(boxes)
+        has_room(
+            box.x,
+            box.y,
+            [
+                (other.x, other.y, 2 * other.radius)
+                for other_index, other in enumerate(boxes)
+                if other_index != index
+            ],
+        )
+        for index, box in enumerate(boxes)
     )
 
 
-def shortfall(boxes: list[Box]) -> float:
-    return plan.shortfall([(b.x, b.y, 2 * b.radius) for b in boxes])
+def total_room_shortfall(boxes: list[GlassBox]) -> float:
+    return plan.shortfall([(box.x, box.y, 2 * box.radius) for box in boxes])
 
 
-def table_tensor(boxes: list[Box]) -> tuple[np.ndarray, np.ndarray]:
-    """(SLOTS, GLASS_WIDTH) numbers and a (SLOTS,) mask saying which rows are glasses."""
-    rows = np.zeros((SLOTS, GLASS_WIDTH), dtype=np.float32)
-    mask = np.zeros(SLOTS, dtype=bool)
-    for k, b in enumerate(boxes[:SLOTS]):
-        rows[k] = [
-            (b.x - CENTRE[0]) / 0.2,
-            (b.y - CENTRE[1]) / 0.2,
-            b.radius / 0.05,
-            b.height / 0.2,
-            (b.foot or b.radius) / 0.04,
-            room_short(boxes, k) / 0.05,
+def encode_table(boxes: list[GlassBox]) -> tuple[np.ndarray, np.ndarray]:
+    """(GLASS_SLOTS, NUMBERS_PER_GLASS) numbers and a (GLASS_SLOTS,) mask saying which rows are glasses."""
+    rows = np.zeros((GLASS_SLOTS, NUMBERS_PER_GLASS), dtype=np.float32)
+    mask = np.zeros(GLASS_SLOTS, dtype=bool)
+    for index, box in enumerate(boxes[:GLASS_SLOTS]):
+        rows[index] = [
+            (box.x - GLASS_ZONE_CENTRE[0]) / 0.2,
+            (box.y - GLASS_ZONE_CENTRE[1]) / 0.2,
+            box.radius / 0.05,
+            box.height / 0.2,
+            (box.foot or box.radius) / 0.04,
+            room_shortfall_of_glass(boxes, index) / 0.05,
         ]
-        mask[k] = True
+        mask[index] = True
     return rows, mask
 
 
-def scale_setting(name: str, value: float) -> float:
-    lo, hi = RANGES[name]
+def setting_to_unit(name: str, value: float) -> float:
+    lowest, highest = SETTING_RANGES[name]
     if name == "stroke_speed":  # chosen on a log scale, because 0.02 and 0.04 differ as much as 0.2 and 0.4
-        return (math.log(value) - math.log(lo)) / (math.log(hi) - math.log(lo))
-    return (value - lo) / (hi - lo)
+        return (math.log(value) - math.log(lowest)) / (math.log(highest) - math.log(lowest))
+    return (value - lowest) / (highest - lowest)
 
 
-def unscale_setting(name: str, unit: float) -> float:
+def unit_to_setting(name: str, unit: float) -> float:
     unit = min(1.0, max(0.0, float(unit)))
-    lo, hi = RANGES[name]
+    lowest, highest = SETTING_RANGES[name]
     if name == "stroke_speed":
-        return math.exp(math.log(lo) + unit * (math.log(hi) - math.log(lo)))
-    return lo + unit * (hi - lo)
+        return math.exp(math.log(lowest) + unit * (math.log(highest) - math.log(lowest)))
+    return lowest + unit * (highest - lowest)
 
 
-def action_vector(request: Request) -> np.ndarray:
+def encode_push(request: PushRequest) -> np.ndarray:
     """The push as numbers: cos and sin of the heading, travel in 0..1, then the six settings in 0..1."""
-    s = request.settings
+    settings = request.settings
     return np.array(
         [
             math.cos(request.heading),
             math.sin(request.heading),
-            (request.travel - TRAVEL[0]) / (TRAVEL[1] - TRAVEL[0]),
-            *(scale_setting(n, getattr(s, n)) for n in SETTING_NAMES),
+            (request.travel - TRAVEL_RANGE[0]) / (TRAVEL_RANGE[1] - TRAVEL_RANGE[0]),
+            *(setting_to_unit(name, getattr(settings, name)) for name in SETTING_NAMES),
         ],
         dtype=np.float32,
     )
 
 
-def request_from(glass: int, vector) -> Request:
+def decode_push(glass: int, numbers) -> PushRequest:
     """A push back out of numbers. Whatever a network says is clipped into the allowed ranges."""
-    v = np.asarray(vector, dtype=float)
-    heading = math.atan2(v[1], v[0])
-    travel = TRAVEL[0] + min(1.0, max(0.0, v[2])) * (TRAVEL[1] - TRAVEL[0])
-    settings = Settings(**{n: unscale_setting(n, v[3 + i]) for i, n in enumerate(SETTING_NAMES)})
-    return Request(glass, heading, travel, settings)
+    values = np.asarray(numbers, dtype=float)
+    heading = math.atan2(values[1], values[0])
+    travel = TRAVEL_RANGE[0] + min(1.0, max(0.0, values[2])) * (TRAVEL_RANGE[1] - TRAVEL_RANGE[0])
+    settings = MoveItSettings(
+        **{name: unit_to_setting(name, values[3 + index]) for index, name in enumerate(SETTING_NAMES)}
+    )
+    return PushRequest(glass, heading, travel, settings)
 
 
 # ----------------------------------------------------------------- the records
 
 
-def load_records(*paths) -> list[dict]:
+def load_push_records(*paths) -> list[dict]:
     import json
     from pathlib import Path
 
@@ -137,16 +149,20 @@ def load_records(*paths) -> list[dict]:
     return rows
 
 
-def boxes_of(layout: list[dict]) -> list[Box]:
-    return [Box(g["x"], g["y"], g["radius"], g["height"], g["foot"]) for g in layout]
+def boxes_from_layout(layout: list[dict]) -> list[GlassBox]:
+    return [
+        GlassBox(glass["x"], glass["y"], glass["radius"], glass["height"], glass["foot"]) for glass in layout
+    ]
 
 
-def request_of(record: dict) -> Request:
-    r = record["request"]
-    return Request(r["glass"], r["heading"], r["travel"], Settings(**r["settings"]))
+def push_request_from_record(record: dict) -> PushRequest:
+    request = record["request"]
+    return PushRequest(
+        request["glass"], request["heading"], request["travel"], MoveItSettings(**request["settings"])
+    )
 
 
-def outcome(record: dict) -> dict:
+def push_outcome_from_record(record: dict) -> dict:
     """What a push did, as the numbers the solutions learn from and are scored by.
 
     ``gain`` is the change in how many glasses the hand could pick. ``eased`` is
@@ -167,27 +183,30 @@ def outcome(record: dict) -> dict:
             "disturbed": 0.0,
             "seconds": 0.0,
         }
-    k, r = record["request"]["glass"], record["request"]
-    u = (math.cos(r["heading"]), math.sin(r["heading"]))
-    d = (after[k]["x"] - before[k]["x"], after[k]["y"] - before[k]["y"])
+    glass, request = record["request"]["glass"], record["request"]
+    along_push = (math.cos(request["heading"]), math.sin(request["heading"]))
+    moved = (after[glass]["x"] - before[glass]["x"], after[glass]["y"] - before[glass]["y"])
     others = [
-        math.dist((a["x"], a["y"]), (b["x"], b["y"]))
-        for j, (a, b) in enumerate(zip(after, before, strict=True))
-        if j != k
+        math.dist((after_glass["x"], after_glass["y"]), (before_glass["x"], before_glass["y"]))
+        for index, (after_glass, before_glass) in enumerate(zip(after, before, strict=True))
+        if index != glass
     ]
     return {
         "feasible": True,
-        "gain": sum(g["pickable"] for g in after) - sum(g["pickable"] for g in before),
-        "eased": 1000.0 * (shortfall(boxes_of(before)) - shortfall(boxes_of(after))),
+        "gain": sum(row["pickable"] for row in after) - sum(row["pickable"] for row in before),
+        "eased": 1000.0
+        * (total_room_shortfall(boxes_from_layout(before)) - total_room_shortfall(boxes_from_layout(after))),
         "topple": record["toppled"] > 0,
-        "moved": d[0] * u[0] + d[1] * u[1],
-        "across": abs(d[0] * u[1] - d[1] * u[0]),
+        "moved": moved[0] * along_push[0] + moved[1] * along_push[1],
+        "across": abs(moved[0] * along_push[1] - moved[1] * along_push[0]),
         "disturbed": max(others, default=0.0),
         "seconds": record["arm_seconds"],
     }
 
 
-def hand_clear(boxes: list[Box], k: int, heading: float, travel: float, lead: float = 0.05) -> bool:
+def hand_fits_along_push(
+    boxes: list[GlassBox], glass_index: int, heading: float, travel: float, lead_in: float = 0.05
+) -> bool:
     """Whether the shut hand, driven along this push, stays clear of every other glass.
 
     This is problem 3's own test of a push (``plan.along``): each stretch of the
@@ -199,20 +218,20 @@ def hand_clear(boxes: list[Box], k: int, heading: float, travel: float, lead: fl
     models learn the rest -- what the arm can and cannot do -- from MoveIt's
     answers.
     """
-    u = np.array([math.cos(heading), math.sin(heading)])
-    glass = boxes[k]
-    middle = np.array([glass.x, glass.y])
-    start = middle - (glass.radius + lead) * u
-    end = middle + travel * u
-    for j, other in enumerate(boxes):
-        if j == k:
+    along_push = np.array([math.cos(heading), math.sin(heading)])
+    pushed_box = boxes[glass_index]
+    middle = np.array([pushed_box.x, pushed_box.y])
+    start = middle - (pushed_box.radius + lead_in) * along_push
+    end = middle + travel * along_push
+    for other_index, other in enumerate(boxes):
+        if other_index == glass_index:
             continue
         centre = np.array([other.x, other.y])
         passing = min(
-            glass.radius + other.radius + plan.CLEARANCE, float(np.linalg.norm(centre - middle)) - 0.001
+            pushed_box.radius + other.radius + plan.CLEARANCE, float(np.linalg.norm(centre - middle)) - 0.001
         )
         swept = any(
-            plan.segment_distance(centre, start - far * u, end - near * u)
+            plan.segment_distance(centre, start - far * along_push, end - near * along_push)
             < half + other.radius + plan.CLEARANCE
             for near, far, half in plan.JAW_SEGMENTS
         )
@@ -221,26 +240,29 @@ def hand_clear(boxes: list[Box], k: int, heading: float, travel: float, lead: fl
     return plan.in_zone(*end)
 
 
-def away_angle(boxes: list[Box], k: int) -> float:
-    """The direction from the nearest other glass towards glass ``k``: the way a push usually should go.
+def heading_away_from_nearest_glass(boxes: list[GlassBox], glass: int) -> float:
+    """The direction from the nearest other glass towards glass ``glass``: the way a push usually should go.
 
     A push towards a neighbour almost never helps, so measuring the heading from
     this direction instead of from the table's x axis hands a learner the one piece
     of geometry every good push shares, and leaves it to learn how far to depart
     from it. With one glass on the table there is no neighbour and the answer is 0.
     """
-    here = boxes[k]
-    best, angle = math.inf, 0.0
-    for j, other in enumerate(boxes):
-        if j != k:
-            gap = math.dist((here.x, here.y), (other.x, other.y))
-            if gap < best:
-                best, angle = gap, math.atan2(here.y - other.y, here.x - other.x)
-    return angle
+    this_box = boxes[glass]
+    nearest_distance, heading = math.inf, 0.0
+    for other_index, other in enumerate(boxes):
+        if other_index != glass:
+            distance = math.dist((this_box.x, this_box.y), (other.x, other.y))
+            if distance < nearest_distance:
+                nearest_distance, heading = distance, math.atan2(this_box.y - other.y, this_box.x - other.x)
+    return heading
 
 
-def relative_request(glass: int, vector, boxes: list[Box]) -> Request:
-    """Like ``request_from``, but the first two numbers are an angle measured from ``away_angle``."""
-    request = request_from(glass, vector)
-    heading = away_angle(boxes, glass) + request.heading
-    return Request(glass, (heading + math.pi) % (2 * math.pi) - math.pi, request.travel, request.settings)
+def decode_push_relative_to_neighbour(glass: int, numbers, boxes: list[GlassBox]) -> PushRequest:
+    """Like ``decode_push``, but the first two numbers are an angle.
+
+    The angle is measured from ``heading_away_from_nearest_glass``.
+    """
+    request = decode_push(glass, numbers)
+    heading = heading_away_from_nearest_glass(boxes, glass) + request.heading
+    return PushRequest(glass, (heading + math.pi) % (2 * math.pi) - math.pi, request.travel, request.settings)

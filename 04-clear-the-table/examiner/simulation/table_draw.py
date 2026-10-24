@@ -29,7 +29,7 @@ only what the draw promises about the arrangement. Every table holds:
 
 **"Touching" here means closer than the room the open hand needs**, which is
 what ``has_room`` measures. The glasses never overlap: the draw leaves
-``START_GAP`` of daylight between every pair of them, and two glasses can be
+``LEAST_GAP_BETWEEN_GLASSES`` of daylight between every pair of them, and two glasses can be
 well clear of each other and still be too close for the hand to reach between.
 
 Nothing about a table is constant. The kind, the number of glasses, how they
@@ -63,48 +63,48 @@ from examiner.simulation.taken_from_problem_3 import GRIP_ROOM, Seen, SpawnedGla
 # than 75 mm, so on a zone 320 by 360 mm, seven glasses leave it nowhere to
 # stand. A problem nobody can finish measures nothing, because every solution
 # scores zero for the same reason and the differences between them disappear.
-FEWEST, MOST = 3, 5
+FEWEST_GLASSES, MOST_GLASSES = 3, 5
 
 # How many of them are crowded, lowest and highest. Two is the floor because
 # two glasses is what crowding means, and three the ceiling because this has to
 # stay a narrow band: the scorecard averages arm time over tables, and tables
 # that started two glasses apart in difficulty would not belong in one average.
-CROWDED_BAND = (2, 3)
+CROWDED_GLASS_RANGE = (2, 3)
 
 # How many already have room. Never none, so that a solution has to decide to
 # leave a glass alone, and never more than two, because a table of mostly free
 # glasses measures almost nothing.
-FREE_BAND = (1, 2)
+FREE_GLASS_RANGE = (1, 2)
 
 # A crowded glass is crowded by a neighbour, so the smallest touching group is
 # two. This is not a free choice; it is what "crowded" means.
-LEAST_IN_A_GROUP = 2
+SMALLEST_TOUCHING_GROUP = 2
 
 # The least daylight between two glasses. Problem 3's examiner has a constant of
 # this name and this size, but ``taken_from_problem_3`` does not re-export it and this is a
 # choice belonging to problem 4's draw rather than to the cell, so it is named
 # here. The glasses are standing on a table, not stacked: they never touch.
-START_GAP = 0.005
+LEAST_GAP_BETWEEN_GLASSES = 0.005
 
 # Room kept between one touching group and anything outside it, over and above
 # the room the hand needs. Without it a group's edge glass would sit exactly on
 # the boundary of having room, and the measurement noise in a solution's look
 # would decide which group it belonged to.
-GROUP_GAP = 0.008
+EXTRA_GAP_BETWEEN_GROUPS = 0.008
 
 # Tries before the draw gives up, so that an impossible table raises instead of
 # spinning. A table normally lands on its first try; the counts are generous
 # because the cost of a retry is one more random point.
-GLASS_TRIES = 60
-SPOT_TRIES = 400
-GROUP_TRIES = 60
-LAYOUT_TRIES = 40
+GLASS_DRAW_TRIES = 60
+SPOT_DRAW_TRIES = 400
+GROUP_LAYOUT_TRIES = 60
+TABLE_LAYOUT_TRIES = 40
 
 
-def _splits(total: int, least: int) -> list[tuple[int, ...]]:
+def _ways_to_split_into_groups(total: int, least: int) -> list[tuple[int, ...]]:
     """Every way ``total`` crowded glasses divide into groups of ``least`` or more.
 
-    Written out rather than listed as a constant so that moving CROWDED_BAND
+    Written out rather than listed as a constant so that moving CROWDED_GLASS_RANGE
     moves the compositions with it.
     """
     if total == 0:
@@ -113,7 +113,7 @@ def _splits(total: int, least: int) -> list[tuple[int, ...]]:
     for size in range(least, total + 1):
         rest = total - size
         if rest == 0 or rest >= least:
-            out += [(size, *more) for more in _splits(rest, size)]
+            out += [(size, *more) for more in _ways_to_split_into_groups(rest, size)]
     return out
 
 
@@ -123,23 +123,23 @@ def _splits(total: int, least: int) -> list[tuple[int, ...]]:
 # seed. Both are needed: a pair falls to a single well aimed nudge, a group of
 # three does not, and a solution that can do the first and not the second
 # should be visible as exactly that rather than scoring zero on everything.
-COMPOSITIONS = tuple(
+TABLE_COMPOSITIONS = tuple(
     (groups, free)
-    for crowded in range(CROWDED_BAND[0], CROWDED_BAND[1] + 1)
-    for groups in _splits(crowded, LEAST_IN_A_GROUP)
-    for free in range(FREE_BAND[0], FREE_BAND[1] + 1)
-    if FEWEST <= crowded + free <= MOST
+    for crowded in range(CROWDED_GLASS_RANGE[0], CROWDED_GLASS_RANGE[1] + 1)
+    for groups in _ways_to_split_into_groups(crowded, SMALLEST_TOUCHING_GROUP)
+    for free in range(FREE_GLASS_RANGE[0], FREE_GLASS_RANGE[1] + 1)
+    if FEWEST_GLASSES <= crowded + free <= MOST_GLASSES
 )
 
 # The kinds, from the library that draws them, so the four names are not
-# written down a third time. ``examiner.KINDS`` is the same four in its own order
+# written down a third time. ``examiner.GLASS_KINDS`` is the same four in its own order
 # and ``taken_from_problem_3`` does not re-export it.
-KINDS = tuple(sorted(KIND_RANGES))
+GLASS_KINDS = tuple(sorted(KIND_RANGES))
 
-Spot = tuple[float, float, float]  # x, y, and the glass's widest width
+GlassSpot = tuple[float, float, float]  # x, y, and the glass's widest width
 
 
-def solution_one() -> ModuleType:
+def problem_3_plan() -> ModuleType:
     """Solution 1's geometry, imported on use rather than at the top of the file.
 
     Its tipping rule and its measure of how much room a table is short of are
@@ -158,7 +158,7 @@ def solution_one() -> ModuleType:
     return plan
 
 
-def as_seen(outline: Outline) -> Seen:
+def true_reading_of_outline(outline: Outline) -> Seen:
     """A glass's true numbers, in the shape solution 1's rules read.
 
     Those rules take a ``Seen`` because the arm only ever has measurements.
@@ -176,11 +176,11 @@ def as_seen(outline: Outline) -> Seen:
     )
 
 
-def _others(spots: list[Spot], i: int) -> list[Spot]:
+def _other_spots(spots: list[GlassSpot], i: int) -> list[GlassSpot]:
     return [spot for j, spot in enumerate(spots) if j != i]
 
 
-def in_the_way(one: Spot, other: Spot) -> bool:
+def too_close_for_the_open_hand(one: GlassSpot, other: GlassSpot) -> bool:
     """Whether two glasses are closer than the room the open hand needs.
 
     This is what "touching" means on this table, and it is ``has_room``'s own
@@ -194,7 +194,7 @@ def in_the_way(one: Spot, other: Spot) -> bool:
     return not has_room(x, y, [other]) and not has_room(ox, oy, [(x, y, width)])
 
 
-def groups_of(spots: list[Spot]) -> list[tuple[int, ...]]:
+def touching_groups(spots: list[GlassSpot]) -> list[tuple[int, ...]]:
     """The touching groups: glasses in each other's way, joined up into clumps.
 
     A clump is what a solution has to break up, and its size is what makes the
@@ -210,7 +210,7 @@ def groups_of(spots: list[Spot]) -> list[tuple[int, ...]]:
         while edge:
             i = edge.pop()
             for j in range(len(spots)):
-                if j not in clump and in_the_way(spots[i], spots[j]):
+                if j not in clump and too_close_for_the_open_hand(spots[i], spots[j]):
                     clump.add(j)
                     edge.append(j)
         seen |= clump
@@ -218,7 +218,7 @@ def groups_of(spots: list[Spot]) -> list[tuple[int, ...]]:
     return found
 
 
-def _glass(kind: str, rng: random.Random, crowded: bool) -> Outline:
+def _draw_glass_outline(kind: str, rng: random.Random, crowded: bool) -> Outline:
     """One glass, redrawn until the physics could slide it if it is to be pushed.
 
     Only the crowded ones are held to that. A glass that already has room is
@@ -226,17 +226,19 @@ def _glass(kind: str, rng: random.Random, crowded: bool) -> Outline:
     gain -- and it is the tippy kinds, the tapered ones, that the arm most
     needs to meet standing somewhere it can be left alone.
     """
-    for _ in range(GLASS_TRIES):
+    for _ in range(GLASS_DRAW_TRIES):
         outline, _proportions = draw(kind, rng)
-        if not crowded or solution_one().slides(as_seen(outline)) != "no":
+        if not crowded or problem_3_plan().slides(true_reading_of_outline(outline)) != "no":
             return outline
     raise RuntimeError(
-        f"no {kind} in {GLASS_TRIES} draws had a foot wide enough to slide rather than tip; "
+        f"no {kind} in {GLASS_DRAW_TRIES} draws had a foot wide enough to slide rather than tip; "
         f"its range in KIND_RANGES, or the height the jaw pushes at, wants looking at"
     )
 
 
-def _spot(rng: random.Random, width: float, group: list[Spot], placed: list[Spot]) -> Spot | None:
+def _draw_spot_in_group(
+    rng: random.Random, width: float, group: list[GlassSpot], placed: list[GlassSpot]
+) -> GlassSpot | None:
     """A spot for one glass joining ``group``, or None when this try missed.
 
     The first glass of a group goes anywhere in the zone. Each one after it is
@@ -249,7 +251,9 @@ def _spot(rng: random.Random, width: float, group: list[Spot], placed: list[Spot
         x, y = rng.uniform(x_min, x_max), rng.uniform(y_min, y_max)
     else:
         nx, ny, nwidth = rng.choice(group)
-        near = rng.uniform((width + nwidth) / 2 + START_GAP, GRIP_ROOM + min(width, nwidth) / 2)
+        near = rng.uniform(
+            (width + nwidth) / 2 + LEAST_GAP_BETWEEN_GLASSES, GRIP_ROOM + min(width, nwidth) / 2
+        )
         angle = rng.uniform(-math.pi, math.pi)
         x, y = nx + near * math.cos(angle), ny + near * math.sin(angle)
     spot = (x, y, width)
@@ -257,27 +261,32 @@ def _spot(rng: random.Random, width: float, group: list[Spot], placed: list[Spot
         return None
     # Daylight from every glass in the group, not only the one it was stood
     # beside, and from everything outside it as well.
-    if any(math.dist((x, y), (ox, oy)) < (width + owidth) / 2 + START_GAP for ox, oy, owidth in group):
+    if any(
+        math.dist((x, y), (ox, oy)) < (width + owidth) / 2 + LEAST_GAP_BETWEEN_GLASSES
+        for ox, oy, owidth in group
+    ):
         return None
-    if group and not any(in_the_way(spot, other) for other in group):
+    if group and not any(too_close_for_the_open_hand(spot, other) for other in group):
         return None
-    # Outside the group, room for the hand and GROUP_GAP more, so that no two
+    # Outside the group, room for the hand and EXTRA_GAP_BETWEEN_GROUPS more, so that no two
     # groups quietly become one and a free glass stays free.
     if any(
-        math.dist((x, y), (ox, oy)) < GRIP_ROOM + max(width, owidth) / 2 + GROUP_GAP
+        math.dist((x, y), (ox, oy)) < GRIP_ROOM + max(width, owidth) / 2 + EXTRA_GAP_BETWEEN_GROUPS
         for ox, oy, owidth in placed
     ):
         return None
     return spot
 
 
-def _group(rng: random.Random, widths: list[float], placed: list[Spot]) -> list[Spot] | None:
+def _lay_out_touching_group(
+    rng: random.Random, widths: list[float], placed: list[GlassSpot]
+) -> list[GlassSpot] | None:
     """One whole touching group laid out, or None if it would not fit anywhere."""
-    for _ in range(GROUP_TRIES):
-        group: list[Spot] = []
+    for _ in range(GROUP_LAYOUT_TRIES):
+        group: list[GlassSpot] = []
         for width in widths:
-            for _try in range(SPOT_TRIES):
-                spot = _spot(rng, width, group, placed)
+            for _try in range(SPOT_DRAW_TRIES):
+                spot = _draw_spot_in_group(rng, width, group, placed)
                 if spot is not None:
                     group.append(spot)
                     break
@@ -288,8 +297,8 @@ def _group(rng: random.Random, widths: list[float], placed: list[Spot]) -> list[
     return None
 
 
-def table(seed: int) -> list[SpawnedGlass]:
-    """Table number ``seed``, as a list of glasses for ``Simulator(seed, glasses=...)``.
+def draw_table(seed: int) -> list[SpawnedGlass]:
+    """Table number ``seed``, as a list of glasses for ``TableSimulator(seed, glasses=...)``.
 
     The same seed always gives the same table. Problem 3's convention holds
     here too: seeds below ``TEST_SEEDS`` are for training and the ones above it
@@ -299,21 +308,21 @@ def table(seed: int) -> list[SpawnedGlass]:
     # 7 is not problem 3's table 7 with extra glasses. ``random`` hashes a
     # string the same way in every run, so this is still reproducible.
     rng = random.Random(f"clear-the-table:{seed}")
-    kind = rng.choice(KINDS)
-    groups, free = rng.choice(COMPOSITIONS)
+    kind = rng.choice(GLASS_KINDS)
+    groups, free = rng.choice(TABLE_COMPOSITIONS)
     # A free glass is a touching group of one: same placement, and the room it
     # needs is the room every group keeps from every other.
     sizes = sorted((*groups, *(1,) * free), reverse=True)
 
-    for _ in range(LAYOUT_TRIES):
-        placed: list[Spot] = []
+    for _ in range(TABLE_LAYOUT_TRIES):
+        placed: list[GlassSpot] = []
         drawn: list[Outline] = []
         for size in sizes:
             widths = []
             for _each in range(size):
-                drawn.append(_glass(kind, rng, crowded=size > 1))
+                drawn.append(_draw_glass_outline(kind, rng, crowded=size > 1))
                 widths.append(drawn[-1].max_diameter)
-            group = _group(rng, widths, placed)
+            group = _lay_out_touching_group(rng, widths, placed)
             if group is None:
                 break
             placed += group
@@ -329,25 +338,28 @@ def table(seed: int) -> list[SpawnedGlass]:
             ]
 
     raise RuntimeError(
-        f"no table for seed {seed}: {LAYOUT_TRIES} tries never fitted {sum(sizes)} "
+        f"no table for seed {seed}: {TABLE_LAYOUT_TRIES} tries never fitted {sum(sizes)} "
         f"{kind}es in groups of {sizes} into the glass zone. Either the composition wants "
-        f"narrowing or GROUP_GAP wants cutting"
+        f"narrowing or EXTRA_GAP_BETWEEN_GROUPS wants cutting"
     )
 
 
-def facts(seed: int) -> dict:
+def measured_table_facts(seed: int) -> dict:
     """What table ``seed`` really is, measured off the glasses it drew.
 
     Measured rather than remembered: these are the numbers a document or a
     scorecard quotes, and a draw that silently stopped keeping one of its
     promises would still report the promise if this returned what it intended.
     """
-    glasses = table(seed)
-    spots: list[Spot] = [(g.position[0], g.position[1], g.outline.max_diameter) for g in glasses]
-    clumps = groups_of(spots)
-    crowded = [i for i, spot in enumerate(spots) if not has_room(spot[0], spot[1], _others(spots, i))]
+    glasses = draw_table(seed)
+    spots: list[GlassSpot] = [(g.position[0], g.position[1], g.outline.max_diameter) for g in glasses]
+    clumps = touching_groups(spots)
+    crowded = [i for i, spot in enumerate(spots) if not has_room(spot[0], spot[1], _other_spots(spots, i))]
     pairs = sum(
-        1 for i in range(len(spots)) for j in range(i + 1, len(spots)) if in_the_way(spots[i], spots[j])
+        1
+        for i in range(len(spots))
+        for j in range(i + 1, len(spots))
+        if too_close_for_the_open_hand(spots[i], spots[j])
     )
     return {
         "seed": seed,
@@ -360,7 +372,7 @@ def facts(seed: int) -> dict:
         "touching_pairs": pairs,
         # How much room the table is short of in total, by solution 1's own
         # measure. Zero would mean there was nothing to do.
-        "shortfall": solution_one().shortfall(spots),
+        "shortfall": problem_3_plan().shortfall(spots),
         "closest": min(
             (
                 math.dist(spots[i][:2], spots[j][:2]) - (spots[i][2] + spots[j][2]) / 2
@@ -370,7 +382,6 @@ def facts(seed: int) -> dict:
             default=0.0,
         ),
         "crowded_can_slide": all(
-            solution_one().slides(as_seen(glasses[i].outline)) != "no" for i in crowded
+            problem_3_plan().slides(true_reading_of_outline(glasses[i].outline)) != "no" for i in crowded
         ),
     }
-
