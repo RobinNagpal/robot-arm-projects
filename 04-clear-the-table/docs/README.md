@@ -128,8 +128,11 @@ see whether the hand came down in the gap between two glasses or at the side.
   look that number could belong to another glass, which was then never pushed again on that
   table. Now the glass is remembered by where it stands, so imitation and SmolVLA have more
   glasses left to choose from. They push for longer and break more: imitation 31 glasses
-  instead of 19, and SmolVLA 24 instead of 17. A second run of imitation gave exactly the
-  same result, so the change comes from the fix and not from noise.
+  instead of 19, and SmolVLA 24 instead of 17. A run is not repeated exactly, because
+  MoveIt's planner draws its arm paths at random, so a second run can end a few tables
+  differently. However, a second run of imitation gave the same totals, and a change of
+  seven to twelve glasses is much larger than the two to four that this noise moves a
+  result by. So the change comes from the fix and not from noise.
 
 ## Films
 
